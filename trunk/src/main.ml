@@ -18,8 +18,9 @@
 
 (* ---------------------------------------------------------------------- *)
 
-(* Some command-line arguments are handled specially during startup, e.g.
+(* Some command-line arguments are handled specially during startup, e.g.,
        -doc
+       -help
        -version
        -server
        -socket
@@ -213,11 +214,11 @@ let nonGuiStartup() = begin
   (* if it returns start a UI *)
   (try
     (match Util.StringMap.find uiPrefName argv with
-      "text"::_    -> Uitext.Body.start Uicommon.Text
-    | "graphic"::_ ->
-        (Printf.eprintf "Error: that ui is not supported\n"; flush stderr; exit 1)
+      "text"::_    -> (Uitext.Body.start Uicommon.Text; exit 0)
+    | "graphic"::_ -> () (* fallthru *)
     | _            -> Prefs.printUsage Uicommon.usageMsg; exit 1)
-  with Not_found -> ())
+  with Not_found -> ());
+  ()
 end
 
 module Body = functor(Ui : Uicommon.UI) -> struct

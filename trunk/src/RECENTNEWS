@@ -1,3 +1,17 @@
+CHANGES FROM VERSION 2.12.2
+
+Deleted some files that don't need to be in the repository.
+
+Mac GUI:
+  Handle the "help" command-line argument properly.
+  Handle profiles given on the command line properly.
+  When a profile has been selected, the profile dialog is replaced by a
+    "connecting" message while the connection is being made.  This
+    gives better feedback.
+  Size of left and right columns is now large enough so that
+    "PropsChanged" is not cut off.
+
+-------------------------------
 CHANGES FROM VERSION 2.12.1
 
 * Added some TODO items

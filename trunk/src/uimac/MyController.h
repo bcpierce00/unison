@@ -23,6 +23,9 @@
     IBOutlet NSView *updatesView;
     NSSize updatesSize;
 
+    IBOutlet NSView *ConnectingView;
+    NSSize ConnectingSize;
+
     IBOutlet ReconTableView *tableView;
     IBOutlet NSTextField *updatesText;
 
@@ -33,7 +36,7 @@
     
     IBOutlet NSButton *passwordCancelButton;
 	
-	IBOutlet NSWindow *aboutWindow;
+    IBOutlet NSWindow *aboutWindow;
     IBOutlet NSTextField *versionText;
 
 
@@ -41,6 +44,8 @@
     value caml_reconItems;
     NSMutableArray *reconItems;
     value preconn;
+
+    NSString *pName;
 }
 - (IBAction)createButton:(id)sender;
 - (IBAction)saveProfileButton:(id)sender;
