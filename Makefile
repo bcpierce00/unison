@@ -215,7 +215,7 @@ DEVELDIR=$(EXPORTDIR)/download/resources/developers-only
 nightly:
 	($(RM) -r $(HOME)/tmp/unison; \
          cd $(HOME)/tmp; \
-	 svn co file:///plclub1/svnroot/unison/trunk unison; \
+	 svn co https://cvs.cis.upenn.edu:3690/svnroot/unison/trunk unison; \
          cd $(HOME)/tmp/unison; \
          $(MAKE) exportdevel)
 
