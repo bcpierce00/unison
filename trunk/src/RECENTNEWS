@@ -1,5 +1,10 @@
 CHANGES FROM VERSION 2.11.0
 
+* Using svn keyword substitution for Rev (revision) in src/mkProjectInfo.ml.
+
+-------------------------------
+CHANGES FROM VERSION 2.11.0
+
 * Removed PRCS-specific code; many make targets are simply removed.
   In particular, make populate is gone, so you have to use svn add
   and svn delete to change the files in the repository.
