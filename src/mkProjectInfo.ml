@@ -40,10 +40,7 @@ let pointVersionOrigin = 3 (* Revision that corresponds to point version 0 *)
 *)
 
 let revisionString = "$Rev$";;
-(* TEMPORARY until svn keywords are set up
 let revision = Scanf.sscanf revisionString "$Rev: %d " (fun x -> x);;
-*)
-let revision = 3;;
 let pointVersion = revision - pointVersionOrigin;;
 
 Printf.printf "VERSION=%d.%d.%d\n" majorVersion minorVersion pointVersion;;
