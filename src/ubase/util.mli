@@ -48,6 +48,7 @@ val startswith : string -> string -> bool
 val endswith : string -> string -> bool
 val findsubstring : string -> string -> int option
 val replacesubstring : string -> string -> string -> string
+val replacesubstrings : string -> (string * string) list -> string
 val concatmap : string -> ('a -> string) -> 'a list -> string
 val trimWhitespace : string -> string
 val splitIntoWords : string -> char -> string list

@@ -30,6 +30,10 @@ let setDirection ri dir force =
             d := Replica1ToReplica2
           else
             d := Replica2ToReplica1
+        end else if s1=`Deleted && dir=`Newer then begin
+          d := Replica2ToReplica1
+        end else if s2=`Deleted && dir=`Newer then begin
+          d := Replica1ToReplica2
         end
   | _ ->
       ()

@@ -1,3 +1,16 @@
+CHANGES FROM VERSION 2.11.4
+
+* Generalized \\verb|diff| preference so that it can be given either as just 
+  the command name to be used for calculating diffs or else a whole command
+  line, containing the strings CURRENT1 and CURRENT2, which will be replaced
+  by the names of the files to be diffed before the command is called.
+
+* Added another small fix (by Jerome) to OSX file type display.
+
+* A few other small tweaks
+
+
+-------------------------------
 CHANGES FROM VERSION 2.11.3
 
 Changes to Mac gui:

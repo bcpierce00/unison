@@ -697,7 +697,7 @@ let rec nice i
   else
     Lwt_unix.yield() >>= (fun () -> nice (i - 1))
 
-(* RegisterHostCmd is a simpler version of registerClientServer.
+(* RegisterHostCmd is a simpler version of registerClientServer [registerServerCmd?].
    It is used to create remote procedure calls: the only communication
    between the client and server is the sending of arguments from
    client to server, and the sending of the result from the server

@@ -424,11 +424,13 @@ let readChannelTillEof c =
 let diffCmd =
   Prefs.createString "diff" "diff"
     "*command for showing differences between files"
-    ("This preference can be used to control the name (and command-line "
-     ^ "arguments) of the system "
+    ("This preference can be used to control the name and command-line "
+     ^ "arguments of the system "
      ^ "utility used to generate displays of file differences.  The default "
-     ^ "is `\\verb|diff|'.  The diff program should expect two file names "
-     ^ "as arguments")
+     ^ "is `\\verb|diff|'.  If the value of this preference contains the substrings "
+     ^ "CURRENT1 and CURRENT2, these will be replaced by the names of the files to be "
+     ^ "diffed.  If not, the two filenames will be appended to the command (enclosed "
+     ^ "in double quotes).")
 
 let quotes s = "'" ^ Util.replacesubstring s "'" "'\''" ^ "'"
 
@@ -439,9 +441,15 @@ let rec diff root1 path1 ui1 root2 path2 ui2 showDiff id =
       (root2string root1) (Path.toString path1)
       (root2string root2) (Path.toString path2));
   let displayDiff fspath1 fspath2 =
-    let cmd = (Prefs.read diffCmd)
-                 ^ " " ^ (quotes (Fspath.toString fspath1))
-                 ^ " " ^ (quotes (Fspath.toString fspath2)) in
+    let cmd =
+      if Util.findsubstring (Prefs.read diffCmd) "CURRENT1" = None then
+          (Prefs.read diffCmd)
+        ^ " " ^ (quotes (Fspath.toString fspath1))
+        ^ " " ^ (quotes (Fspath.toString fspath2)) 
+      else 
+        Util.replacesubstrings (Prefs.read diffCmd)
+          ["CURRENT1", (Fspath.toString fspath1);
+           "CURRENT2", (Fspath.toString fspath2)] in
     let c = Unix.open_process_in cmd in
     showDiff cmd (readChannelTillEof c);
     ignore(Unix.close_process_in c) in
