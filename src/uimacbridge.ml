@@ -260,6 +260,11 @@ let unisonRiSetConflict ri =
     Problem _ -> ()
   | Different(_,_,d,_) -> d := Conflict;;
 Callback.register "unisonRiSetConflict" unisonRiSetConflict;;
+let unisonRiSetMerge ri =
+  match ri.ri.replicas with
+    Problem _ -> ()
+  | Different(_,_,d,_) -> d := Merge;;
+Callback.register "unisonRiSetMerge" unisonRiSetMerge;;
 let unisonRiForceOlder ri =
   Recon.setDirection ri.ri `Older `Force;;
 Callback.register "unisonRiForceOlder" unisonRiForceOlder;;
@@ -297,7 +302,7 @@ let unisonSynchronize () =
                 catch (fun () ->
                          Transport.transportItem
                            theSI.ri (Uutil.File.ofLine i)
-                           (fun title text -> Trace.status (Printf.sprintf "%s: %s" title text); true)
+                           (fun title text -> Trace.status (Printf.sprintf "MERGE %s: %s" title text); true)
                          >>= (fun () ->
                          return Util.Succeeded))
                       (fun e ->

@@ -25,6 +25,7 @@
 - (IBAction)forceNewer:(id)sender;
 - (IBAction)selectConflicts:(id)sender;
 - (IBAction)revert:(id)sender;
+- (IBAction)merge:(id)sender;
 - (BOOL)validateMenuItem:(NSMenuItem *)item;
 
 @end

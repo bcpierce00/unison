@@ -145,6 +145,11 @@
     [self reloadData];
 }
 
+- (IBAction)merge:(id)sender
+{
+    [self doAction:'m'];
+}
+
 /* There are menu commands for these, but we add some shortcuts so you don't
    have to press the Command key */
 - (void)keyDown:(NSEvent *)event

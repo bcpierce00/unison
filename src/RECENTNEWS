@@ -1,3 +1,11 @@
+CHANGES FROM VERSION 2.11.3
+
+Changes to Mac gui:
+* Added a synchronize menu item with keyboard shortcut
+* Added a merge menu item, still needs to be debugged
+* Updated copyright message
+
+-------------------------------
 CHANGES FROM VERSION 2.11.1
 
 * Makefile hack to force subvversion to update the Rev keyword in
