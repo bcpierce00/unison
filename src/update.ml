@@ -514,14 +514,19 @@ let loadArchives (optimistic: bool) : bool Lwt.t =
      >>= (fun checksums ->
   let identicals = archivesIdentical checksums in
   if not (optimistic || identicals) then
-    raise (Util.Fatal (
-        "Internal error: On-disk archives are not identical.\n\n"
-      ^ "If you get this message repeatedly, please \n "
-      ^ "  a) notify unison-help@cis.upenn.edu\n"
-      ^ "  b) move the archive files (~/.unison/arNNNNN) on each "
-      ^ "     machine to some other directory (in case they may be\n"
-      ^ "     useful for debugging)\n"
-      ^ "  c) run unison again to synchronize from scratch."));
+    raise (Util.Fatal(
+	"Internal error: On-disk archives are not identical.\n"
+      ^ "\n"
+      ^ "If you get this message repeatedly, please:\n"
+      ^ "  a) Notify unison-help@cis.upenn.edu.\n"
+      ^ "  b) Move the archive files on each machine to some other directory\n"
+      ^ "     (in case they may be useful for debugging).\n"
+      ^ "     The archive files on this machine are in the directory\n"
+      ^ (Printf.sprintf "       %s\n" (Fspath.toString Os.unisonDir))
+      ^ "     and have names of the form\n"
+      ^ "       arXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n"
+      ^ "     where the X's are a hexidecimal number .\n"
+      ^ "  c) Run unison again to synchronize from scratch.\n"));
   if Prefs.read dumpArchives then 
     Globals.allRootsMap (fun r -> dumpArchiveOnRoot r ())
      >>= (fun _ -> Lwt.return identicals)

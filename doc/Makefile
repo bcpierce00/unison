@@ -97,7 +97,9 @@ clean::
 	   junk.* *.htoc *.toc *.bak \
 	   docs docs.exe temp.dvi temp.html unison-manual.html \
 	   postproc postproc.exe postproc.ml obsolete \
-	   unison-manual.dvi unison-manual.ps unison-manual.pdf
+	   unison-manual.dvi unison-manual.ps unison-manual.pdf \
+	   unison-manual.info* unisonversion.tex \
+	   contact.html faq.html faq.haux index.html
 
 ../src/Makefile.ProjectInfo: ../src/mkProjectInfo
 	../src/mkProjectInfo > $@

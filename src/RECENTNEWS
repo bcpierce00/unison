@@ -1,3 +1,13 @@
+CHANGES FROM VERSION 2.12.5
+
+Removed some uses of ".unison" from code, since the
+actual name of the unison directory can vary according
+to OS.
+
+Better cleaning in the doc directory and removed bogus
+files from svn.
+
+-------------------------------
 CHANGES FROM VERSION 2.12.4
 
 Mac icon now has proper transparency.
