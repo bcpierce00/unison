@@ -494,18 +494,16 @@ let strip t = t
 
 let diff t t' = if similar t t' then None else t'
 
+let zeroes = "\000\000\000\000\000\000\000\000"
+
 let toString t =
   match t with
-    None | Some "" -> ""
-  | Some s         ->
-      (* BCP: I don't completely understand how these are created, but it seems
-         that they are not always of length either zero or at least eight.  Here's
-         a simple fix for now *)
-      if String.length s >= 8 then
-        " " ^ String.escaped (String.sub s 0 4) ^
-        " " ^ String.escaped (String.sub s 4 4)
-      else 
-        " " ^ String.escaped s
+    Some s when s.[0] = 'F' && String.sub (s ^ zeroes) 1 8 <> zeroes ->
+      let s = s ^ zeroes in
+      " " ^ String.escaped (String.sub s 1 4) ^
+      " " ^ String.escaped (String.sub s 5 4)
+  | _ ->
+      ""
 
 let syncedPartsToString = toString
 

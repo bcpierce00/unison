@@ -294,6 +294,11 @@ let rec replacesubstring s fromstring tostring =
       let after = String.sub s afterpos ((String.length s) - afterpos) in
       before ^ tostring ^ (replacesubstring after fromstring tostring)
 
+let replacesubstrings s pairs =
+  Safelist.fold_left 
+    (fun s' (froms,tos) -> replacesubstring s' froms tos)
+    s pairs
+
 let startswith s1 s2 =
   let l1 = String.length s1 in
   let l2 = String.length s2 in
