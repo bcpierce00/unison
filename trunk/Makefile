@@ -226,6 +226,8 @@ exportdevel: tareverything
 ######################################################################
 # Submitting changes
 
+CP = cp
+
 submit: tareverything sendsubmission
 
 tareverything:
