@@ -3,7 +3,7 @@
 all:: unison-manual.html
 
 -include ../src/Makefile.ProjectInfo
-include ../src/Makefile.Ocaml
+include ../src/Makefile.OCaml
 
 STRINGS = ../icons/Unison.gif
 SOURCES = unison-manual.tex changes.tex \

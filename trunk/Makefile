@@ -18,7 +18,7 @@ src/Makefile.ProjectInfo: src/mkProjectInfo
 src/mkProjectInfo: src/mkProjectInfo.ml
 	ocamlc -o $@ $^
 
-include src/Makefile.Ocaml
+include src/Makefile.OCaml
 
 ######################################################################
 # Version control

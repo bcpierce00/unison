@@ -4,7 +4,7 @@ all: doit
 
 UISTYLE=tk
 -include ../src/Makefile.ProjectInfo
-include ../src/Makefile.Ocaml
+include ../src/Makefile.OCaml
 
 doit: ask$(EXEC_EXT)
 

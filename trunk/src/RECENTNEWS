@@ -1,3 +1,8 @@
+CHANGES FROM VERSION 2.11.1
+
+* Fixed some file name case errors that didn't show up on the Mac.
+
+-------------------------------
 CHANGES FROM VERSION 2.11.0
 
 * Using svn keyword substitution for Rev (revision) in src/mkProjectInfo.ml.
