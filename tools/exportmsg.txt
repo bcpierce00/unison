@@ -1,16 +1,14 @@
 Checklist: 
+
   - Move everything interesting from src/RECENTNEWS to doc/changes.tex  
 
-  - Do a 'make checkin' if anything has changed (including in the step
+  - If this is a significant release (not just a minor bugfix release), 
+    increment the major version number by editing src/mkProjectInfo.ml
+
+  - Do a 'make checkin' if anything has changed (including in the steps
     just above) -- we need to make sure that the exact release version
     is reflected in the repository, in case we need to check it out again
     later to redo or fix the build.
-
-  - If this is a significant release (not just a minor bugfix release), 
-    increment the major version number
-       prcs checkin -rN       (where N is the next number, e.g. 8 if we
-                               are moving from 2.7.34 to 2.8.1)
-       prcs checkout 
 
   - If this is a stable release, make sure you remembered to do a 
     'make exportstable', not just 'make export'.

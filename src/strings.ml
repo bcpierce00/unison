@@ -11,7 +11,7 @@ let docs =
       \032  different hosts (or different disks on the same host), modified\n\
       \032  separately, and then brought up to date by propagating the changes in\n\
       \032  each replica to the other.\n\
-      \n\
+      \032  \n\
       \032  Unison shares a number of features with tools such as configuration\n\
       \032  management packages (CVS (http://www.cyclic.com/), PRCS\n\
       \032  (http://www.XCF.Berkeley.EDU/~jmacd/prcs.html), etc.), distributed\n\
@@ -45,7 +45,7 @@ let docs =
       \032      failures.\n\
       \032    * Unison is free; full source code is available under the GNU Public\n\
       \032      License.\n\
-      \n\
+      \032      \n\
       "))
 ::
     ("", ("Preface", 
@@ -79,7 +79,7 @@ let docs =
       \032  implementation. Cedric Fournet\n\
       \032  (http://research.microsoft.com/~fournet/) contributed to an even\n\
       \032  earlier prototype.\n\
-      \n\
+      \032  \n\
       "))
 ::
     ("lists", ("Mailing Lists and Bug Reporting", 
@@ -120,11 +120,11 @@ let docs =
       \032      http://groups.yahoo.com/group/unison-hackers or else send an email\n\
       \032      to unison-hackers-subscribe@groups.yahoo.com\n\
       \032      (mailto:unison-hackers-subscribe@groups.yahoo.com).\n\
-      \n\
+      \032      \n\
       \032  Archives of all the lists are available (and publically visible) via\n\
       \032  the above links. Postings are limited to members, to reduce the spam\n\
       \032  load on moderators.\n\
-      \n\
+      \032  \n\
       Reporting bugs:\n\
       \n\
       \032  If Unison is not working the way you expect, here are some steps to\n\
@@ -141,12 +141,12 @@ let docs =
       \032      machine(s) you are running it on, a record of what gets printed\n\
       \032      when the -debug all option is included, and as much information as\n\
       \032      you can about what went wrong.\n\
-      \n\
+      \032      \n\
       Feature Requests:\n\
       \n\
       \032  Please post your feature requests, suggestions, etc. to the\n\
       \032  unison-users list.\n\
-      \n\
+      \032  \n\
       "))
 ::
     ("status", ("Development Status", 
@@ -157,22 +157,22 @@ let docs =
       \032  Harmony, described at http://www.cis.upenn.edu/~bcpierce/harmony.) At\n\
       \032  this point, there is no one whose job it is to maintain Unison, fix\n\
       \032  bugs, or answer questions.\n\
-      \n\
+      \032  \n\
       \032  However, the original developers are all still using Unison daily. It\n\
       \032  will continue to be maintained and supported for the foreseeable\n\
       \032  future, and we will occasionally release new versions with bug fixes,\n\
       \032  small improvements, and contributed patches.\n\
-      \n\
+      \032  \n\
       \032  Reports of bugs affecting correctness or safety are of interest to\n\
       \032  many people and will generally get high priority. Other bug reports\n\
       \032  will be looked at as time permits. Bugs should be reported to the\n\
       \032  users list at unison-users@yahoogroups.com\n\
       \032  (mailto:unison-users@yahoogroups.com).\n\
-      \n\
+      \032  \n\
       \032  Feature requests are welcome, but will probably just be added to the\n\
       \032  ever-growing todo list. They should also be sent to\n\
       \032  unison-users@yahoogroups.com (mailto:unison-users@yahoogroups.com).\n\
-      \n\
+      \032  \n\
       \032  Patches are even more welcome. They should be sent to\n\
       \032  unison-hackers@yahoogroups.com\n\
       \032  (mailto:unison-hackers@yahoogroups.com). (Caveat: since safety and\n\
@@ -181,7 +181,7 @@ let docs =
       \032  to contribute to Unison, start by downloading the developer tarball\n\
       \032  from the download page. For some details on how the code is organized,\n\
       \032  etc., see the file CONTRIB.\n\
-      \n\
+      \032  \n\
       "))
 ::
     ("copying", ("Copying", 
@@ -190,7 +190,7 @@ let docs =
       \032  Unison is free software. You are free to change and redistribute it\n\
       \032  under the terms of the GNU General Public License. Please see the file\n\
       \032  COPYING in the Unison distribution for more information.\n\
-      \n\
+      \032  \n\
       "))
 ::
     ("ack", ("Acknowledgements", 
@@ -200,7 +200,7 @@ let docs =
       \032  under grants CCR-9701826 and ITR-0113226, Principles and Practice of\n\
       \032  Synchronization, and by University of Pennsylvania's Institute for\n\
       \032  Research in Cognitive Science (IRCS).\n\
-      \n\
+      \032  \n\
       "))
 ::
     ("install", ("Installation", 
@@ -212,63 +212,63 @@ let docs =
       \032  Asked Questions page\n\
       \032  (http://www.cis.upenn.edu/~bcpierce/unison/faq.html) helpful.\n\
       \032  Pre-built binaries are available for a variety of platforms.\n\
-      \n\
+      \032  \n\
       \032  Unison can be used with either of two user interfaces:\n\
       \032   1. a simple textual interface, suitable for dumb terminals (and\n\
       \032      running from scripts), and\n\
       \032   2. a more sophisticated grapical interface, based on Gtk2.\n\
-      \n\
+      \032      \n\
       \032  You will need to install a copy of Unison on every machine that you\n\
       \032  want to synchronize. However, you only need the version with a\n\
       \032  graphical user interface (if you want a GUI at all) on the machine\n\
       \032  where you're actually going to display the interface (the CLIENT\n\
       \032  machine). Other machines that you synchronize with can get along just\n\
       \032  fine with the textual version.\n\
-      \n\
+      \032  \n\
       Downloading Unison\n\
       \n\
       \032  The Unison download site lives under\n\
       \032  http://www.cis.upenn.edu/~bcpierce/unison.\n\
-      \n\
+      \032  \n\
       \032  If a pre-built binary of Unison is available for the client machine's\n\
       \032  architecture, just download it and put it somewhere in your search\n\
       \032  path (if you're going to invoke it from the command line) or on your\n\
       \032  desktop (if you'll be click-starting it).\n\
-      \n\
+      \032  \n\
       \032  The executable file for the graphical version (with a name including\n\
       \032  gtkui) actually provides both interfaces: the graphical one appears by\n\
       \032  default, while the textual interface can be selected by including -ui\n\
       \032  text on the command line. The textui executable provides just the\n\
       \032  textual interface.\n\
-      \n\
+      \032  \n\
       \032  If you don't see a pre-built executable for your architecture, you'll\n\
       \032  need to build it yourself. See the section ``Building Unison'' . There\n\
       \032  are also a small number of contributed ports to other architectures\n\
       \032  that are not maintained by us. See the Contributed Ports page\n\
       \032  (http://www.cis.upenn.edu/~bcpierce/unison/download.html) to check\n\
       \032  what's available.\n\
-      \n\
+      \032  \n\
       \032  Check to make sure that what you have downloaded is really executable.\n\
       \032  Either click-start it, or type \"unison -version\" at the command line.\n\
-      \n\
+      \032  \n\
       \032  Unison can be used in three different modes: with different\n\
       \032  directories on a single machine, with a remote machine over a direct\n\
       \032  socket connection, or with a remote machine using ssh for\n\
       \032  authentication and secure transfer. If you intend to use the last\n\
       \032  option, you may need to install ssh; see the section ``Installing\n\
       \032  Ssh'' .\n\
-      \n\
+      \032  \n\
       Running Unison\n\
       \n\
       \032  Once you've got Unison installed on at least one system, read the\n\
       \032  section ``Tutorial'' of the user manual (or type \"unison -doc\n\
       \032  tutorial\") for instructions on how to get started.\n\
-      \n\
+      \032  \n\
       Upgrading\n\
       \n\
       \032  Upgrading to a new version of Unison is as simple as throwing away the\n\
       \032  old binary and installing the new one.\n\
-      \n\
+      \032  \n\
       \032  Before upgrading, it is a good idea to run the old version one last\n\
       \032  time, to make sure all your replicas are completely synchronized. A\n\
       \032  new version of Unison will sometimes introduce a different format for\n\
@@ -278,18 +278,18 @@ let docs =
       \032  you will find the old archives intact), which means that any\n\
       \032  differences between the replicas will show up as conflicts that need\n\
       \032  to be resolved manually.\n\
-      \n\
+      \032  \n\
       Building Unison from Scratch\n\
       \n\
       \032  If a pre-built image is not available, you will need to compile it\n\
       \032  from scratch; the sources are available from the same place as the\n\
       \032  binaries.\n\
-      \n\
+      \032  \n\
       \032  In principle, Unison should work on any platform to which OCaml has\n\
       \032  been ported and on which the Unix module is fully implemented. It has\n\
       \032  been tested on many flavors of Windows (98, NT, 2000, XP) and Unix (OS\n\
       \032  X, Solaris, Linux, FreeBSD), and on both 32- and 64-bit architectures.\n\
-      \n\
+      \032  \n\
       Unix\n\
       \n\
       \032  You'll need the Objective Caml compiler (version 3.07 or later), which\n\
@@ -301,61 +301,62 @@ let docs =
       \032  necessary. (Quick start: on many systems, the following sequence of\n\
       \032  commands will get you a working and installed compiler: first do make\n\
       \032  world opt, then su to root and do make install.)\n\
-      \n\
+      \032  \n\
       \032  You'll also need the GNU make utility, standard on many Unix systems.\n\
       \032  (Type \"make --version\" to check that you've got the GNU version.)\n\
-      \n\
+      \032  \n\
       \032  Once you've got OCaml installed, grab a copy of the Unison sources,\n\
       \032  unzip and untar them, change to the new \"unison\" directory, and type\n\
       \032  ``make UISTYLE=text.'' The result should be an executable file called\n\
       \032  \"unison\". Type \"./unison\" to make sure the program is executable. You\n\
       \032  should get back a usage message.\n\
-      \n\
+      \032  \n\
       \032  If you want to build the graphical user interface, you will need to\n\
       \032  install two additional things:\n\
       \032    * The Gtk2 libraries. These areavailable from http://www.gtk.org and\n\
       \032      are standard on many Unix installations.\n\
       \032    * The lablgtk2 OCaml library. Grab the developers' tarball from\n\
-      \n\
+      \032      \n\
       \032    http://wwwfun.kurims.kyoto-u.ac.jp/soft/olabl/lablgtk.html,\n\
       \032      untar it, and follow the instructions to build and install it.\n\
       \032      (Quick start: make configure, then make, then make opt, then su\n\
       \032      and make install.)\n\
-      \n\
+      \032      \n\
       \032  Now build unison. If your search paths are set up correctly, simply\n\
       \032  typing make again should build a unison executable with a Gtk2\n\
       \032  graphical interface. (In previous releases of Unison, it was necessary\n\
       \032  to add UISTYLE=gtk2 to the 'make' command above. This requirement has\n\
       \032  been removed: the makefile should detect automatically when lablgtk2\n\
       \032  is present and set this flag automatically.)\n\
-      \n\
+      \032  \n\
       \032  Put the unison executable somewhere in your search path, either by\n\
       \032  adding the Unison directory to your PATH variable or by copying the\n\
       \032  executable to some standard directory where executables are stored.\n\
-      \n\
+      \032  \n\
       Windows\n\
       \n\
       \032  Although the binary distribution should work on any version of\n\
       \032  Windows, some people may want to build Unison from scratch on those\n\
       \032  systems too.\n\
-      \n\
+      \032  \n\
       Bytecode version:\n\
       \n\
       \032  The simpler but slower compilation option to build a Unison executable\n\
       \032  is to build a bytecode version. You need first install Windows version\n\
       \032  of the OCaml compiler (version 3.07 or later, available from\n\
       \032  http://caml.inria.fr). Then grab a copy of Unison sources and type\n\
+      \n\
       \032      make NATIVE=false\n\
       \n\
       \032  to compile the bytecode. The result should be an executable file\n\
       \032  called unison.exe.\n\
-      \n\
+      \032  \n\
       Native version:\n\
       \n\
       \032  Building a more efficient, native version of Unison on Windows\n\
       \032  requires a little more work. See the file INSTALL.win32 in the source\n\
       \032  code distribution.\n\
-      \n\
+      \032  \n\
       Installation Options\n\
       \n\
       \032  The Makefile in the distribution includes several switches that can be\n\
@@ -367,7 +368,7 @@ let docs =
       \032    * Building with make STATIC=true generates a (mostly) statically\n\
       \032      linked executable. We use this for building distribution versions,\n\
       \032      for portability.\n\
-      \n\
+      \032      \n\
       "))
 ::
     ("tutorial", ("Tutorial", 
@@ -378,7 +379,7 @@ let docs =
       \032  Unison can be used with either of two user interfaces:\n\
       \032   1. a straightforward textual interface and\n\
       \032   2. a more sophisticated graphical interface\n\
-      \n\
+      \032      \n\
       \032  The textual interface is more convenient for running from scripts and\n\
       \032  works on dumb terminals; the graphical interface is better for most\n\
       \032  interactive use. For this tutorial, you can use either. If you are\n\
@@ -388,24 +389,24 @@ let docs =
       \032  built. You can force the text interface even if graphical is the\n\
       \032  default by adding -ui text. The other command-line arguments to both\n\
       \032  versions are identical.\n\
-      \n\
+      \032  \n\
       \032  The graphical version can also be run directly by clicking on its\n\
       \032  icon, but this may require a little set-up (see the section\n\
       \032  ``Click-starting Unison'' ). For this tutorial, we assume that you're\n\
       \032  starting it from the command line.\n\
-      \n\
+      \032  \n\
       \032  Unison can synchronize files and directories on a single machine, or\n\
       \032  between two machines on a network. (The same program runs on both\n\
       \032  machines; the only difference is which one is responsible for\n\
       \032  displaying the user interface.) If you're only interested in a\n\
       \032  single-machine setup, then let's call that machine the CLIENT . If\n\
       \032  you're synchronizing two machines, let's call them CLIENT and SERVER .\n\
-      \n\
+      \032  \n\
       Local Usage\n\
       \n\
       \032  Let's get the client machine set up first and see how to synchronize\n\
       \032  two directories on a single machine.\n\
-      \n\
+      \032  \n\
       \032  Follow the instructions in the section ``Installation'' to either\n\
       \032  download or build an executable version of Unison, and install it\n\
       \032  somewhere on your search path. (If you just want to use the textual\n\
@@ -413,9 +414,10 @@ let docs =
       \032  want to the graphical interface---or if you will use both interfaces\n\
       \032  [the gtkui binary actually has both compiled in]---then download the\n\
       \032  gtkui binary.)\n\
-      \n\
+      \032  \n\
       \032  Create a small test directory a.tmp containing a couple of files\n\
       \032  and/or subdirectories, e.g.,\n\
+      \n\
       \032      mkdir a.tmp\n\
       \032      touch a.tmp/a a.tmp/b\n\
       \032      mkdir a.tmp/d\n\
@@ -428,17 +430,18 @@ let docs =
       \032  synchronizing them won't propagate any changes, but Unison will\n\
       \032  remember the current state of both directories so that it will be able\n\
       \032  to tell next time what has changed.) Type:\n\
+      \n\
       \032      unison a.tmp b.tmp\n\
       \n\
       \032  Textual Interface:\n\
       \032    * You should see a message notifying you that all the files are\n\
       \032      actually equal and then get returned to the command line.\n\
-      \n\
+      \032      \n\
       \032  Graphical Interface:\n\
       \032    * You should get a big empty window with a message at the bottom\n\
       \032      notifying you that all files are identical. Choose the Exit item\n\
       \032      from the File menu to get back to the command line.\n\
-      \n\
+      \032      \n\
       \032  Next, make some changes in a.tmp and/or b.tmp. For example:\n\
       \032       rm a.tmp/a\n\
       \032       echo \"Hello\" > a.tmp/b\n\
@@ -454,29 +457,31 @@ let docs =
       \032  changed. If a file has been modified in just one replica, then it will\n\
       \032  be displayed with an arrow indicating the direction that the change\n\
       \032  needs to be propagated. For example,\n\
+      \n\
       \032                <---  new file   c  [f]\n\
       \n\
       \032  indicates that the file c has been modified only in the second\n\
       \032  replica, and that the default action is therefore to propagate the new\n\
       \032  version to the first replica. To follw Unison's recommendation, press\n\
       \032  the ``f'' at the prompt.\n\
-      \n\
+      \032  \n\
       \032  If both replicas are modified and their contents are different, then\n\
       \032  the changes are in conflict: <-?-> is displayed to indicate that\n\
       \032  Unison needs guidance on which replica should override the other.\n\
+      \n\
       \032    new file  <-?->  new file   d/h  []\n\
       \n\
       \032  By default, neither version will be propagated and both replicas will\n\
       \032  remain as they are.\n\
-      \n\
+      \032  \n\
       \032  If both replicas have been modified but their new contents are the\n\
       \032  same (as with the file b), then no propagation is necessary and\n\
       \032  nothing is shown. Unison simply notes that the file is up to date.\n\
-      \n\
+      \032  \n\
       \032  These display conventions are used by both versions of the user\n\
       \032  interface. The only difference lies in the way in which Unison's\n\
       \032  default actions are either accepted or overriden by the user.\n\
-      \n\
+      \032  \n\
       \032  Textual Interface:\n\
       \032    * The status of each modified file is displayed, in turn. When the\n\
       \032      copies of a file in the two replicas are not identical, the user\n\
@@ -491,7 +496,7 @@ let docs =
       \032      with the updates that have been selected.\n\
       \032      When Unison stops to wait for input from the user, pressing ``?''\n\
       \032      will always give a list of possible responses and their meanings.\n\
-      \n\
+      \032      \n\
       \032  Graphical Interface:\n\
       \032    * The main window shows all the files that have been modified in\n\
       \032      either a.tmp or b.tmp. To override a default action (or to select\n\
@@ -508,24 +513,24 @@ let docs =
       \032      changes as shown in the main window, click the ``Go'' button to\n\
       \032      set them in motion. A check sign will be displayed next to each\n\
       \032      filename when the file has been dealt with.\n\
-      \n\
+      \032      \n\
       Remote Usage\n\
       \n\
       \032  Next, we'll get Unison set up to synchronize replicas on two different\n\
       \032  machines.\n\
-      \n\
+      \032  \n\
       \032  Follow the instructions in the Installation section to download or\n\
       \032  build an executable version of Unison on the server machine, and\n\
       \032  install it somewhere on your search path. (It doesn't matter whether\n\
       \032  you install the textual or graphical version, since the copy of Unison\n\
       \032  on the server doesn't need to display any user interface at all.)\n\
-      \n\
+      \032  \n\
       \032  It is important that the version of Unison installed on the server\n\
       \032  machine is the same as the version of Unison on the client machine.\n\
       \032  But some flexibility on the version of Unison at the client side can\n\
       \032  be achieved by using the -addversionno option; see the section\n\
       \032  ``Preferences'' .\n\
-      \n\
+      \032  \n\
       \032  Now there is a decision to be made. Unison provides two methods for\n\
       \032  communicating between the client and the server:\n\
       \032    * Remote shell method: To use this method, you must have some way of\n\
@@ -537,11 +542,11 @@ let docs =
       \032    * Socket method: This method requires only that you can get TCP\n\
       \032      packets from the client to the server and back. A draconian\n\
       \032      firewall can prevent this, but otherwise it should work anywhere.\n\
-      \n\
+      \032      \n\
       \032  Decide which of these you want to try, and continue with the section\n\
       \032  ``Remote Shell Method'' or the section ``Socket Method'' , as\n\
       \032  appropriate.\n\
-      \n\
+      \032  \n\
       Remote Shell Method\n\
       \n\
       \032  The standard remote shell facility on Unix systems is ssh, which\n\
@@ -550,15 +555,16 @@ let docs =
       \032  up-to-date binaries for some architectures can also be found at\n\
       \032  ftp://ftp.faqs.org/ssh/contrib. See section [1]A.2 for installation\n\
       \032  instructions for the Windows version.\n\
-      \n\
+      \032  \n\
       \032  Running ssh requires some coordination between the client and server\n\
       \032  machines to establish that the client is allowed to invoke commands on\n\
       \032  the server; please refer to the or ssh documentation for information\n\
       \032  on how to set this up. The examples in this section use ssh, but you\n\
       \032  can substitute rsh for ssh if you wish.\n\
-      \n\
+      \032  \n\
       \032  First, test that we can invoke Unison on the server from the client.\n\
       \032  Typing\n\
+      \n\
       \032       ssh remotehostname unison -version\n\
       \n\
       \032  should print the same version information as running\n\
@@ -569,12 +575,13 @@ let docs =
       \032  or else the search path that's being used when executing commands on\n\
       \032  the server doesn't contain the unison executable (e.g., ``command not\n\
       \032  found'').\n\
-      \n\
+      \032  \n\
       \032  Create a test directory a.tmp in your home directory on the client\n\
       \032  machine.\n\
-      \n\
+      \032  \n\
       \032  Test that the local unison client can start and connect to the remote\n\
       \032  server. Type\n\
+      \n\
       \032         unison -testServer a.tmp ssh://remotehostname/a.tmp\n\
       \n\
       \032  Now cd to your home directory and type:\n\
@@ -582,13 +589,14 @@ let docs =
       \n\
       \032  The result should be that the entire directory a.tmp is propagated\n\
       \032  from the client to your home directory on the server.\n\
-      \n\
+      \032  \n\
       \032  After finishing the first synchronization, change a few files and try\n\
       \032  synchronizing again. You should see similar results as in the local\n\
       \032  case.\n\
-      \n\
+      \032  \n\
       \032  If your user name on the server is not the same as on the client, you\n\
       \032  need to specify it on the command line:\n\
+      \n\
       \032         unison a.tmp ssh://username@remotehostname/a.tmp\n\
       \n\
       \032  Notes:\n\
@@ -596,6 +604,7 @@ let docs =
       \032      on the remote host, you can give an absolute path for it by adding\n\
       \032      an extra slash between remotehostname and the beginning of the\n\
       \032      path:\n\
+      \n\
       \032         unison a.tmp ssh://remotehostname//absolute/path/to/a.tmp\n\
       \032    * You can give an explicit path for the unison executable on the\n\
       \032      server by using the command-line option \"-servercmd\n\
@@ -604,7 +613,7 @@ let docs =
       \032      section ``Profile'' ). Similarly, you can specify a explicit path\n\
       \032      for the ssh program using the \"-sshcmd\" option. Extra arguments\n\
       \032      can be passed to ssh by setting the -sshargs preference.\n\
-      \n\
+      \032      \n\
       Socket Method\n\
       \n\
       \032    Warning: The socket method is insecure: not only are the texts of\n\
@@ -616,12 +625,12 @@ let docs =
       \032    is a copy of the Unison sources.) The socket method is provided\n\
       \032    only for expert users with specific needs; everyone else should use\n\
       \032    the ssh method.\n\
-      \n\
+      \032    \n\
       \032  To run Unison over a socket connection, you must start a Unison daemon\n\
       \032  process on the server. This process runs continuously, waiting for\n\
       \032  connections over a given socket from client machines running Unison\n\
       \032  and processing their requests in turn.\n\
-      \n\
+      \032  \n\
       \032  To start the daemon, type\n\
       \032      unison -socket NNNN\n\
       \n\
@@ -633,9 +642,10 @@ let docs =
       \032  directory in which you start the server process; this behavior is\n\
       \032  different from the ssh case, where the path is relative to your home\n\
       \032  directory on the server.\n\
-      \n\
+      \032  \n\
       \032  Create a test directory a.tmp in your home directory on the client\n\
       \032  machine. Now type:\n\
+      \n\
       \032      unison a.tmp socket://remotehostname:NNNN/a.tmp\n\
       \n\
       \032  The result should be that the entire directory a.tmp is propagated\n\
@@ -643,11 +653,11 @@ let docs =
       \032  the directory that the server was started from). After finishing the\n\
       \032  first synchronization, change a few files and try synchronizing again.\n\
       \032  You should see similar results as in the local case.\n\
-      \n\
+      \032  \n\
       \032  Since the socket method is not used by many people, its functionality\n\
       \032  is rather limited. For example, the server can only deal with one\n\
       \032  client at a time.\n\
-      \n\
+      \032  \n\
       Using Unison for All Your Files\n\
       \n\
       \032  Once you are comfortable with the basic operation of Unison, you may\n\
@@ -668,16 +678,18 @@ let docs =
       \032      Unison to synchronize only some of the files and subdirectories\n\
       \032      within it on any given run. This can be accomplished by using the\n\
       \032      -path switch on the command line:\n\
+      \n\
       \032      unison /home/username ssh://remotehost//home/username -path shared\n\
       \032      The -path option can be used as many times as needed, to\n\
       \032      synchronize several files or subdirectories:\n\
+      \n\
       \032      unison /home/username ssh://remotehost//home/username \\\n\
       \032         -path shared \\\n\
       \032         -path pub \\\n\
       \032         -path .netscape/bookmarks.html\n\
       \032      These -path arguments can also be put in your preference file. See\n\
       \032      the section ``Preferences'' for an example.\n\
-      \n\
+      \032      \n\
       \032  Most people find that they only need to maintain a profile (or\n\
       \032  profiles) on one of the hosts that they synchronize, since Unison is\n\
       \032  always initiated from this host. (For example, if you're synchronizing\n\
@@ -687,17 +699,17 @@ let docs =
       \032  operation typically needs to be initiated from the machine with the\n\
       \032  most recent changes. the section ``Profile'' covers the syntax of\n\
       \032  Unison profiles, together with some sample profiles.\n\
-      \n\
+      \032  \n\
       \032  Some tips on improving Unison's performance can be found on the\n\
       \032  Frequently Asked Questions page\n\
       \032  (http://www.cis.upenn.edu/~bcpierce/unison/faq.html).\n\
-      \n\
+      \032  \n\
       Using Unison to Synchronize More Than Two Machines\n\
       \n\
       \032  Unison is designed for synchronizing pairs of replicas. However, it is\n\
       \032  possible to use it to keep larger groups of machines in sync by\n\
       \032  performing multiple pairwise synchronizations.\n\
-      \n\
+      \032  \n\
       \032  If you need to do this, the most reliable way to set things up is to\n\
       \032  organize the machines into a ``star topology,'' with one machine\n\
       \032  designated as the ``hub'' and the rest as ``spokes,'' and with each\n\
@@ -705,22 +717,23 @@ let docs =
       \032  the star topology is that it eliminates the possibility of confusing\n\
       \032  ``spurious conflicts'' arising from the fact that a separate archive\n\
       \032  is maintained by Unison for every pair of hosts that it synchronizes.\n\
-      \n\
+      \032  \n\
       Going Further\n\
       \n\
       \032  On-line documentation for the various features of Unison can be\n\
       \032  obtained either by typing\n\
+      \n\
       \032       unison -doc topics\n\
       \n\
       \032  at the command line, or by selecting the Help menu in the graphical\n\
       \032  user interface. The same information is also available in a typeset\n\
       \032  User's Manual (HTML or PostScript format) through\n\
       \032  http://www.cis.upenn.edu/~bcpierce/unison.\n\
-      \n\
+      \032  \n\
       \032  If you use Unison regularly, you should subscribe to one of the\n\
       \032  mailing lists, to receive announcements of new versions. See the\n\
       \032  section ``Mailing Lists'' .\n\
-      \n\
+      \032  \n\
       "))
 ::
     ("basics", ("Basic Concepts", 
@@ -731,35 +744,40 @@ let docs =
       \032  and at more length in a number of papers, available at\n\
       \032  http://www.cis.upenn.edu/~bcpierce/papers. But the informal\n\
       \032  presentation here should be enough for most users.\n\
-      \n\
+      \032  \n\
       Roots\n\
       \n\
       \032  A replica's root tells Unison where to find a set of files to be\n\
       \032  synchronized, either on the local machine or on a remote host. For\n\
       \032  example,\n\
+      \n\
       \032     relative/path/of/root\n\
       \n\
       \032  specifies a local root relative to the directory where Unison is\n\
       \032  started, while\n\
+      \n\
       \032     /absolute/path/of/root\n\
       \n\
       \032  specifies a root relative to the top of the local filesystem,\n\
       \032  independent of where Unison is running. Remote roots can begin with\n\
       \032  ssh://, rsh:// to indicate that the remote server should be started\n\
       \032  with rsh or ssh:\n\
+      \n\
       \032     ssh://remotehost//absolute/path/of/root\n\
       \032     rsh://user@remotehost/relative/path/of/root\n\
       \n\
       \032  If the remote server is already running (in the socket mode), then the\n\
       \032  syntax\n\
+      \n\
       \032     socket://remotehost:portnum//absolute/path/of/root\n\
       \032     socket://remotehost:portnum/relative/path/of/root\n\
       \n\
       \032  is used to specify the hostname and the port that the client Unison\n\
       \032  should use to contact it.\n\
-      \n\
+      \032  \n\
       \032  The syntax for roots is based on that of URIs (described in RFC 2396).\n\
       \032  The full grammar is:\n\
+      \n\
       \032 replica ::= [protocol:]//[user@][host][:port][/path]\n\
       \032          |  path\n\
       \n\
@@ -778,6 +796,7 @@ let docs =
       \032  assumed to be file:. Under Windows, it is possible to synchronize with\n\
       \032  a remote directory using the file: protocol over the Windows Network\n\
       \032  Neighborhood. For example,\n\
+      \n\
       \032      unison foo //host/drive/bar\n\
       \n\
       \032  synchronizes the local directory foo with the directory drive:\\bar on\n\
@@ -788,17 +807,17 @@ let docs =
       \032  reached by a very fast network connection, since the full contents of\n\
       \032  every file in the remote replica will have to be transferred to the\n\
       \032  local machine to detect updates.\n\
-      \n\
+      \032  \n\
       \032  The names of roots are canonized by Unison before it uses them to\n\
       \032  compute the names of the corresponding archive files, so\n\
       \032  //saul//home/bcpierce/common and //saul.cis.upenn.edu/common will be\n\
       \032  recognized as the same replica under different names.\n\
-      \n\
+      \032  \n\
       Paths\n\
       \n\
       \032  A path refers to a point within a set of files being synchronized; it\n\
       \032  is specified relative to the root of the replica.\n\
-      \n\
+      \032  \n\
       \032  Formally, a path is just a sequence of names, separated by /. Note\n\
       \032  that the path separator character is always a forward slash, no matter\n\
       \032  what operating system Unison is running on. Forward slashes are\n\
@@ -809,13 +828,13 @@ let docs =
       \032  ssh://saul.cis.upenn.edu/home/bcpierce on a Unix server. Then the path\n\
       \032  current/todo.txt refers to the file c:\\pierce\\current\\todo.txt on the\n\
       \032  client and /home/bcpierce/current/todo.txt on the server.)\n\
-      \n\
+      \032  \n\
       \032  The empty path (i.e., the empty sequence of names) denotes the whole\n\
       \032  replica. Unison displays the empty path as ``[root].''\n\
-      \n\
+      \032  \n\
       \032  If p is a path and q is a path beginning with p, then q is said to be\n\
       \032  a descendant of p. (Each path is also a descendant of itself.)\n\
-      \n\
+      \032  \n\
       What is an Update?\n\
       \n\
       \032  The contents of a path p in a particular replica could be a file, a\n\
@@ -831,12 +850,12 @@ let docs =
       \032      directory.\n\
       \032    * If p does not refer to anything in this replica, then the contents\n\
       \032      of p are the token ``ABSENT.''\n\
-      \n\
+      \032      \n\
       \032  Unison keeps a record of the contents of each path after each\n\
       \032  successful synchronization of that path (i.e., it remembers the\n\
       \032  contents at the last moment when they were the same in the two\n\
       \032  replicas).\n\
-      \n\
+      \032  \n\
       \032  We say that a path is updated (in some replica) if its current\n\
       \032  contents are different from its contents the last time it was\n\
       \032  successfully synchronized. Note that whether a path is updated has\n\
@@ -846,10 +865,10 @@ let docs =
       \032  recognized as an update. A file can even be changed several times and\n\
       \032  then changed back to its original contents; as long as Unison is only\n\
       \032  run at the end of this process, no update will be recognized.\n\
-      \n\
+      \032  \n\
       \032  What Unison actually calculates is a close approximation to this\n\
       \032  definition; see the section ``Caveats and Shortcomings'' .\n\
-      \n\
+      \032  \n\
       What is a Conflict?\n\
       \n\
       \032  A path is said to be conflicting if the following conditions all hold:\n\
@@ -857,7 +876,7 @@ let docs =
       \032   2. it or any of its descendants has been updated in the other\n\
       \032      replica, and\n\
       \032   3. its contents in the two replicas are not identical.\n\
-      \n\
+      \032      \n\
       Reconciliation\n\
       \n\
       \032  Unison operates in several distinct stages:\n\
@@ -882,7 +901,7 @@ let docs =
       \032      place.\n\
       \032   5. It updates its archive files to reflect the new state of the\n\
       \032      replicas.\n\
-      \n\
+      \032      \n\
       "))
 ::
     ("failures", ("Invariants", 
@@ -892,7 +911,7 @@ let docs =
       \032  important to understand both what a synchronizer does under normal\n\
       \032  conditions and what can happen under unusual conditions such as system\n\
       \032  crashes and communication failures.\n\
-      \n\
+      \032  \n\
       \032  Unison is careful to protect both its internal state and the state of\n\
       \032  the replicas at every point in this process. Specifically, the\n\
       \032  following guarantees are enforced:\n\
@@ -903,7 +922,7 @@ let docs =
       \032    * At every moment, the information stored on disk about Unison's\n\
       \032      private state can be either (1) unchanged, or (2) updated to\n\
       \032      reflect those paths that have been successfully synchronized.\n\
-      \n\
+      \032      \n\
       \032  The upshot is that it is safe to interrupt Unison at any time, either\n\
       \032  manually or accidentally. [Caveat: the above is almost true there are\n\
       \032  occasionally brief periods where it is not (and, because of\n\
@@ -915,7 +934,7 @@ let docs =
       \032  your home directory, containing information about the operation that\n\
       \032  was interrupted. The next time you try to run Unison, it will notice\n\
       \032  this file and warn you about it.]\n\
-      \n\
+      \032  \n\
       \032  If an interruption happens while it is propagating updates, then there\n\
       \032  may be some paths for which an update has been propagated but which\n\
       \032  have not been marked as synchronized in Unison's archives. This is no\n\
@@ -923,19 +942,19 @@ let docs =
       \032  paths in both replicas, notice that the contents are now equal, and\n\
       \032  mark the paths as successfully updated when it writes back its private\n\
       \032  state at the end of this run.\n\
-      \n\
+      \032  \n\
       \032  If Unison is interrupted, it may sometimes leave temporary working\n\
       \032  files (with suffix .tmp) in the replicas. It is safe to delete these\n\
       \032  files. Also, if the backups flag is set, Unison will leave around old\n\
       \032  versions of files that it overwrites, with names like\n\
       \032  file.0.unison.bak. These can be deleted safely when they are no longer\n\
       \032  wanted.\n\
-      \n\
+      \032  \n\
       \032  Unison is not bothered by clock skew between the different hosts on\n\
       \032  which it is running. It only performs comparisons between timestamps\n\
       \032  obtained from the same host, and the only assumption it makes about\n\
       \032  them is that the clock on each system always runs forward.\n\
-      \n\
+      \032  \n\
       \032  If Unison finds that its archive files have been deleted (or that the\n\
       \032  archive format has changed and they cannot be read, or that they don't\n\
       \032  exist because this is the first run of Unison on these particular\n\
@@ -945,7 +964,7 @@ let docs =
       \032  that exist in only one replica will be propagated to the other, while\n\
       \032  files that exist in both replicas but are unequal will be marked as\n\
       \032  conflicting.\n\
-      \n\
+      \032  \n\
       \032  Touching a file without changing its contents should never affect\n\
       \032  Unison's behavior. (When running with the fastcheck preference set to\n\
       \032  true---the default on Unix systems---Unison uses file modtimes for a\n\
@@ -953,20 +972,20 @@ let docs =
       \032  for each file that might have changed it computes a fingerprint of the\n\
       \032  file's contents and compares it against the last-synchronized\n\
       \032  contents.)\n\
-      \n\
+      \032  \n\
       \032  It is safe to ``brainwash'' Unison by deleting its archive files on\n\
       \032  both replicas. The next time it runs, it will assume that all the\n\
       \032  files it sees in the replicas are new.\n\
-      \n\
+      \032  \n\
       \032  It is safe to modify files while Unison is working. If Unison\n\
       \032  discovers that it has propagated an out-of-date change, or that the\n\
       \032  file it is updating has changed on the target replica, it will signal\n\
       \032  a failure for that file. Run Unison again to propagate the latest\n\
       \032  change.\n\
-      \n\
+      \032  \n\
       \032  Changes to the ignore patterns from the user interface (e.g., using\n\
       \032  the `i' key) are immediately reflected in the current profile.\n\
-      \n\
+      \032  \n\
       Caveats and Shortcomings\n\
       \n\
       \032  Here are some things to be careful of when using Unison.\n\
@@ -1013,14 +1032,14 @@ let docs =
       \032      delete and a separate create: it deletes the old directory\n\
       \032      (including the ignored files) and creates a new one (not including\n\
       \032      the ignored files, since they are completely invisible to it).\n\
-      \n\
+      \032      \n\
       "))
 ::
     ("", ("Reference Guide", 
      "Reference Guide\n\
       \n\
       \032  This section covers the features of Unison in detail.\n\
-      \n\
+      \032  \n\
       "))
 ::
     ("running", ("Running Unison", 
@@ -1039,7 +1058,7 @@ let docs =
       \032    * Typing just ``unison'' (or invoking Unison by clicking on a\n\
       \032      desktop icon). In this case, Unison will ask for the profile to\n\
       \032      use for synchronization (or create a new one, if necessary).\n\
-      \n\
+      \032      \n\
       The .unison Directory\n\
       \n\
       \032  Unison stores a variety of information in a private directory on each\n\
@@ -1050,19 +1069,19 @@ let docs =
       \032  if the environment variable USERPROFILE is defined, then the directory\n\
       \032  will be $USERPROFILE\\.unison; otherwise if HOME is defined, it will be\n\
       \032  $HOME\\.unison; otherwise, it will be c:\\.unison.\n\
-      \n\
+      \032  \n\
       \032  The archive file for each replica is found in the .unison directory on\n\
       \032  that replica's host. Profiles (described below) are always taken from\n\
       \032  the .unison directory on the client host.\n\
-      \n\
+      \032  \n\
       \032  Note that Unison maintains a completely different set of archive files\n\
       \032  for each pair of roots.\n\
-      \n\
+      \032  \n\
       \032  We do not recommend synchronizing the whole .unison directory, as this\n\
       \032  will involve frequent propagation of large archive files. It should be\n\
       \032  safe to do it, though, if you really want to. Synchronizing just the\n\
       \032  profile files in the .unison directory is definitely OK.\n\
-      \n\
+      \032  \n\
       Archive Files\n\
       \n\
       \032  The name of the archive file on each replica is calculated from\n\
@@ -1074,11 +1093,11 @@ let docs =
       \032    * an internal version number that is changed whenever a new Unison\n\
       \032      release changes the format of the information stored in the\n\
       \032      archive.\n\
-      \n\
+      \032      \n\
       \032  This method should work well for most users. However, it is\n\
       \032  occasionally useful to change the way archive names are generated.\n\
       \032  Unison provides two ways of doing this.\n\
-      \n\
+      \032  \n\
       \032  The function that finds the canonical hostname of the local host\n\
       \032  (which is used, for example, in calculating the name of the archive\n\
       \032  file used to remember which files have been synchronized) normally\n\
@@ -1087,18 +1106,20 @@ let docs =
       \032  used instead. This makes it easier to use Unison in situations where a\n\
       \032  machine's name changes frequently (e.g., because it is a laptop and\n\
       \032  gets moved around a lot).\n\
-      \n\
+      \032  \n\
       \032  A more powerful way of changing archive names is provided by the\n\
       \032  rootalias preference. The preference file may contain any number of\n\
       \032  lines of the form:\n\
+      \n\
       \032   rootalias = //hostnameA//path-to-replicaA -> //hostnameB//path-to-replicaB\n\
       \n\
       \032  When calculating the name of the archive files for a given pair of\n\
       \032  roots, Unison replaces any root that matches the left-hand side of any\n\
       \032  rootalias rule by the corresponding right-hand side.\n\
-      \n\
+      \032  \n\
       \032  So, if you need to relocate a root on one of the hosts, you can add a\n\
       \032  rule of the form:\n\
+      \n\
       \032   rootalias = //new-hostname//new-path -> //old-hostname//old-path\n\
       \n\
       \032  Warning: The rootalias option is dangerous and should only be used if\n\
@@ -1112,17 +1133,17 @@ let docs =
       \032  times interactively (with the batch flag off, etc.) and carefully\n\
       \032  check that things look reasonable---in particular, that update\n\
       \032  detection is working as expected.\n\
-      \n\
+      \032  \n\
       Preferences\n\
       \n\
       \032  Many details of Unison's behavior are configurable by user-settable\n\
       \032  ``preferences.''\n\
-      \n\
+      \032  \n\
       \032  Some preferences are boolean-valued; these are often called flags.\n\
       \032  Others take numeric or string arguments, indicated in the preferences\n\
       \032  list by n or xxx. Most of the string preferences can be given several\n\
       \032  times; the arguments are accumulated into a list internally.\n\
-      \n\
+      \032  \n\
       \032  There are two ways to set the values of preferences: temporarily, by\n\
       \032  providing command-line arguments to a particular run of Unison, or\n\
       \032  permanently, by adding commands to a profile in the .unison directory\n\
@@ -1130,15 +1151,15 @@ let docs =
       \032  line or in preference files) is not significant. On the command line,\n\
       \032  preferences and other arguments (the profile name and roots) can be\n\
       \032  intermixed in any order.\n\
-      \n\
+      \032  \n\
       \032  To set the value of a preference p from the command line, add an\n\
       \032  argument -p (for a boolean flag) or -p n or -p xxx (for a numeric or\n\
       \032  string preference) anywhere on the command line. To set a boolean flag\n\
       \032  to false on the command line, use -p=false.\n\
-      \n\
+      \032  \n\
       \032  Here are all the preferences supported by Unison. This list can be\n\
       \032  obtained by typing unison -help.\n\
-      \n\
+      \032  \n\
       Usage: unison [options]\n\
       \032   or unison root1 root2 [options]\n\
       \032   or unison profilename [options]\n\
@@ -1288,10 +1309,13 @@ let docs =
       \032         output from some modules (e.g., it will show exactly what bytes\n\
       \032         are being sent across the network).\n\
       \032  diff xxx\n\
-      \032         This preference can be used to control the name (and\n\
-      \032         command-line arguments) of the system utility used to generate\n\
-      \032         displays of file differences. The default is `diff'. The diff\n\
-      \032         program should expect two file names as arguments\n\
+      \032         This preference can be used to control the name and\n\
+      \032         command-line arguments of the system utility used to generate\n\
+      \032         displays of file differences. The default is `diff'. If the\n\
+      \032         value of this preference contains the substrings CURRENT1 and\n\
+      \032         CURRENT2, these will be replaced by the names of the files to\n\
+      \032         be diffed. If not, the two filenames will be appended to the\n\
+      \032         command (enclosed in double quotes).\n\
       \032  doc xxx\n\
       \032         The command-line argument -doc secname causes unison to display\n\
       \032         section secname of the manual on the standard output and then\n\
@@ -1660,7 +1684,7 @@ let docs =
       \032         when a file with the required contents already exists in the\n\
       \032         target replica. This usually allows file moves to be propagated\n\
       \032         very quickly. The default value istrue.\n\
-      \n\
+      \032         \n\
       Profiles\n\
       \n\
       \032  A profile is a text file that specifies permanent settings for roots,\n\
@@ -1674,35 +1698,36 @@ let docs =
       \032  executable is compiled with the graphical user interface). If a file\n\
       \032  named default.prf is found, its settings will be offered as the\n\
       \032  default choices.\n\
-      \n\
+      \032  \n\
       \032  To set the value of a preference p permanently, add to the appropriate\n\
       \032  profile a line of the form\n\
+      \n\
       \032       p = true\n\
       \n\
       \032  for a boolean flag or\n\
       \032       p = <value>\n\
       \n\
       \032  for a preference of any other type.\n\
-      \n\
+      \032  \n\
       \032  Whitespaces around p and xxx are ignored. A profile may also include\n\
       \032  blank lines and lines beginning with #; both are ignored.\n\
-      \n\
+      \032  \n\
       \032  When Unison starts, it first reads the profile and then the command\n\
       \032  line, so command-line options will override settings from the profile.\n\
-      \n\
+      \032  \n\
       \032  Profiles may also include lines of the form include name, which will\n\
       \032  cause the file name (or name.prf, if name does not exist in the\n\
       \032  .unison directory) to be read at the point, and included as if its\n\
       \032  contents, instead of the include line, was part of the profile.\n\
       \032  Include lines allows settings common to several profiles to be stored\n\
       \032  in one place.\n\
-      \n\
+      \032  \n\
       \032  A profile may include a preference `label = desc' to provide a\n\
       \032  description of the options selected in this profile. The string desc\n\
       \032  is listed along with the profile name in the profile selection dialog,\n\
       \032  and displayed in the top-right corner of the main Unison window in the\n\
       \032  graphical user interface.\n\
-      \n\
+      \032  \n\
       \032  The graphical user-interface also supports one-key shortcuts for\n\
       \032  commonly used profiles. If a profile contains a preference of the form\n\
       \032  `key = n', where n is a single digit, then pressing this digit key\n\
@@ -1710,13 +1735,14 @@ let docs =
       \032  synchronization again from scratch. In this case, all actions that\n\
       \032  have been selected for a set of changes currently being displayed will\n\
       \032  be discarded.\n\
-      \n\
+      \032  \n\
       Sample Profiles\n\
       \n\
       A Minimal Profile\n\
       \n\
       \032  Here is a very minimal profile file, such as might be found in\n\
       \032  .unison/default.prf:\n\
+      \n\
       \032   # Roots of the synchronization\n\
       \032   root = /home/bcpierce\n\
       \032   root = ssh://saul//home/bcpierce\n\
@@ -1730,6 +1756,7 @@ let docs =
       \n\
       \032  Here is a more sophisticated profile, illustrating some other useful\n\
       \032  features.\n\
+      \n\
       \032   # Roots of the synchronization\n\
       \032   root = /home/bcpierce\n\
       \032   root = ssh://saul//home/bcpierce\n\
@@ -1769,17 +1796,18 @@ let docs =
       \032  ``top-level'' file for each set of paths that need to be synchronized.\n\
       \032  (The include mechanism can also be used to allow the same set of\n\
       \032  preference settings to be used with different roots.)\n\
-      \n\
+      \032  \n\
       \032  The collection of profiles implementing this scheme might look as\n\
       \032  follows. The file default.prf is empty except for an include\n\
       \032  directive:\n\
+      \n\
       \032   # Include the contents of the file common\n\
       \032   include common\n\
       \n\
       \032  Note that the name of the common file is common, not common.prf; this\n\
       \032  prevents Unison from offering common as one of the list of profiles in\n\
       \032  the opening dialog (in the graphical UI).\n\
-      \n\
+      \032  \n\
       \032  The file common contains the real preferences:\n\
       \032   # Roots of the synchronization\n\
       \032   root = /home/bcpierce\n\
@@ -1806,10 +1834,11 @@ let docs =
       \032  replicas will be synchronized. (If we never want to synchronize the\n\
       \032  whole replicas, then default.prf would instead include settings for\n\
       \032  all the paths that are usually synchronized.)\n\
-      \n\
+      \032  \n\
       \032  To synchronize just part of the replicas, Unison is invoked with an\n\
       \032  alternate preference file---e.g., doing 'unison workingset', where the\n\
       \032  preference file workingset.prf contains\n\
+      \n\
       \032   path = current/papers\n\
       \032   path = Mail/inbox\n\
       \032   path = Mail/drafts\n\
@@ -1817,10 +1846,11 @@ let docs =
       \n\
       \032  causes Unison to synchronize just the subdirectories current/papers\n\
       \032  and older/papers.\n\
-      \n\
+      \032  \n\
       \032  The key preference can be used in combination with the graphical UI to\n\
       \032  quickly switch between different sets of paths. For example, if the\n\
       \032  file mail.prf contains\n\
+      \n\
       \032   path = Mail\n\
       \032   batch = true\n\
       \032   key = 2\n\
@@ -1829,14 +1859,14 @@ let docs =
       \032  then pressing 2 will cause Unison to look for updates in the Mail\n\
       \032  subdirectory and (because the batch flag is set) immediately propagate\n\
       \032  any that it finds.\n\
-      \n\
+      \032  \n\
       Keeping Backups\n\
       \n\
       \032  Unison can maintain full backups of the last-synchronized versions of\n\
       \032  some of the files in each replica; these function both as backups in\n\
       \032  the usual sense and as the ``common version'' when invoking external\n\
       \032  merge programs.\n\
-      \n\
+      \032  \n\
       \032  The backed up files are stored in a directory ~/.unison/backup on each\n\
       \032  host. The name of this directory can be changed by setting the\n\
       \032  environment variable UNISONBACKUPDIR. Files are added to the backup\n\
@@ -1846,40 +1876,41 @@ let docs =
       \032      deleted), all files will be backed up.\n\
       \032    * Otherwise, each file will be backed up the first time unison\n\
       \032      propagates an update for it.\n\
-      \n\
+      \032      \n\
       \032  It is safe to manually delete files from the backup directory (or to\n\
       \032  throw away the directory itself). Before unison uses any of these\n\
       \032  files for anything important, it checks that its fingerprint matches\n\
       \032  the one that it expects.\n\
-      \n\
+      \032  \n\
       \032  The preference backup controls which files are actually backed up: for\n\
       \032  example, giving the preference `backup = Name *' causes backing up of\n\
       \032  all files. The preference backupversions controls how many previous\n\
       \032  versions of each file are kept. The default is value 2 (i.e., the last\n\
       \032  synchronized version plus one backup).\n\
-      \n\
+      \032  \n\
       \032  For backward compatibility, the backups preference is also still\n\
       \032  supported, but backup is generally more convenient, as it keeps all\n\
       \032  its backup files in one place instead of leaving them all over the\n\
       \032  filesystem. See the documentation for these preferences for more\n\
       \032  information about the differences.\n\
-      \n\
+      \032  \n\
       Merging Conflicting Versions\n\
       \n\
       \032  Unison can invoke external programs to merge conflicting versions of a\n\
       \032  file. The preference merge controls how this program is invoked.\n\
-      \n\
+      \032  \n\
       \032  The merge preference may be given once or several times in a\n\
       \032  preference file (it can also be given on the command line, of course,\n\
       \032  but this can be a bit awkward because of the spaces and special\n\
       \032  characters involved). Each instance of the preference looks like this:\n\
+      \n\
       \032   merge = <PATHSPEC> -> <MERGECMD>\n\
       \n\
       \032  The <PATHSPEC> here has exactly the same format as for the ignore\n\
       \032  preference (see the section ``Path specification'' ). For example,\n\
       \032  using ``Name *.txt'' as the <PATHSPEC> tells Unison that this command\n\
       \032  should be used whenever a file with extension .txt needs to be merged.\n\
-      \n\
+      \032  \n\
       \032  The <MERGECMD> part of the preference specifies what external command\n\
       \032  should be invoked to merge files at paths matching the <PATHSPEC>.\n\
       \032  Within this string, several special substrings are recognized; these\n\
@@ -1911,7 +1942,7 @@ let docs =
       \032      NEWARCH, if present, will be used as the ``last common state'' of\n\
       \032      the replicas. (These three options are provided for later\n\
       \032      compatibility with the Harmony data synchronizer.)\n\
-      \n\
+      \032      \n\
       \032  To accomodate the wide variety of programs that users might want to\n\
       \032  use for merging, Unison checks for several possible situations when\n\
       \032  the merge program exits:\n\
@@ -1935,14 +1966,16 @@ let docs =
       \032      and NEW2 have identical contents, then the same contents are\n\
       \032      stored in the backup directory to reflect the fact that the file\n\
       \032      is currently in sync.\n\
-      \n\
+      \032      \n\
       \032  A large number of external merging programs are available. For\n\
       \032  example, on Unix systems setting the merge preference to\n\
+      \n\
       \032   merge = Name *.txt -> diff3 CURRENT1 CURRENTARCH CURRENT2 -m > NEW\n\
       \n\
       \032  will tell Unison to use the external diff3 program for merging.\n\
       \032  Alternatively, users of emacs may find the following settings\n\
       \032  convenient:\n\
+      \n\
       \032   merge = Name *.txt -> emacs -q --eval '(ediff-merge-files-with-ancestor\n\
       \032                            \"CURRENT1\" \"CURRENT2\" \"CURRENTARCH\" nil \"NEW\")'\n\
       \n\
@@ -1950,12 +1983,14 @@ let docs =
       \032  the edge of the page. In your preference file, each command should be\n\
       \032  written on a single line.) Users running Mac OS X (you may need the\n\
       \032  Developer Tools installed to get the opendiff utility) may prefer\n\
+      \n\
       \032   merge = Name *.txt -> opendiff CURRENT1 CURRENT2 -ancestor CURRENTARCH -mer\n\
       ge NEW\n\
       \n\
       \032  Here is a slightly more involved hack. The opendiff program can\n\
       \032  operate either with or without an archive file. A merge command of\n\
       \032  this form\n\
+      \n\
       \032   merge = Name *.txt ->\n\
       \032             if [ CURRENTARCHOPTx = x ];\n\
       \032             then opendiff CURRENT1 CURRENT2 -merge NEW;\n\
@@ -1966,16 +2001,16 @@ let docs =
       \032  (still all on one line in the preference file!) will test whether an\n\
       \032  archive file exists and use the appropriate variant of the arguments\n\
       \032  to opendiff.\n\
-      \n\
+      \032  \n\
       \032  Ordinarily, external merge programs are only invoked when Unison is\n\
       \032  not running in batch mode. To specify an external merge program that\n\
       \032  should be used no matter the setting of the batch flag, use the\n\
       \032  mergebatch preference instead of merge.\n\
-      \n\
+      \032  \n\
       \032    Please post suggestions for other useful values of the merge\n\
       \032    preference to the unison-users mailing list---we'd like to give\n\
       \032    several examples here. \n\
-      \n\
+      \032    \n\
       The User Interface\n\
       \n\
       \032  Both the textual and the graphical user interfaces are intended to be\n\
@@ -1989,7 +2024,7 @@ let docs =
       \032      for example, when Unison is running in a shell window inside\n\
       \032      Emacs. Setting the dumbtty preference will force Unison to leave\n\
       \032      the terminal alone and process input a line at a time.\n\
-      \n\
+      \032      \n\
       Exit code\n\
       \n\
       \032  When running in the textual mode, Unison returns an exit status, which\n\
@@ -2002,10 +2037,10 @@ let docs =
       \032      successful.\n\
       \032    * 2: non-fatal failures occurred during file transfer.\n\
       \032    * 3: a fatal error occurred, or the execution was interrupted.\n\
-      \n\
+      \032      \n\
       \032  The graphical interface does not return any useful information through\n\
       \032  the exit status.\n\
-      \n\
+      \032  \n\
       Path specification\n\
       \n\
       \032  Several Unison preferences (e.g., ignore/ignorenot, follow,\n\
@@ -2017,16 +2052,20 @@ let docs =
       \032    * Pattern preferences can be given on the command line, or, more\n\
       \032      often, stored in profiles, using the same syntax as other\n\
       \032      preferences. For example, a profile line of the form\n\
+      \n\
       \032            ignore = pattern\n\
       \032      adds pattern to the list of patterns to be ignored.\n\
       \032    * Each pattern can have one of three forms. The most general form is\n\
       \032      a Posix extended regular expression introduced by the keyword\n\
       \032      Regex. (The collating sequences and character classes of full\n\
       \032      Posix regexps are not currently supported).\n\
+      \n\
       \032                Regex regexp\n\
       \032      For convenience, two other styles of pattern are also recognized:\n\
+      \n\
       \032                Name name\n\
       \032      matches any path in which the last component matches name, while\n\
+      \n\
       \032                Path path\n\
       \032      matches exactly the path path. The name and path arguments of the\n\
       \032      latter forms of patterns are not regular expressions. Instead,\n\
@@ -2041,10 +2080,10 @@ let docs =
       \032      under Windows, where the normal separator character is a\n\
       \032      backslash. This makes it possible to use the same set of path\n\
       \032      patterns for both Unix and Windows file systems.\n\
-      \n\
+      \032      \n\
       \032  Some examples of path patterns appear in the section ``Ignoring\n\
       \032  Paths'' .\n\
-      \n\
+      \032  \n\
       Ignoring Paths\n\
       \n\
       \032  Most users of Unison will find that their replicas contain lots of\n\
@@ -2052,9 +2091,10 @@ let docs =
       \032  very large files, old stuff, architecture-specific binaries, etc. They\n\
       \032  can instruct Unison to ignore these paths using patterns introduced in\n\
       \032  the section ``Path Patterns'' .\n\
-      \n\
+      \032  \n\
       \032  For example, the following pattern will make Unison ignore any path\n\
       \032  containing the name CVS or a name ending in .cmo:\n\
+      \n\
       \032            ignore = Name {CVS,*.cmo}\n\
       \n\
       \032  The next pattern makes Unison ignore the path a/b:\n\
@@ -2062,18 +2102,20 @@ let docs =
       \n\
       \032  Path patterns do not skip filesnames beginning with . (as Name\n\
       \032  patterns do). For example,\n\
+      \n\
       \032            ignore = Path */tmp\n\
       \n\
       \032  will include .foo/tmp in the set of ignore directories, as it is a\n\
       \032  path, not a name, that is ignored.\n\
-      \n\
+      \032  \n\
       \032  The following pattern makes Unison ignore any path beginning with a/b\n\
       \032  and ending with a name ending by .ml.\n\
+      \n\
       \032            ignore = Regex a/b/.*\\.ml\n\
       \n\
       \032  Note that regular expression patterns are ``anchored'': they must\n\
       \032  match the whole path, not just a substring of the path.\n\
-      \n\
+      \032  \n\
       \032  Here are a few extra points regarding the ignore preference.\n\
       \032    * If a directory is ignored, all its descendents will be too.\n\
       \032    * The user interface provides some convenient commands for adding\n\
@@ -2097,29 +2139,30 @@ let docs =
       \032      any ignored files in the directory will be lost (since they are\n\
       \032      invisible to Unison and therefore they do not get recreated in the\n\
       \032      new version of the directory).\n\
-      \n\
+      \032      \n\
       Symbolic Links\n\
       \n\
       \032  Ordinarily, Unison treats symbolic links in Unix replicas as\n\
       \032  ``opaque'': it considers the contents of the link to be just the\n\
       \032  string specifying where the link points, and it will propagate changes\n\
       \032  in this string to the other replica.\n\
-      \n\
+      \032  \n\
       \032  It is sometimes useful to treat a symbolic link ``transparently,''\n\
       \032  acting as though whatever it points to were physically in the replica\n\
       \032  at the point where the symbolic link appears. To tell Unison to treat\n\
       \032  a link in this manner, add a line of the form\n\
+      \n\
       \032            follow = pathspec\n\
       \n\
       \032  to the profile, where pathspec is a path pattern as described in the\n\
       \032  section ``Path Patterns'' .\n\
-      \n\
+      \032  \n\
       \032  Windows file systems do not support symbolic links; Unison will refuse\n\
       \032  to propagate an opaque symbolic link from Unix to Windows and flag the\n\
       \032  path as erroneous. When a Unix replica is to be synchronized with a\n\
       \032  Windows system, all symbolic links should match either an ignore\n\
       \032  pattern or a follow pattern.\n\
-      \n\
+      \032  \n\
       Permissions\n\
       \n\
       \032  Synchronizing the permission bits of files is slightly tricky when two\n\
@@ -2139,12 +2182,12 @@ let docs =
       \032    * The Unix owner and group ids are not propagated. (What would this\n\
       \032      mean, in general?) All files are created with the owner and group\n\
       \032      of the server process.\n\
-      \n\
+      \032      \n\
       Cross-Platform Synchronization\n\
       \n\
       \032  If you use Unison to synchronize files between Windows and Unix\n\
       \032  systems, there are a few special issues to be aware of.\n\
-      \n\
+      \032  \n\
       \032  Case conflicts. In Unix, filenames are case sensitive: foo and FOO can\n\
       \032  refer to different files. In Windows, on the other hand, filenames are\n\
       \032  not case sensitive: foo and FOO can only refer to the same file. This\n\
@@ -2152,7 +2195,7 @@ let docs =
       \032  system --- Windows won't allow two different files to have the\n\
       \032  ``same'' name. Unison detects this situation for you, and reports that\n\
       \032  it cannot synchronize the files.\n\
-      \n\
+      \032  \n\
       \032  You can deal with a case conflict in a couple of ways. If you need to\n\
       \032  have both files on the Windows system, your only choice is to rename\n\
       \032  one of the Unix files to avoid the case conflict, and re-synchronize.\n\
@@ -2161,7 +2204,7 @@ let docs =
       \032  synchronization; Unison won't touch those files. If you don't want to\n\
       \032  see the warning on each synchronization, you can tell Unison to ignore\n\
       \032  the files (see the section ``Ignore'' ).\n\
-      \n\
+      \032  \n\
       \032  Illegal filenames. Unix allows some filenames that are illegal in\n\
       \032  Windows. For example, colons (`:') are not allowed in Windows\n\
       \032  filenames, but they are legal in Unix filenames. This means that a\n\
@@ -2169,23 +2212,23 @@ let docs =
       \032  case conflicts, Unison detects this situation for you, and you have\n\
       \032  the same options: you can either rename the Unix file and\n\
       \032  re-synchronize, or you can ignore it.\n\
-      \n\
+      \032  \n\
       Slow Links\n\
       \n\
       \032  Unison is built to run well even over relatively slow links such as\n\
       \032  modems and DSL connections.\n\
-      \n\
+      \032  \n\
       \032  Unison uses the ``rsync protocol'' designed by Andrew Tridgell and\n\
       \032  Paul Mackerras to greatly speed up transfers of large files in which\n\
       \032  only small changes have been made. More information about the rsync\n\
       \032  protocol can be found at the rsync web site\n\
       \032  (http://samba.anu.edu.au/rsync/).\n\
-      \n\
+      \032  \n\
       \032  If you are using Unison with ssh, you may get some speed improvement\n\
       \032  by enabling ssh's compression feature. Do this by adding the option\n\
       \032  ``-rshargs -C'' to the command line or ``rshargs = -C'' to your\n\
       \032  profile.\n\
-      \n\
+      \032  \n\
       Fast Update Detection\n\
       \n\
       \032  If your replicas are large and at least one of them is on a Windows\n\
@@ -2196,13 +2239,13 @@ let docs =
       \032  yes, causes it to use file creation times as 'pseudo inode numbers'\n\
       \032  when scanning replicas for updates, instead of reading the full\n\
       \032  contents of every file.\n\
-      \n\
+      \032  \n\
       \032  When fastcheck is set to no, Unison will perform slow\n\
       \032  checking---re-scanning the contents of each file on each\n\
       \032  synchronization---on all replicas. When fastcheck is set to default\n\
       \032  (which, naturally, is the default), Unison will use fast checks on\n\
       \032  Unix replicas and slow checks on Windows replicas.\n\
-      \n\
+      \032  \n\
       \032  This strategy may cause Unison to miss propagating an update if the\n\
       \032  create time, modification time, and length of the file are all\n\
       \032  unchanged by the update (this is not easy to achieve, but it can be\n\
@@ -2212,7 +2255,7 @@ let docs =
       \032  use this switch most of the time and occasionally run Unison once with\n\
       \032  fastcheck set to no, if you are worried that Unison may have\n\
       \032  overlooked an update.\n\
-      \n\
+      \032  \n\
       Click-starting Unison\n\
       \n\
       \032  On Windows NT/2k/XP systems, the graphical version of Unison can be\n\
@@ -2221,7 +2264,7 @@ let docs =
       \032  incompatibility with ocaml and Windows 95/98 that is not under our\n\
       \032  control, you must start Unison from a DOS window in Windows 95/98 if\n\
       \032  you want to use ssh.\n\
-      \n\
+      \032  \n\
       \032  When you click on the Unison icon, two windows will be created:\n\
       \032  Unison's regular window, plus a console window, which is used only for\n\
       \032  giving your password to ssh (if you do not use ssh to connect, you can\n\
@@ -2230,10 +2273,10 @@ let docs =
       \032  If you start Unison from a DOS window, Unison's regular window will\n\
       \032  appear and you will type your password in the DOS window you were\n\
       \032  using.\n\
-      \n\
+      \032  \n\
       \032  To use Unison in this mode, you must first create a profile (see the\n\
       \032  section ``Profile'' ). Use your favorite editor for this.\n\
-      \n\
+      \032  \n\
       "))
 ::
     ("ssh", ("Installing Ssh", 
@@ -2243,11 +2286,11 @@ let docs =
       \032  ssh server (or daemon), which is available on Unix systems. Unison is\n\
       \032  known to work with ssh version 1.2.27 (Unix) and version 1.2.14\n\
       \032  (Windows); other versions may or may not work.\n\
-      \n\
+      \032  \n\
       Unix\n\
       \n\
       \032  Most modern Unix installations come with ssh pre-installed.\n\
-      \n\
+      \032  \n\
       Windows\n\
       \n\
       \032  Many Windows implementations of ssh only provide graphical interfaces,\n\
@@ -2284,7 +2327,7 @@ let docs =
       \032           ``skip'' is shown. For a minimum installation, select only\n\
       \032           the packages ``cygwin'' and ``openssh,'' which come to about\n\
       \032           1900KB; the full installation is much larger.\n\
-      \n\
+      \032           \n\
       \032    Note that you are plan to build unison using the free CygWin GNU C\n\
       \032    compiler, you need to install essential development packages such\n\
       \032    as ``gcc'', ``make'', ``fileutil'', etc; we refer to the file\n\
@@ -2296,6 +2339,7 @@ let docs =
       \032        d. You can now delete the directory Foo and its contents.\n\
       \032      Some people have reported problems using Cygwin's ssh with Unison.\n\
       \032      If you have trouble, you might try this one instead:\n\
+      \n\
       \032 http://opensores.thebunker.net/pub/mirrors/ssh/contrib/ssh-1.2.14-win32bin.zi\n\
       p\n\
       \032   2. You must set the environment variables HOME and PATH. Ssh will\n\
@@ -2304,6 +2348,7 @@ let docs =
       \032      must be set to include the Cygwin bin directory, so that Unison\n\
       \032      can find the ssh executable.\n\
       \032         + On Windows 95/98, add the lines\n\
+      \n\
       \032   set PATH=%PATH%;<SSHDIR>\n\
       \032   set HOME=<HOMEDIR>\n\
       \032           to the file C:\\AUTOEXEC.BAT, where <HOMEDIR> is the directory\n\
@@ -2322,6 +2367,7 @@ let docs =
       \032           includes the ssh executable; if you've installed Cygwin in\n\
       \032           the default location, this is C:\\cygwin\\bin.\n\
       \032   3. Test ssh from a DOS shell by typing\n\
+      \n\
       \032     ssh <remote host> -l <login name>\n\
       \032      You should get a prompt for your password on <remote host>,\n\
       \032      followed by a working connection.\n\
@@ -2332,7 +2378,7 @@ let docs =
       \032      you are logged in with a different user name on the local and\n\
       \032      remote hosts, provide your remote user name when providing the\n\
       \032      remote root (i.e., //username@host/path...).\n\
-      \n\
+      \032      \n\
       "))
 ::
     ("news", ("Changes in Version 2.10.12", 
@@ -2466,7 +2512,7 @@ let docs =
       \032           mentioned in the documentation\n\
       \032         + Unison can now be installed easily on OSX systems using the\n\
       \032           Fink package manager\n\
-      \n\
+      \032      \n\
       \032  Changes since 2.9.1:\n\
       \032    * Added a preference maxthreads that can be used to limit the number\n\
       \032      of simultaneous file transfers.\n\
@@ -2498,7 +2544,7 @@ let docs =
       \032           automatically, depending on whether it finds lablgtk\n\
       \032           installed\n\
       \032         + Unison should now compile ``out of the box'' under OSX\n\
-      \n\
+      \032      \n\
       \032  Changes since 2.8.1:\n\
       \032    * Changing profile works again under Windows\n\
       \032    * File movement optimization: Unison now tries to use local copy\n\
@@ -2529,12 +2575,12 @@ let docs =
       \032         + further comments in ``update.ml'';\n\
       \032         + connection information is not stored in global variables\n\
       \032           anymore.\n\
-      \n\
+      \032      \n\
       \032  Changes since 2.7.78:\n\
       \032    * Small bugfix to textual user interface under Unix (to avoid\n\
       \032      leaving the terminal in a bad state where it would not echo inputs\n\
       \032      after Unison exited).\n\
-      \n\
+      \032      \n\
       \032  Changes since 2.7.39:\n\
       \032    * Improvements to the main web page (stable and beta version docs\n\
       \032      are now both accessible).\n\
@@ -2569,7 +2615,7 @@ let docs =
       \032           failing.\n\
       \032         + Made some improvements to the error messages.\n\
       \032         + Added some debugging messages to remote.ml.\n\
-      \n\
+      \032      \n\
       \032  Changes since 2.7.7:\n\
       \032    * Incorporated, once again, a multi-threaded transport sub-system.\n\
       \032      It transfers several files at the same time, thereby making much\n\
@@ -2628,11 +2674,11 @@ let docs =
       \032         + Added the option to compile unison on the Windows platform\n\
       \032           with Cygwin GNU C compiler. This option only supports\n\
       \032           building dynamically linked unison executables.\n\
-      \n\
+      \032      \n\
       \032  Changes since 2.7.4:\n\
       \032    * Fixed a silly (but debilitating) bug in the client startup\n\
       \032      sequence.\n\
-      \n\
+      \032      \n\
       \032  Changes since 2.7.1:\n\
       \032    * Added addprefsto preference, which (when set) controls which\n\
       \032      preference file new preferences (e.g. new ignore patterns) are\n\
@@ -2643,7 +2689,7 @@ let docs =
       \032      tell when you were trying to use Unison incorrectly with an old\n\
       \032      version of the server, since it would hang instead of giving an\n\
       \032      error message.)\n\
-      \n\
+      \032      \n\
       \032  Changes since 2.6.59:\n\
       \032    * Changed fastcheck from a boolean to a string preference. Its legal\n\
       \032      values are yes (for a fast check), no (for a safe check), or\n\
@@ -2668,7 +2714,7 @@ let docs =
       \032         + File permissions are properly updated when the file is behind\n\
       \032           a followed link.\n\
       \032         + Several other small fixes.\n\
-      \n\
+      \032      \n\
       \032  Changes since 2.6.38:\n\
       \032    * Major Windows performance improvement!\n\
       \032      We've added a preference fastcheck that makes Unison look only at\n\
@@ -2760,12 +2806,14 @@ let docs =
       \032                     merge2).\n\
       \032                For example, on Unix systems setting the merge\n\
       \032                preference to\n\
+      \n\
       \032  merge = diff3 -m CURRENT1 OLD CURRENT2 > NEW\n\
       \032                will tell Unison to use the external diff3 program for\n\
       \032                merging.\n\
       \032                A large number of external merging programs are\n\
       \032                available. For example, emacs users may find the\n\
       \032                following convenient:\n\
+      \n\
       \032   merge2 = emacs -q --eval '(ediff-merge-files \"CURRENT1\" \"CURRENT2\"\n\
       \032              nil \"NEW\")'\n\
       \032   merge = emacs -q --eval '(ediff-merge-files-with-ancestor\n\
@@ -2811,7 +2859,7 @@ let docs =
       \032         + We've added a module dependency diagram to the source\n\
       \032           distribution, in src/DEPENDENCIES.ps, to help new prospective\n\
       \032           developers with navigating the code.\n\
-      \n\
+      \032      \n\
       \032  Changes since 2.6.11:\n\
       \032    * INCOMPATIBLE CHANGE: Archive format has changed.\n\
       \032    * INCOMPATIBLE CHANGE: The startup sequence has been completely\n\
@@ -2826,6 +2874,7 @@ let docs =
       \032      You can achieve a similar effect, though, by breaking your profile\n\
       \032      into two:\n\
       \n\
+      \n\
       \032 default.prf =\n\
       \032     root = blah\n\
       \032     root = foo\n\
@@ -2834,6 +2883,7 @@ let docs =
       \032 common.prf =\n\
       \032     <everything else>\n\
       \032      Now do\n\
+      \n\
       \032 unison common root1 root2\n\
       \032      when you want to specify roots explicitly.\n\
       \032    * The -prefer and -force options have been extended to allow users\n\
@@ -2877,7 +2927,7 @@ let docs =
       \032           specified in a path preference and ignored, it will be\n\
       \032           skipped.\n\
       \032         + Numerous other bugfixes and small improvements.\n\
-      \n\
+      \032      \n\
       \032  Changes since 2.6.1:\n\
       \032    * The synchronization of modification times has been disabled for\n\
       \032      directories.\n\
@@ -2894,16 +2944,16 @@ let docs =
       \032    * Both '-pref=val' and '-pref val' are now allowed for boolean\n\
       \032      values. (The former can be used to set a preference to false.)\n\
       \032    * Lot of small bugs fixed.\n\
-      \n\
+      \032      \n\
       \032  Changes since 2.5.31:\n\
       \032    * The log preference is now set to true by default, since the log\n\
       \032      file seems useful for most users.\n\
       \032    * Several miscellaneous bugfixes (most involving symlinks).\n\
-      \n\
+      \032      \n\
       \032  Changes since 2.5.25:\n\
       \032    * INCOMPATIBLE CHANGE: Archive format has changed (again).\n\
       \032    * Several significant bugs introduced in 2.5.25 have been fixed.\n\
-      \n\
+      \032      \n\
       \032  Changes since 2.5.1:\n\
       \032    * INCOMPATIBLE CHANGE: Archive format has changed. Make sure you\n\
       \032      synchronize your replicas before upgrading, to avoid spurious\n\
@@ -3021,7 +3071,7 @@ let docs =
       \032           as having changed during synchronization. This should be\n\
       \032           fixed.\n\
       \032         + Numerous smaller fixes.\n\
-      \n\
+      \032      \n\
       \032  Changes since 2.4.1:\n\
       \032    * Added a number of 'sorting modes' for the user interface. By\n\
       \032      default, conflicting changes are displayed at the top, and the\n\
@@ -3069,7 +3119,7 @@ let docs =
       \032         + Carriage returns (Control-M's) are ignored at the ends of\n\
       \032           lines in profiles, for Windows compatibility.\n\
       \032         + All preferences are now fully documented in the user manual.\n\
-      \n\
+      \032      \n\
       \032  Changes since 2.3.12:\n\
       \032    * INCOMPATIBLE CHANGE: Archive format has changed. Make sure you\n\
       \032      synchronize your replicas before upgrading, to avoid spurious\n\
@@ -3154,12 +3204,12 @@ let docs =
       \032         + Added a subsection to the manual describing cross-platform\n\
       \032           issues (case conflicts, illegal filenames)\n\
       \032    * Many small bug fixes and random improvements.\n\
-      \n\
+      \032      \n\
       \032  Changes since 2.3.1:\n\
       \032    * Several bug fixes. The most important is a bug in the rsync module\n\
       \032      that would occasionally cause change propagation to fail with a\n\
       \032      'rename' error.\n\
-      \n\
+      \032      \n\
       \032  Changes since 2.2:\n\
       \032    * The multi-threaded transport system is now disabled by default.\n\
       \032      (It is not stable enough yet.)\n\
@@ -3177,7 +3227,7 @@ let docs =
       \032      after the canonization step -- i.e., the one that is listed first\n\
       \032      in the user interface -- not the one listed first on the command\n\
       \032      line or in the preferences file.)\n\
-      \n\
+      \032      \n\
       \032  Changes since 2.1:\n\
       \032    * The transport subsystem now includes an implementation by Sylvain\n\
       \032      Gommier and Norman Ramsey of Tridgell and Mackerras's rsync\n\
@@ -3208,7 +3258,7 @@ let docs =
       \032      checking whether the file threads/threads.cma in the OCaml\n\
       \032      standard library directory contains the string -lpthread near the\n\
       \032      end.)\n\
-      \n\
+      \032      \n\
       \032  Changes since 1.292:\n\
       \032    * Reduced memory footprint (this is especially important during the\n\
       \032      first run of unison, where it has to gather information about all\n\
@@ -3217,7 +3267,7 @@ let docs =
       \032      after the client exits.\n\
       \032    * Added a SHIFT modifier to the Ignore menu shortcut keys in GTK\n\
       \032      interface (to avoid hitting them accidentally).\n\
-      \n\
+      \032      \n\
       \032  Changes since 1.231:\n\
       \032    * Tunneling over ssh is now supported in the Windows version. See\n\
       \032      the installation section of the manual for detailed instructions.\n\
@@ -3251,7 +3301,7 @@ let docs =
       \032      server command. This allows multiple versions of unison to coexist\n\
       \032      conveniently on the same server: whichever version is run on the\n\
       \032      client, the same version will be selected on the server.\n\
-      \n\
+      \032      \n\
       \032  Changes since 1.219:\n\
       \032    * INCOMPATIBLE CHANGE: Archive format has changed. Make sure you\n\
       \032      synchronize your replicas before upgrading, to avoid spurious\n\
@@ -3284,7 +3334,7 @@ let docs =
       \032      back to previous items)\n\
       \032    * The organization of the export directory has changed --- should be\n\
       \032      easier to find / download things now.\n\
-      \n\
+      \032      \n\
       \032  Changes since 1.200:\n\
       \032    * INCOMPATIBLE CHANGE: Archive format has changed. Make sure you\n\
       \032      synchronize your replicas before upgrading, to avoid spurious\n\
@@ -3293,7 +3343,7 @@ let docs =
       \032    * Major internal changes designed to make unison safer to run at the\n\
       \032      same time as the replicas are being changed by the user.\n\
       \032    * Internal performance improvements.\n\
-      \n\
+      \032      \n\
       \032  Changes since 1.190:\n\
       \032    * INCOMPATIBLE CHANGE: Archive format has changed. Make sure you\n\
       \032      synchronize your replicas before upgrading, to avoid spurious\n\
@@ -3306,7 +3356,7 @@ let docs =
       \032      preparation for adding rsync-like smart file transfer in a later\n\
       \032      release.\n\
       \032    * Miscellaneous bug fixes.\n\
-      \n\
+      \032      \n\
       \032  Changes since 1.180:\n\
       \032    * INCOMPATIBLE CHANGE: Archive format has changed. Make sure you\n\
       \032      synchronize your replicas before upgrading, to avoid spurious\n\
@@ -3320,7 +3370,7 @@ let docs =
       \032    * Fixed one more non-tail-recursive list processing function, which\n\
       \032      was causing stack overflows when synchronizing very large\n\
       \032      replicas.\n\
-      \n\
+      \032      \n\
       \032  Changes since 1.169:\n\
       \032    * The text user interface now provides commands for ignoring files.\n\
       \032    * We found and fixed some more non-tail-recursive list processing\n\
@@ -3331,12 +3381,16 @@ let docs =
       \032      appropriate ignore pattern in your profile.\n\
       \032    * INCOMPATIBLE CHANGE: The syntax of ignore and follow patterns has\n\
       \032      changed. Instead of putting a line of the form\n\
+      \n\
       \032                ignore = <regexp>\n\
       \032      in your profile (.unison/default.prf), you should put:\n\
+      \n\
       \032                ignore = Regexp <regexp>\n\
       \032      Moreover, two other styles of pattern are also recognized:\n\
+      \n\
       \032                ignore = Name <name>\n\
       \032      matches any path in which one component matches <name>, while\n\
+      \n\
       \032                ignore = Path <path>\n\
       \032      matches exactly the path <path>.\n\
       \032      Standard ``globbing'' conventions can be used in <name> and\n\
@@ -3346,14 +3400,14 @@ let docs =
       \032         + [xyz] matches any character from the set {x, y, z }\n\
       \032         + {a,bb,ccc} matches any one of a, bb, or ccc.\n\
       \032      See the user manual for some examples.\n\
-      \n\
+      \032      \n\
       \032  Changes since 1.146:\n\
       \032    * Some users were reporting stack overflows when synchronizing huge\n\
       \032      directories. We found and fixed some non-tail-recursive list\n\
       \032      processing functions, which we hope will solve the problem. Please\n\
       \032      give it a try and let us know.\n\
       \032    * Major additions to the documentation.\n\
-      \n\
+      \032      \n\
       \032  Changes since 1.142:\n\
       \032    * Major internal tidying and many small bugfixes.\n\
       \032    * Major additions to the user manual.\n\
@@ -3363,7 +3417,7 @@ let docs =
       \032      UI from a desktop icon.\n\
       \032    * Fixed a small bug where the text UI on NT was raising a 'no such\n\
       \032      signal' exception.\n\
-      \n\
+      \032      \n\
       \032  Changes since 1.139:\n\
       \032    * The precompiled windows binary in the last release was compiled\n\
       \032      with an old OCaml compiler, causing propagation of permissions not\n\
@@ -3375,7 +3429,7 @@ let docs =
       \032      XXX, or -debug all to turn on absolutely everything.\n\
       \032    * Fixed a small bug where the text UI on NT was raising a 'no such\n\
       \032      signal' exception.\n\
-      \n\
+      \032      \n\
       \032  Changes since 1.111:\n\
       \032    * INCOMPATIBLE CHANGE: The names and formats of the preference files\n\
       \032      in the .unison directory have changed. In particular:\n\
@@ -3387,6 +3441,7 @@ let docs =
       \032      manual for details.\n\
       \032    * You can now have different preference files in your .unison\n\
       \032      directory. If you start unison like this\n\
+      \n\
       \032            unison profilename\n\
       \032      (i.e. with just one ``anonymous'' command-line argument), then the\n\
       \032      file ~/.unison/profilename.prf will be loaded instead of\n\
@@ -3406,18 +3461,18 @@ let docs =
       \032      around with.\n\
       \032    * Added a file CONTRIB with some suggestions for how to help us make\n\
       \032      Unison better.\n\
-      \n\
+      \032      \n\
       "))
 ::
     ("", ("Junk", 
      "Junk\n\
       \032    _________________________________________________________________\n\
-      \n\
-      \032    This document was translated from LAT[E]X by [2]HEVEA. \n\
+      \032  \n\
+      \032    This document was translated from LATEX by [2]HEVEA. \n\
       \n\
       References\n\
       \n\
-      \032  1. file://localhost/Users/trevor/svn-unison/unison/doc/temp.html#ssh-win\n\
+      \032  1. file://localhost/plclub/bcpierce/current/unison/trunk/doc/temp.html#ssh-win\n\
       \032  2. http://pauillac.inria.fr/~maranget/hevea/index.html\n\
       "))
 ::
