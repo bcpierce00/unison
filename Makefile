@@ -3,75 +3,39 @@
 # $I2: Last modified by bcpierce on Mon, 06 Sep 2004 19:43:55 -0400 $
 # $I3: Copyright 1999-2004 (see COPYING for details) $
 #######################################################################
-.PHONY: all src doc
+.PHONY: all src
 
-all: src 
+all: src
 
 src:
 	$(MAKE) -C src
 
-include src/Makefile.OCaml
+-include src/Makefile.ProjectInfo
+
+src/Makefile.ProjectInfo: src/mkProjectInfo
+	src/mkProjectInfo > $@
+
+src/mkProjectInfo: src/mkProjectInfo.ml
+	ocamlc -o $@ $^
+
+include src/Makefile.Ocaml
 
 ######################################################################
 # Version control
 
-DEVELOPERS = unison@cis.upenn.edu
 SUBMISSIONADDR = bcpierce@cis.upenn.edu
 
-PRCS = /home/bcpierce/PRCS
-
-merge:
-	prcs merge -r@ -R $(PRCS) --force
-	prcs rekey -R $(PRCS) --force
-
-checkin: remembernews merge populate diff 
-	prcs checkin -r@ -R $(PRCS) --long-format > .checkin.tmp
-	prcs rekey -R $(PRCS) --force
-	@$(MAKE) summaryheader
-	@cat .checkin.tmp >> .summary.tmp
-	@cat .summary.tmp > mail.tmp
-	/bin/mail $(DEVELOPERS) < mail.tmp
-	-$(RM) .checkin.tmp mail.tmp .summary.tmp .diff.tmp changes.tmp
+checkin: logmsg remembernews
+	svn commit --file logmsg
+	$(RM) logmsg
 ifeq ($(shell whoami),bcpierce)
 	$(MAKE) nightly
 endif
 
-oldcheckin: remembernews merge populate diff 
-	prcs checkin -r@ -R $(PRCS) --long-format > .checkin.tmp
-	prcs rekey -R $(PRCS) --force
-	@$(MAKE) summaryheader
-	@cat .checkin.tmp >> .summary.tmp
-	@echo >> .summary.tmp
-	@echo ------------------------------------------ >> .summary.tmp
-	@echo Change details: >> .summary.tmp
-	@echo >> .summary.tmp
-	@cat .summary.tmp .diff.tmp > mail.tmp
-	/bin/mail $(DEVELOPERS) < mail.tmp
-	-$(RM) .checkin.tmp mail.tmp .summary.tmp .diff.tmp changes.tmp
-
-summaryheader: 
-	@echo Subject: $(NAME) $(VERSION) checkin > .summary.tmp
-	@echo >> .summary.tmp
-	@cat news.tmp >> .summary.tmp
-	@echo >> .summary.tmp
-	@echo >> .summary.tmp
-	@echo Summary of changes: >> .summary.tmp
-	@echo >> .summary.tmp
-
-populate:
-	prcs populate -R $(PRCS) --delete --force
-
-diff:
-	-prcs diff --revision=@ -R $(PRCS) \
-                -P --quiet --new -- --expand-tabs --context=5  -b \
-          > .diff.tmp
-
-remembernews: tools/grabnews
-	tools/grabnews < unison.prj > news.tmp
-	echo "CHANGES FROM VERSION" $(VERSION) > changes.tmp
-	echo >> changes.tmp
-	cat news.tmp >> changes.tmp
-	cp changes.tmp rc.tmp
+remembernews: logmsg
+	echo "CHANGES FROM VERSION" $(VERSION) > rc.tmp
+	echo >> rc.tmp
+	cat logmsg >> rc.tmp
 	echo  >> rc.tmp
 	echo    ------------------------------- >> rc.tmp
 	-cat src/RECENTNEWS >> rc.tmp
@@ -94,7 +58,7 @@ else
 ifeq ($(OSARCH),linux)
   EXPORTNATIVE=true
   EXPORTSTATIC=false
-else 
+else
 ifeq ($(OSARCH),osx)
   EXPORTNATIVE=true
   EXPORTSTATIC=false
@@ -116,7 +80,7 @@ else
   TEXDIRECTIVES+="\\\\stablefalse"
 endif
 
-export: 
+export:
 	-$(RM) $(STABLEFLAG)
 	$(MAKE) exportcommon
 
@@ -134,14 +98,14 @@ FINALDOWNLOADDIR=$(DOWNLOADPARENT)/$(NAME)-$(VERSION)
 DOWNLOADDIR=$(FINALDOWNLOADDIR)-underconstruction
 EXPORTNAME=$(NAME)-$(VERSION)
 
-# Export separate top-level html pages for some important bits of the docs, 
+# Export separate top-level html pages for some important bits of the docs,
 # e.g. the FAQ.   This is run automatically as part of 'make commitexport',
 # but can also be run manually at any time.
 exporthtml:
 
-realexport: 
+realexport:
 	$(MAKE) $(DOWNLOADDIR)
-	$(MAKE) exportdocs 
+	$(MAKE) exportdocs
 	$(MAKE) exportsources
 	@echo
 	cat tools/afterexportmsg.txt
@@ -165,18 +129,18 @@ realcommit:
 	-chmod -R o-w $(EXPORTDIR)
 	-mkdir $(FINALDOWNLOADDIR)
 	mv $(DOWNLOADDIR)/* $(FINALDOWNLOADDIR)/
-	-rm -rf $(DOWNLOADDIR)
+	-$(RM) -r $(DOWNLOADDIR)
 	-$(RM) $(DOWNLOADPARENT)/latest
 	-ln -s $(NAME)-$(VERSION) $(DOWNLOADPARENT)/latest
 	$(MAKE) nightly
 ifeq ($(wildcard $(STABLEFLAG)),$(STABLEFLAG))
-	-$(RM) -f $(EXPORTDIR)/download/beta-test/latest
+	-$(RM) $(EXPORTDIR)/download/beta-test/latest
 	ln -s ../stable/latest $(EXPORTDIR)/download/beta-test/latest
 endif
 
 TMP=/tmp
 exportsources:
-	$(RM) -rf $(TMP)/$(EXPORTNAME)
+	$(RM) -r $(TMP)/$(EXPORTNAME)
 	cp -r src $(TMP)/$(EXPORTNAME)
 	-$(RM) $(TMP)/$(EXPORTNAME)/RECENTNEWS
 	$(MAKE) -C $(TMP)/$(EXPORTNAME) clean
@@ -184,7 +148,7 @@ exportsources:
            | gzip --force --best > $(EXPORTNAME).tar.gz)
 	mv $(TMP)/$(EXPORTNAME).tar.gz $(DOWNLOADDIR)
 
-exportdocs: 
+exportdocs:
 	$(MAKE) -C src UISTYLE=text DEBUGGING=false \
                        NATIVE=$(EXPORTNATIVE) STATIC=$(EXPORTSTATIC)
 	-$(RM) src/strings.ml
@@ -199,13 +163,13 @@ exportdocs:
 EXPORTTMP=$(TMP)/export-$(OSARCH)x.tmp
 
 exportnative:
-	-$(RM) -rf $(EXPORTTMP)
+	-$(RM) -r $(EXPORTTMP)
 	cp -r src $(EXPORTTMP)
 	make realexportnative
 ifeq ($(OSARCH),linux)
 	make realexportnative EXPORTSTATIC=true KIND=-static
 endif
-	rm -rf $(EXPORTTMP)
+	$(RM) -r $(EXPORTTMP)
 
 realexportnative:
 	-$(MAKE) -C $(EXPORTTMP) clean
@@ -236,27 +200,26 @@ mailchanges: tools/ask src/$(NAME)
 	@echo >> mail.tmp
 	@cat src/NEWS >> mail.tmp
 	@src/unison -doc news >> mail.tmp
-	tools/ask tools/mailmsg.txt 
+	tools/ask tools/mailmsg.txt
 	@send ./mail.tmp
 
 ######################################################################
 # Export developer sources  (normally run every night by a cron job on
 # saul.cis.upenn.edu; also as a last step of 'make checkin', when performed
 # by bcp.  Can also be run manually if needed.
+# NOTE: the svn checkout assumes this is being run on saul.
 
 DEVELDIR=$(EXPORTDIR)/download/resources/developers-only
 
 nightly:
-	($(RM) -rf $(HOME)/tmp/unison; \
-         mkdir $(HOME)/tmp/unison; \
+	($(RM) -r $(HOME)/tmp/unison; \
+         cd $(HOME)/tmp; \
+	 svn co file:///plclub1/svnroot/unison/trunk unison; \
          cd $(HOME)/tmp/unison; \
-         prcs checkout -R $(PRCS) -f unison; \
-         cp src/RECENTNEWS $(TMP); \
          $(MAKE) exportdevel)
 
 exportdevel: tareverything
-	-$(RM) -f $(DEVELDIR)/*
-	-mv -f $(TMP)/RECENTNEWS $(DEVELDIR)
+	-$(RM) $(DEVELDIR)/*
 	mv $(TMP)/$(EXPORTNAME).tar.gz $(DEVELDIR)
 
 ######################################################################
@@ -265,9 +228,9 @@ exportdevel: tareverything
 submit: tareverything sendsubmission
 
 tareverything:
-	$(RM) -rf $(TMP)/$(EXPORTNAME)
-	cp -r . $(TMP)/$(EXPORTNAME)
-	rm -rf $(TMP)/$(EXPORTNAME)/private
+	$(RM) -r $(TMP)/$(EXPORTNAME)
+	$(CP) -r . $(TMP)/$(EXPORTNAME)
+	$(RM) -r $(TMP)/$(EXPORTNAME)/private
 	$(MAKE) -C $(TMP)/$(EXPORTNAME) clean
 	(cd $(TMP); tar cf - $(EXPORTNAME) \
            | gzip --force --best > $(EXPORTNAME).tar.gz)
@@ -298,13 +261,13 @@ depend::
 	$(MAKE) -C src depend
 
 clean::
-	$(RM) -rf *.tmp \
+	$(RM) -r *.tmp \
 	   *.o *.obj *.cmo *.cmx *.cmi core TAGS *~ *.log \
 	   *.aux *.log *.dvi *.out *.backup[0-9] obsolete *.bak $(STABLEFLAG)
-	$(MAKE) -C src clean
 	$(MAKE) -C doc clean
 	$(MAKE) -C tools clean
-	-find . -name obsolete -exec $(RM) -rf {} \;
+	$(MAKE) -C src clean
+	-find . -name obsolete -exec $(RM) -r {} \;
 
 install:
 	$(MAKE) -C src install
