@@ -26,6 +26,7 @@ include src/Makefile.OCaml
 SUBMISSIONADDR = bcpierce@cis.upenn.edu
 
 checkin: logmsg remembernews
+	echo >> src/mkProjectInfo.ml # so the Rev keyword gets updated
 	svn commit --file logmsg
 	$(RM) logmsg
 ifeq ($(shell whoami),bcpierce)

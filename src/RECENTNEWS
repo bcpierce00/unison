@@ -1,5 +1,11 @@
 CHANGES FROM VERSION 2.11.1
 
+* Makefile hack to force subvversion to update the Rev keyword in
+  src/mkProjectInfo.ml on each checkin.
+
+-------------------------------
+CHANGES FROM VERSION 2.11.1
+
 * Fixed some file name case errors that didn't show up on the Mac.
 
 -------------------------------
