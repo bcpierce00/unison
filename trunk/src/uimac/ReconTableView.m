@@ -37,6 +37,7 @@
         || [menuItem action] == @selector(forceNewer:)
         || [menuItem action] == @selector(forceOlder:)
         || [menuItem action] == @selector(revert:)
+        || [menuItem action] == @selector(merge:)
         || [menuItem action] == @selector(ignorePath:)
         || [menuItem action] == @selector(ignoreExt:)
         || [menuItem action] == @selector(ignoreName:))
