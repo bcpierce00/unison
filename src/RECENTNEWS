@@ -1,3 +1,21 @@
+CHANGES FROM VERSION 2.12.7
+
+* Changed the command-line tool into a shell script.
+
+  The previous method relied on NSWorkspace and this does not seem to
+  work if the user is not logged in to the Console.  You get an error:
+
+    INIT_Processeses(), could not establish the default connection to
+    the WindowServer.Abort trap
+
+  The shell script simply invokes the absolute path.  The disadvantage
+  of this approach is that it's not as robust if the user moves or
+  renames the application.
+
+* The Merge menu item is dimmed as appropriate.
+
+
+-------------------------------
 CHANGES FROM VERSION 2.12.6
 
 Mac GUI changes:

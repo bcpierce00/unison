@@ -448,7 +448,7 @@ CAMLprim value displayStatus(value s)
 - (IBAction)installCommandLineTool:(id)sender
 {
   /* Install the command-line tool in /usr/bin/unison.
-     Requires root privilege, so we ask for it and pass the task off to cp. */
+     Requires root privilege, so we ask for it and pass the task off to /bin/sh. */
 
   OSStatus myStatus;
 
@@ -472,18 +472,22 @@ CAMLprim value displayStatus(value s)
   if (myStatus == errAuthorizationSuccess) {
     NSBundle *bundle = [NSBundle mainBundle];
     NSString *bundle_path = [bundle bundlePath];
-    NSString *cltool_path =
-      [bundle_path stringByAppendingString:@"/Contents/MacOS/cltool"];
+    NSString *exec_path =
+      [bundle_path stringByAppendingString:@"/Contents/MacOS/Unison"];
     // Not sure why but this doesn't work:
-    // [bundle pathForResource:@"cltool" ofType:nil];
+    // [bundle pathForResource:@"Unison" ofType:nil];
 
-    if (cltool_path == nil) return;
+    if (exec_path == nil) return;
+    NSString *sh_commands =
+      [NSString
+        stringWithFormat:@"(echo '#!/bin/sh' > /usr/bin/unison; echo %@ '$*' >> /usr/bin/unison; chmod 755 /usr/bin/unison)",
+        exec_path];
 
-    char *args[] = { "-f", (char *)[cltool_path cString], "/usr/bin/unison", NULL };
+    char *args[] = { "-c", (char *)[sh_commands cString], NULL };
 
     myFlags = kAuthorizationFlagDefaults;
     myStatus = AuthorizationExecuteWithPrivileges
-      (myAuthorizationRef, "/bin/cp", myFlags, args,
+      (myAuthorizationRef, "/bin/sh", myFlags, args,
        NULL);
   }
   AuthorizationFree (myAuthorizationRef, kAuthorizationFlagDefaults);
