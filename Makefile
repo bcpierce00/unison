@@ -25,13 +25,15 @@ include src/Makefile.OCaml
 
 SUBMISSIONADDR = bcpierce@cis.upenn.edu
 
-checkin: logmsg remembernews
-	echo >> src/mkProjectInfo.ml # so the Rev keyword gets updated
-	svn commit --file logmsg
-	$(RM) logmsg
+checkin: checkinfast
 ifeq ($(shell whoami),bcpierce)
 	$(MAKE) nightly
 endif
+
+checkinfast: logmsg remembernews
+	echo >> src/mkProjectInfo.ml # so the Rev keyword gets updated
+	svn commit --file logmsg
+	$(RM) logmsg
 
 remembernews: logmsg
 	echo "CHANGES FROM VERSION" $(VERSION) > rc.tmp
@@ -122,6 +124,7 @@ $(DOWNLOADDIR):
 commitexport:
 	$(MAKE) realcommit
 	$(MAKE) mailchanges
+	$(MAKE) nightly
 
 realcommit:
 	@echo
@@ -135,7 +138,6 @@ realcommit:
 	-$(RM) -r $(DOWNLOADDIR)
 	-$(RM) $(DOWNLOADPARENT)/latest
 	-ln -s $(NAME)-$(VERSION) $(DOWNLOADPARENT)/latest
-	$(MAKE) nightly
 ifeq ($(wildcard $(STABLEFLAG)),$(STABLEFLAG))
 	-$(RM) $(EXPORTDIR)/download/beta-test/latest
 	ln -s ../stable/latest $(EXPORTDIR)/download/beta-test/latest
@@ -162,6 +164,7 @@ exportdocs:
 	cp doc/unison-manual.ps $(DOWNLOADDIR)/$(EXPORTNAME)-manual.ps
 	-cp doc/unison-manual.pdf $(DOWNLOADDIR)/$(EXPORTNAME)-manual.pdf
 	cp doc/unison-manual.html $(DOWNLOADDIR)/$(EXPORTNAME)-manual.html
+	cp doc/unison-manual.html $(DOWNLOADDIR)/$(NAME)-manual.html
 
 EXPORTTMP=$(TMP)/export-$(OSARCH)x.tmp
 
