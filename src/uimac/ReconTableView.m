@@ -90,10 +90,12 @@
         [[reconItems objectAtIndex:i] doAction:c];
     }
     if (numSelected>0) {
-        if (numSelected == 1 && [self numberOfRows] > i+1)
+      if (numSelected == 1 && [self numberOfRows] > i+1) {
             // Move to next row, unless already at last row, or if more than one row selected
             [self selectRow:i+1 byExtendingSelection:NO];
-        [self reloadData];
+            [self scrollRowToVisible:i+1];
+      }
+      else [self reloadData];
     }
 }
 

@@ -1,3 +1,11 @@
+CHANGES FROM VERSION 2.12.11
+
+Mac GUI:
+* actions like < and > scroll to the next item as necessary.
+* Restart has a menu item and keyboard shortcut (command-R).
+
+
+-------------------------------
 CHANGES FROM VERSION 2.12.10
 
 Tiny fixes.
