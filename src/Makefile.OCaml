@@ -61,11 +61,12 @@ else
   ifeq ($(wildcard $(LABLGTK2LIB)),$(LABLGTK2LIB))
     UISTYLE=gtk2
   else
-    ifeq ($(wildcard $(LABLGTKLIB)),$(LABLGTKLIB))
-      UISTYLE=gtk
-    else
+    # BCP: removed defaulting for gtk1 UI, which is now deprecated
+    # ifeq ($(wildcard $(LABLGTKLIB)),$(LABLGTKLIB))
+    #   UISTYLE=gtk
+    # else
       UISTYLE=text
-    endif
+    # endif
 endif
 endif
 buildexecutable::
