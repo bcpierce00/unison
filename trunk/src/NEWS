@@ -1,6 +1,55 @@
 
 Changes in Version 2.10.12
 
+   Changes since 2.10.2:
+     * INCOMPATIBLE CHANGE: Archive format has changed.
+     * Source code availability: The Unison sources are now managed using
+       Subversion. One nice side-effect is that anonymous checkout is now
+       possible, like this:
+
+        svn co https://cvs.cis.upenn.edu:3690/svnroot/unison/
+       We will also continue to export a ``developer tarball'' of the
+       current (modulo one day) sources in the web export directory. To
+       receive commit logs for changes to the sources, subscribe to the
+       unison-hackers list
+       (http://www.cis.upenn.edu/ bcpierce/unison/lists.html).
+     * Text user interface:
+          + Substantial reworking of the internal logic of the text UI to
+            make it a bit easier to modify.
+          + The dumbtty flag in the text UI is automatically set to true
+            if the client is running on a Unix system and the EMACS
+            environment variable is set to anything other than the empty
+            string.
+     * Native OS X gui:
+          + Added a synchronize menu item with keyboard shortcut
+          + Added a merge menu item, still needs to be debugged
+          + Fixes to compile for Panther
+          + Miscellaneous improvements and bugfixes
+     * Small changes:
+          + Changed the filename checking code to apply to Windows only,
+            instead of OS X as well.
+          + Finder flags now synchronized
+          + Fallback in copy.ml for filesystem that do not support O_EXCL
+          + Changed buffer size for local file copy (was highly
+            inefficient with synchronous writes)
+          + Ignore chmod failure when deleting a directory
+          + Fixed assertion failure when resolving a conflict content
+            change / permission changes in favor of the content change.
+          + Workaround for transferring large files using rsync.
+          + Use buffered I/O for files (this is the only way to open
+            files in binary mode under Cygwin).
+          + On non-Cygwin Windows systems, the UNISON environment
+            variable is now checked first to determine where to look for
+            Unison's archive and preference files, followed by HOME and
+            USERPROFILE in that order. On Unix and Cygwin systems, HOME
+            is used.
+          + Generalized diff preference so that it can be given either as
+            just the command name to be used for calculating diffs or
+            else a whole command line, containing the strings CURRENT1
+            and CURRENT2, which will be replaced by the names of the
+            files to be diff'ed before the command is called.
+          + Recognize password prompts in some newer versions of ssh.
+       
    Changes since 2.9.20:
      * INCOMPATIBLE CHANGE: Archive format has changed.
      * Major functionality changes:

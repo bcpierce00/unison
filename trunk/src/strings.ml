@@ -87,65 +87,10 @@ let docs =
       \n\
       Mailing Lists:\n\
       \n\
-      \032  It is strongly recommended that all Unison users subscribe to one of\n\
-      \032  the first two:\n\
-      \032    * unison-announce (http://groups.yahoo.com/group/unison-announce) is\n\
-      \032      a moderated list where new Unison releases are announced. It is\n\
-      \032      very low volume, averaging about one message per month.\n\
-      \032      To subscribe, you can either visit\n\
-      \032      http://groups.yahoo.com/group/unison-announce (you will be asked\n\
-      \032      to create a Yahoo groups account if you do not already have one),\n\
-      \032      or else send an email to\n\
-      \032      unison-announce-subscribe@groups.yahoo.com\n\
-      \032      (mailto:unison-announce-subscribe@groups.yahoo.com) (which will\n\
-      \032      simply add you to the list, whether you have a Yahoo account or\n\
-      \032      not).\n\
-      \032    * unison-users (http://groups.yahoo.com/group/unison-users) is a\n\
-      \032      somewhat-higher-volume list for users of unison. It is used for\n\
-      \032      discussions of many sorts --- proposals and designs for new\n\
-      \032      features, installation and configuration questions, usage tips,\n\
-      \032      etc. It is also moderated, but just to filter spam.\n\
-      \032      To subscribe, you can either visit\n\
-      \032      http://groups.yahoo.com/group/unison-users or else send an email\n\
-      \032      to unison-users-subscribe@groups.yahoo.com\n\
-      \032      (mailto:unison-users-subscribe@groups.yahoo.com).\n\
-      \032      Release announcements are made on both of these lists, so there is\n\
-      \032      no need to subscribe to both.\n\
-      \032    * unison-hackers (http://groups.yahoo.com/group/unison-hackers) is\n\
-      \032      for informal discussion among Unison developers. Anyone who\n\
-      \032      considers themselves a Unison expert and wishes to lend a hand\n\
-      \032      with maintaining and improving Unison is welcome to join. This\n\
-      \032      list is moderated to filter spam.\n\
-      \032      To subscribe, you can either visit\n\
-      \032      http://groups.yahoo.com/group/unison-hackers or else send an email\n\
-      \032      to unison-hackers-subscribe@groups.yahoo.com\n\
-      \032      (mailto:unison-hackers-subscribe@groups.yahoo.com).\n\
-      \032      \n\
-      \032  Archives of all the lists are available (and publically visible) via\n\
-      \032  the above links. Postings are limited to members, to reduce the spam\n\
-      \032  load on moderators.\n\
-      \032  \n\
-      Reporting bugs:\n\
-      \n\
-      \032  If Unison is not working the way you expect, here are some steps to\n\
-      \032  follow.\n\
-      \032    * First, take a look at the Unison documentation, especially the FAQ\n\
-      \032      section. Lots of questions are answered there.\n\
-      \032    * Next, try running Unison with the -debug all command line option.\n\
-      \032      This will cause Unison to generate a detailed trace of what it's\n\
-      \032      doing, which may help pinpoint where the problem is occurring.\n\
-      \032    * If this doesn't clarify matters, try sending an email describing\n\
-      \032      your problem to the users list at unison-users@groups.yahoo.com\n\
-      \032      (mailto:unison-users@groups.yahoo.com). Please include the version\n\
-      \032      of Unison you are using (type unison -version), the kind of\n\
-      \032      machine(s) you are running it on, a record of what gets printed\n\
-      \032      when the -debug all option is included, and as much information as\n\
-      \032      you can about what went wrong.\n\
-      \032      \n\
-      Feature Requests:\n\
-      \n\
-      \032  Please post your feature requests, suggestions, etc. to the\n\
-      \032  unison-users list.\n\
+      \032  Moderated mailing lists are available for announcements of new\n\
+      \032  versions, discussions among users, and discussions among developers.\n\
+      \032  See http://www.cis.upenn.edu/ bcpierce/unison/lists.html for more\n\
+      \032  information.\n\
       \032  \n\
       "))
 ::
@@ -2384,6 +2329,55 @@ let docs =
     ("news", ("Changes in Version 2.10.12", 
      "Changes in Version 2.10.12\n\
       \n\
+      \032  Changes since 2.10.2:\n\
+      \032    * INCOMPATIBLE CHANGE: Archive format has changed.\n\
+      \032    * Source code availability: The Unison sources are now managed using\n\
+      \032      Subversion. One nice side-effect is that anonymous checkout is now\n\
+      \032      possible, like this:\n\
+      \n\
+      \032       svn co https://cvs.cis.upenn.edu:3690/svnroot/unison/\n\
+      \032      We will also continue to export a ``developer tarball'' of the\n\
+      \032      current (modulo one day) sources in the web export directory. To\n\
+      \032      receive commit logs for changes to the sources, subscribe to the\n\
+      \032      unison-hackers list\n\
+      \032      (http://www.cis.upenn.edu/ bcpierce/unison/lists.html).\n\
+      \032    * Text user interface:\n\
+      \032         + Substantial reworking of the internal logic of the text UI to\n\
+      \032           make it a bit easier to modify.\n\
+      \032         + The dumbtty flag in the text UI is automatically set to true\n\
+      \032           if the client is running on a Unix system and the EMACS\n\
+      \032           environment variable is set to anything other than the empty\n\
+      \032           string.\n\
+      \032    * Native OS X gui:\n\
+      \032         + Added a synchronize menu item with keyboard shortcut\n\
+      \032         + Added a merge menu item, still needs to be debugged\n\
+      \032         + Fixes to compile for Panther\n\
+      \032         + Miscellaneous improvements and bugfixes\n\
+      \032    * Small changes:\n\
+      \032         + Changed the filename checking code to apply to Windows only,\n\
+      \032           instead of OS X as well.\n\
+      \032         + Finder flags now synchronized\n\
+      \032         + Fallback in copy.ml for filesystem that do not support O_EXCL\n\
+      \032         + Changed buffer size for local file copy (was highly\n\
+      \032           inefficient with synchronous writes)\n\
+      \032         + Ignore chmod failure when deleting a directory\n\
+      \032         + Fixed assertion failure when resolving a conflict content\n\
+      \032           change / permission changes in favor of the content change.\n\
+      \032         + Workaround for transferring large files using rsync.\n\
+      \032         + Use buffered I/O for files (this is the only way to open\n\
+      \032           files in binary mode under Cygwin).\n\
+      \032         + On non-Cygwin Windows systems, the UNISON environment\n\
+      \032           variable is now checked first to determine where to look for\n\
+      \032           Unison's archive and preference files, followed by HOME and\n\
+      \032           USERPROFILE in that order. On Unix and Cygwin systems, HOME\n\
+      \032           is used.\n\
+      \032         + Generalized diff preference so that it can be given either as\n\
+      \032           just the command name to be used for calculating diffs or\n\
+      \032           else a whole command line, containing the strings CURRENT1\n\
+      \032           and CURRENT2, which will be replaced by the names of the\n\
+      \032           files to be diff'ed before the command is called.\n\
+      \032         + Recognize password prompts in some newer versions of ssh.\n\
+      \032      \n\
       \032  Changes since 2.9.20:\n\
       \032    * INCOMPATIBLE CHANGE: Archive format has changed.\n\
       \032    * Major functionality changes:\n\
