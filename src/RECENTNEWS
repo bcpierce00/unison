@@ -1,0 +1,71 @@
+CHANGES FROM VERSION 2.10.11
+
+* Small fix to Jerome's recent round of changes for OSX metadata synchronization.  
+
+* Added {\\tt retry} preference.  When it is set to a positive integer (default is 0), the
+  text UI will retry synchronizing that many times for any paths where transport fails on
+  the first attempt.  
+
+* Substantial reworking of the internal logic of the text UI to make it a bit easier to
+  modify.
+-------------------------------
+CHANGES FROM VERSION 2.10.3
+
+* The {\\tt dumbtty} flag in the text UI is automatically set to true if the client is 
+  running on a Unix system and the {\\tt EMACS}
+  environment variable is set to anything other than the empty string.
+
+* On non-Cygwin Windows systems, the UNISON environment variable is now checked first to determine 
+  where to look for Unison's archive and preference files, followed by HOME and 
+  USERPROFILE in that order.  On Unix and Cygwin systems, HOME is used.
+
+* Small documentation changes suggested by Alan Schmitt.
+-------------------------------
+CHANGES FROM VERSION 2.10.9
+
+* ARCHIVE FORMAT CHANGED: SYNCHRONIZE BEFORE UPGRADING.
+* Better error message when trying to send a command which is too big
+* Workaround for transferring large files using rsync
+* Use buffered I/O for files (this is the only way to open files in binary
+  mode under Cygwin)
+* Finder flags now synchronized
+
+-------------------------------
+CHANGES FROM VERSION 2.10.4
+
+* Fallback in copy.ml for filesystem that do no support O_EXCL
+* Changed buffer size for local file copy (was highly inefficient with
+  synchronous writes)
+* Ignore chmod failure when deleting a directory
+* Fixed assertion failure when resolving a conflict content change /
+  permission changes in favor of the content change
+
+-------------------------------
+CHANGES FROM VERSION 2.10.7
+
+* Mac gui bug fix: rightmost column of reconcile view now expands.
+* Mac gui about box now shows correct version number.
+* Mac gui help now brings up online documentation in a browser.
+-------------------------------
+CHANGES FROM VERSION 2.10.6
+
+* Changed the filename checking code to apply to Windows only, instead
+  of OS X as well.
+-------------------------------
+CHANGES FROM VERSION 2.10.5
+
+* Missing CAML_NAME_SPACE in main.m
+-------------------------------
+CHANGES FROM VERSION 2.10.4
+
+* Fixes for Mac gui to compile for Panther.
+-------------------------------
+CHANGES FROM VERSION 2.9.102
+
+* Fixed uigtk.ml compile issue
+* Fixed deadlock under Windows
+-------------------------------
+CHANGES FROM VERSION 2.10.2
+
+* Small changes to Makefiles and such for release process
+-------------------------------
