@@ -17,21 +17,21 @@ static MyController *me; // needed by reloadTable and displayStatus, below
 - (void)resizeWindowToSize:(NSSize)newSize
 {
     NSRect aFrame;
-    
+
     float newHeight = newSize.height;
     float newWidth = newSize.width;
 
-    aFrame = [NSWindow contentRectForFrameRect:[mainWindow frame] 
+    aFrame = [NSWindow contentRectForFrameRect:[mainWindow frame]
                        styleMask:[mainWindow styleMask]];
-    
+
     aFrame.origin.y += aFrame.size.height;
     aFrame.origin.y -= newHeight;
     aFrame.size.height = newHeight;
     aFrame.size.width = newWidth;
-    
-    aFrame = [NSWindow frameRectForContentRect:aFrame 
+
+    aFrame = [NSWindow frameRectForContentRect:aFrame
                        styleMask:[mainWindow styleMask]];
-    
+
     [mainWindow setFrame:aFrame display:YES animate:YES];
 }
 
@@ -103,7 +103,7 @@ static MyController *me; // needed by reloadTable and displayStatus, below
     [self updateReconItems];
     if ([reconItems count] > 0)
         [tableView selectRow:0 byExtendingSelection:NO];
-    
+
     // label the left and right columns with the roots
     NSTableHeaderCell *left = [[[tableView tableColumns] objectAtIndex:0] headerCell];
     value *f = caml_named_value("unisonFirstRootString");
@@ -111,10 +111,10 @@ static MyController *me; // needed by reloadTable and displayStatus, below
     NSTableHeaderCell *right = [[[tableView tableColumns] objectAtIndex:2] headerCell];
     f = caml_named_value("unisonSecondRootString");
     [right setObjectValue:[NSString stringWithCString:String_val(Callback_checkexn(*f, Val_unit))]];
-    
+
     // cause scrollbar to display if necessary
     [tableView reloadData];
-    
+
     // activate menu items
     [tableView setEditable:YES];
 }
@@ -129,7 +129,7 @@ static MyController *me; // needed by reloadTable and displayStatus, below
     [mainWindow setContentView:blankView];
     [self resizeWindowToSize:updatesSize];
     [mainWindow setContentView:updatesView];
-    
+
     // reconItems table gets keyboard input
     [mainWindow makeFirstResponder:tableView];
 
@@ -320,7 +320,7 @@ CAMLprim value reloadTable(value row)
     NSNumber *reason = [[notification userInfo] objectForKey:@"NSTextMovement"];
     int code = [reason intValue];
     if (code == NSReturnTextMovement)
-        [self endPasswordWindow:self];    
+        [self endPasswordWindow:self];
 }
 // Or, the Continue button will invoke this when clicked
 - (IBAction)endPasswordWindow:(id)sender
@@ -434,9 +434,65 @@ CAMLprim value displayStatus(value s)
       /* Start the connection */
       [self connect:caml_profile];
     }
-    else
+    else {
+      /* If invoked from terminal we need to bring the app to the front */
+      [NSApp activateIgnoringOtherApps:YES];
       /* Bring up the dialog to choose a profile */
       [self chooseProfiles];
+    }
+}
+
+/* from http://developer.apple.com/documentation/Security/Conceptual/authorization_concepts/index.html */
+#include <Security/Authorization.h>
+#include <Security/AuthorizationTags.h>
+- (IBAction)installCommandLineTool:(id)sender
+{
+  /* Install the command-line tool in /usr/bin/unison.
+     Requires root privilege, so we ask for it and pass the task off to cp. */
+
+  OSStatus myStatus;
+
+  AuthorizationFlags myFlags = kAuthorizationFlagDefaults;
+  AuthorizationRef myAuthorizationRef;
+  myStatus = AuthorizationCreate(NULL, kAuthorizationEmptyEnvironment,
+				 myFlags, &myAuthorizationRef);
+  if (myStatus != errAuthorizationSuccess) return;
+
+  {
+    AuthorizationItem myItems = {kAuthorizationRightExecute, 0,
+				 NULL, 0};
+    AuthorizationRights myRights = {1, &myItems};
+    myFlags = kAuthorizationFlagDefaults |
+      kAuthorizationFlagInteractionAllowed |
+      kAuthorizationFlagPreAuthorize |
+      kAuthorizationFlagExtendRights;
+    myStatus =
+      AuthorizationCopyRights(myAuthorizationRef,&myRights,NULL,myFlags,NULL);
+  }
+  if (myStatus == errAuthorizationSuccess) {
+    NSBundle *bundle = [NSBundle mainBundle];
+    NSString *bundle_path = [bundle bundlePath];
+    NSString *cltool_path =
+      [bundle_path stringByAppendingString:@"/Contents/MacOS/cltool"];
+    // Not sure why but this doesn't work:
+    // [bundle pathForResource:@"cltool" ofType:nil];
+
+    if (cltool_path == nil) return;
+
+    char *args[] = { "-f", (char *)[cltool_path cString], "/usr/bin/unison", NULL };
+
+    myFlags = kAuthorizationFlagDefaults;
+    myStatus = AuthorizationExecuteWithPrivileges
+      (myAuthorizationRef, "/bin/cp", myFlags, args,
+       NULL);
+  }
+  AuthorizationFree (myAuthorizationRef, kAuthorizationFlagDefaults);
+
+  /*
+  if (myStatus == errAuthorizationCanceled)
+    NSLog(@"The attempt was canceled\n");
+  else if (myStatus) NSLog(@"There was an authorization error: %ld\n", myStatus);
+  */
 }
 
 @end

@@ -65,4 +65,5 @@
 - (NSMutableArray *)reconItems;
 - (int)updateForIgnore:(int)i;
 - (void)displayDetails:(int)i;
+- (IBAction)installCommandLineTool:(id)sender;
 @end
