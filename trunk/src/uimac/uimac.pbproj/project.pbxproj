@@ -114,6 +114,7 @@
 		};
 		29B97314FDCFA39411CA2CEA = {
 			children = (
+				69E407B907EB95AA00D37AA1,
 				080E96DDFE201D6D7F000001,
 				29B97315FDCFA39411CA2CEA,
 				29B97317FDCFA39411CA2CEA,
@@ -518,6 +519,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				69C625F20664EC3300B3C46A,
+				69E407BA07EB95AA00D37AA1,
 			);
 			isa = PBXFrameworksBuildPhase;
 			runOnlyForDeploymentPostprocessing = 0;
@@ -558,6 +560,20 @@
 			path = ReconItem.h;
 			refType = 4;
 			sourceTree = "<group>";
+		};
+		69E407B907EB95AA00D37AA1 = {
+			isa = PBXFileReference;
+			lastKnownFileType = wrapper.framework;
+			name = Security.framework;
+			path = /System/Library/Frameworks/Security.framework;
+			refType = 0;
+			sourceTree = "<absolute>";
+		};
+		69E407BA07EB95AA00D37AA1 = {
+			fileRef = 69E407B907EB95AA00D37AA1;
+			isa = PBXBuildFile;
+			settings = {
+			};
 		};
 	};
 	rootObject = 29B97313FDCFA39411CA2CEA;

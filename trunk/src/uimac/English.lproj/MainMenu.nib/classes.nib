@@ -23,6 +23,7 @@
                 cancelProfileButton = id; 
                 createButton = id; 
                 endPasswordWindow = id; 
+                installCommandLineTool = id; 
                 onlineHelp = id; 
                 openButton = id; 
                 raiseAboutWindow = id; 

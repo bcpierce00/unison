@@ -8,6 +8,8 @@
 	<string>Unison</string>
 	<key>CFBundleIconFile</key>
 	<string>Unison.icns</string>
+	<key>CFBundleIdentifier</key>
+	<string>edu.upenn.cis.Unison</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundlePackageType</key>

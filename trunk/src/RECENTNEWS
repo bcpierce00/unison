@@ -1,3 +1,17 @@
+CHANGES FROM VERSION 2.12.6
+
+Mac GUI changes:
+
+    Added a command-line tool for Mac OS X.  It can be installed from
+    the Unison menu.
+
+    Added a CFBundleIdentifier, edu.upenn.cis.Unison, to Info.plist for
+    the command-line tool, so it can find the application.
+
+    Had to make sure the application is brought to the foreground in case
+    it is invoked from the command-line tool.
+
+-------------------------------
 CHANGES FROM VERSION 2.12.5
 
 Removed some uses of ".unison" from code, since the
