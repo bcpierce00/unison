@@ -8,22 +8,14 @@ See the file BUGS.txt for a list of currently open bugs.
 
 ###########################################################################
 
-BEFORE RELEASE
-==============
-
-*** Clean up RECENTNEWS and check in current version to update version number
-
-*** all files in the download dir should have the unison version number in
-    their names -- this is implemented but needs to be tested
-
-*** Generate PDF with good fonts and with -t letter  (double-check)
-
-*** Display and verify results of merge -- add this to uigtk2
-
 SOON
 ====
 
+*** make the ETA bar show which file is actually transferring bytes at the moment
+
 *** Fix the pred module to understand negation and delete XXXnot predicates
+
+*** Display and verify results of merge -- add this to uigtk2
 
 *** Web
     - Add a "supported platforms" page mentioning system-specific stuff
@@ -227,6 +219,34 @@ SMALL FUNCTIONALITY IMPROVEMENTS
 
 *** improve error reporting when Unison is started with different versions of
     client and server
+
+*** A switch to delete files before replication. It's not something I
+    would have considered doing, and in normal replication, there have
+    already been pointed out good reasons why Unison works the way it
+    does, but Roman makes a good reason for why this is useful in CD-RW
+    backups, and why this could be useful on a general to do list. And
+    this is certainly *generic*, which my point is not (as it only applies
+    to the Microsoft Windows NTFS situation).
+
+*** A switch to include NTFS ACE/ACL file permissions to be copied when
+    copying from one NTFS location to another NTFS location. As I
+    mentioned this is less generic, but of fundamental usefullness in
+    Windows usage, as NTFS permissions are absolutely essential in many
+    backup/replication situations in Windows systems. Robocopy has the
+    /SEC switch, but Unison is a far better tool, and I was hoping in that
+    light that Unison could implement the rights/permissions stuff also.
+
+*** There is no command-line argument to tell Unison where the .unison
+    directory is; Unison finds it in the environment or not at all.  I was
+    able to workaround this with a symbolic link to put .unison where it was
+    expected, but it seems like an easy option to add.
+
+*** The other is possibly a bit more difficult, but more useful as well.  There
+    is a brief window of vulnerability between when the local server is started
+    and when the remote client connects to it.  (It's no longer than that
+    because Unison won't take more than one connection at a time.)  I can
+    tolerate it, but the window could be eliminated entirely by allowing socket
+    connections to require a nonce.
 
 ** Would be nice to transfer directories "incrementally" rather than
    atomically (i.e., if Unison is interrupted during the transfer of a

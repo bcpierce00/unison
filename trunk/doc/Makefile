@@ -30,6 +30,7 @@ real:
 	$(MAKE) once
 
 once: postproc$(EXEC_EXT) $(STRINGS) docs$(EXEC_EXT)
+	echo '\def\unisonversion{$(VERSION)}' > unisonversion.tex
 	@echo HEVEAPATH = $(HEVEAPATH)
 	@(if [ ! -f prefs.tmp ]; then $(MAKE) prefs.tmp; fi)
 	@(if [ ! -f prefsdocs.tmp ]; then $(MAKE) prefsdocs.tmp; fi)

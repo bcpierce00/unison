@@ -32,6 +32,10 @@ CAMLprim value dumpFd(value fdVal) {
 #ifdef __APPLE__
 #include <util.h>          // openpty
 #endif
+#ifdef __FreeBSD__
+#include <sys/types.h>
+#include <libutil.h>
+#endif
 
 /* c_openpty: unit -> (int * Unix.file_descr) */
 CAMLprim value c_openpty() {

@@ -35,10 +35,10 @@ THREADS=false
 
 all:: strings.ml buildexecutable
 
-all:: INSTALL
+all:: INSTALLATION
 
-INSTALL: $(NAME)$(EXEC_EXT)
-	./$(NAME) -doc install > INSTALL
+INSTALLATION: $(NAME)$(EXEC_EXT)
+	./$(NAME) -doc install > INSTALLATION
 
 ########################################################################
 ## Miscellaneous developer-only switches
