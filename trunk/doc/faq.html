@@ -1,0 +1,691 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN"
+            "http://www.w3.org/TR/REC-html40/loose.dtd">
+<HTML>
+<HEAD><TITLE>Unison: Frequently Asked Questions</TITLE>
+<META http-equiv="Content-Type" content="text/html; charset= ISO-8859-1">
+</HEAD>
+<BODY BGCOLOR=white TEXT=black>
+<!--HTMLHEAD-->
+<!--ENDHTML-->
+<!--CUT DEF section 1 -->
+<BR>
+<BR>
+
+</head><H1 align=center><IMG src="Unison.gif" ALT="Unison">
+<br>
+Frequently Asked Questions</H1>
+<BR>
+<BR>
+<!--TOC subsection <A NAME="faqgeneral"></A>General Questions-->
+
+<H3><A NAME="faqgeneral"></A>General Questions</H3><UL>
+<LI>
+<EM>Does Unison work on Mac OSX?</EM><BR>
+<BR>
+Unison has not been extensively tested on OSX, though several people say
+they are using it successfully. There are several known caveats:<BR>
+<BR>
+<UL>
+<LI>
+It does not understand resource forks and will not synchronize them
+properly. Resource forks are not used by standard unix applications, but
+<EM>are</EM> used by many native mac applications. <BR>
+<BR>
+
+<LI>OSX native filesystems are case-insensitive (i.e., 'a' and 'A' are
+the same file), but Unison doesn't recognize this. A workaround is to
+add the line
+<PRE>
+        ignorecase = true
+</PRE>
+to your profile.<BR>
+<BR>
+
+<LI>Unison will be confused by some files that are frequently updated
+by OSX, and will report lots of errors of the form ``XXX has been
+modified during synchronization.'' These files --- 
+in particular, files with names like <TT>.FBCLockFolder</TT> and <TT>.FBCIndex</TT> --- should be ignored by adding 
+<PRE>
+        ignore = Name .FBCIndex
+        ignore = Name .FBCLockFolder
+</PRE>
+to your profile.<BR>
+<BR>
+
+<LI>We do not distribute pre-built binaries for OSX. 
+The textual user interface should compile ``straight out of the box''
+according to the standard Unix installation instructions (once OCaml is
+installed, either from Fink or by compiling it from sources, which is
+straightforward). <BR>
+<BR>
+Compiling the graphical user interface is also fairly straightforward,
+assuming you have already installed Fink (a very large collection of Unix
+tools with a nice package system). Proceed as follows:
+<UL>
+<LI>
+Use Fink to install an X server (e.g., XDarwin)
+
+<LI>Use Fink to install the <TT>gtk</TT> package (you may already have
+installed it without realizing it, since it is required by a number of
+other common packages).
+
+<LI>Grab the <TT>lablgtk</TT> distribution from 
+<BLOCKQUOTE>
+<A HREF="http://wwwfun.kurims.kyoto-u.ac.jp/soft/olabl/lablgtk.html">http://wwwfun.kurims.kyoto-u.ac.jp/soft/olabl/lablgtk.html</A>
+</BLOCKQUOTE>
+and install it according to the enclosed instructions. (Make sure to
+build the native-code versions of the libraries by doing 'make opt'
+before 'make install.')
+
+<LI>Go to the main unison directory and do 'make'. (The <TT>UISTYLE=gtk</TT> option should be selected automatically.)
+</UL>
+</UL><BR>
+Unison does not run on Mac OS 9 or earlier. <BR>
+<BR>
+
+<LI><EM>What are the differences between Unison and rsync?</EM><BR>
+<BR>
+Rsync is a mirroring tool; Unison is a synchronizer. That is, rsync
+needs to be told ``this replica contains the true versions of all the
+files; please make the other replica look exactly the same.'' Unison
+is capable of recognizing updates in both replicas and deciding which way
+they should be propagated.<BR>
+<BR>
+Both Unison and rsync use the so-called ``rsync algorithm,'' by Andrew
+Tridgell and Paul Mackerras, for performing updates. This algorithm
+streamlines updates in small parts of large files by transferring only
+the parts that have changed.<BR>
+<BR>
+
+<LI><EM>What are the differences between Unison and CVS?</EM><BR>
+<BR>
+Both CVS and Unison can be used to keep a remote replica of a
+directory structure up to date with a central repository. Both are
+capable of propagating updates in both directions and recognizing
+conflicting updates. Both use the rsync protocol for file transfer.<BR>
+<BR>
+Unison's main advantage is being somewhat more automatic and easier to
+use, especially on large groups of files. CVS requires manual
+notification whenever files are added or deleted. Moving files is a
+bit tricky. And if you decide to move a directory... well, heaven
+help you.<BR>
+<BR>
+CVS, on the other hand, is a full-blown version control system, and it
+has <EM>lots</EM> of other features (version history, multiple branches,
+etc.) that Unison (which is just a file synchronizer) doesn't have.<BR>
+<BR>
+
+<LI><EM>Has anybody tried to use Unison in conjunction with CVS
+ in order to replicate a CVS repository for active development in more than
+ one geographical location at the same time?
+ Do you forsee any issues with trying to do such a thing, or do you have any
+ tips as to how to get a setup like that working?</EM><BR>
+<BR>
+Unison and CVS can be used together. The easiest way is to replicate
+your files with Unison but keep your CVS repository on just one machine
+(and do a commit on that machine after each time you synchronize with
+Unison, if files in that directory have changed). <BR>
+<BR>
+More complex schemes are also possible (e.g., using a remote CVS server
+and checking in from any host with one of the replicas), but should be
+used with care. In particular, if you use a remote CVS server, it is
+important that you do <EM>not</EM> tell Unison to <TT>ignore</TT> the files in
+the <TT>CVS</TT> subdirectory.<BR>
+<BR>
+
+<LI><EM>Is it OK to mount my remote filesystem using NFS and
+ run unison locally, or should I run a remote server process?</EM><BR>
+<BR>
+NFS-mounting the replicas is fine, as long as the local network is
+fast enough. Unison needs to read a lot of files (in particular, it
+needs to check the last-modified time of every file in the repository
+every time it runs), so if the link bandwidth is low then running a
+remote server is much better.<BR>
+<BR>
+
+<LI><EM>When I run Unison on Windows, it creates two different
+ windows, the main user interface and a blank console window. Is
+ there any way to get rid of the second one?</EM><BR>
+<BR>
+The extra console window is there for ssh to use to get your password.
+Unfortunately, in the present version of unison the window will appear
+whether you're using ssh or not.<BR>
+<BR>
+Karl Moerder contributed some scripts that he uses to make the command
+window a bit more attractive. He starts unison from a shortcut to a
+<CODE>.cmd</CODE> file. This lets him control the attributes of the command
+window, making it small and gray and centering the passphrase request.
+His scripts can be found at 
+<A HREF="http://www.cis.upenn.edu/~bcpierce/unison/download/resources/karls-winhax.zip">http://www.cis.upenn.edu/~bcpierce/unison/download/resources/karls-winhax.zip</A>.<BR>
+<BR>
+It is also possible to get rid of the window entirely (for users that
+only want socket mode connections) by playing games with icons. 
+If you make a symbolic link to the executable, you can edit the
+properties box to make this window come up iconic. That way when you
+click on the link, you seem to just get a unison window (except on the
+task bar, where the text window shows). <BR>
+<BR>
+
+<LI><EM>Will unison behave correctly if used transitively? That is,
+ if I synchronize both between </EM><CODE><EM>host1:dir</EM></CODE><EM> and </EM><CODE><EM>host2:dir</EM></CODE><EM> and
+ between </EM><CODE><EM>host2:dir</EM></CODE><EM> and </EM><CODE><EM>host3:dir</EM></CODE><EM> at different times? Are
+ there any problems if the ``connectivity graph'' has loops?</EM><BR>
+<BR>
+This mode of usage will work fine. As far as each ``host pair'' is
+concerned, filesystem updates made by Unison when synchronizing any other
+pairs of hosts are exactly the same as ordinary user changes to the
+filesystem. So if a file started out having been modified on just one
+machine, then every time Unison is run on a pair of hosts where one has
+heard about the change and the other hasn't will result in the change
+being propagated to the other host. Running unison between machines
+where both have already heard about the change will leave that file
+alone. So, no matter what the connectivity graph looks like (as long as
+it is not partitioned), eventually everyone will agree on the new value
+of the file.<BR>
+<BR>
+The only thing to be careful of is changing the file <EM>again</EM> on the first
+machine (or, in fact, any other machine) before all the machines have
+heard about the first change -- this can result in Unison reporting
+conflicting changes to the file, which you'll then have to resolve by
+hand.<BR>
+<BR>
+
+<LI><EM>What will happen if I try to synchronize a special file (e.g.,
+something in </EM><CODE><EM>/dev</EM></CODE><EM>, </EM><CODE><EM>/proc</EM></CODE><EM>, etc.)?</EM><BR>
+<BR>
+Unison will refuse to synchronize such files. It only understands
+ordinary files, directories, and symlinks.<BR>
+<BR>
+
+<LI><EM>Is it OK to run several copies of Unison concurrently?</EM><BR>
+<BR>
+Unison is built to handle this case, but this functionality has not been
+extensively tested. Keep your eyes open.<BR>
+<BR>
+
+<LI><EM>What will happen if I do a local (or NFS, etc.) sync and some
+ file happens to be part of both replicas?</EM><BR>
+<BR>
+It will look to Unison as though somebody else has been modifying the
+files it is trying to synchronize, and it will fail (safely) on these
+files.<BR>
+<BR>
+
+<LI><EM>What happens if Unison gets killed while it is working? Do I
+ have to kill it nicely, or can I use </EM><EM><TT>kill -9</TT></EM><EM>? What if the network
+ goes down during a synchronization? What if one machine crashes but
+ the other keeps running?</EM><BR>
+<BR>
+Don't worry; be happy. See the section ``Invariants'' of the user manual
+.<BR>
+<BR>
+
+<LI><EM>What about race conditions when both Unison and some other
+ program or user are both trying to write to a file at exactly the same
+ moment?</EM> <BR>
+<BR>
+Unison works hard to make these ``windows of danger'' as short as
+possible, but they cannot be eliminated completely.<BR>
+<BR>
+
+<LI><EM>I've heard that the Unix file locking mechanism doesn't work
+ very well under NFS. Is this a problem for Unison?</EM><BR>
+<BR>
+No.<BR>
+<BR>
+
+<LI><EM>On Windows systems, it looks like the </EM><EM><TT>root</TT></EM><EM> preferences
+ are specified using backslashes, but </EM><EM><TT>path</TT></EM><EM> and </EM><EM><TT>ignore</TT></EM><EM>
+ preferences are specified with forward slashes. What's up with that?</EM> <BR>
+<BR>
+Unison uses two sorts of paths: native filesystem paths, which use the
+syntax of the host filesystem, and ``portable'' paths relative to the
+roots of the replicas, which always use / to separate the path
+components. Roots are native filesystem paths; the others are
+root-relative.<BR>
+<BR>
+
+<LI><EM>What will happen if I run Unison after my archive files get
+ deleted or damaged?</EM><BR>
+<BR>
+A missing or damaged archive is treated the same as a completely empty
+one. This means that Unison will consider <EM>all</EM> the files in both
+replicas to be new. Any files that exist only in one replica will be
+transferred to the other replica (because it will look as though they
+have just been created); files that exist on both replicas but have
+different contents will be flagged as conflicts; files that have the same
+contents on both replicas will simply be noted in the rebuilt archive.<BR>
+<BR>
+If just one of the archive files is missing or damaged, Unison will
+ignore the other one and start from an empty archive.</UL><!--TOC subsection <A NAME="problems"></A>Common Problems-->
+
+<H3><A NAME="problems"></A>Common Problems</H3>A general recommendation is that, if you've gotten into a state you don't
+understand, deleting the archive files on both replicas (files with names
+like <TT>arNNNNNNNNNNNNNNN</TT> in the <TT>.unison</TT> directory) will return
+you to a blank slate. If the replicas are identical, then deleting the
+archives is always safe. If they are not identical, then deleting the
+archives will cause all files that exist on one side but not the other to
+be copied, and will report conflicts for all non-identical files that
+do exist on both sides.<BR>
+<BR>
+(If you think the behavior you're observing is an actual bug, then you
+might consider <EM>moving</EM> the archives to somewhere else instead of
+deleting them, so that you can try to replicate the bad behavior and
+report more clearly what happened.)<BR>
+<BR>
+<UL>
+<LI>
+<EM>The text mode user interface fails with 
+``</EM><CODE><EM>Uncaught exception Sys_blocked_io</EM></CODE><EM>'' when running over ssh2.</EM><BR>
+<BR>
+The problem here is that ssh2 puts its standard file descriptors into
+non-blocking mode. But unison and ssh share the same stderr (so that
+error messages from the server are displayed), and the nonblocking
+setting interferes with Unison's interaction with the user. This can be
+corrected by redirecting the stderr when invoking Unison:
+<PRE>
+     unison -ui text &lt;other args&gt; 2&gt;/dev/tty
+</PRE>
+(The redirection syntax is a bit shell-specific. On some shells, e.g.,
+ csh and tcsh, you may need to write
+<PRE>
+   unison -ui text &lt;other args&gt;  &gt; &amp; /dev/tty
+</PRE>
+instead.) <BR>
+<BR>
+
+<LI><EM>What does the following mean?</EM>
+<PRE>
+    Propagating updates [accounting/fedscwh3qt2000.wb3]
+    failed: error in renaming locally:
+    /DANGER.README: permission denied
+</PRE>It means that unison is having trouble creating the temporary file
+DANGER.README, which it uses as a "commit log" for operations (such as
+renaming its temporary file <TT>accounting/fedscwh3qt2000.wb3.unison.tmp</TT> to
+the real location <TT>accounting/fedscwh3qt2000.wb3</TT>) that may leave the
+filesystem in a bad state if they are interrupted in the middle. This is
+pretty unlikely, since the rename operation happens fast, but it is
+possible; if it happens, the commit log will be left around and Unison
+will notice (and tell you) the next time it runs that the consistency of
+that file needs to be checked.<BR>
+<BR>
+The specific problem here is that Unison is trying to create
+DANGER.README in the directory specified by your HOME environment
+variable, which seems to be set to /, where you do not have write
+permission.<BR>
+<BR>
+
+<LI><EM>The command line</EM>
+<PRE>
+     unison work ssh://remote.dcs.ed.ac.uk/work
+</PRE>
+<EM>fails, with ``</EM><EM><TT>fatal error: could not connect to server.</TT></EM><EM>''
+But when I connect directly with </EM><EM><TT>ssh remote.dcs.ed.ac.uk/work</TT></EM><EM>,
+I see that my </EM><EM><TT>PATH</TT></EM><EM> variable is correctly set, and the unison
+executable is found. </EM><BR>
+<BR>
+In the first case, Unison is using <TT>ssh</TT> to execute a command, and
+in the second, it is giving you an interactive remote shell. Under
+some ssh configurations, these two use different startup sequences.
+You can test whether this is the problem here by trying, e.g.,
+<PRE>
+    ssh remote.dcs.ed.ac.uk 'echo $PATH'
+</PRE>
+and seeing whether your <TT>PATH</TT> is the same as when you do
+<PRE>
+    ssh remote.dcs.ed.ac.uk 
+    [give password and wait for connection]
+    echo $PATH
+</PRE>One method that should always work is this [thanks to Richard Atterer for
+this]:
+<OL>
+<LI>
+ 
+log into the machine, set up PATH so the program is found
+
+<LI>execute
+<PRE>
+         echo "PATH=$PATH" &gt;&gt;~/.ssh/environment
+</PRE>
+</OL><BR>
+All this seems to be controlled by the configuration of ssh, but we have
+not understood the details---if someone does, please let us know.<BR>
+<BR>
+
+<LI><EM>I'm having trouble getting unison working with openssh
+ under Windows. Any suggestions?</EM>
+ 
+ <A HREF="http://www.apocalypse.org/pub/u/antony">Antony Courtney</A>
+ contributed the following comment.
+ <BLOCKQUOTE>
+ I ran in to some difficulties trying to use this ssh client with
+ Unison, and tracked down at least one of the problems. I thought
+ I'd share my experiences, and provide a 'known good' solution for
+ other users who might want to use this Windows / Unison / ssh /
+ Cygwin combination.
+ 
+ If you launch Unison from bash, it fails (at least for me).
+ Running <CODE>unison_win32-gtkui.exe</CODE>, I get a dialog box that
+ reads:
+<PRE>
+        Fatal error: Error in checkServer: Broken pipe [read()]
+</PRE>
+ and a message is printed to stderr in the bash window that reads:
+<PRE>
+        ssh: unison_win32-gtkui.exe: no address associated with hostname.
+</PRE>
+ My guess is that this is caused by some incompatibility between
+ the Ocaml Win32 library routines and Cygwin with regard to setting
+ up argv[] for child processes.
+ </BLOCKQUOTE>The solution is to launch Unison from a DOS command prompt instead;
+or see section&nbsp;<A HREF="#click">X</A>.<BR>
+<BR>
+
+<LI><EM>When I use ssh to log into the server, everything looks fine
+ (and I can see the Unison binary in my path).
+ But when I do '</EM><EM><TT>ssh &lt;server&gt; unison</TT></EM><EM>' it fails. Why?</EM><BR>
+<BR>
+[Thanks to Nick Phillips for the following explanation.]<BR>
+<BR>
+It's simple. If you start ssh, enter your password etc. and then end up
+in a shell, you have a login shell.<BR>
+<BR>
+If you do "ssh myhost.com unison" then unison is not run in a login shell.<BR>
+<BR>
+This means that different shell init scripts are used, and most people seem
+to have their shell init scripts set up all wrong.<BR>
+<BR>
+With bash, for example, your <CODE>.bash_profile</CODE> <EM>only</EM> gets used if
+you start 
+a login shell. This usually means that you've logged in on the system console,
+on a terminal, or remotely. If you start an xterm from the command line
+you won't get a login shell in it. If you start a command remotely from
+the ssh or rsh command line you also won't get a login shell to run it in
+(this is of course a Good Thing -- you may want to run interactive commands
+from it, for example to ask what type of terminal they're using today).<BR>
+<BR>
+If people insist on setting their <CODE>PATH</CODE> in their
+<CODE>.bash_profile</CODE>, then they 
+should probably do at least one of the following:
+<OL>
+<LI>
+ 
+
+stop it;
+
+<LI>
+read the bash manual, section "INVOCATION";
+
+<LI>
+set their path in their <CODE>.bashrc</CODE>;
+
+<LI>
+get their sysadmin to set a sensible system-wide default path;
+
+<LI>
+ source their <CODE>.bash_profile</CODE> from their <CODE>.bashrc</CODE> ...
+</OL>
+It's pretty similar for most shells.<BR>
+<BR>
+
+<LI><EM>Unison crashes with an ``out of memory'' error when used to
+ synchronize really huge directories (e.g., with hundreds of thousands
+ of files).</EM><BR>
+<BR>
+You may need to increase your maximum stack size. On Linux and Solaris
+systems, for example, you can do this using the <TT>ulimit</TT> command (see
+the <TT>bash</TT> documentation for details).<BR>
+<BR>
+
+<LI><EM>Unison seems to be unable to copy a single really huge file.
+ I get something like this:</EM>
+<PRE>
+    Error in querying file information:
+    Value too large for defined data type [lstat(...)]
+</PRE>This is a limitation in the OCaml interface to the Unix system calls.
+(The problem is that the OCaml library uses 32-bit integers to represent
+file positions. The maximal positive 'int' in OCaml is about 2.1E9. We
+hope that the OCaml team will someday provide an alternative interface
+that uses 64-bit integers.<BR>
+<BR>
+
+<LI><EM>Why does unison run so slowly the first time I start it?</EM><BR>
+<BR>
+On the first synchronization, unison doesn't have any ``memory'' of what
+your replicas used to look like, so it has to go through, fingerprint
+every file, transfer the fingerprints across the network, and compare
+them to what's on the other side. Having done this once, it stashes away
+the information so that in future runs almost all of the work can be done
+locally on each side.<BR>
+<BR>
+
+<LI><EM>I can't seem to override the paths selected in the profile by
+ using a </EM><EM><TT>-path</TT></EM><EM> argument on the command line.</EM><BR>
+<BR>
+Right: the <TT>path</TT> preference is additive (each use adds an entry to
+the list of paths within the replicas that Unison will try to
+synchronize), and there is no way to remove entries once they have gotten
+into this list. The solution is to split your preference file into
+different ``top-level'' files containing different sets of <TT>path</TT>
+preferences and make them all include a common preference file to avoid
+repeating the non-path preferences. See the section ``Profile
+ Examples'' of the user manual
+ for a complete example. <BR>
+<BR>
+
+<LI><EM>I can't seem to override the roots selected in the profile by
+ listing the roots on the command line. I get ``Fatal error: Wrong
+ number of roots (2 expected; 4 provided).''</EM><BR>
+<BR>
+Roots should be provided <EM>either</EM> in the preference file <EM>or</EM> on
+the command line, not both. See the section ``Profile
+ Examples'' of the user manual
+ for further advice.<BR>
+<BR>
+
+<LI><EM>I am trying to compile unison 2.7.7 using OCaml 3.04. I get ``Values do not match'' error.</EM>
+ 
+ Unison 2.7.7 compiles with Ocaml 3.02. Later versions of OCaml,
+ include version 3.04, require by default all parameter labels for
+ function calls if they are declared in the interface. Adding the
+ compilation option ``<CODE>-nolabels</CODE>'' (by inserting a line
+ ``<CODE>CAMLFLAGS+=-nolabels</CODE>'' to the file named ``<CODE>Makefile.OCaml</CODE>'')
+ should solve the problem. To compile the graphical user interface for Unison 2.7.7, use LablGtk 1.1.2 instead of LablGtk 1.1.3.<BR>
+<BR>
+
+<LI><EM>I get a persistent 'rsync failure' error when transferring a
+ particular file. What can I do?</EM><BR>
+<BR>
+We're not sure what causes this failure, but a workaround is to set the
+<TT>rsync</TT> flag to false.</UL><!--TOC subsection <A NAME="tips"></A>Tricks and Tips-->
+
+<H3><A NAME="tips"></A>Tricks and Tips</H3><UL>
+<LI>
+<EM>I want to use Unison to synchronize really big replicas. How
+ can I improve performance?</EM><BR>
+<BR>
+When you synchronize a large directory structure for the first time,
+Unison will need to spend a lot of time walking over all the files and
+building an internal data structure called an archive. There is no way
+around this: Unison uses these archives in a critical way to do its work.
+While you're getting things set up, you'll probably save time if you
+start off focusing Unison's attention on just a subset of your files, by
+including the option <TT>-path <I>some/small/subdirectory</I></TT> on the
+command line. When this is working to your satisfaction, take away the
+<CODE>-path</CODE> option and go get lunch while Unison works. This rebuilding
+operation will sometimes need to be repeated when you upgrade Unison
+(major upgrades often involve changes to the format of the archive files;
+minor upgrades generally do not.)<BR>
+<BR>
+Next, you make sure that you are not ``remote mounting'' either of your
+replicas over a network connection. Unison needs to run close to the
+files that it is managing, otherwise performance will be very poor. Set
+up a client-server configuration as described in the installation section
+of the manual.<BR>
+<BR>
+If your replicas are large and at least one of them is on a Windows
+system, you will probably find that Unison's default method for detecting
+changes (which involves scanning the full <EM>contents</EM> of every file on
+every sync---the only completely safe way to do it under Windows) is too
+slow. In this case, you may be interested in the <TT>fastcheck</TT>
+preference, documented in the section ``Fast Update Checking'' of the user manual
+.<BR>
+<BR>
+In normal operation, the longest part of a Unison run is usually the time
+that it takes to scan the replicas for updates. This requires examining
+the filesystem entry for every file (i.e., doing an <TT>fstat</TT> on each
+inode) in the replica. This means that the total number of inodes in the
+replica, rather than the total size of the data, is the main factor
+limiting Unison's performance.<BR>
+<BR>
+Update detection times can be improved (sometimes dramatically) by
+telling Unison to ignore certain files or directories. See the
+description of the <TT>ignore</TT> and <TT>ignorenot</TT> preferences in
+the section ``Preferences'' of the user manual
+.<BR>
+<BR>
+(One could also imagine improving Unison's update detection by giving it
+access to the filesystem logs kept by some modern ``journaling
+filesystems'' such as ext3 or ReiserFS, but this has not been
+implemented. We have some ideas for how to make it work, but it will
+require a bit of systems hacking that no one has volunteered for yet.)<BR>
+<BR>
+Another way of making Unison detect updates faster is by ``aiming'' it at
+just a portion of the replicas by giving it one or more <TT>path</TT>
+preferences. For example, if you want to synchronize several large
+subdirectories of your home directory between two hosts, you can set
+things up like this:<BR>
+<BR>
+<UL>
+<LI>
+Create a common profile (called, e.g., <TT>common</TT>) containing most of
+your preferences, including the two roots:
+<PRE>
+     root = /home/bcpierce
+     root = ssh://saul.cis.upenn.edu//home/bcpierce
+     ignore = Name *.o
+     ignore = Name *.tmp
+     etc.
+</PRE>
+<LI>Create a default profile <TT>default.prf</TT> with <TT>path</TT>
+preferences for all of the top-level subdirectories that you want to keep
+in sync, plus an instruction to read the <TT>common</TT> profile:
+<PRE>
+     path = current
+     path = archive
+     path = src
+     path = Mail
+     include common
+</PRE>
+Running <TT>unison default</TT> will synchronize everything.<BR>
+<BR>
+(If you want to synchronize <EM>everything</EM> in your home directory, you
+can omit the <TT>path</TT> preferences from <TT>default.prf</TT>.)<BR>
+<BR>
+
+<LI>Create several more preference files similar to <TT>default.prf</TT>
+but containing smaller sets of <TT>path</TT> preferences. For example, <TT>mail.prf</TT> might contain:
+<PRE>
+     path = Mail
+     include common
+</PRE>
+Now running <TT>unison mail</TT> will scan and synchronize just your <TT>Mail</TT> subdirectory.
+</UL><BR>
+Once update detection is finished, Unison needs to transfer the changed
+files. This is done using a variant of the <TT>rsync</TT> protocol, so if
+you have made only small changes in a large file, the amount of data
+transferred across the network will be relatively small. <BR>
+<BR>
+Unison carries out many file transfers at the same time, so the per-file
+set up time is not a significant performance factor. <BR>
+<BR>
+
+<LI><EM>Is it possible to run Unison from </EM><EM><TT>inetd</TT></EM><EM> (the Unix
+ internet services daemon)?</EM><BR>
+<BR>
+Toby Johnson has contributed a
+detailed
+<A HREF="http://www.cis.upenn.edu/~bcpierce/unison/download/resources/xinetd-chroot-howto.txt">chroot
+ min-HOWTO</A> describing how to do this. (Yan Seiner wrote an earlier
+<A HREF="http://www.cis.upenn.edu/~bcpierce/unison/download/resources/inetd-howto.txt">howto</A>,
+on which Toby's is based.)<BR>
+<BR>
+
+<LI><EM>Is there a way to get Unison not to prompt me for a
+ password every time I run it (e.g., so that I can run it every
+ half hour from a shell script)?</EM>
+ 
+ It's actually <TT>ssh</TT> that's asking for the password. If you're
+ running the Unison client on a Unix system, you should check out the
+ 'ssh-agent' facility in ssh. If you do
+<PRE>
+      ssh-agent bash
+</PRE>
+ (or <TT>ssh-agent startx</TT>, when you first log in) it will start you a
+ shell (or an X Windows session) in which all processes and
+ sub-processes are part of the same ssh-authorization group. If, inside
+ any shell belonging to this authorization group, you run the <TT>ssh-add</TT> program, it will prompt you <EM>once</EM> for a password and
+ then remember it for the duration of the bash session. You can then
+ use Unison over <TT>ssh</TT>---or even run it repeatedly from a shell
+ script---without giving your password again.<BR>
+<BR>
+ It may also be possible to configure <TT>ssh</TT> so that it does not
+ require any password: just enter an empty password when you create a
+ pair of keys. If you think it is safe enough to keep your private key
+ unencrypted on your client machine, this solution should work even
+ under Windows.<BR>
+<BR>
+
+<LI><EM>Is there a way, under Windows, to click-start Unison and make
+ it synchronize according to a particular profile?</EM><BR>
+<BR>
+Greg Sullivan sent us the following useful trick: <BR>
+<BR>
+<BLOCKQUOTE>
+In order to make syncing a particular profile ``clickable'' from the
+Win98 desktop, when the profile uses <TT>ssh</TT>, you need to create a <TT>.bat</TT> file that contains nothing but ``<TT>unison profile-name</TT>''
+(assuming <TT>unison.exe</TT> is in the <TT>PATH</TT>). I first tried the
+``obvious'' strategy of creating a shortcut on the desktop with the
+actual command line ``<TT>unison profile</TT>, but that hangs. The <TT>.bat</TT> file trick works, though, because it runs <TT>command.com</TT> and
+then invokes the <TT>.bat</TT> file.
+</BLOCKQUOTE>
+<LI><EM>Can Unison be used with SSH's port forwarding features?</EM><BR>
+<BR>
+Mark Thomas says the following procedure works for him:
+<BLOCKQUOTE>
+After having problems with unison spawning a command line ssh in Windows
+I noticed that unison also supports a socket mode of communication (great
+software!) so I tried the port forwarding feature of ssh using a
+graphical SSH terminal TTSSH:
+<BLOCKQUOTE>
+<A HREF="http://www.zip.com.au/~roca/ttssh.html">http://www.zip.com.au/~roca/ttssh.html</A>
+</BLOCKQUOTE>To use unison I start TTSHH with port forwarding enabled and login to 
+the Linux box where the unison server (<CODE>unison -socket xxxx</CODE>) is 
+started automatically. In windows I just run unison and 
+connect to localhost (<CODE>unison socket://localhost:xxxx/ ...</CODE>)
+</BLOCKQUOTE>
+<LI><EM>How can I use Unison from a laptop whose hostname changes
+ depending on where it is plugged into the network?</EM><BR>
+<BR>
+This is partially addressed by the <TT>rootalias</TT> preference. See the
+discussion in the section ``Archive Files'' of the user manual
+.<BR>
+<BR>
+
+<LI><EM>It's annoying that (on Unix systems) I have to type an ssh
+ passphrase into a console window, rather than being asked for it in a
+ dialog box. Is there a better way?</EM><BR>
+<BR>
+We have some ideas about how this might be done (by allocating a PTY and
+using it to talk to ssh), but we haven't implemented them yet. If you'd
+like to have a crack at it, we'd be glad to discuss ideas and incorporate
+patches. <BR>
+<BR>
+In the meantime, tmb has contributed a script that uses <TT>expectk</TT> to
+do what's needed. It's available at
+<A HREF="http://www.cis.upenn.edu/~bcpierce/unison/download/resources/expectk-startup">http://www.cis.upenn.edu/~bcpierce/unison/download/resources/expectk-startup</A>.</UL>
+ <!--HTMLFOOT-->
+<!--ENDHTML-->
+</BODY>
+</HTML>
+

@@ -1,0 +1,48 @@
+The Unison development team at the University of Pennsylvania is
+pleased to the first public release (2.1) of its file synchronization
+tool for Unix and Windows systems.  Unison allows two replicas of a
+collection of files and directories to be stored on different hosts
+(or different disks on the same host), modified separately, and then
+brought up to date by propagating the changes in each replica to the
+other.
+
+The current release is available for immediate download from
+     http://www.cis.upenn.edu/~bcpierce/unison
+in both source and binary form.
+
+Unison shares a number of features with tools such as configuration
+management packages (CVS, PRCS, etc.) distributed filesystems (Coda, etc.)
+uni-directional mirroring utilities (rsync, etc.) and other synchronizers
+(Intellisync, Reconcile, etc), but differs in several significant areas:
+
+   * Unison runs on both Windows (95, 98, NT, and 2k) and Unix (Solaris,
+     Linux, etc.) systems. Moreover, Unison works across platforms, allowing
+     a Windows laptop, for example, to synchronize with a Unix fileserver.
+   * Unlike ``true'' distributed filesystems, Unison is a user-level
+     program: it can be run without kernel modifications or superuser
+     permissions on either host.
+   * Unlike simple mirroring or backup utilities, Unison can deal with
+     updates to both replicas of a distributed directory structure. Updates
+     that do not conflict are propagated automatically. Conflicting updates
+     are detected and displayed.
+   * Unison works between any pair of machines connected to the internet,
+     communicating over either a direct socket link or tunneling over an rsh
+     or an encrypted ssh connection. It is careful with network bandwidth,
+     and runs well over slow links such as PPP connections.
+   * Unison has a clear and precise specification and comes with extensive
+     documentation.
+   * Unison is resilient to failure. It is careful to leave the replicas and
+     its own private structures in a sensible state at all times, even in
+     case of abnormal termination or communication failures.
+   * Unison is free; complete source code is available under the GNU Public
+     License.
+
+Unison is brought to you by 
+   Sylvain Gommier, 
+   Trevor Jim, 
+   Benjamin Pierce, and 
+   Jerome Vouillon. 
+
+Please contact unison@cis.upenn.edu or visit our home page for more
+information.
+

@@ -1,0 +1,22 @@
+
+
+-------------------------------------
+This file has been translated from LaTeX by HeVeA.
+
+
+
+File: unison-manual.info-2,	Node: Notes 1
+-----------------------------------
+  
+ 
+ * Note 1:Top.  If you are compiling Unison 2.7.7 or
+   an earlier version, you need to 
+  
+ - insert a line ``CAMLFLAGS+=-nolabels to the file named
+   ``Makefile.OCaml'' in the source directory, and 
+ - install LablGtk 1.1.1 instead of the latest version. 
+  
+ * Note 2:Top.  The Cygwin port (the Installing Ssh on
+   Windows (#ssh-win) section) of openssh includes a ssh server program
+   for the Windows  platform, but we have not yet tested Unison with
+   this ssh server.

@@ -1,0 +1,919 @@
+Here we list planned and imagined improvements to Unison.  Ones that we
+regard as most important are marked with *.  See the file BUGS.txt for a
+list of currently open bugs.
+
+###########################################################################
+
+DEFINITELY BEFORE NEXT RELEASE
+==============================
+
+[zy] The "Zhe: wrong assumption" bugs for diff and merge is embarrassing.
+
+[zy] ignore path processing during directory copying doesn't seem to work
+     -- Actually this bug doesn't exist!!  From a dream?
+
+[zy] Fix makefile
+
+[zy] Finish adding comments to source code
+
+[zy] Add something to docs about how to use 'rootalias'.  Include an
+     explanation of the semantics, a couple of examples, and a suggestion
+     for how to debug what it's doing by turning on appropriate debugging
+     flags.  (And maybe we should actually make the debug output there a
+     bit more verbose?)
+
+[zy] Find out whether it's possible to subscribe by something like
+     sending an empty email to unison-users-subscribe@groups.yahoo.com 
+     If so, document it in the manual and on the index page.
+
+[bcp] docs
+  - document good trick: use -1 switch to ssh if the paths are set up wrong
+    on the remote host
+  - should say whether trailing slashes are ok for paths; should say
+    that leading slashes are illegal.
+    ===> check
+  - not so clear what you have to do with a Regex to match a directory
+    and all its subfiles: foo or foo/ or foo/.* ?
+    ===> the first. document it.  (Does foo/ match foo?  I don't think so.
+         Document, one way or the other.)
+  - what happens when files are included whose parent dirs are
+    excluded? (With Regex?  With multiple Path and Name?)
+    ===> document
+  - the documentation is very good, but i couldn't find a description of how 
+    to respond to the prompts in the textual ui. is that explained 
+    somewhere? a few typos i noticed: "with t fast", "nison", "off of".
+
+[bcp] look at bcp's unison.todo mail folder and move tasks into here
+
+** The "total size transferred" in the GTK UI should be stored in an
+   Int64; otherwise large transfers will overflow it.
+   ==> change Util.filesize to int64 (this seems like a "right thing",
+       but seems to cause an "out of memory" error on the first sync of
+       my full replica).  Should try this again.   -BCP
+   ==> even if we can't do this change, we should at least recognize when
+       filesizes are too big to represent and generate a sensible error
+       message! 
+
+** Fix index.tex (stable not getting done correctly; wrong pointer to
+   contact us)
+
+IF POSSIBLE BEFORE NEXT RELEASE
+===============================
+
+** Suggestion for extending merge functionality
+     - add a new kind of preference -- a conditional stringlist preference
+     - in the preference file, each value looks like either
+            prefname = string
+       or
+            prefname = string WHEN Path PPPPP 
+            prefname = string WHEN Name XXXXX
+            prefname = string WHEN Regex XXXXX
+     - when we look up such a preference, we provide a current path, and it
+       returns the one that matches the current path, if any 
+
+** Would be good to change the semantics of the "backup" functionality,
+   so that Unison would not insist on making a *full* backup of the whole
+   replica, but just do so lazily.  
+
+** Would be nice to transfer directories "incrementally" rather than
+   atomically (i.e., if Unison is interrupted during the transfer of a
+   directory, the partially-transferred directory should persist).  Is
+   this allowed by the specification?  (If so, then it should just become
+   the default behavior.)
+
+** ~/foo seems to work on the command line but not in root = ~/foo in the
+   config file.
+   ===> Would be nice to support ~ internally
+
+** unison -help doesn't go to stdout so it's hard to pipe it into less
+
+** The new backup mechanism should be refined so that it does not insist on
+   making a full backup every time it changes the archive -- e.g., in
+   particular, when the files are actually equal.
+
+> In menu Actions
+>  - show Diff applies to the current line, while
+>  - revert to unision's recommandation applies to all lines 
+> Should be clearer and/or homogeneous behavior.
+> I would also like to have "revert to unision's recommandation" for the
+> current line. 
+
+Auto-termination of the graphical UI (switch-controlled)
+  * Unison starts in the usual way and checks for changes
+  * If there are no conflicts, it proceeds without waiting for confirmation
+  * If there *are* conflicts, it waits for instructions, just like now
+  * In either case, when it's finished transferring the changes, it quits
+
+improve error reporting when Unison is started with different versions of
+client and server
+
+should strip symbols from binary files in 'make exportnative'
+
+The archive should indicate whether it is case-dependant or not.
+
+When loading archives, one should check that they have the same checksum.
+  ==> [What does that mean?]
+
+in gtk ui, display green checkmark next to finished items even if their
+  direction indicates a conflict; do not list such items as "skipped" at
+  the end
+
+In the text ui, put a "failure and skip count" at the end, like the GTK ui
+In both UIs, show how many bytes/files were successfully transferred at the end
+
+giving a -path preference whose parent dir doesn't exist currently causes
+  Unison to abort with a fatal error.  Would be better if it just
+  signalled an error for that file.
+
+** no spec for escaping regexp chars; spaces? newlines? tabs? others?
+   mechanism for getting the list of files from another program (plugin)?
+   ===> needs to be documented (look at rx.ml)
+
+** seems not to recognise ignores when they are inside a path that has
+   just been added.
+===> Jamey claims that if we add a new directory, some of whose children
+     are ignored, then when this new dir is propagated, also the ignored
+     stuff gets copied  (if this is true, then it's probably a bug in
+     update.ml) 
+
+** if you abort, it gets confused about the status of
+   ~/.unison/default.prf on the next run sometimes.
+   ===> We can't figure out how this might have happened.  Would probably
+   indicate a serious bug, though, if true.
+
+** if unison is dynamically linked, can we check from the -version
+that all the libraries are present and working?  can we check the
+status of threading?  mention in the manual what happens if one side
+is threaded and the other is not.
+
+** what happens when we ssh through loopback and sync the same
+   directory?
+   ===> Needs to be thought about.  In particular, what is the name of the
+        archive in this case?  Could they ever be exactly the same?
+   ===> Try it and see.
+
+we should reload the current preference file (if it's changed, at least)
+  when we restart
+
+###########################################################################
+
+                                WISH LIST
+                                =========
+          (good ideas that we're NOT working on right at the moment)
+
+FRESHLY ADDED
+=============
+
+
+The -sortbysize is nice, but what I would really like is a -limitbysize.
+  When I'm connected over a modem line, I would like not to transfer the
+  larger files that need synchronization. That can wait until I am
+  connected via a faster connection. What I presently do is allow unison
+  to run in -sortbysize mode, and abort once I have all my little, more
+  important files. -limitbysize should simply filter the list of transfer
+  to only those that are below the threshold size. The syntax is
+  obvious... It should be -limitbysize xxx, where xxx is the size
+  (preferably in kb, but bytes will do as well).
+
+"Quit" during synchronization should abort all current operations (so
+  that temporary files are deleted) before exiting.
+
+Make sure that no filesystem check is missing in the transport agent.
+  ===> What does this mean?
+
+Unison's gui offers an `Actions' menu with a variety of features
+  regarding preferences.  I would love to see an action with the following
+  semantics: if the two files differ only in their modification time,
+  prefer the older modification time.
+  ===> This would be easy to add, but I am beginning to worry that we are
+       getting too many funny little switches like this.  We should think
+       about them all together and make sure they make sense.
+
+Would be nice to have the Unison log file relative to my home directory,
+ like this 
+       logfile = ~/.unision/log
+  or
+       logfile = $HOME/.unision/log
+  (We should do this for *all* files that the user specifies.)
+
+It would be nice if Unison could have the "power" to copy write-protected
+   files, maybe as an option.
+
+Fast update checking would be cool... Some resources:
+   FAM (used in Enlightenment) 
+   dnotify (linux 2.4)
+   BSD kqueue
+   the "VFS stacking layer" implemented by a guy at Columbia
+
+Update checking over NFS might be *much* faster if we use only relative
+  pathnames (absolute paths may require an RPC per level!?)
+
+On Saul, Unison seems to use HUGE amounts of memory (250Mb resident),
+  while on my laptop it's much less.  WTF?
+
+SMALL FUNCTIONALITY IMPROVEMENTS
+================================
+
+*** Currently, if a file changes on either side between the initial update
+    detection and the time when the transport module tries to propagate
+    changes, the transport is aborted.  But if the change occurred on the
+    replica that is being used as the source for the transfer (which will
+    be the common case!), then there is no reason to abort -- we should
+    just propagate the newest version.
+
+*** When unison notices lock files in the archive directory, it should
+    offer to delete them *for* the user, rather than forcing the user to
+    delete them manually.
+
+** [A good idea for the ssh prompt issue...]  I'm not sure why you would
+  need a C implementation; you could do the same thing in CAML that expect
+  does: allocate a PTY, start up ssh on that, and interact with it. On
+  Windows, you can probably do the same with the Win32 console API,
+  although I don't see why such an improvement needs to work uniformly
+  across all platforms to be useful.  [Note that allocating PTYs is not
+  very portable, but we could at least try allocating one and see if
+  something useful comes back...]
+
+** An idea for the interface to the external merge functionality:
+  created a general mechanism for invoking external functionality...
+    - in profile, declare a command of the form
+           key M = external "merge ##1 ##2 ###" --> overwriting originals
+      (concrete syntax open to discussion!).  Main parts are
+         - what key to bind it to in the UI(s)
+         - the command line to start up
+         - variables (##1 and ##2) for the local and remote files
+           (the remote file will automatically be copied to a local temp
+           file, if this variable is used)
+         - a variable (###) for a temporary output file
+         - an indication of what to do with this output file
+           (or maybe this could be automatic)
+         - (should also indicate which machine(s) to run the command on?)
+
+** small additions to merge functionality:
+  - if the external merge program *deletes* one of the files it is given,
+    Unison should interpret this as "Copy the other file onto this location
+    (instead of merging)".  This will allow some other interesting 
+    functionality, e.g. external programs that may decide to keep both
+    versions by moving one of them out of the way (mh-rename).
+  - the invocation of the external 'diff' program should be selectable
+    using the same conventions as the 'merge' program
+  - would be nice to be able to invoke DIFFERENT merge programs
+    depending on paths
+
+** It would be nice to have a "merge" command (similar to "diff" in the
+   UI) that invokes a user-specified merging tool (which one could
+   perhaps depend on a regex matched against the file's pathname) on the
+   two versions, allows the user to merge as desired, and writes the
+   merged version (if any) over both of the originals.  (There are lots of
+   merge tools that could be used with this -- e.g., kfilemerge, ediff,
+   xdiff, mgdiff, kmerge, etc.  But I had trouble finding even one that I could
+   install cleanly on my linux box.  How hard would it be to write our
+   own?  Then we could unify the merge and diff functionality, it would be
+   more portable, etc.) 
+   ==> Other potential merge tools: 
+     idiff [BCP has a copy of the code for idiff that Norman sent.]  
+
+** Allow 'default.prf' in place of 'default' for profile names
+
+** [dlux@dlux.hu, Feb 2002] For some apps (e.g., some mail readers?),
+  putting temp files in the same directory as the file we're about to
+  overwrite is bad/dangerous. Some alternatives that we could
+  consider... 
+    -  Add a configuration option for temporary directory and notice the
+       user about the volume restrictions in the docs and then if the user
+       does not consider it, then we use a non-atomic (copy + unlink)
+       rename. In an ideal environment (where the user consider this
+       restriction), it makes possible to sync a maildir folder while it is
+       online!
+    -  An even better solution: One more temporary file step. If the user
+       sets the temporary directory, then we synchronize the files to that
+       directory, and if the file is downloaded/uploaded fully, then we move
+       it to a tempfile into the target directory (with .unison.tmp
+       extension) and then rename it into the final name.
+
+* Maybe we should write debugging and tracing information to stdout
+  instead of stderr?
+
+* URI pathname syntax
+  Why is the following command wrong?
+     unison -servercmd `which unison` /usr/local ssh://labrador/usr/local
+  It took me three tries and careful reading of the documentation to
+  figure it out.  I don't have any good suggestions here, other than
+  that I think the whole issue of relative vs absolute pathnames needs
+  serious thought.  I think the current interfaces do not work very
+  well.  One possibility that I will float is that you invent a special
+  character string to refer to the root of synchronization.
+  E.g., interpret ~ as $HOME in roots.
+  --
+  Also: we should add the file:// syntax to URIs...
+    file://C:/Necula    (C:/Necula on the local file system)
+    file:////share/subdir  (//share/subdir as from the point of view of
+                          the local file system)
+    unison://host///share/subdir
+  -- 
+  Should local roots in a profile be canonized?
+    Right now, we can have a relative root in the profile.  This
+    is going to be a problem if unison is started in a different
+    directory.
+
+* Now that we always keep fingerprints in the archive, we should
+  re-fingerprint "possibly updated" files during update detection.  (If we
+  do this, then we can completely eliminate false positives.  This, in
+  turn, will allow us to give a more demanding specification.)
+
+* At the moment, if Unison is interrupted during a non-atomic operation
+  on the file system, the user has to clean things up manually, following
+  the instructions in the the recovery log.  We should do that for them.
+  (This is actually a bit tricky, since we need to be careful about what
+  might happen if unison crashes during recovery, etc.  The best way to
+  accomplish this would be to write a general logging/recovery facility
+  in OCaml.)
+
+* Dealing with ACLs: Maybe this is what we should do actually.  We could
+  specify a user (and similarly a group) to unison.  It would be
+  interpreted in a special way: if a file is owned by this user, unison
+  will rather consider that the owner of the file is undefined.  So, when
+  a file owned by an unkown user is synchronized, the file owner is set
+  to the default user.  Then, on the next synchronizations, unison will
+  consider that the owner has not been propagated and try again.  [Should
+  be easy once the reconciler is made more modular]
+
+* The -terse preference should suppress more (in fact, almost all)
+  messages in the text ui.  See Dale Worley's message for a detailed
+  proposal. 
+
+[From Yan Seiner]
+  Can unison modify the (*nix) environment to show the
+  ip/name/some_other_id of the system making the connection?  This would
+  help tremendously.
+  For example, vtun does this:
+  ---
+  root      6319  0.0  0.6  1984  852 ?        S<   Aug27   0:37 vtund[s]:
+  bgsludge tun tun10
+  root      6324  0.0  0.6  1984  852 ?        S<   Aug27   2:00 vtund[s]:
+  cardinal tun tun0
+  root     17001  0.0  0.6  1984  848 ?        S<   Aug27   0:05 vtund[s]:
+  wtseller tun tun11
+  root     20100  0.0  0.6  1984  852 ?        S<   Aug28   0:02 vtund[s]:
+  cardridg tun tun1
+  ----
+  So I know I have four sessions, to each named machine, and I know
+  immediately who is connected and who is not.  If I have to kill a
+  session, I don't kill the wrong one.
+
+add a switch '-logerrors' that makes unison log error messages to a
+  separate file in addition to the standard logfile
+
+Dale Worley's suggestion for relocating archives:
+  >   You're right: it's not all that tricky.  So would you be happy if you
+  >   could run unison in a special mode like this
+  >       unison -relocate //old-host1//path1 //old-host2//path2 \
+  >                        //new-host1//path1 //new-host2//path2
+  >   (where all the hosts and paths are normalized) and it would move the
+  >   archives for you on both machines?
+  Actually, I think that what you want is for the user to specify the
+  old paths in *normalized* form and the new paths in *non-normalized*
+  form.  That is, unison uses the old paths literally as provided by the
+  user, but it applies the usual normalization algorithm to the new
+  paths.
+  This may sound strange, but I think that it's the Right Thing:
+  - There is no guarantee that the normalization algorithm, applied to
+    the old paths as the user used to specify them, normalizes to the
+    the normalized paths that are recorded in the archive.  Indeed,
+    there may no longer be *any* path which normalizes to the recorded
+    paths.
+  - The user can extract the normalized old paths from the second line
+    of the archive files.  This is clumsy, but reliable.  And we don't
+    intend the user to relocate an archive very often.
+  - But for the new paths, you want to normalize what the user supplies,
+    because he doesn't know in advance how Unison is going to normalize
+    the new paths, and may well specify them incorrectly.  That would
+    leave him with a relocated archive that he might not be able to use
+    at all.
+  You might want to put quotes around the pathnames in the second line
+  of the archive, since MS-Windows directory names can contain spaces,
+  etc.
+
+For safety...
+  - Add a preference 'maxdelete' taking an integer parameter, default 100
+    (or perhaps even less -- keeping it fairly small will help naive users
+    avoid shooting themselves in the foot).  A negative number means
+    skip this check (i.e., infinity).
+  - When the transport subsystem gets control (i.e., just after the user
+    says 'go' to the user interface, when not running in batch mode)
+    it first checks the number of files that are going to be deleted
+    (including all the contents of any directories that are marked for
+    deletion).  If it is more than maxdelete (and maxdelete is
+    positive), then...
+       - If we're in batch mode (batch=true), we halt without doing
+         anything.
+       - If we're not in batch mode, we display a warning message and
+         make the user confirm.  (If they do *not* confirm, it would be
+         nice to dump them back into the user interface again, but this
+         would require a little rewriting of our control flow.)
+  - Would also be nice to include a display in the UI someplace that says
+    how many files are to be deleted/changed/created plus how many bytes
+    to be transferred, and a warning signal (display in red or something)
+    if these exceed the current setting of maxdelete.
+
+Might be nice to provide an option that says "if you're propagating a
+  newly created directory and something goes wrong with something inside
+  it, just ignore the file that failed and keep going with the rest of
+  the directory."  [We probably don't want to continue in all cases (for
+  instance, when the disk is full)]
+
+Would be nice to be able to run unison in a special mode like this
+    unison -relocate //old-host1//path1 //old-host2//path2 \
+                     //new-host1//path1 //new-host2//path2
+  (where all the hosts and paths are canonized) and have it move the
+  archives for you on both machines?
+
+It would be nice if unison had a tool by which it could regenerate all
+  the MD5 sums and compare them to what it has stored, then produce a list
+  of files that are different.  I obviously cannot count on file size and
+  date in  this case; those may not have changed but the contents may be
+  corrupt.
+
+If the connection to the server goes away and then comes back up, it
+  would be nice if Unison would transparently re-establish it (at least,
+  when this makes sense!)
+
+If we synchronize a path whose parent doesn't exist in one replica, we'll
+  fail.  Might be nicer to create the parent path if needed.
+
+maybe put backup files somewhere other than in the replica (e.g. in
+  $HOME/tmp, or controlled by preference)
+
+Better documentation of the -backups flag, and a way to expire old backups
+
+Add a preference that makes the reconciler ignore prefs-only differences 
+  between files (not updating the archive, though -- just suppressing
+  the difference -- will this slow things down too much??  Maybe it needs
+  to happen in the update detector, before things are transmitted across
+  the network.)
+
+Perhaps we should interpret both / and the local separator as path
+  separators, i.e., under Windows / and \, under Mac / and :, and under
+  Unix just /.  For Windows this will be fine, since / is not allowed in
+  filenames.
+
+Maybe have an option to tell do not transfer toto.dvi if toto.tex exists (or
+  toto.ps if toto.dvi): something like
+          Ignore .dvi If .tex
+  ===> This is not a good idea -- would give different ignore results on
+  the two machines.  But maybe a variant would work:
+    - Have an option to execute a command if a given file exist like
+            Execute rm core If core
+            Execute make clean If Makefile
+
+We should put in a preference that forces Unison to do really safe update
+  detection (with fingerprinting), even on Unix systems.  (Maybe just for
+  some paths?)
+
+Maybe we should never emit a conflict for modtimes; instead, we just
+  propagate the largest one.
+
+USER INTERFACE
+==============
+
+* Would be nice to have a keystroke in the UI that means 'add the current
+  directory to the set of ignore patterns.'
+
+* In the text UI, during the transport phase, print each file being
+  transferred on *one* line, with an arrow to indicate which way (and
+  dropping the explicit indication of which host from and to).  The
+  logfile should be more explicit.
+
+* The unison gui currently displays a percentage completion in the lower right
+  corner.  I would find it comforting if it would also display an effective
+  bandwidth there, i.e., how many bits per second are flowing through the
+  transport layer?  I make this request because owing to a hardware 
+  catastrophe, I have just started using Unison through the phone lines, and
+  it seems to do nothing for a long period of time.  I don't know whether
+  to blame the cheap modem, the cheap ISP, or whether Unison simply isn't
+  telling me that bits are flowing through the wire.  (netstat -tn
+  suggests not much is happening, but I don't know if the results can
+  be trusted.)
+
+* Would it be hard to add "tool tips" to the buttons in the UI?
+  ==> Look for "tooltip" in examples/testgtk.ml.
+      The easiest way is with a toolbar, but you can also add tooltips to any
+      widget (cf lines 867 and after).
+
+* > On a line, I would like to have a description of the action to be taken in
+  > clear words: (e.g. will erase file on local or will copy from local to
+  > remote, etc.)
+  This might be a good use for "tool tips," if I knew how to make them work
+  using lablGTK.
+
+* After clicking "Create new profile" in the initial profile window and
+  giving a name for the new profile, it is confusing to get dumped back
+  into the profile window again and have to explicitly select the new
+  profile.  Would be better to skip this step and go straight into
+  filling in its fields.
+
+* Another usability issue in the text UI: , and < should mean the same to
+  unison. It would be nice if both had the same representation on-screen
+  (ie, show a "<" even if I typed a ","). Similarly for . and >.
+
+* The menu help for left/right arrow both said `transfer local to local'.
+  Not helpful.  The items in question are pathnames, which you might not
+  have to abbreviate.  To save space one might consider replacing any
+  common prefix, and also short prefixes that look like they might be
+  automounter goo, with an ellipsis.  Then show, e.g., 20 chars.  I'd
+  also be willing to name paths in my profile, e.g., replica flatcoat =
+  /home/cellar/nr replica cellar = /m/cellar60/nr This would be
+  especially attractive if my short names were meaningful on the command
+  line.
+
+* In the GTK user interface, it would be nice to be able to put up a window 
+  displaying the contents of the log file (and add log messages to it
+  dynamically as we're working).  Be careful, though: the log could get
+  large and we don't want this to be too slow. 
+
+* Could there be an option between -ui text and -ui graphic that when combine
+  with -batch and -auto would start in text mode, but pop up an interactive
+  graphic window when real conflicts happens.
+
+It would be nice to have a command in the GUI that would allow a single
+  path within the replica to be selected from a file dialog and
+  synchronized.
+
+The scroll bar is not usable during transport: every time a line changes
+  in the list, the display jumps to that line; if many small files are
+  transfered, it makes browsing in the list quite impossible...  
+
+[From Manuel Serrano] Would be nice to put the arrows in different
+  directions in different colors, so that, e.g., you could quickly scan the
+  list of changes and make sure that they are all in the same direction
+  ===> We tried this, but we couldn't find color combinations that did not
+  seem confusing.  (Two different shades of green?  Three? ...)  If we
+  really want this, probably the best is to put in some preferences for the
+  user to control the colors of all the arrows individually.
+
+Under Windows, convert filename to Unicode before printing them.
+
+Text mode user interface should be brought up to date with graphical
+  interface (it should prompt for profile selection, creation, root
+  entry, etc.; command characters should be the same; ...)
+
+Since the manual is pretty big, it would be nice if the on-line version
+  were accessible through cascading menus, allowing direct access to
+  individual subsections.  It would also be nice if it were formatted a
+  bit more attractively, using proportional-width fonts, etc.  (Does GTK
+  have something like an RTF widget?)
+
+If I have a change I look at the detail window. It would be nice to be
+  able to click on one of the lines there instead of pressing one of <-
+  or ->. For one thing in the detail window the relative position of the
+  two files is up and down and translating that to <- or -> is somewhat
+  unintuitive.
+
+Also, it would be nice to highlight in the detailed window the
+   elements that have changed.
+
+Make it possible to select a bunch of conflicts at the same time and
+  override them all together
+
+The UI window should display the current roots somewhere.
+
+There should be a -geometry command-line interface, following the usual X
+  conventions. 
+
+put in a command-line option that makes fatal errors exit right away
+  without displaying anything in the graphical UI (for debugging)
+
+Use the CTree widget to display the list of files
+  Add the ability to close and open directories in the UI.
+
+it would be nice to give a visual indication of which files are
+  particularly big, so that the user can tell where the transfer
+  operations may get slowed down.  Maybe a "size bar" showing the log
+  of the size (perhaps also color coded). 
+  ===> less urgent now because we can re-sort the update items by size
+
+Would it be hard to allow long-running transfers to be aborted?
+  For instance, the key "/" aborts the transmission of the selected file
+  OR:
+  Allow the user to terminate individual operations by clicking a
+  "cancel" button.  (This is not completely straightforward because
+  the whole program is single-threaded.  But it should be possible for
+  the low-level transport code in remote.ml to realize that the
+  operation has been aborted, clean up, and raise an exception.)
+
+It would be nice if the initial 'usage' message were not so long.  Maybe
+  we could split options into 'novice' and 'expert' ones, and only print
+  the novice ones (with an indication how to obtain the full expert
+  printout).
+
+> Show diff should behave as an emacs view-mode buffer and quit on a single 
+> 'q' in the window, or better quit even without focus be sent to the diff
+> window...
+The UI for the diff functionality needs some polishing.  (Also, it should
+be merged with the new "merge" functionality.)
+
+consider separating switches into 'ordinary' and 'expert' categories,
+  documented in separate sections
+
+would be nice to be able to "Proceed" just the selected line
+
+might be nice if the GUI would beep when finished syncing (needs to be
+  switch-selectable and off by default, naturally).  Is this easy with
+  LablGTK? 
+
+It would be nice to be able to STOP the GUI in the middle of propagating
+  changes.  
+
+
+TIDYING
+=======
+
+* Tidying
+    - divide files into subdirs
+
+* Go through the sources and make all fatal and transient error messages
+  as informative as possible 
+
+* remove ourlablgtk from the distribution
+
+Make the sources available by anonymous CVS (maybe from SourceForge)
+
+More documentation (especially in the interface files) is always nice.
+  In particular, there isn't enough documentation of the big picture.
+  It isn't clear how to fit together archives, servers, paths, roots, 
+  update detection, reconciliation, conflict resolution, or the user 
+  interface...
+
+Ocamlexc v1.0, the uncaught exceptions analyzer for Objective Caml is now
+  available from Pessaux's home page.  It would be fun to run it over the
+  Unison sources and see if it reveals any problems.
+
+
+LARGER EXTENSIONS
+=================
+
+* [From JMS] 
+  Some update detection speed improvement suggestions:
+  - Read the FFS (Fast Filesystem) paper for hints
+  - change the working directory instead of using absolute paths; this
+    avoids calls to the evil iname(?) facility in the kernel
+  - work breadth-first instead of depth first, to keep things in the
+    kernel cache
+
+* Rewrite recon.ml in a more modular way.  Probably, have for each property
+  a function taking the previous file state and the state on each
+  replicas, and returning in what the synchronization operation should be
+  (nothing, left, right, conflict); a combinator then merge the results.
+
+* Here's an idea for speeding up dealing with moved files: 
+  - we keep a log of informational hints about every file we look at,
+    containing at least its size and (if we have it) it's fingerprint
+    we just keep building up this information, never checking that
+    it's still up to date until we try to use it, at which time we do
+    double-check it with what's in the FS
+  - when we're about to copy a file, we first look whether we've seen
+    a file the same size on the receiving side.  If so, we see whether
+    one of these files has the same fingerprint as the one we're about
+    to copy, and if so we copy from the local one instead.
+
+It would be good to have a graphical interface allowing management and
+  editing of profiles, ignore patterns, etc.  Or, less ambitiously, just
+  have UI options for all command-line options (killServer) 
+
+How about a facility so that you can specify more than one pair of
+  file systems for a single invocation of Unison? This would be like
+  calling Unison multiple times, except that it would ask all the
+  questions at once.  Better yet, we could actually deal with the
+  multi-replica case.  (The latter is pretty hard.)
+
+What about invoking some user-specified operation on each file as it
+  is transferred?  Or in each directory where things have changed?
+  (This will require some careful design work.)
+
+Sync with archived directories (in tar / zip / gz format) would be
+  nice.  Seems a bit awkward to implement, though: at the moment there
+  are a lot of functions all over the place that investigate and
+  modify the file system, and these would all have to be replaced with
+  a layer that transparently parses, etc., etc.
+
+Consider using other authentication services (e.g. Kerberos) instead
+  of / in addition to ssh.
+
+What happens when we synchronize, then decide to ignore some existing file
+  What happens to the entry in the archive?  If mirroring, it may be
+  large, we probably want to delete it from the archive.
+
+File level synchronization (bookmarks, mailboxes)
+
+It might be nice to implement an (optional) safety check that detects
+  aliasing within a replica due to followed links (or hard links) and
+  complains if it finds any.  This should not be *too* expensive, since
+  we already know all the inode numbers.  (Even if it *is* expensive, it
+  might be useful to allow users to do this occasionally, if they are
+  paranoid.) 
+
+
+WINDOWS ISSUES
+==============
+
+Suggestion from Arnaud:
+  I have been using XP for a while and despite all the problems I have, there
+  is a very nice feature: being able to mount remote folders (nothing new), to
+  work with them offline and synchronize them. Really useful.
+  -- 
+  A good way to simulate this with Unison would be to package it as a shell
+  extension. From the desktop by clicking on the right button the user selects
+  "create new Unison mount point" and answers a few trivial question. And the
+  rest is done in the background. There are a lot of examples of shell
+  extensions and there is a really good book for O'Reilly about it.
+  -- 
+  A good project for a student :-)
+  -- 
+  PS: see http://www.simplythebest.net/shellenh.html for some examples.
+
+when typing ctrl-c in windows (dos-window in win98SE) when
+  unison is asking for conflicting updates there araises following
+  message (sorry for my bad translation to english):
+  "This program is closes because of a non-valid action. Contact the
+  manufactura if the error remains".                            
+
+NTFS seems to have two ways of setting a file read-only!  
+Comments from Karl Moerder:
+    Tonight I made some files read-only on my desktop at home. I did this by
+    setting global read and execute permissions (from the security tab of
+    properties). I ran Unison and it didn't notice the change. I then set
+    the permissions back to full control and then selected the read-only box
+    (from the general tab of properties). I ran Unison again and it noticed
+    and pushed the perms change to the server.
+    I understand that Windows is a bit squirrely here, but how do you decide
+    which permissions to look at? It seems like perhaps the ones on the
+    security tab would be more natural. (?)
+    --
+    I get similar results with both bits (they both cause read-only
+    behavior).
+    I believe that the origin of the two modes of setting is that the first
+    set is the old way of doing Windows protection (probably the interface
+    provided on FAT file systems) and the new way is the more Unix like way
+    (added for NTFS file systems). The new way has rwxdpo bits for each
+    group (and there can be several groups).
+
+
+###########################################################################
+###########################################################################
+###########################################################################
+
+OLD/DEAD STUFF
+==============
+
+We should handle more gracefully the file that cannot be synchronized
+(for instance, read-only files)
+propagating changes within a read-only directory is going to fail
+    similar problem propagating unreadable files
+  ==> this is not a bug.  The GUI should tell the user what happened in
+      a nice way, though
+
+It would be nice to have an option which takes .cvsignore
+files into account.
+
+Change "-socket 1234" to "-server -port 1234"??  (See msg from Karl Moerder)
+
+Pipe "diff" output through a pager in text mode
+
+Trevor's text mode bug:
+  I tried poking into the text interface problem and got some really
+  strange results.
+  It doesn't seem to work at all under the cygwin bash window or ms-dos
+  prompt.  E.g., typing unison -ui text simply returns, as does unison
+  -version (without printing anything).  The -dumbtty flag does not
+  help.
+  [There is no console associated to the program in this can.
+   Therefore, writing to stdout makes the program fail.]
+  However, it works perfectly under an emacs shell, where I've set
+  things up to use bash.
+  [I don't know why it works in this case.]
+  Maybe whoever else is using Windows can give it a try on their
+    machine?
+  And another:
+    When I launch unison (client side) under windows nt, it works great. It
+    also works fine under windows 98 when I use a standard dos command
+    shell. The trouble I'm having is when use cygwin and the bash shell
+    (B20.1) and launch the client from win98, I get an extra carriage return
+    in the stream. This CR means the default action for the first file diff
+    is taken. If the first conflict is a two way, the program correctly
+    requeries me becuase it won't accept a CR. 
+    I'm guessing that cygwin sends part of a cr/lf pair that other programs
+    absorb or something similar. Again I only see this under win98 using
+    cygnus...
+  Console management under Window: a console is needed for the text UI
+  and ssh. Creation of a console looks something like that:
+    int hCrt;
+    FILE *hf;
+    AllocConsole();
+    hCrt = _open_osfhandle((long) GetStdHandle(STD_OUTPUT_HANDLE), _O_TEXT);
+    hf = _fdopen( hCrt, "w" );
+    *stdout = *hf;
+    setvbuf( stdout, NULL, _IONBF, 0 ); 
+
+Can we have a way to toggle this after unison starts?  Sometimes my
+laptop has a fast link, sometimes a slow link.  Consider that when
+click-starting it isn't possible to add command-line args.  Having two
+different profiles is possible, but, seems more like an annoying
+duplication of all the ignore stuff etc.
+            
+The issue about where Unison should put its files if HOME is not set...
+  > The problem here seems to be that unison is trying to create
+  > DANGER.README in the directory specified by your HOME environment
+  > variable, which seems to be set to /, where you do not have write
+  > permission.  Does that make any sense?
+  > 
+    Yes it does, as I am running unison from inetd and it seems to default
+  to / as its home dir.  How about changing that default to /var/unison,
+  or almost anything else but /?  That would be nice....  (I know, I know,
+  all those win systems don't have a /var/ directory....)
+    Anyway, as long as the unison user has write permissions in /, unison
+  from inetd works like a charm.  Definitely NOT RECOMMENDED without a
+  strong firewall and VPN, though. <big grin>
+Trevor:
+    Maybe the DANGER.README should be in the unison directory, and we can
+    have a command line flag for specifying the directory.  If so, we
+    can't expect the user to notice it, we have to make sure unison
+    conveys the info and lets the user recover (no more manual deletion).
+
+Have a button for "Show ignores"
+
+put in a "paranoid" switch that makes the update detector ignore the archive
+
+Unison should perhaps confirm when I ask for a conflict to be resolved
+  by copying an old file over a new file.
+  ==> this is a good idea, but we're not sure exactly how the UI should
+      report this / ask for confirmation (pop up a window? display
+      something in red?)
+
+it would be nice if some *intermittent* status messages got displayed
+  when the remote host was working on detecting updates (but be careful
+  not to display too many -- this can slow things down a lot)
+  ===> This is not feasible
+
+[Trevor] Finish integrating the new syntax for replicas. There are some
+  important design decisions to make.
+  * Should we allow synchronization of two remote roots on the same
+    host? E.g., suppose we are host foo and we execute
+       unison //bar //bar:5050
+    The first root is our home directory on bar, and the second root
+    is the directory on bar that a unison server was started in. It
+    might be reasonable to do this. The technical problem is that the
+    Remote module maps HOSTS to network connections (sockets). Clearly
+    here we need one connection per root, so Remote should really map
+    ROOTS to network connections. But there are also a bunch of
+    functions that execute according to the host, and not the root:
+    processCommitLogOnHost, renameOnHost, propagatePrefsTo,
+    canonizeFspathOnHost, canonicalHostnameOnHost, killServerOnHost,
+    and maybe others. 
+
+Another diff issue:
+  If I run the diff, and I decide that the version with the < marker
+  is what I want to keep, I have to choose the > arrow in unison.
+  I find this fact very disconcerting.  Suggestion: use diff -c.  [Norman]
+  ==> Not a bug.  Norman can use diff -c if he prefers.
+
+Get rid of _ stuff in paths
+  proposal:
+    path <--> printpath    use name<->printname; insert "/" as separator
+    name <-> printname :
+      a/b   <->  <not possible>
+      a\b   <->  a=bkslash=b
+      a=b   <->  a=eq=b
+    name2unixname
+      a/b   <->  <not possible>
+      a\b   <->  a\b
+      a=b   <->  a=b
+    name2win32name
+      a/b   <->  <not possible>
+      a\b   <->  a/b
+      a=b   <->  a=b
+
+Here are some weird invocations we ought to detect.
+  * unison foo foo/bar
+  * unison foo foo
+  * unison //saul/foo //saul.cis.upenn.edu/foo
+All of these involve synchronizing overlapping trees.
+Another example would be two trees with nonoverlapping roots that
+overlap due to symbolic links somewhere inside the trees.
+  ==> should be part of the same sanity check at the beginning
+
+Encrypt socket connections.
+  ==> We've resisted doing this because it seems hard and we don't want
+  to do anything in this domain that we can't do well.  But it's worth
+  thinking about.
+
+"Hanrahan, Donald" <dhanrahan@logicon.com>
+  Also I find that even with the -batch option set, I am getting a
+  fair bit of output to the console rather than the log file.  I am
+  not sure if this is going to be a problem when running as a service
+  (probably not as long as it doesn't prompt for input).  Perhaps
+  someone knows.
+
+Can we detect and follow hard links?  E.g., consider a hard link to a
+file outside a root.  Right now we'll update the link to be a new
+file, the file outside will not be updated.  Maybe this is the right
+behavior; but we should put something into the docs.

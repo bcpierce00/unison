@@ -1,0 +1,307 @@
+%!PS-Adobe-2.0
+%%Creator: dot version gviz 1.7.3b (Mon Feb 26 14:10:22 EST 2001)
+%%For: (bcpierce) Benjamin C. Pierce
+%%Title: G
+%%Pages: (atend)
+%%BoundingBox: 36 36 577 62
+%%EndComments
+%%BeginProlog
+save
+/DotDict 200 dict def
+DotDict begin
+
+%%BeginResource: procset
+/coord-font-family /Times-Roman def
+/default-font-family /Times-Roman def
+/coordfont coord-font-family findfont 8 scalefont def
+
+/InvScaleFactor 1.0 def
+/set_scale {
+	dup 1 exch div /InvScaleFactor exch def
+	dup scale
+} bind def
+
+% styles
+/solid { } bind def
+/dashed { [9 InvScaleFactor mul dup ] 0 setdash } bind def
+/dotted { [1 InvScaleFactor mul 6 InvScaleFactor mul] 0 setdash } bind def
+/invis {/fill {newpath} def /stroke {newpath} def /show {pop newpath} def} bind def
+/bold { 2 setlinewidth } bind def
+/filled { } bind def
+/unfilled { } bind def
+/rounded { } bind def
+/diagonals { } bind def
+
+% hooks for setting color 
+/nodecolor { sethsbcolor } bind def
+/edgecolor { sethsbcolor } bind def
+/graphcolor { sethsbcolor } bind def
+/nopcolor {pop pop pop} bind def
+
+/beginpage {	% i j npages
+	/npages exch def
+	/j exch def
+	/i exch def
+	/str 10 string def
+	npages 1 gt {
+		gsave
+			coordfont setfont
+			0 0 moveto
+			(\() show i str cvs show (,) show j str cvs show (\)) show
+		grestore
+	} if
+} bind def
+
+/set_font {
+	findfont exch
+	scalefont setfont
+} def
+
+% draw aligned label in bounding box aligned to current point
+% alignfactor tells what fraction to place on the left.
+% -.5 is centered.
+/alignedtext {			% text labelwidth fontsz alignfactor
+	/alignfactor exch def
+	/fontsz exch def
+	/width exch def
+	/text exch def
+	gsave
+		% even if node or edge is dashed, don't paint text with dashes
+		[] 0 setdash
+		currentpoint newpath moveto
+		text stringwidth pop
+		alignfactor mul fontsz -.3 mul rmoveto
+		text show
+	grestore
+} def
+
+/boxprim {				% xcorner ycorner xsize ysize
+		4 2 roll
+		moveto
+		2 copy
+		exch 0 rlineto
+		0 exch rlineto
+		pop neg 0 rlineto
+		closepath
+} bind def
+
+/ellipse_path {
+	/ry exch def
+	/rx exch def
+	/y exch def
+	/x exch def
+	matrix currentmatrix
+	newpath
+	x y translate
+	rx ry scale
+	0 0 1 0 360 arc
+	setmatrix
+} bind def
+
+/endpage { showpage } bind def
+
+/layercolorseq
+	[	% layer color sequence - darkest to lightest
+		[0 0 0]
+		[.2 .8 .8]
+		[.4 .8 .8]
+		[.6 .8 .8]
+		[.8 .8 .8]
+	]
+def
+
+/setlayer {/maxlayer exch def /curlayer exch def
+	layercolorseq curlayer get
+	aload pop sethsbcolor
+	/nodecolor {nopcolor} def
+	/edgecolor {nopcolor} def
+	/graphcolor {nopcolor} def
+} bind def
+
+/onlayer { curlayer ne {invis} if } def
+
+/onlayers {
+	/myupper exch def
+	/mylower exch def
+	curlayer mylower lt
+	curlayer myupper gt
+	or
+	{invis} if
+} def
+
+/curlayer 0 def
+
+%%EndProlog
+%%BeginSetup
+14 default-font-family set_font
+1 setmiterlimit
+% /arrowlength 10 def
+% /arrowwidth 5 def
+
+% make sure pdfmark is harmless for PS-interpreters other than Distiller
+/pdfmark where {pop} {userdict /pdfmark /cleartomark load put} ifelse
+% make '<<' and '>>' safe on PS Level 1 devices
+/languagelevel where {pop languagelevel}{1} ifelse
+2 lt {
+    userdict (<<) cvn ([) cvn load put
+    userdict (>>) cvn ([) cvn load put
+} if
+
+%%EndResource
+%%EndSetup
+%%Page: 1 1
+%%PageBoundingBox: 36 36 577 62
+%%PageOrientation: Portrait
+gsave
+35 35 542 27 boxprim clip newpath
+36 36 translate
+0 0 1 beginpage
+0.4847 set_scale
+0 0 translate 0 rotate
+[ /CropBox [36 36 577 62] /PAGES pdfmark
+0.000 0.000 0.000 graphcolor
+14.00 /Times-Roman set_font
+
+%	Fileinfo
+gsave 10 dict begin
+32 26 32 18 ellipse_path
+stroke
+gsave 10 dict begin
+32 27 moveto (Fileinfo) 44 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Props
+gsave 10 dict begin
+109 26 27 18 ellipse_path
+stroke
+gsave 10 dict begin
+109 27 moveto (Props) 31 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Fspath
+gsave 10 dict begin
+183 26 29 18 ellipse_path
+stroke
+gsave 10 dict begin
+183 27 moveto (Fspath) 37 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Os
+gsave 10 dict begin
+257 26 27 18 ellipse_path
+stroke
+gsave 10 dict begin
+257 27 moveto (Os) 15 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Path
+gsave 10 dict begin
+329 26 27 18 ellipse_path
+stroke
+gsave 10 dict begin
+329 27 moveto (Path) 24 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Uitext
+gsave 10 dict begin
+402 26 28 18 ellipse_path
+stroke
+gsave 10 dict begin
+402 27 moveto (Uitext) 35 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Uigtk
+gsave 10 dict begin
+475 26 27 18 ellipse_path
+stroke
+gsave 10 dict begin
+475 27 moveto (Uigtk) 31 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Recon
+gsave 10 dict begin
+548 26 28 18 ellipse_path
+stroke
+gsave 10 dict begin
+548 27 moveto (Recon) 35 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Update
+gsave 10 dict begin
+624 26 30 18 ellipse_path
+stroke
+gsave 10 dict begin
+624 27 moveto (Update) 40 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Transport
+gsave 10 dict begin
+709 26 37 18 ellipse_path
+stroke
+gsave 10 dict begin
+709 27 moveto (Transport) 54 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Files
+gsave 10 dict begin
+791 26 27 18 ellipse_path
+stroke
+gsave 10 dict begin
+791 27 moveto (Files) 27 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Tree
+gsave 10 dict begin
+863 26 27 18 ellipse_path
+stroke
+gsave 10 dict begin
+863 27 moveto (Tree) 25 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Safelist
+gsave 10 dict begin
+939 26 31 18 ellipse_path
+stroke
+gsave 10 dict begin
+939 27 moveto (Safelist) 41 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Arg
+gsave 10 dict begin
+1015 26 27 18 ellipse_path
+stroke
+gsave 10 dict begin
+1015 27 moveto (Arg) 21 14.00 -0.50 alignedtext
+end grestore
+end grestore
+
+%	Prefs
+gsave 10 dict begin
+1087 26 27 18 ellipse_path
+stroke
+gsave 10 dict begin
+1087 27 moveto (Prefs) 28 14.00 -0.50 alignedtext
+end grestore
+end grestore
+endpage
+grestore
+%%PageTrailer
+%%EndPage: 1
+%%Trailer
+%%Pages: 1
+end
+restore
+%%EOF

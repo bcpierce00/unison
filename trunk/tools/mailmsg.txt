@@ -1,0 +1,3 @@
+About to mail release message to alpha-testers...
+
+Edit mail.tmp if you like, then press OK.
