@@ -98,6 +98,9 @@ extern value Callback_checkexn(value,value);
     case '+':
         [self setDirection:"unisonRiForceNewer"];
         break;
+    case 'm':
+        [self setDirection:"unisonRiSetMerge"];
+        break;
     default:
         NSLog(@"ReconItem.doAction : unknown action");
         break;

@@ -90,6 +90,7 @@
                 ignoreName = id; 
                 ignorePath = id; 
                 leaveAlone = id; 
+                merge = id; 
                 revert = id; 
                 selectConflicts = id; 
             }; 
