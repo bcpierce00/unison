@@ -174,11 +174,8 @@ else
 endif
 
 # NOTE: the OCAMLLIBDIR is not getting passed correctly?
-macexecutable: $(NAME)-blob.o uimac/English.lproj
+macexecutable: $(NAME)-blob.o
 	(cd uimac; xcodebuild OCAMLLIBDIR="$(OCAMLLIBDIR)")
-
-uimac/English.lproj: uimac/English1.tgz
-	(cd uimac; tar xfvz English1.tgz)
 
 # OCaml objects for the bytecode version
 # File extensions will be substituted for the native code version
