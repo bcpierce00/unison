@@ -62,6 +62,7 @@ int main(int argc, const char *argv[])
     /* Check for invocations that don't start up the gui */
     for (i=1; i<argc; i++) {
         if (!strcmp(argv[i],"-doc") ||
+            !strcmp(argv[i],"-help") ||
             !strcmp(argv[i],"-version") ||
             !strcmp(argv[i],"-server") ||
             !strcmp(argv[i],"-socket") ||
@@ -75,9 +76,11 @@ int main(int argc, const char *argv[])
                 value *f = caml_named_value("unisonExnInfo");
                 char *m = String_val(caml_callback(*f,Extract_exception(e)));
                 NSLog(@"Uncaught exception: %s", m);
+                exit(1);
             }
             [pool release];
-            exit(0);
+            /* If we get here without exiting first, the non GUI startup detected a
+               -ui graphic or command-line profile, and we should in fact start the GUI. */
         }
     }
     

@@ -33,6 +33,7 @@
             CLASS = MyController; 
             LANGUAGE = ObjC; 
             OUTLETS = {
+                ConnectingView = NSView; 
                 aboutWindow = NSWindow; 
                 chooseProfileView = NSView; 
                 detailsTextView = NSTextView; 

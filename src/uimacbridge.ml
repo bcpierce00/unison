@@ -3,10 +3,12 @@
 open Common;;
 open Lwt;;
 
+let debug = Trace.debug "startup"
+
 let unisonNonGuiStartup() = begin
   (* If there's no GUI, don't print progress in the GUI *)
   Uutil.setProgressPrinter (fun _ _ _ -> ());
-  Main.nonGuiStartup()
+  Main.nonGuiStartup()    (* If this returns the GUI should be started *)
 end;;
 Callback.register "unisonNonGuiStartup" unisonNonGuiStartup;;
 
@@ -51,7 +53,14 @@ Callback.register "unisonGetVersion" unisonGetVersion;;
 
 (* snippets from Uicommon, duplicated for now *)
 (* First initialization sequence *)
+(* Returns a string option: command line profile, if any *)
 let unisonInit0() =
+  ignore (Gc.set {(Gc.get ()) with Gc.max_overhead = 150});
+  (* Install an appropriate function for finding preference files.  (We put
+     this in Util just because the Prefs module lives below the Os module in the
+     dependency hierarchy, so Prefs can't call Os directly.) *)
+  Util.supplyFileInUnisonDirFn 
+    (fun n -> Fspath.toString (Os.fileInUnisonDir(n)));
   (* Display status in GUI instead of on stderr *)
   let formatStatus major minor = (Util.padto 30 (major ^ "  ")) ^ minor in
   Trace.messageDisplayer := displayStatus;
@@ -61,15 +70,47 @@ let unisonInit0() =
   Uutil.setProgressPrinter showProgress;
   (* Make sure we have a directory for archives and profiles *)
   Os.createUnisonDir();
-  (* Install an appropriate function for finding preference files.  (We put
-     this in Util just because the Prefs module lives below the Os module in the
-     dependency hierarchy, so Prefs can't call Os directly.) *)
-  Util.supplyFileInUnisonDirFn 
-    (fun n -> Fspath.toString (Os.fileInUnisonDir(n)));
+  (* Extract any command line profile or roots *)
+  let clprofile = ref None in
+  begin
+    try
+      let args = Prefs.scanCmdLine Uicommon.usageMsg in
+      match Util.StringMap.find "rest" args with
+        [] -> ()
+      | [profile] -> clprofile := Some profile
+      | [root1;root2] -> Globals.setRawRoots [root1;root2]
+      | [root1;root2;profile] ->
+          Globals.setRawRoots [root1;root2];
+          clprofile := Some profile
+      | _ ->
+          (Printf.eprintf
+             "%s was invoked incorrectly (too many roots)" Uutil.myName;
+           exit 1)
+    with Not_found -> ()
+  end;
   (* Print header for debugging output *)
-  Trace.debug "" (fun() ->
+  debug (fun() ->
     Printf.eprintf "%s, version %s\n\n" Uutil.myName Uutil.myVersion);
-  Trace.debug "" (fun() -> Util.msg "initializing UI")
+  debug (fun() -> Util.msg "initializing UI");
+  debug (fun () ->
+    (match !clprofile with
+      None -> Util.msg "No profile given on command line"
+    | Some s -> Printf.eprintf "Profile '%s' given on command line" s);
+    (match Globals.rawRoots() with
+      [] -> Util.msg "No roots given on command line"
+    | [root1;root2] ->
+        Printf.eprintf "Roots '%s' and '%s' given on command line"
+          root1 root2
+    | _ -> assert false));
+  begin match !clprofile with
+    None -> ()
+  | Some n ->
+      let f = Prefs.profilePathname n in
+      if not(Sys.file_exists f)
+      then (Printf.eprintf "Profile %s does not exist" f;
+            exit 1)
+  end;
+  !clprofile
 ;;
 Callback.register "unisonInit0" unisonInit0;;
 

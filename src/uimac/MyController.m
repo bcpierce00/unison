@@ -43,42 +43,6 @@ static MyController *me; // needed by reloadTable and displayStatus, below
     [mainWindow makeFirstResponder:[profileController tableView]]; // profiles get keyboard input
 }
 
-- (void)awakeFromNib
-{
-    me = self;
-    // call some ocaml init code.  FIX: Does this occur before ProfileController awakeFromNib?
-    value *f = NULL;
-    f = caml_named_value("unisonInit0");
-    Callback_checkexn(*f, Val_unit);
-    caml_reconItems = preconn = Val_int(0); // caml []
-    caml_register_global_root(&caml_reconItems);
-    caml_register_global_root(&preconn);
-    
-    // Initialize locals and set up the first window the user will see
-    chooseProfileSize = [chooseProfileView frame].size;
-    updatesSize = [updatesView frame].size;
-    preferencesSize = [preferencesView frame].size;
-
-    // Double clicking in the profile list will open the profile
-    [[profileController tableView] setTarget:self];
-    [[profileController tableView] setDoubleAction:@selector(openButton:)];
-
-    blankView = [[NSView alloc] init];
-    
-    // Set up the version string in the about box.  We use a custom
-    // about box just because PRCS doesn't seem capable of getting the
-    // version into the InfoPlist.strings file; otherwise we'd use the
-    // standard about box.
-    f = caml_named_value("unisonGetVersion");
-    [versionText setStringValue:
-		   [NSString stringWithCString:
-			       String_val(Callback_checkexn(*f, Val_unit))]];
-
-//    [mainWindow setContentSize:chooseProfileSize];
-//    [mainWindow setContentView:chooseProfileView];
-    [self chooseProfiles];
-}
-
 - (IBAction)createButton:(id)sender
 {
     [preferencesController reset];
@@ -162,8 +126,6 @@ static MyController *me; // needed by reloadTable and displayStatus, below
     [self clearDetails];
     [reconItems release];
     reconItems = nil;
-    [updatesText setStringValue:[NSString stringWithFormat:@"Synchronizing profile '%@'",
-                                          [profileController selected]]];
     [mainWindow setContentView:blankView];
     [self resizeWindowToSize:updatesSize];
     [mainWindow setContentView:updatesView];
@@ -178,16 +140,21 @@ static MyController *me; // needed by reloadTable and displayStatus, below
         toTarget:self withObject:nil];
 }
 
-- (IBAction)openButton:(id)sender
+- (void)connect:(value)profileName
 {
-    NSLog(@"Connecting...");
     // contact server, propagate prefs
-    value *f = NULL;
-    const char *s = [[profileController selected] cString];
-    value caml_s = caml_copy_string(s);
+    NSLog(@"Connecting...");
+
+    // Switch to ConnectingView
+    [mainWindow setContentView:blankView];
+    [self resizeWindowToSize:ConnectingSize];
+    [mainWindow setContentView:ConnectingView];
+    [ConnectingView setNeedsDisplay:YES]; // FIX: this doesn't seem to work fast enough
+
     // possibly slow -- need another thread?  Print "contacting server"
+    value *f = NULL;
     f = caml_named_value("unisonInit1");
-    preconn = Callback_checkexn(*f, caml_s);
+    preconn = Callback_checkexn(*f, profileName);
     if (preconn == Val_unit) {
         [self afterOpen]; // no prompting required
         return;
@@ -204,6 +171,17 @@ static MyController *me; // needed by reloadTable and displayStatus, below
         return;
     }
     [self raisePasswordWindow:[NSString stringWithCString:String_val(Field(prompt,0))]];
+}
+
+- (IBAction)openButton:(id)sender
+{
+    NSString *profile = [profileController selected];
+    [updatesText setStringValue:[NSString stringWithFormat:@"Synchronizing profile '%@'",
+                                          profile]];
+    const char *s = [profile cString];
+    value caml_s = caml_copy_string(s);
+    [self connect:caml_s];
+    return;
 }
 
 - (IBAction)restartButton:(id)sender
@@ -352,7 +330,8 @@ CAMLprim value reloadTable(value row)
     if ([sender isEqualTo:passwordCancelButton]) {
         value *f = caml_named_value("openConnectionCancel");
         Callback_checkexn(*f, preconn);
-       return;
+        [self chooseProfiles];
+        return;
     }
     NSString *password = [passwordText stringValue];
     value *f = NULL;
@@ -408,6 +387,56 @@ CAMLprim value displayStatus(value s)
     [me statusTextSet:[NSString stringWithCString:String_val(s)]];
 //    NSLog(@"dS: %s",String_val(s));
     return Val_unit;
+}
+
+- (void)awakeFromNib
+{
+    /**** Initialize locals ****/
+    me = self;
+    chooseProfileSize = [chooseProfileView frame].size;
+    updatesSize = [updatesView frame].size;
+    preferencesSize = [preferencesView frame].size;
+    ConnectingSize = [ConnectingView frame].size;
+    blankView = [[NSView alloc] init];
+    /* Double clicking in the profile list will open the profile */
+    [[profileController tableView] setTarget:self];
+    [[profileController tableView] setDoubleAction:@selector(openButton:)];
+    /* Set up the version string in the about box.  We use a custom
+       about box just because PRCS doesn't seem capable of getting the
+       version into the InfoPlist.strings file; otherwise we'd use the
+       standard about box. */
+    value *f = NULL;
+    f = caml_named_value("unisonGetVersion");
+    [versionText setStringValue:
+		   [NSString stringWithCString:
+			       String_val(Callback_checkexn(*f, Val_unit))]];
+
+    /* Ocaml initialization */
+    // FIX: Does this occur before ProfileController awakeFromNib?
+    caml_reconItems = preconn = Val_int(0);
+    caml_register_global_root(&caml_reconItems);
+    caml_register_global_root(&preconn);
+
+    /* Command-line processing */
+    f = caml_named_value("unisonInit0");
+    value clprofile = Callback_checkexn(*f, Val_unit);
+
+    /* Set up the first window the user will see */
+    if (Is_block(clprofile)) {
+      /* A profile name was given on the command line */
+      value caml_profile = Field(clprofile,0);
+      NSString *profile = [NSString stringWithCString:String_val(caml_profile)];
+      [updatesText setStringValue:[NSString stringWithFormat:@"Synchronizing profile '%@'",
+                                            profile]];
+      /* If invoked from terminal we need to bring the app to the front */
+      [NSApp activateIgnoringOtherApps:YES];
+
+      /* Start the connection */
+      [self connect:caml_profile];
+    }
+    else
+      /* Bring up the dialog to choose a profile */
+      [self chooseProfiles];
 }
 
 @end
