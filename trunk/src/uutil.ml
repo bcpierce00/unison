@@ -6,13 +6,9 @@
 (*                      Unison name and version                              *)
 (*****************************************************************************)
 
-(* $Format: "let myName = \"$Project$\""$ *)
-let myName = "unison"
+let myName = ProjectInfo.myName
 
-let versionprefix = "2."
-
-(* $Format: "let myVersion = versionprefix ^ \"$ProjectVersion$\""$ *)
-let myVersion = versionprefix ^ "10.12"
+let myVersion = ProjectInfo.myVersion
 
 (*****************************************************************************)
 (*                             HASHING                                       *)

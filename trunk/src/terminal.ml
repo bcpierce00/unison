@@ -32,7 +32,7 @@ Host key verification failed." (to stderr)
 *)
 
 let passwordRx =
-  Rx.rx ".*'s password: "
+  Rx.rx ".*assword: "
 let authenticityRx =
   Rx.rx "The authenticity of host .* continue connecting \\(yes/no\\)\\? "
 let password s = Rx.match_string passwordRx s
@@ -74,7 +74,7 @@ let ptySlaveOpen = function
         with _ -> None in
       (try Unix.close fdMaster with Unix.Unix_error(_,_,_) -> ());
       slave
-  
+
 (*
 let printTermAttrs fd = (* for debugging *)
   let tio = Unix.tcgetattr fd in
@@ -211,7 +211,7 @@ let termInteract fdTerm fdInput callBack =
     if not(List.exists (fun x -> x=fdTerm) ready) then return();
     (* there's input waiting on the terminal *)
     (* read a line of input *)
-    let msg = 
+    let msg =
       let n = 1024 in (* Assume length of input from terminal < n *)
       let s = String.create n in
       let howmany =
@@ -225,9 +225,9 @@ let termInteract fdTerm fdInput callBack =
     (* return if the terminal has been closed *)
     if len = 0 then return();
     (* if the input is a CR-LF, ignore and keep waiting *)
-    if len = 2 && msg.[0] = '\r' && msg.[1] = '\n' then 
+    if len = 2 && msg.[0] = '\r' && msg.[1] = '\n' then
       ()
-    else 
+    else
       let response = callBack msg in
       (* FIX: should loop on write, watch for EINTR, etc. *)
       ignore(Unix.write fdTerm (response ^ "\n") 0 (String.length response + 1))
@@ -242,7 +242,7 @@ let rec termInput fdTerm fdInput =
   if not(List.exists (fun x -> x=fdTerm) ready) then None else
   (* there's input waiting on the terminal *)
   (* read a line of input *)
-  let msg = 
+  let msg =
     let n = 1024 in (* Assume length of input from terminal < n *)
     let s = String.create n in
     let howmany =
@@ -254,6 +254,6 @@ let rec termInput fdTerm fdInput =
     String.sub s 0 howmany in
   let len = String.length msg in
   if len = 0 then None (* the terminal has been closed *)
-  else if len = 2 && msg.[0] = '\r' && msg.[1] = '\n' then 
+  else if len = 2 && msg.[0] = '\r' && msg.[1] = '\n' then
     termInput fdTerm fdInput
   else Some msg

@@ -2,11 +2,12 @@
 
 all:: unison-manual.html
 
-include ../src/Makefile.OCaml
+-include ../src/Makefile.ProjectInfo
+include ../src/Makefile.Ocaml
 
 STRINGS = ../icons/Unison.gif
 SOURCES = unison-manual.tex changes.tex \
-          local.tex short.tex postproc$(EXEC_EXT) Makefile 
+          local.tex short.tex postproc$(EXEC_EXT) Makefile
 
 # ifeq ($(shell ls /usr/local/bin/hevea), /usr/local/bin/hevea)
 #   HEVEAPATH = /usr/local/bin/hevea
@@ -18,7 +19,7 @@ ifneq ($(HEVEAPATH),)
   HEVEA=true
 endif
 
-unison-manual.html: $(SOURCES) 
+unison-manual.html: $(SOURCES)
 	$(MAKE) real
 
 # If the .aux file is missing, do 'make once' an extra time to make
@@ -45,15 +46,15 @@ endif
 	latex unison-manual.tex
 	latex unison-manual.tex
 	cp unison-manual.dvi temp.dvi
-	dvips -t letter -o unison-manual.ps unison-manual.dvi 
+	dvips -t letter -o unison-manual.ps unison-manual.dvi
 	dvips -t letter -z -Ppdf -G0 -D600 unison-manual.dvi -o junk.ps
-	ps2pdf junk.ps unison-manual.pdf 
+	ps2pdf junk.ps unison-manual.pdf
 ifdef HEVEA
 	hevea unison-manual.tex
 endif
 
 # Index file for web dir
-index.html: index.tex local.tex short.tex Makefile 
+index.html: index.tex local.tex short.tex Makefile
 	printf '$(TEXDIRECTIVES)\\draftfalse' > texdirectives.tex
 	hevea index.tex
 
@@ -68,11 +69,11 @@ faq.html: faq.tex local.tex Makefile faqbody.tex
 	hevea faq.tex
 
 # Listing of preferences
-prefs.tmp: 
+prefs.tmp:
 	-(if [ -f ../src/$(NAME)$(EXEC_EXT) ]; then \
            ../src/unison -help > prefs.tmp; \
            fi)
-prefsdocs.tmp: 
+prefsdocs.tmp:
 	-(if [ -f ../src/$(NAME)$(EXEC_EXT) ]; then \
            ../src/unison -prefsdocs 2> prefsdocs.tmp; \
            fi)
@@ -85,14 +86,20 @@ postproc$(EXEC_EXT) : postproc.ml
 	ocamlopt -o $@ $^
 
 %.ml : %.mll
-	-rm -f $@
+	-$(RM) $@
 	ocamllex $<
 
 clean::
-	$(RM) -rf \
+	$(RM) -r \
 	   *.dtxt *.aux *.log *.out \
 	   texdirectives.tex \
 	   junk.* *.htoc *.toc *.bak \
 	   docs docs.exe temp.dvi temp.html unison-manual.html \
-	   postproc postproc.exe postproc.ml obsolete
+	   postproc postproc.exe postproc.ml obsolete \
+	   unison-manual.dvi unison-manual.ps unison-manual.pdf
 
+../src/Makefile.ProjectInfo: ../src/mkProjectInfo
+	../src/mkProjectInfo > $@
+
+../src/mkProjectInfo: ../src/mkProjectInfo.ml
+	ocamlc -o $@ $^

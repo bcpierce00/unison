@@ -1,4 +1,4 @@
-open Printf 
+open Printf
 
 let main() = begin
 
@@ -11,7 +11,7 @@ fprintf ml "(* DO NOT MODIFY.\n\
 let rec findFirstSNIP ch =
   try
     let l = input_line ch in
-    if l <> "----SNIP----" then findFirstSNIP ch 
+    if l <> "----SNIP----" then findFirstSNIP ch
   with
     End_of_file ->
       (Printf.printf "File does not contain ----SNIP----\n";
@@ -40,26 +40,26 @@ let prsection ch =
       fprintf ml "\\n\\\n      ";
       loop()
     end in
-  (try loop() with End_of_file -> ());  
+  (try loop() with End_of_file -> ());
   fprintf ml "\"))\n::\n" in
 
-let prmanual() = 
+let prmanual() =
   fprintf ml "let docs =\n";
   let ch = open_in "../doc/unison-manual.dtxt" in
   findFirstSNIP ch;
   try
     while true do prsection ch done
   with End_of_file -> ();
-  close_in ch;  
+  close_in ch;
   fprintf ml "    [];;\n\n" in
 
-(* $Format: "let myName = \"$Project$\" in"$ *)
+(* FIX: this should be derived automatically from projectInfo.ml *)
 let myName = "unison" in
 
 (* Docs *)
 prmanual ();
 
-(* Clean up *)  
+(* Clean up *)
 close_out ml;
 
 end (* of main *);;

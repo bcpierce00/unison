@@ -1,3 +1,21 @@
+CHANGES FROM VERSION 2.11.0
+
+* Removed PRCS-specific code; many make targets are simply removed.
+  In particular, make populate is gone, so you have to use svn add
+  and svn delete to change the files in the repository.
+
+* To check in a new version, you should still do make checkin.  This
+  requires you to create a logmsg file containing a message like the one
+  that used to go in New-Version-Log in unison.prj.  Make checkin will
+  delete this file, to avoid messages being reused.
+
+* Removed tools/grabnews.mll.
+
+* Change in src/terminal.ml to recognize password prompts in some
+  newer versions of ssh.
+
+
+-------------------------------
 CHANGES FROM VERSION 2.10.11
 
 * Small fix to Jerome's recent round of changes for OSX metadata synchronization.  

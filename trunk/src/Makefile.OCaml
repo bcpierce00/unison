@@ -3,30 +3,12 @@
 ####################################################################
 
 ####################################################################
-### Project infos
-
-# Project name
-# $Format: "NAME=$Project$"$
-NAME=unison
-
-# When this changes, be sure to change the similar definitions in 
-#    doc/local.tex 
-#    src/util.ml
-VERSIONPREFIX=2.
-
-# $Format: "MAJORVERSION=$(VERSIONPREFIX)$ProjectMajorVersion$"$
-MAJORVERSION=$(VERSIONPREFIX)10
-
-# $Format: "VERSION=$(VERSIONPREFIX)$ProjectVersion$"$
-VERSION=$(VERSIONPREFIX)10.12
-
-####################################################################
 ### Try to automatically guess OS
 
 ifeq (${OSCOMP},cygwingnuc) # Define this if compiling with Cygwin GNU C
   OSARCH=win32gnuc
   ETAGS=c:/emacs/bin/etags
-  buildexecutable:: win32rc/unison.res.lib   
+  buildexecutable:: win32rc/unison.res.lib
 else
 # Win32 system
 ifeq (${OSTYPE},cygwin32) # Cygwin Beta 19
@@ -62,14 +44,14 @@ endif
 # get rid of it...
 OCAMLLIBDIR=$(shell ocamlc -v | tail -1 | sed -e 's/.* //g' | sed -e 's/\\/\//g' | sed -e 's///g')
 
-# User interface style: 
+# User interface style:
 #   Legal values are
 #     UISTYLE=text
 #     UISTYLE=gtk
 #     UISTYLE=gtk2
 #     UISTYLE=mac
 #
-# This should be set to an appropriate value automatically, depending 
+# This should be set to an appropriate value automatically, depending
 # on whether the lablgtk library is available
 LABLGTKLIB=$(OCAMLLIBDIR)/lablgtk
 LABLGTK2LIB=$(OCAMLLIBDIR)/lablgtk2
@@ -86,7 +68,7 @@ else
     endif
 endif
 endif
-buildexecutable:: 
+buildexecutable::
 	@echo UISTYLE = $(UISTYLE)
 
 ####################################################################
@@ -106,7 +88,7 @@ ifeq ($(OSARCH),win32)
 #  CLIBS+=-cclib -lunix -cclib -lstr  # If compiling with gcc
   STATICLIBS+=-cclib win32rc/unison.res \
               -cclib -lunix -cclib -lstr
-  buildexecutable:: 
+  buildexecutable::
 	@echo Building for Windows
 else
   # Unix system, or Cygwin with GNU C compiler
@@ -125,17 +107,24 @@ else
         CLIBS+=-cclib -lutil
       endif
     endif
-    buildexecutable:: 
+    buildexecutable::
 	@echo Building for Unix
   endif
 endif
 
-buildexecutable:: 
+buildexecutable::
 	@echo NATIVE = $(NATIVE)
 	@echo THREADS = $(THREADS)
 	@echo STATIC = $(STATIC)
 	@echo OSTYPE = $(OSTYPE)
 	@echo OSARCH = $(OSARCH)
+
+ubase/projectInfo.ml: mkProjectInfo
+	echo 'let myName = "'$(NAME)'";;' > $@
+	echo 'let myVersion = "'$(VERSION)'";;' >> $@
+
+clean::
+	$(RM) ubase/projectInfo.ml
 
 ####################################################################
 ### fix for OCaml API change
@@ -162,7 +151,7 @@ endif
 endif
 
 clean::
-	rm -f ubase/uprintf.ml
+	$(RM) ubase/uprintf.ml
 
 ####################################################################
 ### Unison objects and libraries
@@ -181,7 +170,7 @@ macexecutable: $(NAME)-blob.o
 # File extensions will be substituted for the native code version
 
 OCAMLOBJS += \
-          ubase/myMap.cmo ubase/safelist.cmo ubase/uprintf.cmo \
+          ubase/projectInfo.cmo ubase/myMap.cmo ubase/safelist.cmo ubase/uprintf.cmo \
           ubase/util.cmo ubase/rx.cmo ubase/uarg.cmo \
           ubase/prefs.cmo ubase/trace.cmo \
           \
@@ -235,7 +224,7 @@ STDLIBDIR=/usr/lib
 X11LIBDIR=$(STDLIBDIR)
 GUILIBDIR=$(STDLIBDIR)
 
-# Arch-specific directories 
+# Arch-specific directories
 ifeq ($(OSARCH), win32)
   GUILIBDIR=$(OCAMLLIBDIR)/guilib
 endif
@@ -258,7 +247,7 @@ ifeq ($(shell hostname), raptor.research.att.com)
   X11LIBDIR=/usr/lib32
 endif
 
-# Patch to make a Windows GUI version come up with no 
+# Patch to make a Windows GUI version come up with no
 # console when click-started
 #  ifeq ($(OSARCH), win32)
 #    COBJS+=winmain.c
@@ -271,7 +260,7 @@ ifeq ($(UISTYLE), gtk)
   CAMLFLAGS+=-I $(OCAMLLIBDIR)/lablgtk
   OCAMLOBJS+=pixmaps.cmo uigtk.cmo linkgtk.cmo
   OCAMLLIBS+=lablgtk.cma
-  OCAMLLIBS+=str.cma	
+  OCAMLLIBS+=str.cma
   ifeq ($(OSARCH), win32)
     WINSYSLIBS=user32.lib advapi32.lib wsock32.lib gdi32.lib \
                imm32.lib shell32.lib ole32.lib uuid.lib
@@ -320,14 +309,14 @@ ifeq ($(UISTYLE), gtk)
 endif
 
 # Gtk2 GUI
-# stse 2003-0521 FIXME for win32: 
+# stse 2003-0521 FIXME for win32:
 # how to specify versions in GUILIBDIR? glib-2.2.1 instead of glib-1.3?
 ifeq ($(UISTYLE), gtk2)
   GUILIBDIR=$(OCAMLLIBDIR)/lablgtk2/cclibs
   CAMLFLAGS+=-I $(OCAMLLIBDIR)/lablgtk2
   OCAMLOBJS+=pixmaps.cmo uigtk2.cmo linkgtk2.cmo
   OCAMLLIBS+=lablgtk.cma
-  OCAMLLIBS+=str.cma	
+  OCAMLLIBS+=str.cma
   ifeq ($(OSARCH), win32)
     WINSYSLIBS=user32.lib advapi32.lib wsock32.lib gdi32.lib \
                imm32.lib shell32.lib ole32.lib uuid.lib
@@ -398,7 +387,7 @@ ifeq ($(STATIC), true)
 endif
 
 # Tony Shepherd told us that he had to use the following to get the GTK
-# version to build on Solaris 8/8 
+# version to build on Solaris 8/8
 #
 #         ifeq ($(OSARCH), solaris)
 #             STATICLIBS+=-cclib -llablgtk \
@@ -415,7 +404,7 @@ endif
 #   SUNWGtku respectively and glib and gmodule in SFWglib and SUNWGlib
 #   respectively, but only in .so format so are useless for creating a
 #   static bimary:(.
-#   
+#
 #   However, the .a libraries are part of the evaluation copy of Gnome 1.4
 #   that comes with solaris 8, so I used those to build.
 
@@ -458,9 +447,9 @@ endif
 ifeq ($(DEBUGGING), false)
   ifneq ($(OSARCH), win32)
     ifneq ($(OSARCH), osx)
-      # Strip the binary (does not work with MS compiler; might not work 
+      # Strip the binary (does not work with MS compiler; might not work
       # under OSX)
-      CFLAGS+=-cclib -Wl,-s 
+      CFLAGS+=-cclib -Wl,-s
     endif
   endif
 endif
@@ -502,7 +491,7 @@ win32rc/unison.res.lib: win32rc/unison.res
 	windres win32rc/unison.res win32rc/unison.res.lib
 
 %.ml: %.mll
-	-$(RM) -f $@
+	-$(RM) $@
 	ocamllex $<
 
 %.cmi : %.mli
@@ -540,10 +529,10 @@ $(NAME)-blob.o: $(CAMLOBJS) $(COBJS)
 ### Misc
 
 clean::
-	-$(RM) -rf *.cmi *.cmo *.cmx *.cma *.cmxa TAGS tags
-	-$(RM) -rf *.o core gmon.out *~ .*~
-	-$(RM) -rf *.obj *.lib *.exp
-	-$(RM) -rf *.tmp *.bak?.tmp .*.bak?.tmp
+	-$(RM) -r *.cmi *.cmo *.cmx *.cma *.cmxa TAGS tags
+	-$(RM) -r *.o core gmon.out *~ .*~
+	-$(RM) -r *.obj *.lib *.exp
+	-$(RM) -r *.tmp *.bak?.tmp .*.bak?.tmp
 
 paths:
 	@echo PATH = $(PATH)

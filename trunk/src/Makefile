@@ -29,23 +29,6 @@ THREADS=false
 ########################################################################
 #     (There should be no need to change anything from here on)       ##
 ########################################################################
-########################################################################
-
-## Miscellaneous developer-only switches
-DEBUGGING=true
-PROFILING=false
-STATIC=false
-
-########################################################################
-### Project name
-
-# $Format: "NAME=$Project$"$
-NAME=unison
-
-########################################################################
-### Compilation rules
-
-include Makefile.OCaml
 
 ######################################################################
 # Building installation instructions
@@ -56,6 +39,30 @@ all:: INSTALL
 
 INSTALL: $(NAME)$(EXEC_EXT)
 	./$(NAME) -doc install > INSTALL
+
+########################################################################
+## Miscellaneous developer-only switches
+DEBUGGING=true
+PROFILING=false
+STATIC=false
+
+# NAME and VERSION, automatically generated
+-include Makefile.ProjectInfo
+
+Makefile.ProjectInfo: mkProjectInfo
+	./mkProjectInfo > $@
+
+mkProjectInfo: mkProjectInfo.ml
+	ocamlc -o $@ $^
+
+clean::
+	$(RM) mkProjectInfo
+	$(RM) Makefile.ProjectInfo
+
+########################################################################
+### Compilation rules
+
+include Makefile.OCaml
 
 ######################################################################
 # Installation
