@@ -4,7 +4,7 @@
 let docs =
     ("about", ("About Unison", 
      "Unison File Synchronizer\n\
-      Version 2.10.12\n\
+      Version 2.12.0\n\
       \n\
       \032  Unison is a file-synchronization tool for Unix and Windows. It allows\n\
       \032  two replicas of a collection of files and directories to be stored on\n\
@@ -87,10 +87,10 @@ let docs =
       \n\
       Mailing Lists:\n\
       \n\
-      \032  Moderated mailing lists are available for announcements of new\n\
-      \032  versions, discussions among users, and discussions among developers.\n\
-      \032  See http://www.cis.upenn.edu/ bcpierce/unison/lists.html for more\n\
-      \032  information.\n\
+      \032  Moderated mailing lists are available for bug reporting, announcements\n\
+      \032  of new versions, discussions among users, and discussions among\n\
+      \032  developers. See http://www.cis.upenn.edu/ bcpierce/unison/lists.html\n\
+      \032  for more information.\n\
       \032  \n\
       "))
 ::
@@ -2326,8 +2326,8 @@ let docs =
       \032      \n\
       "))
 ::
-    ("news", ("Changes in Version 2.10.12", 
-     "Changes in Version 2.10.12\n\
+    ("news", ("Changes in Version 2.12.0", 
+     "Changes in Version 2.12.0\n\
       \n\
       \032  Changes since 2.10.2:\n\
       \032    * INCOMPATIBLE CHANGE: Archive format has changed.\n\

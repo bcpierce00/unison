@@ -4,16 +4,7 @@
 \newif\ifstable  \stablefalse
 
 \input{texdirectives}
-
-\newcommand{\versionprefix}{2.}
-\newcommand{\unisonmajorversion}{%
-% $Format: "\\versionprefix $ProjectMajorVersion$%"$
-\versionprefix 10%
-}
-\newcommand{\unisonversion}{%
-% $Format: "\\versionprefix $ProjectVersion$%"$
-\versionprefix 10.12%
-}
+\input{unisonversion}
 
 \newcommand{\finish}[1]{\ifdraft{\ifhevea\red\else \large\bf\fi [#1]\ifhevea\fi}\fi}
 \newcommand{\finishlater}[1]{}
