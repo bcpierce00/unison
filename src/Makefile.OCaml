@@ -165,6 +165,7 @@ endif
 # NOTE: the OCAMLLIBDIR is not getting passed correctly?
 macexecutable: $(NAME)-blob.o
 	(cd uimac; xcodebuild OCAMLLIBDIR="$(OCAMLLIBDIR)")
+	gcc uimac/cltool.c -o uimac/build/Unison.app/Contents/MacOS/cltool -framework Carbon
 
 # OCaml objects for the bytecode version
 # File extensions will be substituted for the native code version

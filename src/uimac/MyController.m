@@ -473,21 +473,16 @@ CAMLprim value displayStatus(value s)
     NSBundle *bundle = [NSBundle mainBundle];
     NSString *bundle_path = [bundle bundlePath];
     NSString *exec_path =
-      [bundle_path stringByAppendingString:@"/Contents/MacOS/Unison"];
+      [bundle_path stringByAppendingString:@"/Contents/MacOS/cltool"];
     // Not sure why but this doesn't work:
-    // [bundle pathForResource:@"Unison" ofType:nil];
+    // [bundle pathForResource:@"cltool" ofType:nil];
 
     if (exec_path == nil) return;
-    NSString *sh_commands =
-      [NSString
-        stringWithFormat:@"(echo '#!/bin/sh' > /usr/bin/unison; echo %@ '$*' >> /usr/bin/unison; chmod 755 /usr/bin/unison)",
-        exec_path];
-
-    char *args[] = { "-c", (char *)[sh_commands cString], NULL };
+    char *args[] = { "-f", (char *)[exec_path cString], "/usr/bin/unison", NULL };
 
     myFlags = kAuthorizationFlagDefaults;
     myStatus = AuthorizationExecuteWithPrivileges
-      (myAuthorizationRef, "/bin/sh", myFlags, args,
+      (myAuthorizationRef, "/bin/cp", myFlags, args,
        NULL);
   }
   AuthorizationFree (myAuthorizationRef, kAuthorizationFlagDefaults);

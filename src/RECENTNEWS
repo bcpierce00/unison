@@ -1,3 +1,11 @@
+CHANGES FROM VERSION 2.12.8
+
+Better Mac command-line tool.  This one uses Launch Services to find
+the Unison application, and it works over ssh.  It should be more
+robust when the user moves, renames, or upgrades the Unison
+application.
+
+-------------------------------
 CHANGES FROM VERSION 2.12.7
 
 * Changed the command-line tool into a shell script.
