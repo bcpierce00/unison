@@ -102,6 +102,8 @@ EXPORTNAME=$(NAME)-$(VERSION)
 # Export separate top-level html pages for some important bits of the docs,
 # e.g. the FAQ.   This is run automatically as part of 'make commitexport',
 # but can also be run manually at any time.
+# (Actually we don't do this any more; the web pages are maintained by hand
+# and the documentation should not duplicate any information in them. -bcp)
 exporthtml:
 
 realexport:

@@ -1,5 +1,5 @@
 
-Changes in Version 2.10.2
+Changes in Version 2.10.12
 
    Changes since 2.9.20:
      * INCOMPATIBLE CHANGE: Archive format has changed.
@@ -49,7 +49,9 @@ Changes in Version 2.10.2
             (The purpose is to speed update detection for cases like Mail
             folders, which contain lots and lots of immutable files.)
             Also a preference assumeContentsAreImmutableNot, which
-            overrides the first, similarly to ignorenot.
+            overrides the first, similarly to ignorenot. (Later
+            amendment: these preferences are now called immutable and
+            immutablenot.)
           + The ignorecase flag has been changed from a boolean to a
             three-valued preference. The default setting, called default,
             checks the operating systems running on the client and server
