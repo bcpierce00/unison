@@ -1,6 +1,8 @@
 /* Stub code for controlling terminals on Mac OS X. */
 
+#ifndef WIN32
 #include <sys/ioctl.h>
+#endif
 #include <caml/mlvalues.h>
 
 CAMLprim value setControllingTerminal(value fdVal) {
@@ -18,7 +20,9 @@ CAMLprim value dumpFd(value fdVal) {
 }
 
 #include <caml/fail.h>     // failwith
+#ifndef WIN32
 #include <sys/errno.h>     // errno
+#endif
 #include <string.h>        // strerror
 #include <caml/alloc.h>    // alloc_tuple
 #include <caml/memory.h>   // Store_field
@@ -39,7 +43,7 @@ CAMLprim value dumpFd(value fdVal) {
 
 /* c_openpty: unit -> (int * Unix.file_descr) */
 CAMLprim value c_openpty() {
-#ifdef __sun__
+#if defined(__sun__) || defined(WIN32)
   failwith("openpty not implemented");
   return Val_int(0); // for type checker -- never reached.
 #else  

@@ -384,11 +384,12 @@ let ressDummy = NoRess
 (****)
 
 let openRessIn fspath path =
-  Util.convertUnixErrorsToTransient "reading ressource fork" (fun () ->
+  Util.convertUnixErrorsToTransient "reading resource fork" (fun () ->
     try
-      open_in_gen
-        [Open_rdonly; Open_binary] 0o444
-        (Fspath.concatToString fspath (ressPath path))
+      Unix.in_channel_of_descr
+        (Unix.openfile
+           (Fspath.concatToString fspath (ressPath path))
+           [Unix.O_RDONLY] 0o444)
     with Unix.Unix_error (Unix.ENOTDIR, _, _) ->
       let (doublePath, inch, entries) = openDouble fspath path in
       try
@@ -398,10 +399,10 @@ let openRessIn fspath path =
         inch
       with Not_found ->
         close_in inch;
-        raise (Util.Transient "No ressource fork found"))
+        raise (Util.Transient "No resource fork found"))
 
 let openRessOut fspath path length =
-  Util.convertUnixErrorsToTransient "writing ressource fork" (fun () ->
+  Util.convertUnixErrorsToTransient "writing resource fork" (fun () ->
     try
       Unix.out_channel_of_descr
         (Unix.openfile
@@ -421,7 +422,7 @@ let openRessOut fspath path length =
         output_string outch "\000\000\000\009"; (* Finder info *)
         output_string outch "\000\000\000\050"; (* offset *)
         output_string outch "\000\000\000\032"; (* length *)
-        output_string outch "\000\000\000\002"; (* Ressource fork *)
+        output_string outch "\000\000\000\002"; (* Resource fork *)
         output_string outch "\000\000\000\082"; (* offset *)
         output_string outch (setInt4 (Uutil.Filesize.toInt64 length));
                                                 (* length *)

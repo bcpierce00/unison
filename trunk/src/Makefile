@@ -38,7 +38,8 @@ all:: strings.ml buildexecutable
 all:: INSTALLATION
 
 INSTALLATION: $(NAME)$(EXEC_EXT)
-	./$(NAME) -doc install > INSTALLATION
+# file isn't made for OS X, so check that it's there first
+	(if [ -f $(NAME) ]; then ./$(NAME) -doc install > INSTALLATION; fi)
 
 ########################################################################
 ## Miscellaneous developer-only switches

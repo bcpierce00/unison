@@ -1,3 +1,16 @@
+CHANGES FROM VERSION 2.12.9
+
+Jerome's fix for the problem of syncing resource forks across a
+non-Mac system.
+
+Changed a few error messages to use "resource" instead of
+"ressource".  I guess "ressource" is the French spelling?
+
+Don't build the src/INSTALLATION file on Mac.
+
+Max's patch for pty.c under Windows.
+
+-------------------------------
 CHANGES FROM VERSION 2.12.8
 
 Better Mac command-line tool.  This one uses Launch Services to find
