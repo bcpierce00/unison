@@ -35,9 +35,9 @@ THREADS=false
 
 all:: strings.ml buildexecutable
 
-all:: INSTALLATION
+all:: INSTALL
 
-INSTALLATION: $(NAME)$(EXEC_EXT)
+INSTALL: $(NAME)$(EXEC_EXT)
 # file isn't made for OS X, so check that it's there first
 	(if [ -f $(NAME) ]; then ./$(NAME) -doc install > INSTALLATION; fi)
 
@@ -70,7 +70,10 @@ include Makefile.OCaml
 
 INSTALLDIR = $(HOME)/bin/
 
-install: $(NAME)$(EXEC_EXT)
+# This has two names because on OSX the file INSTALL shadows the target 'install'!
+install: doinstall
+
+doinstall: $(NAME)$(EXEC_EXT)
 	-mv $(INSTALLDIR)/$(NAME)$(EXEC_EXT) /tmp/$(NAME)-$(shell echo $$$$)
 	cp $(NAME)$(EXEC_EXT) $(INSTALLDIR)
 	cp $(NAME)$(EXEC_EXT) $(INSTALLDIR)$(NAME)-$(VERSION)$(EXEC_EXT)
