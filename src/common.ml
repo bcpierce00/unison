@@ -50,7 +50,7 @@ let compareRoots x y =
       else
         result
 
-let sortRoots rootList = List.sort compareRoots rootList
+let sortRoots rootList = Safelist.sort compareRoots rootList
 
 (* ---------------------------------------------------------------------- *)
 

@@ -1,3 +1,39 @@
+CHANGES FROM VERSION 2.12.12
+
+* Changed time display to include seconds (so that people on FAT
+  filesystems will not be confused when Unison tries to update a file
+  time to an odd number of seconds and the filesystem truncates it to
+  an even number!)
+
+* Changed some occurrences of List.foo to Safelist.foo (just for paranoia) 
+
+* Added Prefs.name function (actually needed by Harmony) and changed
+  type of Prefs.alias to take a Prefs.t instead of a string as first
+  parameter (for more safety)
+
+* WARNING: everything compiles, but the new Prefs module has not been
+  tested yet.  (I'll do that soon.)
+
+
+-------------------------------
+CHANGES FROM VERSION 2.12.12
+
+* Changed time display to include seconds (so that people on FAT
+  filesystems will not be confused when Unison tries to update a file
+  time to an odd number of seconds and the filesystem truncates it to
+  an even number!)
+
+* Changed some occurrences of List.foo to Safelist.foo (just for paranoia) 
+
+* Added Prefs.name function (actually needed by Harmony) and changed
+  type of Prefs.alias to take a Prefs.t instead of a string as first
+  parameter (for more safety)
+
+* WARNING: everything compiles, but the new Prefs module has not been
+  tested yet.  (I'll do that soon.)
+
+
+-------------------------------
 CHANGES FROM VERSION 2.12.11
 
 Mac GUI:

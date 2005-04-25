@@ -50,7 +50,7 @@ let reuseToplevelWindows =
      ^ "destroying them and creating fresh ones.  ") 
 *)
 (* For convenience: *)
-let _ = Prefs.alias "reusewindows" "rw"
+let _ = Prefs.alias reuseToplevelWindows "rw"
 
 
 let expert =
@@ -490,7 +490,7 @@ let testServer =
      ^ "Should not be set in preference files.")
 
 (* For backward compatibility *)
-let _ = Prefs.alias "testserver" "testServer"
+let _ = Prefs.alias testServer "testServer"
 
 (* ---- *)
 

@@ -246,9 +246,10 @@ let time () =
 let time2string timef =
   let time = localtime timef in
   Printf.sprintf
-    "%2d:%.2d on %2d %3s, %4d"
+    "%2d:%.2d:%.2d on %2d %3s, %4d"
     time.Unix.tm_hour
     time.Unix.tm_min
+    time.Unix.tm_sec
     time.Unix.tm_mday
     (monthname time.Unix.tm_mon)
     (time.Unix.tm_year + 1900)

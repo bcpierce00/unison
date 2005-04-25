@@ -10,7 +10,9 @@ trace.cmo: prefs.cmi safelist.cmi util.cmi trace.cmi
 trace.cmx: prefs.cmx safelist.cmx util.cmx trace.cmi 
 uarg.cmo: safelist.cmi util.cmi uarg.cmi 
 uarg.cmx: safelist.cmx util.cmx uarg.cmi 
+uprintf.cmo: uprintf.cmi 
+uprintf.cmx: uprintf.cmi 
 util.cmo: safelist.cmi uprintf.cmi util.cmi 
-util.cmx: safelist.cmx uprintf.cmi util.cmi 
+util.cmx: safelist.cmx uprintf.cmx util.cmi 
 prefs.cmi: util.cmi 
 trace.cmi: prefs.cmi 

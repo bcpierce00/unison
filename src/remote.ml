@@ -1139,7 +1139,7 @@ let killServer =
      ^ "rather than leaving one running all the time.)")
 
 (* For backward compatibility *)
-let _ = Prefs.alias "killserver" "killServer"
+let _ = Prefs.alias killServer "killServer"
 
 (* Used by the socket mechanism: Create a socket on portNum and wait
    for a request. Each request is processed by commandLoop. When a

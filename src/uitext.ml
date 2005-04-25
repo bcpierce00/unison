@@ -158,7 +158,7 @@ let rec selectAction batch actions tryagain =
   | Some i -> i)
 
 let alwaysDisplayDetails ri =
-  alwaysDisplay ((Uicommon.details2string ri "\n  ") ^ "\n")
+  alwaysDisplay ((Uicommon.details2string ri "  ") ^ "\n")
 
 let displayDetails ri =
   if not (Prefs.read silent) then alwaysDisplayDetails ri
@@ -189,7 +189,7 @@ let interact rilist =
   display ("\n" ^ Uicommon.roots2string() ^ "\n");
   let rec loop prev =
     function
-      [] -> (ConfirmBeforeProceeding, List.rev prev)
+      [] -> (ConfirmBeforeProceeding, Safelist.rev prev)
     | ri::rest as ril ->
         let next() = loop (ri::prev) rest in
         let repeat() = loop prev ril in
@@ -277,7 +277,7 @@ let interact rilist =
                   ("list all suggested changes"),
                   (fun () -> display "\n";
                      Safelist.iter
-                       (fun ri -> displayri ri; alwaysDisplayDetails ri)
+                       (fun ri -> displayri ri; display "\n  "; alwaysDisplayDetails ri)
                        ril;
                      display "\n";
                      repeat()));
@@ -291,7 +291,7 @@ let interact rilist =
                  (["g"],
                   ("proceed immediately to propagating changes"),
                   (fun() ->
-                     (ProceedImmediately, List.rev_append prev ril)));
+                     (ProceedImmediately, Safelist.rev_append prev ril)));
                  (["q"],
                   ("exit " ^ Uutil.myName ^ " without propagating any changes"),
                   fun () -> raise Sys.Break);
@@ -339,7 +339,7 @@ let verifyMerge title text =
 let doTransport reconItemList =
   let totalBytesToTransfer =
     ref
-      (List.fold_left
+      (Safelist.fold_left
          (fun l ri -> Uutil.Filesize.add l (Common.riLength ri))
          Uutil.Filesize.zero reconItemList) in
   let totalBytesTransferred = ref Uutil.Filesize.zero in

@@ -809,7 +809,7 @@ let getProfile () =
          if profile = default then selRow := !i;
          lst#set_row_data !i (profile, info);
          incr i)
-      (List.sort (fun (p, _) (p', _) -> compare p p') !profilesAndRoots);
+      (Safelist.sort (fun (p, _) (p', _) -> compare p p') !profilesAndRoots);
     let r = lst#rows in
     let p = if r < 2 then 0. else float !selRow /. float (r - 1) in
     lst#scroll_vertical `JUMP p;

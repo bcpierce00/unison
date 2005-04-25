@@ -82,19 +82,19 @@ let allRootsIter f =
 let allRootsIter2 f l =
   let l = Safelist.combine (rootsList ()) l in
   Lwt_util.iter (fun (r, v) -> f r v)
-    (List.sort (fun (r, _) (r', _) -> Common.compareRoots r r') l)
+    (Safelist.sort (fun (r, _) (r', _) -> Common.compareRoots r r') l)
 
 let allRootsMap f =
   Lwt_util.map (fun r -> f r >>= (fun v -> return (r, v)))
     (rootsInCanonicalOrder ()) >>= (fun l ->
-      return (List.map snd (reorderCanonicalListToUsersOrder l)))
+      return (Safelist.map snd (reorderCanonicalListToUsersOrder l)))
     
 let allRootsMapWithWaitingAction f wa =
   Lwt_util.map_with_waiting_action 
     (fun r -> (f r) >>= (fun v -> return (r, v)))
     (fun r -> wa r) 
     (rootsInCanonicalOrder ()) >>= (fun l ->
-      return (List.map snd (reorderCanonicalListToUsersOrder l)))
+      return (Safelist.map snd (reorderCanonicalListToUsersOrder l)))
     
 let replicaHostnames () =
   Safelist.map 
@@ -267,7 +267,7 @@ let backup =
    ^ "\\verb|maxbackups| preference."
    ^ "\n\n The syntax of \\ARG{pathspec} is described in \\sectionref{pathspec}{Path Specification}.")
 
-let _ = Prefs.alias "backup" "mirror"
+let _ = Pred.alias backup "mirror"
 
 let backupnot =
    Pred.create "backupnot"

@@ -1,11 +1,12 @@
 (* $I1: Unison file synchronizer: src/ubase/prefs.mli $ *)
 (* $I2: Last modified by bcpierce on Sun, 24 Mar 2002 11:24:03 -0500 $ *)
-(* $I3: Copyright 1999-2004 (see COPYING for details) $ *)
+(* $I3: Copyright 1999-2002 (see COPYING for details) $ *)
 
 type 'a t
 
 val read : 'a t -> 'a  
 val set : 'a t -> 'a -> unit
+val name : 'a t -> string list
 
 (* Convenient functions for registering simple kinds of preferences.  Note   *)
 (* that createStringPref creates a preference that can only be set once,     *)
@@ -54,8 +55,8 @@ val create :
   
 (* Create an alternate name for a preference (the new name will not appear   *)
 (* in usage messages or generated documentation)                             *)
-val alias : string              (* existing name *)
-         -> string              (* new name *)
+val alias : 'a t              (* existing preference *)
+         -> string            (* new name *)
          -> unit
 
 (* Reset all preferences to their initial values                             *)

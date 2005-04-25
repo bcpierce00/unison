@@ -1,14 +1,16 @@
 (* $I1: Unison file synchronizer: src/ubase/prefs.ml $ *)
 (* $I2: Last modified by bcpierce on Sat, 10 Aug 2002 09:39:41 -0400 $ *)
-(* $I3: Copyright 1999-2004 (see COPYING for details) $ *)
+(* $I3: Copyright 1999-2002 (see COPYING for details) $ *)
 
 let debug = Util.debug "prefs"
 
-type 'a t = 'a ref
+type 'a t = ('a * string list) ref
 
-let read p = !p
+let read p = fst !p
 
-let set p v = (p:=v)
+let set p v = p:=(v, snd !p)
+
+let name p = snd !p
 
 let rawPref default = ref default
 
@@ -103,13 +105,12 @@ let prefs =
   ref (Util.StringMap.empty : (string * Uarg.spec * string) Util.StringMap.t)
 
 (* aliased pref has *-prefixed doc and empty fulldoc                         *)
-let alias oldname newname =
-  try
-    let (doc,pspec,fulldoc) = Util.StringMap.find oldname !prefs in
-    prefs := Util.StringMap.add newname ("*", pspec, "") !prefs
-  with
-    Not_found -> raise (Util.Fatal
-                   ("Can't alias unregistered pref " ^ oldname))
+let alias pref newname =
+  (* pref must have been registered, so name pref is not empty, and will be *)
+  (* found in the map, no need for catching exception                       *)
+  let (_,pspec,_) = Util.StringMap.find (Safelist.hd (name pref)) !prefs in
+  prefs := Util.StringMap.add newname ("*", pspec, "") !prefs;
+  pref := (fst !pref, newname::(snd !pref))
 
 let registerPref name pspec doc fulldoc =
   if Util.StringMap.mem name !prefs then
@@ -117,17 +118,17 @@ let registerPref name pspec doc fulldoc =
   prefs := Util.StringMap.add name (doc, pspec, fulldoc) !prefs
 
 let createPrefInternal name default doc fulldoc printer parsefn =
-  let newCell = rawPref default in
+  let newCell = rawPref (default, [name]) in
   registerPref name (parsefn newCell) doc fulldoc;
   adddumper name (fun () -> Marshal.to_string !newCell []);
-  addprinter name (fun () -> printer !newCell);
-  addresetter (fun () -> newCell := default);
+  addprinter name (fun () -> printer (fst !newCell));
+  addresetter (fun () -> newCell := (default, [name]));
   addloader name (fun s -> newCell := Marshal.from_string s 0);
   newCell
 
 let create name default doc fulldoc intern printer =
   createPrefInternal name default doc fulldoc printer
-    (fun cell -> Uarg.String (fun s -> set cell (intern !cell s)))
+    (fun cell -> Uarg.String (fun s -> set cell (intern (fst !cell) s)))
 
 let createBool name default doc fulldoc =
   createPrefInternal name default doc fulldoc
@@ -136,7 +137,7 @@ let createBool name default doc fulldoc =
 
 let createInt name default doc fulldoc =
   createPrefInternal name default doc fulldoc
-    (fun v -> [string_of_int v])
+    (fun v -> [string_of_int v])  
     (fun cell -> Uarg.Int (fun i -> set cell i))
 
 let createString name default doc fulldoc =
@@ -147,8 +148,7 @@ let createString name default doc fulldoc =
 let createStringList name doc fulldoc =
   createPrefInternal name [] doc fulldoc
     (fun v -> v)
-    (fun cell -> Uarg.String (fun s -> set cell (s::!cell)))
-
+    (fun cell -> Uarg.String (fun s -> set cell (s::(fst !cell))))
 
 (*****************************************************************************)
 (*                      Command-line parsing                                 *)
@@ -198,7 +198,7 @@ let processCmdLine usage hook =
     raise(Util.Fatal(Printf.sprintf "%s \n%s\n" usage str))
 
 let parseCmdLine usage =
-  processCmdLine usage (fun name sp -> sp)
+  processCmdLine usage (fun _ sp -> sp)
 
 (* Scan command line without actually setting any preferences; return a      *)
 (* string map associating a list of strings with each option appearing on    *)
@@ -275,7 +275,7 @@ let loadTheFile () =
       Safelist.iter
         (fun (fileName, lineNum, varName,theResult) ->
            try
-             let doc, theFunction, _ = Util.StringMap.find varName !prefs in
+             let _, theFunction, _ = Util.StringMap.find varName !prefs in
              match theFunction with
                Uarg.Bool boolFunction ->
                  boolFunction (string2bool varName theResult)
@@ -300,7 +300,7 @@ let loadTheFile () =
 let listVisiblePrefs () =
   let l =
     Util.StringMap.fold
-      (fun name (doc, pspec, fulldoc) l ->
+      (fun name (_, pspec, fulldoc) l ->
          if String.length fulldoc > 0 then begin
            (name, pspec, fulldoc) :: l
          end else l) !prefs [] in
@@ -308,7 +308,7 @@ let listVisiblePrefs () =
 
 let printFullDocs () =
   Printf.eprintf "\\begin{description}\n";
-  List.iter
+  Safelist.iter
     (fun (name, pspec, fulldoc) ->
        Printf.eprintf "\\item [{%s \\tt %s}]\n%s\n\n"
          name (prefArg pspec) fulldoc)

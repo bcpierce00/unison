@@ -208,7 +208,7 @@ let termInteract fdTerm fdInput callBack =
   let return() = raise Return in
   try while (true) do
     let (ready,_,_) = select [fdTerm;fdInput] [] [] (-1.0) in
-    if not(List.exists (fun x -> x=fdTerm) ready) then return();
+    if not(Safelist.exists (fun x -> x=fdTerm) ready) then return();
     (* there's input waiting on the terminal *)
     (* read a line of input *)
     let msg =
@@ -239,7 +239,7 @@ let termInteract fdTerm fdInput callBack =
    return Some s. Otherwise, return None. *)
 let rec termInput fdTerm fdInput =
   let (ready,_,_) = select [fdTerm;fdInput] [] [] (-1.0) in
-  if not(List.exists (fun x -> x=fdTerm) ready) then None else
+  if not(Safelist.exists (fun x -> x=fdTerm) ready) then None else
   (* there's input waiting on the terminal *)
   (* read a line of input *)
   let msg =
