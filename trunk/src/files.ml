@@ -491,7 +491,7 @@ let rec diff root1 path1 ui1 root2 path2 ui2 showDiff id =
              Path.addSuffixToFinalName realPath "#unisondiff-" in
            Lwt_unix.run
              (Update.translatePath root1 path1 >>= (fun path1 ->
-              (* Note that we don't need the ressource fork *)
+              (* Note that we don't need the resource fork *)
               Copy.file root1 path1 root2 workingDir tmppath realPath
                 `Copy (Props.setLength Props.fileSafe (Props.length desc1))
                  fp2 ress2 id));
@@ -785,7 +785,9 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
         end else if dig1 = dig1' then begin
           debug (fun () -> Util.msg "Merge program changed just second input\n");
           copy [(working2,working1);(working2,workingarch)]
-        end else assert false
+        end else
+          raise (Util.Transient ("Error: the merge function changed both of "
+                                 ^ "its inputs but did not make them equal"))
       end
 
       else if working1_still_exists && (not working2_still_exists) then begin

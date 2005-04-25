@@ -117,7 +117,7 @@ let overrideReconcilerChoices ris =
   let (root,force) = lookupPreferredRoot() in
   if root<>"" then begin
     let dir = root2direction root in
-    List.iter (fun ri -> setDirection ri dir force) ris
+    Safelist.iter (fun ri -> setDirection ri dir force) ris
   end
 
 (* Look up the preferred root and verify that it is OK (this is called at    *)
@@ -142,7 +142,7 @@ let rec checkForError ui =
   | Updates (uc, _) ->
       match uc with
         Dir (_, children, _) ->
-          List.iter (fun (_, uiSub) -> checkForError uiSub) children
+          Safelist.iter (fun (_, uiSub) -> checkForError uiSub) children
       | Absent | File _ | Symlink _ ->
           ()
 
@@ -428,7 +428,7 @@ let reconcileList (pathUpdatesList: (Path.t * Common.updateItem list) list)
   if !archiveUpdated then Update.commitUpdates ();
   let result = Tree.flatten unequals Path.empty Path.child [] in
   let unsorted =
-    List.map (fun (p, rplc) -> {path = p; replicas = rplc}) result in
+    Safelist.map (fun (p, rplc) -> {path = p; replicas = rplc}) result in
   let sorted = Sortri.sortReconItems unsorted in
   overrideReconcilerChoices sorted;
   (sorted, not (Tree.is_empty equals))

@@ -852,7 +852,7 @@ let getProfile () =
          if profile = default then selRow := !i;
          lst#set_row_data !i (profile, info);
          incr i)
-      (List.sort (fun (p, _) (p', _) -> compare p p') !profilesAndRoots);
+      (Safelist.sort (fun (p, _) (p', _) -> compare p p') !profilesAndRoots);
     let r = lst#rows in
     let p = if r < 2 then 0. else float !selRow /. float (r - 1) in
     lst#scroll_vertical `JUMP p;
@@ -975,7 +975,7 @@ let documentation sect =
   ignore (t_dismiss#connect#clicked ~callback:dismiss);
   ignore (t#event#connect#delete ~callback:(fun _ -> dismiss (); true));
 
-  let (name, docstr) = List.assoc sect Strings.docs in
+  let (name, docstr) = Safelist.assoc sect Strings.docs in
   let docstr = transcodeDoc docstr in
   let hb = GPack.hbox ~packing:(t#vbox#pack ~expand:false ~padding:2) () in
   let optionmenu =
@@ -1082,7 +1082,7 @@ let rec createToplevelWindow () =
   let grGo = ref [] in
   let grRestart = ref [] in
   let grAdd gr w = gr := w#misc::!gr in
-  let grSet gr st = List.iter (fun x -> x#set_sensitive st) !gr in
+  let grSet gr st = Safelist.iter (fun x -> x#set_sensitive st) !gr in
 
   (*********************************************************************
     Create the menu bar
@@ -2102,9 +2102,9 @@ lst_store#set ~row ~column:c_path path;
              else loop (i+1) (acc) in
            let failedindices = loop 0 [] in
            let failedpaths =
-             List.map (fun i -> !theState.(i).ri.path) failedindices in
+             Safelist.map (fun i -> !theState.(i).ri.path) failedindices in
            debug (fun()-> Util.msg "Restarting with paths = %s\n"
-                    (String.concat ", " (List.map
+                    (String.concat ", " (Safelist.map
                                            (fun p -> "'"^(Path.toString p)^"'")
                                            failedpaths)));
            Prefs.set Globals.paths failedpaths; detectCmd())

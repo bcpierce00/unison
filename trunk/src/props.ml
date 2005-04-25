@@ -205,7 +205,7 @@ let numericIds =
      user/group names even if this preference is not set."
 
 (* For backward compatibility *)
-let _ = Prefs.alias "numericids" "numericIds"
+let _ = Prefs.alias numericIds "numericIds"
 
 module Id (M : sig
   val sync : bool Prefs.t

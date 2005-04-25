@@ -111,7 +111,7 @@ let root2stringOrAlias (root: Common.root): string =
 let storeRootsName () =
   let n =
     String.concat ", "
-      (List.sort compare
+      (Safelist.sort compare
          (Safelist.map root2stringOrAlias
             (Safelist.map
                (function
@@ -146,7 +146,7 @@ let showArchiveName =
      ^ "of the roots, in the same form as is expected by the {\\tt rootalias}"
      ^ "preference.")
 
-let _ = Prefs.alias "showarchive" "showArchiveName"
+let _ = Prefs.alias showArchiveName "showArchiveName"
 
 let archiveHash fspath =
   (* Conjoin the canonical name of the current host and the canonical
@@ -653,7 +653,7 @@ let lockArchives () =
   assert (!locked = false);
   Globals.allRootsMap
     (fun r -> lockArchiveOnRoot r ()) >>= (fun result ->
-  if List.exists (fun x -> x <> None) result
+  if Safelist.exists (fun x -> x <> None) result
   && not (Prefs.read ignorelocks) then begin
     Globals.allRootsIter2
       (fun r st ->
@@ -984,18 +984,18 @@ let findAllBackups filePath =
   let parentPath = Path.parent filePath in
   let path = Path.toString filePath in
   let files =
-    List.map
+    Safelist.map
       (fun a ->
          Path.toString (Path.child parentPath (Name.fromString a)))
       (childrenOf (backupDirectory()) parentPath)
   in
-  let backups = List.filter (fun p -> fileNameOfBackup p = path) files in
+  let backups = Safelist.filter (fun p -> fileNameOfBackup p = path) files in
   let newL =
-    List.map
+    Safelist.map
       (fun a -> let (x,y) = incrNameOfBackup a in (x, a, y))
       backups
   in
-  List.sort (fun (a, _, _) (b, _, _) -> - (compare a b)) newL
+  Safelist.sort (fun (a, _, _) (b, _, _) -> - (compare a b)) newL
 
 
 (*** Main backup functions ***)
@@ -1005,7 +1005,7 @@ let incrVersionsOfBackups filePath =
   debugbackups (fun () ->
            (Util.msg "incrVersionOfBackups for %s...\n"
               (Fspath.concatToString (backupDirectory()) filePath)));
-  List.iter
+  Safelist.iter
     (fun (curVersion, curPath, newPath) ->
        if curVersion + 1 < Prefs.read Os.maxbackups then begin
          debugbackups (fun () ->
@@ -1493,14 +1493,14 @@ let rec buildUpdateChildren
         end
   in
   let newChi = NameMap.mapii matchChild archChi in
-  List.iter
+  Safelist.iter
     (fun (nm, st) ->
        let arch = handleChild nm NoArchive st in
        assert (arch = NoArchive))
     !curChildren;
   Trace.showTimer t;
   (* The Recon module relies on the updates to be sorted *)
-  ((if !archUpdated then Some newChi else None), List.rev !updates)
+  ((if !archUpdated then Some newChi else None), Safelist.rev !updates)
 
 and buildUpdateRec archive currfspath path fastCheck =
   try
@@ -1576,7 +1576,7 @@ and buildUpdateRec archive currfspath path fastCheck =
            really be recalculated when things change. *)
         let newdesc =
            Props.setLength info.Fileinfo.desc
-             (List.fold_left
+             (Safelist.fold_left
                (fun s (_,ui) -> Uutil.Filesize.add s (uiLength ui))
                Uutil.Filesize.zero childUpdates) in
         (None,
@@ -1605,7 +1605,7 @@ let rec buildUpdate archive fspath fullpath here path =
       let children = getChildren fspath here in
       let (name', status) =
         try
-          List.find (fun (name', _) -> Name.eq name name') children
+          Safelist.find (fun (name', _) -> Name.eq name name') children
         with Not_found ->
           (name, if badFilename name then `Bad else `Ok)
       in

@@ -11,7 +11,13 @@ See the file BUGS.txt for a list of currently open bugs.
 SOON
 ====
 
-*** make the ETA bar show which file is actually transferring bytes at the moment
+**** Fix backup subsystem.
+
+**** When deleting a directory, we should *not* skip over Unison temp files
+     in the process of listing children
+
+*** make the ETA bar show which file is actually transferring bytes at the
+    moment
 
 *** Fix the pred module to understand negation and delete XXXnot predicates
 

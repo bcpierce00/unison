@@ -39,7 +39,7 @@ let rcons n path = concat (Name.toString n) path
 let toStringList p = Str.split (Str.regexp pathSeparatorString) p
 
 (* Give a left-to-right list of names in the path *)
-let toNames p = List.map Name.fromString (toStringList p)
+let toNames p = Safelist.map Name.fromString (toStringList p)
 
 let child path name = concat path (Name.toString name)
 

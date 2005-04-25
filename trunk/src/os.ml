@@ -43,7 +43,7 @@ let maxbackups =
      ^ "be kept by unison, for each path that matches the predicate "
      ^ "\\verb|backup|.  The default is 2.")
 
-let _ = Prefs.alias "maxbackups" "mirrorversions"
+let _ = Prefs.alias maxbackups "mirrorversions"
 
 let minbackups =
   Prefs.createInt "minbackups" 1

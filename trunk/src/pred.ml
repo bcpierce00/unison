@@ -10,7 +10,7 @@ let debug = Util.debug "pred"
 
 type t =
   { pref: string list Prefs.t;
-    name: string;
+    name: string;                  (* XXX better to get it from Prefs! *)
     mutable default: string list;
     mutable last_pref : string list;
     mutable last_def : string list;
@@ -85,6 +85,8 @@ let create name fulldoc =
 
 let addDefaultPatterns p pats =
   p.default <- Safelist.append pats p.default
+
+let alias p n = Prefs.alias p.pref n
 
 let recompile mode p =
   let pref = Prefs.read p.pref in

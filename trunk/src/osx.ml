@@ -219,13 +219,13 @@ let getFileInfos fspath path typ =
             let (fspath, path) = Fspath.findWorkingDir fspath path in
             let (doublePath, inch, entries) = openDouble fspath path in
             let (rsrcOffset, rsrcLength) =
-              try List.assoc `RSRC entries with Not_found ->
+              try Safelist.assoc `RSRC entries with Not_found ->
                 (0L, 0L)
             in
             let finfo =
               protect (fun () ->
                 try
-                  let (ofs, len) = List.assoc `FINFO entries in
+                  let (ofs, len) = Safelist.assoc `FINFO entries in
                   if len <> finfoLength then fail doublePath "bad finder info";
                   readDoubleFromOffset doublePath inch ofs 32
                 with Not_found ->
@@ -282,7 +282,7 @@ let setFileInfos fspath path finfo =
       begin try
         let (doublePath, inch, entries) = openDouble fspath path in
         begin try
-          let (ofs, len) = List.assoc `FINFO entries in
+          let (ofs, len) = Safelist.assoc `FINFO entries in
           if len <> finfoLength then fail doublePath "bad finder info";
           let fullFinfo =
             protect
@@ -393,7 +393,7 @@ let openRessIn fspath path =
     with Unix.Unix_error (Unix.ENOTDIR, _, _) ->
       let (doublePath, inch, entries) = openDouble fspath path in
       try
-        let (rsrcOffset, rsrcLength) = List.assoc `RSRC entries in
+        let (rsrcOffset, rsrcLength) = Safelist.assoc `RSRC entries in
         protect (fun () -> LargeFile.seek_in inch rsrcOffset)
           (fun () -> close_in inch);
         inch
