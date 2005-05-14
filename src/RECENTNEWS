@@ -1,3 +1,12 @@
+CHANGES FROM VERSION 2.12.13
+
+* Archive now updated again when a file seems to have changed but
+  actually did not change.
+* Fix diff bug (no difference shown the first time)
+* Catch any error when Unix.localtime fails when pretty-printing the
+  modification time
+
+-------------------------------
 CHANGES FROM VERSION 2.12.12
 
 * Changed time display to include seconds (so that people on FAT

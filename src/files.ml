@@ -476,7 +476,7 @@ let rec diff root1 path1 ui1 root2 path2 ui2 showDiff id =
              (Update.translatePath root2 path2 >>= (fun path2 ->
               Copy.file root2 path2 root1 workingDir tmppath realPath
                 `Copy (Props.setLength Props.fileSafe (Props.length desc2))
-                 fp1 ress1 id));
+                 fp2 ress2 id));
            displayDiff
 	     (Fspath.concat workingDir realPath)
              (Fspath.concat workingDir tmppath);
@@ -494,7 +494,7 @@ let rec diff root1 path1 ui1 root2 path2 ui2 showDiff id =
               (* Note that we don't need the resource fork *)
               Copy.file root1 path1 root2 workingDir tmppath realPath
                 `Copy (Props.setLength Props.fileSafe (Props.length desc1))
-                 fp2 ress2 id));
+                 fp1 ress1 id));
            displayDiff
              (Fspath.concat workingDir tmppath)
 	     (Fspath.concat workingDir realPath);
