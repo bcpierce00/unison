@@ -368,6 +368,10 @@ let dummy = NotSynced 0.
 
 let minus_two = Int64.of_int (-2)
 let approximate t = Int64.logand (Int64.of_float t) minus_two
+(*FIX: this is the right approximation function (date are approximated
+  upward on FAT filesystems
+let approximate t = Int64.of_float (2. *. ceil (t /. 2.))
+*)
 let extract t = match t with Synced v -> v | NotSynced v -> v
 
 let oneHour = Int64.of_int 3600

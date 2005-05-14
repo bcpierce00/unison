@@ -19,6 +19,8 @@ let debugbackups = Trace.debug "backup"
    archive changes: old archives will then automatically be discarded.  (We
    do not use the unison version number for this because usually the archive
    representation does not change between unison versions.) *)
+(*FIX: change the approximate function in props.ml next time the
+  format is modified (see file props.ml for the new function) *)
 let archiveFormat = 22
 
 module NameMap = MyMap.Make (Name)
@@ -1639,7 +1641,7 @@ let rec buildUpdate archive fspath fullpath here path =
              Note that we may also put NoArchive deep inside an
              archive...
           *)
-          (ArchiveDir (desc, NameMap.add name' child otherChildren),
+          (ArchiveDir (desc, NameMap.add name' arch otherChildren),
            updates)
 
 (* for the given path, find the archive and compute the list of update
