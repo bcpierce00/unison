@@ -17,6 +17,8 @@ val readLink : Fspath.t -> Path.local -> string
 val symlink : Fspath.t -> Path.local -> string -> unit
 
 val rename : Fspath.t -> Path.local -> Fspath.t -> Path.local -> unit
+val renameIfAllowed :
+  Fspath.t -> Path.local -> Fspath.t -> Path.local -> exn option
 val createDir : Fspath.t -> Path.local -> Props.t -> unit
 val delete : Fspath.t -> Path.local -> unit
 
@@ -41,10 +43,6 @@ val fingerprint :
   Fspath.t -> Path.local -> (* coordinates of file to fingerprint *)
   Fileinfo.t ->             (* old fileinfo *)
   fullfingerprint           (* current fingerprint *)
-
-(* Verify that the parent of the given path refers to a directory in the     *)
-(* local filesystem.  Raise a Fatal error if not.                            *)
-val checkThatParentPathIsADir : Fspath.t -> Path.local -> unit
 
 (* Versions of system calls that will restart when interrupted by
    signal handling *)

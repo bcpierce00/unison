@@ -39,9 +39,10 @@ let password s = Rx.match_string passwordRx s
 let authenticity s = Rx.match_string authenticityRx s
 
 (* Create a new process with a new controlling terminal, useful for
-   SSH password interaction.  Only works on Mac OS X for now.
+   SSH password interaction.
 *)
 
+(*
 let a1 = [|'p';'q';'r';'s';'t';'u';'v';'w';'x';'y';'z';'P';'Q';'R';'S';'T'|]
 let a2 = [|'0';'1';'2';'3';'4';'5';'6';'7';'8';'9';'a';'b';'c';'d';'e';'f'|]
 exception Break of (Unix.file_descr * string) option
@@ -75,7 +76,6 @@ let ptySlaveOpen = function
       (try Unix.close fdMaster with Unix.Unix_error(_,_,_) -> ());
       slave
 
-(*
 let printTermAttrs fd = (* for debugging *)
   let tio = Unix.tcgetattr fd in
   let boolPrint name x d =
@@ -126,26 +126,24 @@ let printTermAttrs fd = (* for debugging *)
 *)
 
 (* Implemented in file pty.c *)
-external setControllingTerminal : Unix.file_descr -> int =
+external dumpFd : Unix.file_descr -> int = "%identity"
+external setControllingTerminal : Unix.file_descr -> unit =
   "setControllingTerminal"
-external dumpFd : Unix.file_descr -> int =
-  "dumpFd"
-external c_openpty : unit -> (Unix.file_descr * Unix.file_descr) =
+external c_openpty : unit -> Unix.file_descr * Unix.file_descr =
   "c_openpty"
-let openpty() = (try Some(c_openpty()) with _ -> None)
+let openpty() = try Some (c_openpty ()) with Unix.Unix_error _ -> None
 
 (* Utility functions copied from ocaml's unix.ml because they are not exported :-| *)
 let rec safe_dup fd =
   let new_fd = Unix.dup fd in
-  if (dumpFd new_fd) >= 3 then
+  if dumpFd new_fd >= 3 then
     new_fd
   else begin
     let res = safe_dup fd in
     Unix.close new_fd;
     res
   end
-let safe_close fd =
-  try Unix.close fd with Unix.Unix_error(_,_,_) -> ()
+let safe_close fd = try Unix.close fd with Unix.Unix_error _ -> ()
 let perform_redirections new_stdin new_stdout new_stderr =
   let newnewstdin = safe_dup new_stdin in
   let newnewstdout = safe_dup new_stdout in
@@ -162,79 +160,43 @@ let perform_redirections new_stdin new_stdout new_stderr =
    descriptor for the master end of the controlling terminal is
    returned. *)
 let create_session cmd args new_stdin new_stdout new_stderr =
-  match openpty() with
+  match openpty () with
     None ->
       (None,
        Unix.create_process cmd args new_stdin new_stdout new_stderr)
-  | Some(fdM,fdS) as x ->
+  | Some (masterFd, slaveFd) ->
 (*
       Printf.printf "openpty returns %d--%d\n" (dumpFd fdM) (dumpFd fdS); flush stdout;
       Printf.printf "new_stdin=%d, new_stdout=%d, new_stderr=%d\n"
         (dumpFd new_stdin) (dumpFd new_stdout) (dumpFd new_stderr) ; flush stdout;
 *)
-      (match Unix.fork() with
+      begin match Unix.fork () with
         0 ->
           begin try
-            ignore(Unix.setsid());
-            ignore(setControllingTerminal fdS);
+            Unix.close masterFd;
+            ignore (Unix.setsid ());
+            setControllingTerminal slaveFd;
             (* WARNING: SETTING ECHO TO FALSE! *)
-            let tio = Unix.tcgetattr fdS in
+            let tio = Unix.tcgetattr slaveFd in
             tio.Unix.c_echo <- false;
-            Unix.tcsetattr fdS Unix.TCSANOW tio;
+            Unix.tcsetattr slaveFd Unix.TCSANOW tio;
             perform_redirections new_stdin new_stdout new_stderr;
-(*
-            Unix.dup2 new_stdin Unix.stdin;
-            Unix.dup2 new_stdout Unix.stdout;
-            Unix.dup2 new_stderr Unix.stderr;
-*)
             Unix.execvp cmd args; (* never returns *)
-            (None,0) (* to satisfy type checker *)
+            assert false          (* to satisfy type checker *)
           with _ ->
-            Printf.eprintf "Some error in create_session child\n"; flush stderr;
+            Printf.eprintf "Some error in create_session child\n";
+            flush stderr;
             exit 127
           end
-      | id -> (Some fdM,id))
+      | childPid ->
+          Unix.close slaveFd;
+          (Some masterFd, childPid)
+      end
 
 let rec select a b c d =
   try Unix.select a b c d
   with Unix.Unix_error(Unix.EINTR,_,_) -> select a b c d
 
-(* Watch a terminal (as returned by create_session) and a regular
-   input until there is regular input but no terminal input.  Pass any
-   terminal input to the callback.  Do not close the terminal because
-   that would terminate the ssh session. *)
-exception Return
-let termInteract fdTerm fdInput callBack =
-  let return() = raise Return in
-  try while (true) do
-    let (ready,_,_) = select [fdTerm;fdInput] [] [] (-1.0) in
-    if not(Safelist.exists (fun x -> x=fdTerm) ready) then return();
-    (* there's input waiting on the terminal *)
-    (* read a line of input *)
-    let msg =
-      let n = 1024 in (* Assume length of input from terminal < n *)
-      let s = String.create n in
-      let howmany =
-        let rec loop() =
-          try Unix.read fdTerm s 0 n
-          with Unix.Unix_error(Unix.EINTR,_,_) -> loop() in
-        loop() in
-      if howmany <= 0 then "" else
-      String.sub s 0 howmany in
-    let len = String.length msg in
-    (* return if the terminal has been closed *)
-    if len = 0 then return();
-    (* if the input is a CR-LF, ignore and keep waiting *)
-    if len = 2 && msg.[0] = '\r' && msg.[1] = '\n' then
-      ()
-    else
-      let response = callBack msg in
-      (* FIX: should loop on write, watch for EINTR, etc. *)
-      ignore(Unix.write fdTerm (response ^ "\n") 0 (String.length response + 1))
-    (* loop *)
-  done with Return -> ()
-
-(**** ALTERNATE INTERFACE ****)
 (* Wait until there is input. If there is terminal input s,
    return Some s. Otherwise, return None. *)
 let rec termInput fdTerm fdInput =
@@ -257,3 +219,28 @@ let rec termInput fdTerm fdInput =
   else if len = 2 && msg.[0] = '\r' && msg.[1] = '\n' then
     termInput fdTerm fdInput
   else Some msg
+
+let (>>=) = Lwt.bind
+
+(* Read messages from the terminal and use the callback to get an answer *)
+let handlePasswordRequests fdTerm callback =
+  Unix.set_nonblock fdTerm;
+  let buf = String.create 10000 in
+  let rec loop () =
+    Lwt_unix.read fdTerm buf 0 10000 >>= (fun len ->
+      if len = 0 then
+        (* The remote end is dead *)
+        Lwt.return ()
+      else
+        let query = String.sub buf 0 len in
+        if query = "\r\n" then
+          loop ()
+        else begin
+          let response = callback query in
+          Lwt_unix.write fdTerm
+            (response ^ "\n") 0 (String.length response + 1)
+              >>= (fun _ ->
+          loop ())
+        end)
+  in
+  ignore (loop ())

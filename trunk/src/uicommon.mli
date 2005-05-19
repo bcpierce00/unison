@@ -82,7 +82,7 @@ val uiInit :
     getProfile:(unit -> string option) ->
     getFirstRoot:(unit -> string option) ->
     getSecondRoot:(unit -> string option) ->
-    termInteract:(string -> string) option ->
+    termInteract:(string -> string -> string) option ->
     unit
 
 val initPrefs :
@@ -90,18 +90,10 @@ val initPrefs :
   displayWaitMessage:(unit->unit) ->
   getFirstRoot:(unit->string option) ->
   getSecondRoot:(unit->string option) ->
-  termInteract:(string -> string) option ->
+  termInteract:(string -> string -> string) option ->
   unit
 
 val checkCaseSensitivity : unit -> unit Lwt.t
-
-(* Interacting with ssh *)
-type sshInfo =
-    Password of string
-  | HostAuthenticity of string * string
-  | Other of string
-
-val sshParse : string -> sshInfo
 
 (* Exit codes *)
 val perfectExit: int   (* when everything's okay *)

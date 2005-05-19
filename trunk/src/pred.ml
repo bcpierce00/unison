@@ -127,7 +127,7 @@ let extern p = Prefs.read p.pref
 
 let test p s =
   recompile_if_needed p;
-  let res = Rx.match_string p.compiled s in
+  let res = Rx.match_string p.compiled (Case.normalize s) in
   debug (fun() -> Util.msg "%s '%s' = %b\n" p.name s res);
   res
 

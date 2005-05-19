@@ -4,4 +4,6 @@
 
 val insensitive : unit -> bool
 
+val normalize : string -> string
+
 val init : bool -> unit

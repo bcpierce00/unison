@@ -6,11 +6,6 @@ external isMacOSXPred : unit -> bool = "isMacOSX"
 
 let isMacOSX = isMacOSXPred ()
 
-(* FIX: this should be somewhere else *)
-(* Only used to check whether pty is supported *)
-external isLinuxPred : unit -> bool = "isLinux"
-let isLinux = isLinuxPred ()
-
 (****)
 
 let rsrcSync =

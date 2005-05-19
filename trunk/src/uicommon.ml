@@ -275,26 +275,28 @@ let quote s =
     | c ->
         buf.[!pos] <- c; pos := !pos + 1
   done;
-  String.sub buf 0 !pos
+  "{" ^ String.sub buf 0 !pos ^ "}"
 
-let ignorePath path = "Path " ^ (quote (Path.toString path))
+let ignorePath path = "Path " ^ quote (Path.toString path)
 
 let ignoreName path =
   match Path.finalName path with
-    Some name -> "Name " ^ (quote (Name.toString name))
+    Some name -> "Name " ^ quote (Name.toString name)
   | None      -> assert false
 
 let ignoreExt path =
   match Path.finalName path with
     Some name ->
       let str = Name.toString name in
-      (try
-        let pos = String.rindex str '.' + 1 in
+      begin try
+        let pos = String.rindex str '.' in
         let ext = String.sub str pos (String.length str - pos) in
-        "Name *." ^ (quote ext)
+        "Name {,.}*" ^ quote ext
       with Not_found -> (* str does not contain '.' *)
-        "Name "^(quote str))
-  | None      -> assert false
+        "Name " ^ quote str
+      end
+  | None ->
+      assert false
 
 let addIgnorePattern theRegExp =
   if theRegExp = "Path " then
@@ -501,7 +503,7 @@ let uiInit
     ~(getProfile : unit -> string option)
     ~(getFirstRoot : unit -> string option)
     ~(getSecondRoot : unit -> string option)
-    ~(termInteract : (string -> string) option) =
+    ~(termInteract : (string -> string -> string) option) =
 
   (* Make sure we have a directory for archives and profiles *)
   Os.createUnisonDir();
@@ -571,7 +573,8 @@ let uiInit
     end in
 
   (* Load the profile and command-line arguments *)
-  initPrefs profileName displayWaitMessage getFirstRoot getSecondRoot termInteract;
+  initPrefs
+    profileName displayWaitMessage getFirstRoot getSecondRoot termInteract;
 
   (* Turn on GC messages, if the '-debug gc' flag was provided *)
   if Trace.enabled "gc" then Gc.set {(Gc.get ()) with Gc.verbose = 0x3F};
@@ -579,33 +582,6 @@ let uiInit
   if Prefs.read testServer then exit 0;
   (* BCPFIX: Should/can this be done earlier?? *)
   Files.processCommitLogs()
-
-(* Interacting with ssh *)
-type sshInfo =
-    Password of string
-  | HostAuthenticity of string * string
-  | Other of string
-
-let sshParse s =
-  if Rx.match_string (Rx.rx ".+'s password: ") s then
-    Password(String.sub s 0 (String.length s - String.length "'s password: "))
-  else 
-    (* Look for a string such as
-       "The authenticity of host 'saul.cis.upenn.edu (158.130.12.4)' can't be established.\n"^
-       "RSA key fingerprint is d1:d8:5e:08:8c:ae:56:15:66:af:4b:55:53:2a:bc:38.\n"^
-       "Are you sure you want to continue connecting (yes/no)? "
-    *)
-    let x = Rx.match_prefix
-        (Rx.rx "The authenticity of host \'.*\'.*fingerprint is ") s 0 in
-    match x with
-      None -> Other s
-    | Some fingerStart ->
-        let hostStart = String.length "The authenticity of host \'" in
-        let hostEnd = String.index_from s hostStart '\'' in
-        let host = String.sub s hostStart (hostEnd-hostStart) in
-        let fingerEnd = String.index_from s fingerStart '.' in
-        let finger = String.sub s fingerStart (fingerEnd-fingerStart) in
-        HostAuthenticity(host,finger)
 
 (* Exit codes *)
 let perfectExit = 0   (* when everything's okay *)

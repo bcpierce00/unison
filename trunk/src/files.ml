@@ -184,17 +184,23 @@ let renameLocal (_, (keepbackups, fspath, pathFrom, pathTo)) =
          let temp' = Fspath.toString temp in (* only for debugmsg, delete? *)
          writeCommitLog source target temp';
          debug (fun() -> Util.msg "rename %s to %s\n" target' temp');
-         Os.rename target Path.empty temp Path.empty;
-         if keepbackups then
-          (*FIX: should be recursive*)
-           Xferhint.renameEntry (fspath, pathTo) (fspath, tmpPath);
-         debug (fun() -> Util.msg "rename %s to %s\n" source' target');
-         Os.rename source Path.empty target Path.empty;
-         (*FIX: should be recursive*)
-         Xferhint.renameEntry (fspath, pathFrom) (fspath, pathTo);
-         if not keepbackups then
-           Os.delete fspath tmpPath;
-         clearCommitLog()
+         match Os.renameIfAllowed target Path.empty temp Path.empty with
+           None ->
+             if keepbackups then
+              (*FIX: should be recursive*)
+               Xferhint.renameEntry (fspath, pathTo) (fspath, tmpPath);
+             debug (fun() -> Util.msg "rename %s to %s\n" source' target');
+             Os.rename source Path.empty target Path.empty;
+             (*FIX: should be recursive*)
+             Xferhint.renameEntry (fspath, pathFrom) (fspath, pathTo);
+             if not keepbackups then
+               Os.delete fspath tmpPath;
+             clearCommitLog()
+         | Some e ->
+             (* We are not able to move the file.  We clear the commit
+                log as nothing happened, then fail. *)
+             clearCommitLog();
+             Util.convertUnixErrorsToTransient "renaming" (fun () -> raise e)
        end else begin
          debug (fun() -> Util.msg "rename: moveFirst=false\n");
          Os.rename source Path.empty target Path.empty;
@@ -429,8 +435,8 @@ let diffCmd =
      ^ "utility used to generate displays of file differences.  The default "
      ^ "is `\\verb|diff|'.  If the value of this preference contains the substrings "
      ^ "CURRENT1 and CURRENT2, these will be replaced by the names of the files to be "
-     ^ "diffed.  If not, the two filenames will be appended to the command (enclosed "
-     ^ "in double quotes).")
+     ^ "diffed.  If not, the two filenames will be appended to the command.  In both "
+     ^ "cases, the filenames are suitably quoted.")
 
 let quotes s = "'" ^ Util.replacesubstring s "'" "'\''" ^ "'"
 
@@ -442,14 +448,14 @@ let rec diff root1 path1 ui1 root2 path2 ui2 showDiff id =
       (root2string root2) (Path.toString path2));
   let displayDiff fspath1 fspath2 =
     let cmd =
-      if Util.findsubstring (Prefs.read diffCmd) "CURRENT1" = None then
+      if Util.findsubstring "CURRENT1" (Prefs.read diffCmd) = None then
           (Prefs.read diffCmd)
         ^ " " ^ (quotes (Fspath.toString fspath1))
-        ^ " " ^ (quotes (Fspath.toString fspath2)) 
-      else 
+        ^ " " ^ (quotes (Fspath.toString fspath2))
+      else
         Util.replacesubstrings (Prefs.read diffCmd)
-          ["CURRENT1", (Fspath.toString fspath1);
-           "CURRENT2", (Fspath.toString fspath2)] in
+          ["CURRENT1", quotes (Fspath.toString fspath1);
+           "CURRENT2", quotes (Fspath.toString fspath2)] in
     let c = Unix.open_process_in cmd in
     showDiff cmd (readChannelTillEof c);
     ignore(Unix.close_process_in c) in

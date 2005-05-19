@@ -22,6 +22,7 @@ val registerHostCmd :
 (* A variant of registerHostCmd, for constructing a remote command to be
    applied to a particular root (host + fspath).
  -
+
    A naming convention: when a `root command' is built from a
    corresponding `local command', we name the two functions
    <funcName>OnRoot and <funcName>Local *)
@@ -42,7 +43,9 @@ val killServer : bool Prefs.t
 
 (* Establish a connection to the remote server (if any) corresponding
    to the root and return the canonical name of the root *)
-val canonizeRoot : Clroot.clroot -> (string -> string) option -> Common.root Lwt.t
+val canonizeRoot :
+  string -> Clroot.clroot -> (string -> string -> string) option ->
+  Common.root Lwt.t
 
 (* Statistics *)
 val emittedBytes : float ref

@@ -48,7 +48,7 @@ let installRoots termInteract =
       (String.concat ", " roots) ));
   Safelist.fold_right
     (fun r cont ->
-       Remote.canonizeRoot (Clroot.parseRoot r) termInteract
+       Remote.canonizeRoot r (Clroot.parseRoot r) termInteract
        >>= (fun r' ->
        cont >>= (fun l ->
        return (r' :: l))))

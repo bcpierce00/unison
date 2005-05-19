@@ -1,3 +1,24 @@
+CHANGES FROM VERSION 2.12.14
+
+* Fixed a bug with completely empty directories under Windows
+  (not even containing "." and "..")
+* Attempt to resolve issues with synchronizing modification times
+  of read-only files under Windows
+* Ignore chmod failures when deleting files
+* Bug fixes and cleanups in ssh password prompting.  Now works with
+  the GTK2 UI under Linux.  (I hope the Mac OS X is not broken.)
+* Ignore trailing dots in filenames in case insensitive mode
+* Do not keep DANGER.README file if the first rename fail because it
+  is not allowed
+* Fixed check for path validity
+* Proper quoting of paths, files and extensions ignored using the UI
+* Added one missing restoreTerminal call in test UI
+* The strings CURRENT1 and CURRENT2 are now correctly substitued when
+  they occur in the diff preference
+* Include profile name in the GTK2 window name
+* Added bindings ',' (same as '<') and '.' (same as '>') in the GTK2 UI
+
+-------------------------------
 CHANGES FROM VERSION 2.12.13
 
 * Archive now updated again when a file seems to have changed but

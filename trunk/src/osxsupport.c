@@ -25,16 +25,6 @@ CAMLprim value isMacOSX (value nothing) {
 #endif
 }
 
-/* FIX: this should be somewhere else */
-/* Only used to check whether pty is supported */
-CAMLprim value isLinux (value nothing) {
-#ifdef __linux__
-  return Val_true;
-#else
-  return Val_false;
-#endif
-}
-
 CAMLprim value getFileInfos (value path, value need_size) {
 #ifdef __APPLE__
 

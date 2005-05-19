@@ -29,6 +29,46 @@ let someHostIsInsensitive =
 (* Note: this function must be fast *)
 let insensitive () = Prefs.read someHostIsInsensitive
 
+let needNormalization s =
+  let rec iter s pos len wasDot =
+    if pos = len then wasDot else
+    let c = s.[pos] in
+    (wasDot && c = '/') || iter s (pos + 1) len (c = '.')
+  in
+  iter s 0 (String.length s) false
+
+let removeTrailingDots s =
+  let len = String.length s in
+  let s' = String.create len in
+  let pos = ref (len - 1) in
+  let pos' = ref (len - 1) in
+  while !pos >= 0 do
+    while !pos >= 0 && s.[!pos] = '.' do decr pos done;
+    while !pos >= 0 && s.[!pos] <> '/' do
+      s'.[!pos'] <- s.[!pos]; decr pos; decr pos'
+    done;
+    while !pos >= 0 && s.[!pos] = '/' do
+      s'.[!pos'] <- s.[!pos]; decr pos; decr pos'
+    done
+  done;
+  String.sub s' (!pos' + 1) (len - !pos' - 1)
+
+(* Dots are ignored at the end of filenames under Windows. *)
+let normalize s =
+  if
+    insensitive () &&
+(*FIX: should only be done when one host is running under Windows...
+(should be OK for now as it seems unlikely to have a file ending with
+ a dot and the same file with the same name but no dot at the end)
+    Prefs.read someHostIsRunningWindows &&
+    not (Prefs.read allHostsAreRunningWindows) &&
+*)
+    needNormalization s
+  then
+    removeTrailingDots s
+  else
+    s
+
 (* During startup the client determines the case sensitivity of each root.   *)
 (* If any root is case insensitive, all roots must know it; we ensure this   *)
 (* by storing the information in a pref so that it is propagated to the      *)
