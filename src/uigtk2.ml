@@ -154,7 +154,7 @@ class scrolled_text
 (* oneBox: Display a message in a window and wait for the user
    to hit the button. *)
 let oneBox ~title ~message ~label =
-  let t = GWindow.dialog ~title ~wm_name:title
+  let t = GWindow.dialog ~title
       ~modal:true ~position:`CENTER () in
   grabFocus t;
   let h = GPack.hbox ~packing:(t#vbox#pack ~expand:false ~padding:20) () in
@@ -178,7 +178,7 @@ let okBox ~title ~message = oneBox ~title ~message ~label:"OK"
    chosen, false if the second button is chosen. *)
 let twoBox ~title ~message ~alabel ~blabel =
   let result = ref false in
-  let t = GWindow.dialog ~title ~wm_name:title ~modal:true
+  let t = GWindow.dialog ~title ~modal:true
       ~position:`CENTER () in
   grabFocus t;
   let h = GPack.hbox ~packing:(t#vbox#pack ~expand:false ~padding:20) () in
@@ -228,7 +228,7 @@ let safeExit () =
 let warnBox title message =
   if Prefs.read Globals.batch then begin
     (* In batch mode, just pop up a window and go ahead *)
-    let t = GWindow.dialog ~title ~wm_name:title ~position:`CENTER () in
+    let t = GWindow.dialog ~title ~position:`CENTER () in
     let h = GPack.hbox ~packing:(t#vbox#pack ~expand:false ~padding:20) () in
     ignore(GMisc.label ~justify:`LEFT ~text:message
              ~packing:(h#pack ~expand:false ~padding:20) ());
@@ -391,7 +391,7 @@ let serverWritten = ref 0.
 
 let statistics () =
   let title = "Statistics" in
-  let t = GWindow.dialog ~title ~wm_name:title () in
+  let t = GWindow.dialog ~title () in
   let t_dismiss =
     GButton.button ~label:"Dismiss" ~packing:t#action_area#add () in
   t_dismiss#grab_default ();
@@ -532,7 +532,7 @@ let tryAgainOrQuit message =
 (* ------ *)
 
 let getFirstRoot() =
-  let t = GWindow.dialog ~title:"Root selection" ~wm_name:"Root selection"
+  let t = GWindow.dialog ~title:"Root selection"
       ~modal:true ~allow_grow:true () in
   t#misc#grab_focus ();
 
@@ -576,7 +576,7 @@ let getFirstRoot() =
 (* ------ *)
 
 let getSecondRoot () =
-  let t = GWindow.dialog ~title:"Root selection" ~wm_name:"Root selection"
+  let t = GWindow.dialog ~title:"Root selection"
       ~modal:true ~allow_grow:true () in
   t#misc#grab_focus ();
 
@@ -705,21 +705,26 @@ let getSecondRoot () =
 
 (* ------ *)
 
-let getPassword account =
-  let t = GWindow.dialog ~title:"Enter password" ~wm_name:"Enter password"
+let getPassword rootName msg =
+  let t = GWindow.dialog ~title:"Unison: SSH connection" ~position:`CENTER
       ~modal:true ~allow_grow:true () in
   t#misc#grab_focus ();
 
-  let message = "Enter the password for " ^ account in
+  let header =
+    Format.sprintf "<b>Connecting to '%s'...</b>" rootName in
 
-  let hb = GPack.hbox
-      ~packing:(t#vbox#pack ~expand:false ~padding:15) () in
-  ignore(GMisc.label ~text:message
+  let hb = GPack.hbox ~packing:(t#vbox#pack ~expand:false ~padding:4) () in
+  ignore(GMisc.label ~markup:header
            ~justify:`LEFT
-           ~packing:(hb#pack ~expand:false ~padding:15) ());
+           ~packing:(hb#pack ~expand:false ~padding:4) ());
+
+  let hb = GPack.hbox ~packing:(t#vbox#pack ~expand:false) () in
+  ignore(GMisc.label ~text:msg
+           ~justify:`LEFT
+           ~packing:(hb#pack ~expand:false ~fill:true ~padding:4) ());
 
   let f1 = GPack.hbox ~spacing:4
-      ~packing:(t#vbox#pack ~expand:true ~padding:4) () in
+      ~packing:(t#vbox#pack ~expand:false ~padding:4) () in
 
   let passwordE = GEdit.entry ~packing:f1#add ~visibility:false () in
   passwordE#misc#grab_focus ();
@@ -738,15 +743,10 @@ let getPassword account =
   t#show ();
   ignore (t#connect#destroy ~callback:GMain.Main.quit);
   GMain.Main.main ();
+  gtk_sync ();
   !result
 
-let termInteract() =
-  let handleSSH s =
-    match Uicommon.sshParse s with
-      Uicommon.Password account -> getPassword account
-    | _ -> "" in
-  if Osx.isMacOSX or Osx.isLinux then Some handleSSH
-  else None
+let termInteract = Some getPassword
 
 (* ------ *)
 
@@ -811,7 +811,7 @@ let getProfile () =
   let result = ref None in
 
   (* Build the dialog *)
-  let t = GWindow.dialog ~title:"Profiles" ~wm_name:"Profiles" ~width:400 () in
+  let t = GWindow.dialog ~title:"Profiles" ~width:400 () in
 
   let okCommand() =
     currentWindow := None;
@@ -880,7 +880,7 @@ let getProfile () =
       ~packing:(hb#pack ~expand:false) () in
   ignore (nw#connect#clicked ~callback:(fun () ->
     let t =
-      GWindow.dialog ~title:"New profile" ~wm_name:"New profile" ~modal:true ()
+      GWindow.dialog ~title:"New profile" ~modal:true ()
     in
     let vb = GPack.vbox ~border_width:4 ~packing:t#vbox#add () in
     let f = GPack.vbox ~packing:(vb#pack ~expand:true ~padding:4) () in
@@ -967,7 +967,7 @@ let getProfile () =
 
 let documentation sect =
   let title = "Documentation" in
-  let t = GWindow.dialog ~title ~wm_name:title () in
+  let t = GWindow.dialog ~title () in
   let t_dismiss =
     GButton.button ~label:"Dismiss" ~packing:t#action_area#add () in
   t_dismiss#grab_default ();
@@ -1011,7 +1011,7 @@ let documentation sect =
 let messageBox ~title ?(label = "Dismiss") ?(action = fun t -> t#destroy)
     ?(modal = false) message =
   let utitle = transcode title in
-  let t = GWindow.dialog ~title:utitle ~wm_name:utitle ~modal ~position:`CENTER () in
+  let t = GWindow.dialog ~title:utitle ~modal ~position:`CENTER () in
   let t_dismiss = GButton.button ~label ~packing:t#action_area#add () in
   t_dismiss#grab_default ();
   ignore (t_dismiss#connect#clicked ~callback:(action t));
@@ -1047,7 +1047,7 @@ let getMyWindow () =
           | None ->
               (* Used to be ~position:`CENTER -- maybe that was better... *)
               GWindow.window ~kind:`TOPLEVEL ~position:`CENTER
-                ~wm_name:Uutil.myName () in
+                ~title:Uutil.myName () in
   myWindow := Some(w);
   w
 
@@ -1109,6 +1109,9 @@ let rec createToplevelWindow () =
       else if p="default" then label
       else if label="" then p
       else p ^ " (" ^ label ^ ")" in
+    toplevelWindow#set_title
+      (if s = "" then Uutil.myName else
+       Format.sprintf "%s [%s]" Uutil.myName s);
     let s = if s="" then "" else "Profile: " ^ s in
     profileLabel#set_text s
   in
@@ -1903,9 +1906,9 @@ lst_store#set ~row ~column:c_path path;
     (mainWindow#event#connect#key_press ~callback:
        begin fun ev ->
          let key = GdkEvent.Key.keyval ev in
-         if key = GdkKeysyms._Left then begin
+         if key = GdkKeysyms._Left || key = Char.code ',' then begin
            leftAction (); GtkSignal.stop_emit (); true
-         end else if key = GdkKeysyms._Right then begin
+         end else if key = GdkKeysyms._Right || key = Char.code '.' then begin
            rightAction (); GtkSignal.stop_emit (); true
          end else
            false
@@ -2055,7 +2058,7 @@ lst_store#set ~row ~column:c_path path;
   let loadProfile p =
     debug (fun()-> Util.msg "Loading profile %s..." p);
     Uicommon.initPrefs p displayWaitMessage getFirstRoot getSecondRoot
-      (termInteract());
+      termInteract;
     displayNewProfileLabel p;
     setMainWindowColumnHeaders()
   in
@@ -2226,7 +2229,7 @@ let start _ =
       getProfile
       getFirstRoot
       getSecondRoot
-      (termInteract());
+      termInteract;
 
     scanProfiles();
     createToplevelWindow();

@@ -139,7 +139,7 @@ let opendir (Fspath d) =
   if Util.osType<>`Win32 || not(isRootDir d) then Unix.opendir d else
   try
     Unix.opendir d
-  with _ -> (* FIX: should not catch ALL exceptions *)
+  with Unix.Unix_error _ ->
     Unix.opendir (d^"*")
 
 let child (Fspath f) n =
@@ -246,7 +246,6 @@ let canonizeFspath p0 =
             Sys.getcwd() end in
           Sys.chdir original;
           let bn = Filename.basename p in
-          Printf.eprintf "p = %s; bn = %s\n" p bn; flush stderr;
           if bn="" then parent'
           else toString(child (localString2fspath parent')
                           (Name.fromString bn))

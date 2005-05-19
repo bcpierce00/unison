@@ -1367,7 +1367,7 @@ let allHostsAreRunningWindows =
 let badWindowsFilenameRx =
   (* FIX: This should catch all device names (like aux, con, ...).  I don't
      know what all the possible device names are. *)
-  Rx.case_insensitive (Rx.rx "aux|con|lpt1|prn|(.*[\000-\031\\/<>:\"|].*)")
+  Rx.case_insensitive (Rx.rx "\\.*|aux|con|lpt1|prn|(.*[\000-\031\\/<>:\"|].*)")
 let isBadWindowsFilename s =
   (* FIX: should also check for a max filename length, not sure how much *)
   Rx.match_string badWindowsFilenameRx (Name.toString s)
@@ -1594,7 +1594,6 @@ and buildUpdateRec archive currfspath path fastCheck =
 let rec buildUpdate archive fspath fullpath here path =
   match Path.deconstruct path with
     None ->
-      Os.checkThatParentPathIsADir fspath here;
       showStatus path;
       let (arch, ui) =
         buildUpdateRec archive fspath here (useFastChecking()) in
@@ -1604,6 +1603,12 @@ let rec buildUpdate archive fspath fullpath here path =
        end,
        ui)
   | Some(name, path') ->
+      if not (isDir fspath here) then
+        (archive,
+         Error (Printf.sprintf
+                  "path %s is not valid because %s is not a directory"
+                  (Path.toString fullpath) (Path.toString here)))
+      else
       let children = getChildren fspath here in
       let (name', status) =
         try

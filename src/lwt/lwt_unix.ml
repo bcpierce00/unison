@@ -154,7 +154,10 @@ let rec run thread =
                   (fun () -> Unix.write fd buf pos len)
            | `CheckSocket res ->
                 wrap_syscall outputs fd res
-                  (fun () -> ignore (Unix.getpeername fd))
+                  (fun () ->
+                     try ignore (Unix.getpeername fd) with
+                       Unix.Unix_error (Unix.ENOTCONN, _, _) ->
+                         ignore (Unix.read fd " " 0 1))
            | `Wait res ->
                 wrap_syscall inputs fd res (fun () -> ()))
         writers;

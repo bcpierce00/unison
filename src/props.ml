@@ -425,7 +425,7 @@ let syncedPartsToString t = match t with
 
 let iCanWrite p =
   try
-    Unix.access p [Unix.R_OK];
+    Unix.access p [Unix.W_OK];
     true
   with
     Unix.Unix_error _ -> false
@@ -629,8 +629,8 @@ let set fspath path kind p =
   Uid.set fspath path kind p.uid;
   Gid.set fspath path kind p.gid;
   TypeCreator.set fspath path kind p.typeCreator;
-  Perm.set fspath path kind p.perm;
-  Time.set fspath path kind p.time
+  Time.set fspath path kind p.time;
+  Perm.set fspath path kind p.perm
 
 let init someHostIsRunningWindows =
   Perm.init someHostIsRunningWindows;

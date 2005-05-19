@@ -5,10 +5,6 @@
 val init : bool -> unit
 val isMacOSX : bool
 
-(* FIX: this should be somewhere else *)
-(* Only used to check whether pty is supported *)
-val isLinux : bool
-
 val rsrc : bool Prefs.t
 
 type 'a ressInfo

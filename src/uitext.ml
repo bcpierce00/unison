@@ -426,6 +426,8 @@ let setWarnPrinter() =
                  (["n";"q";"x"],
                     ("Exit"),
                     fun()->
+                      alwaysDisplay "\n";
+                      restoreTerminal ();
                       Lwt_unix.run (Update.unlockArchives ());
                       exit 1)]
                 (fun()-> display  "Press return to continue.")
