@@ -1,3 +1,11 @@
+CHANGES FROM VERSION 2.12.15
+
+* Added a window icon for the GTK UI
+* When there is an error during a non-atomic renaming, fail in a
+  fatal way (otherwise, Unison may fail later in a puzzling way
+  because of the left over DANGER.README file)
+
+-------------------------------
 CHANGES FROM VERSION 2.12.14
 
 * Fixed a bug with completely empty directories under Windows

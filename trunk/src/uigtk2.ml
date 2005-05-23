@@ -70,6 +70,17 @@ let fontMonospaceMedium =
 
 let fontMonospaceMediumPango = lazy (Pango.Font.from_string "monospace")
 
+(**********************************************************************
+ Unison Logo
+ **********************************************************************)
+
+(* Not sure whether this is available under Windows...
+let icon = Rsvg.render_from_string Pixmaps.icon_svg
+*)
+let icon =
+  GdkPixbuf.from_data ~width:48 ~height:48 ~has_alpha:true
+    (Gpointer.region_of_string Pixmaps.icon_data)
+
 (*********************************************************************
   UI state variables
  *********************************************************************)
@@ -740,6 +751,7 @@ let getPassword rootName msg =
   contButton#grab_default ();
   let quitButton = GButton.button ~label:"Quit" ~packing:f3#add () in
   ignore (quitButton#connect#clicked ~callback:safeExit);
+  ignore (t#event#connect#delete ~callback:(fun _ -> safeExit (); true));
   t#show ();
   ignore (t#connect#destroy ~callback:GMain.Main.quit);
   GMain.Main.main ();
@@ -1066,6 +1078,7 @@ let displayWaitMessage () =
 
 let rec createToplevelWindow () =
   let toplevelWindow = getMyWindow() in
+  toplevelWindow#set_icon (Some icon);
   let toplevelVBox = GPack.vbox ~packing:toplevelWindow#add () in
 
   (*******************************************************************

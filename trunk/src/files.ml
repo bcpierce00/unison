@@ -18,23 +18,25 @@ let writeCommitLog source target tempname =
   let targetname = Fspath.toString target in
   debug (fun() -> Util.msg "Writing commit log: renaming %s to %s via %s\n"
     sourcename targetname tempname);
-  let c =
-    Util.convertUnixErrorsToFatal
-      "writing commit log"
-      (fun() ->
+  Util.convertUnixErrorsToFatal
+    "writing commit log"
+    (fun () ->
+       let c =
          open_out_gen [Open_wronly; Open_creat; Open_trunc; Open_excl]
-           0o600 commitLogName) in
-  Printf.fprintf c "Warning: the last run of %s terminated abnormally " Uutil.myName;
-  Printf.fprintf c "while moving\n   %s\nto\n   %s\nvia\n   %s\n\n"
-    sourcename targetname tempname;
-  Printf.fprintf c "Please check the state of these files immediately\n";
-  Printf.fprintf c "(and delete this notice when you've done so).\n";
-  close_out c
+           0o600 commitLogName in
+       Printf.fprintf c "Warning: the last run of %s terminated abnormally "
+         Uutil.myName;
+       Printf.fprintf c "while moving\n   %s\nto\n   %s\nvia\n   %s\n\n"
+         sourcename targetname tempname;
+       Printf.fprintf c "Please check the state of these files immediately\n";
+       Printf.fprintf c "(and delete this notice when you've done so).\n";
+       close_out c)
 
 let clearCommitLog () =
   debug (fun() -> (Util.msg "Deleting commit log\n"));
-  try Unix.unlink commitLogName
-  with Unix.Unix_error(_) -> ()
+  Util.convertUnixErrorsToFatal
+    "clearing commit log"
+      (fun () -> Unix.unlink commitLogName)
 
 let processCommitLog () =
   if Sys.file_exists commitLogName then begin
@@ -186,16 +188,22 @@ let renameLocal (_, (keepbackups, fspath, pathFrom, pathTo)) =
          debug (fun() -> Util.msg "rename %s to %s\n" target' temp');
          match Os.renameIfAllowed target Path.empty temp Path.empty with
            None ->
-             if keepbackups then
-              (*FIX: should be recursive*)
-               Xferhint.renameEntry (fspath, pathTo) (fspath, tmpPath);
-             debug (fun() -> Util.msg "rename %s to %s\n" source' target');
-             Os.rename source Path.empty target Path.empty;
-             (*FIX: should be recursive*)
-             Xferhint.renameEntry (fspath, pathFrom) (fspath, pathTo);
-             if not keepbackups then
-               Os.delete fspath tmpPath;
-             clearCommitLog()
+             (* If the renaming fails, we will be left with
+                DANGER.README file which will make any other
+                (similar) renaming fail in a cryptic way.  So, it
+                seems better to abort early. *)
+             Util.convertUnixErrorsToFatal "renaming with commit log"
+               (fun () ->
+                  if keepbackups then
+                    (*FIX: should be recursive*)
+                    Xferhint.renameEntry (fspath, pathTo) (fspath, tmpPath);
+                  debug (fun()-> Util.msg "rename %s to %s\n" source' target');
+                  Os.rename source Path.empty target Path.empty;
+                 (*FIX: should be recursive*)
+                 Xferhint.renameEntry (fspath, pathFrom) (fspath, pathTo);
+                 if not keepbackups then
+                   Os.delete fspath tmpPath;
+                 clearCommitLog())
          | Some e ->
              (* We are not able to move the file.  We clear the commit
                 log as nothing happened, then fail. *)
