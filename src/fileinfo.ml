@@ -59,6 +59,9 @@ let get fromRoot fspath path =
            desc     = Props.dummy;
            osX      = Osx.getFileInfos fspath path `ABSENT })
 
+let check fspath path props =
+  Props.check fspath path (statFn false fspath path) props
+
 let set fspath path action newDesc =
   let (kind, p) =
     match action with
@@ -75,7 +78,8 @@ let set fspath path action newDesc =
         Props.override
           (get false fspath path).desc (Props.diff oldDesc newDesc)
   in
-  Props.set fspath path kind p
+  Props.set fspath path kind p;
+  check fspath path p
 
 type stamp =
     InodeStamp of int         (* inode number, for Unix systems *)

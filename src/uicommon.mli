@@ -65,6 +65,8 @@ val showDiffs :
   -> Uutil.File.t               (* id for transfer progress reports *)
   -> unit
 
+val dangerousPathMsg : Path.t list -> string
+
 (* Utilities for adding ignore patterns *)
 val ignorePath : Path.t -> string
 val ignoreName : Path.t -> string

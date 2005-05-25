@@ -7,3 +7,4 @@
 
 val acquire : string -> bool
 val release : string -> unit
+val is_locked : string -> bool

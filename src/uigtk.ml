@@ -1481,7 +1481,8 @@ let rec createToplevelWindow () =
     let reconcile updates =
       let t = Trace.startTimer "Reconciling" in
       Recon.reconcileAll updates in
-    let (reconItemList, thereAreEqualUpdates) = reconcile (findUpdates ()) in
+    let (reconItemList, thereAreEqualUpdates, dangerousPaths) =
+      reconcile (findUpdates ()) in
     Trace.showTimer t;
     if reconItemList = [] then
       if thereAreEqualUpdates then
@@ -1499,7 +1500,11 @@ let rec createToplevelWindow () =
     current := None;
     displayMain();
     grSet grGo (Array.length !theState > 0);
-    grSet grRestart true 
+    grSet grRestart true;
+    if dangerousPaths <> [] then begin
+      Prefs.set Globals.batch false;
+      Util.warn (Uicommon.dangerousPathMsg dangerousPaths)
+    end;
 in
 
   (*********************************************************************
