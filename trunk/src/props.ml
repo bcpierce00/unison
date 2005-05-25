@@ -30,6 +30,7 @@ module Perm : sig
   val fileSafe : t
   val dirDefault : t
   val extract : t -> int
+  val check : Fspath.t -> Path.local -> Unix.LargeFile.stats -> t -> unit
 end = struct
 
 (* We introduce a type, Perm.t, that holds a file's permissions along with   *)
@@ -176,6 +177,17 @@ let set fspath path kind (fp, mask) =
         Unix.chmod abspath fp)
 
 let get stats _ = (stats.Unix.LargeFile.st_perm, Prefs.read permMask)
+
+let check fspath path stats (fp, mask) =
+  if fp land mask <> stats.Unix.LargeFile.st_perm land mask then
+    raise
+      (Util.Transient
+         (Format.sprintf
+            "Failed to set permissions of file %s to %s: \
+             the permissions was set to %s instead"
+            (Fspath.concatToString fspath path)
+            (syncedPartsToString (fp, mask))
+            (syncedPartsToString (stats.Unix.LargeFile.st_perm, mask))))
 
 let init someHostIsRunningWindows =
   let mask = if someHostIsRunningWindows then wind_mask else unix_mask in
@@ -354,6 +366,7 @@ module Time : sig
   val extract : t -> float
   val sync : bool Prefs.t
   val replace : t -> float -> t
+  val check : Fspath.t -> Path.local -> Unix.LargeFile.stats -> t -> unit
 end = struct
 
 let sync =
@@ -366,13 +379,10 @@ type t = Synced of float | NotSynced of float
 
 let dummy = NotSynced 0.
 
+let extract t = match t with Synced v -> v | NotSynced v -> v
+
 let minus_two = Int64.of_int (-2)
 let approximate t = Int64.logand (Int64.of_float t) minus_two
-(*FIX: this is the right approximation function (date are approximated
-  upward on FAT filesystems
-let approximate t = Int64.of_float (2. *. ceil (t /. 2.))
-*)
-let extract t = match t with Synced v -> v | NotSynced v -> v
 
 let oneHour = Int64.of_int 3600
 let minusOneHour = Int64.neg oneHour
@@ -394,6 +404,25 @@ let similar t t' =
     Synced v, Synced v'      ->
       let delta = Int64.sub (approximate v) (approximate v') in
       delta = Int64.zero || delta = oneHour || delta = minusOneHour
+  | NotSynced _, NotSynced _ ->
+      true
+  | _                        ->
+      false
+
+(* Accept one hour differences and one second differences *)
+let possible_deltas =
+  [ -3601L; 3601L; -3600L; 3600L; -3599L; 3599L; -1L; 1L; 0L ]
+
+(*FIX: this is the right similar function (date are approximated
+   on FAT filesystems upward under Windows, downward under Linux)
+  The hash function needs to be updated as well *)
+let similar_correct t t' =
+  not (Prefs.read sync)
+    ||
+  match t, t' with
+    Synced v, Synced v'      ->
+      List.mem (Int64.sub (Int64.of_float v)  (Int64.of_float v'))
+        possible_deltas
   | NotSynced _, NotSynced _ ->
       true
   | _                        ->
@@ -470,6 +499,23 @@ let get stats _ =
     Synced v
   else
     NotSynced v
+
+let check fspath path stats t =
+  match t with
+    NotSynced _ ->
+      ()
+  | Synced v ->
+      let t' = Synced (stats.Unix.LargeFile.st_mtime) in
+      if not (similar_correct t t') then
+        raise
+          (Util.Transient
+             (Format.sprintf
+                "Failed to set modification time of file %s to %s: \
+             the time was set to %s instead"
+            (Fspath.concatToString fspath path)
+            (syncedPartsToString t)
+            (syncedPartsToString t')))
+
 
 let same p p' = extract p = extract p'
 
@@ -631,6 +677,11 @@ let set fspath path kind p =
   TypeCreator.set fspath path kind p.typeCreator;
   Time.set fspath path kind p.time;
   Perm.set fspath path kind p.perm
+
+(* Paranoid checks *)
+let check fspath path stats p =
+  Time.check fspath path stats p.time;
+  Perm.check fspath path stats p.perm
 
 let init someHostIsRunningWindows =
   Perm.init someHostIsRunningWindows;

@@ -68,8 +68,10 @@ and updateContent =
        * contentschange               (*   - hint to transport agent *)
   | Dir                               (* Path refers to a directory *)
       of Props.t                      (*   - summary of current state *)
-       * (Name.t * updateItem) list   (*   - children *)
+       * (Name.t * updateItem) list   (*   - children
+                                             MUST KEEP SORTED for recon *)
        * permchange                   (*   - did permissions change? *)
+       * bool                         (*   - is the directory now empty? *)
   | Symlink                           (* Path refers to a symbolic link *)
       of string                       (*   - link text *)
 

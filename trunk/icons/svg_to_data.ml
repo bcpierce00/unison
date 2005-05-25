@@ -9,5 +9,9 @@
 
 let buf = Rsvg.render_from_file Sys.argv.(1)
 let _ =
-Format.printf "\"%s\"@."
-  (String.escaped (Gpointer.string_of_region (GdkPixbuf.get_pixels buf)))
+Format.printf "\"";
+let s = Gpointer.string_of_region (GdkPixbuf.get_pixels buf) in
+for i = 0 to 575 do
+  Format.printf "%s" (String.escaped (String.sub s (i * 16) 16));
+  if i = 575 then Format.printf "\"@." else Format.printf "\\@. "
+done

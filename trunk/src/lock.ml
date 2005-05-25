@@ -35,3 +35,8 @@ let acquire name =
            create name 0o600)
 
 let release name = try Unix.unlink name with Unix.Unix_error _ -> ()
+
+let is_locked name =
+  Util.convertUnixErrorsToTransient
+    "Lock.test"
+    (fun () -> Sys.file_exists name)

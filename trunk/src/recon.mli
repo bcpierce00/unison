@@ -2,15 +2,17 @@
 (* $I2: Last modified by bcpierce on Thu, 24 Jun 2004 12:13:22 -0400 $ *)
 (* $I3: Copyright 1999-2004 (see COPYING for details) $ *)
 
-val reconcileAll : 
+val reconcileAll :
      Common.updateItem list Common.oneperpath
                                 (* one updateItem per replica, per path *)
   -> Common.reconItem list      (* List of updates that need propagated *)
      * bool                     (* Any file updated equally on all roots*)
+     * Path.t list              (* Paths which have been emptied on one side*)
 (* --------------- *)
-      
+
 val reconcileTwo : Path.t -> Common.updateItem -> Common.updateItem ->
-  Common.reconItem list * bool
+  Common.reconItem list * bool * Path.t list
+
 
 (* Use the current values of the '-prefer <ROOT>' and '-force <ROOT>'        *)
 (* preferences to override the reconciler's choices                          *)

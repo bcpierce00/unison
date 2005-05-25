@@ -82,6 +82,7 @@ and updateContent =
        * (Name.t * updateItem) list   (*   - children;
                                              MUST KEEP SORTED for recon *)
        * permchange                   (*   - did permissions change? *)
+       * bool                         (*   - is the directory now empty? *)
   | Symlink                           (* Path refers to a symbolic link *)
       of string                       (*   - link text *)
 
@@ -121,9 +122,9 @@ type reconItem =
      replicas : replicas}
 
 let ucLength = function
-    File(desc,_)  -> Props.length desc
-  | Dir(desc,_,_) -> Props.length desc
-  | _             -> Uutil.Filesize.zero
+    File(desc,_)    -> Props.length desc
+  | Dir(desc,_,_,_) -> Props.length desc
+  | _               -> Uutil.Filesize.zero
 
 let uiLength = function
     Updates(uc,_) -> ucLength uc

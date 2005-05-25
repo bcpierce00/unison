@@ -261,6 +261,20 @@ let showDiffs ri printer errprinter id =
 exception Synch_props of Common.reconItem
 
 (**********************************************************************
+                  Common error messages
+ **********************************************************************)
+
+let dangerousPathMsg dangerousPaths =
+  if dangerousPaths = [Path.empty] then
+    "The root of one of the replicas has been completely emptied."
+  else
+    Printf.sprintf
+      "The following paths have been completely emptied:\n  %s"
+      (String.concat "\n  "
+         (Safelist.map (fun p -> "'" ^ (Path.toString p) ^ "'")
+            dangerousPaths))
+
+(**********************************************************************
                   Useful patterns for ignoring paths
  **********************************************************************)
 

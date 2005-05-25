@@ -71,15 +71,22 @@ let fontMonospaceMedium =
 let fontMonospaceMediumPango = lazy (Pango.Font.from_string "monospace")
 
 (**********************************************************************
- Unison Logo
+ Unison icon
  **********************************************************************)
 
 (* Not sure whether this is available under Windows...
 let icon = Rsvg.render_from_string Pixmaps.icon_svg
 *)
+(* This does not work with the current version of Lablgtk, due to a bug
 let icon =
   GdkPixbuf.from_data ~width:48 ~height:48 ~has_alpha:true
     (Gpointer.region_of_string Pixmaps.icon_data)
+*)
+let icon =
+  let p = GdkPixbuf.create ~width:48 ~height:48 ~has_alpha:true () in
+  Gpointer.blit
+    (Gpointer.region_of_string Pixmaps.icon_data) (GdkPixbuf.get_pixels p);
+  p
 
 (*********************************************************************
   UI state variables
@@ -1078,7 +1085,9 @@ let displayWaitMessage () =
 
 let rec createToplevelWindow () =
   let toplevelWindow = getMyWindow() in
-  toplevelWindow#set_icon (Some icon);
+  (* There is already a default icon under Windows, and transparent
+     icons are not supported by all version of Windows *)
+  if Util.osType <> `Win32 then toplevelWindow#set_icon (Some icon);
   let toplevelVBox = GPack.vbox ~packing:toplevelWindow#add () in
 
   (*******************************************************************
@@ -1583,7 +1592,8 @@ lst_store#set ~row ~column:c_path path;
     let reconcile updates =
       let t = Trace.startTimer "Reconciling" in
       Recon.reconcileAll updates in
-    let (reconItemList, thereAreEqualUpdates) = reconcile (findUpdates ()) in
+    let (reconItemList, thereAreEqualUpdates, dangerousPaths) =
+      reconcile (findUpdates ()) in
     Trace.showTimer t;
     if reconItemList = [] then
       if thereAreEqualUpdates then
@@ -1602,7 +1612,11 @@ lst_store#set ~row ~column:c_path path;
     displayMain();
     progressBarPulse := false; sync_action := None; displayGlobalProgress 0.;
     grSet grGo (Array.length !theState > 0);
-    grSet grRestart true 
+    grSet grRestart true;
+    if dangerousPaths <> [] then begin
+      Prefs.set Globals.batch false;
+      Util.warn (Uicommon.dangerousPathMsg dangerousPaths)
+    end;
   in
 
   (*********************************************************************

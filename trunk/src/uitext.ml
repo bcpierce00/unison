@@ -410,7 +410,7 @@ let setWarnPrinterForInitialization()=
             alwaysDisplay "Error: ";
             alwaysDisplay s;
             alwaysDisplay "\n";
-            exit 1)
+            exit Uicommon.fatalExit)
 
 let setWarnPrinter() =
   Util.warnPrinter :=
@@ -429,7 +429,7 @@ let setWarnPrinter() =
                       alwaysDisplay "\n";
                       restoreTerminal ();
                       Lwt_unix.run (Update.unlockArchives ());
-                      exit 1)]
+                      exit Uicommon.fatalExit)]
                 (fun()-> display  "Press return to continue.")
             end)
 
@@ -510,9 +510,32 @@ let rec interactAndPropagateChanges reconItemList
       (fun () -> display "Proceed with propagating updates? ")
   end
 
+let checkForDangerousPath dangerousPaths =
+  if dangerousPaths <> [] then begin
+    alwaysDisplayAndLog (Uicommon.dangerousPathMsg dangerousPaths);
+    if Prefs.read Globals.batch then begin
+      (* FIX: there should probably be an option to force proceeding *)
+      alwaysDisplay "Aborting...\n"; restoreTerminal ();
+      exit Uicommon.fatalExit
+    end else begin
+      displayWhenInteractive "Do you really want to proceed? ";
+      selectAction
+        None
+        [(["y"],
+          "Continue",
+          (fun() -> ()));
+         (["n"; "q"; "x"; ""],
+          "Exit",
+          (fun () -> alwaysDisplay "\n"; restoreTerminal ();
+                     exit Uicommon.fatalExit))]
+        (fun () -> display "Do you really want to proceed? ")
+    end
+  end
+
 let synchronizeOnce() =
   Trace.status "Looking for changes";
-  let (reconItemList, anyEqualUpdates) = Recon.reconcileAll (Update.findUpdates()) in
+  let (reconItemList, anyEqualUpdates, dangerousPaths) =
+    Recon.reconcileAll (Update.findUpdates()) in
   if reconItemList = [] then begin
     (if anyEqualUpdates then
       Trace.status ("Nothing to do: replicas have been changed only "
@@ -521,11 +544,12 @@ let synchronizeOnce() =
        Trace.status "Nothing to do: replicas have not changed since last sync.");
     (Uicommon.perfectExit, [])
   end else begin
+    checkForDangerousPath dangerousPaths;
     let (anySkipped, anyFailures, failedPaths) =
       interactAndPropagateChanges reconItemList in
     let exitStatus = Uicommon.exitCode(anySkipped,anyFailures) in
     (exitStatus, failedPaths)
-  end 
+  end
 
 let synchronizeUntilNoFailures () =
   let initValueOfPathsPreference = Prefs.read Globals.paths in

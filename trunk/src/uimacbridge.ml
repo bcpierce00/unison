@@ -230,7 +230,8 @@ let unisonInit2 () =
   let reconcile updates =
     let t = Trace.startTimer "Reconciling" in
     Recon.reconcileAll updates in
-  let (reconItemList, thereAreEqualUpdates) = reconcile (findUpdates ()) in
+  let (reconItemList, thereAreEqualUpdates, dangerousPaths) =
+    reconcile (findUpdates ()) in
   Trace.showTimer t;
   if reconItemList = [] then
     if thereAreEqualUpdates then
@@ -246,6 +247,10 @@ let unisonInit2 () =
                    whatHappened = None; statusMessage = None })
       reconItemList in
   theState := Array.of_list stateItemList;
+  if dangerousPaths <> [] then begin
+    Prefs.set Globals.batch false;
+    Util.warn (Uicommon.dangerousPathMsg dangerousPaths)
+  end;
   !theState
 ;;
 Callback.register "unisonInit2" unisonInit2;;

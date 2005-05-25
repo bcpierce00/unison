@@ -464,6 +464,10 @@ let loadArchiveOnRoot: Common.root -> bool -> (int * string) option Lwt.t =
               perform archive recovery.  So, the optimistic loading
               fails. *)
            Sys.file_exists (Fspath.toString (Os.fileInUnisonDir newArcName))
+             ||
+           let (lockFilename, _) = archiveName fspath Lock in
+           let lockFile = Fspath.toString (Os.fileInUnisonDir lockFilename) in
+           Lock.is_locked lockFile
          then
            Lwt.return None
          else
@@ -1367,14 +1371,15 @@ let allHostsAreRunningWindows =
 let badWindowsFilenameRx =
   (* FIX: This should catch all device names (like aux, con, ...).  I don't
      know what all the possible device names are. *)
-  Rx.case_insensitive (Rx.rx "\\.*|aux|con|lpt1|prn|(.*[\000-\031\\/<>:\"|].*)")
+  Rx.case_insensitive
+    (Rx.rx "\\.*|aux|con|lpt1|prn|(.*[\000-\031\\/<>:\"|].*)")
+
 let isBadWindowsFilename s =
   (* FIX: should also check for a max filename length, not sure how much *)
   Rx.match_string badWindowsFilenameRx (Name.toString s)
 let badFilename s =
-  (* Don't check unless we are doing a cross-platform sync with Windows *)
+  (* Don't check unless we are syncing with Windows *)
   Prefs.read someHostIsRunningWindows &&
-  not (Prefs.read allHostsAreRunningWindows) &&
   isBadWindowsFilename s
 
 let getChildren fspath path =
@@ -1415,10 +1420,11 @@ let getChildren fspath path =
 (* from a list of (name, archive) pairs {usually the items in the same
    directory}, build two lists: the first a named list of the _old_
    archives, with their timestamps updated for the files whose contents
-   remain unchanged, the second a named list of updates *)
+   remain unchanged, the second a named list of updates; also returns
+   whether the directory is now empty *)
 let rec buildUpdateChildren
     fspath path (archChi: archive NameMap.t) fastCheck
-    : archive NameMap.t option * (Name.t * Common.updateItem) list
+    : archive NameMap.t option * (Name.t * Common.updateItem) list * bool
     =
   let t = Trace.startTimerQuietly
             (Printf.sprintf "checking %s" (Path.toString path)) in
@@ -1427,6 +1433,7 @@ let rec buildUpdateChildren
     not (Pred.test immutablenot (Path.toString path))
   in
   let curChildren = ref (getChildren fspath path) in
+  let emptied = not (NameMap.is_empty archChi) && !curChildren = [] in
   let updates = ref [] in
   let archUpdated = ref false in
   let handleChild nm archive status =
@@ -1502,7 +1509,8 @@ let rec buildUpdateChildren
     !curChildren;
   Trace.showTimer t;
   (* The Recon module relies on the updates to be sorted *)
-  ((if !archUpdated then Some newChi else None), Safelist.rev !updates)
+  ((if !archUpdated then Some newChi else None),
+   Safelist.rev !updates, emptied)
 
 and buildUpdateRec archive currfspath path fastCheck =
   try
@@ -1557,20 +1565,20 @@ and buildUpdateRec archive currfspath path fastCheck =
             (PropsSame, archDesc)
           else
             (PropsUpdated, info.Fileinfo.desc) in
-        let (newChildren, childUpdates) =
+        let (newChildren, childUpdates, emptied) =
           buildUpdateChildren currfspath path prevChildren fastCheck in
         (begin match newChildren with
            Some ch -> Some (ArchiveDir (archDesc, ch))
          | None    -> None
          end,
          if childUpdates <> [] || permchange = PropsUpdated then
-           Updates (Dir (desc, childUpdates, permchange),
+           Updates (Dir (desc, childUpdates, permchange, emptied),
                     oldInfoOf archive)
          else
            NoUpdates)
     | (`DIRECTORY, _) ->
         debug (fun() -> Util.msg "  buildUpdate -> New directory\n");
-        let (newChildren, childUpdates) =
+        let (newChildren, childUpdates, _) =
           buildUpdateChildren currfspath path NameMap.empty fastCheck in
         (* BCPFIX: This is a bit of a hack and does not really work, since
            it means that we calculate the size of a directory just once and
@@ -1582,7 +1590,7 @@ and buildUpdateRec archive currfspath path fastCheck =
                (fun s (_,ui) -> Uutil.Filesize.add s (uiLength ui))
                Uutil.Filesize.zero childUpdates) in
         (None,
-         Updates (Dir (newdesc, childUpdates, PropsUpdated),
+         Updates (Dir (newdesc, childUpdates, PropsUpdated, false),
                   oldInfoOf archive))
   with
     Util.Transient(s) -> None, Error(s)
@@ -1821,7 +1829,7 @@ let rec updateArchiveRec ui archive =
           ArchiveFile (desc, dig, stamp, ress)
       | Symlink l ->
           ArchiveSymlink l
-      | Dir (desc, children, _) ->
+      | Dir (desc, children, _, _) ->
           begin match archive with
             ArchiveDir (_, arcCh) ->
               let ch =
@@ -2004,7 +2012,7 @@ let doUpdateProps arch propOpt ui =
         end
     | Updates (File (desc, ContentsUpdated (dig, stamp, ress)), _) ->
         ArchiveFile(desc, dig, stamp, ress)
-    | Updates (Dir (desc, _, _), _) ->
+    | Updates (Dir (desc, _, _, _), _) ->
         begin match arch with
           ArchiveDir (_, children) -> ArchiveDir (desc, children)
         | _                        -> ArchiveDir (desc, NameMap.empty)

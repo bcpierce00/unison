@@ -32,7 +32,7 @@ extern void uerror (char * cmdname, value arg) Noreturn;
 CAMLprim value setControllingTerminal(value fdVal) {
   int fd = Int_val(fdVal);
   if (ioctl(fd, TIOCSCTTY, (char *) 0) < 0)
-    uerror("ioctl", NULL);
+    uerror("ioctl", (value) 0);
   return Val_unit;
 }
 
@@ -40,7 +40,7 @@ CAMLprim value setControllingTerminal(value fdVal) {
 CAMLprim value c_openpty() {
   int master,slave;
   if (openpty(&master,&slave,NULL,NULL,NULL) < 0)
-    uerror("openpty", NULL);
+    uerror("openpty", (value) 0);
   value pair = alloc_tuple(2);
   Store_field(pair,0,Val_int(master));
   Store_field(pair,1,Val_int(slave));

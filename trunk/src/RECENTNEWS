@@ -1,3 +1,24 @@
+CHANGES FROM VERSION 2.12.16
+
+* Warning (failure in batch mode) when one path is completely emptied.
+  This prevents Unison from deleting everything on one replica when
+  the other disappear.
+  (Someone should check whether my change in the Mac UI works)
+* Double check that permissions and modification times have been
+  properly set: there are some combination of OS and filesystem on
+  which setting them can fail in a silent way.
+* Check for bad Windows filenames for pure Windows synchronization
+  also (not just cross architecture synchronization).
+  This way, filenames containing backslashes, which are not correctly
+  handled by unison, are rejected right away.
+* Make the optimistic archive loading fail if one of the archives is
+  locked.  (If a lock is present, it is likely that Unison will fail
+  later when saving the archive.)
+* Fixed compilation warnings in pty.c
+* Icon: do not set an icon for the main window under Windows, as there is
+  already one; workaround for a bug in the current version of Lablgtk.
+
+-------------------------------
 CHANGES FROM VERSION 2.12.15
 
 * Added a window icon for the GTK UI
