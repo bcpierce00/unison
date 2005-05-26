@@ -266,7 +266,15 @@ let interact rilist =
                      newLine ();
                      Uicommon.showDiffs ri
                        (fun title text ->
-                          Printf.printf "\n%s\n\n%s\n\n" title text)
+                          try
+                            let pager = Sys.getenv "PAGER" in
+                            restoreTerminal ();
+                            let out = Unix.open_process_out pager in
+                            Printf.fprintf out "\n%s\n\n%s\n\n" title text;
+                            let _ = Unix.close_process_out out in
+                            setupTerminal ()
+                          with Not_found ->
+                            Printf.printf "\n%s\n\n%s\n\n" title text)
                        (fun s -> Printf.printf "%s\n" s)
                        Uutil.File.dummy;
                      repeat()));
@@ -277,7 +285,8 @@ let interact rilist =
                   ("list all suggested changes"),
                   (fun () -> display "\n";
                      Safelist.iter
-                       (fun ri -> displayri ri; display "\n  "; alwaysDisplayDetails ri)
+                       (fun ri -> displayri ri; display "\n  ";
+                                  alwaysDisplayDetails ri)
                        ril;
                      display "\n";
                      repeat()));
@@ -334,7 +343,7 @@ let verifyMerge title text =
         (fun () -> false));
        ]
       (fun () -> display "Commit results of merge? ")
-  end 
+  end
 
 let doTransport reconItemList =
   let totalBytesToTransfer =
@@ -384,7 +393,8 @@ let doTransport reconItemList =
     | ri :: rest when pRiThisRound ri ->
         loop rest
           (uiWrapper ri
-             (fun () -> Transport.transportItem ri (Uutil.File.ofLine 0) verifyMerge)
+             (fun () -> Transport.transportItem ri
+                          (Uutil.File.ofLine 0) verifyMerge)
            :: actions)
           pRiThisRound
     | _ :: rest ->

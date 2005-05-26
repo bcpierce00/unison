@@ -133,7 +133,9 @@ let is_absolute s =
 *)
 let fromString str =
   let str = if Util.osType = `Win32 then Fileutil.bs2fs str else str in
-  if is_absolute str then raise(Invalid_argument "Path.fromString");
+  if is_absolute str then
+    raise (Util.Transient
+             (Printf.sprintf "The path '%s' is not a relative path" str));
   let str = Fileutil.removeTrailingSlashes str in
   if str = "" then empty else
   let rec loop p str =
@@ -142,7 +144,10 @@ let fromString str =
       let name1 = String.sub str 0 pos in
       let str_res =
         String.sub str (pos + 1) (String.length str - pos - 1) in
-      loop (child p (Name.fromString name1)) str_res
+      if pos = 0 then begin
+        loop p str_res
+      end else
+        loop (child p (Name.fromString name1)) str_res
     with
       Not_found -> child p (Name.fromString str)
     | Invalid_argument _ ->

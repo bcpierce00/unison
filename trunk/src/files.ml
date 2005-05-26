@@ -436,12 +436,12 @@ let readChannelTillEof c =
   String.concat "\n" (Safelist.rev (loop []))
 
 let diffCmd =
-  Prefs.createString "diff" "diff"
+  Prefs.createString "diff" "diff -u"
     "*command for showing differences between files"
     ("This preference can be used to control the name and command-line "
      ^ "arguments of the system "
      ^ "utility used to generate displays of file differences.  The default "
-     ^ "is `\\verb|diff|'.  If the value of this preference contains the substrings "
+     ^ "is `\\verb|diff -u|'.  If the value of this preference contains the substrings "
      ^ "CURRENT1 and CURRENT2, these will be replaced by the names of the files to be "
      ^ "diffed.  If not, the two filenames will be appended to the command.  In both "
      ^ "cases, the filenames are suitably quoted.")
