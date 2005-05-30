@@ -1,3 +1,75 @@
+CHANGES FROM VERSION 2.12.19
+
+* Removed uprintf_old.ml and uprintf_new.ml -- everybody should be
+  running OCaml 3.08 by now.
+
+* Previous checkin seems to be at least minimally working.
+
+* Changed format of modification time displays, from 
+
+     `modified at hh:mm:ss on dd MMM, yyyy'
+
+  to
+
+     `modified on yyyy-mm-dd hh:mm:ss'
+
+* Tidied printing of exceptions during transport
+
+
+
+
+
+
+
+-------------------------------
+CHANGES FROM VERSION 2.12.19
+
+* Removed uprintf_old.ml and uprintf_new.ml -- everybody should be
+  running OCaml 3.08 by now.
+
+* Previous checkin seems to be at least minimally working.
+
+* Changed format of modification time displays, from 
+
+     `modified at hh:mm:ss on dd MMM, yyyy'
+
+  to
+
+     `modified on yyyy-mm-dd hh:mm:ss'
+
+* Tidied printing of exceptions during transport
+
+
+
+
+
+
+
+-------------------------------
+CHANGES FROM VERSION 2.12.19
+
+* Removed uprintf_old.ml and uprintf_new.ml -- everybody should be
+  running OCaml 3.08 by now.
+
+* Previous checkin seems to be at least minimally working.
+
+* Changed format of modification time displays, from 
+
+     `modified at hh:mm:ss on dd MMM, yyyy'
+
+  to
+
+     `modified on yyyy-mm-dd hh:mm:ss'
+
+* Tidied printing of exceptions during transport
+
+
+
+
+
+
+
+-------------------------------
 CHANGES FROM VERSION 2.12.18
 
 * Makefile clean-up

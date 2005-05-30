@@ -206,6 +206,14 @@ let ignoreTransientErrors thunk =
   with
     Transient(s) -> ()
 
+let printException e =
+  try
+    raise e
+  with
+    Transient s -> s
+  | Fatal s -> s
+  | e -> Printexc.to_string e
+
 (* Safe version of Unix getenv -- raises a comprehensible error message if
    called with an env variable that doesn't exist                            *)
 let safeGetenv var =
@@ -246,6 +254,7 @@ let time () =
 let time2string timef =
   try
     let time = localtime timef in
+(* Old-style:
     Printf.sprintf
       "%2d:%.2d:%.2d on %2d %3s, %4d"
       time.Unix.tm_hour
@@ -254,6 +263,15 @@ let time2string timef =
       time.Unix.tm_mday
       (monthname time.Unix.tm_mon)
       (time.Unix.tm_year + 1900)
+*)
+    Printf.sprintf
+      "%4d-%2d-%2d at %2d:%.2d:%.2d"
+      (time.Unix.tm_year + 1900)
+      time.Unix.tm_mon
+      time.Unix.tm_mday
+      time.Unix.tm_hour
+      time.Unix.tm_min
+      time.Unix.tm_sec
   with Transient _ ->
     "(invalid date)"
 
