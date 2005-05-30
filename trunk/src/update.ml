@@ -1613,9 +1613,14 @@ let rec buildUpdate archive fspath fullpath here path =
   | Some(name, path') ->
       if not (isDir fspath here) then
         (archive,
-         Error (Printf.sprintf
-                  "path %s is not valid because %s is not a directory"
-                  (Path.toString fullpath) (Path.toString here)))
+         if Path.isEmpty here then
+           Error (Printf.sprintf
+                    "path %s is not valid because the root of one of the replicas is not a directory"
+                    (Path.toString fullpath))
+         else
+           Error (Printf.sprintf
+                    "path %s is not valid because %s is not a directory in one of the replicas"
+                    (Path.toString fullpath) (Path.toString here)))
       else
       let children = getChildren fspath here in
       let (name', status) =

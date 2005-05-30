@@ -1296,8 +1296,8 @@ let rec createToplevelWindow () =
   let mergeLogo = buildPixmaps Pixmaps.mergeLogo greenPixel in
   let mergeLogoBlack = buildPixmap (Pixmaps.mergeLogo blackPixel) in
 
-  let displayArrow i action =
-    let changedFromDefault = match !theState.(i).ri.replicas with
+  let displayArrow i j action =
+    let changedFromDefault = match !theState.(j).ri.replicas with
         Different(_,_,{contents=curr},default) -> curr<>default
       | _ -> false in
     let sel pixmaps =
@@ -1326,7 +1326,7 @@ let rec createToplevelWindow () =
     for i = Array.length !theState - 1 downto 0 do
       let (r1, action, r2, status, path) = columnsOf i in
       ignore (mainWindow#prepend [ r1; ""; r2; status; transcode path ]);
-      displayArrow 0 action
+      displayArrow 0 i action
     done;
     debug (fun()-> Util.msg "reset current to %s\n"
              (match savedCurrent with None->"None" | Some(i) -> string_of_int i));
@@ -1341,7 +1341,7 @@ let rec createToplevelWindow () =
     let (r1, action, r2, status, path) = columnsOf i in
     mainWindow#freeze ();
     mainWindow#set_cell ~text:r1     i 0;
-    displayArrow i action;
+    displayArrow i i action;
     mainWindow#set_cell ~text:r2     i 2;
     displayStatusIcon i status;
     mainWindow#set_cell ~text:(transcode path)   i 4;

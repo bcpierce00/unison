@@ -7,17 +7,17 @@
 
 ifeq (${OSCOMP},cygwingnuc) # Define this if compiling with Cygwin GNU C
   OSARCH=win32gnuc
-  ETAGS=c:/emacs/bin/etags
+  ETAGS=/bin/etags
   buildexecutable:: win32rc/unison.res.lib
 else
 # Win32 system
 ifeq (${OSTYPE},cygwin32) # Cygwin Beta 19
   OSARCH=win32
-  ETAGS=c:/emacs/bin/etags
+  ETAGS=/bin/etags
 else
 ifeq (${OSTYPE},cygwin)	  # Cygwin Beta 20
   OSARCH=win32
-  ETAGS=c:/emacs/bin/etags
+  ETAGS=/bin/etags
 else
 
 # Unix system
@@ -42,7 +42,7 @@ endif
 # to Unix '/' separators, and extraneous control-M's are deleted.
 # Unfortunately there is a literal control-M buried in this, I'd rather
 # get rid of it...
-OCAMLLIBDIR=$(shell ocamlc -v | tail -1 | sed -e 's/.* //g' | sed -e 's/\\/\//g' | sed -e 's///g')
+OCAMLLIBDIR=$(shell ocamlc -v | tail -n -1 | sed -e 's/.* //g' | sed -e 's/\\/\//g' | sed -e 's///g')
 
 # User interface style:
 #   Legal values are
@@ -83,12 +83,8 @@ ifeq ($(OSARCH),win32)
   EXEC_EXT=.exe
   OBJ_EXT=.obj
   CWD=.
-  CAMLFLAGS+=-noautolink
-  CLIBS+=-cclib win32rc/unison.res \
-         -cclib -lunix -cclib -lstr
-#  CLIBS+=-cclib -lunix -cclib -lstr  # If compiling with gcc
-  STATICLIBS+=-cclib win32rc/unison.res \
-              -cclib -lunix -cclib -lstr
+  CLIBS+=-cclib win32rc/unison.res
+  STATICLIBS+=-cclib win32rc/unison.res
   buildexecutable::
 	@echo Building for Windows
 else
@@ -103,6 +99,7 @@ else
 	@echo Building for Windows with Cygwin GNU C
   else
     EXEC_EXT=
+    # openpty is in the libutil library
     ifneq ($(OSARCH),solaris)
       ifneq ($(OSARCH),osx)
         CLIBS+=-cclib -lutil
@@ -172,8 +169,8 @@ macexecutable: $(NAME)-blob.o
 # File extensions will be substituted for the native code version
 
 OCAMLOBJS += \
-          ubase/projectInfo.cmo ubase/myMap.cmo ubase/safelist.cmo ubase/uprintf.cmo \
-          ubase/util.cmo ubase/rx.cmo ubase/uarg.cmo \
+          ubase/projectInfo.cmo ubase/myMap.cmo ubase/safelist.cmo \
+          ubase/uprintf.cmo ubase/util.cmo ubase/rx.cmo ubase/uarg.cmo \
           ubase/prefs.cmo ubase/trace.cmo \
           \
           lwt/pqueue.cmo lwt/lwt.cmo lwt/lwt_util.cmo lwt/lwt_unix.cmo \
@@ -194,7 +191,7 @@ OCAMLOBJS+=main.cmo
 # File extensions will be substituted for the native code version
 OCAMLLIBS+=unix.cma str.cma
 
-COBJS+=osxsupport.o pty.o
+COBJS+=osxsupport$(OBJ_EXT) pty$(OBJ_EXT)
 
 ########################################################################
 ### User Interface setup
@@ -221,34 +218,6 @@ endif
 # -  dos, relative      ..\\..\\ocaml\\lib\\labltk
 # -  dos, absolute      d:\\home\\foobar\\ocaml\\lib\\labltk
 
-# Standard GUI libraries directories
-STDLIBDIR=/usr/lib
-X11LIBDIR=$(STDLIBDIR)
-GUILIBDIR=$(STDLIBDIR)
-
-# Arch-specific directories
-ifeq ($(OSARCH), win32)
-  GUILIBDIR=$(OCAMLLIBDIR)/guilib
-endif
-ifeq ($(OSARCH), win32gnuc)
-  GUILIBDIR=$(OCAMLLIBDIR)/lablgtk/cclibs
-endif
-ifeq ($(OSARCH), linux)
-  X11LIBDIR=/usr/X11R6/lib
-endif
-ifeq ($(OSARCH), OpenBSD)
-  X11LIBDIR=/usr/X11R6/lib
-endif
-ifeq ($(OSARCH), osx)
-  X11LIBDIR=/usr/X11R6/lib
-endif
-
-# Developer-only directories
-ifeq ($(shell hostname), raptor.research.att.com)
-  GUILIBDIR=/usr/common/gtk-1.2.6/lib
-  X11LIBDIR=/usr/lib32
-endif
-
 # Patch to make a Windows GUI version come up with no
 # console when click-started
 #  ifeq ($(OSARCH), win32)
@@ -258,157 +227,24 @@ endif
 
 # Gtk GUI
 ifeq ($(UISTYLE), gtk)
-  GUILIBDIR=$(OCAMLLIBDIR)/lablgtk/cclibs
-  CAMLFLAGS+=-I $(OCAMLLIBDIR)/lablgtk
+  CAMLFLAGS+=-I +lablgtk
   OCAMLOBJS+=pixmaps.cmo uigtk.cmo linkgtk.cmo
   OCAMLLIBS+=lablgtk.cma
-  OCAMLLIBS+=str.cma
-  ifeq ($(OSARCH), win32)
-    WINSYSLIBS=user32.lib advapi32.lib wsock32.lib gdi32.lib \
-               imm32.lib shell32.lib ole32.lib uuid.lib
-    CLIBS+=-cclib -llablgtk \
-           $(GUILIBDIR)/glib-1.3.lib \
-           $(GUILIBDIR)/gmodule-1.3.lib \
-           $(GUILIBDIR)/gdk-1.3.lib \
-           $(GUILIBDIR)/gtk-1.3.lib \
-           $(WINSYSLIBS)
-    STATICLIBS+=-cclib -llablgtk \
-                $(GUILIBDIR)/static/glib-1.3.lib \
-                $(GUILIBDIR)/static/gmodule-1.3.lib \
-                $(GUILIBDIR)/static/gdk-1.3.lib \
-                $(GUILIBDIR)/static/gtk-1.3.lib \
-                $(WINSYSLIBS)
-  else
-    ifeq ($(OSARCH), win32gnuc)
-      WINSYSLIBS=
-#-cclib user32.lib -cclib advapi32.lib -cclib wsock32.lib \
-#               -cclib gdi32.lib -cclib imm32.lib -cclib shell32.lib \
-#               -cclib ole32.lib -cclib uuid.lib
-      CLIBS+=-cclib -llablgtk \
-           -cclib $(GUILIBDIR)/glib-1.3.lib \
-           -cclib $(GUILIBDIR)/gmodule-1.3.lib \
-           -cclib $(GUILIBDIR)/gdk-1.3.lib \
-           -cclib $(GUILIBDIR)/gtk-1.3.lib \
-           $(WINSYSLIBS)
-      STATICLIBS+=-cclib -llablgtk \
-                -cclib $(GUILIBDIR)/cclibs/glib-1.3.lib \
-                -cclib $(GUILIBDIR)/cclibs/gmodule-1.3.lib \
-                -cclib $(GUILIBDIR)/cclibs/gdk-1.3.lib \
-                -cclib $(GUILIBDIR)/cclibs/gtk-1.3.lib \
-                $(WINSYSLIBS)
-    else
-      ifeq ($(OSARCH), solaris)
-        STATICLIBS+=-cclib -llablgtk \
-                  $(GUILIBDIR)/libgtk.a \
-                  $(GUILIBDIR)/libgdk.a \
-                  $(GUILIBDIR)/libgmodule.a \
-                  $(GUILIBDIR)/libglib.a \
-                  $(X11LIBDIR)/libXext.a \
-                  $(X11LIBDIR)/libX11.a
-      endif
-    endif
-  endif
 endif
 
 # Gtk2 GUI
-# stse 2003-0521 FIXME for win32:
-# how to specify versions in GUILIBDIR? glib-2.2.1 instead of glib-1.3?
 ifeq ($(UISTYLE), gtk2)
-  GUILIBDIR=$(OCAMLLIBDIR)/lablgtk2/cclibs
-  CAMLFLAGS+=-I $(OCAMLLIBDIR)/lablgtk2
+  CAMLFLAGS+=-I +lablgtk2
   OCAMLOBJS+=pixmaps.cmo uigtk2.cmo linkgtk2.cmo
   OCAMLLIBS+=lablgtk.cma
-  OCAMLLIBS+=str.cma
-  ifeq ($(OSARCH), win32)
-    WINSYSLIBS=user32.lib advapi32.lib wsock32.lib gdi32.lib \
-               imm32.lib shell32.lib ole32.lib uuid.lib
-    CLIBS+=-cclib -llablgtk2 \
-           $(GUILIBDIR)/glib-1.3.lib \
-           $(GUILIBDIR)/gmodule-1.3.lib \
-           $(GUILIBDIR)/gdk-1.3.lib \
-           $(GUILIBDIR)/gtk-1.3.lib \
-           $(WINSYSLIBS)
-    STATICLIBS+=-cclib -llablgtk2 \
-                $(GUILIBDIR)/static/glib-1.3.lib \
-                $(GUILIBDIR)/static/gmodule-1.3.lib \
-                $(GUILIBDIR)/static/gdk-1.3.lib \
-                $(GUILIBDIR)/static/gtk-1.3.lib \
-                $(WINSYSLIBS)
-  else
-    ifeq ($(OSARCH), win32gnuc)
-      WINSYSLIBS=
-#-cclib user32.lib -cclib advapi32.lib -cclib wsock32.lib \
-#               -cclib gdi32.lib -cclib imm32.lib -cclib shell32.lib \
-#               -cclib ole32.lib -cclib uuid.lib
-      CLIBS+=-cclib -llablgtk2 \
-           -cclib $(GUILIBDIR)/glib-1.3.lib \
-           -cclib $(GUILIBDIR)/gmodule-1.3.lib \
-           -cclib $(GUILIBDIR)/gdk-1.3.lib \
-           -cclib $(GUILIBDIR)/gtk-1.3.lib \
-           $(WINSYSLIBS)
-      STATICLIBS+=-cclib -llablgtk2 \
-                -cclib $(GUILIBDIR)/cclibs/glib-1.3.lib \
-                -cclib $(GUILIBDIR)/cclibs/gmodule-1.3.lib \
-                -cclib $(GUILIBDIR)/cclibs/gdk-1.3.lib \
-                -cclib $(GUILIBDIR)/cclibs/gtk-1.3.lib \
-                $(WINSYSLIBS)
-    else
-      ifeq ($(OSARCH), solaris)
-        STATICLIBS+=-cclib -llablgtk2 \
-                  $(GUILIBDIR)/libgtk.a \
-                  $(GUILIBDIR)/libgdk.a \
-                  $(GUILIBDIR)/libgmodule.a \
-                  $(GUILIBDIR)/libglib.a \
-                  $(X11LIBDIR)/libXext.a \
-                  $(X11LIBDIR)/libX11.a
-      endif
-    endif
-  endif
 endif
 
 ####################################################################
 ### Static build setup
 
 ifeq ($(STATIC), true)
-  ifeq ($(OSARCH), solaris)
-    CAMLFLAGS+=-noautolink
-    STATICLIBS+=-cclib -lunix -cclib -lstr -cclib -ldl
-    # libcurses is not in a standard place in older Solaris releases.
-    STATICLIBS+=-cclib -R/usr/xpg4/lib
-  endif
-  ifeq ($(OSARCH), linux)
-    STATICLIBS+=-cclib -static
-  endif
-  ifeq ($(OSARCH), OpenBSD)
-    STATICLIBS+=-cclib -static
-  endif
-  ifeq ($(OSARCH), osx)
-    STATICLIBS+=-cclib -static
-  endif
-  CLIBS=$(STATICLIBS)
+  STATICLIBS+=-cclib -static
 endif
-
-# Tony Shepherd told us that he had to use the following to get the GTK
-# version to build on Solaris 8/8
-#
-#         ifeq ($(OSARCH), solaris)
-#             STATICLIBS+=-cclib -llablgtk \
-#                     /opt/gnome-1.4/lib/libgtk.a \
-#                     /opt/gnome-1.4/lib/libgdk.a \
-#                     /opt/gnome-1.4/lib/libgmodule.a \
-#                     /opt/gnome-1.4/lib/libglib.a \
-#                      /usr/openwin/lib/libX11.a \
-#                     /usr/openwin/lib/libXext.a
-#
-# He said:
-#   In solaris 8 (on the companion software CD) and solaris 9 (part of the
-#   distribution), the gtk and gdk libraries are available in SFWgtk and
-#   SUNWGtku respectively and glib and gmodule in SFWglib and SUNWGlib
-#   respectively, but only in .so format so are useless for creating a
-#   static bimary:(.
-#
-#   However, the .a libraries are part of the evaluation copy of Gnome 1.4
-#   that comes with solaris 8, so I used those to build.
 
 ####################################################################
 ### Dependencies
@@ -439,7 +275,7 @@ ifdef OCAMLDOT
            >>dot.tmp
 	echo '{ rank = same; "Tree"; "Safelist"; }'>>dot.tmp
 	echo '{ rank = same; "Uarg"; "Prefs"; }'>>dot.tmp
-	ocamldot .depend | tail +2 >> dot.tmp
+	ocamldot .depend | tail -n +2 >> dot.tmp
 	-dot -Tps -o DEPENDENCIES.ps dot.tmp
 endif
 
@@ -508,7 +344,7 @@ win32rc/unison.res.lib: win32rc/unison.res
 	@echo "$(OCAMLOPT): $< ---> $@"
 	$(OCAMLOPT) $(CAMLFLAGS) -c $(CWD)/$<
 
-%.o: %.c
+%.o %.obj: %.c
 	@echo "$(OCAMLOPT): $< ---> $@"
 	$(CAMLC) $(CAMLFLAGS) -c $(CWD)/$<
 
@@ -539,5 +375,4 @@ clean::
 paths:
 	@echo PATH = $(PATH)
 	@echo OCAMLLIBDIR = $(OCAMLLIBDIR)
-	@echo GUILIBDIR = $(GUILIBDIR)
 

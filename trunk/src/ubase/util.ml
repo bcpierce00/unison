@@ -368,11 +368,11 @@ let fileInHomeDir n =
     Filename.concat (safeGetenv "HOME") n
   else if osType = `Win32 then
     let dirString =
-      try Unix.getenv "UNISON" (* Use UNISON dir if it is set *)
-      with Not_found ->
       try Unix.getenv "HOME" (* Windows 9x with Cygwin HOME set *)
       with Not_found ->
       try Unix.getenv "USERPROFILE" (* Windows NT/2K standard *)
+      with Not_found ->
+      try Unix.getenv "UNISON" (* Use UNISON dir if it is set *)
       with Not_found ->
       "c:/" (* Default *) in
     Filename.concat dirString n
