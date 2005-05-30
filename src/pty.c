@@ -4,6 +4,7 @@
 #include <caml/alloc.h>    // alloc_tuple
 #include <caml/memory.h>   // Store_field
 #include <caml/fail.h>     // failwith
+#include <errno.h>         // ENOSYS
 
 extern void unix_error (int errcode, char * cmdname, value arg) Noreturn;
 extern void uerror (char * cmdname, value arg) Noreturn;

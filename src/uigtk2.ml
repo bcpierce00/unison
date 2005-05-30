@@ -1347,13 +1347,23 @@ let rec createToplevelWindow () =
     Functions used to print in the main window
    *********************************************************************)
 
+  let skip_unselect = ref false in
+
   let select i =
     let r = mainWindow#rows in
     let p = if r < 2 then 0. else (float i +. 0.5) /. float (r - 1) in
-    mainWindow#scroll_vertical `JUMP (min p 1.) in
+    skip_unselect := true;
+    mainWindow#scroll_vertical `JUMP (min p 1.)
+  in
 
   ignore (mainWindow#connect#unselect_row ~callback:
-      (fun ~row ~column ~event -> current := None; updateDetails ()));
+      (fun ~row ~column ~event ->
+         if !skip_unselect then
+           skip_unselect := false
+         else begin
+           current := None;
+           updateDetails ()
+         end));
   ignore (mainWindow#connect#select_row ~callback:
       (fun ~row ~column ~event -> current := Some row; updateDetails ()));
 
@@ -1413,8 +1423,8 @@ let rec createToplevelWindow () =
   let mergeLogo = buildPixmaps Pixmaps.mergeLogo greenPixel in
   let mergeLogoBlack = buildPixmap (Pixmaps.mergeLogo blackPixel) in
 
-  let displayArrow i action =
-    let changedFromDefault = match !theState.(i).ri.replicas with
+  let displayArrow i j action =
+    let changedFromDefault = match !theState.(j).ri.replicas with
         Different(_,_,{contents=curr},default) -> curr<>default
       | _ -> false in
     let sel pixmaps =
@@ -1450,7 +1460,7 @@ lst_store#set ~row ~column:c_status status;
 lst_store#set ~row ~column:c_path path;
 *)
       ignore (mainWindow#prepend [ r1; ""; r2; status; transcode path ]);
-      displayArrow 0 action
+      displayArrow 0 i action
     done;
     debug (fun()-> Util.msg "reset current to %s\n"
              (match savedCurrent with None->"None" | Some(i) -> string_of_int i));
@@ -1465,7 +1475,7 @@ lst_store#set ~row ~column:c_path path;
     let (r1, action, r2, status, path) = columnsOf i in
     mainWindow#freeze ();
     mainWindow#set_cell ~text:r1     i 0;
-    displayArrow i action;
+    displayArrow i i action;
     mainWindow#set_cell ~text:r2     i 2;
     displayStatusIcon i status;
     mainWindow#set_cell ~text:(transcode path)   i 4;
@@ -1920,9 +1930,9 @@ lst_store#set ~row ~column:c_path path;
     (mainWindow#event#connect#key_press ~callback:
        begin fun ev ->
          let key = GdkEvent.Key.keyval ev in
-         if key = GdkKeysyms._Left || key = Char.code ',' then begin
+         if key = GdkKeysyms._Left then begin
            leftAction (); GtkSignal.stop_emit (); true
-         end else if key = GdkKeysyms._Right || key = Char.code '.' then begin
+         end else if key = GdkKeysyms._Right then begin
            rightAction (); GtkSignal.stop_emit (); true
          end else
            false
@@ -1938,28 +1948,35 @@ lst_store#set ~row ~column:c_path path;
     if loc1 = loc2 then "left to right" else
     Printf.sprintf "from %s to %s" loc1 loc2 in
   let left =
-    actionsMenu#add_item ~key:GdkKeysyms._greater ~callback:rightAction
-      ("Propagate this path " ^ descr) in
+    actionsMenu#add_image_item ~key:GdkKeysyms._greater ~callback:rightAction
+      ~image:((GMisc.image ~stock:`GO_FORWARD ~icon_size:`MENU ())#coerce)
+      ~label:("Propagate this path " ^ descr) () in
   grAdd grAction left;
   left#add_accelerator ~group:accel_group ~modi:[`SHIFT] GdkKeysyms._greater;
+  left#add_accelerator ~group:accel_group GdkKeysyms._period;
 
-  let merge = actionsMenu#add_item ~key:GdkKeysyms._m ~callback:mergeAction
-		"Merge the files" in
+  let merge =
+    actionsMenu#add_image_item ~key:GdkKeysyms._m ~callback:mergeAction
+      ~image:((GMisc.image ~stock:`ADD ~icon_size:`MENU ())#coerce)
+      ~label:"Merge the files" () in
   grAdd grAction merge;
-  merge#add_accelerator ~group:accel_group GdkKeysyms._m;
+(* merge#add_accelerator ~group:accel_group ~modi:[`SHIFT] GdkKeysyms._m; *)
 
   let descl =
     if loc1 = loc2 then "right to left" else
     Printf.sprintf "from %s to %s" loc2 loc1 in
   let right =
-    actionsMenu#add_item ~key:GdkKeysyms._less ~callback:leftAction
-      ("Propagate this path " ^ descl) in
+    actionsMenu#add_image_item ~key:GdkKeysyms._less ~callback:leftAction
+      ~image:((GMisc.image ~stock:`GO_BACK ~icon_size:`MENU ())#coerce)
+      ~label:("Propagate this path " ^ descl) () in
   grAdd grAction right;
   right#add_accelerator ~group:accel_group ~modi:[`SHIFT] GdkKeysyms._less;
+  right#add_accelerator ~group:accel_group ~modi:[`SHIFT] GdkKeysyms._comma;
 
   grAdd grAction
-    (actionsMenu#add_item ~key:GdkKeysyms._slash ~callback:questionAction
-       "Do not propagate changes to this path");
+    (actionsMenu#add_image_item ~key:GdkKeysyms._slash ~callback:questionAction
+      ~image:((GMisc.image ~stock:`NO ~icon_size:`MENU ())#coerce)
+      ~label:"Do not propagate changes to this path" ());
 
   (* Override actions *)
   ignore (actionsMenu#add_separator ());
@@ -2060,8 +2077,9 @@ lst_store#set ~row ~column:c_path path;
 
   (* Diff *)
   ignore (actionsMenu#add_separator ());
-  grAdd grDiff (actionsMenu#add_item ~key:GdkKeysyms._d ~callback:diffCmd
-                  "Show diffs for selected path...");
+  grAdd grDiff (actionsMenu#add_image_item ~key:GdkKeysyms._d ~callback:diffCmd
+      ~image:((GMisc.image ~stock:`DIALOG_INFO ~icon_size:`MENU ())#coerce)
+      ~label:"Show diffs for selected path" ());
 
   (*********************************************************************
     Synchronization menu
@@ -2081,14 +2099,15 @@ lst_store#set ~row ~column:c_path path;
     | Some(n) -> loadProfile n in
 
   grAdd grGo
-    (fileMenu#add_item ~key:GdkKeysyms._g
-       ~callback:(fun () ->
-                    getLock synchronize)
-       "Go");
+    (fileMenu#add_image_item ~key:GdkKeysyms._g
+       ~image:(GMisc.image ~stock:`EXECUTE ~icon_size:`MENU () :> GObj.widget)
+       ~callback:(fun () -> getLock synchronize)
+       ~label:"Go" ());
   grAdd grRestart
-    (fileMenu#add_item ~key:GdkKeysyms._r
+    (fileMenu#add_image_item ~key:GdkKeysyms._r
+       ~image:(GMisc.image ~stock:`REFRESH ~icon_size:`MENU () :> GObj.widget)
        ~callback:(fun () -> reloadProfile(); detectCmd())
-       detectCmdName);
+       ~label:detectCmdName ());
   grAdd grRestart
     (fileMenu#add_item ~key:GdkKeysyms._a
        ~callback:(fun () ->
@@ -2128,12 +2147,13 @@ lst_store#set ~row ~column:c_path path;
   ignore (fileMenu#add_separator ());
 
   grAdd grRestart
-    (fileMenu#add_item ~key:GdkKeysyms._p
+    (fileMenu#add_image_item ~key:GdkKeysyms._p
        ~callback:(fun _ ->
           match getProfile() with
             None -> ()
           | Some(p) -> loadProfile p; detectCmd ())
-       "Select a new profile from the profile dialog...");
+       ~image:(GMisc.image ~stock:`OPEN ~icon_size:`MENU () :> GObj.widget)
+       ~label:"Select a new profile from the profile dialog..." ());
 
   let fastProf name key =
     grAdd grRestart
@@ -2160,10 +2180,13 @@ lst_store#set ~row ~column:c_path path;
 
   ignore (fileMenu#add_separator ());
   ignore (fileMenu#add_item
-            ~callback:(fun _ -> stat_win#show ()) "Statistics...");
+            ~callback:(fun _ -> stat_win#show ()) "Statistics");
 
   ignore (fileMenu#add_separator ());
-  ignore (fileMenu#add_item ~key:GdkKeysyms._q ~callback:safeExit "Quit");
+  ignore (fileMenu#add_image_item
+            ~key:GdkKeysyms._q ~callback:safeExit
+            ~image:((GMisc.image ~stock:`QUIT ~icon_size:`MENU ())#coerce)
+            ~label:"Quit" ());
 
   (*********************************************************************
     Expert menu

@@ -1,3 +1,18 @@
+CHANGES FROM VERSION 2.12.18
+
+* Makefile clean-up
+* More GTK2 UI polishing
+* Improved error message for non-existent paths
+* Keep the right arrow colors when sorting entries
+* Fixed the focus problem for the buttons used to choose which action
+  to take (workaround to GTK bug #56070)
+* Under Windows, use $UNISON for home directory as a last resort
+  (it was wrongly moved before $HOME and $USERPROFILE in Unison 2.12.0)
+* Disable the code that ignores dot at end of files for the moment, as
+  it actually requires an archive change
+* Added missing include in pty.c
+
+-------------------------------
 CHANGES FROM VERSION 2.12.17
 
 * Use the diff "-u" option by default when showing differences between files

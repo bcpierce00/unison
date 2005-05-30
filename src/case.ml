@@ -55,6 +55,8 @@ let removeTrailingDots s =
 
 (* Dots are ignored at the end of filenames under Windows. *)
 let normalize s =
+  s
+(*FIX: disabled for know -- requires an archive version change
   if
     insensitive () &&
 (*FIX: should only be done when one host is running under Windows...
@@ -68,6 +70,7 @@ let normalize s =
     removeTrailingDots s
   else
     s
+*)
 
 (* During startup the client determines the case sensitivity of each root.   *)
 (* If any root is case insensitive, all roots must know it; we ensure this   *)
