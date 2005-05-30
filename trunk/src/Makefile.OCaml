@@ -125,33 +125,6 @@ clean::
 	$(RM) ubase/projectInfo.ml
 
 ####################################################################
-### fix for OCaml API change
-
-OCAMLVER := $(shell ocamlc -version)
-
-ubase/uprintf.ml:
-ifeq ($(OCAMLVER),3.06)
-	cp -f ubase/uprintf_old.ml ubase/uprintf.ml
-else
-ifeq ($(OCAMLVER),3.07)
-	cp -f ubase/uprintf_old.ml ubase/uprintf.ml
-else
-ifeq ($(OCAMLVER),3.07+1)
-	cp -f ubase/uprintf_old.ml ubase/uprintf.ml
-else
-ifeq ($(OCAMLVER),3.07+2)
-	cp -f ubase/uprintf_old.ml ubase/uprintf.ml
-else
-	cp -f ubase/uprintf_new.ml ubase/uprintf.ml
-endif
-endif
-endif
-endif
-
-clean::
-	$(RM) ubase/uprintf.ml
-
-####################################################################
 ### Unison objects and libraries
 
 ifeq ($(UISTYLE),mac)

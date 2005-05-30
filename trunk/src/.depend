@@ -1,234 +1,238 @@
-common.cmi: uutil.cmi props.cmi path.cmi osx.cmi os.cmi name.cmi fspath.cmi \
-    fileinfo.cmi 
-copy.cmi: uutil.cmi props.cmi path.cmi osx.cmi os.cmi lwt/lwt.cmi fspath.cmi \
-    common.cmi 
-fileinfo.cmi: props.cmi path.cmi osx.cmi fspath.cmi 
-files.cmi: uutil.cmi props.cmi path.cmi lwt/lwt.cmi common.cmi 
-fingerprint.cmi: uutil.cmi path.cmi fspath.cmi 
-fspath.cmi: path.cmi name.cmi 
-globals.cmi: ubase/prefs.cmi pred.cmi path.cmi lwt/lwt.cmi common.cmi 
-os.cmi: props.cmi ubase/prefs.cmi path.cmi name.cmi fspath.cmi fileinfo.cmi 
-osx.cmi: uutil.cmi ubase/prefs.cmi path.cmi fspath.cmi fingerprint.cmi 
+common.cmi: fileinfo.cmi fspath.cmi name.cmi os.cmi osx.cmi path.cmi \
+    props.cmi uutil.cmi 
+copy.cmi: common.cmi fspath.cmi lwt/lwt.cmi os.cmi osx.cmi path.cmi props.cmi \
+    uutil.cmi 
+fileinfo.cmi: fspath.cmi osx.cmi path.cmi props.cmi 
+files.cmi: common.cmi lwt/lwt.cmi path.cmi props.cmi uutil.cmi 
+fingerprint.cmi: fspath.cmi path.cmi uutil.cmi 
+fspath.cmi: name.cmi path.cmi 
+globals.cmi: common.cmi lwt/lwt.cmi path.cmi pred.cmi ubase/prefs.cmi 
+os.cmi: fileinfo.cmi fspath.cmi name.cmi path.cmi ubase/prefs.cmi props.cmi 
+osx.cmi: fingerprint.cmi fspath.cmi path.cmi ubase/prefs.cmi uutil.cmi 
 path.cmi: name.cmi 
-props.cmi: uutil.cmi ubase/prefs.cmi path.cmi osx.cmi fspath.cmi 
-recon.cmi: path.cmi common.cmi 
-remote.cmi: ubase/prefs.cmi lwt/lwt.cmi fspath.cmi common.cmi clroot.cmi 
+props.cmi: fspath.cmi osx.cmi path.cmi ubase/prefs.cmi uutil.cmi 
+recon.cmi: common.cmi path.cmi 
+remote.cmi: clroot.cmi common.cmi fspath.cmi lwt/lwt.cmi ubase/prefs.cmi 
 sortri.cmi: common.cmi 
-transfer.cmi: uutil.cmi lwt/lwt.cmi 
-transport.cmi: uutil.cmi lwt/lwt.cmi common.cmi 
-uicommon.cmi: uutil.cmi ubase/prefs.cmi path.cmi lwt/lwt.cmi common.cmi 
-uigtk2.cmi: uicommon.cmi 
+transfer.cmi: lwt/lwt.cmi uutil.cmi 
+transport.cmi: common.cmi lwt/lwt.cmi uutil.cmi 
+uicommon.cmi: common.cmi lwt/lwt.cmi path.cmi ubase/prefs.cmi uutil.cmi 
 uigtk.cmi: uicommon.cmi 
+uigtk2.cmi: uicommon.cmi 
 uitext.cmi: uicommon.cmi 
-update.cmi: tree.cmi props.cmi ubase/prefs.cmi path.cmi osx.cmi os.cmi \
-    name.cmi lwt/lwt.cmi fspath.cmi fileinfo.cmi common.cmi 
-xferhint.cmi: ubase/prefs.cmi path.cmi os.cmi fspath.cmi 
+update.cmi: common.cmi fileinfo.cmi fspath.cmi lwt/lwt.cmi name.cmi os.cmi \
+    osx.cmi path.cmi ubase/prefs.cmi props.cmi tree.cmi 
+xferhint.cmi: fspath.cmi os.cmi path.cmi ubase/prefs.cmi 
 case.cmo: ubase/prefs.cmi case.cmi 
 case.cmx: ubase/prefs.cmx case.cmi 
 checksum.cmo: checksum.cmi 
 checksum.cmx: checksum.cmi 
-clroot.cmo: ubase/rx.cmi ubase/prefs.cmi clroot.cmi 
-clroot.cmx: ubase/rx.cmx ubase/prefs.cmx clroot.cmi 
-common.cmo: uutil.cmi ubase/safelist.cmi props.cmi path.cmi osx.cmi os.cmi \
-    name.cmi fspath.cmi fileinfo.cmi common.cmi 
-common.cmx: uutil.cmx ubase/safelist.cmx props.cmx path.cmx osx.cmx os.cmx \
-    name.cmx fspath.cmx fileinfo.cmx common.cmi 
-copy.cmo: xferhint.cmi uutil.cmi ubase/util.cmi transfer.cmi ubase/trace.cmi \
-    remote.cmi props.cmi ubase/prefs.cmi path.cmi osx.cmi os.cmi \
-    lwt/lwt_util.cmi lwt/lwt.cmi fspath.cmi fileinfo.cmi common.cmi copy.cmi 
-copy.cmx: xferhint.cmx uutil.cmx ubase/util.cmx transfer.cmx ubase/trace.cmx \
-    remote.cmx props.cmx ubase/prefs.cmx path.cmx osx.cmx os.cmx \
-    lwt/lwt_util.cmx lwt/lwt.cmx fspath.cmx fileinfo.cmx common.cmx copy.cmi 
-fileinfo.cmo: ubase/util.cmi props.cmi ubase/prefs.cmi path.cmi osx.cmi \
-    fspath.cmi fileinfo.cmi 
-fileinfo.cmx: ubase/util.cmx props.cmx ubase/prefs.cmx path.cmx osx.cmx \
-    fspath.cmx fileinfo.cmi 
-files.cmo: xferhint.cmi uutil.cmi ubase/util.cmi update.cmi ubase/trace.cmi \
-    ubase/safelist.cmi ubase/rx.cmi remote.cmi props.cmi ubase/prefs.cmi \
-    path.cmi osx.cmi os.cmi lwt/lwt_util.cmi lwt/lwt_unix.cmi lwt/lwt.cmi \
-    globals.cmi fspath.cmi fileinfo.cmi copy.cmi common.cmi files.cmi 
-files.cmx: xferhint.cmx uutil.cmx ubase/util.cmx update.cmx ubase/trace.cmx \
-    ubase/safelist.cmx ubase/rx.cmx remote.cmx props.cmx ubase/prefs.cmx \
-    path.cmx osx.cmx os.cmx lwt/lwt_util.cmx lwt/lwt_unix.cmx lwt/lwt.cmx \
-    globals.cmx fspath.cmx fileinfo.cmx copy.cmx common.cmx files.cmi 
+clroot.cmo: ubase/prefs.cmi ubase/rx.cmi clroot.cmi 
+clroot.cmx: ubase/prefs.cmx ubase/rx.cmx clroot.cmi 
+common.cmo: fileinfo.cmi fspath.cmi name.cmi os.cmi osx.cmi path.cmi \
+    props.cmi ubase/safelist.cmi uutil.cmi common.cmi 
+common.cmx: fileinfo.cmx fspath.cmx name.cmx os.cmx osx.cmx path.cmx \
+    props.cmx ubase/safelist.cmx uutil.cmx common.cmi 
+copy.cmo: common.cmi fileinfo.cmi fspath.cmi lwt/lwt.cmi lwt/lwt_util.cmi \
+    os.cmi osx.cmi path.cmi ubase/prefs.cmi props.cmi remote.cmi \
+    ubase/trace.cmi transfer.cmi ubase/util.cmi uutil.cmi xferhint.cmi \
+    copy.cmi 
+copy.cmx: common.cmx fileinfo.cmx fspath.cmx lwt/lwt.cmx lwt/lwt_util.cmx \
+    os.cmx osx.cmx path.cmx ubase/prefs.cmx props.cmx remote.cmx \
+    ubase/trace.cmx transfer.cmx ubase/util.cmx uutil.cmx xferhint.cmx \
+    copy.cmi 
+fileinfo.cmo: fspath.cmi osx.cmi path.cmi ubase/prefs.cmi props.cmi \
+    ubase/util.cmi fileinfo.cmi 
+fileinfo.cmx: fspath.cmx osx.cmx path.cmx ubase/prefs.cmx props.cmx \
+    ubase/util.cmx fileinfo.cmi 
+files.cmo: common.cmi copy.cmi fileinfo.cmi fspath.cmi globals.cmi \
+    lwt/lwt.cmi lwt/lwt_unix.cmi lwt/lwt_util.cmi os.cmi osx.cmi path.cmi \
+    ubase/prefs.cmi props.cmi remote.cmi ubase/rx.cmi ubase/safelist.cmi \
+    ubase/trace.cmi update.cmi ubase/util.cmi uutil.cmi xferhint.cmi \
+    files.cmi 
+files.cmx: common.cmx copy.cmx fileinfo.cmx fspath.cmx globals.cmx \
+    lwt/lwt.cmx lwt/lwt_unix.cmx lwt/lwt_util.cmx os.cmx osx.cmx path.cmx \
+    ubase/prefs.cmx props.cmx remote.cmx ubase/rx.cmx ubase/safelist.cmx \
+    ubase/trace.cmx update.cmx ubase/util.cmx uutil.cmx xferhint.cmx \
+    files.cmi 
 fileutil.cmo: fileutil.cmi 
 fileutil.cmx: fileutil.cmi 
-fingerprint.cmo: uutil.cmi ubase/util.cmi fspath.cmi fingerprint.cmi 
-fingerprint.cmx: uutil.cmx ubase/util.cmx fspath.cmx fingerprint.cmi 
-fspath.cmo: ubase/util.cmi ubase/rx.cmi path.cmi name.cmi fileutil.cmi \
+fingerprint.cmo: fspath.cmi ubase/util.cmi uutil.cmi fingerprint.cmi 
+fingerprint.cmx: fspath.cmx ubase/util.cmx uutil.cmx fingerprint.cmi 
+fspath.cmo: fileutil.cmi name.cmi path.cmi ubase/rx.cmi ubase/util.cmi \
     fspath.cmi 
-fspath.cmx: ubase/util.cmx ubase/rx.cmx path.cmx name.cmx fileutil.cmx \
+fspath.cmx: fileutil.cmx name.cmx path.cmx ubase/rx.cmx ubase/util.cmx \
     fspath.cmi 
-globals.cmo: ubase/util.cmi ubase/trace.cmi ubase/safelist.cmi remote.cmi \
-    ubase/prefs.cmi pred.cmi path.cmi os.cmi name.cmi lwt/lwt_util.cmi \
-    lwt/lwt.cmi common.cmi clroot.cmi globals.cmi 
-globals.cmx: ubase/util.cmx ubase/trace.cmx ubase/safelist.cmx remote.cmx \
-    ubase/prefs.cmx pred.cmx path.cmx os.cmx name.cmx lwt/lwt_util.cmx \
-    lwt/lwt.cmx common.cmx clroot.cmx globals.cmi 
-linkgtk2.cmo: uigtk2.cmi main.cmo 
-linkgtk2.cmx: uigtk2.cmx main.cmx 
-linkgtk.cmo: uigtk.cmi main.cmo 
-linkgtk.cmx: uigtk.cmx main.cmx 
-linktext.cmo: uitext.cmi main.cmo 
-linktext.cmx: uitext.cmx main.cmx 
+globals.cmo: clroot.cmi common.cmi lwt/lwt.cmi lwt/lwt_util.cmi name.cmi \
+    os.cmi path.cmi pred.cmi ubase/prefs.cmi remote.cmi ubase/safelist.cmi \
+    ubase/trace.cmi ubase/util.cmi globals.cmi 
+globals.cmx: clroot.cmx common.cmx lwt/lwt.cmx lwt/lwt_util.cmx name.cmx \
+    os.cmx path.cmx pred.cmx ubase/prefs.cmx remote.cmx ubase/safelist.cmx \
+    ubase/trace.cmx ubase/util.cmx globals.cmi 
+linkgtk.cmo: main.cmo uigtk.cmi 
+linkgtk.cmx: main.cmx uigtk.cmx 
+linkgtk2.cmo: main.cmo uigtk2.cmi 
+linkgtk2.cmx: main.cmx uigtk2.cmx 
+linktext.cmo: main.cmo uitext.cmi 
+linktext.cmx: main.cmx uitext.cmx 
 linktk.cmo: main.cmo 
 linktk.cmx: main.cmx 
 lock.cmo: ubase/util.cmi lock.cmi 
 lock.cmx: ubase/util.cmx lock.cmi 
-main.cmo: uutil.cmi ubase/util.cmi uitext.cmi uicommon.cmi strings.cmi \
-    ubase/safelist.cmi remote.cmi ubase/prefs.cmi os.cmi fspath.cmi 
-main.cmx: uutil.cmx ubase/util.cmx uitext.cmx uicommon.cmx strings.cmx \
-    ubase/safelist.cmx remote.cmx ubase/prefs.cmx os.cmx fspath.cmx 
-name.cmo: ubase/util.cmi case.cmi name.cmi 
-name.cmx: ubase/util.cmx case.cmx name.cmi 
-os.cmo: uutil.cmi ubase/util.cmi ubase/safelist.cmi props.cmi ubase/prefs.cmi \
-    path.cmi osx.cmi name.cmi fspath.cmi fingerprint.cmi fileinfo.cmi os.cmi 
-os.cmx: uutil.cmx ubase/util.cmx ubase/safelist.cmx props.cmx ubase/prefs.cmx \
-    path.cmx osx.cmx name.cmx fspath.cmx fingerprint.cmx fileinfo.cmx os.cmi 
-osx.cmo: uutil.cmi ubase/util.cmi ubase/safelist.cmi ubase/prefs.cmi path.cmi \
-    name.cmi fspath.cmi fingerprint.cmi osx.cmi 
-osx.cmx: uutil.cmx ubase/util.cmx ubase/safelist.cmx ubase/prefs.cmx path.cmx \
-    name.cmx fspath.cmx fingerprint.cmx osx.cmi 
-path.cmo: ubase/util.cmi ubase/safelist.cmi ubase/rx.cmi pred.cmi name.cmi \
-    fileutil.cmi case.cmi path.cmi 
-path.cmx: ubase/util.cmx ubase/safelist.cmx ubase/rx.cmx pred.cmx name.cmx \
-    fileutil.cmx case.cmx path.cmi 
-pred.cmo: ubase/util.cmi ubase/safelist.cmi ubase/rx.cmi ubase/prefs.cmi \
-    case.cmi pred.cmi 
-pred.cmx: ubase/util.cmx ubase/safelist.cmx ubase/rx.cmx ubase/prefs.cmx \
-    case.cmx pred.cmi 
-props.cmo: uutil.cmi ubase/util.cmi ubase/prefs.cmi path.cmi osx.cmi \
-    fspath.cmi props.cmi 
-props.cmx: uutil.cmx ubase/util.cmx ubase/prefs.cmx path.cmx osx.cmx \
-    fspath.cmx props.cmi 
-recon.cmo: ubase/util.cmi update.cmi tree.cmi ubase/trace.cmi sortri.cmi \
-    ubase/safelist.cmi props.cmi ubase/prefs.cmi path.cmi name.cmi \
-    globals.cmi fileinfo.cmi common.cmi recon.cmi 
-recon.cmx: ubase/util.cmx update.cmx tree.cmx ubase/trace.cmx sortri.cmx \
-    ubase/safelist.cmx props.cmx ubase/prefs.cmx path.cmx name.cmx \
-    globals.cmx fileinfo.cmx common.cmx recon.cmi 
-remote.cmo: uutil.cmi ubase/util.cmi ubase/trace.cmi terminal.cmi \
-    ubase/safelist.cmi ubase/prefs.cmi os.cmi lwt/lwt_unix.cmi lwt/lwt.cmi \
-    fspath.cmi common.cmi clroot.cmi remote.cmi 
-remote.cmx: uutil.cmx ubase/util.cmx ubase/trace.cmx terminal.cmx \
-    ubase/safelist.cmx ubase/prefs.cmx os.cmx lwt/lwt_unix.cmx lwt/lwt.cmx \
-    fspath.cmx common.cmx clroot.cmx remote.cmi 
-sortri.cmo: ubase/util.cmi ubase/safelist.cmi ubase/prefs.cmi pred.cmi \
-    path.cmi common.cmi sortri.cmi 
-sortri.cmx: ubase/util.cmx ubase/safelist.cmx ubase/prefs.cmx pred.cmx \
-    path.cmx common.cmx sortri.cmi 
+main.cmo: fspath.cmi os.cmi ubase/prefs.cmi remote.cmi ubase/safelist.cmi \
+    strings.cmi uicommon.cmi uitext.cmi ubase/util.cmi uutil.cmi 
+main.cmx: fspath.cmx os.cmx ubase/prefs.cmx remote.cmx ubase/safelist.cmx \
+    strings.cmx uicommon.cmx uitext.cmx ubase/util.cmx uutil.cmx 
+name.cmo: case.cmi ubase/util.cmi name.cmi 
+name.cmx: case.cmx ubase/util.cmx name.cmi 
+os.cmo: fileinfo.cmi fingerprint.cmi fspath.cmi name.cmi osx.cmi path.cmi \
+    ubase/prefs.cmi props.cmi ubase/safelist.cmi ubase/util.cmi uutil.cmi \
+    os.cmi 
+os.cmx: fileinfo.cmx fingerprint.cmx fspath.cmx name.cmx osx.cmx path.cmx \
+    ubase/prefs.cmx props.cmx ubase/safelist.cmx ubase/util.cmx uutil.cmx \
+    os.cmi 
+osx.cmo: fingerprint.cmi fspath.cmi name.cmi path.cmi ubase/prefs.cmi \
+    ubase/safelist.cmi ubase/util.cmi uutil.cmi osx.cmi 
+osx.cmx: fingerprint.cmx fspath.cmx name.cmx path.cmx ubase/prefs.cmx \
+    ubase/safelist.cmx ubase/util.cmx uutil.cmx osx.cmi 
+path.cmo: case.cmi fileutil.cmi name.cmi pred.cmi ubase/rx.cmi \
+    ubase/safelist.cmi ubase/util.cmi path.cmi 
+path.cmx: case.cmx fileutil.cmx name.cmx pred.cmx ubase/rx.cmx \
+    ubase/safelist.cmx ubase/util.cmx path.cmi 
+pred.cmo: case.cmi ubase/prefs.cmi ubase/rx.cmi ubase/safelist.cmi \
+    ubase/util.cmi pred.cmi 
+pred.cmx: case.cmx ubase/prefs.cmx ubase/rx.cmx ubase/safelist.cmx \
+    ubase/util.cmx pred.cmi 
+props.cmo: fspath.cmi osx.cmi path.cmi ubase/prefs.cmi ubase/util.cmi \
+    uutil.cmi props.cmi 
+props.cmx: fspath.cmx osx.cmx path.cmx ubase/prefs.cmx ubase/util.cmx \
+    uutil.cmx props.cmi 
+recon.cmo: common.cmi fileinfo.cmi globals.cmi name.cmi path.cmi \
+    ubase/prefs.cmi props.cmi ubase/safelist.cmi sortri.cmi ubase/trace.cmi \
+    tree.cmi update.cmi ubase/util.cmi recon.cmi 
+recon.cmx: common.cmx fileinfo.cmx globals.cmx name.cmx path.cmx \
+    ubase/prefs.cmx props.cmx ubase/safelist.cmx sortri.cmx ubase/trace.cmx \
+    tree.cmx update.cmx ubase/util.cmx recon.cmi 
+remote.cmo: clroot.cmi common.cmi fspath.cmi lwt/lwt.cmi lwt/lwt_unix.cmi \
+    os.cmi ubase/prefs.cmi ubase/safelist.cmi terminal.cmi ubase/trace.cmi \
+    ubase/util.cmi uutil.cmi remote.cmi 
+remote.cmx: clroot.cmx common.cmx fspath.cmx lwt/lwt.cmx lwt/lwt_unix.cmx \
+    os.cmx ubase/prefs.cmx ubase/safelist.cmx terminal.cmx ubase/trace.cmx \
+    ubase/util.cmx uutil.cmx remote.cmi 
+sortri.cmo: common.cmi path.cmi pred.cmi ubase/prefs.cmi ubase/safelist.cmi \
+    ubase/util.cmi sortri.cmi 
+sortri.cmx: common.cmx path.cmx pred.cmx ubase/prefs.cmx ubase/safelist.cmx \
+    ubase/util.cmx sortri.cmi 
 strings.cmo: strings.cmi 
 strings.cmx: strings.cmi 
-terminal.cmo: ubase/safelist.cmi ubase/rx.cmi lwt/lwt_unix.cmi lwt/lwt.cmi \
+terminal.cmo: lwt/lwt.cmi lwt/lwt_unix.cmi ubase/rx.cmi ubase/safelist.cmi \
     terminal.cmi 
-terminal.cmx: ubase/safelist.cmx ubase/rx.cmx lwt/lwt_unix.cmx lwt/lwt.cmx \
+terminal.cmx: lwt/lwt.cmx lwt/lwt_unix.cmx ubase/rx.cmx ubase/safelist.cmx \
     terminal.cmi 
-transfer.cmo: uutil.cmi ubase/util.cmi ubase/trace.cmi ubase/safelist.cmi \
-    lwt/lwt.cmi checksum.cmi transfer.cmi 
-transfer.cmx: uutil.cmx ubase/util.cmx ubase/trace.cmx ubase/safelist.cmx \
-    lwt/lwt.cmx checksum.cmx transfer.cmi 
-transport.cmo: uutil.cmi ubase/util.cmi ubase/trace.cmi ubase/safelist.cmi \
-    remote.cmi props.cmi ubase/prefs.cmi path.cmi osx.cmi os.cmi \
-    lwt/lwt_util.cmi lwt/lwt.cmi globals.cmi files.cmi common.cmi \
-    transport.cmi 
-transport.cmx: uutil.cmx ubase/util.cmx ubase/trace.cmx ubase/safelist.cmx \
-    remote.cmx props.cmx ubase/prefs.cmx path.cmx osx.cmx os.cmx \
-    lwt/lwt_util.cmx lwt/lwt.cmx globals.cmx files.cmx common.cmx \
-    transport.cmi 
+transfer.cmo: checksum.cmi lwt/lwt.cmi ubase/safelist.cmi ubase/trace.cmi \
+    ubase/util.cmi uutil.cmi transfer.cmi 
+transfer.cmx: checksum.cmx lwt/lwt.cmx ubase/safelist.cmx ubase/trace.cmx \
+    ubase/util.cmx uutil.cmx transfer.cmi 
+transport.cmo: common.cmi files.cmi globals.cmi lwt/lwt.cmi lwt/lwt_util.cmi \
+    os.cmi osx.cmi path.cmi ubase/prefs.cmi props.cmi remote.cmi \
+    ubase/safelist.cmi ubase/trace.cmi ubase/util.cmi uutil.cmi transport.cmi 
+transport.cmx: common.cmx files.cmx globals.cmx lwt/lwt.cmx lwt/lwt_util.cmx \
+    os.cmx osx.cmx path.cmx ubase/prefs.cmx props.cmx remote.cmx \
+    ubase/safelist.cmx ubase/trace.cmx ubase/util.cmx uutil.cmx transport.cmi 
 tree.cmo: ubase/safelist.cmi tree.cmi 
 tree.cmx: ubase/safelist.cmx tree.cmi 
-uicommon.cmo: xferhint.cmi uutil.cmi ubase/util.cmi update.cmi \
-    ubase/trace.cmi ubase/safelist.cmi remote.cmi recon.cmi props.cmi \
-    ubase/prefs.cmi pred.cmi path.cmi osx.cmi os.cmi name.cmi \
-    lwt/lwt_unix.cmi lwt/lwt.cmi globals.cmi fspath.cmi files.cmi \
-    fileinfo.cmi common.cmi clroot.cmi case.cmi uicommon.cmi 
-uicommon.cmx: xferhint.cmx uutil.cmx ubase/util.cmx update.cmx \
-    ubase/trace.cmx ubase/safelist.cmx remote.cmx recon.cmx props.cmx \
-    ubase/prefs.cmx pred.cmx path.cmx osx.cmx os.cmx name.cmx \
-    lwt/lwt_unix.cmx lwt/lwt.cmx globals.cmx fspath.cmx files.cmx \
-    fileinfo.cmx common.cmx clroot.cmx case.cmx uicommon.cmi 
-uigtk2.cmo: uutil.cmi ubase/util.cmi update.cmi uitext.cmi uicommon.cmi \
-    transport.cmi ubase/trace.cmi strings.cmi sortri.cmi ubase/safelist.cmi \
-    remote.cmi recon.cmi ubase/prefs.cmi pixmaps.cmo path.cmi os.cmi \
-    lwt/lwt_util.cmi lwt/lwt_unix.cmi lwt/lwt.cmi globals.cmi fspath.cmi \
-    files.cmi common.cmi clroot.cmi uigtk2.cmi 
-uigtk2.cmx: uutil.cmx ubase/util.cmx update.cmx uitext.cmx uicommon.cmx \
-    transport.cmx ubase/trace.cmx strings.cmx sortri.cmx ubase/safelist.cmx \
-    remote.cmx recon.cmx ubase/prefs.cmx pixmaps.cmx path.cmx os.cmx \
-    lwt/lwt_util.cmx lwt/lwt_unix.cmx lwt/lwt.cmx globals.cmx fspath.cmx \
-    files.cmx common.cmx clroot.cmx uigtk2.cmi 
-uigtk.cmo: uutil.cmi ubase/util.cmi update.cmi uitext.cmi uicommon.cmi \
-    transport.cmi ubase/trace.cmi strings.cmi sortri.cmi ubase/safelist.cmi \
-    remote.cmi recon.cmi ubase/prefs.cmi pixmaps.cmo path.cmi os.cmi \
-    lwt/lwt_util.cmi lwt/lwt_unix.cmi lwt/lwt.cmi globals.cmi fspath.cmi \
-    files.cmi common.cmi clroot.cmi uigtk.cmi 
-uigtk.cmx: uutil.cmx ubase/util.cmx update.cmx uitext.cmx uicommon.cmx \
-    transport.cmx ubase/trace.cmx strings.cmx sortri.cmx ubase/safelist.cmx \
-    remote.cmx recon.cmx ubase/prefs.cmx pixmaps.cmx path.cmx os.cmx \
-    lwt/lwt_util.cmx lwt/lwt_unix.cmx lwt/lwt.cmx globals.cmx fspath.cmx \
-    files.cmx common.cmx clroot.cmx uigtk.cmi 
-uimacbridge.cmo: xferhint.cmi uutil.cmi ubase/util.cmi update.cmi \
-    uicommon.cmi transport.cmi ubase/trace.cmi terminal.cmi \
-    ubase/safelist.cmi remote.cmi recon.cmi ubase/prefs.cmi path.cmi os.cmi \
-    main.cmo lwt/lwt_util.cmi lwt/lwt_unix.cmi lwt/lwt.cmi globals.cmi \
-    fspath.cmi files.cmi common.cmi clroot.cmi 
-uimacbridge.cmx: xferhint.cmx uutil.cmx ubase/util.cmx update.cmx \
-    uicommon.cmx transport.cmx ubase/trace.cmx terminal.cmx \
-    ubase/safelist.cmx remote.cmx recon.cmx ubase/prefs.cmx path.cmx os.cmx \
-    main.cmx lwt/lwt_util.cmx lwt/lwt_unix.cmx lwt/lwt.cmx globals.cmx \
-    fspath.cmx files.cmx common.cmx clroot.cmx 
-uitext.cmo: uutil.cmi ubase/util.cmi update.cmi uicommon.cmi transport.cmi \
-    ubase/trace.cmi ubase/safelist.cmi recon.cmi ubase/prefs.cmi path.cmi \
-    lwt/lwt_util.cmi lwt/lwt_unix.cmi lwt/lwt.cmi globals.cmi common.cmi \
-    uitext.cmi 
-uitext.cmx: uutil.cmx ubase/util.cmx update.cmx uicommon.cmx transport.cmx \
-    ubase/trace.cmx ubase/safelist.cmx recon.cmx ubase/prefs.cmx path.cmx \
-    lwt/lwt_util.cmx lwt/lwt_unix.cmx lwt/lwt.cmx globals.cmx common.cmx \
-    uitext.cmi 
-update.cmo: xferhint.cmi uutil.cmi ubase/util.cmi tree.cmi ubase/trace.cmi \
-    ubase/safelist.cmi ubase/rx.cmi remote.cmi props.cmi ubase/prefs.cmi \
-    pred.cmi path.cmi osx.cmi os.cmi name.cmi ubase/myMap.cmi \
-    lwt/lwt_unix.cmi lwt/lwt.cmi lock.cmi globals.cmi fspath.cmi \
-    fingerprint.cmi fileinfo.cmi copy.cmi common.cmi update.cmi 
-update.cmx: xferhint.cmx uutil.cmx ubase/util.cmx tree.cmx ubase/trace.cmx \
-    ubase/safelist.cmx ubase/rx.cmx remote.cmx props.cmx ubase/prefs.cmx \
-    pred.cmx path.cmx osx.cmx os.cmx name.cmx ubase/myMap.cmx \
-    lwt/lwt_unix.cmx lwt/lwt.cmx lock.cmx globals.cmx fspath.cmx \
-    fingerprint.cmx fileinfo.cmx copy.cmx common.cmx update.cmi 
-uutil.cmo: ubase/util.cmi ubase/projectInfo.cmo uutil.cmi 
-uutil.cmx: ubase/util.cmx ubase/projectInfo.cmx uutil.cmi 
-xferhint.cmo: ubase/util.cmi ubase/trace.cmi ubase/prefs.cmi path.cmi os.cmi \
-    fspath.cmi xferhint.cmi 
-xferhint.cmx: ubase/util.cmx ubase/trace.cmx ubase/prefs.cmx path.cmx os.cmx \
-    fspath.cmx xferhint.cmi 
+uicommon.cmo: case.cmi clroot.cmi common.cmi fileinfo.cmi files.cmi \
+    fspath.cmi globals.cmi lwt/lwt.cmi lwt/lwt_unix.cmi name.cmi os.cmi \
+    osx.cmi path.cmi pred.cmi ubase/prefs.cmi props.cmi recon.cmi remote.cmi \
+    ubase/safelist.cmi ubase/trace.cmi update.cmi ubase/util.cmi uutil.cmi \
+    xferhint.cmi uicommon.cmi 
+uicommon.cmx: case.cmx clroot.cmx common.cmx fileinfo.cmx files.cmx \
+    fspath.cmx globals.cmx lwt/lwt.cmx lwt/lwt_unix.cmx name.cmx os.cmx \
+    osx.cmx path.cmx pred.cmx ubase/prefs.cmx props.cmx recon.cmx remote.cmx \
+    ubase/safelist.cmx ubase/trace.cmx update.cmx ubase/util.cmx uutil.cmx \
+    xferhint.cmx uicommon.cmi 
+uigtk.cmo: clroot.cmi common.cmi files.cmi fspath.cmi globals.cmi lwt/lwt.cmi \
+    lwt/lwt_unix.cmi lwt/lwt_util.cmi os.cmi path.cmi pixmaps.cmo \
+    ubase/prefs.cmi recon.cmi remote.cmi ubase/safelist.cmi sortri.cmi \
+    strings.cmi ubase/trace.cmi transport.cmi uicommon.cmi uitext.cmi \
+    update.cmi ubase/util.cmi uutil.cmi uigtk.cmi 
+uigtk.cmx: clroot.cmx common.cmx files.cmx fspath.cmx globals.cmx lwt/lwt.cmx \
+    lwt/lwt_unix.cmx lwt/lwt_util.cmx os.cmx path.cmx pixmaps.cmx \
+    ubase/prefs.cmx recon.cmx remote.cmx ubase/safelist.cmx sortri.cmx \
+    strings.cmx ubase/trace.cmx transport.cmx uicommon.cmx uitext.cmx \
+    update.cmx ubase/util.cmx uutil.cmx uigtk.cmi 
+uigtk2.cmo: clroot.cmi common.cmi files.cmi fspath.cmi globals.cmi \
+    lwt/lwt.cmi lwt/lwt_unix.cmi lwt/lwt_util.cmi os.cmi path.cmi pixmaps.cmo \
+    ubase/prefs.cmi recon.cmi remote.cmi ubase/safelist.cmi sortri.cmi \
+    strings.cmi ubase/trace.cmi transport.cmi uicommon.cmi uitext.cmi \
+    update.cmi ubase/util.cmi uutil.cmi uigtk2.cmi 
+uigtk2.cmx: clroot.cmx common.cmx files.cmx fspath.cmx globals.cmx \
+    lwt/lwt.cmx lwt/lwt_unix.cmx lwt/lwt_util.cmx os.cmx path.cmx pixmaps.cmx \
+    ubase/prefs.cmx recon.cmx remote.cmx ubase/safelist.cmx sortri.cmx \
+    strings.cmx ubase/trace.cmx transport.cmx uicommon.cmx uitext.cmx \
+    update.cmx ubase/util.cmx uutil.cmx uigtk2.cmi 
+uimacbridge.cmo: clroot.cmi common.cmi files.cmi fspath.cmi globals.cmi \
+    lwt/lwt.cmi lwt/lwt_unix.cmi lwt/lwt_util.cmi main.cmo os.cmi path.cmi \
+    ubase/prefs.cmi recon.cmi remote.cmi ubase/safelist.cmi terminal.cmi \
+    ubase/trace.cmi transport.cmi uicommon.cmi update.cmi ubase/util.cmi \
+    uutil.cmi xferhint.cmi 
+uimacbridge.cmx: clroot.cmx common.cmx files.cmx fspath.cmx globals.cmx \
+    lwt/lwt.cmx lwt/lwt_unix.cmx lwt/lwt_util.cmx main.cmx os.cmx path.cmx \
+    ubase/prefs.cmx recon.cmx remote.cmx ubase/safelist.cmx terminal.cmx \
+    ubase/trace.cmx transport.cmx uicommon.cmx update.cmx ubase/util.cmx \
+    uutil.cmx xferhint.cmx 
+uitext.cmo: common.cmi globals.cmi lwt/lwt.cmi lwt/lwt_unix.cmi \
+    lwt/lwt_util.cmi path.cmi ubase/prefs.cmi recon.cmi ubase/safelist.cmi \
+    ubase/trace.cmi transport.cmi uicommon.cmi update.cmi ubase/util.cmi \
+    uutil.cmi uitext.cmi 
+uitext.cmx: common.cmx globals.cmx lwt/lwt.cmx lwt/lwt_unix.cmx \
+    lwt/lwt_util.cmx path.cmx ubase/prefs.cmx recon.cmx ubase/safelist.cmx \
+    ubase/trace.cmx transport.cmx uicommon.cmx update.cmx ubase/util.cmx \
+    uutil.cmx uitext.cmi 
+update.cmo: common.cmi copy.cmi fileinfo.cmi fingerprint.cmi fspath.cmi \
+    globals.cmi lock.cmi lwt/lwt.cmi lwt/lwt_unix.cmi ubase/myMap.cmi \
+    name.cmi os.cmi osx.cmi path.cmi pred.cmi ubase/prefs.cmi props.cmi \
+    remote.cmi ubase/rx.cmi ubase/safelist.cmi ubase/trace.cmi tree.cmi \
+    ubase/util.cmi uutil.cmi xferhint.cmi update.cmi 
+update.cmx: common.cmx copy.cmx fileinfo.cmx fingerprint.cmx fspath.cmx \
+    globals.cmx lock.cmx lwt/lwt.cmx lwt/lwt_unix.cmx ubase/myMap.cmx \
+    name.cmx os.cmx osx.cmx path.cmx pred.cmx ubase/prefs.cmx props.cmx \
+    remote.cmx ubase/rx.cmx ubase/safelist.cmx ubase/trace.cmx tree.cmx \
+    ubase/util.cmx uutil.cmx xferhint.cmx update.cmi 
+uutil.cmo: ubase/projectInfo.cmo ubase/util.cmi uutil.cmi 
+uutil.cmx: ubase/projectInfo.cmx ubase/util.cmx uutil.cmi 
+xferhint.cmo: fspath.cmi os.cmi path.cmi ubase/prefs.cmi ubase/trace.cmi \
+    ubase/util.cmi xferhint.cmi 
+xferhint.cmx: fspath.cmx os.cmx path.cmx ubase/prefs.cmx ubase/trace.cmx \
+    ubase/util.cmx xferhint.cmi 
 lwt/lwt.cmo: lwt/lwt.cmi 
 lwt/lwt.cmx: lwt/lwt.cmi 
-lwt/lwt_unix.cmo: lwt/pqueue.cmi lwt/lwt.cmi lwt/lwt_unix.cmi 
-lwt/lwt_unix.cmx: lwt/pqueue.cmx lwt/lwt.cmx lwt/lwt_unix.cmi 
+lwt/lwt_unix.cmo: lwt/lwt.cmi lwt/pqueue.cmi lwt/lwt_unix.cmi 
+lwt/lwt_unix.cmx: lwt/lwt.cmx lwt/pqueue.cmx lwt/lwt_unix.cmi 
 lwt/lwt_util.cmo: lwt/lwt.cmi lwt/lwt_util.cmi 
 lwt/lwt_util.cmx: lwt/lwt.cmx lwt/lwt_util.cmi 
 lwt/pqueue.cmo: lwt/pqueue.cmi 
 lwt/pqueue.cmx: lwt/pqueue.cmi 
 ubase/myMap.cmo: ubase/myMap.cmi 
 ubase/myMap.cmx: ubase/myMap.cmi 
-ubase/prefs.cmo: ubase/util.cmi ubase/uarg.cmi ubase/safelist.cmi \
+ubase/prefs.cmo: ubase/safelist.cmi ubase/uarg.cmi ubase/util.cmi \
     ubase/prefs.cmi 
-ubase/prefs.cmx: ubase/util.cmx ubase/uarg.cmx ubase/safelist.cmx \
+ubase/prefs.cmx: ubase/safelist.cmx ubase/uarg.cmx ubase/util.cmx \
     ubase/prefs.cmi 
 ubase/rx.cmo: ubase/rx.cmi 
 ubase/rx.cmx: ubase/rx.cmi 
 ubase/safelist.cmo: ubase/safelist.cmi 
 ubase/safelist.cmx: ubase/safelist.cmi 
-ubase/trace.cmo: ubase/util.cmi ubase/safelist.cmi ubase/prefs.cmi \
+ubase/trace.cmo: ubase/prefs.cmi ubase/safelist.cmi ubase/util.cmi \
     ubase/trace.cmi 
-ubase/trace.cmx: ubase/util.cmx ubase/safelist.cmx ubase/prefs.cmx \
+ubase/trace.cmx: ubase/prefs.cmx ubase/safelist.cmx ubase/util.cmx \
     ubase/trace.cmi 
-ubase/uarg.cmo: ubase/util.cmi ubase/safelist.cmi ubase/uarg.cmi 
-ubase/uarg.cmx: ubase/util.cmx ubase/safelist.cmx ubase/uarg.cmi 
+ubase/uarg.cmo: ubase/safelist.cmi ubase/util.cmi ubase/uarg.cmi 
+ubase/uarg.cmx: ubase/safelist.cmx ubase/util.cmx ubase/uarg.cmi 
 ubase/uprintf.cmo: ubase/uprintf.cmi 
 ubase/uprintf.cmx: ubase/uprintf.cmi 
-ubase/util.cmo: ubase/uprintf.cmi ubase/safelist.cmi ubase/util.cmi 
-ubase/util.cmx: ubase/uprintf.cmx ubase/safelist.cmx ubase/util.cmi 
+ubase/util.cmo: ubase/safelist.cmi ubase/uprintf.cmi ubase/util.cmi 
+ubase/util.cmx: ubase/safelist.cmx ubase/uprintf.cmx ubase/util.cmi 
 lwt/lwt_unix.cmi: lwt/lwt.cmi 
 lwt/lwt_util.cmi: lwt/lwt.cmi 
 ubase/prefs.cmi: ubase/util.cmi 

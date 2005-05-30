@@ -107,7 +107,7 @@ let doAction (fromRoot,toRoot) path fromContents toContents id =
                   fromRoot path uiFrom toRoot path uiTo id))
       (fun e -> Trace.log
           (Printf.sprintf
-             "Failed with exception %s\n" (Printexc.to_string e));
+             "Failed: %s\n" (Util.printException e));
         return ()))
 
 let propagate root1 root2 reconItem id showMergeFn =

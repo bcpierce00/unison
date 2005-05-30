@@ -30,6 +30,8 @@ type confirmation =
    Succeeded
  | Failed of string
 
+val printException : exn -> string
+
 (* ---------------------------------------------------------------------- *)
 (* Strings *)
 
