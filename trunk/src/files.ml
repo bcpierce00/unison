@@ -446,7 +446,15 @@ let diffCmd =
      ^ "diffed.  If not, the two filenames will be appended to the command.  In both "
      ^ "cases, the filenames are suitably quoted.")
 
-let quotes s = "'" ^ Util.replacesubstring s "'" "'\''" ^ "'"
+(* Using single quotes is simpler under Unix but they are not accepted
+   by the Windows shell.  Double quotes without further quoting is
+   sufficient with Windows as filenames are not allowed to contain
+   double quotes. *)
+let quotes s =
+  if Util.osType = `Win32 && not Util.isCygwin then
+    "\"" ^ s ^ "\""
+  else
+    "'" ^ Util.replacesubstring s "'" "'\''" ^ "'"
 
 let rec diff root1 path1 ui1 root2 path2 ui2 showDiff id =
   debug (fun () ->
