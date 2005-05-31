@@ -1,3 +1,10 @@
+CHANGES FROM VERSION 2.12.21
+
+* More robust handling of character encodings in GTK2 UI
+* Removed the DIALOG_AUTHENTICATION icon for now (not available in the
+  current lablgtk2 release)
+
+-------------------------------
 CHANGES FROM VERSION 2.12.20
 
 * Diff command: fixed filename quoting under Windows: use double

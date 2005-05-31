@@ -74,9 +74,6 @@ let fontMonospaceMediumPango = lazy (Pango.Font.from_string "monospace")
  Unison icon
  **********************************************************************)
 
-(* Not sure whether this is available under Windows...
-let icon = Rsvg.render_from_string Pixmaps.icon_svg
-*)
 (* This does not work with the current version of Lablgtk, due to a bug
 let icon =
   GdkPixbuf.from_data ~width:48 ~height:48 ~has_alpha:true
@@ -142,119 +139,6 @@ let gtk_sync () =
   while Glib.Main.iteration false do () done
 
 (**********************************************************************
-                       USEFUL LOW-LEVEL WIDGETS
- **********************************************************************)
-
-class scrolled_text
-    ?(font=fontMonospaceMediumPango) ?editable ?word_wrap
-    ~width ~height ?packing ?show
-    () =
-  let sw =
-    GBin.scrolled_window ?packing ~show:false
-      ~hpolicy:`NEVER ~vpolicy:`AUTOMATIC ()
-  in
-  let text = GText.view ?editable ?wrap_mode:(Some `WORD) ~packing:sw#add () in
-  object
-    inherit GObj.widget_full sw#as_widget
-    method text = text
-    method insert ?(font=fontMonospaceMediumPango) s =
-      text#buffer#set_text s;
-    method show () = sw#misc#show ()
-    initializer
-      text#misc#modify_font (Lazy.force font);
-      text#misc#set_size_chars ~height ~width ();
-      if show <> Some false then sw#misc#show ()
-  end
-
-(* ------ *)
-
-(* Display a message in a window and wait for the user
-   to hit the button. *)
-let okBox ~title ~typ ~message =
-  let t =
-    GWindow.message_dialog
-      ~title ~message_type:typ ~message ~modal:true
-      ~buttons:GWindow.Buttons.ok () in
-  grabFocus t;
-  ignore (t#run ()); t#destroy ();
-  releaseFocus ()
-
-(* ------ *)
-
-let primaryText msg =
-  Printf.sprintf "<span weight=\"bold\" size=\"larger\">%s</span>" msg
-
-(* twoBox: Display a message in a window and wait for the user
-   to hit one of two buttons.  Return true if the first button is
-   chosen, false if the second button is chosen. *)
-let twoBox ~title ~message ~astock ~bstock =
-  let t =
-    GWindow.dialog ~border_width:6 ~modal:true ~no_separator:true
-      ~allow_grow:false () in
-  t#vbox#set_spacing 12;
-  let h1 = GPack.hbox ~border_width:6 ~spacing:12 ~packing:t#vbox#pack () in
-  ignore (GMisc.image ~stock:`DIALOG_WARNING ~icon_size:`DIALOG
-            ~yalign:0. ~packing:h1#pack ());
-  let v1 = GPack.vbox ~spacing:12 ~packing:h1#pack () in
-  ignore (GMisc.label
-            ~markup:(primaryText title ^ "\n\n" ^ message)
-            ~selectable:true ~yalign:0. ~packing:v1#add ());
-  t#add_button_stock bstock `NO;
-  t#add_button_stock astock `YES;
-  t#set_default_response `NO;
-  grabFocus t; t#show();
-  let res = t#run () in
-  t#destroy (); releaseFocus ();
-  res = `YES
-
-(* ------ *)
-
-(* Avoid recursive invocations of the function below (a window receives
-   delete events even when it is not sensitive) *)
-let inExit = ref false
-
-let doExit () = Lwt_unix.run (Update.unlockArchives ()); exit 0
-
-let safeExit () =
-  if not !inExit then begin
-    inExit := true;
-    if not !busy then exit 0 else
-    if twoBox ~title:"Premature exit"
-        ~message:"Unison is working, exit anyway ?"
-        ~astock:`YES ~bstock:`NO
-    then exit 0;
-    inExit := false
-  end
-
-(* ------ *)
-
-(* warnBox: Display a warning message in a window and wait (unless
-   we're in batch mode) for the user to hit "OK" or "Exit". *)
-let warnBox title message =
-  if Prefs.read Globals.batch then begin
-    (* In batch mode, just pop up a window and go ahead *)
-    let t =
-      GWindow.dialog ~border_width:6 ~modal:true ~no_separator:true
-        ~allow_grow:false () in
-    t#vbox#set_spacing 12;
-    let h1 = GPack.hbox ~border_width:6 ~spacing:12 ~packing:t#vbox#pack () in
-    ignore (GMisc.image ~stock:`DIALOG_INFO ~icon_size:`DIALOG
-              ~yalign:0. ~packing:h1#pack ());
-    let v1 = GPack.vbox ~spacing:12 ~packing:h1#pack () in
-    ignore (GMisc.label ~markup:(primaryText title ^ "\n\n" ^ message)
-              ~selectable:true ~yalign:0. ~packing:v1#add ());
-    t#add_button_stock `CLOSE `CLOSE;
-    t#set_default_response `CLOSE;
-    ignore (t#connect#response ~callback:(fun _ -> t#destroy ()));
-    t#show ()
-  end else begin
-    inExit := true;
-    let ok = twoBox ~title ~message ~astock:`OK ~bstock:`QUIT in
-    if not(ok) then doExit ();
-    inExit := false
-  end
-
-(**********************************************************************
                       CHARACTER SET TRANSCODING
 ***********************************************************************)
 
@@ -311,7 +195,212 @@ let transcodeDoc s =
   transcodeRec buf s 0 (String.length s);
   Buffer.contents buf
 
-let transcode = Glib.Convert.locale_to_utf8
+(****)
+
+let wf_utf8 =
+  [[('\x00', '\x7F')];
+   [('\xC2', '\xDF'); ('\x80', '\xBF')];
+   [('\xE0', '\xE0'); ('\xA0', '\xBF'); ('\x80', '\xBF')];
+   [('\xE1', '\xEC'); ('\x80', '\xBF'); ('\x80', '\xBF')];
+   [('\xED', '\xED'); ('\x80', '\x9F'); ('\x80', '\xBF')];
+   [('\xEE', '\xEF'); ('\x80', '\xBF'); ('\x80', '\xBF')];
+   [('\xF0', '\xF0'); ('\x90', '\xBF'); ('\x80', '\xBF'); ('\x80', '\xBF')];
+   [('\xF1', '\xF3'); ('\x80', '\xBF'); ('\x80', '\xBF'); ('\x80', '\xBF')];
+   [('\xF4', '\xF4'); ('\x80', '\x8F'); ('\x80', '\xBF'); ('\x80', '\xBF')]]
+
+let rec accept_seq l s i len =
+  match l with
+    [] ->
+      Some i
+  | (a, b) :: r ->
+      if i = len || s.[i] < a || s.[i] > b then
+        None
+      else
+        accept_seq r s (i + 1) len
+
+let rec accept_rec l s i len =
+  match l with
+    [] ->
+      None
+  | seq :: r ->
+      match accept_seq seq s i len with
+        None -> accept_rec r s i len
+      | res  -> res
+
+let accept = accept_rec wf_utf8
+
+(***)
+
+let rec validate_rec s i len =
+  i = len ||
+  match accept s i len with
+    Some i -> validate_rec s i len
+  | None   -> false
+
+let expl f s = f s 0 (String.length s)
+
+let validate = expl validate_rec
+
+(****)
+
+let protect_char buf c =
+  if c < '\x80' then
+    Buffer.add_char buf c
+  else
+    let c = Char.code c in
+    Buffer.add_char buf (Char.chr (c lsr 6 + 0xC0));
+    Buffer.add_char buf (Char.chr (c land 0x3f + 0x80))
+
+let rec protect_rec buf s i len =
+  if i = len then
+    Buffer.contents buf
+  else
+    match accept s i len with
+      Some i' ->
+        Buffer.add_substring buf s i (i' - i);
+        protect_rec buf s i' len
+    | None ->
+        protect_char buf s.[i];
+        protect_rec buf s (i + 1) len
+
+(* Convert a string to UTF8 by keeping all UTF8 characters unchanged
+   and considering all other characters as ISO 8859-1 characters *)
+let protect s =
+  let buf = Buffer.create (String.length s * 2) in
+  expl (protect_rec buf) s
+
+(****)
+
+let escapeMarkup s = Glib.Markup.escape_text s
+
+let transcode s =
+  try
+    Glib.Convert.locale_to_utf8 s
+  with Glib.Convert.Error _ ->
+    protect s
+
+let transcodeFilename s =
+  if Util.osType = `Win32 then transcode s else
+  try
+    Glib.Convert.filename_to_utf8 s
+  with Glib.Convert.Error _ ->
+    protect s
+
+(**********************************************************************
+                       USEFUL LOW-LEVEL WIDGETS
+ **********************************************************************)
+
+class scrolled_text
+    ?(font=fontMonospaceMediumPango) ?editable ?word_wrap
+    ~width ~height ?packing ?show
+    () =
+  let sw =
+    GBin.scrolled_window ?packing ~show:false
+      ~hpolicy:`NEVER ~vpolicy:`AUTOMATIC ()
+  in
+  let text = GText.view ?editable ?wrap_mode:(Some `WORD) ~packing:sw#add () in
+  object
+    inherit GObj.widget_full sw#as_widget
+    method text = text
+    method insert ?(font=fontMonospaceMediumPango) s =
+      text#buffer#set_text s;
+    method show () = sw#misc#show ()
+    initializer
+      text#misc#modify_font (Lazy.force font);
+      text#misc#set_size_chars ~height ~width ();
+      if show <> Some false then sw#misc#show ()
+  end
+
+(* ------ *)
+
+(* Display a message in a window and wait for the user
+   to hit the button. *)
+let okBox ~title ~typ ~message =
+  let t =
+    GWindow.message_dialog
+      ~title ~message_type:typ ~message ~modal:true
+      ~buttons:GWindow.Buttons.ok () in
+  grabFocus t;
+  ignore (t#run ()); t#destroy ();
+  releaseFocus ()
+
+(* ------ *)
+
+let primaryText msg =
+  Printf.sprintf "<span weight=\"bold\" size=\"larger\">%s</span>"
+    (escapeMarkup msg)
+
+(* twoBox: Display a message in a window and wait for the user
+   to hit one of two buttons.  Return true if the first button is
+   chosen, false if the second button is chosen. *)
+let twoBox ~title ~message ~astock ~bstock =
+  let t =
+    GWindow.dialog ~border_width:6 ~modal:true ~no_separator:true
+      ~allow_grow:false () in
+  t#vbox#set_spacing 12;
+  let h1 = GPack.hbox ~border_width:6 ~spacing:12 ~packing:t#vbox#pack () in
+  ignore (GMisc.image ~stock:`DIALOG_WARNING ~icon_size:`DIALOG
+            ~yalign:0. ~packing:h1#pack ());
+  let v1 = GPack.vbox ~spacing:12 ~packing:h1#pack () in
+  ignore (GMisc.label
+            ~markup:(primaryText title ^ "\n\n" ^ escapeMarkup message)
+            ~selectable:true ~yalign:0. ~packing:v1#add ());
+  t#add_button_stock bstock `NO;
+  t#add_button_stock astock `YES;
+  t#set_default_response `NO;
+  grabFocus t; t#show();
+  let res = t#run () in
+  t#destroy (); releaseFocus ();
+  res = `YES
+
+(* ------ *)
+
+(* Avoid recursive invocations of the function below (a window receives
+   delete events even when it is not sensitive) *)
+let inExit = ref false
+
+let doExit () = Lwt_unix.run (Update.unlockArchives ()); exit 0
+
+let safeExit () =
+  if not !inExit then begin
+    inExit := true;
+    if not !busy then exit 0 else
+    if twoBox ~title:"Premature exit"
+        ~message:"Unison is working, exit anyway ?"
+        ~astock:`YES ~bstock:`NO
+    then exit 0;
+    inExit := false
+  end
+
+(* ------ *)
+
+(* warnBox: Display a warning message in a window and wait (unless
+   we're in batch mode) for the user to hit "OK" or "Exit". *)
+let warnBox title message =
+  let message = transcode message in
+  if Prefs.read Globals.batch then begin
+    (* In batch mode, just pop up a window and go ahead *)
+    let t =
+      GWindow.dialog ~border_width:6 ~modal:true ~no_separator:true
+        ~allow_grow:false () in
+    t#vbox#set_spacing 12;
+    let h1 = GPack.hbox ~border_width:6 ~spacing:12 ~packing:t#vbox#pack () in
+    ignore (GMisc.image ~stock:`DIALOG_INFO ~icon_size:`DIALOG
+              ~yalign:0. ~packing:h1#pack ());
+    let v1 = GPack.vbox ~spacing:12 ~packing:h1#pack () in
+    ignore (GMisc.label ~markup:(primaryText title ^ "\n\n" ^
+                                 escapeMarkup message)
+              ~selectable:true ~yalign:0. ~packing:v1#add ());
+    t#add_button_stock `CLOSE `CLOSE;
+    t#set_default_response `CLOSE;
+    ignore (t#connect#response ~callback:(fun _ -> t#destroy ()));
+    t#show ()
+  end else begin
+    inExit := true;
+    let ok = twoBox ~title ~message ~astock:`OK ~bstock:`QUIT in
+    if not(ok) then doExit ();
+    inExit := false
+  end
 
 (**********************************************************************
                          HIGHER-LEVEL WIDGETS
@@ -525,7 +614,7 @@ let file_dialog ~title ~callback ?filename () =
 (* ------ *)
 
 let fatalError message =
-  Trace.log ((transcode message) ^ "\n");
+  Trace.log (message ^ "\n");
   let title = "Fatal error" in
   let t =
     GWindow.dialog ~border_width:6 ~modal:true ~no_separator:true
@@ -536,7 +625,8 @@ let fatalError message =
             ~yalign:0. ~packing:h1#pack ());
   let v1 = GPack.vbox ~spacing:12 ~packing:h1#pack () in
   ignore (GMisc.label
-            ~markup:(primaryText title ^ "\n\n" ^ message)
+            ~markup:(primaryText title ^ "\n\n" ^
+                     escapeMarkup (transcode message))
             ~selectable:true ~yalign:0. ~packing:v1#add ());
   t#add_button_stock `QUIT `QUIT;
   t#set_default_response `QUIT;
@@ -736,10 +826,12 @@ let getPassword rootName msg =
   let header = primaryText (Format.sprintf "Connecting to '%s'..." rootName) in
 
   let h1 = GPack.hbox ~border_width:6 ~spacing:12 ~packing:t#vbox#pack () in
-  ignore (GMisc.image ~stock:`DIALOG_AUTHENTICATION ~icon_size:`DIALOG
+  (* FIX: DIALOG_AUTHENTICATION is way better but is not available
+     in the current release of LablGTK2... *)
+  ignore (GMisc.image ~stock:(*`DIALOG_AUTHENTICATION*)`DIALOG_QUESTION ~icon_size:`DIALOG
             ~yalign:0. ~packing:h1#pack ());
   let v1 = GPack.vbox ~spacing:12 ~packing:h1#pack () in
-  ignore(GMisc.label ~markup:(header ^ "\n\n" ^ msg)
+  ignore(GMisc.label ~markup:(header ^ "\n\n" ^ escapeMarkup msg)
            ~selectable:true ~yalign:0. ~packing:v1#pack ());
 
   let passwordE = GEdit.entry ~packing:v1#pack ~visibility:false () in
@@ -916,9 +1008,9 @@ let getProfile () =
         let filename = Prefs.profilePathname profile in
         if Sys.file_exists filename then
           okBox
-            ~title:(Uutil.myName ^ " error") ~typ:`ERROR
+            ~title:"Error" ~typ:`ERROR
             ~message:("Profile \""
-                      ^ profile
+                      ^ (transcodeFilename profile)
                       ^ "\" already exists!\nPlease select another name.")
         else
           (* Make an empty file *)
@@ -1036,7 +1128,7 @@ let messageBox ~title ?(action = fun t -> t#destroy)
     new scrolled_text ~editable:false
       ~width:80 ~height:20 ~packing:t#vbox#add ()
   in
-  t_text#insert (transcode message);
+  t_text#insert message;
   ignore (t#event#connect#delete ~callback:(fun _ -> action t (); true));
   t#show ();
   if modal then begin
@@ -1149,7 +1241,7 @@ let rec createToplevelWindow () =
       (if s = "" then Uutil.myName else
        Format.sprintf "%s [%s]" Uutil.myName s);
     let s = if s="" then "" else "Profile: " ^ s in
-    profileLabel#set_text s
+    profileLabel#set_text (transcodeFilename s)
   in
 
   begin match !Prefs.profileName with
@@ -1306,8 +1398,9 @@ let rec createToplevelWindow () =
             None -> Uicommon.details2string !theState.(row).ri "  "
           | Some(Util.Succeeded) -> Uicommon.details2string !theState.(row).ri "  "
           | Some(Util.Failed(s)) -> s in
-	let path = transcode (Path.toString !theState.(row).ri.path) in
-        detailsWindow#buffer#set_text (path ^ "\n" ^ details);
+	let path = Path.toString !theState.(row).ri.path in
+        detailsWindow#buffer#set_text
+          (transcodeFilename path ^ "\n" ^ transcode details);
     end;
     (* Display text *)
     updateButtons () in
@@ -1459,7 +1552,8 @@ lst_store#set ~row ~column:c_replica2 r2;
 lst_store#set ~row ~column:c_status status;
 lst_store#set ~row ~column:c_path path;
 *)
-      ignore (mainWindow#prepend [ r1; ""; r2; status; transcode path ]);
+      ignore (mainWindow#prepend
+                [ r1; ""; r2; status; transcodeFilename path ]);
       displayArrow 0 i action
     done;
     debug (fun()-> Util.msg "reset current to %s\n"
@@ -1478,10 +1572,11 @@ lst_store#set ~row ~column:c_path path;
     displayArrow i i action;
     mainWindow#set_cell ~text:r2     i 2;
     displayStatusIcon i status;
-    mainWindow#set_cell ~text:(transcode path)   i 4;
+    mainWindow#set_cell ~text:(transcodeFilename path)   i 4;
     if status = "failed" then begin
       mainWindow#set_cell
-        ~text:(path ^ "       [failed: click on this line for details]") i 4
+        ~text:(transcodeFilename path ^
+               "       [failed: click on this line for details]") i 4
     end;
     mainWindow#thaw ();
     if !current = Some i then updateDetails ();
@@ -1904,7 +1999,7 @@ lst_store#set ~row ~column:c_path path;
       Some i ->
         getLock (fun () ->
           Uicommon.showDiffs !theState.(i).ri
-            (fun title text -> messageBox ~title text)
+            (fun title text -> messageBox ~title (transcode text))
             Trace.status (Uutil.File.ofLine i);
           displayGlobalProgress 0.)
     | None ->
