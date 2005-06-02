@@ -150,7 +150,7 @@ OCAMLOBJS += \
           \
           case.cmo pred.cmo uutil.cmo \
           fileutil.cmo name.cmo path.cmo fspath.cmo fingerprint.cmo \
-          osx.cmo \
+          abort.cmo osx.cmo \
           props.cmo fileinfo.cmo os.cmo lock.cmo clroot.cmo common.cmo \
           tree.cmo checksum.cmo terminal.cmo \
           transfer.cmo xferhint.cmo remote.cmo copy.cmo \

@@ -353,6 +353,7 @@ let copy
     match f with
       Update.ArchiveFile (desc, dig, stamp, ress) ->
         Lwt_util.run_in_region copyReg 1 (fun () ->
+          Abort.check id;
           Copy.file
             rootFrom pFrom rootTo workingDir pTo realPTo
             update desc dig ress id
@@ -362,12 +363,14 @@ let copy
         Lwt_util.run_in_region copyReg 1 (fun () ->
           debug (fun() -> Util.msg "Making symlink %s/%s -> %s\n"
                             (root2string rootTo) (Path.toString pTo) l);
+          Abort.check id;
           makeSymlink rootTo (workingDir, pTo, l))
     | Update.ArchiveDir (desc, children) ->
         Lwt_util.run_in_region copyReg 1 (fun () ->
           debug (fun() -> Util.msg "Creating directory %s/%s\n"
             (root2string rootTo) (Path.toString pTo));
           mkdir rootTo workingDir pTo) >>= (fun initialDesc ->
+        Abort.check id;
         let actions =
           Update.NameMap.fold
             (fun name child rem ->
@@ -383,23 +386,29 @@ let copy
           (fun e ->
              (* If one thread fails (in a non-fatal way), we wait for
                 all other threads to terminate before continuing *)
+             Abort.file id;
              match e with
                Util.Transient _ ->
+                 let e = ref e in
                  Lwt_util.iter
                    (fun act ->
                       Lwt.catch
                          (fun () -> act)
-                         (fun e ->
-                            match e with
-                              Util.Transient _ -> Lwt.return ()
-                            | _                -> Lwt.fail e))
+                         (fun e' ->
+                            match e' with
+                              Util.Transient _ ->
+                                if Abort.testException !e then e := e';
+                                Lwt.return ()
+                            | _                ->
+                                Lwt.fail e'))
                    actions >>= (fun () ->
-                 Lwt.fail e)
+                 Lwt.fail !e)
              | _ ->
                  Lwt.fail e) >>= (fun () ->
         Lwt_util.run_in_region copyReg 1 (fun () ->
           (* We use the actual file permissions so as to preserve
              inherited bits *)
+          Abort.check id;
           setPropRemote rootTo
             (workingDir, pTo, `Set initialDesc, desc))))
     | Update.NoArchive ->

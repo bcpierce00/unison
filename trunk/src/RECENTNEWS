@@ -1,3 +1,12 @@
+CHANGES FROM VERSION 2.12.23
+
+* Mechanism for aborting synchronization.  This mechanism is used for
+  now to interrupt all threads corresponding to an item whose transfer
+  has failed (this can take a fairly long time otherwise).  It could
+  also be used for a GUI stop button.
+* Improved warning message for emptied paths.
+
+-------------------------------
 CHANGES FROM VERSION 2.12.22
 
 * Disable multi-threading when both roots are local

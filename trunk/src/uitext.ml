@@ -373,7 +373,7 @@ let doTransport reconItemList =
   if not (Prefs.read Trace.terse) && (Prefs.read Trace.debugmods = []) then
     Uutil.setProgressPrinter showProgress;
 
-  Transport.logStartTime();
+  Transport.start ();
   let fFailedPaths = ref [] in
   let uiWrapper ri f =
     catch f
@@ -407,7 +407,7 @@ let doTransport reconItemList =
   Lwt_unix.run
     (let actions = loop reconItemList [] Common.isDeletion in
     Lwt_util.join actions);
-  Transport.logEndTime();
+  Transport.finish ();
 
   Uutil.setProgressPrinter (fun _ _ _ -> ());
   Util.set_infos "";
