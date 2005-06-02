@@ -689,14 +689,6 @@ let registerServerCmd name f =
   registerSpecialServerCmd
     name defaultMarshalingFunctions defaultMarshalingFunctions f
 
-(* [nice i] yields [i] times to give other process a chance to run *)
-let rec nice i
-  : unit Lwt.t =
-  if i <= 0 then
-    Lwt.return ()
-  else
-    Lwt_unix.yield() >>= (fun () -> nice (i - 1))
-
 (* RegisterHostCmd is a simpler version of registerClientServer [registerServerCmd?].
    It is used to create remote procedure calls: the only communication
    between the client and server is the sending of arguments from
@@ -718,12 +710,7 @@ let registerHostCmd cmdName cmd =
      depending on whether the call is to the local host or a remote one *)
   fun host args ->
     match host with
-      "" -> nice 5
-             (* the local thread should be courteous, giving the    *)
-             (* rpc call some chance to catch up.  This should take *)
-             (* care of the malicious case of non-yielding threads, *)
-             (* such as the update detection function               *)
-          >>= (fun () -> cmd args)
+      "" -> cmd args
     | _  -> client host args
 
 let hostOfRoot root =
@@ -745,14 +732,8 @@ let registerRootCmdWithConnection
      depending on whether the call is to the local host or a remote one *)
   fun localRoot remoteRoot args ->
     match (hostOfRoot localRoot) with
-      "" -> nice 5
-             (* the local thread should be courteous, giving the    *)
-             (* rpc call some chance to catch up.  This should take *)
-             (* care of the malicious case of non-yielding threads, *)
-             (* such as the update detection function               *)
-               >>= (fun () ->
-            let conn = hostConnection (hostOfRoot remoteRoot) in
-            cmd conn args)
+      "" -> let conn = hostConnection (hostOfRoot remoteRoot) in
+            cmd conn args
     | _  -> let conn = hostConnection (hostOfRoot localRoot) in
             client0 conn args
 

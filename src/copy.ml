@@ -74,22 +74,22 @@ let localFile
          let outFd = openFileOut fspathTo pathTo `DATA in
          protect (fun () ->
            Uutil.readWrite inFd outFd
-             (fun l -> Uutil.showProgress id (Uutil.Filesize.ofInt l) "l"))
-           (fun () -> close_out outFd);
-         close_out outFd)
-         (fun () -> close_in inFd);
-       close_in inFd;
+             (fun l -> Uutil.showProgress id (Uutil.Filesize.ofInt l) "l");
+           close_in inFd;
+           close_out outFd)
+           (fun () -> close_out_noerr outFd))
+         (fun () -> close_in_noerr inFd);
        if ressLength > Uutil.Filesize.zero then begin
          let inFd = openFileIn fspathFrom pathFrom (`RESS ressLength) in
          protect (fun () ->
            let outFd = openFileOut fspathTo pathTo (`RESS ressLength) in
            protect (fun () ->
              Uutil.readWriteBounded inFd outFd ressLength
-               (fun l -> Uutil.showProgress id (Uutil.Filesize.ofInt l) "l"))
-             (fun () -> close_out outFd);
+               (fun l -> Uutil.showProgress id (Uutil.Filesize.ofInt l) "l");
+             close_in inFd;
              close_out outFd)
-           (fun () -> close_in inFd);
-         close_in inFd;
+             (fun () -> close_out_noerr outFd))
+           (fun () -> close_in_noerr inFd);
        end;
        match update with
          `Update _ ->
@@ -154,25 +154,28 @@ let startReceivingFile
           Transfer.Rsync.aboveRsyncThreshold destFileSize
             &&
           Transfer.Rsync.aboveRsyncThreshold srcFileSize ->
-        let infd = openFileIn fspath realPath fileKind in
-        (* Now that we've successfully opened the original version
-           of the file, install a more interesting decompressor *)
-        decompressor :=
-          Remote.MsgIdMap.add file_id
-            (fun ti ->
-               let fd = destinationFd fspath path fileKind outfd in
-               Transfer.Rsync.rsyncDecompress infd fd showProgress ti)
-            !decompressor;
-        let bi =
-          protect (fun () -> Transfer.Rsync.rsyncPreprocess infd)
-            (fun () -> close_in infd)
-        in
-        let (firstBi, remBi) =
-          match bi with
-            []                 -> assert false
-          | firstBi :: remBi -> (firstBi, remBi)
-        in
-        Lwt.return (outfd, ref (Some infd), Some firstBi, remBi)
+        Util.convertUnixErrorsToTransient
+          "preprocessing file"
+          (fun () ->
+             let infd = openFileIn fspath realPath fileKind in
+             (* Now that we've successfully opened the original version
+                of the file, install a more interesting decompressor *)
+             decompressor :=
+               Remote.MsgIdMap.add file_id
+                 (fun ti ->
+                    let fd = destinationFd fspath path fileKind outfd in
+                    Transfer.Rsync.rsyncDecompress infd fd showProgress ti)
+                 !decompressor;
+             let bi =
+               protect (fun () -> Transfer.Rsync.rsyncPreprocess infd)
+                 (fun () -> close_in_noerr infd)
+             in
+             let (firstBi, remBi) =
+               match bi with
+                 []                 -> assert false
+               | firstBi :: remBi -> (firstBi, remBi)
+             in
+             Lwt.return (outfd, ref (Some infd), Some firstBi, remBi))
     | _ ->
         Lwt.return (outfd, ref None, None, [])
   end else
@@ -180,7 +183,7 @@ let startReceivingFile
 
 let processTransferInstruction conn (file_id, ti) =
   Util.convertUnixErrorsToTransient
-    "processTransferInstruction"
+    "processing a transfer instruction"
     (fun () ->
        ignore (Remote.MsgIdMap.find file_id !decompressor ti));
   Lwt.return ()
@@ -228,10 +231,10 @@ let compress conn
          close_in infd;
          Lwt.return ()))
        (fun () ->
-          close_in infd))
+          close_in_noerr infd))
     (fun e ->
        Util.convertUnixErrorsToTransient
-         "rsyncSender" (fun () -> raise e))
+         "rsync sender" (fun () -> raise e))
 
 let compressRemotely = Remote.registerServerCmd "compress" compress
 
@@ -257,7 +260,7 @@ let rec sendRemBi conn file_id remBi =
 
 let fileSize (fspath, path) =
   Util.convertUnixErrorsToTransient
-    "fileSize"
+    "getting file size"
     (fun () ->
        Lwt.return
         (Props.length (Fileinfo.get false fspath path).Fileinfo.desc))
@@ -280,20 +283,27 @@ let bufferSize sz =
 (****)
 
 let close_all infd outfd =
+  Util.convertUnixErrorsToTransient
+    "closing files"
+    (fun () ->
+       begin match !infd with
+         Some fd -> close_in fd; infd := None
+       | None    -> ()
+       end;
+       begin match !outfd with
+         Some fd -> close_out fd; outfd := None
+       | None    -> ()
+       end)
+
+let close_all_no_error infd outfd =
   begin match !infd with
-    Some fd -> infd := None; close_in fd
+    Some fd -> close_in_noerr fd
   | None    -> ()
   end;
   begin match !outfd with
-    Some fd -> outfd := None; close_out fd
+    Some fd -> close_out_noerr fd
   | None    -> ()
   end
-
-let close_all_no_error infd outfd =
-  try
-    close_all infd outfd
-  with Unix.Unix_error _ ->
-    ()
 
 let reallyTransmitFile
     connFrom fspathFrom pathFrom fspathTo pathTo realPathTo

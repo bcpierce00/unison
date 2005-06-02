@@ -921,13 +921,21 @@ let childrenOf fspath path
   let absolutePath = Fspath.concat fspath path in
   try
     let directory = Fspath.opendir absolutePath in
-    let result =
+    begin try
       Util.convertUnixErrorsToTransient
         "scanning directory"
-        (fun () -> loop [] directory) in
-    Unix.closedir directory;
-    result
-  with Unix.Unix_error _ -> []
+          (fun () ->
+             let result = loop [] directory in
+             Unix.closedir directory;
+             result)
+    with Util.Transient _ as e ->
+      begin try
+        Unix.closedir directory
+      with Unix.Unix_error _ -> () end;
+      raise e
+    end
+  with Unix.Unix_error _ ->
+    []
 
 let isDir fspath path =
   let fullFspath = Fspath.concat fspath path in

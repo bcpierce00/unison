@@ -631,7 +631,7 @@ let strip p =
 
 let toString p =
   Printf.sprintf
-    "modified at %s  size %-9.f %s%s%s%s"
+    "modified on %s  size %-9.f %s%s%s%s"
     (Time.toString p.time)
     (Uutil.Filesize.toFloat p.length)
     (Perm.toString p.perm)

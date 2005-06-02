@@ -393,7 +393,8 @@ let copy
                             match e with
                               Util.Transient _ -> Lwt.return ()
                             | _                -> Lwt.fail e))
-                   actions
+                   actions >>= (fun () ->
+                 Lwt.fail e)
              | _ ->
                  Lwt.fail e) >>= (fun () ->
         Lwt_util.run_in_region copyReg 1 (fun () ->
