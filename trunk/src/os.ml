@@ -162,9 +162,16 @@ and childrenOf fspath path =
       in
       match directory with
         Some directory ->
-          let result = loop [] directory in
-          Unix.closedir directory;
-          result
+          begin try
+            let result = loop [] directory in
+            Unix.closedir directory;
+            result
+          with Unix.Unix_error _ as e ->
+            begin try
+              Unix.closedir directory
+            with Unix.Unix_error _ -> () end;
+            raise e
+          end
       | None ->
           [])
 

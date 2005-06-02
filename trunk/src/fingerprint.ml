@@ -23,16 +23,20 @@ let subfile path offset len =
     "digesting subfile"
     (fun () ->
        let inch = open_in_bin path in
-       LargeFile.seek_in inch offset;
        begin try
+         LargeFile.seek_in inch offset;
          let res = Digest.channel inch (Uutil.Filesize.toInt len) in
          close_in inch;
          res
-       with End_of_file ->
-         close_in inch;
-         raise (Util.Transient
-                  (Format.sprintf
-                     "Error in digesting subfile '%s': truncated file" path))
+       with
+         End_of_file ->
+           close_in_noerr inch;
+           raise (Util.Transient
+                    (Format.sprintf
+                       "Error in digesting subfile '%s': truncated file" path))
+       | e ->
+           close_in_noerr inch;
+           raise e
        end)
 
 let int2hexa quartet =

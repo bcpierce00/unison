@@ -131,7 +131,7 @@ let openDouble fspath path =
         entries := (id, (ofs, len)) :: !entries
       done;
       (path, inch, !entries)))
-    (fun () -> close_in inch)
+    (fun () -> close_in_noerr inch)
 
 (****)
 
@@ -222,12 +222,13 @@ let getFileInfos fspath path typ =
                 try
                   let (ofs, len) = Safelist.assoc `FINFO entries in
                   if len <> finfoLength then fail doublePath "bad finder info";
-                  readDoubleFromOffset doublePath inch ofs 32
+                  let res = readDoubleFromOffset doublePath inch ofs 32 in
+                  close_in inch;
+                  res
                 with Not_found ->
                   "")
-                (fun () -> close_in inch)
+                (fun () -> close_in_noerr inch)
             in
-            close_in inch;
             let stats = Unix.LargeFile.stat doublePath in
             { ressInfo =
                 if rsrcLength = 0L then NoRess else
@@ -281,21 +282,23 @@ let setFileInfos fspath path finfo =
           if len <> finfoLength then fail doublePath "bad finder info";
           let fullFinfo =
             protect
-              (fun () -> readDoubleFromOffset doublePath inch ofs 32)
-              (fun () -> close_in inch)
+              (fun () ->
+                let res = readDoubleFromOffset doublePath inch ofs 32 in
+                close_in inch;
+                res)
+              (fun () -> close_in_noerr inch)
           in
-          close_in inch;
           let outch =
             open_out_gen [Open_wronly; Open_binary] 0o600 doublePath in
           protect
             (fun () ->
                writeDoubleFromOffset doublePath outch ofs
-                 (insertInfo fullFinfo finfo))
+                 (insertInfo fullFinfo finfo);
+               close_out outch)
             (fun () ->
-               close_out outch);
-          close_out outch
+               close_out_noerr outch);
         with Not_found ->
-          close_in inch;
+          close_in_noerr inch;
           raise (Util.Transient
                    (Format.sprintf
                       "Unable to set the file type and creator: \n\
@@ -320,7 +323,7 @@ let setFileInfos fspath path finfo =
             output_string outch "\000\000\000\032"; (* length *)
             output_string outch (insertInfo (emptyFinderInfo ()) finfo);
             close_out outch)
-            (fun () -> close_out outch)
+            (fun () -> close_out_noerr outch)
         end
       end)
 
@@ -390,10 +393,10 @@ let openRessIn fspath path =
       try
         let (rsrcOffset, rsrcLength) = Safelist.assoc `RSRC entries in
         protect (fun () -> LargeFile.seek_in inch rsrcOffset)
-          (fun () -> close_in inch);
+          (fun () -> close_in_noerr inch);
         inch
       with Not_found ->
-        close_in inch;
+        close_in_noerr inch;
         raise (Util.Transient "No resource fork found"))
 
 let openRessOut fspath path length =
@@ -423,5 +426,5 @@ let openRessOut fspath path length =
                                                 (* length *)
         output_string outch (emptyFinderInfo ());
         flush outch)
-        (fun () -> close_out outch);
+        (fun () -> close_out_noerr outch);
       outch)

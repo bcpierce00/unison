@@ -1440,23 +1440,12 @@ let rec createToplevelWindow () =
     Functions used to print in the main window
    *********************************************************************)
 
-  let skip_unselect = ref false in
-
   let select i =
     let r = mainWindow#rows in
     let p = if r < 2 then 0. else (float i +. 0.5) /. float (r - 1) in
-    skip_unselect := true;
     mainWindow#scroll_vertical `JUMP (min p 1.)
   in
 
-  ignore (mainWindow#connect#unselect_row ~callback:
-      (fun ~row ~column ~event ->
-         if !skip_unselect then
-           skip_unselect := false
-         else begin
-           current := None;
-           updateDetails ()
-         end));
   ignore (mainWindow#connect#select_row ~callback:
       (fun ~row ~column ~event -> current := Some row; updateDetails ()));
 
