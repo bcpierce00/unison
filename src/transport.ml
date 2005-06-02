@@ -144,7 +144,8 @@ let transportItem reconItem id showMergeFn =
 let months = ["Jan"; "Feb"; "Mar"; "Apr"; "May"; "Jun"; "Jul"; "Aug"; "Sep";
               "Oct"; "Nov"; "Dec"]
 
-let logStartTime () =
+let start () =
+  Abort.reset ();
   let tm = Util.localtime (Util.time()) in
   let m =
     Printf.sprintf
@@ -155,7 +156,7 @@ let logStartTime () =
       (tm.Unix.tm_year+1900) in
   Trace.log m
 
-let logEndTime () =
+let finish () =
   let tm = Util.localtime (Util.time()) in
   let m =
     Printf.sprintf

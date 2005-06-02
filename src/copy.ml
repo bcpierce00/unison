@@ -74,7 +74,9 @@ let localFile
          let outFd = openFileOut fspathTo pathTo `DATA in
          protect (fun () ->
            Uutil.readWrite inFd outFd
-             (fun l -> Uutil.showProgress id (Uutil.Filesize.ofInt l) "l");
+             (fun l ->
+                Abort.check id;
+                Uutil.showProgress id (Uutil.Filesize.ofInt l) "l");
            close_in inFd;
            close_out outFd)
            (fun () -> close_out_noerr outFd))
@@ -85,7 +87,9 @@ let localFile
            let outFd = openFileOut fspathTo pathTo (`RESS ressLength) in
            protect (fun () ->
              Uutil.readWriteBounded inFd outFd ressLength
-               (fun l -> Uutil.showProgress id (Uutil.Filesize.ofInt l) "l");
+               (fun l ->
+                  Abort.check id;
+                  Uutil.showProgress id (Uutil.Filesize.ofInt l) "l");
              close_in inFd;
              close_out outFd)
              (fun () -> close_out_noerr outFd))
@@ -135,6 +139,7 @@ let startReceivingFile
      temporary files remaining after a crash *)
   let outfd = ref None in
   let showProgress count =
+    Abort.check id;
     Uutil.showProgress id (Uutil.Filesize.ofInt count) "r" in
   (* Install a simple generic decompressor *)
   decompressor :=
@@ -209,6 +214,7 @@ let compress conn
        let infd = openFileIn fspathFrom pathFrom fileKind in
        lwt_protect (fun () ->
          let showProgress count =
+           Abort.check id;
            Uutil.showProgress id (Uutil.Filesize.ofInt count) "r" in
          let compr =
            match biOpt with
@@ -435,6 +441,7 @@ let transmitFile
   (* This must be on the client: any lock on the server side may result
      in a deadlock under windows *)
   Lwt_util.run_in_region transmitFileReg bufSz (fun () ->
+    Abort.check id;
     transmitFileOnRoot rootTo rootFrom
       (snd rootFrom, pathFrom, fspathTo, pathTo, realPathTo,
        update, desc, fp, ress, id))

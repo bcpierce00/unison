@@ -9,6 +9,7 @@ val transportItem :
   -> (string->string->bool)     (* fn to display title / result of merge *)
   -> unit Lwt.t
 
-(* Print a header to the log file *)
-val logStartTime : unit -> unit
-val logEndTime   : unit -> unit
+(* Should be called respectively when starting the synchronization and
+   once it is finished *)
+val start : unit -> unit
+val finish : unit -> unit
