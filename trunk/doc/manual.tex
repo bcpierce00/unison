@@ -1065,12 +1065,16 @@ that exist in only one replica will be propagated to the other, while
 files that exist in both replicas but are unequal will be marked as
 conflicting. 
 
-Touching a file without changing its contents should never affect Unison's
-behavior.  (When running with the {\tt fastcheck} preference set to
-true---the default on Unix systems---Unison uses file modtimes for a quick
-first pass to tell which files have definitely {\em not} changed; then for
-each file that might have changed it computes a fingerprint of the file's
-contents and compares it against the last-synchronized contents.)
+Touching a file without changing its contents should never affect whether or
+not Unison does an update. (When running with the fastcheck preference set
+to true---the default on Unix systems---Unison uses file modtimes for a
+quick first pass to tell which files have definitely not changed; then, for
+each file that might have changed, it computes a fingerprint of the file's
+contents and compares it against the last-synchronized contents. Also, the
+\verb|-times| option allows you to synchronize file times, but it does not
+cause identical files to be changed; Unison will only modify the file
+times.)
+
 
 It is safe to ``brainwash'' Unison by deleting its archive files
 {\em on both replicas}.  The next time it runs, it will assume that
