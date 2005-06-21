@@ -40,9 +40,12 @@ endif
 # The OCaml lib dir is used by all versions
 # It is extracted from 'ocamlc -v' and Windows '\' separators are turned
 # to Unix '/' separators, and extraneous control-M's are deleted.
-# Unfortunately there is a literal control-M buried in this, I'd rather
-# get rid of it...
-OCAMLLIBDIR=$(shell ocamlc -v | tail -n -1 | sed -e 's/.* //g' | sed -e 's/\\/\//g' | sed -e 's///g')
+## BCP: Edited this 6/05 following a suggestion by Nick Montfort
+## Unfortunately there is a literal control-M buried in this, I'd rather
+## get rid of it...
+#OCAMLLIBDIR=$(shell ocamlc -v | tail -n -1 | sed -e 's/.* //g' | sed -e 's/\\/\//g' | sed -e 's///g')
+# Here is Nick's version:
+OCAMLLIBDIR=$(shell ocamlc -v | sed -n '$p' | sed -e 's/^Standard library directory: //' | sed -e 's/\\/\//g' | sed -e 's/\r//g')
 
 # User interface style:
 #   Legal values are
