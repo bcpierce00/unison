@@ -1,3 +1,8 @@
+CHANGES FROM VERSION 2.12.25
+
+Backed out Nick's change to Makefile.OCaml :-)
+
+-------------------------------
 CHANGES FROM VERSION 2.12.24
 
 Added Nick's change to Makefile.OCaml
