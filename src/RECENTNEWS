@@ -1,3 +1,9 @@
+CHANGES FROM VERSION 2.12.26
+
+Added Zvezdan's smaller change to Makefile.OCaml.
+
+
+-------------------------------
 CHANGES FROM VERSION 2.12.25
 
 Backed out Nick's change to Makefile.OCaml :-)
