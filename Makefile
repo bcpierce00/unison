@@ -74,52 +74,25 @@ endif
 endif
 endif
 
-STABLEFLAG=stable.flag
-ifeq ($(wildcard $(STABLEFLAG)),$(STABLEFLAG))
-  DOWNLOADAREA=stable
-  TEXDIRECTIVES+="\\\\stabletrue"
-else
-  DOWNLOADAREA=beta-test
-  TEXDIRECTIVES+="\\\\stablefalse"
-endif
-
-export:
-	-$(RM) $(STABLEFLAG)
-	$(MAKE) exportcommon
-
-exportstable:
-	touch $(STABLEFLAG)
-	$(MAKE) exportcommon
-
-exportcommon: tools/ask
-	tools/ask tools/exportmsg.txt
-	$(MAKE) realexport
-
 EXPORTDIR=$(BCPHOME)/pub/$(NAME)
 DOWNLOADPARENT=$(EXPORTDIR)/download/$(DOWNLOADAREA)
-FINALDOWNLOADDIR=$(DOWNLOADPARENT)/$(NAME)-$(VERSION)
-DOWNLOADDIR=$(FINALDOWNLOADDIR)-underconstruction
+DOWNLOADDIR=$(DOWNLOADPARENT)/$(NAME)-$(VERSION)
 EXPORTNAME=$(NAME)-$(VERSION)
+DOWNLOADAREA=releases
+TMP=/tmp
 
-# Export separate top-level html pages for some important bits of the docs,
-# e.g. the FAQ.   This is run automatically as part of 'make commitexport',
-# but can also be run manually at any time.
-# (Actually we don't do this any more; the web pages are maintained by hand
-# and the documentation should not duplicate any information in them. -bcp)
-exporthtml:
+newbetarelease: tools/ask
+	@tools/ask tools/exportmsg.txt
+	echo Write me!
 
-realexport:
+export:
 	$(MAKE) $(DOWNLOADDIR)
 	$(MAKE) exportdocs
 	$(MAKE) exportsources
 	@echo
-	cat tools/afterexportmsg.txt
-
-$(DOWNLOADDIR):
-	@echo Creating DOWNLOADDIR = $(DOWNLOADDIR)
-	@echo
-	-mkdir -p $(DOWNLOADDIR)
-	-touch $(DOWNLOADDIR)/THIS-IS-UNISON-$(VERSION)
+	@echo -n "OK to commit?  Press RETURN if yes, Crtl-C and tidy web dir if no... "
+	read JUNK
+	$(MAKE) commitexport
 
 commitexport:
 	$(MAKE) realcommit
@@ -129,21 +102,18 @@ commitexport:
 realcommit:
 	@echo
 	@echo Committing new export directory
-	$(MAKE) exporthtml
 	-chmod -R a+r $(EXPORTDIR)
 	-chmod -R g+wr $(EXPORTDIR)
 	-chmod -R o-w $(EXPORTDIR)
-	-mkdir $(FINALDOWNLOADDIR)
-	mv $(DOWNLOADDIR)/* $(FINALDOWNLOADDIR)/
-	-$(RM) -r $(DOWNLOADDIR)
-	-$(RM) $(DOWNLOADPARENT)/latest
-	-ln -s $(NAME)-$(VERSION) $(DOWNLOADPARENT)/latest
-ifeq ($(wildcard $(STABLEFLAG)),$(STABLEFLAG))
-	-$(RM) $(EXPORTDIR)/download/beta-test/latest
-	ln -s ../stable/latest $(EXPORTDIR)/download/beta-test/latest
-endif
+	-$(RM) $(DOWNLOADPARENT)/latestbeta
+	-ln -s $(NAME)-$(VERSION) $(DOWNLOADPARENT)/latestbeta
 
-TMP=/tmp
+$(DOWNLOADDIR):
+	@echo Creating DOWNLOADDIR = $(DOWNLOADDIR)
+	@echo
+	-mkdir -p $(DOWNLOADDIR)
+	-touch $(DOWNLOADDIR)/THIS-IS-UNISON-$(VERSION)
+
 exportsources:
 	$(RM) -r $(TMP)/$(EXPORTNAME)
 	cp -r src $(TMP)/$(EXPORTNAME)
@@ -165,6 +135,24 @@ exportdocs:
 	-cp doc/unison-manual.pdf $(DOWNLOADDIR)/$(EXPORTNAME)-manual.pdf
 	cp doc/unison-manual.html $(DOWNLOADDIR)/$(EXPORTNAME)-manual.html
 	cp doc/unison-manual.html $(DOWNLOADDIR)/$(NAME)-manual.html
+
+mailchanges: tools/ask src/$(NAME)
+	@echo To: $(NAME)-announce@egroups.com,$(NAME)-users@egroups.com \
+            > mail.tmp
+	@echo Subject: $(NAME) $(VERSION) now available >> mail.tmp
+	@echo >> mail.tmp
+	@echo Download address: >> mail.tmp
+	@echo "  " http://www.cis.upenn.edu/~bcpierce/unison/download.html \
+           >> mail.tmp
+	@echo >> mail.tmp
+	@cat src/NEWS >> mail.tmp
+	@src/unison -doc news >> mail.tmp
+	tools/ask tools/mailmsg.txt
+	@send ./mail.tmp
+
+######################################################################
+# Export binary for the current architecture 
+# (this stuff is all probably dead)
 
 EXPORTTMP=$(TMP)/export-$(OSARCH)x.tmp
 
@@ -194,20 +182,6 @@ realexportnative:
 	gzip --best --force -c \
             $(DOWNLOADDIR)/$(EXPORTNAME).$(OSARCH)$(KIND)-gtkui$(EXEC_EXT) \
           > $(DOWNLOADDIR)/$(EXPORTNAME).$(OSARCH)$(KIND)-gtkui$(EXEC_EXT).gz
-
-mailchanges: tools/ask src/$(NAME)
-	@echo To: $(NAME)-announce@egroups.com,$(NAME)-users@egroups.com \
-            > mail.tmp
-	@echo Subject: $(NAME) $(VERSION) now available >> mail.tmp
-	@echo >> mail.tmp
-	@echo Download address: >> mail.tmp
-	@echo "  " http://www.cis.upenn.edu/~bcpierce/unison/download.html \
-           >> mail.tmp
-	@echo >> mail.tmp
-	@cat src/NEWS >> mail.tmp
-	@src/unison -doc news >> mail.tmp
-	tools/ask tools/mailmsg.txt
-	@send ./mail.tmp
 
 ######################################################################
 # Export developer sources  (normally run every night by a cron job on

@@ -1,3 +1,32 @@
+CHANGES FROM VERSION 2.12.27
+
+* New release protocol:
+
+    - To make a new beta release, we copy the trunk into a new branch named
+      unison-X.Y (where X.Y is the major version number).  We edit 
+      mkProjectInfo.ml so that this version becomes X.Y.0.
+
+    - As bugs are found and fixed in the beta release, they are also merged 
+      (using svn merge) into the trunk.  
+
+    - At some point, when the beta release is judged stable, it is
+      promoted to stable status and the old stable version is retired.
+      This involves just changing a symlink in the web repository.
+
+    - During initial negotiation between client and server, only the
+      major version number is checked.  The third component is used to
+      identify the "patch level" for debugging purposes: it keeps
+      incrementing as commits are made to the trunk unison repository.
+
+    - I'm not quite certain how to handle the change log.  (E.g.,
+      should it get updated when bugs are fixed in beta releases?)
+      For the moment, I haven't done anything special.
+
+(The export procedure is not fully automated yet -- still working on
+branch creation stuff.  This checkin is just a checkpoint.)
+
+
+-------------------------------
 CHANGES FROM VERSION 2.12.26
 
 Added Zvezdan's smaller change to Makefile.OCaml.

@@ -1,4 +1,5 @@
-Now do a "make exportnative" on each architecture...
+Now do a "make exportnative" on each architecture that we're going to build
+here (if any -- these days most binaries are built by external packagers)...
 
 
 Finish up by doing "make commitexport" to commit what you've built

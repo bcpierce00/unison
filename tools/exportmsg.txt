@@ -1,15 +1,13 @@
-Checklist: 
+Checklist for release process: 
 
-  - Move everything interesting from src/RECENTNEWS to doc/changes.tex  
+  - If you haven't already, you need to begin by...
 
-  - If this is a significant release (not just a minor bugfix release), 
-    increment the major version number by editing src/mkProjectInfo.ml
+    - Moving everything interesting from src/RECENTNEWS to doc/changes.tex  
 
-  - Do a 'make checkin' if anything has changed (including in the steps
-    just above) -- we need to make sure that the exact release version
-    is reflected in the repository, in case we need to check it out again
-    later to redo or fix the build.
+    - Incrementing the major version number by editing src/mkProjectInfo.ml
+      (make sure that the new version is going to be X.Y.0 for some X and Y)
 
-  - If this is a stable release, make sure you remembered to do a 
-    'make exportstable', not just 'make export'.
+    - Doing a 'make checkin'
 
+If any of this needs to be done, hit Ctrl-C and do it, then do 'make
+release' again.  Otherwise, hit return.
