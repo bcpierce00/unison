@@ -85,6 +85,7 @@ TMP=/tmp
 beta: tools/ask
 	@tools/ask tools/exportmsg.txt
 	(cd ..; svn copy trunk branches/$(EXPORTNAME))
+	(cd ../$(EXPORTNAME); svn commit -m "New release branch"; svn update)
 	$(MAKE) -C ../branches/$(EXPORTNAME) export
 
 # Do this in a release branch to export a new tarball (e.g., after fixing a bug)
