@@ -1,0 +1,82 @@
+<P><B>Philadelphia, PA (September 27, 2000)</B> -- The Unison development
+team at the University of Pennsylvania has announced a new public release
+(version 2.5) of its file synchronization tool for Unix and Windows
+systems.  The new version incorporates (among many other improvements) an
+implementation of the "rsync protocol" for diffs-only propagation of
+small changes to large files.
+<BR>
+
+<P>
+The current release is available for immediate download from
+<DIV ALIGN=center>
+ <A HREF="http://www.cis.upenn.edu/~bcpierce/unison">http://www.cis.upenn.edu/~bcpierce/unison</A>
+</DIV>
+in both source and binary form.<BR>
+
+<P>
+
+Unison allows two replicas of a collection of files and directories to be
+stored on different hosts (or different disks on the same host), modified
+separately, and then brought up to date by propagating the changes in
+each replica to the other.  The protocol for file transfers now
+incorporates a key algorithm from Andrew Tridgell's popular <A
+HREF="http://rsync.samba.org/">rsync</A> utility, allowing small changes
+in large files to be reconciled by transmitting only a few bytes over the
+network.  
+
+<p>
+
+Unison 
+shares a number of features with tools such as configuration
+management packages (<A HREF="http://www.cyclic.com/">CVS</A>,
+<A HREF="http://www.XCF.Berkeley.EDU/~jmacd/prcs.html">PRCS</A>,
+etc.) 
+distributed filesystems 
+(<A HREF="http://www.coda.cs.cmu.edu/">Coda</A>, 
+etc.)
+uni-directional mirroring utilities 
+(<A HREF="http://rsync.samba.org/">rsync</A>, 
+etc.)
+and other synchronizers 
+(<A HREF="http://www.pumatech.com">Intellisync</A>, 
+<A HREF="http://www.merl.com/reports/TR99-14/">Reconcile</A>,
+etc), but differs in 
+ several significant areas:
+<UL>
+<LI>
+Unison runs on both Windows (95, 98, NT, and 2k) and Unix (Solaris,
+ Linux, etc.) systems. Moreover, Unison works <EM>across</EM>
+ platforms, allowing a Windows laptop, for example, to synchronize with a
+ Unix fileserver.
+
+<LI>Unlike a full-blown distributed filesystem, Unison is a user-level
+ program: it can be run without kernel modifications or superuser
+ permissions on either host.
+
+<LI>Unlike simple mirroring or backup utilities, Unison can deal
+ with updates to both replicas of a distributed directory structure.
+ Updates that do not conflict are propagated automatically.
+ Conflicting updates are detected and displayed.
+
+<LI>Unison works between any pair of machines connected to the
+ internet, communicating over either a direct socket link or
+ tunneling over an <TT>rsh</TT> or an encrypted <TT>ssh</TT> connection.
+ It is careful with network bandwidth, and runs well over slow links
+ such as PPP connections.
+
+<LI>Unison has a clear and precise specification and comes with
+extensive documentation. 
+
+<LI>Unison is resilient to failure. It is careful to leave the
+ replicas and its own private structures in a sensible state at all
+ times, even in case of abnormal termination or communication
+ failures.
+
+<LI>Unison is free; complete source code is available under the GNU
+Public License.
+</UL>
+
+Unison is brought to you by Sylvain Gommier, Trevor Jim, Benjamin
+  Pierce, and Jerome Vouillon.  Contact the Unison support
+  line, <A HREF="mailto:unison@cis.upenn.edu">unison@cis.upenn.edu</A>,
+  for more information.

@@ -1,0 +1,18 @@
+myMap.cmo: myMap.cmi 
+myMap.cmx: myMap.cmi 
+prefs.cmo: util.cmi uarg.cmi safelist.cmi prefs.cmi 
+prefs.cmx: util.cmx uarg.cmx safelist.cmx prefs.cmi 
+rx.cmo: rx.cmi 
+rx.cmx: rx.cmi 
+safelist.cmo: safelist.cmi 
+safelist.cmx: safelist.cmi 
+trace.cmo: util.cmi safelist.cmi prefs.cmi trace.cmi 
+trace.cmx: util.cmx safelist.cmx prefs.cmx trace.cmi 
+uarg.cmo: util.cmi safelist.cmi uarg.cmi 
+uarg.cmx: util.cmx safelist.cmx uarg.cmi 
+uprintf.cmo: uprintf.cmi 
+uprintf.cmx: uprintf.cmi 
+util.cmo: uprintf.cmi safelist.cmi util.cmi 
+util.cmx: uprintf.cmx safelist.cmx util.cmi 
+prefs.cmi: util.cmi 
+trace.cmi: prefs.cmi 
