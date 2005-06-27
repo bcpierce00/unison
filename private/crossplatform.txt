@@ -1,0 +1,86 @@
+Notes about case conflicts and illegal filenames
+
+  * Abstract view is that there is a global flag.  When the whole program
+    is in insensitive mode, paths are taken to be uppercase-only.  Spelling
+    of filenames is *not* synchronized.  (Point to think about: how much
+    harder would it be to make the spelling part of the file contents,
+    therefore subject to synchronization (like perms)?)
+  * When in case-insensitive mode, Ignore processing must also be
+    case-insensitive.
+  * detection of FOO/foo situations on unix side must take place during
+    update detection (not a separate phase).
+  * In the initial handshake between client and server, determine if
+      this is a Unix<->Windows sync.
+  * If so, on the unix side, we add some processing so that
+      filenames that are not legal under Windows are marked as
+      Problems.  And, if two different files with the same name except
+      for case appear in the same directory, they are both marked as
+      Problems.
+  * Also, on both sides, we have to use case-insensitive comparison.
+      This is also true if we have two Windows systems -- right now we
+      have a bug if the same file exists on two Windows systems with
+      different case (they may not be matched up correctly by the
+      reconciler because it relies on sorting).
+  * Finally, we have to be careful when moving a file from one system
+      to another.  For example, suppose we want to move FOO on one
+      system to foo on another (the file exists on both).  We must be
+      sure to use the target name "foo" and not FOO: otherwise, if the
+      target is on a Unix system we would end up with two files, the
+      new FOO and the old foo.  Under Windows things aren't as bad, we
+      would only have one file, but its case would have changed.
+  * Another similar conflict: Windows file names cannot have colons. 
+  * A problem with the plan:
+      Suppose we are using network names like //raptor/trevor/foo.
+      Then there is a single unison process running, using a file
+      protocol.  But the network name does not indicate the Os of
+      the file system.  In this case, raptor is a Unix machine and
+      it is important that we invoke the case handling code above if
+      we are running Unison on a Windows machine.
+      Here's a way to automatically detect this case: try to create a
+      file FOO and a file foo and see what happens.  This won't work if
+      you don't have write permission.
+  * An example of the problem:
+      begin with a file Foo under windows.
+      synchronize
+      delete Foo on the unix side and create foo instead
+      synchronize
+      depending on what order you do the creation/deletion on the windows 
+        side, you may or may not get an error
+
+  Related comments from Karl Moerder:
+    I ran into a problem this morning with Unison. My environment is Windows
+    NT client (multiple machines) and Linux server. I use Unison to keep
+    them all in sync.
+    I had a file that was synchronized on all machines. Then last night I
+    changed it from mixed Upper/lower case to all lowercase on my desktop at
+    home. Then I ran Unison to synchronize.
+    This morning when I synchronized, I got an error message from Unison. It
+    seems that when Unison replaced the file, Windows NT kept the old
+    capitalization. Then when Unison did its final check, the files did not
+    match.
+    Windows NT actually keeps two different file name strings around (isn't
+    Microsoft fun!). I have some ideas for a simple work around for this
+    with your file naming sequence, but I think a telephone call would work
+    better than e-mail.
+    --
+    More on the Uppercase vs lowercase problem...
+    I did some experiments in Windows NT (NTFS file system)
+    If I create a file fred.txt in directory a and a file Fred.txt in
+    directory b
+    then if I try to copy ...b/Fred.txt to ...a/
+    the copy will succeed, but the spelling of the file in ...a/ will still
+    be fred.txt (but with new data)
+    on the other hand, if I first rename ...a/fred.txt to ...a/Fred.txt
+    (which succeeds) and then do the copy then I get the new contents and
+    the new data. Meanwhile, I keep the file system is a safe state all the
+    times (assuming that each of the above file operations is atomic).
+    Perhaps this will work for you in Unison, also.
+    By the way, (I think it is ok, but...) when you change the file
+    permissions before updating the file (like in 1.213), you could leave
+    the permissions in an altered state. This could be important if you are
+    synchronizing read-only or execute-only files...you may leave them
+    writeable at times. This might be a problem for some users. (I think
+    that you can make the holes small, but you may not be able to completely
+    close them.)
+
+

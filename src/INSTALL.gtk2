@@ -1,0 +1,57 @@
+We are happy to announce a new version of Unison with a user interface
+based on Gtk 2.2, enabling display of filenames with any locale encoding.
+
+Installation instructions follow:
+
+-----------------------------
+LINUX (and maybe other Unixes):
+
+In order to use gtk2 with unison,
+
+1) install glib, pango, gtk (version >2.2)
+   from http://www.gtk.org/
+
+2) install lablgtk2 (version >20030423)
+   from http://wwwfun.kurims.kyoto-u.ac.jp/soft/olabl/lablgtk.html
+
+3) install unison (version >2.9.36)
+   from http://www.cis.upenn.edu/~bcpierce/unison/
+
+   Simply type 'make'.
+
+   Makefile will detect the presence of lablgtk2 directory
+   $(OCAMLLIBDIR)/lablgtk2 (such as /usr/local/lib/ocaml/lablgtk2/)
+   and use UISTYLE=gtk2 by default. If absent, it falls back to
+   lablgtk with UISTYLE=gtk, then back to UISTYLE=text.
+
+   You can force the selection by
+        make UISTYLE=gtk2
+     or make UISTYLE=gtk
+     or make UISTYLE=text
+
+4) setup your locale environment properly
+   for example, export LANG=zh_HK.BIG5-HKSCS
+
+   otherwise, you will get
+     Uncaught exception Glib.GError("Invalid byte sequence in conversion input")  
+5) enjoy unison with i18n!
+
+-----------------------------
+OS X:
+
+1) Install gtk2 using fink:
+
+      sudo /sw/bin/fink  install gtk+2
+
+   Then proceed from step 2 above.
+
+In our tests, the linker generates lots of error messages, but appears
+to build a working executable.  Also, we have not yet been able to get
+this build to work with 'STATIC=true'.
+
+-----------------------------
+WINDOWS:
+
+(Anybody want to contribute instructions??)
+
+
