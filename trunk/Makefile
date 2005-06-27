@@ -36,7 +36,7 @@ checkinfast: logmsg remembernews
 	$(RM) logmsg
 
 remembernews: logmsg
-	echo "CHANGES FROM VERSION" $(VERSION) > rc.tmp
+	echo "CHANGES IN VERSION" $(VERSION) > rc.tmp
 	echo >> rc.tmp
 	cat logmsg >> rc.tmp
 	echo  >> rc.tmp
@@ -81,10 +81,13 @@ EXPORTNAME=$(NAME)-$(VERSION)
 DOWNLOADAREA=releases
 TMP=/tmp
 
-newbetarelease: tools/ask
+# Do this when it's time to create a new beta-release from the development trunk
+beta: tools/ask
 	@tools/ask tools/exportmsg.txt
-	echo Write me!
+	(cd ..; svn copy trunk branches/$(EXPORTNAME))
+	$(MAKE) -C ../branches/$(EXPORTNAME) export
 
+# Do this in a release branch to export a new tarball (e.g., after fixing a bug)
 export:
 	$(MAKE) $(DOWNLOADDIR)
 	$(MAKE) exportdocs
