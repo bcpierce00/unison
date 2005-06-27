@@ -2,9 +2,9 @@ Checklist for release process:
 
   - If you haven't already, you need to begin by...
 
-    - do 'svn update' to make sure your revision number is up to date
-
     - Moving everything interesting from src/RECENTNEWS to doc/changes.tex  
+
+    - Doing 'svn update' to find out the current revision number
 
     - Incrementing the major version number by editing src/mkProjectInfo.ml
       (make sure that the new version is going to be X.Y.0 for some X and Y)
