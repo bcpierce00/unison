@@ -47,7 +47,7 @@ DEBUGGING=true
 PROFILING=false
 STATIC=false
 
-# NAME and VERSION, automatically generated
+# NAME, VERSION, and MAJORVERSION, automatically generated
 -include Makefile.ProjectInfo
 
 Makefile.ProjectInfo: mkProjectInfo
