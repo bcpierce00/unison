@@ -72,6 +72,7 @@ endif
 EXPORTDIR=$(BCPHOME)/pub/$(NAME)
 DOWNLOADPARENT=$(EXPORTDIR)/download/$(DOWNLOADAREA)
 DOWNLOADDIR=$(DOWNLOADPARENT)/$(NAME)-$(VERSION)
+BRANCH=$(MAJORVERSION)
 EXPORTNAME=$(NAME)-$(VERSION)
 DOWNLOADAREA=releases
 TMP=/tmp
@@ -79,12 +80,12 @@ TMP=/tmp
 # Do this when it's time to create a new beta-release from the development trunk
 beta: tools/ask
 	@tools/ask tools/exportmsg.txt
-	(cd ..; svn copy trunk branches/$(EXPORTNAME))
-	(cd ../branches/$(EXPORTNAME); svn commit -m "New release branch")
+	(cd ..; svn copy trunk branches/$(BRANCH))
+	(cd ../branches/$(BRANCH); svn commit -m "New release branch")
 	@echo
 	@echo -n "Press RETURN to export it... "
 	@read JUNK
-	$(MAKE) -C ../branches/$(EXPORTNAME) export
+	$(MAKE) -C ../branches/$(BRANCH) export
 
 # Do this in a release branch to export a new tarball (e.g., after fixing a bug)
 export:
@@ -108,7 +109,7 @@ realcommit:
 	-chmod -R g+wr $(EXPORTDIR)
 	-chmod -R o-w $(EXPORTDIR)
 	-$(RM) $(DOWNLOADPARENT)/latestbeta
-	-ln -s $(NAME)-$(VERSION) $(DOWNLOADPARENT)/latestbeta
+	-ln -s $(EXPORTNAME) $(DOWNLOADPARENT)/latestbeta
 
 $(DOWNLOADDIR):
 	@echo Creating DOWNLOADDIR = $(DOWNLOADDIR)
@@ -118,7 +119,7 @@ $(DOWNLOADDIR):
 
 exportsources:
 	$(RM) -r $(TMP)/$(EXPORTNAME)
-	(cd $(TMP); svn export https://cvs.cis.upenn.edu:3690/svnroot/unison/branches/$(EXPORTNAME))
+	(cd $(TMP); svn export https://cvs.cis.upenn.edu:3690/svnroot/unison/branches/$(BRANCH)/src $(EXPORTNAME))
 	-$(RM) $(TMP)/$(EXPORTNAME)/RECENTNEWS
 	(cd $(TMP); tar cvf - $(EXPORTNAME) \
            | gzip --force --best > $(EXPORTNAME).tar.gz)
