@@ -80,8 +80,8 @@ TMP=/tmp
 beta: tools/ask
 	@tools/ask tools/exportmsg.txt
 	(cd ..; svn copy trunk branches/$(EXPORTNAME))
+	(cd ../$(EXPORTNAME); svn commit -m "New release branch")
 	$(MAKE) -C ../branches/$(EXPORTNAME) export
-	(cd ../$(EXPORTNAME); svn commit -m "New release branch"; svn update)
 
 # Do this in a release branch to export a new tarball (e.g., after fixing a bug)
 export:
@@ -115,9 +115,8 @@ $(DOWNLOADDIR):
 
 exportsources:
 	$(RM) -r $(TMP)/$(EXPORTNAME)
-	cp -r src $(TMP)/$(EXPORTNAME)
+	(cd $(TMP); svn export https://cvs.cis.upenn.edu:3690/svnroot/unison/branches/$(EXPORTNAME)/src $(EXPORTNAME))
 	-$(RM) $(TMP)/$(EXPORTNAME)/RECENTNEWS
-	$(MAKE) -C $(TMP)/$(EXPORTNAME) clean
 	(cd $(TMP); tar cvf - $(EXPORTNAME) \
            | gzip --force --best > $(EXPORTNAME).tar.gz)
 	mv $(TMP)/$(EXPORTNAME).tar.gz $(DOWNLOADDIR)
@@ -136,7 +135,7 @@ exportdocs:
 	cp doc/unison-manual.html $(DOWNLOADDIR)/$(NAME)-manual.html
 
 mailchanges: tools/ask src/$(NAME)
-	@echo To: $(NAME)-announce@egroups.com,$(NAME)-users@egroups.com \
+	@echo To: $(NAME)-announce@yahoogroups.com,$(NAME)-users@yahoogroups.com \
             > mail.tmp
 	@echo Subject: $(NAME) $(VERSION) now available >> mail.tmp
 	@echo >> mail.tmp
