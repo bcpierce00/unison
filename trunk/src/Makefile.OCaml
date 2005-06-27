@@ -126,6 +126,7 @@ buildexecutable::
 ubase/projectInfo.ml: mkProjectInfo
 	echo 'let myName = "'$(NAME)'";;' > $@
 	echo 'let myVersion = "'$(VERSION)'";;' >> $@
+	echo 'let myMajorVersion = "'$(MAJORVERSION)'";;' >> $@
 
 clean::
 	$(RM) ubase/projectInfo.ml

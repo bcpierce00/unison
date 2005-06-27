@@ -36,15 +36,16 @@ let pointVersionOrigin = 14 (* Revision that corresponds to point version 0 *)
    revision 28 corresponds to a 0 point release.  Since we were at revision
    27 before the commit, then we will be at 28 after the commit, so after
    the commit we will be at Unison version 3.0.0.
-
 *)
 
 let revisionString = "$Rev$";;
 let revision = Scanf.sscanf revisionString "$Rev: %d " (fun x -> x);;
 let pointVersion = revision - pointVersionOrigin;;
 
+Printf.printf "MAJORVERSION=%d.%d\n" majorVersion minorVersion;;
 Printf.printf "VERSION=%d.%d.%d\n" majorVersion minorVersion pointVersion;;
 Printf.printf "NAME=%s\n" projectName;;
+
 
 
 

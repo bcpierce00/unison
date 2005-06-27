@@ -7,6 +7,7 @@
    can be re-used by other programs. *)
 
 (* Identification *)
+val myMajorVersion : string
 val myVersion : string
 val myName : string
 

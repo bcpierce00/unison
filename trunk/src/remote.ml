@@ -433,7 +433,7 @@ let addversionno =
   Prefs.createBool "addversionno" false
     ("add version number to name of " ^ Uutil.myName ^ " executable on server")
     ("When this flag is set to {\\tt true}, Unison "
-      ^ "will use \\texttt{unison-\\ARG{currentversionnumber}} instead of "
+     ^ "will use \\texttt{unison-\\ARG{currentversionnumber}} instead of "
      ^ "just \\verb|unison| as the remote server command.  This allows "
      ^ "multiple binaries for different versions of unison to coexist "
      ^ "conveniently on the same server: whichever version is run "
@@ -742,7 +742,7 @@ let registerRootCmdWithConnection
                      BUILDING CONNECTIONS TO THE SERVER
  ****************************************************************************)
 
-let connectionHeader = "Unison " ^ Uutil.myVersion ^ "\n"
+let connectionHeader = "Unison " ^ Uutil.myMajorVersion ^ "\n"
 
 let rec checkHeader conn prefix buffer pos len =
   if pos = len then

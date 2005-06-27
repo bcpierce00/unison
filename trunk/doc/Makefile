@@ -54,21 +54,6 @@ ifdef HEVEA
 	hevea unison-manual.tex
 endif
 
-# Index file for web dir
-index.html: index.tex local.tex short.tex Makefile
-	printf '$(TEXDIRECTIVES)\\draftfalse' > texdirectives.tex
-	hevea index.tex
-
-# Contacts file
-contact.html: contact.tex local.tex Makefile contactsbody.tex
-	printf '$(TEXDIRECTIVES)\\draftfalse' > texdirectives.tex
-	hevea contact.tex
-
-# FAQ
-faq.html: faq.tex local.tex Makefile faqbody.tex
-	printf '$(TEXDIRECTIVES)\\draftfalse' > texdirectives.tex
-	hevea faq.tex
-
 # Listing of preferences
 prefs.tmp:
 	-(if [ -f ../src/$(NAME)$(EXEC_EXT) ]; then \
