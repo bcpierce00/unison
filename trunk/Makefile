@@ -81,6 +81,9 @@ beta: tools/ask
 	@tools/ask tools/exportmsg.txt
 	(cd ..; svn copy trunk branches/$(EXPORTNAME))
 	(cd ../$(EXPORTNAME); svn commit -m "New release branch")
+	@echo
+	@echo -n "Press RETURN to export it... "
+	@read JUNK
 	$(MAKE) -C ../branches/$(EXPORTNAME) export
 
 # Do this in a release branch to export a new tarball (e.g., after fixing a bug)
@@ -89,7 +92,7 @@ export:
 	$(MAKE) exportdocs
 	$(MAKE) exportsources
 	@echo
-	@echo -n "OK to commit?  Press RETURN if yes, Crtl-C and tidy web dir if no... "
+	@echo -n "OK to commit?  Press RETURN if yes (Crtl-C and tidy web dir if no)... "
 	@read JUNK
 	$(MAKE) commitexport
 
@@ -115,7 +118,7 @@ $(DOWNLOADDIR):
 
 exportsources:
 	$(RM) -r $(TMP)/$(EXPORTNAME)
-	(cd $(TMP); svn export https://cvs.cis.upenn.edu:3690/svnroot/unison/branches/$(EXPORTNAME)/src $(EXPORTNAME))
+	(cd $(TMP); svn export https://cvs.cis.upenn.edu:3690/svnroot/unison/branches/$(EXPORTNAME))
 	-$(RM) $(TMP)/$(EXPORTNAME)/RECENTNEWS
 	(cd $(TMP); tar cvf - $(EXPORTNAME) \
            | gzip --force --best > $(EXPORTNAME).tar.gz)
