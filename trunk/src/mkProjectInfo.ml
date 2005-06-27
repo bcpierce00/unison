@@ -3,7 +3,7 @@
 let projectName = "unison"
 let majorVersion = 2
 let minorVersion = 13
-let pointVersionOrigin = 45 (* Revision that corresponds to point version 0 *)
+let pointVersionOrigin = 46 (* Revision that corresponds to point version 0 *)
 
 (* You shouldn't need to edit below. *)
 
@@ -28,15 +28,14 @@ let pointVersionOrigin = 45 (* Revision that corresponds to point version 0 *)
 
         let majorVersion = 3
         let minorVersion = 0
-        let pointVersionOrigin = 29
+        let pointVersionOrigin = 28
 
    and then do a svn commit.
 
    The first two lines are obvious.  The last line says that Subversion
-   revision 29 corresponds to a 0 point release.  Since we were at revision
-   27 and the release process is going to involve making two commits, we
-   will be at 29 after the commit, so after the commit we will be at Unison
-   version 3.0.0.
+   revision 28 corresponds to a 0 point release.  Since we were at revision
+   27 and we're going to do a commit before making a release, we
+   will be at 28 after the commit and this will be Unison version 3.0.0.
 *)
 
 let revisionString = "$Rev$";;
@@ -46,6 +45,7 @@ let pointVersion = revision - pointVersionOrigin;;
 Printf.printf "MAJORVERSION=%d.%d\n" majorVersion minorVersion;;
 Printf.printf "VERSION=%d.%d.%d\n" majorVersion minorVersion pointVersion;;
 Printf.printf "NAME=%s\n" projectName;;
+
 
 
 
