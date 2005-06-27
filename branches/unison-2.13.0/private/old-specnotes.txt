@@ -1,0 +1,72 @@
+
+3) ITERABILITY
+
+Astute readers/listeners will already have realized that the present
+spec. doesn't give us any way to *iterate* the synchronizer, to
+synchronize many times.  We can fix this by making a new memory part
+of the output of the synchronizer:
+
+Now, a synchronizer comprises
+   a set       M
+   a relation  describes subseteq M * FS * FS
+   a relation  snc : M * FS * FS  *  M * FS * FS
+such that
+    if  OA-content = OB-content
+        M describes OA,OB
+        A follows OA and B follows OB
+    and snc(M,A,B, M',A',B'),
+    then
+       for all paths p, (A) and (B), as before
+
+       (C) there exist OA' and OB' such that
+
+            - OA'-content = OB'-content
+            - M' describes OA',OB'
+            - A' follows OA' and B' follows OB'
+            - for each path p in A' and B',
+                * if A'(p)=B'(p)=DIR, then OA'(p)=OB'(p)=DIR
+                * else if A'/p=B'/p, then OA'/p=OB'/p=OA/p
+                * else OA'/p=A/p and OB'/p=OB/p
+
+          ("M' correctly describes the last synchronized state of
+            each path")
+
+
+4) FAILURE
+
+The next problem with the spec is that it is not implementable in the
+presence of communication or system failures: the synchronizer may be
+partway through propagating updates from one system to the other when
+the user types Control-C or the modem gets unplugged.
+
+Note that if the filesystem supports transactions, then in principle
+we don't need to do anything about this: we just make the whole
+propagation (including updating M) into one big transaction.  If a
+failure happens in the middle, the system sorts things out so that
+either we complete normally as described above or it is as if the
+synchronizer never ran.
+
+Unfortunately, current filesystems do not support transactions, so we
+need to weaken the specification.  However, we do not want the
+specification to be so weak that it allows *any* behavior in the
+presence of failures.  We need to give the user some guarantees about
+what state the replicas (and memory!) might be in.  To this end, we
+introduce the notion of failure explicitly into the spec:
+
+Now, a synchronizer comprises
+   a set       M
+   a relation  describes subseteq M * FS * FS
+   a relation  snc : M * FS * FS  *  M * FS * FS  *  BOOL
+such that
+    if  OA-content = OB-content
+        M describes OA,OB
+        A follows OA and B follows OB
+    and snc(M,A,B, M',A',B', FAILURE),
+    then
+      (A) and (B) as before
+
+      (C') either FAILURE and M'=M
+           or (C) as before
+
+
+
