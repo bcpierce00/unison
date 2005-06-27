@@ -25,18 +25,13 @@ include src/Makefile.OCaml
 
 SUBMISSIONADDR = bcpierce@cis.upenn.edu
 
-checkin: checkinfast
-ifeq ($(shell whoami),bcpierce)
-	$(MAKE) nightly
-endif
-
-checkinfast: logmsg remembernews
+checkin: logmsg remembernews
 	echo >> src/mkProjectInfo.ml # so the Rev keyword gets updated
 	svn commit --file logmsg
 	$(RM) logmsg
 
 remembernews: logmsg
-	echo "CHANGES IN VERSION" $(VERSION) > rc.tmp
+	echo "CHANGES FROM VERSION" $(VERSION) > rc.tmp
 	echo >> rc.tmp
 	cat logmsg >> rc.tmp
 	echo  >> rc.tmp
