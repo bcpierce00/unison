@@ -80,7 +80,7 @@ TMP=/tmp
 beta: tools/ask
 	@tools/ask tools/exportmsg.txt
 	(cd ..; svn copy trunk branches/$(EXPORTNAME))
-	(cd ../$(EXPORTNAME); svn commit -m "New release branch")
+	(cd ../branches/$(EXPORTNAME); svn commit -m "New release branch")
 	@echo
 	@echo -n "Press RETURN to export it... "
 	@read JUNK
