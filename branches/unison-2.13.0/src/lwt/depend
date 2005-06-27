@@ -1,0 +1,10 @@
+lwt.cmo: lwt.cmi 
+lwt.cmx: lwt.cmi 
+lwt_unix.cmo: pqueue.cmi lwt.cmi lwt_unix.cmi 
+lwt_unix.cmx: pqueue.cmx lwt.cmx lwt_unix.cmi 
+lwt_util.cmo: lwt.cmi lwt_util.cmi 
+lwt_util.cmx: lwt.cmx lwt_util.cmi 
+pqueue.cmo: pqueue.cmi 
+pqueue.cmx: pqueue.cmi 
+lwt_unix.cmi: lwt.cmi 
+lwt_util.cmi: lwt.cmi 

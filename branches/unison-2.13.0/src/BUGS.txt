@@ -1,0 +1,370 @@
+                         OUTSTANDING UNISON BUGS
+                         =======================
+
+SHOWSTOPPERS
+============
+
+Mac OSX, Windows XP: 
+  - Unison does not understand resource forks (OSX) or alternate data
+    streams (XP) and will not synchronize them properly. 
+
+Linux, Solaris: 
+  - None known.
+
+---------------------------------------------------------------------------
+SERIOUS
+=======
+
+[Summer 2002] if you abort, it gets confused about the status of
+   ~/.unison/default.prf on the next run sometimes. 
+   ===> We can't figure out how this might have happened.  Would probably
+   indicate a serious bug, though, if true.
+
+[July 2002, Findler]
+  I get this message from unison:
+    Fatal error: Internal error: New archives are not identical.
+    Retaining original archives.  Please run Unison again to bring them
+     up to date. 
+    If you get this message again, please notify unison-help@cis.upenn.edu.
+  and I think that I know what's going wrong. Unison is somehow using a
+  key consisting of the result of `hostname' (and maybe other stuff) to
+  uniquely identify an archive. I have two macos x machine and I use both
+  of them to sync to a third (solaris) place. The problem seems to be
+  that unison can't tell the difference between two macos x machines,
+  since the default setup under macos x always gives the hostname
+  "localhost".
+  --
+  So, I wonder if there is some other way to distinguish the two
+  hostnames. Things that come to mind: ip addresses (but that can be bad
+  if the machine moves around), ethernet addresses (but my laptop has two
+  of them -- still better than ip addresses, I think) or perhaps some
+  macos-specific mechanism for getting the macos name of the computer.
+  --
+  For now, I've just changed the result of `hostname' on one of my
+  machines, but I just made up something that no DNS server agrees with,
+  so that might cause me trouble down the line, I'd bet.
+  ===> We should use some more information to make sure the archive names are
+       unique enough.  But what, exactly?
+
+[Aug 2002] OSX native filesystems are case insensitive, like Windows, but
+Unison does not currently recognize this.  A workaround is to set the
+'ignorecase' preference explicitly to true.
+
+[July 2002] Unison does not understand Windows' non-Latin character set
+  encodings.  For some other character sets (e.g. European characters
+  such as u-umlaut), only the display is affected.  For character sets
+  that use multi-byte encoding schemes (e.g. Japanese), Unison can
+  actually get confused and synchronize incorrectly.  (One case where
+  this can happen is if the second byte of a two-byte character is
+  actually a slash!)
+     ==> This would be hard to fix, given OCaml's current poor support
+         for localization.  Jacques Garrigue made some suggestions (bcp
+         has them in a mail message) that might be the basis for looking
+         at this if someone is really motivated, but they look like real
+         work. 
+     ==> The right think to do is to use the Windows Unicode API
+
+[APril 2002, Jason Eisner] Recently I found an aliasing problem that may
+  endanger Unison's semantics.  
+  --
+  The problem is with the "follow" directive, which is documented like
+  this: "Including the preference -follow <pathspec> causes Unison to
+  treat symbolic links matching <pathspec> as 'invisible' and behave as
+  if the thing pointed to by the link had appeared literally at this
+  place in the replica."
+  --
+  If one of these invisible (elsewhere called "transparent") symlinks
+  points outside the replica, all is well and good.  But if it points to
+  something in the replica, then Unison now has two names for the same
+  file.  It doesn't currently detect the aliasing.  As a result, it keeps
+  separate information for the two names in the archive files.
+  [A long example is in a mailmessage in BCP's files]
+
+[April 2002] File times are reported incorrectly under Win32 after a
+  switch to/from daylight saving time.  Here is a link, to shed some
+  light on why this might be happening:
+  http://www.codeproject.com/datetime/dstbugs.asp
+  FIXED (a difference of exactly one hour is ignored)
+
+[Feb 2002] Individual files larger than about 1Gb are not handled
+  correctly.
+  - Only the beginning of the file is fingerprinted
+  ==> Fixed in the next release of OCaml
+  - We can't detect whether a file is large
+  FIXED
+
+starting Unison on two non-existent local directories leads to an
+  assertion failure in path.ml
+
+[Feb 2002] a bad sequence of events involving permissions...
+   - create a file on server, *owned* by somebody else but readable by me
+   - sync with laptop (file gets copied; copy is owned by me)
+   - on laptop, change file's permissions  (e.g., add group-writable bit)
+   - sync again; during transport, the props modification fails (because
+     I don't own the file)
+   - sync again; note that the file does *not* get listed as updated!
+     (which is wrong: it should be marked 'props')
+  ==> Unison wrongly assumes that changing the permissions never fail.
+  FIXED
+
+[2001] There seems to be a memory leak in uigtk.ml (we originally guessed
+  it had something to do with calls to detectCmd and friends not being
+  tail-recursive, but this does not seem to be it).  We don't currently
+  understand what might be causing this.
+  ===> This is rather memory fragmentation
+       We should probably perform a full GC cycle after each
+       synchronization
+       DONE
+
+[Feb, 2002] The on-disk archives can get out of sync.  This
+    happened to Andre Bonhote, Terry Eubanks and Nicholas Petreley
+    (http://www.linuxworld.com/site-stories/2002/0111.unison.html).
+    According to the information sent by Andre Bonhote, this is not an
+    archive corruption.  One side really contain an archive which is older
+    than the other.
+  What I'm not sure is how this can happen.
+  Anyway, we should really check whether the archives are identical
+    when loading them...
+    ==> DONE
+
+[Aug 2001] When a merge fails, CURRENT2 is not deleted.  If one
+reattempts the merge, it then fails in pre-process when it tries to
+create a new CURRENT2.  Moreover, subsequent runs of Unison treat the
+leftover CURRENT2 as a new file to synchronize.
+
+[Spring 2001] Unison's rsync-based file transfer mechanism has trouble
+  with very large files.  For example, a 500Mb file will run the OCaml
+  system out of memory on some configurations.
+  ===> This needs to be fixed, but it's low priority at the moment
+  FIXED (one function was not tail recursive)
+
+[Jan 2002] I use unison between a Win2k and WinME computers (the WinME is
+  the server).  I have a 350 meg file that I can't sync reliably unless I
+  turn rsync off.  The last couple of times its failed, the client side
+  unison is sucking 100% cpu for over an hour and not responding. There's
+  no real disk activity on either box and the network (100baseT switched
+  network) is idle. I have to nuke it from the task manager to
+  recover. It doesn't seem to be using excessive amounts of RAM. There is
+  usually a temp file on the target machine that's about 15meg when it
+  goes crazy. Flipping off rsync solves the problem.
+  ===> Ocaml marshalling bug
+       (FIXED)
+
+we think a client/server mismatch might produce a hang, instead of an
+  error, because the version number has gotten shorter!  :-)
+  ==> fixed, right?
+      FIXED, yes
+
+---------------------------------------------------------------------------
+MINOR
+=====
+
+Sascha Kuzins  [July 2002]
+  The server crashes everytime the client is finished.
+      "Fatal Error: Error in waiting on port: "
+          "The network name is not available anymore" (rough translation from
+  German)
+  I use Unison on two XP Professional machines, German versions, with the
+  simple tcp connection.
+
+Andy Starrer  [Aug 2002]
+  After connecting to server and trying to do first original sync
+   with empty client dir, the server searches a while and then shows a dialog:
+  --
+   Uncaught exception File "/usr/ports/net/unison/work/unison-2.9.1/path.ml,
+    line 0, characters 1785-1797: Assertion failed
+  -- 
+  using an awk line & char numbering print,
+   these char #s in path.ml fall on the "assert false" on line 69
+  (first line of file shows char count of 0)
+  -- 
+  66 1707 let parent path =
+  67 1725   match rtl path with
+  68 1747     RTL(_::p) -> RTL(p)
+  69 1771   | RTL [] -> assert false
+  70 1798   | LTR _ -> assert false
+  --
+  ===> Who is calling parent on an empty path???
+  
+Another report of the same (?) bug by Ruslan Ermolov:
+  Attempting to symlink ~/.unison/backup to
+  another (real) directory results in the following uncaught exception:
+  --
+  : $ ls -ld ~/.unison/*backup
+  : lrwx------  1 ru  sunbay   10 Aug  6 15:22 /home/ru/.unison/backup -> realbackup
+  : drwx------  2 ru  sunbay  512 Aug  6 15:22 /home/ru/.unison/realbackup
+  : $ unison -batch -backup='Name *' /tmp/replica1 /tmp/replica2
+  : Contacting server...
+  : Looking for changes
+  : Reconciling changes
+  : 
+  : replica1       replica2           
+  : deleted  ---->            a  
+  : replica1     : deleted
+  : replica2     : unchanged file   
+  :   modified at 15:22 on  6 Aug, 2002  size 0         rw-------
+  : Propagating updates
+  : 
+  : 
+  : UNISON started propagating changes at 15:26:04 on 06 Aug 2002
+  : [BGN] Deleting a
+  :   from /tmp/replica2
+  : Uncaught exception File "/usr/ports/net/unison/work/unison-2.9.1/path.ml", line 0, characters 1785-1797: Assertion failed
+  --
+  OTOH, Unison follows ~/.unison if it's symlinked, and I use this feature
+  when using SSH as a transport.  
+
+Devin Bayer  [Aug 2002]
+  Stack overflow on huge directory...
+  ---
+  It turns out a dir I had was messing unison all up.  It was
+  not huge, only 137 MB.  But it is was up of mostly empty files:
+  396326 of them.  So theres your bug report.  I don't need these files,
+  but I wish that the error message was clearer.
+  ---
+  here is gdb's backtraces, but there is no debug symbols:
+  #0  0x080acd30 in re_compile_pattern ()
+  #1  0x080ace22 in re_compile_pattern ()
+  #2  0x080a871c in re_compile_pattern ()
+  #3  0x080717f7 in strcpy ()
+  Cannot access memory at address 0x26
+  ---
+  ===> The stack trace seems bogus.  This problem might be fixed now, 
+       but, I guess we still need to fix Os.childrenOf, which does not
+       seem tail-recursive.
+       DONE
+
+Jamey Leifer [July 2002]
+ * [graphic ui, bug] If one of the files "has unknown type" (i.e. is a
+   system file), then pressing "f" (i.e. "Retry on unsynchronised items")
+   results in an error window and unison quiting.  To me "Retry" implies
+   less drastic behaviour.  It should just report errors as normal.
+
+BCP  [May 2002]
+  The "rescan paths that failed previous sync" function misses some files.
+  E.g., if a directory has failed to transfer because the disk ran out of
+  space and I hit 'f', it will come back with "Everything is up to date",
+  even though doing a full re-sync will again recognize the directory as
+  needing to be transferred.
+
+Jason Eisner [April, 2002]
+  The Merge feature does not appear to modify file times.  Thus, when
+  times=true, using the Merge feature on
+     changed ? changed    myfile
+  turns it into
+     props   ? props      myfile
+  and to finish the sync, I have to decide which file time "wins."
+  This differs from the behavior that I would expect and find more
+  convenient: namely, if I perform the merge at 3pm, then it counts as a
+  change to BOTH replicas of myfile and they should both end up with a
+  time of 3pm.
+  So I'd suggest that myfile in the local replica should have its
+  modtime as well as its contents changed to that of
+  #unisonmerged-myfile (the temporary file produced by the Merge
+  program).  Then this modtime and contents should be propagated to the
+  remote myfile as usual, handling clock skew as for any other propagation.
+  Other file properties should probably NOT be propagated.
+
+Unison should report a better error message when a modified file slips
+  through the fast check and is later detected during transport.
+
+I got this
+  C:\CygWin\home\kmoerder>unison a ssh://moerder/a
+  kmoerder@moerder's password:
+  C:\CygWin\home\kmoerder>Fatal error: Error in grabbing:
+  Broken pipe [read()]
+
+This should be caught and reported cleanly:
+  ~/.unison> unison ~/.unison/mail
+  Uncaught exception Invalid_argument("Os.string2name('/home/bcpierce/.unison/mail.prf' contains a '/')")
+
+dworley:
+  Unison sometimes aborts if one of the files it is synchronizing
+  changes during the run.  Most of the time, it can step over the
+  file correctly, but sometimes it bails out.  This can be a problem
+  in an environment where you cannot guarantee that the two
+  filesystems are stable during the Unison run.
+  ==> More information needed
+
+Karl Moerder:
+  The statusdepth doesn't seem to change anything (like it is being
+  ignored). I set it to 2 ("statusdepth = 2" in my .prf file) and got the
+  same display as the default (setting of 1). I didn't check if the
+  default really acted like 1, so it could be that I need to set it to a
+  higher value. I can play with it more later if you need me to.
+
+Karl Moerder:
+  The synchronization of modification times does not work on directories
+  (WinNT folders) or on read-only files. I found this when I tried to
+  synchronize mod times on an otherwise synchronized tree. It failed
+  gracefully on these. The "[click..." message is a nice touch.
+  ==> [Nothing we can do for read-only files; need to patch ocaml for
+       directories...]
+ 
+Bob H. reported an abnormal failure during transport that apparently led to
+  an immediate, dirty termination instead of a clean failure, trapped and
+  properly displayed in the user interface:
+   - on Windows (of course)
+   - Unison was trying to propagate a file onto a file that was open
+     in another application; in Windows, this causes an error
+   - the error was apparently not caught in the usual way, but instead
+     terminated Unison, leaving a DANGER.README file
+
+We probably don't do enough locking/checking in the case where two
+  unisons are running concurrently in the same part of the replica.
+  We're pretty paranoid about checking that the user's files have not
+  changed out from under us, but we assume that the unison.tmp files are
+  ours exclusively.
+  ==> [Using random numbers for tmp files should be sufficient]
+      DONE
+
+"After I synchronized two directories I created a new profile, which
+  defaulted to the same directories.  I synchronized again (no changes,
+  which was fine) but the Unison program did not save the directory names
+  in the new profile.  Later attemts to use that new profile failed, of
+  course, and further random clicking resulted in a message asking me to
+  delete non-existent lock files.  I responded by exiting the program,
+  manually deleting the .prf file, and starting over.  This is a minor
+  bug, I suppose, the root cause of which is the failure to save the
+  directory names in a new profile when they were copied unchanged from a
+  previous profile and/or no files had changed in these directories --
+  the type of bug that can only affect a new user, and so easy to
+  overlook in testing."
+
+The "Diff" window [under Windows] sometimes shows nothing.  Does this
+  arise from a missing "Diff" program?  We should detect this case!
+
+"Hanrahan, Donald" <dhanrahan@logicon.com>
+  Finally, I discovered that a preceeding "/" in a "defaultpath" entry
+  (e.g., defaultpath=/myshare/myfolder
+  vs. defaultpath=myshare/myfolder) seems to cause an unhandled
+  exception (Invalid_argument <"os.string2path">) to occur.
+
+** The "total size transferred" in the GTK UI should be stored in an
+   Int64; otherwise large transfers will overflow it.
+   ==> change Util.filesize to int64 (this seems like a "right thing",
+       but seems to cause an "out of memory" error on the first sync of
+       my full replica).  Should try this again.   -BCP
+   ==> even if we can't do this change, we should at least recognize when
+       filesizes are too big to represent and generate a sensible error
+       message! 
+   ==> But, at the moment, we're blocked by an OCaml bug
+   DONE 
+
+---------------------------------------------------------------------------
+COSMETIC 
+========
+
+Interactively adding an ignore pattern for src will not make
+  src/RECENTNEWS immediately disappear (as it does not directly match
+  the pattern)...
+
+[Mar 2002] When transferring by copying, copies on the remote side are
+  not taken into account by the progress meter.
+
+progress bar calculation is not quite right -- e.g. dir sizes are not
+  always accurate?
+  [One needs to consider simultaneously the archive and the update to
+   compute the size a directory (consider a directory with some
+   updates deep inside]
+  [also, Diff has an effect on the progress bar!]
