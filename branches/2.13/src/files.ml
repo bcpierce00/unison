@@ -371,18 +371,20 @@ let copy
             (root2string rootTo) (Path.toString pTo));
           mkdir rootTo workingDir pTo) >>= (fun initialDesc ->
         Abort.check id;
-        let actions =
-          Update.NameMap.fold
-            (fun name child rem ->
-               copyRec (Path.child pFrom name)
-                       (Path.child pTo name)
-                       (Path.child realPTo name)
-                       child
-               :: rem)
-            children []
-        in
+        let runningThreads = ref [] in
         Lwt.catch
-          (fun () -> Lwt_util.join actions)
+          (fun () ->
+             Update.NameMap.iter
+               (fun name child ->
+                  let thread =
+                    copyRec (Path.child pFrom name)
+                            (Path.child pTo name)
+                            (Path.child realPTo name)
+                            child
+                  in
+                  runningThreads := thread :: !runningThreads)
+               children;
+             Lwt_util.join !runningThreads)
           (fun e ->
              (* If one thread fails (in a non-fatal way), we wait for
                 all other threads to terminate before continuing *)
@@ -401,7 +403,7 @@ let copy
                                 Lwt.return ()
                             | _                ->
                                 Lwt.fail e'))
-                   actions >>= (fun () ->
+                   !runningThreads >>= (fun () ->
                  Lwt.fail !e)
              | _ ->
                  Lwt.fail e) >>= (fun () ->
