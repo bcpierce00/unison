@@ -265,38 +265,3 @@ let mergeCmdForPath p =
   else
     try Pred.assoc merge (Path.toString p)
     with Not_found -> Pred.assoc mergebatch (Path.toString p)
-
-let backup =
-   Pred.create "backup"
-   ("Including the preference \\texttt{-backup \\ARG{pathspec}} "
-   ^ "causes Unison to make back up for each path that matches "
-   ^ "\\ARG{pathspec}.  More precisely, for each path that "
-   ^ "matches this \\ARG{pathspec}, "
-   ^ "Unison will keep several old versions of a file as a backup whenever "
-   ^ "a change is propagated.  These backup files are left in the "
-   ^ "directory specified by the environment variable {\\tt UNISONBACKUPDIR}, "
-    ^ "if it is set; otherwise in the directory named by the {\\tt backupdir} "
-    ^ "preference, if it is non-null; otherwise in "
-   ^ " \\verb|.unison/backup/| by default.  The newest backed up copy will"
-   ^ "have the same name as the original; older versions will be named "
-   ^ "with extensions \\verb|.n.unibck|."
-   ^ " The number of versions that are kept is determined by the "
-   ^ "\\verb|maxbackups| preference."
-   ^ "\n\n The syntax of \\ARG{pathspec} is described in \\sectionref{pathspec}{Path Specification}.")
-
-let _ = Pred.alias backup "mirror"
-
-let backupnot =
-   Pred.create "backupnot"
-   ("The values of this preference specify paths or individual files or"
-    ^ " regular expressions that should {\\em not} "
-    ^ "be backed up, even if the {\\tt backup} preference selects "
-    ^ "them---i.e., "
-    ^ "it selectively overrides {\\tt backup}.  The same caveats apply here "
-    ^ "as with {\\tt ignore} and {\tt ignorenot}.")
-
-let shouldBackup p =
-  let s = (Path.toString p) in
-  (Pred.test backup s && not (Pred.test backupnot s))
-
-    

@@ -67,23 +67,6 @@ val unlockArchives : unit -> unit Lwt.t
 val translatePath : Common.root -> Path.t -> Path.local Lwt.t
 val translatePathLocal : Fspath.t -> Path.t -> Path.local
 
-(* Find the fspath for the backup file corresponding to a given path in the
-   local replica *)
-val findBackup : Path.local -> Fspath.t option
-
-(*
-(* Where is the backup directory *)
-(* FIX: This should not be exported *)
-val backupDirectory : unit -> Fspath.t
-*)
-
-(* Back up a file that is about to be overwritten *)
-val makeBackupFile :
-  Common.root ->
-  Fspath.t -> Path.local -> (* Which file we should mirror *)
-  Path.local ->             (* Its location with respect to the replica root *)
-  unit Lwt.t
-
 (* Are we checking fast, or carefully? *)
 val fastcheck : string Prefs.t
 

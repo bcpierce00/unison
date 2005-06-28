@@ -60,46 +60,51 @@ let lwt_protect f g =
 (****)
 
 let localFile
-     fspathFrom pathFrom fspathTo pathTo realPathTo update desc ressLength id =
+     fspathFrom pathFrom fspathTo pathTo realPathTo update desc ressLength ido =
+
+  let use_id f = match ido with Some id -> f id | None -> () in
+  
   Util.convertUnixErrorsToTransient
     "copying locally"
     (fun () ->
-       Uutil.showProgress id Uutil.Filesize.zero "l";
-       debug (fun () ->
-         Util.msg "copylocal (%s,%s) to (%s, %s)\n"
-           (Fspath.toString fspathFrom) (Path.toString pathFrom)
-           (Fspath.toString fspathTo) (Path.toString pathTo));
-       let inFd = openFileIn fspathFrom pathFrom `DATA in
-       protect (fun () ->
-         let outFd = openFileOut fspathTo pathTo `DATA in
-         protect (fun () ->
-           Uutil.readWrite inFd outFd
-             (fun l ->
-                Abort.check id;
-                Uutil.showProgress id (Uutil.Filesize.ofInt l) "l");
-           close_in inFd;
-           close_out outFd)
-           (fun () -> close_out_noerr outFd))
-         (fun () -> close_in_noerr inFd);
-       if ressLength > Uutil.Filesize.zero then begin
-         let inFd = openFileIn fspathFrom pathFrom (`RESS ressLength) in
-         protect (fun () ->
-           let outFd = openFileOut fspathTo pathTo (`RESS ressLength) in
-           protect (fun () ->
-             Uutil.readWriteBounded inFd outFd ressLength
-               (fun l ->
+      use_id (fun id -> Uutil.showProgress id Uutil.Filesize.zero "l");
+      debug (fun () ->
+        Util.msg "copylocal (%s,%s) to (%s, %s)\n"
+          (Fspath.toString fspathFrom) (Path.toString pathFrom)
+          (Fspath.toString fspathTo) (Path.toString pathTo));
+      let inFd = openFileIn fspathFrom pathFrom `DATA in
+      protect (fun () ->
+        let outFd = openFileOut fspathTo pathTo `DATA in
+        protect (fun () ->
+          Uutil.readWrite inFd outFd
+            (fun l ->
+              use_id ( fun id ->
+		Abort.check id;
+		Uutil.showProgress id (Uutil.Filesize.ofInt l) "l"));
+          close_in inFd;
+          close_out outFd)
+          (fun () -> close_out_noerr outFd))
+        (fun () -> close_in_noerr inFd);
+      if ressLength > Uutil.Filesize.zero then begin
+        let inFd = openFileIn fspathFrom pathFrom (`RESS ressLength) in
+        protect (fun () ->
+          let outFd = openFileOut fspathTo pathTo (`RESS ressLength) in
+          protect (fun () ->
+            Uutil.readWriteBounded inFd outFd ressLength
+              (fun l ->
+		use_id (fun id ->
                   Abort.check id;
-                  Uutil.showProgress id (Uutil.Filesize.ofInt l) "l");
-             close_in inFd;
-             close_out outFd)
-             (fun () -> close_out_noerr outFd))
-           (fun () -> close_in_noerr inFd);
-       end;
-       match update with
-         `Update _ ->
-           Fileinfo.set fspathTo pathTo (`Copy realPathTo) desc
-       | `Copy ->
-           Fileinfo.set fspathTo pathTo (`Set Props.fileDefault) desc)
+                  Uutil.showProgress id (Uutil.Filesize.ofInt l) "l"));
+            close_in inFd;
+            close_out outFd)
+            (fun () -> close_out_noerr outFd))
+          (fun () -> close_in_noerr inFd);
+      end;
+      match update with
+        `Update _ ->
+          Fileinfo.set fspathTo pathTo (`Copy realPathTo) desc
+      | `Copy ->
+          Fileinfo.set fspathTo pathTo (`Set Props.fileDefault) desc)
 
 (****)
 
@@ -394,7 +399,7 @@ let tryCopyMovedFile fspathTo pathTo realPathTo update desc fp ress id =
         try
           localFile
             candidateFspath candidatePath fspathTo pathTo realPathTo
-            update desc (Osx.ressLength ress) id;
+            update desc (Osx.ressLength ress) (Some id);
           let info = Fileinfo.get false fspathTo pathTo in
           let fp' = Os.fingerprint fspathTo pathTo info in
           if fp' = fp then begin
@@ -461,7 +466,7 @@ let file
     (Common.Local, fspathFrom), (Common.Local, realFspathTo) ->
       localFile
         fspathFrom pathFrom fspathTo pathTo realPathTo
-        update desc (Osx.ressLength ress) id;
+        update desc (Osx.ressLength ress) (Some id);
       Lwt.return ()
   | _ ->
       transmitFile

@@ -72,8 +72,7 @@ let doAction (fromRoot,toRoot) path fromContents toContents id =
                ("Deleting " ^ Path.toString path ^
                 "\n  from "^ root2string toRoot)
                ("Deleting " ^ Path.toString path)
-               (fun () -> Files.delete (Prefs.read Os.backups)
-                            fromRoot path toRoot path uiTo)
+               (fun () -> Files.delete fromRoot path toRoot path uiTo)
         (* No need to transfer the whole directory/file if there were only
            property modifications on one side.  (And actually, it would be
            incorrect to transfer a directory in this case.) *)
@@ -94,8 +93,7 @@ let doAction (fromRoot,toRoot) path fromContents toContents id =
                root2string toRoot)
               ("Updating file " ^ Path.toString path)
               (fun () ->
-                Files.copy (Prefs.read Os.backups)
-                  (`Update (fileSize uiFrom uiTo))
+                Files.copy (`Update (fileSize uiFrom uiTo))
                   fromRoot path uiFrom toRoot path uiTo id)
         | (_, _, _, uiFrom), (_, _, _, uiTo) ->
             logLwtNumbered
@@ -103,7 +101,7 @@ let doAction (fromRoot,toRoot) path fromContents toContents id =
                root2string fromRoot ^ "\n  to " ^
                root2string toRoot)
               ("Copying " ^ Path.toString path)
-              (fun () -> Files.copy (Prefs.read Os.backups) `Copy
+              (fun () -> Files.copy `Copy
                   fromRoot path uiFrom toRoot path uiTo id))
       (fun e -> Trace.log
           (Printf.sprintf
