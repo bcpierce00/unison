@@ -100,7 +100,6 @@ export:
 commitexport:
 	$(MAKE) realcommit
 	$(MAKE) mailchanges
-	$(MAKE) nightly
 
 realcommit:
 	@echo
@@ -109,7 +108,7 @@ realcommit:
 	-chmod -R g+wr $(EXPORTDIR)
 	-chmod -R o-w $(EXPORTDIR)
 	-$(RM) $(DOWNLOADPARENT)/latestbeta
-	-ln -s $(EXPORTNAME) $(DOWNLOADPARENT)/latestbeta
+	-ln -s $(EXPORTNAME) $(DOWNLOADPARENT)/beta
 
 $(DOWNLOADDIR):
 	@echo Creating DOWNLOADDIR = $(DOWNLOADDIR)
@@ -138,19 +137,20 @@ exportdocs:
 	cp doc/unison-manual.html $(DOWNLOADDIR)/$(EXPORTNAME)-manual.html
 	cp doc/unison-manual.html $(DOWNLOADDIR)/$(NAME)-manual.html
 
+MAILTMP = $(HOME)/mail.tmp
+
 mailchanges: tools/ask src/$(NAME)
 	@echo To: $(NAME)-announce@yahoogroups.com,$(NAME)-users@yahoogroups.com \
-            > mail.tmp
-	@echo Subject: $(NAME) $(VERSION) now available >> mail.tmp
-	@echo >> mail.tmp
-	@echo Download address: >> mail.tmp
+            > $(MAILTMP)
+	@echo Subject: $(NAME) $(VERSION) now available >> $(MAILTMP)
+	@echo >> $(MAILTMP)
+	@echo Download address: >> $(MAILTMP)
 	@echo "  " http://www.cis.upenn.edu/~bcpierce/unison/download.html \
-           >> mail.tmp
-	@echo >> mail.tmp
-	@cat src/NEWS >> mail.tmp
-	@src/unison -doc news >> mail.tmp
+           >> $(MAILTMP)
+	@echo >> $(MAILTMP)
+	@cat src/NEWS >> $(MAILTMP)
+	@src/unison -doc news >> $(MAILTMP)
 	tools/ask tools/mailmsg.txt
-	@send ./mail.tmp
 
 ######################################################################
 # Export binary for the current architecture 
