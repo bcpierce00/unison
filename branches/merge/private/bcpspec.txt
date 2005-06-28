@@ -1,0 +1,138 @@
+Assumptions:
+  we're dealing with a user-level tool -- it can't see the trace
+  of actions going by, but just the state of the replicas when it is
+  called (and any memory it stashed away)
+  --> leads to a simple functional style of specification
+
+A filesystem is a (total) function from paths to {BOT,DIR} union CONTENTS
+  such that
+    the parent of every non-BOT path is a directory
+    the present parts have finite depth
+
+Write S/p for (lambda q. S(p.q))
+
+1) NAIVE SPEC
+
+  a synchronizer is a relation
+    snc : FS * FS * FS  *  FS * FS
+
+  a synchronizer snc is correct if
+    for all O,A,B,A',B' with snc(O,A,B,  A',B'),
+      for all p
+        (1) if A(p)<>O(p), then A'(p)=A(p)
+          and similarly for B
+            ("if the user makes a change, it will not be overwritten by
+              the synchronizer")
+        (2) if A'(p)<>A(p), then A'(p) = B'(p) = B(p) <> O(p)
+          and similarly for B
+            ("the synchronizer only changes the replicas to propagate
+              user changes")
+
+We can ask some purely formal questions about this spec.  For
+example...
+
+  is it consistent? -- i.e., for each O,A,B, are there SOME A' and B'
+  such that snc(O,A,B,A',B')?
+
+The answer here is yes.
+
+  is it complete? -- i.e., does it make a prediction for the value of
+  every path in A',B' for every O,A,B?
+
+The answer, of course, is no: this spec does not force the
+synchronizer to do ANYTHING.  Of course, we would like it to propagate
+changes, but it is better if we make that a "non-functional
+requirement," for a couple of reasons:
+
+  - The present spec is also good for the failure case,
+    where the synchronizer may succeed in propagating some changes and
+    not others.
+
+  - Moreover, we'll see soon that for efficiency of the implementation
+    we will want to allow some false positives in detection of
+    changes, to avoid making it store too much information or do too
+    much work during change detection.  Allowing false positives,
+    though, can lead to reporting "false conflicts," in the case where
+    one side has really changed and it thinks the other has too.  The
+    spec needs to permit this.
+
+------------------
+iteration should be discussed next: to iterate the synchronizer, we
+run it next time with O calculated as follows:
+
+  COMMON(O,A',B') is the (unique) filesystem O' such that
+     for each path p
+        * if A'(p)=B'(p)=DIR, then O(p)=DIR
+        * else if A'/p=B'/p, then O'/p=O/p
+        * else O'/p=O/p
+
+------------------
+
+2) EFFICIENCY
+
+next, talk about different strategies for update detection, and the
+fact that we've chosen just one (mirroring).  If we want to allow
+others, we need to allow the implementation to choose the type of its
+memory.  (Obviously, the synchronizer needs *some* information about
+the previous state, but we don't want to keep a whole mirror.  This
+would not be too bad in terms of disk space, but bad in terms of
+execution efficiency.)
+
+First, suppose that filesystems carry along some extra information
+(otherwise the exercise is not interesting) that changes when files
+are updated:
+
+Formally, an ANNOTATED FILESYSTEM S will be a PAIR of partial functions
+     S_content : FS
+     S_info : INFO
+where INFO is the extra information that the system maintains.  Write
+AFS for the set of annotated filesystems.  By abuse of notation, we'll
+write S(p) for S_content(p).
+
+We will not be precise about what INFO is, exactly, or what happens to
+S_info when the content part of S changes.  Instead, we introduce a
+relation
+  follows subseteq AFS * AFS
+capturing when one annoted filesystem can "follow" another, in the
+sense that the second is derived from the first by some sequence of
+changes.
+
+[For example, if INFO is a function recording a modtime and an inode
+number for each file, then the follows relation would capture the fact
+that, if S' follows S, then S(p)<>S'(p) implies S-info(p) <>
+S'-info(p).]
+
+Now, a synchronizer comprises
+   a set       MEM 
+   an element  M_init : MEM
+   a relation  snc : MEM * AFS * AFS  *  MEM * AFS * AFS
+
+Informally:
+
+  A synchronizer SNC = (MEM, M_init, snc) is said to be
+  correct for  annotated filesystems A_prev and B_prev, filesystem O,
+  and memory M if:
+      for each A following A_prev and B following B_prev,
+        if snc(M,A,B, M',A',B'), then,
+            - for all paths p, (1) and (2), as before
+            - SNC is correct for A', B', O', and M', where O'=COMMON(O,A',B')
+
+  A synchronizer SNC = (MEM, M_init, snc) is said to be correct if it
+  is correct for (nullafs,nullafs,nullfs,M_init)
+
+(where nullfs is the constant-BOT function on paths and nullafs is the
+corresponding empty annotated filesystem).
+
+Formally, correctness is a coinductively defined predicate:
+
+  The CORRECT SET of a synchronizer SNC = (MEM, M_init, snc) is the
+  largest set
+     CO subseteq AFS * AFS * MEM * FS
+  such that
+     for each (A_prev,B_prev,M,O) in CO
+       for each A following A_prev and B following B_prev
+        if snc(M,A,B, M',A',B'), then,
+            - for all paths p, (1) and (2), as before
+            - (A', B', O', M') in CO, where O'=COMMON(O,A',B')
+
+  SNC is CORRECT if (nullafs,nullafs,M_init,nullfs) is in its correct set.
