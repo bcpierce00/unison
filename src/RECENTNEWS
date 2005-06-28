@@ -1,3 +1,8 @@
+CHANGES FROM VERSION 2.13.1
+
+* Set back the major version number to 2.13.0
+
+-------------------------------
 CHANGES FROM VERSION 2.13.0
 
 * Disable fastcheck for Excel files under Unix too
