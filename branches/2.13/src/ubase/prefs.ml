@@ -4,15 +4,15 @@
 
 let debug = Util.debug "prefs"
 
-type 'a t = 'a ref * string list ref
+type 'a t = ('a * string list) ref
 
-let read (p, _) = !p
+let read p = fst !p
 
-let set (p, _) v = p:= v
+let set p v = p:=(v, snd !p)
 
-let name (_, l) = !l
+let name p = snd !p
 
-let rawPref default name = (ref default, ref [name])
+let rawPref default = ref default
 
 (* ------------------------------------------------------------------------- *)
 
@@ -110,7 +110,7 @@ let alias pref newname =
   (* found in the map, no need for catching exception                       *)
   let (_,pspec,_) = Util.StringMap.find (Safelist.hd (name pref)) !prefs in
   prefs := Util.StringMap.add newname ("*", pspec, "") !prefs;
-  snd pref := newname :: !(snd pref)
+  pref := (fst !pref, newname::(snd !pref))
 
 let registerPref name pspec doc fulldoc =
   if Util.StringMap.mem name !prefs then
@@ -118,17 +118,17 @@ let registerPref name pspec doc fulldoc =
   prefs := Util.StringMap.add name (doc, pspec, fulldoc) !prefs
 
 let createPrefInternal name default doc fulldoc printer parsefn =
-  let newCell = rawPref default name in
+  let newCell = rawPref (default, [name]) in
   registerPref name (parsefn newCell) doc fulldoc;
-  adddumper name (fun () -> Marshal.to_string (read newCell) []);
-  addprinter name (fun () -> printer (read newCell));
-  addresetter (fun () -> set newCell default);
-  addloader name (fun s -> set newCell (Marshal.from_string s 0));
+  adddumper name (fun () -> Marshal.to_string !newCell []);
+  addprinter name (fun () -> printer (fst !newCell));
+  addresetter (fun () -> newCell := (default, [name]));
+  addloader name (fun s -> newCell := Marshal.from_string s 0);
   newCell
 
 let create name default doc fulldoc intern printer =
   createPrefInternal name default doc fulldoc printer
-    (fun cell -> Uarg.String (fun s -> set cell (intern (read cell) s)))
+    (fun cell -> Uarg.String (fun s -> set cell (intern (fst !cell) s)))
 
 let createBool name default doc fulldoc =
   createPrefInternal name default doc fulldoc
@@ -148,7 +148,7 @@ let createString name default doc fulldoc =
 let createStringList name doc fulldoc =
   createPrefInternal name [] doc fulldoc
     (fun v -> v)
-    (fun cell -> Uarg.String (fun s -> set cell (s :: read cell)))
+    (fun cell -> Uarg.String (fun s -> set cell (s::(fst !cell))))
 
 (*****************************************************************************)
 (*                      Command-line parsing                                 *)

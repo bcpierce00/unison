@@ -1,14 +1,7 @@
-CHANGES FROM VERSION 2.13.1
+CHANGES FROM VERSION 2.13.2
 
-* Set back the major version number to 2.13.0
-
--------------------------------
-CHANGES FROM VERSION 2.13.0
-
-* Disable fastcheck for Excel files under Unix too
-* Make this version compatible with 2.12.0:
-  - reverted experimental emptied path check
-  - use a compatible format for preference propagation to the server
+* Reverted all changes (the previously committed version is broken: it
+  pretends to be compatible with 2.13.0 but is not... :-( )
 
 -------------------------------
 CHANGES FROM VERSION 2.13.-3
