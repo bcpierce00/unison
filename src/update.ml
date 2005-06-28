@@ -1328,14 +1328,11 @@ let checkContentsChange
       &&
     Props.length info.Fileinfo.desc = Props.length archDesc
       &&
-    notExcelFile path
-      &&
     match archStamp with
       Fileinfo.InodeStamp inode ->
         info.Fileinfo.inode = inode
     | Fileinfo.CtimeStamp ctime ->
-        info.Fileinfo.ctime = ctime
-  in
+        info.Fileinfo.ctime = ctime && notExcelFile path in
   let ressClearlyUnchanged =
     fastCheck
       &&
@@ -1583,7 +1580,7 @@ and buildUpdateRec archive currfspath path fastCheck =
          | None    -> None
          end,
          if childUpdates <> [] || permchange = PropsUpdated then
-           Updates (Dir (desc, childUpdates, permchange),
+           Updates (Dir (desc, childUpdates, permchange, emptied),
                     oldInfoOf archive)
          else
            NoUpdates)
@@ -1601,7 +1598,7 @@ and buildUpdateRec archive currfspath path fastCheck =
                (fun s (_,ui) -> Uutil.Filesize.add s (uiLength ui))
                Uutil.Filesize.zero childUpdates) in
         (None,
-         Updates (Dir (newdesc, childUpdates, PropsUpdated),
+         Updates (Dir (newdesc, childUpdates, PropsUpdated, false),
                   oldInfoOf archive))
   with
     Util.Transient(s) -> None, Error(s)
@@ -1845,7 +1842,7 @@ let rec updateArchiveRec ui archive =
           ArchiveFile (desc, dig, stamp, ress)
       | Symlink l ->
           ArchiveSymlink l
-      | Dir (desc, children, _) ->
+      | Dir (desc, children, _, _) ->
           begin match archive with
             ArchiveDir (_, arcCh) ->
               let ch =
@@ -2028,7 +2025,7 @@ let doUpdateProps arch propOpt ui =
         end
     | Updates (File (desc, ContentsUpdated (dig, stamp, ress)), _) ->
         ArchiveFile(desc, dig, stamp, ress)
-    | Updates (Dir (desc, _, _), _) ->
+    | Updates (Dir (desc, _, _, _), _) ->
         begin match arch with
           ArchiveDir (_, children) -> ArchiveDir (desc, children)
         | _                        -> ArchiveDir (desc, NameMap.empty)

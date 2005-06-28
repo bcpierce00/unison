@@ -71,6 +71,7 @@ and updateContent =
        * (Name.t * updateItem) list   (*   - children
                                              MUST KEEP SORTED for recon *)
        * permchange                   (*   - did permissions change? *)
+       * bool                         (*   - is the directory now empty? *)
   | Symlink                           (* Path refers to a symbolic link *)
       of string                       (*   - link text *)
 
