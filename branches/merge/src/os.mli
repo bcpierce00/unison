@@ -6,7 +6,8 @@ val myCanonicalHostName : string
 
 val tempPath : Fspath.t -> Path.local -> Path.local
 val includeInTempNames : string -> unit
-val backupPath : Fspath.t -> Path.local -> Path.local
+
+val exists : Fspath.t -> Path.local -> bool
 
 val createUnisonDir : unit -> unit
 val fileInUnisonDir : string -> Fspath.t
@@ -47,22 +48,3 @@ val fingerprint :
 (* Versions of system calls that will restart when interrupted by
    signal handling *)
 val accept : Unix.file_descr -> (Unix.file_descr * Unix.sockaddr)
-
-(*****************************************************************************)
-(*                             OPTIONS                                       *)
-(*****************************************************************************)
-(* It seems to me that all the options should be put into a single options   *)
-(* file.  I put these here for lack of a better palce.                       *)
-(*****************************************************************************)
-
-(* Option that controls whether backup files are kept                        *)
-val backups : bool Prefs.t
-
-(* Option that controls how many backup copies (max) are kept  *)
-val maxbackups : int Prefs.t
-
-(* Option that controls how many backup copies (min) are kept  *)
-val minbackups : int Prefs.t
-
-(* Option that controls how old backup copies can get (days)  *)
-val maxbackupage : int Prefs.t
