@@ -141,7 +141,7 @@ let rec checkForError ui =
       raise (UpdateError err)
   | Updates (uc, _) ->
       match uc with
-        Dir (_, children, _, _) ->
+        Dir (_, children, _) ->
           Safelist.iter (fun (_, uiSub) -> checkForError uiSub) children
       | Absent | File _ | Symlink _ ->
           ()
@@ -179,17 +179,17 @@ let update2replicaContent (conflict: bool) ui ucNew oldType:
       (`SYMLINK, `Created, Props.dummy, ui)
   | Symlink l ->
       (`SYMLINK, `Modified, Props.dummy, ui)
-  | Dir (desc, _, _, _) when oldType <> `DIRECTORY ->
+  | Dir (desc, _, _) when oldType <> `DIRECTORY ->
       (`DIRECTORY, `Created, desc, ui)
-  | Dir (desc, _, PropsUpdated, _) ->
+  | Dir (desc, _, PropsUpdated) ->
       (`DIRECTORY, `PropsChanged, desc, ui)
-  | Dir (desc, _, PropsSame, _) when conflict ->
+  | Dir (desc, _, PropsSame) when conflict ->
       (* Special case: the directory contents has been modified and the      *)
       (* directory is in conflict.  (We don't want to display a conflict     *)
       (* between an unchanged directory and a file, for instance: this would *)
       (* be rather puzzling to the user)                                     *)
       (`DIRECTORY, `Modified, desc, ui)
-  | Dir (desc, _, PropsSame, _) ->
+  | Dir (desc, _, PropsSame) ->
       (`DIRECTORY, `Unchanged, desc, ui)
 
 let oldType (prev: Common.prevState): Fileinfo.typ =
@@ -232,7 +232,7 @@ let rec reconcileNoConflict ui whatIsUpdated
   | NoUpdates -> result
   | Error err ->
       Tree.add result (Problem err)
-  | Updates (Dir (desc, children, permchg, _),
+  | Updates (Dir (desc, children, permchg),
              Previous(`DIRECTORY, _, _, _)) ->
       let r =
         if permchg = PropsSame then result else Tree.add result (different ())
@@ -322,15 +322,15 @@ let rec reconcile path ui1 ui2 counter equals unequals =
       (equals, reconcileNoConflict ui1 Rep1Updated unequals)
   | (Updates (Absent, _), Updates (Absent, _)) ->
       (add_equal counter equals (Absent, Absent), unequals)
-  | (Updates (Dir (desc1, children1, propsChanged1, _) as uc1, prevState1),
-     Updates (Dir (desc2, children2, propsChanged2, _) as uc2, prevState2)) ->
+  | (Updates (Dir (desc1, children1, propsChanged1) as uc1, prevState1),
+     Updates (Dir (desc2, children2, propsChanged2) as uc2, prevState2)) ->
        (* See if the directory itself should have a reconItem *)
        let dirResult =
          if propsChanged1 = PropsSame && propsChanged2 = PropsSame then
            (equals, unequals)
          else if Props.similar desc1 desc2 then
-           let uc1 = Dir (desc1, [], PropsSame, false) in
-           let uc2 = Dir (desc2, [], PropsSame, false) in
+           let uc1 = Dir (desc1, [], PropsSame) in
+           let uc2 = Dir (desc2, [], PropsSame) in
            (add_equal counter equals (uc1, uc2), unequals)
          else
            let action =
@@ -404,11 +404,11 @@ let rec leavePath p t =
 
 (* A path is dangerous if one replica has been emptied but not the other *)
 let dangerousPath u1 u2 =
-  let emptied u =
+  let emptied u = false (*
     match u with
       Updates (Absent, _)                 -> true
     | Updates (Dir (_, _, _, emptied), _) -> emptied
-    | _                                   -> false
+    | _                                   -> false*)
   in
   emptied u1 <> emptied u2
 
