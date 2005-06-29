@@ -19,6 +19,13 @@ let includeInTempNames s =
     if s = "" then tempFileSuffixFixed
     else "." ^ s ^ tempFileSuffixFixed
 
+let xferDelete = ref (fun (fp,p) -> ())
+let xferRename = ref (fun (fp,p) (ftp,tp) -> ())
+
+let initializeXferFunctions del ren =
+  xferDelete := del;
+  xferRename := ren
+      
 
 (*****************************************************************************)
 (*                      QUERYING THE FILESYSTEM                              *)
@@ -107,36 +114,38 @@ and childrenOf fspath path =
 (* Deletes a file or a directory, but checks before if there is something    *)
 and delete fspath path =
   Util.convertUnixErrorsToTransient
-  "deleting"
+    "deleting"
     (fun () ->
-       let absolutePath = Fspath.concatToString fspath path in
-       match (Fileinfo.get false fspath path).Fileinfo.typ with
-         `DIRECTORY ->
-           begin try
-             Unix.chmod absolutePath 0o700
-           with Unix.Unix_error _ -> () end;
-           Safelist.iter
-             (fun child -> delete fspath (Path.child path child))
-             (childrenOf fspath path);
-           Unix.rmdir absolutePath
-       | `FILE ->
-           if Util.osType <> `Unix then begin
-             try
-               Unix.chmod absolutePath 0o600;
-             with Unix.Unix_error _ -> ()
-           end;
-           Unix.unlink absolutePath;
-           if Prefs.read Osx.rsrc then begin
-             let pathDouble = Osx.appleDoubleFile fspath path in
-             if Sys.file_exists pathDouble then
-               Unix.unlink pathDouble
-           end
-       | `SYMLINK ->
+      let absolutePath = Fspath.concatToString fspath path in
+      match (Fileinfo.get false fspath path).Fileinfo.typ with
+        `DIRECTORY ->
+          begin try
+            Unix.chmod absolutePath 0o700
+          with Unix.Unix_error _ -> () end;
+          Safelist.iter
+            (fun child -> delete fspath (Path.child path child))
+            (childrenOf fspath path);
+	  (!xferDelete) (fspath, path);
+          Unix.rmdir absolutePath
+      | `FILE ->
+          if Util.osType <> `Unix then begin
+            try
+              Unix.chmod absolutePath 0o600;
+            with Unix.Unix_error _ -> ()
+          end;
+	  (!xferDelete) (fspath, path);
+          Unix.unlink absolutePath;
+          if Prefs.read Osx.rsrc then begin
+            let pathDouble = Osx.appleDoubleFile fspath path in
+            if Sys.file_exists pathDouble then
+              Unix.unlink pathDouble
+          end
+      | `SYMLINK ->
            (* Note that chmod would not do the right thing on links *)
-           Unix.unlink absolutePath
-       | `ABSENT ->
-           ())
-
+          Unix.unlink absolutePath
+      | `ABSENT ->
+          ())
+    
 let rename sourcefspath sourcepath targetfspath targetpath =
   let source = Fspath.concat sourcefspath sourcepath in
   let source' = Fspath.toString source in
@@ -145,17 +154,18 @@ let rename sourcefspath sourcepath targetfspath targetpath =
   Util.convertUnixErrorsToTransient
   "renaming"
     (fun () ->
-       debug (fun() -> Util.msg "rename %s to %s\n" source' target');
-       Unix.rename source' target';
-       if Prefs.read Osx.rsrc then begin
-         let sourceDouble = Osx.appleDoubleFile sourcefspath sourcepath in
-         let targetDouble = Osx.appleDoubleFile targetfspath targetpath in
-         if Sys.file_exists sourceDouble then
-           Unix.rename sourceDouble targetDouble
-         else if Sys.file_exists targetDouble then
-           Unix.unlink targetDouble
-       end)
-
+      debug (fun() -> Util.msg "rename %s to %s\n" source' target');
+      (!xferRename) (sourcefspath, sourcepath) (targetfspath, targetpath);
+      Unix.rename source' target';
+      if Prefs.read Osx.rsrc then begin
+        let sourceDouble = Osx.appleDoubleFile sourcefspath sourcepath in
+        let targetDouble = Osx.appleDoubleFile targetfspath targetpath in
+        if Sys.file_exists sourceDouble then
+          Unix.rename sourceDouble targetDouble
+        else if Sys.file_exists targetDouble then
+          Unix.unlink targetDouble
+      end)
+    
 let renameIfAllowed sourcefspath sourcepath targetfspath targetpath =
   let source = Fspath.concat sourcefspath sourcepath in
   let source' = Fspath.toString source in
@@ -166,7 +176,11 @@ let renameIfAllowed sourcefspath sourcepath targetfspath targetpath =
     (fun () ->
        debug (fun() -> Util.msg "rename %s to %s\n" source' target');
        let allowed =
-         try Unix.rename source' target'; None with
+         try 
+	   (!xferRename) (sourcefspath, sourcepath) (targetfspath, targetpath);
+	   Unix.rename source' target'; 
+	   None 
+	 with
            Unix.Unix_error (Unix.EPERM, _, _) as e -> Some e
        in
        if allowed = None && Prefs.read Osx.rsrc then begin
