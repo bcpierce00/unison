@@ -37,7 +37,7 @@ let clearCommitLog () =
   Util.convertUnixErrorsToFatal
     "clearing commit log"
       (fun () -> Unix.unlink commitLogName)
-
+    
 let processCommitLog () =
   if Sys.file_exists commitLogName then begin
     raise(Util.Fatal(
@@ -143,21 +143,7 @@ let renameLocal (root, (fspath, pathFrom, pathTo)) =
       (Fspath.toString fspath) 
       (Fspath.toString root));
   let localTargetPath =
-    (* FIX: This is kind of a hack.  Seems like it would be better to change
-       the interface of renameLocal so that it is not necessary. *)
-    let roots = Fspath.toString root in
-    let r = String.length roots in
-    let fspaths = Fspath.toString fspath in
-    if fspaths = roots then 
-      pathTo 
-    else begin
-      if Path.isEmpty (Path.parent pathTo) then
-	let name = Name.fromString (Path.toString pathTo) in
-	Path.child (Path.fromString (String.sub fspaths (r+1) (String.length fspaths - r - 1))) name
-      else 
-	raise (Util.Transient (Printf.sprintf "%s pathTo should not contain any directories" (Path.toString pathFrom)))
-    end
-  in
+    Fspath.fullLocalPath (Fspath.toString root) fspath pathTo in
   let source = Fspath.concat fspath pathFrom in
   let target = Fspath.concat fspath pathTo in
   Util.convertUnixErrorsToTransient
@@ -207,10 +193,8 @@ let renameLocal (root, (fspath, pathFrom, pathTo)) =
                seems better to abort early. *)
             Util.convertUnixErrorsToFatal "renaming with commit log"
               (fun () ->
-                Xferhint.renameEntry (fspath, pathTo) (fspath, tmpPath);
                 debug (fun() -> Util.msg "rename %s to %s\n" source' target');
                 Os.rename source Path.empty target Path.empty;
-                Xferhint.renameEntry (fspath, pathFrom) (fspath, pathTo);
                 Stasher.stashCurrentVersion localTargetPath;
                 Stasher.removeAndBackupAsAppropriate temp Path.empty root localTargetPath;
                 clearCommitLog())
@@ -223,7 +207,6 @@ let renameLocal (root, (fspath, pathFrom, pathTo)) =
         debugverbose (fun() -> Util.msg "rename: moveFirst=false\n");
         Stasher.removeAndBackupAsAppropriate root localTargetPath root localTargetPath;
         Os.rename source Path.empty target Path.empty;
-        Xferhint.renameEntry (fspath, pathFrom) (fspath, pathTo);
         Stasher.stashCurrentVersion localTargetPath
       end;
       Lwt.return ())
@@ -690,15 +673,23 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
       
       (* retrieve the archive for this file, if any *)
       let arch =
-	match ui1 with
-	  Updates (_, Previous (_,_,dig,_)) ->
-	    Stasher.getRecentVersion workingDirForMerge localPath1 dig 
-	| Updates (_, New) ->
+	match ui1, ui2 with
+	| Updates (_, Previous (_,_,dig,_)), Updates (_, Previous (_,_,dig2,_)) ->
+	    if dig = dig2 then
+	      Stasher.getRecentVersion workingDirForMerge localPath1 dig 
+	    else
+	      assert false
+	| NoUpdates, Updates(_, Previous (_,_,dig,_))
+	| Updates(_, Previous (_,_,dig,_)), NoUpdates -> 
+	    Stasher.getRecentVersion workingDirForMerge localPath1 dig
+	| Updates (_, New), Updates(_, New) 
+	| Updates (_, New), NoUpdates
+	| NoUpdates, Updates (_, New) ->
 	    None
-	| NoUpdates -> assert false  (* FIX: should use ui2 *)
-        | Error _ -> assert false
-      in
+	| _ -> assert false
 
+      in
+      
       (* make a local copy of the archive file (in case the merge program  
          overwrites it and the program crashes before the call to the Stasher) *)
       let _= 

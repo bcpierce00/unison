@@ -311,20 +311,12 @@ let removeAndBackupAsAppropriate fspath path fakeFspath fakePath =
 	  (Fspath.toString fakeFspath)
 	  (Path.toString backPath)
 	  (Fspath.toString backRoot));
-      Os.rename fspath path backRoot backPath;
-      (* OS.rename is recursive, but Xferhint.renameentry *)
-      (* is not. To be FIXED *)
-      (* Why are the Xferhint delete & rename functions not 
-	 only called from the Os local functions ? - SL *)
-      Xferhint.deleteEntry (fspath, path)
+      Os.rename fspath path backRoot backPath
     end else begin
       Printf.printf "File %s in %s will not be backed up.\n" 
 	(Path.toString fakePath) 
 	(Fspath.toString fakeFspath);
-      Os.delete fspath path;
-      (* OS.delete is recursive, but Xferhint.deleteentry *)
-      (* is not. To be FIXED *)
-      Xferhint.deleteEntry (fspath, path)
+      Os.delete fspath path
     end
 	
 (*------------------------------------------------------------------------------------*)
@@ -359,18 +351,16 @@ let stashPath fspath path =
     end;
   (fspath, tempPath)
 
-(* FIX: remove begin/ends *)
-
 let stashCurrentVersionLocal fspath path =
   debug (fun () -> 
     Util.msg "stashCurrentVersion of %s in %s\n" 
       (Path.toString path) (Fspath.toString fspath));
-  if Os.exists fspath path then begin
+  if Os.exists fspath path then
     let dirstat = (Fspath.stat (Fspath.concat fspath path))in
     if dirstat.Unix.LargeFile.st_kind = Unix.S_DIR then
       debug (fun () -> Util.msg "Stashing aborted because file is a directory\n")
-    else begin
-      if shouldBackupCurrent path then begin
+    else
+      if shouldBackupCurrent path then
 	let (stashDir, stashPath) = stashPath fspath path in
 	let info = Fileinfo.get false fspath path in
 	Copy.localFile 
@@ -380,9 +370,6 @@ let stashCurrentVersionLocal fspath path =
 	  info.Fileinfo.desc
 	  (Osx.ressLength info.Fileinfo.osX.Osx.ressInfo)
 	  None
-      end
-    end
-  end
       
 let stashCurrentVersionOnRoot: Common.root -> Path.local -> unit Lwt.t =
   Remote.registerRootCmd

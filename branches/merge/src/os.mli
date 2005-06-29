@@ -4,6 +4,11 @@
 
 val myCanonicalHostName : string
 
+val initializeXferFunctions : 
+    (Fspath.t * Path.local -> unit) -> 
+    ((Fspath.t * Path.local) -> (Fspath.t * Path.local) -> unit) ->
+    unit
+
 val tempPath : Fspath.t -> Path.local -> Path.local
 val includeInTempNames : string -> unit
 
