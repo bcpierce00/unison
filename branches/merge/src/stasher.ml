@@ -3,15 +3,15 @@
 (* $I3: Copyright 1999-2004 (see COPYING for details) $ *)
 
 (*------------------------------------------------------------------------------------*)
-
-(* Preferences for backuping and stashing *)
+(* Preferences for backing up and stashing *)
    
 let debug = Util.debug "stasher"
 
 let backuplocation = 
   Prefs.createString "backuplocation" "central"
-    "whether backups should be kept locally or in a centralized directory"
-    ("This preference determines if backups should be kept locally or"
+    "where backups are stored ('local' or 'central')"
+    ("This preference determines whether backups should be kept locally, near the "
+     ^ "original files, or"
      ^" in a central directory specified by the \\texttt{backupdir} "
      ^"preference. If set to \\verb|local|, backups will be kept in "
      ^"the same directory as the original files, and if set to \\verb|central|,"
@@ -20,14 +20,10 @@ let backuplocation =
 let backup =
   Pred.create "backup"
     ("Including the preference \\texttt{-backup \\ARG{pathspec}} "
-     ^ "causes Unison to make back up for each path that matches "
-     ^ "\\ARG{pathspec}.  More precisely, for each path that "
-     ^ "matches this \\ARG{pathspec}, "
-     ^ "Unison will keep several old versions of a file as a backup whenever "
-     ^ "a change is propagated.  These backup files are left in the "
-     ^ "directory specified by the \\verb|backupslocation| preference, and "
-     ^ "will be kept centralized by default. The backups will be named "
-     ^ "according to the \\verb|backupsprefix| and \\verb|backupssuffix| preferences."
+     ^ "causes Unison to keep backup files for each path that matches "
+     ^ "\\ARG{pathspec}.  These backup files are kept in the "
+     ^ "directory specified by the \\verb|backuplocation| preference. The backups are named "
+     ^ "according to the \\verb|backupprefix| and \\verb|backupsuffix| preferences."
      ^ " The number of versions that are kept is determined by the "
      ^ "\\verb|maxbackups| preference."
      ^ "\n\n The syntax of \\ARG{pathspec} is described in "
@@ -50,47 +46,47 @@ let shouldBackup p =
   let s = (Path.toString p) in
   Pred.test backup s && not (Pred.test backupnot s)
     
-let backupsprefix =
-  Prefs.createString "backupsprefix" ".unison."
-    "a prefix to be added to backup's filenames"
+let backupprefix =
+  Prefs.createString "backupprefix" ".unison."
+    "prefix for the names of backup files"
     ("When a backup for a file \\verb|NAME| is created, it is stored "
      ^ "in a directory specified by \\texttt{backuplocation}, in a file called "
-     ^ "\\texttt{backupsprefix}\\verb|NAME|\\texttt{backupssuffix}."
-     ^ " \\texttt{backupsprefix} can be a directory, and both "
-     ^ " \\texttt{backupsprefix} and \\texttt{backupssuffix} can contain "
+     ^ "\\texttt{backupprefix}\\verb|NAME|\\texttt{backupsuffix}."
+     ^ " \\texttt{backupprefix} can include a directory name (causing Unison to "
+     ^ "keep all backup files for a given directory in a subdirectory with this name), and both "
+     ^ " \\texttt{backupprefix} and \\texttt{backupsuffix} can contain the string"
      ^ "\\ARG{\\$VERSION}, which will be replaced by the \\emph{age} of the backup "
      ^ "(1 for the most recent, 2 for the second most recent, and so on...)."
-     ^ " This keyword will be ignore if it appears in a directory name"
-     ^ " in the prefix, and if it  does not appear anywhere"
-     ^ " in the prefix or in the suffix, it will be automatically"
-     ^ " appended before the suffix.")
+     ^ " This keyword is ignored if it appears in a directory name"
+     ^ " in the prefix; if it  does not appear anywhere"
+     ^ " in the prefix or the suffix, it will be automatically"
+     ^ " placed at the beginning of the suffix.")
     
-let backupssuffix =
-  Prefs.createString "backupssuffix" "$VERSION.bak"
-    "a suffix to be added to backup's filenames"
-    ("See \\texttt{backupsprefix} for full documentation.")
-
+let backupsuffix =
+  Prefs.createString "backupsuffix" "$VERSION.bak"
+    "a suffix to be added to names of backup files"
+    ("See \\texttt{backupprefix} for full documentation.")
 
 let backups =
   Prefs.createBool "backups" false
-    "keep backup copies of files (see also 'backup')"
+    "keep backup copies of all files (see also 'backup')"
     ("Setting this flag to true is equivalent to "
      ^" setting \\texttt{backuplocation} to \\texttt{local}"
      ^" and \\texttt{backup} to \\verb|Name *|.")
 
 (* The following function is used to express the old backup preference, if set,
-   in the terms of the new preferences                                          *)
+   in the terms of the new preferences *)
 let translateOldPrefs () =
   match (Pred.extern backup, Pred.extern backupnot, Prefs.read backups) with
     ([], [], true) ->
       debug (fun () -> 
-	Util.msg "backups preference set : translated into backup and backuplocation\n");
+	Util.msg "backups preference set: translated into backup and backuplocation\n");
       Pred.intern backup ["Name *"]; 
       Prefs.set backuplocation "local"
   | (_, _, false) -> 
       ()
-  | _ -> raise (Util.Fatal ( "Both old backups preference and "
-			    ^ "new backup preference are set !"))
+  | _ -> raise (Util.Fatal ( "Both old 'backups' preference and "
+			    ^ "new 'backup' preference are set!"))
 	
 let maxbackups =
   Prefs.createInt "maxbackups" 2
@@ -103,7 +99,7 @@ let _ = Prefs.alias maxbackups "mirrorversions"
     
 let backupdir =
   Prefs.createString "backupdir" ""
-    "Location for backups created by -backup when -backuplocation is central"
+    "Directory for storing centralized backups"
     ("If this preference is set, Unison will use it as the name of the "
      ^ "directory used to store backup files specified by "
      ^ "the {\\tt backup} preference, when {\\tt backuplocation} is set"
@@ -122,22 +118,23 @@ let backupDirectory () =
 let backupcurrent =
   Pred.create "backupcurrent"
     ("Including the preference \\texttt{-backupcurrent \\ARG{pathspec}} "
-     ^" causes Unison to keep a backup of the current version of the file."
-     ^" This file will be called as a backup with version number 000. Such"
-     ^" backups can be used as archives for merging programs, for instance."
-     ^" For more details about backups, see the \\texttt{backup} preference."
+     ^" causes Unison to keep a backup of the {\\em current} version of every file "
+     ^ "matching \\ARG{pathspec}.  "
+     ^" This file will be saved as a backup with version number 000. Such"
+     ^" backups can be used as inputs to external merging programs, for instance.  See "
+     ^ "the documentatation for the \\verb|merge| preference."
+     ^" For more details, see \\sectionref{merge}{Merging Conflicting Versions}."
      ^"\n\n The syntax of \\ARG{pathspec} is described in "
      ^ "\\sectionref{pathspec}{Path Specification}.")
 
-let shouldBackupCurrent p =
-  Pred.test backupcurrent (Path.toString p)
+let shouldBackupCurrent p = Pred.test backupcurrent (Path.toString p)
 
 (*------------------------------------------------------------------------------------*)
 
-(* NB : We use Str.regexp here because we need group matching to retrieve
+(* NB: We use Str.regexp here because we need group matching to retrieve
    and increment version numbers from backup file names. We only use
-   them at this point though, and to check if a path should be back
-   upped or ignored, we use Rx instead. *)
+   it here, though: to check if a path should be backed up or ignored, we
+   use Rx instead. *)
 
 (* regular expressions for backups, based on current preferences *)
 let version_rx = "\\.\\([0-9]+\\)"
@@ -152,8 +149,8 @@ let suffix_rx = ref ""
    local directory, if ever, in which backups are stored ; the second
    one matches the prefix, the third the suffix.                     *)
 let backup_rx () =
-  let sp = Prefs.read backupsprefix in
-  let suffix = Str.quote (Prefs.read backupssuffix) in
+  let sp = Prefs.read backupprefix in
+  let suffix = Str.quote (Prefs.read backupsuffix) in
   let (udir, uprefix) =
     ((match Filename.dirname sp with "." -> "" | s -> (Fileutil.bs2fs s)^"/"), 
      Filename.basename sp) in
@@ -170,18 +167,22 @@ let backup_rx () =
 (* This function updates the regular expressions for backups' filenames *)   
 let updateRE () = 
   let (a,b,c) = backup_rx () in 
-  debug ( fun () -> Util.msg
-      "Regular Expressions for backups updated :\n dir_rx : %s\n prefix_rx : %s\n suffix_rx : %s\n"
-      (match a with None -> "MISSING" | Some s -> s) b c);
+  debug ( fun () -> 
+      Util.msg "Regular Expressions for backups updated:\n ";
+      Util.msg "dir_rx: %s\n prefix_rx: %s\n suffix_rx: %s\n"
+        (match a with None -> "MISSING" | Some s -> s) b c);
   (dir_rx := a; prefix_rx := b; suffix_rx := c)
     
+(* We ignore files whose name ends in .unison.bak, since people may still have these lying around
+   from using previous versions of Unison. *)
+let oldBackupPrefPathspec = "Name *.unison.bak"
+
 (* This function creates Rx regexps based on the preferences to ignore
    backups of old and current versions.*)
 let addBackupFilesToIgnorePref () =
-  
   let regexp_to_rx s =
-   Str.global_replace (Str.regexp "\\\\(") "" (Str.global_replace (Str.regexp "\\\\)") "" s) in
-  
+   Str.global_replace (Str.regexp "\\\\(") ""
+     (Str.global_replace (Str.regexp "\\\\)") "" s) in
   let (full, dir) =
     let d = 
       match !dir_rx with 
@@ -190,38 +191,32 @@ let addBackupFilesToIgnorePref () =
     let p = regexp_to_rx !prefix_rx in
     let s = regexp_to_rx !suffix_rx in
     (".*"^p^".*"^s, ".*"^(String.sub d 0 (String.length d - 1))) in
-  
   let theRegExp = 
     match !dir_rx with 
-      None -> "Regex "^full 
-    | Some _ -> "Regex "^dir in
-  
+      None   -> "Regex " ^ full 
+    | Some _ -> "Regex " ^ dir in
+  debug (fun () -> 
+     Util.msg "New pattern being added to ignore preferences: %s\n" theRegExp);
   let oldRE = Pred.extern Globals.ignore in
-  if not (List.mem theRegExp oldRE) then begin
-    debug (fun () -> 
-      Util.msg "New pattern will be added to ignore preferences : %s\n" theRegExp);
-    let newRE = theRegExp::oldRE in
-    Pred.intern Globals.ignore newRE;
-    let r = Prefs.add "ignore" theRegExp in
-    Trace.status r
-  end
+  let newRE = theRegExp::oldBackupPrefPathspec::oldRE in
+  Pred.intern Globals.ignore newRE
 
 (*------------------------------------------------------------------------------------*)
 
-(* we use references for functions that compute the prefixes and suffixes
+(* We use references for functions that compute the prefixes and suffixes
    in order to avoid using functions from the Str module each time.       *)
 let prefix_string = ref (fun i -> "")
 let suffix_string = ref (fun i -> "")
     
 exception NoVersion
     
-(* This function updates the function used to create prefix and suffix
+(* This function updates the function used to create prefixes and suffixes
    for naming backup files, according to the preferences. *)
 let updatePrefixAndSuffix () =
-  let sp = Prefs.read backupsprefix in
-  let suffix = Prefs.read backupssuffix in
+  let sp = Prefs.read backupprefix in
+  let suffix = Prefs.read backupsuffix in
   
-  (* Don't remove the argument here ! A partially applied printf is error-prone *)
+  (* Don't remove the argument here! A partially applied printf is error-prone *)
   let version i = Printf.sprintf ".%03d" i in
   
   let version_appears_once s mandatory=
@@ -247,17 +242,15 @@ let updatePrefixAndSuffix () =
   let (dir, prefix) =
     ((match Filename.dirname sp with "." -> "" | s -> s), Filename.basename sp) in
   
-  try (
+  try 
     let _ = version_appears_once (prefix^suffix) true in
     prefix_string := version_appears_once prefix false;
     suffix_string := version_appears_once suffix false;
     debug (fun () -> 
       Util.msg "Prefix and Suffix for backup filenames have been updated.\n")
-      )
-  with
-    NoVersion
-    -> prefix_string := (fun _ -> prefix); 
-      suffix_string := (fun i -> (version i)^suffix)
+  with NoVersion ->
+         prefix_string := (fun _ -> prefix); 
+         suffix_string := (fun i -> (version i)^suffix)
 	  
 (* Generates a file name for a backup file.  If backup file already exists,
    the old file will be renamed with the count incremented.  The newest
@@ -268,17 +261,16 @@ let backupPath fspath path =
     match Prefs.read backuplocation with
       "central" -> backupDirectory ()
     | "local" -> fspath
-    |  _ -> raise (Util.Fatal ("backuplocation preference should be set to central"
-			       ^ "or local."))
-  in
+    |  _ -> raise (Util.Fatal ("backuplocation preference should be set to 'central'"
+			       ^ "or 'local'.")) in
   let rec f i =
     let (prefix, suffix) = (!prefix_string i, !suffix_string i) in
     let tempPath = 
       Path.addSuffixToFinalName 
 	(Path.addPrefixToFinalName path prefix) suffix in
-    if Os.exists fspath tempPath then Os.rename fspath tempPath fspath (f (i + 1));
-    tempPath
-  in
+    if Os.exists fspath tempPath && i < Prefs.read maxbackups then
+      Os.rename fspath tempPath fspath (f (i + 1));
+    tempPath in
   (fspath, f 1)
     
 (* backdir may be in subdirectories of fspath, so we recursively 
@@ -293,13 +285,13 @@ let rec mkdirectories fspath backdir =
 
 (*------------------------------------------------------------------------------------*)
 	  
-(* Removes file at fspath/path and backups it before if required
-   To check if the file has to be backupped and to create the
-   name of the backup file, fakeFspath/fakePath is used instead
+(* Removes file at fspath/path and backs it up before if required.
+   To check if the file has to be backed up and to create the
+   name of the backup file, fakeFspath/fakePath is used instead.
    This allows us to deal directly with temporary files. *)
 let removeAndBackupAsAppropriate fspath path fakeFspath fakePath =
   debug ( fun () -> Util.msg
-      "removeAndBackupAsAppropriate : (%s,%s), for real path (%s,%s)\n"
+      "removeAndBackupAsAppropriate: (%s,%s), for real path (%s,%s)\n"
       (Fspath.toString fspath)
       (Path.toString path)
       (Fspath.toString fakeFspath)
@@ -337,21 +329,21 @@ let removeAndBackupAsAppropriate fspath path fakeFspath fakePath =
 	
 (*------------------------------------------------------------------------------------*)
 
-let mergeDirectory fspath =
+let stashDirectory fspath =
   match Prefs.read backuplocation with
     "central" -> backupDirectory ()
   | "local" -> fspath
   |  _ -> raise (Util.Fatal ("backuplocation preference should be set"
 			     ^"to central or local."))
 	
-let findMerge path i =
+let findStash path i =
   Path.addSuffixToFinalName 
     (Path.addPrefixToFinalName path (!prefix_string i))
     (!suffix_string i) 
     
-let mergePath fspath path =
-  let fspath = mergeDirectory fspath in
-  let tempPath = findMerge path 0 in
+let stashPath fspath path =
+  let fspath = stashDirectory fspath in
+  let tempPath = findStash path 0 in
   if Os.exists fspath tempPath then 
     if shouldBackup path then 
       (* this is safe because this is done *after* backup *)
@@ -361,11 +353,13 @@ let mergePath fspath path =
       Trace.debug "verbose" 
 	(fun () -> Util.msg "Creating a safety backup for (%s, %s)\n" 
 	    (Fspath.toString fspath) (Path.toString path));
-      let olBackup = findMerge path 1 in
+      let olBackup = findStash path 1 in
       if Os.exists fspath olBackup then Os.delete fspath olBackup;
       Os.rename fspath tempPath fspath olBackup
     end;
   (fspath, tempPath)
+
+(* FIX: remove begin/ends *)
 
 let stashCurrentVersionLocal fspath path =
   debug (fun () -> 
@@ -377,11 +371,11 @@ let stashCurrentVersionLocal fspath path =
       debug (fun () -> Util.msg "Stashing aborted because file is a directory\n")
     else begin
       if shouldBackupCurrent path then begin
-	let (mergeDir, mergePath) = mergePath fspath path in
+	let (stashDir, stashPath) = stashPath fspath path in
 	let info = Fileinfo.get false fspath path in
 	Copy.localFile 
 	  fspath path 
-	  mergeDir mergePath mergePath 
+	  stashDir stashPath stashPath 
 	  `Copy 
 	  info.Fileinfo.desc
 	  (Osx.ressLength info.Fileinfo.osX.Osx.ressInfo)
@@ -405,16 +399,16 @@ let stashCurrentVersion path =
 (*------------------------------------------------------------------------------------*)    
     
 (* This function tries to find a backup of a recent version of the file at location
-   (fspath, path) in the current replica, matchinf the given fingerprint. If no file
+   (fspath, path) in the current replica, matching the given fingerprint. If no file
    is found, then the functions returns None *without* searching on the other replica *)
 let getRecentVersion fspath path fingerprint =
   debug (fun () ->
     Util.msg "getRecentVersion of %s in %s\n" 
       (Path.toString path) 
       (Fspath.toString fspath));
-  let dir = mergeDirectory fspath in
+  let dir = stashDirectory fspath in
   let rec aux_find i =
-    let path = findMerge path i in
+    let path = findStash path i in
     if Os.exists dir path &&
       (let dig = Os.fingerprint dir path (Fileinfo.get false dir path) in 
       dig = fingerprint)
@@ -425,7 +419,7 @@ let getRecentVersion fspath path fingerprint =
 	  (Fspath.toString dir));
       Some (Fspath.concat dir path)
     end else
-      if i = Prefs.read maxbackups then  begin
+      if i = Prefs.read maxbackups then begin
 	debug (fun () ->
 	  Util.msg "No recent version was available for %s on this root.\n"
 	    (Fspath.toString (Fspath.concat fspath path)));
