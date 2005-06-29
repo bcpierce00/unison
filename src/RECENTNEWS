@@ -1,3 +1,8 @@
+CHANGES FROM VERSION 2.13.6
+
+More progress on merging and backup stuff
+
+-------------------------------
 CHANGES FROM VERSION 2.13.5
 
 First cut at integrating Stephane's new backup / merging stuff
