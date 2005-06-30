@@ -1075,7 +1075,6 @@ contents and compares it against the last-synchronized contents. Also, the
 cause identical files to be changed; Unison will only modify the file
 times.)
 
-
 It is safe to ``brainwash'' Unison by deleting its archive files
 {\em on both replicas}.  The next time it runs, it will assume that
 all the files it sees in the replicas are new.  
@@ -1564,11 +1563,11 @@ It simply means \verb|backup = Name *| and \verb|backuplocation = local|.
 \SUBSECTION{Merging Conflicting Versions}{merge}
 
 Unison can invoke external programs to merge conflicting versions of a file.
-The preference \verb|merge| controls how this program is invoked.  
+The preference \verb|merge| controls this process.  
 
 The \verb|merge| preference may be given once or several times in a
 preference file (it can also be given on the command line, of course, but
-this can be a bit awkward because of the spaces and special characters
+this tends to be awkward because of the spaces and special characters
 involved).  Each instance of the preference looks like this:
 \begin{verbatim}
     merge = <PATHSPEC> -> <MERGECMD>
@@ -1579,24 +1578,20 @@ using ``\verb|Name *.txt|'' as the \verb|<PATHSPEC>| tells Unison that this
 command should be used whenever a file with extension \verb|.txt| needs to
 be merged.  
 
-
-Many merge commands, like \verb|diff3| for instance, require not only
-the two files to be merged, but also a file containing the {\em last
-synchronized version} of a file. You can ask Unison to keep
-such specific archives for some files for you by using the
-\verb|backupcurrent| preference. This preference is used in exactly
-the same way as \verb|backup|. When adding a path specification to
-\verb|backupcurrent|, Unison will keep a backup of the current
-synchronized version of all files matching this path specification,
-and update it every time the files are updated in one or both replicas.
-These backups are kept on {\em both} replicas in the same place as
-regular backups are, i.e. according to the \verb|backuplocation| and
-\verb|backupdir| preferences. They are named like the original files
-if \verb|backupslocation| is set to 'central' and otherwise, Unison
-uses the \verb|backupprefix| and \verb|backupsuffix| preferences and
-assumes a version number 000 for these backups.
-
-
+Many external merging programs require as inputs not just the two files that
+need to be merged, but also a file containing the {\em last synchronized
+  version}.  You can ask Unison to keep a copy of the last synchronized
+version for some files using the \verb|backupcurrent| preference. This
+preference is used in exactly the same way as \verb|backup| and its meaning
+is similar, except that it causes backups to be kept of the {\em current}
+contents of each file after it has been synchronized by Unison, rather than
+the {\em previous} contents that Unison overwrote.  These backups are kept
+on {\em both} replicas in the same place as ordinary backup files---i.e.
+according to the \verb|backuplocation| and \verb|backupdir| preferences.
+They are named like the original files if \verb|backupslocation| is set to
+'central' and otherwise, Unison uses the \verb|backupprefix| and
+\verb|backupsuffix| preferences and assumes a version number 000 for these
+backups.
 
 The \verb|<MERGECMD>| part of the preference specifies what external command
 should be invoked to merge files at paths matching the \verb|<PATHSPEC>|.
