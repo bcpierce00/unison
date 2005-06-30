@@ -4,11 +4,6 @@
 
 val myCanonicalHostName : string
 
-val initializeXferFunctions : 
-    (Fspath.t * Path.local -> unit) -> 
-    ((Fspath.t * Path.local) -> (Fspath.t * Path.local) -> unit) ->
-    unit
-
 val tempPath : Fspath.t -> Path.local -> Path.local
 val includeInTempNames : string -> unit
 
@@ -53,3 +48,11 @@ val fingerprint :
 (* Versions of system calls that will restart when interrupted by
    signal handling *)
 val accept : Unix.file_descr -> (Unix.file_descr * Unix.sockaddr)
+
+(* Called during program initialization to resolve a circular dependency
+   between this module and Xferhints *)
+val initializeXferFunctions : 
+    (Fspath.t * Path.local -> unit) -> 
+    ((Fspath.t * Path.local) -> (Fspath.t * Path.local) -> unit) ->
+    unit
+

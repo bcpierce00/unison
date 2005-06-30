@@ -1398,8 +1398,12 @@ features.
     # Window height
     height = 37
 
-    # Keep a backup copy of the entire replica
+    # Keep a backup copy of every file in a central location
+    backuplocation = central
+    backupdir = /home/bcpierce/backups
     backup = Name *
+    backupprefix = $VERSION.
+    backupsuffix = 
 
     # Use this command for displaying diffs
     diff = diff -y -W 79 --suppress-common-lines
@@ -1488,42 +1492,73 @@ propagate any that it finds.
 
 \SUBSECTION{Keeping Backups}{backups}
 
-Unison can maintain full backups of the last-synchronized versions of
-some of the files in each replica; these function both as backups in the
-usual sense and as the ``common version'' when invoking external merge
-programs.
+When Unison overwrites a file or directory by propagating a new version from
+the other replica, it can keep the old version around as a backup.  There
+are several preferences that control precisely where these backups are
+stored and how they are named.
 
-The backed up files are stored in a directory \verb|~/.unison/backup| on
-each host.  The name of this directory can be changed by setting the
-environment variable \verb|UNISONBACKUPDIR|.
+To enable backups, you must give one or more \verb|backup| preferences.
+Each of these has the form
+\begin{verbatim}
+    backup = <pathspec>
+\end{verbatim}
+where \verb|<pathspec>| has the same form as for the \verb|ignore|
+preference.  For example, 
+\begin{verbatim}
+    backup = Name *
+\end{verbatim}
+causes Unison to keep backups of {\em all} files and directories.  The
+\verb|backupnot| preference can be used to give a few exceptions: it
+specifies which files and directories should {\em not} be backed up, even if
+they match the \verb|backup| pathspec. 
+
+It is important to note that the \verb|pathspec| is matched against the path
+that is being updated by Unison, not its descendants.  For example, if you
+set \verb|backup = Name *.txt| and then delete a whole directory named
+\verb|foo| containing some text files, these files will not be backed up
+because Unison will just check that \verb|foo| does not match \verb|*.txt|.
+Similarly, if the directory itself happened to be called \verb|foo.txt|,
+then the whole directory and all the files in it will be backed up,
+regardless of their names. 
+
+Backup files can be stored either {\em centrally} or {\em locally}.  This
+behavior is controlled by the preference \verb|backuplocation|, whose value
+must be either \verb|central| or \verb|local|.  (The default is
+\verb|central|.)  
+
+When backups are stored locally, they are kept in the same
+directory as the original.
+
+When backups are stored centrally, the directory used to hold them is
+controlled by the preference \verb|backupdir| and the
+environment variable \verb|UNISONBACKUPDIR|.  (The environment variable is
+checked first.)  If neither of these are set, then the directory
+\verb|.unison/backup| in the user's home directory is used.
+
+The preference \verb|backupversions| controls how many previous versions of
+each file are kept.  The default is 2.
+
+By default, backup files are named \verb|.unison.FILENAME.VERSION.bak|,
+where \verb|FILENAME| is the original filename and \verb|version| is the
+backup number (001 for the most recent, 002 for the next most recent,
+etc.).  This can be changed by setting the preferences \verb|backupprefix|
+and/or \verb|backupsuffix|.  If desired, \verb|backupprefix| may include a
+directory prefix; this can be used with \verb|backuplocation = local| to put all
+backup files for each directory into a single subdirectory.  For example, setting
+\begin{verbatim}
+    backuplocation = local
+    backupprefix = .unison/$VERSION.
+    backupsuffix = 
+\end{verbatim}
+will put all backups in a local subdirectory named \verb|.unison|.  Also,
+note that the string \verb|$VERSION| in either \verb|backupprefix| or
+\verb|backupsuffix| (it must appear in one or the other) is replaced by
+the version number.  This can be used, for example, to ensure that backup
+files retain the same extension as the originals.
+
+For backward compatibility, the \verb|backups| preference is also supported.
 %
-Files are added to the backup directory whenever unison updates its
-archive.  This means that
-\begin{itemize}
-\item When unison reconstructs its archive from scratch (e.g.,
-  because of an upgrade, or because the archive files have been
-  manually deleted), all files will be backed up. 
-%Bogus??
-%\finish{Bogus.}
-\item Otherwise, each file will be backed up the first time unison
-  propagates an update for it.
-\end{itemize}
-It is safe to manually delete files from the backup directory (or to
-throw away the directory itself).  Before unison uses any of these files
-for anything important, it checks that its fingerprint matches the one
-that it expects.
-
-The preference \verb|backup| controls which files are actually backed
-up: for example, giving the preference `\verb|backup = Name *|' causes
-backing up of all files.  The preference \verb|backupversions|
-controls how many previous versions of each file are kept.  The
-default is value 2 (i.e., the last synchronized version plus one backup).
-
-For backward compatibility, the \verb|backups| preference is also still
-supported, but \verb|backup| is generally more convenient, as it keeps all
-its backup files in one place instead of leaving them all over the
-filesystem.  See the documentation for these preferences for more
-information about the differences.
+It simply means \verb|backup = Name *| and \verb|backuplocation = local|.
 
 
 \SUBSECTION{Merging Conflicting Versions}{merge}\finish{update all this}

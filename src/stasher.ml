@@ -63,7 +63,7 @@ let backupprefix =
      ^ " placed at the beginning of the suffix.")
     
 let backupsuffix =
-  Prefs.createString "backupsuffix" "$VERSION.bak"
+  Prefs.createString "backupsuffix" ".$VERSION.bak"
     "a suffix to be added to names of backup files"
     ("See \\texttt{backupprefix} for full documentation.")
 
@@ -96,6 +96,7 @@ let maxbackups =
      ^ "\\verb|backup|.  The default is 2.")
     
 let _ = Prefs.alias maxbackups "mirrorversions"
+let _ = Prefs.alias maxbackups "backupversions"
     
 let backupdir =
   Prefs.createString "backupdir" ""
@@ -137,7 +138,7 @@ let shouldBackupCurrent p = Pred.test backupcurrent (Path.toString p)
    use Rx instead. *)
 
 (* regular expressions for backups, based on current preferences *)
-let version_rx = "\\.\\([0-9]+\\)"
+let version_rx = "\\([0-9]+\\)"
 
 let dir_rx = ref None
 let prefix_rx = ref ""
@@ -208,16 +209,13 @@ let addBackupFilesToIgnorePref () =
 let prefix_string = ref (fun i -> "")
 let suffix_string = ref (fun i -> "")
     
-exception NoVersion
-    
 (* This function updates the function used to create prefixes and suffixes
    for naming backup files, according to the preferences. *)
 let updatePrefixAndSuffix () =
   let sp = Prefs.read backupprefix in
   let suffix = Prefs.read backupsuffix in
   
-  (* Don't remove the argument here! A partially applied printf is error-prone *)
-  let version i = Printf.sprintf ".%03d" i in
+  let version i = Printf.sprintf "%03d" i in
   
   let version_appears_once s mandatory=
     let regexp = Str.regexp "\\$VERSION" in
@@ -225,7 +223,7 @@ let updatePrefixAndSuffix () =
       [] -> (fun _ -> "")
     | [Str.Text t] ->  
 	if mandatory then
-	  raise NoVersion
+	  raise (Util.Fatal "Either backupprefix or backupsuffix must contain $VERSION")
 	else
 	  (fun _ -> t)
     | [Str.Delim _; Str.Text t] -> 
@@ -242,15 +240,11 @@ let updatePrefixAndSuffix () =
   let (dir, prefix) =
     ((match Filename.dirname sp with "." -> "" | s -> s), Filename.basename sp) in
   
-  try 
-    let _ = version_appears_once (prefix^suffix) true in
-    prefix_string := version_appears_once prefix false;
-    suffix_string := version_appears_once suffix false;
-    debug (fun () -> 
-      Util.msg "Prefix and Suffix for backup filenames have been updated.\n")
-  with NoVersion ->
-         prefix_string := (fun _ -> prefix); 
-         suffix_string := (fun i -> (version i)^suffix)
+  let _ = version_appears_once (prefix^suffix) true in
+  prefix_string := version_appears_once prefix false;
+  suffix_string := version_appears_once suffix false;
+  debug (fun () -> 
+           Util.msg "Prefix and Suffix for backup filenames have been updated.\n")
 	  
 (* Generates a file name for a backup file.  If backup file already exists,
    the old file will be renamed with the count incremented.  The newest
