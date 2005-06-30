@@ -323,9 +323,14 @@ let stashDirectory fspath =
 			     ^"to central or local."))
 	
 let findStash path i =
-  Path.addSuffixToFinalName 
-    (Path.addPrefixToFinalName path (!prefix_string i))
-    (!suffix_string i) 
+  (* if backups are kept centrally, the current version has exactly
+     th same name as the original, for convenience. *)
+  if i=0 && Prefs.read backuplocation = "central" then
+    path
+  else
+    Path.addSuffixToFinalName 
+      (Path.addPrefixToFinalName path (!prefix_string i))
+      (!suffix_string i) 
     
 let stashPath fspath path =
   let fspath = stashDirectory fspath in
