@@ -12,7 +12,6 @@ let myCanonicalHostName =
   with Not_found -> Unix.gethostname()
 
 let tempFilePrefix = ".#"
-let backupFileSuffix = ".unison.bak"
 let tempFileSuffixFixed = ".unison.tmp"
 let tempFileSuffix = ref tempFileSuffixFixed
 let includeInTempNames s =
@@ -20,46 +19,13 @@ let includeInTempNames s =
     if s = "" then tempFileSuffixFixed
     else "." ^ s ^ tempFileSuffixFixed
 
+let xferDelete = ref (fun (fp,p) -> ())
+let xferRename = ref (fun (fp,p) (ftp,tp) -> ())
 
-(*****************************************************************************)
-(*                             OPTIONS                                       *)
-(*****************************************************************************)
-(* It seems to me that all the options should be put into a single options   *)
-(* file.  I put these here for lack of a better palce.                       *)
-(*****************************************************************************)
-
-let backups =
-  Prefs.createBool "backups" false
-    "keep backup copies of files (see also 'backup')"
-    ("When this flag is {\\tt true}, "
-     ^ "Unison will keep the old version of a file as a backup whenever "
-     ^ "a change is propagated.  These backup files are left in the same "
-     ^ "directory, with extension \\verb|.bak|.  ")
-
-let maxbackups =
-  Prefs.createInt "maxbackups" 2
-    "number of backed up versions of a file"
-    ("This preference specifies the number of backup versions that will "
-     ^ "be kept by unison, for each path that matches the predicate "
-     ^ "\\verb|backup|.  The default is 2.")
-
-let _ = Prefs.alias maxbackups "mirrorversions"
-
-let minbackups =
-  Prefs.createInt "minbackups" 1
-    "number of backup version that will be kept regardless of age"
-    ("When a backup exceeds \\verb|maxbackupage| days old, it will be "
-     ^ "deleted during the next sync.  However \\verb|minbackups| versions "
-     ^ "will be kept regardless of age.")
-
-let maxbackupage =
-  Prefs.createInt "maxbackupage" 100
-    "number of days after which backup versions get deleted"
-    ("When a backup exceeds \\verb|maxbackupage| days old, it will be "
-     ^ "deleted during the next sync.  However \\verb|minbackups| versions "
-     ^ "will be kept regardless of age.  The check is made during file "
-     ^ "synchronization.  A value of 0 will keep files regardless of age.")
-
+let initializeXferFunctions del ren =
+  xferDelete := del;
+  xferRename := ren
+      
 
 (*****************************************************************************)
 (*                      QUERYING THE FILESYSTEM                              *)
@@ -75,45 +41,9 @@ let readLink fspath path =
        let abspath = Fspath.concatToString fspath path in
        Unix.readlink abspath)
 
-let isAppleDoubleFile file =
+let rec isAppleDoubleFile file =
   Prefs.read Osx.rsrc &&
   String.length file > 2 && file.[0] = '.' && file.[1] = '_'
-
-(*****************************************************************************)
-(* When we see a backup file, check to see if it should be deleted because   *)
-(* it is too old or because there are too many backup version for a given    *)
-(* file.   <<>>                                                              *)
-
-let backupRe =
-  Str.regexp ( "^.*\\.\\.\\([0-9]+\\)\\." ^ backupFileSuffix ^ "$" )
-
-let rec removeBackupIfUnwanted fspath path = 
-  if Prefs.read backups then begin
-    let absolutePath = Fspath.concatToString fspath path in
-    let stat = Unix.lstat absolutePath in
-    let age =
-      int_of_float ((Unix.time () -. stat.Unix.st_mtime) /. (60.0 *. 60.0)) in
-    let version = 
-      let pathstring = Path.toString path in
-      if Str.string_match backupRe pathstring 0 then
-        int_of_string (Str.matched_group 1 pathstring)
-      else
-        0 in
-    if version > Prefs.read maxbackups && version > Prefs.read minbackups
-    then begin
-      debug (fun ()->
-        Util.msg "File %s ver %d is too high\n" absolutePath version);
-      delete fspath path
-    end else if
-      Prefs.read maxbackupage <> 0 && age > Prefs.read maxbackupage && 
-      version > Prefs.read minbackups
-    then begin
-      debug (fun ()-> Util.msg "File %s age %d is too old\n" absolutePath age);
-      delete fspath path
-    end else begin
-      debug (fun()-> Util.msg "File %s just right\n" absolutePath);
-    end 
-  end
 
 (* Assumes that (fspath, path) is a directory, and returns the list of       *)
 (* children, except for '.' and '..'.  Note that childrenOf and delete are   *)
@@ -130,11 +60,13 @@ and childrenOf fspath path =
         let newChildren =
           if newFile = "." || newFile = ".." || isAppleDoubleFile newFile then
             children
-          else if Util.endswith newFile backupFileSuffix then begin
-            let newPath = Path.child path (Name.fromString newFile) in
-            removeBackupIfUnwanted fspath newPath;
-            children
-          end else if
+(* does it belong to here ? *)
+(*          else if Util.endswith newFile backupFileSuffix then begin *)
+(*             let newPath = Path.child path (Name.fromString newFile) in *)
+(*             removeBackupIfUnwanted fspath newPath; *)
+(*             children *)
+(*           end  *)
+	  else if
             Util.endswith newFile tempFileSuffixFixed &&
             Util.startswith newFile tempFilePrefix
           then begin
@@ -182,36 +114,38 @@ and childrenOf fspath path =
 (* Deletes a file or a directory, but checks before if there is something    *)
 and delete fspath path =
   Util.convertUnixErrorsToTransient
-  "deleting"
+    "deleting"
     (fun () ->
-       let absolutePath = Fspath.concatToString fspath path in
-       match (Fileinfo.get false fspath path).Fileinfo.typ with
-         `DIRECTORY ->
-           begin try
-             Unix.chmod absolutePath 0o700
-           with Unix.Unix_error _ -> () end;
-           Safelist.iter
-             (fun child -> delete fspath (Path.child path child))
-             (childrenOf fspath path);
-           Unix.rmdir absolutePath
-       | `FILE ->
-           if Util.osType <> `Unix then begin
-             try
-               Unix.chmod absolutePath 0o600;
-             with Unix.Unix_error _ -> ()
-           end;
-           Unix.unlink absolutePath;
-           if Prefs.read Osx.rsrc then begin
-             let pathDouble = Osx.appleDoubleFile fspath path in
-             if Sys.file_exists pathDouble then
-               Unix.unlink pathDouble
-           end
-       | `SYMLINK ->
+      let absolutePath = Fspath.concatToString fspath path in
+      match (Fileinfo.get false fspath path).Fileinfo.typ with
+        `DIRECTORY ->
+          begin try
+            Unix.chmod absolutePath 0o700
+          with Unix.Unix_error _ -> () end;
+          Safelist.iter
+            (fun child -> delete fspath (Path.child path child))
+            (childrenOf fspath path);
+	  (!xferDelete) (fspath, path);
+          Unix.rmdir absolutePath
+      | `FILE ->
+          if Util.osType <> `Unix then begin
+            try
+              Unix.chmod absolutePath 0o600;
+            with Unix.Unix_error _ -> ()
+          end;
+	  (!xferDelete) (fspath, path);
+          Unix.unlink absolutePath;
+          if Prefs.read Osx.rsrc then begin
+            let pathDouble = Osx.appleDoubleFile fspath path in
+            if Sys.file_exists pathDouble then
+              Unix.unlink pathDouble
+          end
+      | `SYMLINK ->
            (* Note that chmod would not do the right thing on links *)
-           Unix.unlink absolutePath
-       | `ABSENT ->
-           ())
-
+          Unix.unlink absolutePath
+      | `ABSENT ->
+          ())
+    
 let rename sourcefspath sourcepath targetfspath targetpath =
   let source = Fspath.concat sourcefspath sourcepath in
   let source' = Fspath.toString source in
@@ -220,17 +154,18 @@ let rename sourcefspath sourcepath targetfspath targetpath =
   Util.convertUnixErrorsToTransient
   "renaming"
     (fun () ->
-       debug (fun() -> Util.msg "rename %s to %s\n" source' target');
-       Unix.rename source' target';
-       if Prefs.read Osx.rsrc then begin
-         let sourceDouble = Osx.appleDoubleFile sourcefspath sourcepath in
-         let targetDouble = Osx.appleDoubleFile targetfspath targetpath in
-         if Sys.file_exists sourceDouble then
-           Unix.rename sourceDouble targetDouble
-         else if Sys.file_exists targetDouble then
-           Unix.unlink targetDouble
-       end)
-
+      debug (fun() -> Util.msg "rename %s to %s\n" source' target');
+      (!xferRename) (sourcefspath, sourcepath) (targetfspath, targetpath);
+      Unix.rename source' target';
+      if Prefs.read Osx.rsrc then begin
+        let sourceDouble = Osx.appleDoubleFile sourcefspath sourcepath in
+        let targetDouble = Osx.appleDoubleFile targetfspath targetpath in
+        if Sys.file_exists sourceDouble then
+          Unix.rename sourceDouble targetDouble
+        else if Sys.file_exists targetDouble then
+          Unix.unlink targetDouble
+      end)
+    
 let renameIfAllowed sourcefspath sourcepath targetfspath targetpath =
   let source = Fspath.concat sourcefspath sourcepath in
   let source' = Fspath.toString source in
@@ -241,7 +176,11 @@ let renameIfAllowed sourcefspath sourcepath targetfspath targetpath =
     (fun () ->
        debug (fun() -> Util.msg "rename %s to %s\n" source' target');
        let allowed =
-         try Unix.rename source' target'; None with
+         try 
+	   (!xferRename) (sourcefspath, sourcepath) (targetfspath, targetpath);
+	   Unix.rename source' target'; 
+	   None 
+	 with
            Unix.Unix_error (Unix.EPERM, _, _) as e -> Some e
        in
        if allowed = None && Prefs.read Osx.rsrc then begin
@@ -380,19 +319,6 @@ let freshPath fspath path prefix suffix =
 
 let tempPath fspath path =
   freshPath fspath path tempFilePrefix !tempFileSuffix
-
-(* Generates a file name for a backup file.  If backup file already exists,  *)
-(* the old file will be renamed with the count incremented.  The newest      *)
-(* backup file is always path..001..unison.bak and larger numbers mean older *)
-(* files.                                                                    *)
-let backupPath fspath path =
-  let rec f i =
-    let s = Printf.sprintf "..%03d.%s" i backupFileSuffix in
-    let tempPath = Path.addSuffixToFinalName path s in
-    if exists fspath tempPath then rename fspath tempPath fspath (f (i + 1));
-    tempPath
-  in
-  f 1
 
 (*****************************************************************************)
 (*                     INTERRUPTED SYSTEM CALLS                              *)

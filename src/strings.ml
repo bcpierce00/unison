@@ -4,7 +4,7 @@
 let docs =
     ("about", ("About Unison", 
      "Unison File Synchronizer\n\
-      Version 2.12.27\n\
+      Version 2.13.10\n\
       \n\
       \032  Unison is a file-synchronization tool for Unix and Windows. It allows\n\
       \032  two replicas of a collection of files and directories to be stored on\n\
@@ -892,12 +892,14 @@ let docs =
       \032  conflicting.\n\
       \n\
       \032  Touching a file without changing its contents should never affect\n\
-      \032  Unison's behavior. (When running with the fastcheck preference set to\n\
-      \032  true---the default on Unix systems---Unison uses file modtimes for a\n\
-      \032  quick first pass to tell which files have definitely not changed; then\n\
-      \032  for each file that might have changed it computes a fingerprint of the\n\
-      \032  file's contents and compares it against the last-synchronized\n\
-      \032  contents.)\n\
+      \032  whether or not Unison does an update. (When running with the fastcheck\n\
+      \032  preference set to true---the default on Unix systems---Unison uses\n\
+      \032  file modtimes for a quick first pass to tell which files have\n\
+      \032  definitely not changed; then, for each file that might have changed,\n\
+      \032  it computes a fingerprint of the file's contents and compares it\n\
+      \032  against the last-synchronized contents. Also, the -times option allows\n\
+      \032  you to synchronize file times, but it does not cause identical files\n\
+      \032  to be changed; Unison will only modify the file times.)\n\
       \n\
       \032  It is safe to ``brainwash'' Unison by deleting its archive files on\n\
       \032  both replicas. The next time it runs, it will assume that all the\n\
@@ -1093,9 +1095,13 @@ let docs =
       \032 -addversionno       add version number to name of unison executable on server\n\
       \032 -auto               automatically accept default actions\n\
       \032 -backup xxx         add a pattern to the backup list\n\
-      \032 -backupdir xxx      Location for backups created by -backup\n\
+      \032 -backupcurrent xxx  add a pattern to the backupcurrent list\n\
+      \032 -backupdir xxx      Directory for storing centralized backups\n\
+      \032 -backuplocation xxx  where backups are stored ('local' or 'central')\n\
       \032 -backupnot xxx      add a pattern to the backupnot list\n\
-      \032 -backups            keep backup copies of files (see also 'backup')\n\
+      \032 -backupprefix xxx   prefix for the names of backup files\n\
+      \032 -backups            keep backup copies of all files (see also 'backup')\n\
+      \032 -backupsuffix xxx   a suffix to be added to names of backup files\n\
       \032 -batch              batch mode: ask no questions at all\n\
       \032 -contactquietly      Suppress the 'contacting server' message during startup\n\
       \032 -debug xxx          debug module xxx ('all' -> everything, 'verbose' -> more)\n\
@@ -1119,13 +1125,10 @@ let docs =
       \032 -label xxx          provide a descriptive string label for this profile\n\
       \032 -log                record actions in file specified by logfile preference\n\
       \032 -logfile xxx        Log file name\n\
-      \032 -maxbackupage n     number of days after which backup versions get deleted\n\
       \032 -maxbackups n       number of backed up versions of a file\n\
       \032 -maxthreads n       maximum number of simultaneous file transfers\n\
       \032 -merge xxx          add a pattern to the merge list\n\
       \032 -mergebatch xxx     add a pattern to the mergebatch list\n\
-      \032 -minbackups n       number of backup version that will be kept regardless of\n\
-      age\n\
       \032 -numericids         don't map uid/gid values by user/group names\n\
       \032 -owner              synchronize owner\n\
       \032 -path xxx           path to synchronize\n\
@@ -1182,35 +1185,59 @@ let docs =
       \032         next, it will skip over all non-conflicting entries and go\n\
       \032         directly to the next conflict.)\n\
       \032  backup xxx\n\
-      \032         Including the preference -backup pathspec causes Unison to make\n\
-      \032         back up for each path that matches pathspec. More precisely,\n\
-      \032         for each path that matches this pathspec, Unison will keep\n\
-      \032         several old versions of a file as a backup whenever a change is\n\
-      \032         propagated. These backup files are left in the directory\n\
-      \032         specified by the environment variable UNISONBACKUPDIR, if it is\n\
-      \032         set; otherwise in the directory named by the backupdir\n\
-      \032         preference, if it is non-null; otherwise in .unison/backup/ by\n\
-      \032         default. The newest backed up copy willhave the same name as\n\
-      \032         the original; older versions will be named with extensions\n\
-      \032         .n.unibck. The number of versions that are kept is determined\n\
-      \032         by the maxbackups preference.\n\
+      \032         Including the preference -backup pathspec causes Unison to keep\n\
+      \032         backup files for each path that matches pathspec. These backup\n\
+      \032         files are kept in the directory specified by the backuplocation\n\
+      \032         preference. The backups are named according to the backupprefix\n\
+      \032         and backupsuffix preferences. The number of versions that are\n\
+      \032         kept is determined by the maxbackups preference.\n\
+      \032         The syntax of pathspec is described in the section ``Path\n\
+      \032         Specification'' .\n\
+      \032  backupcurrent xxx\n\
+      \032         Including the preference -backupcurrent pathspec causes Unison\n\
+      \032         to keep a backup of the current version of every file matching\n\
+      \032         pathspec. This file will be saved as a backup with version\n\
+      \032         number 000. Such backups can be used as inputs to external\n\
+      \032         merging programs, for instance. See the documentatation for\n\
+      \032         themerge preference. For more details, see the section\n\
+      \032         ``Merging Conflicting Versions'' .\n\
       \032         The syntax of pathspec is described in the section ``Path\n\
       \032         Specification'' .\n\
       \032  backupdir xxx\n\
       \032         If this preference is set, Unison will use it as the name of\n\
       \032         the directory used to store backup files specified by the\n\
-      \032         backup preference. It is checked after the UNISONBACKUPDIR\n\
-      \032         environment variable.\n\
+      \032         backup preference, when backuplocation is set to central. It is\n\
+      \032         checked after the UNISONBACKUPDIR environment variable.\n\
+      \032  backuplocation xxx\n\
+      \032         This preference determines whether backups should be kept\n\
+      \032         locally, near the original files, or in a central directory\n\
+      \032         specified by the backupdir preference. If set to local, backups\n\
+      \032         will be kept in the same directory as the original files, and\n\
+      \032         if set to central, backupdir will be used instead.\n\
       \032  backupnot xxx\n\
       \032         The values of this preference specify paths or individual files\n\
       \032         or regular expressions that should not be backed up, even if\n\
       \032         the backup preference selects them---i.e., it selectively\n\
       \032         overrides backup. The same caveats apply here as with ignore\n\
       \032         and t ignorenot.\n\
+      \032  backupprefix xxx\n\
+      \032         When a backup for a file NAME is created, it is stored in a\n\
+      \032         directory specified by backuplocation, in a file called\n\
+      \032         backupprefixNAMEbackupsuffix. backupprefix can include a\n\
+      \032         directory name (causing Unison to keep all backup files for a\n\
+      \032         given directory in a subdirectory with this name), and both\n\
+      \032         backupprefix and backupsuffix can contain the string$VERSION,\n\
+      \032         which will be replaced by the age of the backup (1 for the most\n\
+      \032         recent, 2 for the second most recent, and so on...). This\n\
+      \032         keyword is ignored if it appears in a directory name in the\n\
+      \032         prefix; if it does not appear anywhere in the prefix or the\n\
+      \032         suffix, it will be automatically placed at the beginning of the\n\
+      \032         suffix.\n\
       \032  backups \n\
-      \032         When this flag is true, Unison will keep the old version of a\n\
-      \032         file as a backup whenever a change is propagated. These backup\n\
-      \032         files are left in the same directory, with extension .bak.\n\
+      \032         Setting this flag to true is equivalent to setting\n\
+      \032         backuplocation to local and backup to Name *.\n\
+      \032  backupsuffix xxx\n\
+      \032         See backupprefix for full documentation.\n\
       \032  batch \n\
       \032         When this is set to true, the user interface will ask no\n\
       \032         questions at all. Non-conflicting changes will be propagated;\n\
@@ -1387,12 +1414,6 @@ let docs =
       \032         By default, logging messages will be appended to the file\n\
       \032         unison.log in your HOME directory. Set this preference if you\n\
       \032         prefer another file.\n\
-      \032  maxbackupage n \n\
-      \032         When a backup exceeds maxbackupage days old, it will be deleted\n\
-      \032         during the next sync. However minbackups versions will be kept\n\
-      \032         regardless of age. The check is made during file\n\
-      \032         synchronization. A value of 0 will keep files regardless of\n\
-      \032         age.\n\
       \032  maxbackups n \n\
       \032         This preference specifies the number of backup versions that\n\
       \032         will be kept by unison, for each path that matches the\n\
@@ -1420,10 +1441,6 @@ let docs =
       \032         mergebatch preference instead of merge. When running in\n\
       \032         non-batch mode, the merge preference is used instead of\n\
       \032         mergebatch if both are specified for a given path.\n\
-      \032  minbackups n \n\
-      \032         When a backup exceeds maxbackupage days old, it will be deleted\n\
-      \032         during the next sync. However minbackups versions will be kept\n\
-      \032         regardless of age.\n\
       \032  numericids \n\
       \032         When this flag is set to true, groups and users are\n\
       \032         synchronized numerically, rather than by name.\n\
@@ -1698,8 +1715,12 @@ let docs =
       \032   # Window height\n\
       \032   height = 37\n\
       \n\
-      \032   # Keep a backup copy of the entire replica\n\
+      \032   # Keep a backup copy of every file in a central location\n\
+      \032   backuplocation = central\n\
+      \032   backupdir = /home/bcpierce/backups\n\
       \032   backup = Name *\n\
+      \032   backupprefix = $VERSION.\n\
+      \032   backupsuffix =\n\
       \n\
       \032   # Use this command for displaying diffs\n\
       \032   diff = diff -y -W 79 --suppress-common-lines\n\
@@ -1780,46 +1801,77 @@ let docs =
       \n\
       Keeping Backups\n\
       \n\
-      \032  Unison can maintain full backups of the last-synchronized versions of\n\
-      \032  some of the files in each replica; these function both as backups in\n\
-      \032  the usual sense and as the ``common version'' when invoking external\n\
-      \032  merge programs.\n\
+      \032  When Unison overwrites a file or directory by propagating a new\n\
+      \032  version from the other replica, it can keep the old version around as\n\
+      \032  a backup. There are several preferences that control precisely where\n\
+      \032  these backups are stored and how they are named.\n\
       \n\
-      \032  The backed up files are stored in a directory ~/.unison/backup on each\n\
-      \032  host. The name of this directory can be changed by setting the\n\
-      \032  environment variable UNISONBACKUPDIR. Files are added to the backup\n\
-      \032  directory whenever unison updates its archive. This means that\n\
-      \032    * When unison reconstructs its archive from scratch (e.g., because\n\
-      \032      of an upgrade, or because the archive files have been manually\n\
-      \032      deleted), all files will be backed up.\n\
-      \032    * Otherwise, each file will be backed up the first time unison\n\
-      \032      propagates an update for it.\n\
+      \032  To enable backups, you must give one or more backup preferences. Each\n\
+      \032  of these has the form\n\
+      \032   backup = <pathspec>\n\
       \n\
-      \032  It is safe to manually delete files from the backup directory (or to\n\
-      \032  throw away the directory itself). Before unison uses any of these\n\
-      \032  files for anything important, it checks that its fingerprint matches\n\
-      \032  the one that it expects.\n\
+      \032  where <pathspec> has the same form as for the ignore preference. For\n\
+      \032  example,\n\
+      \032   backup = Name *\n\
       \n\
-      \032  The preference backup controls which files are actually backed up: for\n\
-      \032  example, giving the preference `backup = Name *' causes backing up of\n\
-      \032  all files. The preference backupversions controls how many previous\n\
-      \032  versions of each file are kept. The default is value 2 (i.e., the last\n\
-      \032  synchronized version plus one backup).\n\
+      \032  causes Unison to keep backups of all files and directories. The\n\
+      \032  backupnot preference can be used to give a few exceptions: it\n\
+      \032  specifies which files and directories should not be backed up, even if\n\
+      \032  they match the backup pathspec.\n\
       \n\
-      \032  For backward compatibility, the backups preference is also still\n\
-      \032  supported, but backup is generally more convenient, as it keeps all\n\
-      \032  its backup files in one place instead of leaving them all over the\n\
-      \032  filesystem. See the documentation for these preferences for more\n\
-      \032  information about the differences.\n\
+      \032  It is important to note that the pathspec is matched against the path\n\
+      \032  that is being updated by Unison, not its descendants. For example, if\n\
+      \032  you set backup = Name *.txt and then delete a whole directory named\n\
+      \032  foo containing some text files, these files will not be backed up\n\
+      \032  because Unison will just check that foo does not match *.txt.\n\
+      \032  Similarly, if the directory itself happened to be called foo.txt, then\n\
+      \032  the whole directory and all the files in it will be backed up,\n\
+      \032  regardless of their names.\n\
+      \n\
+      \032  Backup files can be stored either centrally or locally. This behavior\n\
+      \032  is controlled by the preference backuplocation, whose value must be\n\
+      \032  either central or local. (The default is central.)\n\
+      \n\
+      \032  When backups are stored locally, they are kept in the same directory\n\
+      \032  as the original.\n\
+      \n\
+      \032  When backups are stored centrally, the directory used to hold them is\n\
+      \032  controlled by the preference backupdir and the environment variable\n\
+      \032  UNISONBACKUPDIR. (The environment variable is checked first.) If\n\
+      \032  neither of these are set, then the directory .unison/backup in the\n\
+      \032  user's home directory is used.\n\
+      \n\
+      \032  The preference backupversions controls how many previous versions of\n\
+      \032  each file are kept. The default is 2.\n\
+      \n\
+      \032  By default, backup files are named .unison.FILENAME.VERSION.bak, where\n\
+      \032  FILENAME is the original filename and version is the backup number\n\
+      \032  (001 for the most recent, 002 for the next most recent, etc.). This\n\
+      \032  can be changed by setting the preferences backupprefix and/or\n\
+      \032  backupsuffix. If desired, backupprefix may include a directory prefix;\n\
+      \032  this can be used with backuplocation = local to put all backup files\n\
+      \032  for each directory into a single subdirectory. For example, setting\n\
+      \032   backuplocation = local\n\
+      \032   backupprefix = .unison/$VERSION.\n\
+      \032   backupsuffix =\n\
+      \n\
+      \032  will put all backups in a local subdirectory named .unison. Also, note\n\
+      \032  that the string $VERSION in either backupprefix or backupsuffix (it\n\
+      \032  must appear in one or the other) is replaced by the version number.\n\
+      \032  This can be used, for example, to ensure that backup files retain the\n\
+      \032  same extension as the originals.\n\
+      \n\
+      \032  For backward compatibility, the backups preference is also supported.\n\
+      \032  It simply means backup = Name * and backuplocation = local.\n\
       \n\
       Merging Conflicting Versions\n\
       \n\
       \032  Unison can invoke external programs to merge conflicting versions of a\n\
-      \032  file. The preference merge controls how this program is invoked.\n\
+      \032  file. The preference merge controls this process.\n\
       \n\
       \032  The merge preference may be given once or several times in a\n\
       \032  preference file (it can also be given on the command line, of course,\n\
-      \032  but this can be a bit awkward because of the spaces and special\n\
+      \032  but this tends to be awkward because of the spaces and special\n\
       \032  characters involved). Each instance of the preference looks like this:\n\
       \032   merge = <PATHSPEC> -> <MERGECMD>\n\
       \n\
@@ -1827,6 +1879,21 @@ let docs =
       \032  preference (see the section ``Path specification'' ). For example,\n\
       \032  using ``Name *.txt'' as the <PATHSPEC> tells Unison that this command\n\
       \032  should be used whenever a file with extension .txt needs to be merged.\n\
+      \n\
+      \032  Many external merging programs require as inputs not just the two\n\
+      \032  files that need to be merged, but also a file containing the last\n\
+      \032  synchronized version. You can ask Unison to keep a copy of the last\n\
+      \032  synchronized version for some files using the backupcurrent\n\
+      \032  preference. This preference is used in exactly the same way as backup\n\
+      \032  and its meaning is similar, except that it causes backups to be kept\n\
+      \032  of the current contents of each file after it has been synchronized by\n\
+      \032  Unison, rather than the previous contents that Unison overwrote. These\n\
+      \032  backups are kept on both replicas in the same place as ordinary backup\n\
+      \032  files---i.e. according to the backuplocation and backupdir\n\
+      \032  preferences. They are named like the original files if backupslocation\n\
+      \032  is set to 'central' and otherwise, Unison uses the backupprefix and\n\
+      \032  backupsuffix preferences and assumes a version number 000 for these\n\
+      \032  backups.\n\
       \n\
       \032  The <MERGECMD> part of the preference specifies what external command\n\
       \032  should be invoked to merge files at paths matching the <PATHSPEC>.\n\
@@ -1839,14 +1906,15 @@ let docs =
       \032      the contents of the remote variant of the file have been\n\
       \032      transferred by Unison prior to performing the merge.\n\
       \032    * CURRENTARCH is replaced by the name of the backed up copy of the\n\
-      \032      original version of the file (i.e., its state at the end of the\n\
-      \032      last successful run of Unison), if one exists. If no archive\n\
-      \032      exists, then an error is signalled.\n\
+      \032      original version of the file (i.e., the file saved by Unison if\n\
+      \032      the current filename matches the path specifications for the\n\
+      \032      backupcurrent preference, as explained above), if one exists. If\n\
+      \032      no archive exists and CURRENTARCH appears in the merge command,\n\
+      \032      then an error is signalled.\n\
       \032    * CURRENTARCHOPT is replaced by the name of the backed up copy of\n\
       \032      the original version of the file (i.e., its state at the end of\n\
       \032      the last successful run of Unison), if one exists, or the empty\n\
-      \032      string if no archive exists. (Storage of backup copies is\n\
-      \032      controlled by the backup flag.)\n\
+      \032      string if no archive exists.\n\
       \032    * NEW is replaced by the name of a temporary file that Unison\n\
       \032      expects to be written by the merge program when it finishes,\n\
       \032      giving the desired new contents of the file.\n\
@@ -2283,8 +2351,89 @@ let docs =
       \n\
       "))
 ::
-    ("news", ("Changes in Version 2.12.27", 
-     "Changes in Version 2.12.27\n\
+    ("news", ("Changes in Version 2.13.10", 
+     "Changes in Version 2.13.10\n\
+      \n\
+      \032  Changes since 2.12.0:\n\
+      \032    * New convention for release numbering: Releases will continue to be\n\
+      \032      given numbers of the form X.Y.Z, but, from now on, just the major\n\
+      \032      version number (X.Y) will be considered significant when checking\n\
+      \032      compatibility between client and server versions. The third\n\
+      \032      component of the version number will be used only to identify\n\
+      \032      ``patch levels'' of releases.\n\
+      \032      This change goes hand in hand with a change to the procedure for\n\
+      \032      making new releases. Candidate releases will initially be given\n\
+      \032      ``beta release'' status when they are announced for public\n\
+      \032      consumption. Any bugs that are discovered will be fixed in a\n\
+      \032      separate branch of the source repository (without changing the\n\
+      \032      major version number) and new tarballs re-released as needed. When\n\
+      \032      this process converges, the patched beta version will be dubbed\n\
+      \032      stable.\n\
+      \032    * Warning (failure in batch mode) when one path is completely\n\
+      \032      emptied. This prevents Unison from deleting everything on one\n\
+      \032      replica when the other disappear.\n\
+      \032    * Fix diff bug (where no difference is shown the first time the diff\n\
+      \032      command is given).\n\
+      \032    * User interface changes:\n\
+      \032         + Improved workaround for button focus problem (GTK2 UI)\n\
+      \032         + Put leading zeroes in date fields\n\
+      \032         + More robust handling of character encodings in GTK2 UI\n\
+      \032         + Changed format of modification time displays, from modified\n\
+      \032           at hh:mm:ss on dd MMM, yyyy to modified on yyyy-mm-dd\n\
+      \032           hh:mm:ss\n\
+      \032         + Changed time display to include seconds (so that people on\n\
+      \032           FAT filesystems will not be confused when Unison tries to\n\
+      \032           update a file time to an odd number of seconds and the\n\
+      \032           filesystem truncates it to an even number!)\n\
+      \032         + Use the diff \"-u\" option by default when showing differences\n\
+      \032           between files (the output is more readable)\n\
+      \032         + In text mode, pipe the diff output to a pager if the\n\
+      \032           environment variable PAGER is set\n\
+      \032         + Bug fixes and cleanups in ssh password prompting. Now works\n\
+      \032           with the GTK2 UI under Linux. (Hopefully the Mac OS X one is\n\
+      \032           not broken!)\n\
+      \032         + Include profile name in the GTK2 window name\n\
+      \032         + Added bindings ',' (same as '<') and '.' (same as '>') in the\n\
+      \032           GTK2 UI\n\
+      \032    * Mac GUI:\n\
+      \032         + actions like < and > scroll to the next item as necessary.\n\
+      \032         + Restart has a menu item and keyboard shortcut (command-R).\n\
+      \032         + Added a command-line tool for Mac OS X. It can be installed\n\
+      \032           from the Unison menu.\n\
+      \032         + New icon.\n\
+      \032         + Handle the \"help\" command-line argument properly.\n\
+      \032         + Handle profiles given on the command line properly.\n\
+      \032         + When a profile has been selected, the profile dialog is\n\
+      \032           replaced by a \"connecting\" message while the connection is\n\
+      \032           being made. This gives better feedback.\n\
+      \032         + Size of left and right columns is now large enough so that\n\
+      \032           \"PropsChanged\" is not cut off.\n\
+      \032    * Minor changes:\n\
+      \032         + Disable multi-threading when both roots are local\n\
+      \032         + Improved error handling code. In particular, make sure all\n\
+      \032           files are closed in case of a transient failure\n\
+      \032         + Under Windows, use $UNISON for home directory as a last\n\
+      \032           resort (it was wrongly moved before $HOME and $USERPROFILE in\n\
+      \032           Unison 2.12.0)\n\
+      \032         + Reopen the logfile if its name changes (profile change)\n\
+      \032         + Double-check that permissions and modification times have\n\
+      \032           been properly set: there are some combination of OS and\n\
+      \032           filesystem on which setting them can fail in a silent way.\n\
+      \032         + Check for bad Windows filenames for pure Windows\n\
+      \032           synchronization also (not just cross architecture\n\
+      \032           synchronization). This way, filenames containing backslashes,\n\
+      \032           which are not correctly handled by unison, are rejected right\n\
+      \032           away.\n\
+      \032         + Attempt to resolve issues with synchronizing modification\n\
+      \032           times of read-only files under Windows\n\
+      \032         + Ignore chmod failures when deleting files\n\
+      \032         + Ignore trailing dots in filenames in case insensitive mode\n\
+      \032         + Proper quoting of paths, files and extensions ignored using\n\
+      \032           the UI\n\
+      \032         + The strings CURRENT1 and CURRENT2 are now correctly\n\
+      \032           substitued when they occur in the diff preference\n\
+      \032         + Improvements to syncing resource forks between Macs via a\n\
+      \032           non-Mac system.\n\
       \n\
       \032  Changes since 2.10.2:\n\
       \032    * INCOMPATIBLE CHANGE: Archive format has changed.\n\
@@ -3413,7 +3562,7 @@ let docs =
       \n\
       References\n\
       \n\
-      \032  1. file://localhost/Users/bcpierce/current/unison/doc/temp.html#ssh-win\n\
+      \032  1. file://localhost/Users/bcpierce/current/unison/branches/merge/doc/temp.html#ssh-win\n\
       \032  2. http://pauillac.inria.fr/~maranget/hevea/index.html\n\
       "))
 ::

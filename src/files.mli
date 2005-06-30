@@ -7,8 +7,7 @@
 
 (* Delete the given subtree of the given replica                             *)
 val delete :
-     bool                        (* keep backup? *)
-  -> Common.root                 (* source root *)
+     Common.root                 (* source root *)
   -> Path.t                      (* deleted path *)
   -> Common.root                 (* root *)
   -> Path.t                      (* path to delete *)
@@ -19,8 +18,7 @@ val delete :
 (* is performed atomically (or as close to atomically as the os will         *)
 (* support) using temporary files.                                           *)
 val copy :
-     bool                       (* save old version? *)
-  -> [`Update of (Uutil.Filesize.t * Uutil.Filesize.t) | `Copy]
+     [`Update of (Uutil.Filesize.t * Uutil.Filesize.t) | `Copy]
                                 (* whether there was already a file *)
   -> Common.root                (* from what root *)
   -> Path.t                     (* from what path *)

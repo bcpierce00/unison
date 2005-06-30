@@ -78,7 +78,7 @@ let deleteEntry p =
     with Not_found ->
       ()
   end
-
+      
 let renameEntry pOrig pNew =
   if Prefs.read xferbycopying then begin
     debug (fun () ->
@@ -95,3 +95,7 @@ let renameEntry pOrig pNew =
     with Not_found ->
       ()
   end
+
+let _ =
+  Os.initializeXferFunctions deleteEntry renameEntry
+    
