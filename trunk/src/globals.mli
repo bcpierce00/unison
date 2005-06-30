@@ -71,7 +71,6 @@ val batch : bool Prefs.t
 val ignore : Pred.t
 val shouldIgnore : 'a Path.path -> bool
 val shouldMerge : 'a Path.path -> bool
-val shouldBackup : 'a Path.path -> bool  
 
 (* Merging commands *)  
 val mergeCmdForPath : Path.t -> string

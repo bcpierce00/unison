@@ -203,6 +203,26 @@ let localString2fspath s =
     (* Prevent Fspath "" *)
     raise(Invalid_argument "Os.localString2fspath")
 
+(* If the string is the name of the local root, returns a localPath such     *)
+(* that concatenated to the root, it points to the same file as              *)
+(* (fspath, path) in this replica.                                           *)
+let rec fullLocalPath roots fspath path =
+  let r = String.length roots in
+  let fspaths = toString fspath in
+  if fspaths = roots then 
+    path 
+  else 
+    let parent = Path.parent path in
+    if Path.isEmpty parent then
+      let name = Name.fromString (Path.toString path) in
+      Path.child (Path.fromString (String.sub fspaths (r+1) (String.length fspaths - r - 1))) name
+    else
+      let localParentPath = fullLocalPath roots fspath parent in
+      match Path.finalName (Path.magic' path) with
+	Some n -> Path.child localParentPath n
+      |	None -> localParentPath
+	    
+
 (* Return the canonical fspath of a filename (string), relative to the       *)
 (* current host, current directory.                                          *)
 

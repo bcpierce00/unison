@@ -9,7 +9,6 @@ let debug = Trace.debug "update"
 let debugverbose = Trace.debug "verbose"
 let debugalias = Trace.debug "rootalias"
 let debugignore = Trace.debug "ignore"
-let debugbackups = Trace.debug "backup"
 
 (*****************************************************************************)
 (*                             ARCHIVE DATATYPE                              *)
@@ -896,277 +895,11 @@ let translatePath =
   Remote.registerRootCmd "translatePath"
     (fun (fspath, path) -> Lwt.return (translatePathLocal fspath path))
 
-
-(***********************************************************************
-                 MIRRORING OF PREVIOUS FILE CONTENTS
-************************************************************************)
-
-(*** Low-level functions ***)
-
-(* All the directory items under [fspath]/[path] *)
-let childrenOf fspath path
-   : string list
-   =
-  let rec loop children directory =
-    try
-      let newFile = Unix.readdir directory in
-      let newChildren =
-        if newFile = "." || newFile = ".." then
-          children
-        else
-          newFile :: children in
-      loop newChildren directory
-    with End_of_file -> children
-  in
-  let absolutePath = Fspath.concat fspath path in
-  try
-    let directory = Fspath.opendir absolutePath in
-    begin try
-      Util.convertUnixErrorsToTransient
-        "scanning directory"
-          (fun () ->
-             let result = loop [] directory in
-             Unix.closedir directory;
-             result)
-    with Util.Transient _ as e ->
-      begin try
-        Unix.closedir directory
-      with Unix.Unix_error _ -> () end;
-      raise e
-    end
-  with Unix.Unix_error _ ->
-    []
-
 let isDir fspath path =
   let fullFspath = Fspath.concat fspath path in
   try
     (Fspath.stat fullFspath).Unix.LargeFile.st_kind = Unix.S_DIR
   with Unix.Unix_error _ -> false
-
-let isFile fspath path =
-  let fullFspath = Fspath.concat fspath path in
-  try
-    (Fspath.lstat fullFspath).Unix.LargeFile.st_kind = Unix.S_REG
-  with Unix.Unix_error _ -> false
-
-(*** Preferences for backups ***)
-
-let backupdir =
-   Prefs.createString "backupdir" ""
-   "Location for backups created by -backup"
-   ("If this preference is set, Unison will use it as the name of the "
-    ^ "directory used to store backup files specified by "
-    ^ "the {\\tt backup} preference.  It is checked {\\em after} the "
-    ^ "{\\tt UNISONBACKUPDIR} environment variable.")
-
-let backupDirectory () =
-  try Fspath.canonize (Some (Unix.getenv "UNISONBACKUPDIR"))
-  with Not_found ->
-  try Fspath.canonize (Some (Unix.getenv "UNISONMIRRORDIR"))
-  with Not_found ->
-  if Prefs.read backupdir <> ""
-    then Fspath.canonize (Some (Prefs.read backupdir))
-  else Os.fileInUnisonDir "backup"
-
-(*** Functions for manipulating names of backup files ***)
-
-let backupRe = Str.regexp "\\(.*\\)\\.\\([0-9]+\\)\\.unibck$"
-let suffixRe = Str.regexp "\\.[0-9]+\\.unibck$"
-
-let chopSuffix name =
-  String.sub name 0 (Str.search_forward suffixRe name 0)
-
-let fileNameOfBackup name =
-  if Str.string_match backupRe name 0 then
-    chopSuffix name
-  else
-    name
-
-(* incrNameOfBackup("<name>.<i>.unibck") = "<name>.<i+1>.unibck" *)
-let incrNameOfBackup name =
-  if Str.string_match backupRe name 0 then
-    let version = int_of_string (Str.matched_group 2 name) in
-    let newVersion = string_of_int (1 + version) in
-    let newName = chopSuffix name in
-    version, newName ^ "." ^ newVersion ^ ".unibck"
-  else
-    0, (name ^ ".1.unibck")  (*version number, new_name*)
-
-(* Return a sorted list of (version, current name, new name) for the file
-   [filePath] *)
-let findAllBackups filePath =
-  let parentPath = Path.parent filePath in
-  let path = Path.toString filePath in
-  let files =
-    Safelist.map
-      (fun a ->
-         Path.toString (Path.child parentPath (Name.fromString a)))
-      (childrenOf (backupDirectory()) parentPath)
-  in
-  let backups = Safelist.filter (fun p -> fileNameOfBackup p = path) files in
-  let newL =
-    Safelist.map
-      (fun a -> let (x,y) = incrNameOfBackup a in (x, a, y))
-      backups
-  in
-  Safelist.sort (fun (a, _, _) (b, _, _) -> - (compare a b)) newL
-
-
-(*** Main backup functions ***)
-
-let incrVersionsOfBackups filePath =
-  let oldBackups = findAllBackups filePath in
-  debugbackups (fun () ->
-           (Util.msg "incrVersionOfBackups for %s...\n"
-              (Fspath.concatToString (backupDirectory()) filePath)));
-  Safelist.iter
-    (fun (curVersion, curPath, newPath) ->
-       if curVersion + 1 < Prefs.read Os.maxbackups then begin
-         debugbackups (fun () ->
-           Util.msg "  rename %s to %s\n" curPath newPath);
-         Os.rename
-           (backupDirectory()) (Path.fromString curPath)
-           (backupDirectory()) (Path.fromString newPath)
-       end else begin
-         debugbackups (fun () -> Util.msg "  delete %s\n" curPath);
-         Os.delete (backupDirectory()) (Path.fromString curPath)
-       end)
-    oldBackups
-
-(* Find the fspath for the backup file corresponding to a given
-   path in the local replica *)
-let findBackup backupPath =
-  debugbackups (fun () -> Util.msg "findBackup (%s)\n"
-      (Path.toString backupPath));
-  if Globals.shouldBackup backupPath
-       && isFile (backupDirectory()) backupPath
-  then
-    Some (Fspath.concat (backupDirectory()) backupPath)
-  else
-    None
-
-let rec testAndCreateBackupTree path =
-  debugbackups (fun _ ->
-    Util.msg "testAndCreateBackupTree for path %s\n"
-      (Path.toString path));
-  match (Path.deconstructRev path) with
-    Some (_, parentPath) ->
-      makeBackupDirLocal parentPath
-  | None ->
-      ()   (* We've reached the empty path, which means that the whole
-              backup directory is missing; it will be created by our caller *)
-
-and makeBackupDirLocal path =
-  debugbackups (fun () -> Util.msg
-      "makeBackupDir: creating directory %s in %s\n"
-      (Path.toString path) (Fspath.toString (backupDirectory())));
-  let (isThereSomething, isDir) =
-    try
-      (true, isDir (backupDirectory ()) path)
-    with Unix.Unix_error _ -> (false, false)
-  in
-  match (isThereSomething, isDir) with
-    (false, _) ->
-      testAndCreateBackupTree path;
-      Os.createDir (backupDirectory()) path Props.dirDefault
-  | (_, false) ->
-      incrVersionsOfBackups path;
-      Os.createDir (backupDirectory()) path Props.dirDefault;
-  | _ -> ()
-
-let makeBackupFileLocal fspathSrc pathSrc pathTo =
-  Util.convertUnixErrorsToTransient
-    "makeBackupFileLocal"
-    (fun () ->
-       let fspathTo = backupDirectory () in
-       debugbackups (fun () -> Util.msg
-         "makeBackupFileLocal: copy from %s in %s to %s in %s\n"
-         (Path.toString pathSrc) (Fspath.toString fspathSrc)
-         (Path.toString pathTo) (Fspath.toString fspathTo));
-       (* The goal of this fingerprinting is to make sure that all
-          backups of a file are different, not to ensure that the
-          backups really correspond to something in the archive *)
-       let infoSrc = Fileinfo.get false fspathSrc pathSrc in
-       let infoTo = Fileinfo.get false fspathTo pathTo in
-       debugbackups (fun () -> Util.msg "  infoSrc = %s\n"
-                       (Props.toString infoSrc.Fileinfo.desc));
-       let backup_exists_with_correct_contents = 
-          infoSrc.Fileinfo.typ = `FILE && infoTo.Fileinfo.typ = `FILE 
-          && (let digSrc =
-                Os.fingerprint fspathSrc pathSrc infoSrc in
-              let digTo =
-                Os.fingerprint fspathTo pathTo infoTo in
-              digSrc = digTo) in
-       if not backup_exists_with_correct_contents then begin
-           testAndCreateBackupTree pathTo;
-           incrVersionsOfBackups pathTo;
-           Copy.localFile
-             fspathSrc pathSrc fspathTo pathTo pathTo `Copy
-             infoSrc.Fileinfo.desc
-             (Osx.ressLength infoSrc.Fileinfo.osX.Osx.ressInfo)
-             Uutil.File.dummy
-         end)
-
-let makeBackupFileOnRoot
-    : Common.root -> Fspath.t * Path.local * Path.local -> unit Lwt.t
-    =
-  Remote.registerRootCmd "makeBackupFileInter"
-    (fun (_, (fspathSrc, pathSrc, pathTo)) ->
-       Lwt.return (makeBackupFileLocal fspathSrc pathSrc pathTo))
-
-(* Make a backup copy of some file.  The 'path' argument is where the file
-   lives logically in the replicas; the other arguments tell where the actual
-   bits to be backed up are stored right at the moment (which may be
-   different if, e.g., the bits we're backing up are actually the archive
-   file for some external merge program like Harmony). *)
-let makeBackupFile root fspathSrc pathSrc pathTo =
-  if Globals.shouldBackup pathTo then
-    makeBackupFileOnRoot root (fspathSrc, pathSrc, pathTo)
-  else
-    Lwt.return ()
-
-let makeBackupSymlinkLocal path strlink =
-  debugbackups (fun () -> Util.msg
-             "makeBackupSymlinkLocal : \n symlink : %s pointed on %s\n"
-             (Path.toString path) (strlink));
-  testAndCreateBackupTree path;
-  incrVersionsOfBackups path;
-  Os.symlink (backupDirectory()) path strlink
-
-let rec makeBackupRec recursive fspathSrc pathSrc pathTo archive =
-  debugbackups (fun () -> Util.msg "makeBackupRec: %s %s %s\n"
-             (Fspath.toString fspathSrc) (Path.toString pathSrc)
-             (Path.toString pathTo));
-  match archive with
-    ArchiveDir (desc, children) ->
-      makeBackupDirLocal pathTo;
-      begin match recursive with
-        `Rec ->
-          NameMap.iter
-            (fun nm a ->
-               makeBackupRec `Rec
-                 fspathSrc
-                (Path.child pathSrc nm) (Path.child pathTo nm) a)
-            children
-      | `NonRec ->
-          ()
-      end
-  | ArchiveFile (_, _, _, _) ->
-      makeBackupFileLocal fspathSrc pathSrc pathTo
-  | ArchiveSymlink l ->
-      makeBackupSymlinkLocal pathTo l
-  | NoArchive ->
-      incrVersionsOfBackups pathTo
-
-(* recursively make the backup accoring to the path specification. [archive]
-   used for making sure no repetition in the backup *)
-let makeBackup recursive fspath path realPath archive =
-  (* MAYBE FIX: Note that we don't match prefixes of the current path -- e.g., if the
-     path is p/q/x and the backup preference matches p/* but not p/q/*, then
-     we will *not* back up this path.  This seems counter-intuitive. *)
-  if Globals.shouldBackup realPath then
-    makeBackupRec recursive fspath path realPath archive
-
 
 (***********************************************************************
                            UPDATE DETECTION
@@ -1893,7 +1626,6 @@ let updateArchiveLocal fspath path ui id =
   let archive = getArchive root in
   let (localPath, subArch) = getPathInArchive archive Path.empty path in
   let newArch = updateArchiveRec ui (stripArchive path subArch) in
-  makeBackup `Rec fspath localPath localPath newArch;
   let commit () =
     let archive = getArchive root in
     let archive, () =
@@ -1928,7 +1660,7 @@ let markEqualLocal fspath paths =
               let arch = updateArchiveRec (Updates (uc, New)) archive in
               arch, (arch, localPath))
        in
-       makeBackup `NonRec fspath localPath localPath subArch;
+       Stasher.stashCurrentVersion localPath;
        archive := arch);
   setArchiveLocal root !archive
 
@@ -1988,7 +1720,6 @@ let replaceArchiveLocal fspath pathTo location arch id =
     | Some loc -> loc
   in
   let newArch = replaceArchiveRec workingDir tempPathTo arch in
-  makeBackup `Rec workingDir tempPathTo localPath newArch;
   let commit () =
     let archive = getArchive root in
     let archive, () =

@@ -6,7 +6,8 @@ val myCanonicalHostName : string
 
 val tempPath : Fspath.t -> Path.local -> Path.local
 val includeInTempNames : string -> unit
-val backupPath : Fspath.t -> Path.local -> Path.local
+
+val exists : Fspath.t -> Path.local -> bool
 
 val createUnisonDir : unit -> unit
 val fileInUnisonDir : string -> Fspath.t
@@ -48,21 +49,10 @@ val fingerprint :
    signal handling *)
 val accept : Unix.file_descr -> (Unix.file_descr * Unix.sockaddr)
 
-(*****************************************************************************)
-(*                             OPTIONS                                       *)
-(*****************************************************************************)
-(* It seems to me that all the options should be put into a single options   *)
-(* file.  I put these here for lack of a better palce.                       *)
-(*****************************************************************************)
+(* Called during program initialization to resolve a circular dependency
+   between this module and Xferhints *)
+val initializeXferFunctions : 
+    (Fspath.t * Path.local -> unit) -> 
+    ((Fspath.t * Path.local) -> (Fspath.t * Path.local) -> unit) ->
+    unit
 
-(* Option that controls whether backup files are kept                        *)
-val backups : bool Prefs.t
-
-(* Option that controls how many backup copies (max) are kept  *)
-val maxbackups : int Prefs.t
-
-(* Option that controls how many backup copies (min) are kept  *)
-val minbackups : int Prefs.t
-
-(* Option that controls how old backup copies can get (days)  *)
-val maxbackupage : int Prefs.t

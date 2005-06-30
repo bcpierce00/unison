@@ -401,7 +401,7 @@ let promptForRoots getFirstRoot getSecondRoot =
 let firstTime = ref(true)
 
 let initPrefs ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
-    ~termInteract =
+  ~termInteract =
   (* Restore prefs to their default values, if necessary *)
   if not !firstTime then Prefs.resetToDefaults();
 
@@ -411,12 +411,12 @@ let initPrefs ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
   (* If the profile does not exist, create an empty one (this should only
      happen if the profile is 'default', since otherwise we will already
      have checked that the named one exists). *)
-   if not(Sys.file_exists (Prefs.profilePathname profileName)) then
-     Prefs.addComment "Unison preferences file";
+  if not(Sys.file_exists (Prefs.profilePathname profileName)) then
+    Prefs.addComment "Unison preferences file";
 
   (* Load the profile *)
   (debug (fun() -> Util.msg "about to load prefs");
-  Prefs.loadTheFile());
+   Prefs.loadTheFile());
 
   (* Parse the command line.  This will temporarily override
      settings from the profile. *)
@@ -454,38 +454,43 @@ let initPrefs ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
   let numRemote =
     Safelist.fold_left
       (fun n (w,_) ->
-        match w with Local -> n | Remote _ -> n+1)
+         match w with Local -> n | Remote _ -> n+1)
       0
       (Globals.rootsList()) in
-  if numRemote > 1 then
-    raise(Util.Fatal "cannot synchronize more than one remote root");
+      if numRemote > 1 then
+        raise(Util.Fatal "cannot synchronize more than one remote root");
 
   (* If no paths were specified, then synchronize the whole replicas *)
-  if Prefs.read Globals.paths = [] then Prefs.set Globals.paths [Path.empty];
+      if Prefs.read Globals.paths = [] then Prefs.set Globals.paths [Path.empty];
 
   (* Expand any "wildcard" paths [with final component *] *)
-  Globals.expandWildcardPaths();
+      Globals.expandWildcardPaths();
 
-  Update.storeRootsName ();
+      Update.storeRootsName ();
 
-  debug
-    (fun() ->
-       Printf.eprintf "Roots: \n";
-       Safelist.iter (fun clr -> Printf.eprintf "        %s\n" clr)
-         (Globals.rawRoots ());
-       Printf.eprintf "  i.e. \n";
-       Safelist.iter (fun clr -> Printf.eprintf "        %s\n"
-                    (Clroot.clroot2string (Clroot.parseRoot clr)))
-         (Globals.rawRoots ());
-       Printf.eprintf "  i.e. (in canonical order)\n";
-       Safelist.iter (fun r -> 
-         Printf.eprintf "       %s\n" (root2string r))
-         (Globals.rootsInCanonicalOrder());
-       Printf.eprintf "\n"
-    );
+      debug
+  (fun() ->
+     Printf.eprintf "Roots: \n";
+     Safelist.iter (fun clr -> Printf.eprintf "        %s\n" clr)
+       (Globals.rawRoots ());
+     Printf.eprintf "  i.e. \n";
+     Safelist.iter (fun clr -> Printf.eprintf "        %s\n"
+                      (Clroot.clroot2string (Clroot.parseRoot clr)))
+       (Globals.rawRoots ());
+     Printf.eprintf "  i.e. (in canonical order)\n";
+     Safelist.iter (fun r -> 
+                      Printf.eprintf "       %s\n" (root2string r))
+       (Globals.rootsInCanonicalOrder());
+     Printf.eprintf "\n"
+  );
 
-  Recon.checkThatPreferredRootIsValid();
+     Recon.checkThatPreferredRootIsValid();
 
+  (* Initializes some backups stuff according to the preferences just loaded from the profile.
+     Important to do it here, before prefs are propagated, because other preferences may be
+     changed by this function. *) 
+  Stasher.initBackups ();
+  
   Lwt_unix.run
     (checkCaseSensitivity () >>=
      Globals.propagatePrefs);
@@ -592,7 +597,7 @@ let uiInit
   (* Load the profile and command-line arguments *)
   initPrefs
     profileName displayWaitMessage getFirstRoot getSecondRoot termInteract;
-
+  
   (* Turn on GC messages, if the '-debug gc' flag was provided *)
   if Trace.enabled "gc" then Gc.set {(Gc.get ()) with Gc.verbose = 0x3F};
 

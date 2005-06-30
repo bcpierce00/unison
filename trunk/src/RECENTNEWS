@@ -1,3 +1,35 @@
+CHANGES FROM VERSION 2.14.-13
+
+Complete reimplementation of backup functionality by Stephane Lescuyer
+(thanks, Stephane!)  See the manual (in particular, the description of
+the backup... preferences) for details.
+
+NOT YET THOROUGHLY TESTED!  Use with caution...
+
+
+    
+-------------------------------
+CHANGES FROM VERSION 2.13.10
+
+Backup/merge stuff appears to be finished.  Final checkin before merging it back into the main trunk.
+
+
+-------------------------------
+CHANGES FROM VERSION 2.13.8
+
+Documentation nearly finished for new backup/merge stuff
+
+-------------------------------
+CHANGES FROM VERSION 2.13.6
+
+More progress on merging and backup stuff
+
+-------------------------------
+CHANGES FROM VERSION 2.13.5
+
+First cut at integrating Stephane's new backup / merging stuff
+
+-------------------------------
 CHANGES FROM VERSION 2.13.-3
 
 More 
