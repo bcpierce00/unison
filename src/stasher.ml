@@ -425,10 +425,11 @@ let initBackups () =
   addBackupFilesToIgnorePref ();
   updatePrefixAndSuffix ();
   
-  (* if the preference for backuplocation is set to central *)
-  (* then we are likely to need a backup directory in the   *)
-  (* .unison directory ; we deal for this here.             *)
-  let backupDir = Os.fileInUnisonDir "backup" in
-  if (Prefs.read backuplocation = "central") && 
-    not(Os.exists backupDir Path.empty) then
-    Os.createDir backupDir Path.empty Props.dirDefault
+  (* If the preference for backuplocation is set to central
+     then we are likely to need to create this backup directory.
+     We deal for this here.             *)
+  if (Prefs.read backuplocation = "central") then
+    let backupDir = backupDirectory () in    
+    if not(Os.exists backupDir Path.empty) then
+      Os.createDir backupDir Path.empty Props.dirDefault
+	
