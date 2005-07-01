@@ -298,8 +298,8 @@ let removeAndBackupAsAppropriate fspath path fakeFspath fakePath =
       let (backRoot, backPath) = backupPath fakeFspath fakePath in
       (match Path.deconstructRev backPath with
 	None -> ()
-      | Some (n, dir) when dir = Path.empty -> ()
-      | Some (n, backdir) -> mkdirectories backRoot backdir);
+      | Some (_, dir) when dir = Path.empty -> ()
+      | Some (_, backdir) -> mkdirectories backRoot backdir);
       debug (fun () -> Util.msg "Backing up [%s] in [%s] to [%s] in [%s]\n" 
 	  (Path.toString fakePath)
 	  (Fspath.toString fakeFspath)
@@ -335,6 +335,12 @@ let findStash path i =
 let stashPath fspath path =
   let fspath = stashDirectory fspath in
   let tempPath = findStash path 0 in
+
+  (match Path.deconstructRev tempPath with
+    None -> ()
+  | Some (_, dir) when dir = Path.empty -> ()
+  | Some (_, backdir) -> mkdirectories fspath tempPath);
+  
   if Os.exists fspath tempPath then 
     if shouldBackup path then 
       (* this is safe because this is done *after* backup *)
