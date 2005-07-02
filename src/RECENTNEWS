@@ -1,3 +1,10 @@
+CHANGES FROM VERSION 2.13.15
+
+append just the major version number (2.13), not the full version
+(2.13.15) when constructing the remote server command name in the
+presence of -addversionno preference.  (Thanks to Karl M for the
+suggestion.)
+-------------------------------
 CHANGES FROM VERSION 2.13.3
 
 * Fixed off by one error in month numbers (in printed dates) reported by Bob Burger
