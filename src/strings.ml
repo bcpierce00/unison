@@ -4,7 +4,7 @@
 let docs =
     ("about", ("About Unison", 
      "Unison File Synchronizer\n\
-      Version 2.12.27\n\
+      Version 2.13.1\n\
       \n\
       \032  Unison is a file-synchronization tool for Unix and Windows. It allows\n\
       \032  two replicas of a collection of files and directories to be stored on\n\
@@ -2283,8 +2283,89 @@ let docs =
       \n\
       "))
 ::
-    ("news", ("Changes in Version 2.12.27", 
-     "Changes in Version 2.12.27\n\
+    ("news", ("Changes in Version 2.13.1", 
+     "Changes in Version 2.13.1\n\
+      \n\
+      \032  Changes since 2.12.0:\n\
+      \032    * New convention for release numbering:\n\
+      \032    * Releases will continue to be given numbers of the form X.Y.Z, but,\n\
+      \032      from now on, just the major version number (X.Y) will be\n\
+      \032      considered significant when checking compatibility between client\n\
+      \032      and server versions. The third component of the version number\n\
+      \032      will be used only to identify ``patch levels'' of releases.\n\
+      \032      This change goes hand in hand with a change to the procedure for\n\
+      \032      making new releases. Candidate releases will initially be given\n\
+      \032      ``beta release'' status when they are announced for public\n\
+      \032      consumption. Any bugs that are discovered will be fixed in a\n\
+      \032      separate branch of the source repository (without changing the\n\
+      \032      major version number) and new tarballs re-released as needed. When\n\
+      \032      this process converges, the patched beta version will be dubbed\n\
+      \032      stable.\n\
+      \032    * Warning (failure in batch mode) when one path is completely\n\
+      \032      emptied. This prevents Unison from deleting everything on one\n\
+      \032      replica when the other disappear.\n\
+      \032    * Fix diff bug (where no difference is shown the first time the diff\n\
+      \032      command is given).\n\
+      \032    * User interface changes:\n\
+      \032         + Improved workaround for button focus problem (GTK2 UI)\n\
+      \032         + Put leading zeroes in date fields\n\
+      \032         + More robust handling of character encodings in GTK2 UI\n\
+      \032         + Changed format of modification time displays, from modified\n\
+      \032           at hh:mm:ss on dd MMM, yyyy to modified on yyyy-mm-dd\n\
+      \032           hh:mm:ss\n\
+      \032         + Changed time display to include seconds (so that people on\n\
+      \032           FAT filesystems will not be confused when Unison tries to\n\
+      \032           update a file time to an odd number of seconds and the\n\
+      \032           filesystem truncates it to an even number!)\n\
+      \032         + Use the diff \"-u\" option by default when showing differences\n\
+      \032           between files (the output is more readable)\n\
+      \032         + In text mode, pipe the diff output to a pager if the\n\
+      \032           environment variable PAGER is set\n\
+      \032         + Bug fixes and cleanups in ssh password prompting. Now works\n\
+      \032           with the GTK2 UI under Linux. (Hopefully the Mac OS X one is\n\
+      \032           not broken!)\n\
+      \032         + Include profile name in the GTK2 window name\n\
+      \032         + Added bindings ',' (same as '<') and '.' (same as '>') in the\n\
+      \032           GTK2 UI\n\
+      \032    * Mac GUI:\n\
+      \032         + actions like < and > scroll to the next item as necessary.\n\
+      \032         + Restart has a menu item and keyboard shortcut (command-R).\n\
+      \032         + Added a command-line tool for Mac OS X. It can be installed\n\
+      \032           from the Unison menu.\n\
+      \032         + New icon.\n\
+      \032         + Handle the \"help\" command-line argument properly.\n\
+      \032         + Handle profiles given on the command line properly.\n\
+      \032         + When a profile has been selected, the profile dialog is\n\
+      \032           replaced by a \"connecting\" message while the connection is\n\
+      \032           being made. This gives better feedback.\n\
+      \032         + Size of left and right columns is now large enough so that\n\
+      \032           \"PropsChanged\" is not cut off.\n\
+      \032    * Minor changes:\n\
+      \032         + Disable multi-threading when both roots are local\n\
+      \032         + Improved error handling code. In particular, make sure all\n\
+      \032           files are closed in case of a transient failure\n\
+      \032         + Under Windows, use $UNISON for home directory as a last\n\
+      \032           resort (it was wrongly moved before $HOME and $USERPROFILE in\n\
+      \032           Unison 2.12.0)\n\
+      \032         + Reopen the logfile if its name changes (profile change)\n\
+      \032         + Double-check that permissions and modification times have\n\
+      \032           been properly set: there are some combination of OS and\n\
+      \032           filesystem on which setting them can fail in a silent way.\n\
+      \032         + Check for bad Windows filenames for pure Windows\n\
+      \032           synchronization also (not just cross architecture\n\
+      \032           synchronization). This way, filenames containing backslashes,\n\
+      \032           which are not correctly handled by unison, are rejected right\n\
+      \032           away.\n\
+      \032         + Attempt to resolve issues with synchronizing modification\n\
+      \032           times of read-only files under Windows\n\
+      \032         + Ignore chmod failures when deleting files\n\
+      \032         + Ignore trailing dots in filenames in case insensitive mode\n\
+      \032         + Proper quoting of paths, files and extensions ignored using\n\
+      \032           the UI\n\
+      \032         + The strings CURRENT1 and CURRENT2 are now correctly\n\
+      \032           substitued when they occur in the diff preference\n\
+      \032         + Improvements to syncing resource forks between Macs via a\n\
+      \032           non-Mac system.\n\
       \n\
       \032  Changes since 2.10.2:\n\
       \032    * INCOMPATIBLE CHANGE: Archive format has changed.\n\
@@ -3413,7 +3494,7 @@ let docs =
       \n\
       References\n\
       \n\
-      \032  1. file://localhost/Users/bcpierce/current/unison/doc/temp.html#ssh-win\n\
+      \032  1. file://localhost/Users/bcpierce/current/unison/branches/2.13/doc/temp.html#ssh-win\n\
       \032  2. http://pauillac.inria.fr/~maranget/hevea/index.html\n\
       "))
 ::
