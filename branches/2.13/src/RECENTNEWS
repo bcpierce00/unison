@@ -1,3 +1,8 @@
+CHANGES FROM VERSION 2.13.3
+
+* Fixed off by one error in month numbers (in printed dates) reported by Bob Burger
+
+-------------------------------
 CHANGES FROM VERSION 2.13.2
 
 * Reverted all changes (the previously committed version is broken: it
