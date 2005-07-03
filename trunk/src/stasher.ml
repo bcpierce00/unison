@@ -307,9 +307,10 @@ let removeAndBackupAsAppropriate fspath path fakeFspath fakePath =
 	  (Fspath.toString backRoot));
       Os.rename fspath path backRoot backPath
     end else begin
-      Printf.printf "File %s in %s will not be backed up.\n" 
-	(Path.toString fakePath) 
-	(Fspath.toString fakeFspath);
+      debug ( fun () -> Util.msg
+	  "File %s in %s will not be backed up.\n" 
+	  (Path.toString fakePath) 
+	  (Fspath.toString fakeFspath));
       Os.delete fspath path
     end
 	
@@ -356,7 +357,7 @@ let stashPath fspath path =
     end;
   (fspath, tempPath)
 
-let stashCurrentVersionLocal fspath path =
+let stashCurrentVersion fspath path =
   debug (fun () -> 
     Util.msg "stashCurrentVersion of %s in %s\n" 
       (Path.toString path) (Fspath.toString fspath));
@@ -376,17 +377,26 @@ let stashCurrentVersionLocal fspath path =
 	  (Osx.ressLength info.Fileinfo.osX.Osx.ressInfo)
 	  None
       
-let stashCurrentVersionOnRoot: Common.root -> Path.local -> unit Lwt.t =
-  Remote.registerRootCmd
-    "stashCurrentVersion"
-    (fun (fspath, path) ->
-      Lwt.return (stashCurrentVersionLocal fspath path))
+(* let stashCurrentVersionOnRoot: Common.root -> Path.local -> unit Lwt.t = *)
+(*   Remote.registerRootCmd *)
+(*     "stashCurrentVersion" *)
+(*     (fun (fspath, path) -> *)
+(*       Lwt.return (stashCurrentVersionLocal fspath path)) *)
     
-let stashCurrentVersion path =
-  Lwt_unix.run (
-  Globals.allRootsIter
-    (fun r -> stashCurrentVersionOnRoot r path)
-    )
+(* let stashCurrentVersion path = *)
+(*   match Globals.rootsInCanonicalOrder () with *)
+(*     [r1; r2] -> *)
+(*       debug (fun () ->  *)
+(* 	Util.msg "Roots are : \n\t%s\n\t%s" *)
+(* 	  (Common.root2string r1) *)
+(* 	  (Common.root2string r2) *)
+(* 	  ); *)
+(*       Lwt_unix.run ( *)
+(*       Globals.allRootsIter *)
+(* 	(fun r -> debug (fun () -> Util.msg "iter on %s\n" (Common.root2string r)); *)
+(* 	  stashCurrentVersionOnRoot r path) *)
+(* 	) *)
+(*   | _ -> raise (Util.Fatal "The server doesn't know about the roots !") *)
 
 (*------------------------------------------------------------------------------------*)    
     
@@ -425,7 +435,7 @@ let getRecentVersion fspath path fingerprint =
 
 (* This function initializes the Stasher module according to the preferences
    defined in the profile. It should be called whenever a profile is reloaded. *)
-let initBackups () =
+let initBackupsLocal () =
   translateOldPrefs ();
   updateRE ();
   addBackupFilesToIgnorePref ();
@@ -439,3 +449,14 @@ let initBackups () =
     if not(Os.exists backupDir Path.empty) then
       Os.createDir backupDir Path.empty Props.dirDefault
 	
+let initBackupsRoot: Common.root -> unit -> unit Lwt.t =
+  Remote.registerRootCmd
+    "initBackups"
+    (fun (fspath, ()) ->
+      Lwt.return (initBackupsLocal ()))
+
+let initBackups () =
+  Lwt_unix.run (
+  Globals.allRootsIter
+    (fun r -> initBackupsRoot r ())
+    )

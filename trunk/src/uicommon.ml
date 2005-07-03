@@ -484,17 +484,18 @@ let initPrefs ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
      Printf.eprintf "\n"
   );
 
-     Recon.checkThatPreferredRootIsValid();
-
-  (* Initializes some backups stuff according to the preferences just loaded from the profile.
-     Important to do it here, before prefs are propagated, because other preferences may be
-     changed by this function. *) 
-  Stasher.initBackups ();
+  Recon.checkThatPreferredRootIsValid();
   
   Lwt_unix.run
     (checkCaseSensitivity () >>=
      Globals.propagatePrefs);
 
+  (* Initializes some backups stuff according to the preferences just loaded from the profile.
+     Important to do it here, after prefs are propagated, because the function will also be
+     run on the server, if any. Also, this should be done each time a profile is reloaded
+     on this side, that's why it's here. *) 
+  Stasher.initBackups ();
+  
   firstTime := false
 
 (**********************************************************************
