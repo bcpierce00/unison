@@ -58,6 +58,7 @@ let installRoots termInteract =
 
 (* Alternate interface, should replace old interface eventually *)
 let installRoots2 () =
+  debug (fun () -> Util.msg "Installing roots...");
   let roots = rawRoots () in
   theroots :=
     Safelist.map Remote.canonize ((Safelist.map Clroot.parseRoot) roots);
@@ -181,7 +182,7 @@ let propagatePrefsTo =
   Remote.registerHostCmd
     "installPrefs"
     (fun prefs -> return (Prefs.load prefs))
-
+    
 let propagatePrefs () =
   let prefs = Prefs.dump() in
   let toHost root =

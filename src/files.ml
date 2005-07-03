@@ -195,8 +195,8 @@ let renameLocal (root, (fspath, pathFrom, pathTo)) =
               (fun () ->
                 debug (fun() -> Util.msg "rename %s to %s\n" source' target');
                 Os.rename source Path.empty target Path.empty;
-                Stasher.stashCurrentVersion localTargetPath;
                 Stasher.removeAndBackupAsAppropriate temp Path.empty root localTargetPath;
+(*                 Stasher.stashCurrentVersionLocal root localTargetPath; *)
                 clearCommitLog())
         | Some e ->
             (* We are not able to move the file.  We clear the commit
@@ -204,10 +204,10 @@ let renameLocal (root, (fspath, pathFrom, pathTo)) =
             clearCommitLog();
             Util.convertUnixErrorsToTransient "renaming" (fun () -> raise e)
       end else begin
-        debugverbose (fun() -> Util.msg "rename: moveFirst=false\n");
+        debug (fun() -> Util.msg "rename: moveFirst=false\n");
         Stasher.removeAndBackupAsAppropriate root localTargetPath root localTargetPath;
         Os.rename source Path.empty target Path.empty;
-        Stasher.stashCurrentVersion localTargetPath
+(*         Stasher.stashCurrentVersionLocal root localTargetPath *)
       end;
       Lwt.return ())
     
