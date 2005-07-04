@@ -1,5 +1,86 @@
 
-Changes in Version 2.12.27
+Changes in Version 2.14.0
+
+   Changes since 2.12.0:
+     * New convention for release numbering: Releases will continue to be
+       given numbers of the form X.Y.Z, but, from now on, just the major
+       version number (X.Y) will be considered significant when checking
+       compatibility between client and server versions. The third
+       component of the version number will be used only to identify
+       ``patch levels'' of releases.
+       This change goes hand in hand with a change to the procedure for
+       making new releases. Candidate releases will initially be given
+       ``beta release'' status when they are announced for public
+       consumption. Any bugs that are discovered will be fixed in a
+       separate branch of the source repository (without changing the
+       major version number) and new tarballs re-released as needed. When
+       this process converges, the patched beta version will be dubbed
+       stable.
+     * Warning (failure in batch mode) when one path is completely
+       emptied. This prevents Unison from deleting everything on one
+       replica when the other disappear.
+     * Fix diff bug (where no difference is shown the first time the diff
+       command is given).
+     * User interface changes:
+          + Improved workaround for button focus problem (GTK2 UI)
+          + Put leading zeroes in date fields
+          + More robust handling of character encodings in GTK2 UI
+          + Changed format of modification time displays, from modified
+            at hh:mm:ss on dd MMM, yyyy to modified on yyyy-mm-dd
+            hh:mm:ss
+          + Changed time display to include seconds (so that people on
+            FAT filesystems will not be confused when Unison tries to
+            update a file time to an odd number of seconds and the
+            filesystem truncates it to an even number!)
+          + Use the diff "-u" option by default when showing differences
+            between files (the output is more readable)
+          + In text mode, pipe the diff output to a pager if the
+            environment variable PAGER is set
+          + Bug fixes and cleanups in ssh password prompting. Now works
+            with the GTK2 UI under Linux. (Hopefully the Mac OS X one is
+            not broken!)
+          + Include profile name in the GTK2 window name
+          + Added bindings ',' (same as '<') and '.' (same as '>') in the
+            GTK2 UI
+     * Mac GUI:
+          + actions like < and > scroll to the next item as necessary.
+          + Restart has a menu item and keyboard shortcut (command-R).
+          + Added a command-line tool for Mac OS X. It can be installed
+            from the Unison menu.
+          + New icon.
+          + Handle the "help" command-line argument properly.
+          + Handle profiles given on the command line properly.
+          + When a profile has been selected, the profile dialog is
+            replaced by a "connecting" message while the connection is
+            being made. This gives better feedback.
+          + Size of left and right columns is now large enough so that
+            "PropsChanged" is not cut off.
+     * Minor changes:
+          + Disable multi-threading when both roots are local
+          + Improved error handling code. In particular, make sure all
+            files are closed in case of a transient failure
+          + Under Windows, use $UNISON for home directory as a last
+            resort (it was wrongly moved before $HOME and $USERPROFILE in
+            Unison 2.12.0)
+          + Reopen the logfile if its name changes (profile change)
+          + Double-check that permissions and modification times have
+            been properly set: there are some combination of OS and
+            filesystem on which setting them can fail in a silent way.
+          + Check for bad Windows filenames for pure Windows
+            synchronization also (not just cross architecture
+            synchronization). This way, filenames containing backslashes,
+            which are not correctly handled by unison, are rejected right
+            away.
+          + Attempt to resolve issues with synchronizing modification
+            times of read-only files under Windows
+          + Ignore chmod failures when deleting files
+          + Ignore trailing dots in filenames in case insensitive mode
+          + Proper quoting of paths, files and extensions ignored using
+            the UI
+          + The strings CURRENT1 and CURRENT2 are now correctly
+            substitued when they occur in the diff preference
+          + Improvements to syncing resource forks between Macs via a
+            non-Mac system.
 
    Changes since 2.10.2:
      * INCOMPATIBLE CHANGE: Archive format has changed.

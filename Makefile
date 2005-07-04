@@ -118,13 +118,14 @@ $(DOWNLOADDIR):
 
 exportsources:
 	$(RM) -r $(TMP)/$(EXPORTNAME)
-	(cd $(TMP); svn export https://cvs.cis.upenn.edu:3690/svnroot/unison/branches/$(BRANCH)/src $(EXPORTNAME))
+	(svn export src /tmp/$(EXPORTNAME))
 	-$(RM) $(TMP)/$(EXPORTNAME)/RECENTNEWS
 	(cd $(TMP); tar cvf - $(EXPORTNAME) \
            | gzip --force --best > $(EXPORTNAME).tar.gz)
 	mv $(TMP)/$(EXPORTNAME).tar.gz $(DOWNLOADDIR)
 
 exportdocs:
+	-rm -f src/unison
 	$(MAKE) -C src UISTYLE=text DEBUGGING=false \
                        NATIVE=$(EXPORTNATIVE) STATIC=$(EXPORTSTATIC)
 	-$(RM) src/strings.ml
