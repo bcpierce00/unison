@@ -1,3 +1,15 @@
+CHANGES FROM VERSION 2.14.0
+
+* Incorporated Ben Willmore's cool new icon for the Mac UI.
+* Fixed off by one error in month numbers (in printed dates) reported 
+  by Bob Burger
+* append just the major version number (2.13), not the full version
+  (2.13.15) when constructing the remote server command name in the
+  presence of -addversionno preference.  (Thanks to Karl M for the
+  suggestion.)
+* Fixed (I hope!) export procedure so that "Changes in..." message in embedded 
+  documentation has the correct version number.
+-------------------------------
 CHANGES FROM VERSION 2.14.-13
 
 Complete reimplementation of backup functionality by Stephane Lescuyer

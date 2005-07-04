@@ -835,7 +835,7 @@ let buildShellConnection shell host userOpt portOpt rootName termInteract =
   let remoteCmd =
     (if Prefs.read serverCmd="" then Uutil.myName
      else Prefs.read serverCmd)
-    ^ (if Prefs.read addversionno then "-" ^ Uutil.myVersion else "")
+    ^ (if Prefs.read addversionno then "-" ^ Uutil.myMajorVersion else "")
     ^ " -server" in
   let userArgs =
     match userOpt with
@@ -971,7 +971,7 @@ let openConnectionStart clroot =
         let remoteCmd =
           (if Prefs.read serverCmd="" then Uutil.myName
            else Prefs.read serverCmd)
-          ^ (if Prefs.read addversionno then "-" ^ Uutil.myVersion else "")
+          ^ (if Prefs.read addversionno then "-" ^ Uutil.myMajorVersion else "")
           ^ " -server" in
         let userArgs =
           match userOpt with

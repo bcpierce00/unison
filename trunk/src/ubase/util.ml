@@ -267,7 +267,7 @@ let time2string timef =
     Printf.sprintf
       "%4d-%02d-%02d at %2d:%.2d:%.2d"
       (time.Unix.tm_year + 1900)
-      time.Unix.tm_mon
+      (time.Unix.tm_mon + 1)
       time.Unix.tm_mday
       time.Unix.tm_hour
       time.Unix.tm_min
