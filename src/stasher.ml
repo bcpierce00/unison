@@ -108,13 +108,14 @@ let backupdir =
      ^ "{\\tt UNISONBACKUPDIR} environment variable.")
 
 let backupDirectory () =
-  try Fspath.canonize (Some (Unix.getenv "UNISONBACKUPDIR"))
-  with Not_found ->
-    try Fspath.canonize (Some (Unix.getenv "UNISONMIRRORDIR"))
+  Util.convertUnixErrorsToTransient "backupDirectory()" (fun () ->
+    try Fspath.canonize (Some (Unix.getenv "UNISONBACKUPDIR"))
     with Not_found ->
-      if Prefs.read backupdir <> ""
-      then Fspath.canonize (Some (Prefs.read backupdir))
-      else Os.fileInUnisonDir "backup"
+      try Fspath.canonize (Some (Unix.getenv "UNISONMIRRORDIR"))
+      with Not_found ->
+	if Prefs.read backupdir <> ""
+	then Fspath.canonize (Some (Prefs.read backupdir))
+	else Os.fileInUnisonDir "backup")
 
 let backupcurrent =
   Pred.create "backupcurrent"
@@ -290,30 +291,31 @@ let removeAndBackupAsAppropriate fspath path fakeFspath fakePath =
       (Path.toString path)
       (Fspath.toString fakeFspath)
       (Path.toString fakePath));
-  if not (Os.exists fspath path) then 
-    debug (fun () -> Util.msg "File %s in %s does not exist, no need to back up\n"  
-	(Path.toString path) (Fspath.toString fspath))
-  else
-    if shouldBackup fakePath then begin
-      let (backRoot, backPath) = backupPath fakeFspath fakePath in
-      (match Path.deconstructRev backPath with
-	None -> ()
-      | Some (_, dir) when dir = Path.empty -> ()
-      | Some (_, backdir) -> mkdirectories backRoot backdir);
-      debug (fun () -> Util.msg "Backing up [%s] in [%s] to [%s] in [%s]\n" 
-	  (Path.toString fakePath)
-	  (Fspath.toString fakeFspath)
-	  (Path.toString backPath)
-	  (Fspath.toString backRoot));
-      Os.rename fspath path backRoot backPath
-    end else begin
-      debug ( fun () -> Util.msg
-	  "File %s in %s will not be backed up.\n" 
-	  (Path.toString fakePath) 
-	  (Fspath.toString fakeFspath));
-      Os.delete fspath path
-    end
-	
+  Util.convertUnixErrorsToTransient "removeAndBackupAsAppropriate" (fun () ->
+    if not (Os.exists fspath path) then 
+      debug (fun () -> Util.msg "File %s in %s does not exist, no need to back up\n"  
+	  (Path.toString path) (Fspath.toString fspath))
+    else
+      if shouldBackup fakePath then begin
+	let (backRoot, backPath) = backupPath fakeFspath fakePath in
+	(match Path.deconstructRev backPath with
+	  None -> ()
+	| Some (_, dir) when dir = Path.empty -> ()
+	| Some (_, backdir) -> mkdirectories backRoot backdir);
+	debug (fun () -> Util.msg "Backing up [%s] in [%s] to [%s] in [%s]\n" 
+	    (Path.toString fakePath)
+	    (Fspath.toString fakeFspath)
+	    (Path.toString backPath)
+	    (Fspath.toString backRoot));
+	Os.rename fspath path backRoot backPath
+      end else begin
+	debug ( fun () -> Util.msg
+	    "File %s in %s will not be backed up.\n" 
+	    (Path.toString fakePath) 
+	    (Fspath.toString fakeFspath));
+	Os.delete fspath path
+      end)
+	  
 (*------------------------------------------------------------------------------------*)
 
 let stashDirectory fspath =
@@ -334,7 +336,7 @@ let findStash path i =
       (!suffix_string i) 
     
 let stashPath fspath path =
-  let fspath = stashDirectory fspath in
+  let tempfspath = stashDirectory fspath in
   let tempPath = findStash path 0 in
 
   (match Path.deconstructRev tempPath with
@@ -342,40 +344,53 @@ let stashPath fspath path =
   | Some (_, dir) when dir = Path.empty -> ()
   | Some (_, backdir) -> mkdirectories fspath tempPath);
   
-  if Os.exists fspath tempPath then 
-    if shouldBackup path then 
-      (* this is safe because this is done *after* backup *)
-      Os.delete fspath tempPath 
-    else begin
-      (* we still a keep a second backup just in case something go bad *)
-      Trace.debug "verbose" 
-	(fun () -> Util.msg "Creating a safety backup for (%s, %s)\n" 
-	    (Fspath.toString fspath) (Path.toString path));
-      let olBackup = findStash path 1 in
-      if Os.exists fspath olBackup then Os.delete fspath olBackup;
-      Os.rename fspath tempPath fspath olBackup
-    end;
-  (fspath, tempPath)
+  if Os.exists tempfspath tempPath then begin
+    if Fingerprint.file fspath path <> Fingerprint.file tempfspath tempPath then begin
+      if shouldBackup path then 
+        (* this is safe because this is done *after* backup *)
+	Os.delete fspath tempPath 
+      else begin 
+        (* we still a keep a second backup just in case something go bad *)
+	Trace.debug "verbose" 
+	  (fun () -> Util.msg "Creating a safety backup for (%s, %s)\n" 
+	      (Fspath.toString tempfspath) (Path.toString path));
+	let olBackup = findStash path 1 in
+	if Os.exists tempfspath olBackup then Os.delete tempfspath olBackup;
+	Os.rename tempfspath tempPath fspath olBackup
+      end;
+      Some (tempfspath, tempPath)
+    end else
+      None
+  end else
+    Some (tempfspath, tempPath)
 
-let stashCurrentVersion fspath path =
+	
+let rec stashCurrentVersion fspath path =
   debug (fun () -> 
     Util.msg "stashCurrentVersion of %s in %s\n" 
       (Path.toString path) (Fspath.toString fspath));
-  if Os.exists fspath path then
-    let dirstat = (Fspath.stat (Fspath.concat fspath path))in
-    if dirstat.Unix.LargeFile.st_kind = Unix.S_DIR then
-      debug (fun () -> Util.msg "Stashing aborted because file is a directory\n")
-    else
-      if shouldBackupCurrent path then
-	let (stashDir, stashPath) = stashPath fspath path in
-	let info = Fileinfo.get false fspath path in
-	Copy.localFile 
-	  fspath path 
-	  stashDir stashPath stashPath 
-	  `Copy 
-	  info.Fileinfo.desc
-	  (Osx.ressLength info.Fileinfo.osX.Osx.ressInfo)
-	  None
+  Util.convertUnixErrorsToTransient "stashCurrentVersion" (fun () ->
+    if Os.exists fspath path then
+      let dirstat = (Fspath.stat (Fspath.concat fspath path))in
+      if dirstat.Unix.LargeFile.st_kind = Unix.S_DIR then begin
+	debug (fun () -> Util.msg "Stashing recursively because file is a directory\n");
+	ignore (Safelist.iter
+		  (fun n -> stashCurrentVersion fspath (Path.child path n))
+		  (Os.childrenOf fspath path))
+      end else
+	if shouldBackupCurrent path then
+	  match stashPath fspath path with
+	    Some (stashDir, stashPath) ->
+	      let info = Fileinfo.get false fspath path in
+	      Copy.localFile 
+		fspath path 
+		stashDir stashPath stashPath 
+		`Copy 
+		info.Fileinfo.desc
+		(Osx.ressLength info.Fileinfo.osX.Osx.ressInfo)
+		None
+	  | None ->
+	      debug (fun () -> Util.msg "Stashing was not required, contents were equal."))
       
 (* let stashCurrentVersionOnRoot: Common.root -> Path.local -> unit Lwt.t = *)
 (*   Remote.registerRootCmd *)
@@ -408,28 +423,29 @@ let getRecentVersion fspath path fingerprint =
     Util.msg "getRecentVersion of %s in %s\n" 
       (Path.toString path) 
       (Fspath.toString fspath));
-  let dir = stashDirectory fspath in
-  let rec aux_find i =
-    let path = findStash path i in
-    if Os.exists dir path &&
-      (let dig = Os.fingerprint dir path (Fileinfo.get false dir path) in 
-      dig = fingerprint)
-    then begin
-      debug (fun () ->
-	Util.msg "recent version %s found in %s\n" 
-	  (Path.toString path) 
-	  (Fspath.toString dir));
-      Some (Fspath.concat dir path)
-    end else
-      if i = Prefs.read maxbackups then begin
+  Util.convertUnixErrorsToTransient "getRecentVersion" (fun () ->
+    let dir = stashDirectory fspath in
+    let rec aux_find i =
+      let path = findStash path i in
+      if Os.exists dir path &&
+	(let dig = Os.fingerprint dir path (Fileinfo.get false dir path) in 
+	dig = fingerprint)
+      then begin
 	debug (fun () ->
-	  Util.msg "No recent version was available for %s on this root.\n"
-	    (Fspath.toString (Fspath.concat fspath path)));
-	None
+	  Util.msg "recent version %s found in %s\n" 
+	    (Path.toString path) 
+	    (Fspath.toString dir));
+	Some (Fspath.concat dir path)
       end else
-	aux_find (i+1)
-  in
-  aux_find 0
+	if i = Prefs.read maxbackups then begin
+	  debug (fun () ->
+	    Util.msg "No recent version was available for %s on this root.\n"
+	      (Fspath.toString (Fspath.concat fspath path)));
+	  None
+	end else
+	  aux_find (i+1)
+    in
+    aux_find 0)
     
 (*------------------------------------------------------------------------------------*)    
 

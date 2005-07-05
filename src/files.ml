@@ -618,11 +618,11 @@ let copyBack fspathFrom pathFrom rootTo pathTo propsTo uiTo id =
 let merge root1 root2 path id ui1 ui2 showMergeFn =
   debug (fun () -> Util.msg "merge path %s between roots %s and %s\n"
       (Path.toString path) (root2string root1) (root2string root2));
-  let (localPath1, (workingDirForMerge, basep)) =
+  let (localPath1, (workingDirForMerge, basep), fspath1) =
     match root1 with
       (Local,fspath1) ->
         let localPath1 = Update.translatePathLocal fspath1 path in
-        (localPath1, Fspath.findWorkingDir fspath1 localPath1)
+        (localPath1, Fspath.findWorkingDir fspath1 localPath1, fspath1)
     | _ -> assert false (* roots are sorted: first root is always local *)
            (* FIX: I (JV) believe this assumption is wrong: roots are not sorted... *)
            (* Sigh.  Fixing this will require some restructuring of the following... *) in
@@ -645,12 +645,12 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
      names that will be recognized as temp by ordinary Unix programs -- e.g.,
      beginning with dot.  Perhaps the update detection sweep should remove them
      automatically.  *)
-  let working1 = Path.addPrefixToFinalName basep ".#unisonmerge1-" in
-  let working2 = Path.addPrefixToFinalName basep ".#unisonmerge2-" in
-  let workingarch = Path.addPrefixToFinalName basep ".#unisonmergearch-" in
-  let new1 = Path.addPrefixToFinalName basep ".#unisonmergenew1-" in
-  let new2 = Path.addPrefixToFinalName basep ".#unisonmergenew2-" in
-  let newarch = Path.addPrefixToFinalName basep ".#unisonmergenewarch-" in
+  let working1 = Path.addPrefixToFinalName basep ".unisonmerge1-" in
+  let working2 = Path.addPrefixToFinalName basep ".unisonmerge2-" in
+  let workingarch = Path.addPrefixToFinalName basep ".unisonmergearch-" in
+  let new1 = Path.addPrefixToFinalName basep ".unisonmergenew1-" in
+  let new2 = Path.addPrefixToFinalName basep ".unisonmergenew2-" in
+  let newarch = Path.addPrefixToFinalName basep ".unisonmergenewarch-" in
   
   let (desc1, fp1, ress1, desc2, fp2, ress2) = Common.fileInfos ui1 ui2 in
   
@@ -676,15 +676,16 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
 	match ui1, ui2 with
 	| Updates (_, Previous (_,_,dig,_)), Updates (_, Previous (_,_,dig2,_)) ->
 	    if dig = dig2 then
-	      Stasher.getRecentVersion workingDirForMerge localPath1 dig 
+	      Stasher.getRecentVersion fspath1 localPath1 dig 
 	    else
 	      assert false
 	| NoUpdates, Updates(_, Previous (_,_,dig,_))
 	| Updates(_, Previous (_,_,dig,_)), NoUpdates -> 
-	    Stasher.getRecentVersion workingDirForMerge localPath1 dig
+	    Stasher.getRecentVersion fspath1 localPath1 dig
 	| Updates (_, New), Updates(_, New) 
 	| Updates (_, New), NoUpdates
 	| NoUpdates, Updates (_, New) ->
+	    debug (fun () -> Util.msg "File is new, no current version will be searched.");
 	    None
 	| _ -> assert false
 
@@ -692,10 +693,10 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
       
       (* make a local copy of the archive file (in case the merge program  
          overwrites it and the program crashes before the call to the Stasher) *)
-      let _= 
+      let after = 
 	match arch with 
 	  Some fspath ->
-	    let tmpPath = Path.addPrefixToFinalName basep ".#unisonarchbackup-" in
+	    let tmpPath = Path.addPrefixToFinalName basep ".unisonmergebackup-" in
 	    let info = Fileinfo.get false fspath Path.empty in
 	    Copy.localFile 
 	      fspath Path.empty 
@@ -703,9 +704,10 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
 	      `Copy 
 	      info.Fileinfo.desc
 	      (Osx.ressLength info.Fileinfo.osX.Osx.ressInfo)
-	      None 
+	      None ;
+	    (fun () -> Os.delete workingDirForMerge tmpPath)
 	| None ->
-	    ()      in
+	    (fun () -> ())      in
       
       (* run the merge command *)
       Os.delete workingDirForMerge new1;
@@ -845,6 +847,7 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
                      Update.replaceArchive root2 path
                        (Some(workingDirForMerge, workingarch))
                        new_archive_entry transid >>= (fun _ ->
+			 let _ = after () in
                          Lwt.return ())))
            end else 
              (Lwt.return ()) )))))
@@ -858,4 +861,3 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
           Os.delete workingDirForMerge new2;
           Os.delete workingDirForMerge newarch
 	    ))
-    

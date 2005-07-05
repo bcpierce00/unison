@@ -1722,6 +1722,7 @@ let replaceArchiveLocal fspath pathTo location arch id =
   in
   let newArch = replaceArchiveRec workingDir tempPathTo arch in
   let commit () =
+    let _ = Stasher.stashCurrentVersion fspath localPath in
     let archive = getArchive root in
     let archive, () =
       updatePathInArchive archive fspath Path.empty pathTo
