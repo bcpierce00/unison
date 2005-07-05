@@ -350,7 +350,7 @@ let stashPath fspath path =
       Fingerprint.file fspath path <> Fingerprint.file tempfspath tempPath then begin
 	if shouldBackup path then 
         (* this is safe because this is done *after* backup *)
-	  Os.delete fspath tempPath 
+	  Os.delete tempfspath tempPath 
 	else begin 
         (* we still a keep a second backup just in case something go bad *)
 	  Trace.debug "verbose" 
@@ -358,7 +358,7 @@ let stashPath fspath path =
 		(Fspath.toString tempfspath) (Path.toString path));
 	  let olBackup = findStash path 1 in
 	  if Os.exists tempfspath olBackup then Os.delete tempfspath olBackup;
-	  Os.rename tempfspath tempPath fspath olBackup
+	  Os.rename tempfspath tempPath tempfspath olBackup
 	end;
 	Some (tempfspath, tempPath)
       end else
