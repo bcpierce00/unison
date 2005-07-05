@@ -339,31 +339,33 @@ let stashPath fspath path =
   let tempfspath = stashDirectory fspath in
   let tempPath = findStash path 0 in
 
-  (match Path.deconstructRev tempPath with
-    None -> ()
-  | Some (_, dir) when dir = Path.empty -> ()
-  | Some (_, backdir) -> mkdirectories fspath tempPath);
+  let _ =
+    match Path.deconstructRev tempPath with
+      None -> ()
+    | Some (_, dir) when dir = Path.empty ->  ()
+    | Some (_, backdir) -> mkdirectories tempfspath backdir in
   
   if Os.exists tempfspath tempPath then begin
-    if Fingerprint.file fspath path <> Fingerprint.file tempfspath tempPath then begin
-      if shouldBackup path then 
+    if Os.exists fspath path &&
+      Fingerprint.file fspath path <> Fingerprint.file tempfspath tempPath then begin
+	if shouldBackup path then 
         (* this is safe because this is done *after* backup *)
-	Os.delete fspath tempPath 
-      else begin 
+	  Os.delete fspath tempPath 
+	else begin 
         (* we still a keep a second backup just in case something go bad *)
-	Trace.debug "verbose" 
-	  (fun () -> Util.msg "Creating a safety backup for (%s, %s)\n" 
-	      (Fspath.toString tempfspath) (Path.toString path));
-	let olBackup = findStash path 1 in
-	if Os.exists tempfspath olBackup then Os.delete tempfspath olBackup;
-	Os.rename tempfspath tempPath fspath olBackup
-      end;
-      Some (tempfspath, tempPath)
-    end else
+	  Trace.debug "verbose" 
+	    (fun () -> Util.msg "Creating a safety backup for (%s, %s)\n" 
+		(Fspath.toString tempfspath) (Path.toString path));
+	  let olBackup = findStash path 1 in
+	  if Os.exists tempfspath olBackup then Os.delete tempfspath olBackup;
+	  Os.rename tempfspath tempPath fspath olBackup
+	end;
+	Some (tempfspath, tempPath)
+      end else
       None
   end else
     Some (tempfspath, tempPath)
-
+      
 	
 let rec stashCurrentVersion fspath path =
   debug (fun () -> 
