@@ -1,3 +1,9 @@
+CHANGES FROM VERSION 2.14.6
+
+* Added a switch (for debugging purposes) to make 'merge' commands retain temporary
+  files after they are finished
+
+-------------------------------
 CHANGES FROM VERSION 2.14.0
 
 * Incorporated Ben Willmore's cool new icon for the Mac UI.
