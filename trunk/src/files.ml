@@ -585,7 +585,7 @@ let formatMergeCmd p f1 f2 backup out1 out2 outarch =
   let cooked =
     match backup with
       None -> begin
-	let cooked = Util.replacesubstring cooked "CURRENTARCHOPT" " " in
+	let cooked = Util.replacesubstring cooked "CURRENTARCHOPT" "" in
 	match Util.findsubstring "CURRENTARCH" cooked with
 	  None -> cooked
 	| Some _ -> raise (Util.Transient ("No archive found whereas the "^
@@ -615,6 +615,8 @@ let copyBack fspathFrom pathFrom rootTo pathTo propsTo uiTo id =
       rename rootTo pathTo workingDirForCopy tempPathTo realPathTo
         uiTo ))
     
+let keeptempfilesaftermerge =   Prefs.createBool "keeptempfilesaftermerge" false "*" ""
+
 let merge root1 root2 path id ui1 ui2 showMergeFn =
   debug (fun () -> Util.msg "merge path %s between roots %s and %s\n"
       (Path.toString path) (root2string root1) (root2string root2));
@@ -854,10 +856,11 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
     (fun _ ->
       Util.ignoreTransientErrors
 	(fun () ->
-          Os.delete workingDirForMerge working1;
-          Os.delete workingDirForMerge working2;
-          Os.delete workingDirForMerge workingarch;
-          Os.delete workingDirForMerge new1;
-          Os.delete workingDirForMerge new2;
-          Os.delete workingDirForMerge newarch
-	    ))
+           if not (Prefs.read keeptempfilesaftermerge) then begin
+             Os.delete workingDirForMerge working1;
+             Os.delete workingDirForMerge working2;
+             Os.delete workingDirForMerge workingarch;
+             Os.delete workingDirForMerge new1;
+             Os.delete workingDirForMerge new2;
+             Os.delete workingDirForMerge newarch
+           end))
