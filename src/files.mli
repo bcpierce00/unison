@@ -60,6 +60,8 @@ val diff :
 (* terminated) synchronizations                                              *)
 val processCommitLogs : unit -> unit
 
+val makeSureMergeTempfilesAreIgnored : unit -> unit
+
 (* List the files in a directory matching a pattern.  (It would be better
    to use fspath, etc., here instead of string) *)
 val ls : string -> string -> string list
