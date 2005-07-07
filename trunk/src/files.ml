@@ -615,11 +615,22 @@ let copyBack fspathFrom pathFrom rootTo pathTo propsTo uiTo id =
       rename rootTo pathTo workingDirForCopy tempPathTo realPathTo
         uiTo ))
     
-let keeptempfilesaftermerge =   Prefs.createBool "keeptempfilesaftermerge" false "*" ""
+let keeptempfilesaftermerge =   
+  Prefs.createBool
+    "keeptempfilesaftermerge" false "*" ""
+
+let makeSureMergeTempfilesAreIgnored () =
+  let oldRE = Pred.extern Globals.ignore in
+  if List.mem "Name .unisonmerge*" oldRE then
+    ()
+  else
+    let newRE = "Name .unisonmerge*"::oldRE in
+    Pred.intern Globals.ignore newRE
 
 let merge root1 root2 path id ui1 ui2 showMergeFn =
   debug (fun () -> Util.msg "merge path %s between roots %s and %s\n"
       (Path.toString path) (root2string root1) (root2string root2));
+
   let (localPath1, (workingDirForMerge, basep), fspath1) =
     match root1 with
       (Local,fspath1) ->
@@ -658,11 +669,12 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
   
   Util.convertUnixErrorsToTransient "merging files" (fun () ->
     (* Install finalizer (see below) in case we unwind the stack *)
-    Util.finalize (fun () ->
+    Util.finalize  (fun () ->
       
     (* Make local copies of the two replicas *)
       Os.delete workingDirForMerge working1;
       Os.delete workingDirForMerge working2;
+      Os.delete workingDirForMerge workingarch;
       Lwt_unix.run
 	(Copy.file
            root1 localPath1 root1 workingDirForMerge working1 basep
@@ -695,22 +707,20 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
       
       (* make a local copy of the archive file (in case the merge program  
          overwrites it and the program crashes before the call to the Stasher) *)
-      let after = 
+      let _ = 
 	match arch with 
 	  Some fspath ->
-	    let tmpPath = Path.addPrefixToFinalName basep ".unisonmergebackup-" in
 	    let info = Fileinfo.get false fspath Path.empty in
 	    Copy.localFile 
 	      fspath Path.empty 
-	      workingDirForMerge tmpPath tmpPath
+	      workingDirForMerge workingarch workingarch
 	      `Copy 
 	      info.Fileinfo.desc
 	      (Osx.ressLength info.Fileinfo.osX.Osx.ressInfo)
 	      None ;
-	    (fun () -> Os.delete workingDirForMerge tmpPath)
 	| None ->
-	    (fun () -> ())      in
-      
+	    () in
+	    
       (* run the merge command *)
       Os.delete workingDirForMerge new1;
       Os.delete workingDirForMerge new2;
@@ -849,7 +859,6 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
                      Update.replaceArchive root2 path
                        (Some(workingDirForMerge, workingarch))
                        new_archive_entry transid >>= (fun _ ->
-			 let _ = after () in
                          Lwt.return ())))
            end else 
              (Lwt.return ()) )))))

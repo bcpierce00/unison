@@ -210,7 +210,8 @@ let ignore =
      ^ "children).  This is useful for avoiding synchronizing temporary "
      ^ "files, object files, etc. The syntax of \\ARG{pathspec} is "
      ^ "described in \\sectionref{pathspec}{Path Specification}, and further "
-     ^ "details on ignoring paths is found in \\sectionref{ignore}{Ignoring Paths}.")
+     ^ "details on ignoring paths is found in"
+     ^ " \\sectionref{ignore}{Ignoring Paths}.")
     
 let ignorenot =
   Pred.create "ignorenot"

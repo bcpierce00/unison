@@ -392,7 +392,7 @@ let rec stashCurrentVersion fspath path =
 		(Osx.ressLength info.Fileinfo.osX.Osx.ressInfo)
 		None
 	  | None ->
-	      debug (fun () -> Util.msg "Stashing was not required, contents were equal."))
+	      debug (fun () -> Util.msg "Stashing was not required, contents were equal.\n"))
       
 (* let stashCurrentVersionOnRoot: Common.root -> Path.local -> unit Lwt.t = *)
 (*   Remote.registerRootCmd *)
