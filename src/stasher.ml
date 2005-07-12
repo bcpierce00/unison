@@ -372,15 +372,15 @@ let rec stashCurrentVersion fspath path =
     Util.msg "stashCurrentVersion of %s in %s\n" 
       (Path.toString path) (Fspath.toString fspath));
   Util.convertUnixErrorsToTransient "stashCurrentVersion" (fun () ->
-    if Os.exists fspath path then
-      let dirstat = (Fspath.stat (Fspath.concat fspath path))in
-      if dirstat.Unix.LargeFile.st_kind = Unix.S_DIR then begin
-	debug (fun () -> Util.msg "Stashing recursively because file is a directory\n");
-	ignore (Safelist.iter
-		  (fun n -> stashCurrentVersion fspath (Path.child path n))
-		  (Os.childrenOf fspath path))
-      end else
-	if shouldBackupCurrent path then
+    if shouldBackupCurrent path then
+      let stat = (Fileinfo.get (Path.followLink path) fspath path).Fileinfo.typ in
+      if stat <> `ABSENT then
+	if stat = `DIRECTORY then begin
+	  debug (fun () -> Util.msg "Stashing recursively because file is a directory\n");
+	  ignore (Safelist.iter
+		    (fun n -> stashCurrentVersion fspath (Path.child path n))
+		    (Os.childrenOf fspath path))
+	end else
 	  match stashPath fspath path with
 	    Some (stashDir, stashPath) ->
 	      let info = Fileinfo.get false fspath path in
