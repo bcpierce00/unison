@@ -47,7 +47,7 @@ let shouldBackup p =
   Pred.test backup s && not (Pred.test backupnot s)
     
 let backupprefix =
-  Prefs.createString "backupprefix" ".unison."
+  Prefs.createString "backupprefix" ".bak.$VERSION."
     "prefix for the names of backup files"
     ("When a backup for a file \\verb|NAME| is created, it is stored "
      ^ "in a directory specified by \\texttt{backuplocation}, in a file called "
@@ -63,7 +63,7 @@ let backupprefix =
      ^ " placed at the beginning of the suffix.")
     
 let backupsuffix =
-  Prefs.createString "backupsuffix" ".$VERSION.bak"
+  Prefs.createString "backupsuffix" ""
     "a suffix to be added to names of backup files"
     ("See \\texttt{backupprefix} for full documentation.")
 

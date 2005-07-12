@@ -78,13 +78,13 @@ let delete rootFrom pathFrom rootTo pathTo ui =
   Update.transaction (fun id ->
     Update.replaceArchive rootFrom pathFrom None Update.NoArchive id
       >>= (fun _ ->
-    (*Unison do the next line cause we want to keep a backup of the file
-       FIX: We only need this when we are making backups*)
+    (* Unison do the next line cause we want to keep a backup of the file.
+       FIX: We only need this when we are making backups *)
 	Update.updateArchive rootTo pathTo ui id >>= (fun _ ->
 	  Update.replaceArchive
 	    rootTo pathTo None Update.NoArchive id >>= (fun localPathTo ->
     (* Make sure the target is unchanged *)
-    (* There is an unavoidable race condition here *)
+    (* (There is an unavoidable race condition here.) *)
 	      Update.checkNoUpdates rootTo pathTo ui >>= (fun () ->
 		performDelete rootTo (None, localPathTo))))))
     

@@ -1,3 +1,15 @@
+CHANGES FROM VERSION 2.14.10
+
+* Fixes to better support external merge programs
+* Another, even cooler, new icon from Ben Willmore
+
+-------------------------------
+CHANGES FROM VERSION 2.14.10
+
+* Fixes to better support external merge programs
+* Another, even cooler, new icon from Ben Willmore
+
+-------------------------------
 CHANGES FROM VERSION 2.14.6
 
 * Added a switch (for debugging purposes) to make 'merge' commands retain temporary

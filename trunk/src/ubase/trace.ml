@@ -60,7 +60,7 @@ let debug modname thunk =
     flush stderr
   end
 
-(* Set the debugPrinter variable in the Util module so that other modules
+(* We set the debugPrinter variable in the Util module so that other modules
    lower down in the module dependency graph (so that they can't just
    import Trace) can also print debugging messages. *)
 let _ = Util.debugPrinter := Some(debug)
