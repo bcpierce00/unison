@@ -1,3 +1,12 @@
+CHANGES FROM VERSION 2.15.0
+
+* More work on merging functionality -- fixed one nasty bug in the
+  code that updates the archive, but merging is still not completely
+  working.
+
+
+
+-------------------------------
 CHANGES FROM VERSION 2.14.10
 
 * Fixes to better support external merge programs

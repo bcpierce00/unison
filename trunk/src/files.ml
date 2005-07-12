@@ -76,13 +76,13 @@ let performDelete = Remote.registerRootCmd "delete" deleteLocal
 (* FIX: maybe we should rename the destination before making any check ? *)
 let delete rootFrom pathFrom rootTo pathTo ui =
   Update.transaction (fun id ->
-    Update.replaceArchive rootFrom pathFrom None Update.NoArchive id
+    Update.replaceArchive rootFrom pathFrom None Update.NoArchive id true
       >>= (fun _ ->
     (* Unison do the next line cause we want to keep a backup of the file.
        FIX: We only need this when we are making backups *)
 	Update.updateArchive rootTo pathTo ui id >>= (fun _ ->
 	  Update.replaceArchive
-	    rootTo pathTo None Update.NoArchive id >>= (fun localPathTo ->
+	    rootTo pathTo None Update.NoArchive id true >>= (fun localPathTo ->
     (* Make sure the target is unchanged *)
     (* (There is an unavoidable race condition here.) *)
 	      Update.checkNoUpdates rootTo pathTo ui >>= (fun () ->
@@ -420,8 +420,8 @@ let copy
          make_backup >>= (fun _ ->
          Update.replaceArchive
            rootTo pathTo (Some (workingDir, tempPathTo))
-           archFrom id >>= (fun _ ->
-             rename rootTo pathTo workingDir tempPathTo realPathTo uiTo ))))))
+           archFrom id true >>= (fun _ ->
+         rename rootTo pathTo workingDir tempPathTo realPathTo uiTo ))))))
     (fun _ ->
        performDelete rootTo (Some workingDir, tempPathTo)))
 
@@ -645,6 +645,7 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
   let copy l =
     Safelist.iter
       (fun (src,trg) ->
+        debug (fun () -> Util.msg "Copying %s to %s\n" (Path.toString src) (Path.toString trg));
         Os.delete workingDirForMerge trg;
         let info = Fileinfo.get false workingDirForMerge src in
         Copy.localFile
@@ -699,7 +700,7 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
 	| Updates (_, New), Updates(_, New) 
 	| Updates (_, New), NoUpdates
 	| NoUpdates, Updates (_, New) ->
-	    debug (fun () -> Util.msg "File is new, no current version will be searched.");
+	    debug (fun () -> Util.msg "File is new, no current version will be searched");
 	    None
 	| _ -> assert false
 
@@ -763,9 +764,9 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
 
       (* Check which files got created by the merge command and do something appropriate
          with them *)
-        let new1exists = Sys.file_exists (Fspath.concatToString workingDirForMerge new1) in
-        let new2exists = Sys.file_exists (Fspath.concatToString workingDirForMerge new2) in
-        let newarchexists = Sys.file_exists (Fspath.concatToString workingDirForMerge newarch) in
+      let new1exists = Sys.file_exists (Fspath.concatToString workingDirForMerge new1) in
+      let new2exists = Sys.file_exists (Fspath.concatToString workingDirForMerge new2) in
+      let newarchexists = Sys.file_exists (Fspath.concatToString workingDirForMerge newarch) in
 
       if new1exists && new2exists && newarchexists then begin
         debug (fun () -> Util.msg "Three outputs detected \n");
@@ -832,7 +833,7 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
         end
 
         else
-          raise (Util.Transient ("Error: the merge function deleted both of its "
+          raise (Util.Transient ("Error: the merge program deleted both of its "
                                  ^ "inputs and generated no output!"))
       end;
       
@@ -840,28 +841,28 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
 	(debug (fun () -> Util.msg "Committing results of merge\n");
          copyBack workingDirForMerge working1 root1 path desc1 ui1 id >>= (fun () ->
          copyBack workingDirForMerge working2 root2 path desc2 ui2 id >>= (fun () ->
-           let arch_fspath = Fspath.concat workingDirForMerge workingarch in
-           if (Sys.file_exists (Fspath.toString arch_fspath)) then begin
-               (* Update the unison archives to reflect the new external archive file *)
-             debug (fun () -> Util.msg "Updating unison archives to reflect results of merge\n");
-             let infoarch = Fileinfo.get false workingDirForMerge workingarch in
-             let new_archive_entry =
-               Update.ArchiveFile
-                 (Props.get (Fspath.stat arch_fspath) infoarch.osX,
-                  Os.fingerprint arch_fspath Path.empty infoarch,
-                  Fileinfo.stamp (Fileinfo.get true arch_fspath Path.empty),
-                  Osx.stamp infoarch.osX) in
-             Update.transaction
-               (fun transid ->
-                 Update.replaceArchive root1 path
-                   (Some(workingDirForMerge, workingarch))
-                   new_archive_entry transid >>= (fun _ ->
-                     Update.replaceArchive root2 path
-                       (Some(workingDirForMerge, workingarch))
-                       new_archive_entry transid >>= (fun _ ->
-                         Lwt.return ())))
-           end else 
-             (Lwt.return ()) )))))
+         let arch_fspath = Fspath.concat workingDirForMerge workingarch in
+         if (Sys.file_exists (Fspath.toString arch_fspath)) then begin
+           debug (fun () -> Util.msg "Updating unison archives to reflect results of merge\n");
+           let infoarch = Fileinfo.get false workingDirForMerge workingarch in
+           let dig = Os.fingerprint arch_fspath Path.empty infoarch in
+           debug (fun () -> Util.msg "New digest is %s\n" (Os.fullfingerprint_to_string dig));
+           let new_archive_entry =
+             Update.ArchiveFile
+               (Props.get (Fspath.stat arch_fspath) infoarch.osX, dig,
+                Fileinfo.stamp (Fileinfo.get true arch_fspath Path.empty),
+                Osx.stamp infoarch.osX) in
+           Update.transaction
+             (fun transid ->
+                Update.replaceArchive root1 path
+                 (Some(workingDirForMerge, workingarch))
+                 new_archive_entry transid false >>= (fun _ ->
+                Update.replaceArchive root2 path
+                  (Some(workingDirForMerge, workingarch))
+                  new_archive_entry transid false >>= (fun _ ->
+                Lwt.return ())))
+         end else 
+           (Lwt.return ()) )))))
     (fun _ ->
       Util.ignoreTransientErrors
 	(fun () ->
