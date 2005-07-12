@@ -1081,6 +1081,9 @@ let checkContentsChange
       Os.safeFingerprint currfspath path info
         (if dataClearlyUnchanged then Some archDig else None) in
     Xferhint.insertEntry (currfspath, path) newDigest;
+    debug (fun() -> Util.msg "  archive digest = %s   current digest = %s\n"
+             (Os.fullfingerprint_to_string archDig)
+             (Os.fullfingerprint_to_string newDigest));
     if archDig = newDigest then begin
       Some (ArchiveFile
               (Props.setTime archDesc (Props.time info.Fileinfo.desc),
@@ -1680,39 +1683,42 @@ let markEqual equals =
           Tree.map (fun n -> n) (fun (uc1,uc2) -> uc2) equals])
   end
 
-let rec replaceArchiveRec fspath path arch =
+let rec replaceArchiveRec fspath path arch paranoid =
   match arch with
     ArchiveDir (desc, children) ->
       ArchiveDir (desc,
                   NameMap.mapi
                     (fun nm a ->
-                       replaceArchiveRec fspath (Path.child path nm) a)
+                       replaceArchiveRec fspath (Path.child path nm) a paranoid)
                     children)
-  | ArchiveFile (desc, dig, _, ress) ->
-      (* Paranoid check: recompute the file's digest to match it with
-         the archive's *)
-      let info = Fileinfo.get false fspath path in
-      let dig' = Os.fingerprint fspath path info in
-      let stamp' = Osx.stamp info.Fileinfo.osX in
-      if dig' <> dig then
-        raise (Util.Transient
-                 (Printf.sprintf
-                    "The file %s was incorrectly transferred \
-                     (fingerprint mismatch)" (Path.toString path)));
-      ArchiveFile (Props.override info.Fileinfo.desc desc,
-                   dig, Fileinfo.stamp info, stamp')
+  | ArchiveFile (desc, dig, stamp, ress) ->
+      if paranoid then begin
+        (* Paranoid check: recompute the file's digest to match it with
+           the archive's *)
+        let info = Fileinfo.get false fspath path in
+        let dig' = Os.fingerprint fspath path info in
+        let ress' = Osx.stamp info.Fileinfo.osX in
+        if dig' <> dig then
+          raise (Util.Transient
+                   (Printf.sprintf
+                      "The file %s was incorrectly transferred \
+                       (fingerprint mismatch)" (Path.toString path)));
+        ArchiveFile (Props.override info.Fileinfo.desc desc,
+                     dig, Fileinfo.stamp info, ress')
+      end else begin
+        ArchiveFile (desc, dig, stamp, ress)
+      end
   | ArchiveSymlink l ->
       ArchiveSymlink l
   | NoArchive ->
       arch
 
-let replaceArchiveLocal fspath pathTo location arch id =
+let replaceArchiveLocal fspath pathTo location arch id paranoid =
   debug (fun() -> Util.msg
              "replaceArchiveLocal %s %s\n"
              (Fspath.toString fspath)
              (Path.toString pathTo)
         );
-
   let root = thisRootsGlobalName fspath in
   let localPath = translatePathLocal fspath pathTo in
   let (workingDir, tempPathTo) =
@@ -1720,7 +1726,7 @@ let replaceArchiveLocal fspath pathTo location arch id =
       None     -> (fspath, localPath)
     | Some loc -> loc
   in
-  let newArch = replaceArchiveRec workingDir tempPathTo arch in
+  let newArch = replaceArchiveRec workingDir tempPathTo arch paranoid in
   let commit () =
     let _ = Stasher.stashCurrentVersion fspath localPath in
     let archive = getArchive root in
@@ -1736,11 +1742,11 @@ let replaceArchiveLocal fspath pathTo location arch id =
 let replaceArchiveOnRoot =
   Remote.registerRootCmd
     "replaceArchive"
-    (fun (fspath, (pathTo, location, arch, id)) ->
-       Lwt.return (replaceArchiveLocal fspath pathTo location arch id))
+    (fun (fspath, (pathTo, location, arch, id, paranoid)) ->
+       Lwt.return (replaceArchiveLocal fspath pathTo location arch id paranoid))
 
-let replaceArchive root pathTo location archive id =
-  replaceArchiveOnRoot root (pathTo, location, archive, id)
+let replaceArchive root pathTo location archive id paranoid =
+  replaceArchiveOnRoot root (pathTo, location, archive, id, paranoid)
 
 (* Update the archive to reflect
       - the last observed state of the file on disk (ui)

@@ -12,7 +12,8 @@ let file fspath path =
   Util.convertUnixErrorsToTransient
   "digesting file"
     (fun () ->
-       Digest.file (Fspath.toString (Fspath.concat fspath path)))
+       let f = Fspath.toString (Fspath.concat fspath path) in
+       Digest.file f)
 
 let maxLength = Uutil.Filesize.ofInt max_int
 let subfile path offset len =
