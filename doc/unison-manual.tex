@@ -1631,8 +1631,10 @@ To accomodate the wide variety of programs that users might want to use for
 merging, Unison checks for several possible situations when the merge
 program exits:
 \begin{itemize}
-\item If the merge program exits with a non-zero status, the merge is
-  considered to have failed and the replicas are not changed.
+\item If the merge program exits with a non-zero status, then merge is
+  considered to have failed and the replicas are not changed,
+  \textbf{unless} the command created two files that are actually
+  equal, or modified the two source files in equal ways.
 \item If the file \verb|NEW| has been created, it is written back to both
   replicas (and stored in the backup directory).  Similarly, if just the
   file \verb|NEW1| has been created, it is written back to both 
@@ -1650,7 +1652,20 @@ program exits:
   been created, but \verb|NEWARCH| has not, then these files are written back to the
   local replica and remote replica, respectively.  Also, if \verb|NEW1| and
   \verb|NEW2| have identical contents, then the same contents are stored in
-  the backup directory to reflect the fact that the file is currently in sync.
+  the backup directory to reflect the fact that the file is currently
+  in sync. 
+\item If \verb|NEW1| and \verb|NEW2| (resp. \verb|CURRENT1| and
+  \verb|CURRENT2|) are created (resp. overwritten) with different
+  contents, but the merge command did not fail -- exited with 0, then
+  we arbitrarily propagate \verb|NEW1| (resp. \verb|CURRENT1|) to the
+  other replica and to the archive. This is a design choice made to
+  handle the case where a merge command only synchronizes some
+  specific contents between two files, skipping some irrelevant
+  information (order between entries, for instance). We assume that
+  only not important information is trimmed during the merge
+  process. If some important information is ignored by the merge
+  command, then it will eventually be lost on the distant replica,
+  after running Unison.
 \end{itemize}
 
 A large number of external merging programs are available.  
