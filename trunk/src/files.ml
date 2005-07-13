@@ -746,60 +746,63 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
       let c = Unix.open_process_in cmd in
       let mergeLog = readChannelTillEof c in
       let returnValue = Unix.close_process_in c in
-
-      (* check what the merge command did *)
-      if returnValue <> Unix.WEXITED 0 then
-        raise (Util.Transient "Merge program exited with non-zero status");
-
+      
+(*       if returnValue <> Unix.WEXITED 0 then *)
+(*         raise (Util.Transient "Merge program exited with non-zero status"); *)
+   
       let mergeText =
         cmd ^ "\n" ^ 
         (if mergeLog="" then "Merge program exited normally"
         else mergeLog) in
 
       if not
-        (showMergeFn
-           (Printf.sprintf "Results of merging %s" (Path.toString path))
-           mergeText) then
-          raise (Util.Transient "User cancelled merge");
-
+          (showMergeFn
+             (Printf.sprintf "Results of merging %s" (Path.toString path))
+             mergeText) then
+        raise (Util.Transient "User cancelled merge");
+      
       (* Check which files got created by the merge command and do something appropriate
          with them *)
       let new1exists = Sys.file_exists (Fspath.concatToString workingDirForMerge new1) in
       let new2exists = Sys.file_exists (Fspath.concatToString workingDirForMerge new2) in
       let newarchexists = Sys.file_exists (Fspath.concatToString workingDirForMerge newarch) in
-
-      if new1exists && new2exists && newarchexists then begin
-        debug (fun () -> Util.msg "Three outputs detected \n");
-        copy [(new1,working1); (new2, working2); (newarch, workingarch)];
-      end
-
-      else if new1exists && new2exists && (not newarchexists) then begin
-        debug (fun () -> Util.msg "Two outputs detected \n");
-        copy [(new1,working1); (new2,working2)];
+      
+      if new1exists && new2exists then begin
+        if newarchexists then 
+	  debug (fun () -> Util.msg "Three outputs detected \n")
+	else
+	  debug (fun () -> Util.msg "Two outputs detected \n");
         let info1 = Fileinfo.get false workingDirForMerge new1 in
         let info2 = Fileinfo.get false workingDirForMerge new2 in
         let dig1' = Os.fingerprint workingDirForMerge new1 info1 in
         let dig2' = Os.fingerprint workingDirForMerge new2 info2 in
         if dig1'=dig2' then begin
           debug (fun () -> Util.msg "Two outputs equal => update the archive\n");
-          copy [(new1,workingarch)];
-        end
+          copy [(new1,working1); (new2,working2); (new1,workingarch)];
+	end else
+	  if returnValue <> Unix.WEXITED 0 then begin
+            debug (fun () -> (Util.msg "Two outputs not equal but merge command returned 0";
+			      Util.msg " => update other replica and archive to first output\n"));
+	    copy [(new1,working1); (new1,working2); (new1,workingarch)];
+	  end else
+	    raise (Util.Transient "Merge command returned non-zero and let the two files unequal.")
       end
-
-      else if new1exists && (not new2exists) && (not newarchexists) then begin
-        debug (fun () -> Util.msg "One output detected \n");
-        copy [(new1,working1); (new1,working2); (new1,workingarch)];
-      end
-
+	  
+      else if new1exists && (not new2exists) && (not newarchexists) 
+	  && returnValue = Unix.WEXITED 0 then begin
+            debug (fun () -> Util.msg "One output detected \n");
+            copy [(new1,working1); (new1,working2); (new1,workingarch)];
+	  end
+	  
       else if (not new1exists) && new2exists && (not newarchexists) then begin
         assert false
       end
-
+	  
       else if (not new1exists) && (not new2exists) && (not newarchexists) then begin
         debug (fun () -> Util.msg "No outputs detected \n");
         let working1_still_exists = Sys.file_exists (Fspath.concatToString workingDirForMerge working1) in
         let working2_still_exists = Sys.file_exists (Fspath.concatToString workingDirForMerge working2) in
-
+	
         if working1_still_exists && working2_still_exists then begin
           debug (fun () -> Util.msg "No output from merge cmd and both original files are still present\n");
           let info1' = Fileinfo.get false workingDirForMerge working1 in
@@ -818,23 +821,35 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
             debug (fun () -> Util.msg "Merge program changed just second input\n");
             copy [(working2,working1);(working2,workingarch)]
           end else
-            raise (Util.Transient ("Error: the merge function changed both of "
-                                   ^ "its inputs but did not make them equal"))
+	    if returnValue <> Unix.WEXITED 0 then
+	      raise (Util.Transient ("Error: the merge function changed both of "
+                                     ^ "its inputs but did not make them equal"))
+	    else begin
+	      debug (fun () -> (Util.msg "Merge program changed both of its inputs in";
+				Util.msg "different ways, but returned zero.\n"));
+              copy [(working2,working1);(working2,workingarch)];
+	    end
         end
-
-        else if working1_still_exists && (not working2_still_exists) then begin
-          debug (fun () -> Util.msg "No outputs and second replica has been deleted \n");
-          copy [(working1,working2); (working1,workingarch)];
-        end
-
-        else if (not working1_still_exists) && working2_still_exists then begin
-          debug (fun () -> Util.msg "No outputs and first replica has been deleted \n");
-          copy [(working2,working1); (working2,workingarch)];
-        end
-
+	    
+        else if working1_still_exists && (not working2_still_exists) 
+	    && returnValue = Unix.WEXITED 0 then begin
+              debug (fun () -> Util.msg "No outputs and second replica has been deleted \n");
+              copy [(working1,working2); (working1,workingarch)];
+            end
+	    
+        else if (not working1_still_exists) && working2_still_exists 
+	    && returnValue = Unix.WEXITED 0 then begin
+              debug (fun () -> Util.msg "No outputs and first replica has been deleted \n");
+              copy [(working2,working1); (working2,workingarch)];
+            end
+	    
         else
-          raise (Util.Transient ("Error: the merge program deleted both of its "
-                                 ^ "inputs and generated no output!"))
+	  if returnValue = Unix.WEXITED 0 then
+            raise (Util.Transient ("Error: the merge program deleted both of its "
+                                   ^ "inputs and generated no output!"))
+	  else
+	    raise (Util.Transient ("Error: the merge program failed but did not let"
+				   ^ " both files equal."))
       end;
       
       Lwt_unix.run
