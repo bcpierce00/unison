@@ -378,7 +378,10 @@ let rec stashCurrentVersion fspath path =
 	if stat = `DIRECTORY then begin
 	  debug (fun () -> Util.msg "Stashing recursively because file is a directory\n");
 	  ignore (Safelist.iter
-		    (fun n -> stashCurrentVersion fspath (Path.child path n))
+		    (fun n -> 
+		      let pathChild = Path.child path n in 
+		      if not (Globals.shouldIgnore pathChild) then 
+			stashCurrentVersion fspath (Path.child path n))
 		    (Os.childrenOf fspath path))
 	end else
 	  match stashPath fspath path with
