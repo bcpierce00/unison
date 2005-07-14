@@ -1,3 +1,8 @@
+CHANGES FROM VERSION 2.15.6
+
+* Fix to the Mac command-line tool.
+
+-------------------------------
 CHANGES FROM VERSION 2.15.5
 
 Added a few sentences to the documentation of the new merging stuff.
