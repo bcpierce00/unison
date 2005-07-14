@@ -1,3 +1,8 @@
+CHANGES FROM VERSION 2.15.1
+
+* Couple more tweaks to the merging function.  I can run Unison together with Harmony now, it seems.
+
+-------------------------------
 CHANGES FROM VERSION 2.15.0
 
 * More work on merging functionality -- fixed one nasty bug in the

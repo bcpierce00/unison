@@ -257,6 +257,9 @@ clean::
 install:
 	$(MAKE) -C src install
 
+installtext:
+	$(MAKE) -C src install UISTYLE=text
+
 tools/ask: tools/ask.ml
 	$(MAKE) -C tools
 

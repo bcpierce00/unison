@@ -224,6 +224,11 @@ let safeGetenv var =
        with Not_found ->
          raise (Fatal ("Environment variable " ^ var ^ " not found")))
 
+let process_status_to_string = function
+    Unix.WEXITED i   -> Printf.sprintf "Exited with status %d" i
+  | Unix.WSIGNALED i -> Printf.sprintf "Killed by signal %d" i
+  | Unix.WSTOPPED i  -> Printf.sprintf "Stopped by signal %d" i
+
 (*****************************************************************************)
 (*                         OS TYPE                                           *)
 (*****************************************************************************)
