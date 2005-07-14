@@ -1633,13 +1633,14 @@ program exits:
 \begin{itemize}
 \item If the merge program exits with a non-zero status, then merge is
   considered to have failed and the replicas are not changed,
-  \textbf{unless} the command created two files that are actually
-  equal, or modified the two source files in equal ways.
+  \textit{unless} the command created two files that are actually
+  equal (or modified the two input files in equal ways), in which case
+  the merge is regarded as having succeeded.
 \item If the file \verb|NEW| has been created, it is written back to both
   replicas (and stored in the backup directory).  Similarly, if just the
   file \verb|NEW1| has been created, it is written back to both 
   replicas.
-\item If neither \verb|NEW| nor \verb|NEW1| has been created, then Unison
+\item If neither \verb|NEW| nor \verb|NEW1| have been created, then Unison
   examines the temporary files \verb|CURRENT1|  and \verb|CURRENT2| that
   were given as inputs to the merge program.  If either has been changed (or
   both have been changed in identical ways), then its new contents are written
@@ -1651,21 +1652,23 @@ program exits:
   and backup directory, respectively. If the files \verb|NEW1|, \verb|NEW2| have 
   been created, but \verb|NEWARCH| has not, then these files are written back to the
   local replica and remote replica, respectively.  Also, if \verb|NEW1| and
-  \verb|NEW2| have identical contents, then the same contents are stored in
-  the backup directory to reflect the fact that the file is currently
-  in sync. 
-\item If \verb|NEW1| and \verb|NEW2| (resp. \verb|CURRENT1| and
-  \verb|CURRENT2|) are created (resp. overwritten) with different
-  contents, but the merge command did not fail -- exited with 0, then
-  we arbitrarily propagate \verb|NEW1| (resp. \verb|CURRENT1|) to the
-  other replica and to the archive. This is a design choice made to
-  handle the case where a merge command only synchronizes some
-  specific contents between two files, skipping some irrelevant
-  information (order between entries, for instance). We assume that
-  only not important information is trimmed during the merge
-  process. If some important information is ignored by the merge
-  command, then it will eventually be lost on the distant replica,
-  after running Unison.
+  \verb|NEW2| have identical contents, then the same contents are stored as
+  a backup (if the \verb|backupcurrent| preference is set for this path) to
+  reflect the fact that the path is currently in sync. 
+  \item If \verb|NEW1| and \verb|NEW2| (resp. \verb|CURRENT1| and
+  \verb|CURRENT2|) are created (resp. overwritten) with different contents
+  but the merge command did not fail (i.e., it exited with status code 0),
+  then we copy \verb|NEW1| (resp. \verb|CURRENT1|) to the other replica and
+  to the archive.  
+  
+  This behavior is a design choice made to handle the case where a merge
+  command only synchronizes some specific contents between two files,
+  skipping some irrelevant information (order between entries, for
+  instance).  We assume that, if the merge command exits normally, then the
+  two resulting files are ``as good as equal.'' (The reason we copy one on
+  top of the other is to avoid Unison detecting that the files are unequal
+  the next time it is run and trying again to merge them when, in fact, the
+  merge program has already made them as similar as it is able to.)
 \end{itemize}
 
 A large number of external merging programs are available.  

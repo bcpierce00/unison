@@ -1,3 +1,18 @@
+CHANGES FROM VERSION 2.15.5
+
+Added a few sentences to the documentation of the new merging stuff.
+
+I think this stuff (the new merge implementation as well as, more
+importantly, the new implementation of backups) is now just about
+ready to be used by others.  In fact, it would be useful to have a few
+more people try it to flush out any remaining bugs.  
+
+Please keep a careful eye on what it is doing, though, if you choose
+to upgrade.
+
+
+
+-------------------------------
 CHANGES FROM VERSION 2.15.1
 
 * Couple more tweaks to the merging function.  I can run Unison together with Harmony now, it seems.
