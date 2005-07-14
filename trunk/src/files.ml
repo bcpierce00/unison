@@ -249,7 +249,7 @@ let checkContentsChangeLocal
               (Fspath.concatToString currfspath path)
               (if Util.osType = `Win32 && (Prefs.read Update.fastcheck)="yes" then
                 ("If this happens repeatedly, try running once with the "
-                 ^ "fastcheck option set to 'no'.")
+                 ^ "fastcheck option set to 'no'")
               else "")))
   | _ ->
       (* Note that we fall back to the paranoid check (using a fingerprint)
@@ -750,15 +750,15 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
 (*       if returnValue <> Unix.WEXITED 0 then *)
 (*         raise (Util.Transient "Merge program exited with non-zero status"); *)
    
-      let mergeText =
-        cmd ^ "\n" ^ 
-        (if mergeLog="" then "Merge program exited normally"
-        else mergeLog) in
+      let mergeResultLog =
+        cmd ^ "\n" ^ mergeLog ^ "\n" ^ 
+        (if returnValue <> Unix.WEXITED 0 then "" 
+         else Util.process_status_to_string returnValue) in
 
       if not
           (showMergeFn
              (Printf.sprintf "Results of merging %s" (Path.toString path))
-             mergeText) then
+             mergeResultLog) then
         raise (Util.Transient "User cancelled merge");
       
       (* Check which files got created by the merge command and do something appropriate
@@ -780,12 +780,13 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
           debug (fun () -> Util.msg "Two outputs equal => update the archive\n");
           copy [(new1,working1); (new2,working2); (new1,workingarch)];
 	end else
-	  if returnValue <> Unix.WEXITED 0 then begin
-            debug (fun () -> (Util.msg "Two outputs not equal but merge command returned 0";
-			      Util.msg " => update other replica and archive to first output\n"));
+	  if returnValue = Unix.WEXITED 0 then begin
+            debug (fun () -> (Util.msg "Two outputs not equal but merge command returned 0, so we will\n";
+			      Util.msg "overwrite the other replica and the archive with the first output\n"));
 	    copy [(new1,working1); (new1,working2); (new1,workingarch)];
-	  end else
-	    raise (Util.Transient "Merge command returned non-zero and let the two files unequal.")
+	  end else begin
+	    raise (Util.Transient "Merge command exited with non-zero status and left the two files unequal")
+          end 
       end
 	  
       else if new1exists && (not new2exists) && (not newarchexists) 
@@ -848,8 +849,8 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
             raise (Util.Transient ("Error: the merge program deleted both of its "
                                    ^ "inputs and generated no output!"))
 	  else
-	    raise (Util.Transient ("Error: the merge program failed but did not let"
-				   ^ " both files equal."))
+	    raise (Util.Transient ("Error: the merge program failed but did not leave"
+				   ^ " both files equal"))
       end;
       
       Lwt_unix.run

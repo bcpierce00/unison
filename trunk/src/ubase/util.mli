@@ -32,6 +32,8 @@ type confirmation =
 
 val printException : exn -> string
 
+val process_status_to_string : Unix.process_status -> string
+
 (* ---------------------------------------------------------------------- *)
 (* Strings *)
 

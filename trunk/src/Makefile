@@ -73,6 +73,9 @@ INSTALLDIR = $(HOME)/bin/
 # This has two names because on OSX the file INSTALL shadows the target 'install'!
 install: doinstall
 
+installtext: 
+	make -C .. installtext
+
 doinstall: $(NAME)$(EXEC_EXT)
 	-mv $(INSTALLDIR)/$(NAME)$(EXEC_EXT) /tmp/$(NAME)-$(shell echo $$$$)
 	cp $(NAME)$(EXEC_EXT) $(INSTALLDIR)
