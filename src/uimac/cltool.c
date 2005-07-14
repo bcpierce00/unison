@@ -28,7 +28,7 @@ int main(int argc, char **argv) {
   int len;
   char buf[BUFSIZE];
 
-  status = LSFindApplicationForInfo(NULL,CFSTR("edu.upenn.cis.Unison"),NULL,&fsref,NULL);
+  status = LSFindApplicationForInfo(kLSUnknownCreator,CFSTR("edu.upenn.cis.Unison"),NULL,&fsref,NULL);
   if (status) {
     if (status == kLSApplicationNotFoundErr) {
       fprintf(stderr,"Error: can't find the Unison application using the Launch Services database.\n");
