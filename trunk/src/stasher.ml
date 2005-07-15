@@ -307,7 +307,18 @@ let removeAndBackupAsAppropriate fspath path fakeFspath fakePath =
 	    (Fspath.toString fakeFspath)
 	    (Path.toString backPath)
 	    (Fspath.toString backRoot));
-	Os.rename fspath path backRoot backPath
+	try Os.rename fspath path backRoot backPath
+	with
+	  _ -> 
+	    (let info = Fileinfo.get (Path.followLink path) fspath path in
+	    Copy.localFile
+	      fspath path 
+	      backRoot backPath backPath 
+	      `Copy 
+	      info.Fileinfo.desc
+	      (Osx.ressLength info.Fileinfo.osX.Osx.ressInfo)
+	      None;
+	    Os.delete fspath path)
       end else begin
 	debug ( fun () -> Util.msg
 	    "File %s in %s will not be backed up.\n" 
@@ -386,7 +397,7 @@ let rec stashCurrentVersion fspath path =
 	end else
 	  match stashPath fspath path with
 	    Some (stashDir, stashPath) ->
-	      let info = Fileinfo.get false fspath path in
+	      let info = Fileinfo.get (Path.followLink path) fspath path in
 	      Copy.localFile 
 		fspath path 
 		stashDir stashPath stashPath 
