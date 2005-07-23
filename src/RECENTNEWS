@@ -1,3 +1,10 @@
+CHANGES FROM VERSION 2.16.-2
+
+* Bumped version number to 2.16.  (Everybody doing committs should
+  remember to do this manually whenever the wire protocol changes,
+  e.g. when preferences are added...)
+
+-------------------------------
 CHANGES FROM VERSION 2.15.6
 
 * Fix to the Mac command-line tool.
