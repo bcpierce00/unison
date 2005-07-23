@@ -109,6 +109,16 @@ let retry =
      ^ "updated paths where synchronization fails.  Each such path will be tried N times."
     )
 
+let confirmmerge =
+  Prefs.createBool "confirmmerge" false
+    "asks for confirmation before commiting the results of a merge command"
+    ("Setting this preference causes both the text and graphical interfaces"
+     ^ " to ask the user if the results of a merge command may be commited "
+     ^ "to the replica or not. Since the merge command works on temporary files,"
+     ^ " the user can then cancel all the effects of applying the merge if it"
+     ^ " turns out that the result is not satisfactory. Note though that in "
+     ^ "batch-mode, turning this preference to true will have no effect.")
+    
 (**********************************************************************
                          Formatting functions
  **********************************************************************)

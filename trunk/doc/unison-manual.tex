@@ -1632,10 +1632,7 @@ merging, Unison checks for several possible situations when the merge
 program exits:
 \begin{itemize}
 \item If the merge program exits with a non-zero status, then merge is
-  considered to have failed and the replicas are not changed,
-  \textit{unless} the command created two files that are actually
-  equal (or modified the two input files in equal ways), in which case
-  the merge is regarded as having succeeded.
+  considered to have failed and the replicas are not changed.
 \item If the file \verb|NEW| has been created, it is written back to both
   replicas (and stored in the backup directory).  Similarly, if just the
   file \verb|NEW1| has been created, it is written back to both 
@@ -1670,6 +1667,10 @@ program exits:
   the next time it is run and trying again to merge them when, in fact, the
   merge program has already made them as similar as it is able to.)
 \end{itemize}
+
+If the \verb|confirmmerge| preference is set and Unison is not run in
+batch mode, then Unison will always ask for confirmation before
+actually committing the results of the merge to the replicas.
 
 A large number of external merging programs are available.  
 For example, on Unix systems setting the \verb|merge| preference to

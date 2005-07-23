@@ -743,23 +743,26 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
           (Fspath.concatToString workingDirForMerge newarch) in
       Trace.log (Printf.sprintf "%s\n" cmd);
       
-      let c = Unix.open_process_in cmd in
-      let mergeLog = readChannelTillEof c in
-      let returnValue = Unix.close_process_in c in
+      let (out, ipt, err) = Unix.open_process_full cmd (Unix.environment ())in
+      let mergeLogOut = readChannelTillEof out in
+      let mergeLogErr = readChannelTillEof err in
+      let returnValue = Unix.close_process_full (out, ipt, err) in
       
 (*       if returnValue <> Unix.WEXITED 0 then *)
 (*         raise (Util.Transient "Merge program exited with non-zero status"); *)
    
       let mergeResultLog =
-        cmd ^ "\n" ^ mergeLog ^ "\n" ^ 
-        (if returnValue <> Unix.WEXITED 0 then "" 
-         else Util.process_status_to_string returnValue) in
-
+        cmd ^ "\n\nStandard Output:\n" ^ mergeLogOut ^ "\n\n" ^ 
+	(("Error Output:"^mergeLogErr) ^"\n\n" ^
+	 Util.process_status_to_string returnValue)
+      in
+      
       if not
           (showMergeFn
+	     (returnValue = Unix.WEXITED 0)
              (Printf.sprintf "Results of merging %s" (Path.toString path))
              mergeResultLog) then
-        raise (Util.Transient "User cancelled merge");
+        raise (Util.Transient ("Merge command failed or cancelled by the user"));
       
       (* Check which files got created by the merge command and do something appropriate
          with them *)

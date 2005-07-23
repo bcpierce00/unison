@@ -4,9 +4,9 @@
 
 (* Executes the actions implied by the reconItem list. *)
 val transportItem :
-     Common.reconItem           (* Updates that need to be performed *)
-  -> Uutil.File.t               (* id for progress reports *)
-  -> (string->string->bool)     (* fn to display title / result of merge *)
+     Common.reconItem                 (* Updates that need to be performed *)
+  -> Uutil.File.t                     (* id for progress reports *)
+  -> (bool->string->string->bool)     (* fn to display title / result of merge *)
   -> unit Lwt.t
 
 (* Should be called respectively when starting the synchronization and
