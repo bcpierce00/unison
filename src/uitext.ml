@@ -6,7 +6,7 @@ open Common
 open Lwt
 
 module Body : Uicommon.UI = struct
-
+  
 let debug = Trace.debug "ui"
 
 let dumbtty =
@@ -30,7 +30,7 @@ let dumbtty =
      ^ "recognizes keystrokes as soon as they are typed.)\n\n"
      ^ "This preference has no effect on the graphical user "
      ^ "interface.")
-
+    
 let silent =
   Prefs.createBool "silent" false "print nothing (except error messages)"
     ("When this preference is set to {\\tt true}, the textual user "
@@ -326,25 +326,32 @@ let interact rilist =
                 (fun () -> displayri ri)
   in
     loop [] rilist
-
-let verifyMerge title text =
+    
+let verifyMerge proceed title text =
   Printf.printf "%s\n" text;
-  if Prefs.read Globals.batch then
-    true
-  else begin
-    display "Commit results of merge? ";
-    selectAction
-      None   (* Maybe better: (Some "n") *)
-      [(["y";"g"],
-        "Yes: commit",
-        (fun() -> true));
-       (["n"],
-        "No: leave this file unchanged",
-        (fun () -> false));
-       ]
-      (fun () -> display "Commit results of merge? ")
-  end
-
+  if proceed then
+    if Prefs.read Globals.batch then
+      true
+    else begin
+      if Prefs.read Uicommon.confirmmerge then begin
+	display "Commit results of merge? ";
+	selectAction
+	  None   (* Maybe better: (Some "n") *)
+	  [(["y";"g"],
+            "Yes: commit",
+            (fun() -> true));
+	    (["n"],
+             "No: leave this file unchanged",
+             (fun () -> false));
+	  ]
+	  (fun () -> display "Commit results of merge? ")
+      end
+      else
+	true
+    end
+  else
+    false
+      
 let doTransport reconItemList =
   let totalBytesToTransfer =
     ref

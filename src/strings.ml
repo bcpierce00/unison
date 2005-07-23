@@ -4,7 +4,7 @@
 let docs =
     ("about", ("About Unison", 
      "Unison File Synchronizer\n\
-      Version 2.15.1\n\
+      Version 2.15.7\n\
       \n\
       \032  Unison  is a file-synchronization tool for Unix and Windows. It allows\n\
       \032  two  replicas of a collection of files and directories to be stored on\n\
@@ -1103,6 +1103,8 @@ let docs =
       \032 -backups            keep backup copies of all files (see also 'backup')\n\
       \032 -backupsuffix xxx   a suffix to be added to names of backup files\n\
       \032 -batch              batch mode: ask no questions at all\n\
+      \032 -confirmmerge       asks for confirmation before commiting the results of a m\n\
+      erge command\n\
       \032 -contactquietly      Suppress the 'contacting server' message during startup\n\
       \032 -debug xxx          debug module xxx ('all' -> everything, 'verbose' -> more)\n\
       \032 -doc xxx            show documentation ('-doc topics' lists topics)\n\
@@ -1242,6 +1244,14 @@ let docs =
       \032         When  this  is  set  to  true,  the  user interface will ask no\n\
       \032         questions  at  all. Non-conflicting changes will be propagated;\n\
       \032         conflicts will be skipped.\n\
+      \032  confirmmerge\n\
+      \032         Setting  this  preference  causes  both  the text and graphical\n\
+      \032         interfaces  to  ask  the user if the results of a merge command\n\
+      \032         may  be commited to the replica or not. Since the merge command\n\
+      \032         works  on  temporary  files,  the  user can then cancel all the\n\
+      \032         effects  of  applying the merge if it turns out that the result\n\
+      \032         is  not  satisfactory.  Note though that in batch-mode, turning\n\
+      \032         this preference to true will have no effect.\n\
       \032  contactquietly\n\
       \032         If   this   flag  is  set,  Unison  will  skip  displaying  the\n\
       \032         `Contacting  server'  window  (which  some users find annoying)\n\
@@ -1932,38 +1942,43 @@ let docs =
       \032  use  for  merging,  Unison checks for several possible situations when\n\
       \032  the merge program exits:\n\
       \032    * If  the  merge program exits with a non-zero status, then merge is\n\
-      \032      considered to have failed and the replicas are not changed, unless\n\
-      \032      the command created two files that are actually equal, or modified\n\
-      \032      the two source files in equal ways.\n\
+      \032      considered to have failed and the replicas are not changed.\n\
       \032    * If  the  file  NEW  has  been  created, it is written back to both\n\
       \032      replicas  (and stored in the backup directory). Similarly, if just\n\
       \032      the  file  NEW1  has  been  created,  it  is  written back to both\n\
       \032      replicas.\n\
-      \032    * If neither NEW nor NEW1 has been created, then Unison examines the\n\
-      \032      temporary files CURRENT1 and CURRENT2 that were given as inputs to\n\
-      \032      the  merge  program. If either has been changed (or both have been\n\
-      \032      changed in identical ways), then its new contents are written back\n\
-      \032      to both replicas. If either CURRENT1 or CURRENT2 has been deleted,\n\
-      \032      then the contents of the other are written back to both replicas.\n\
+      \032    * If  neither  NEW  nor NEW1 have been created, then Unison examines\n\
+      \032      the  temporary  files  CURRENT1  and  CURRENT2  that were given as\n\
+      \032      inputs  to  the merge program. If either has been changed (or both\n\
+      \032      have  been  changed  in identical ways), then its new contents are\n\
+      \032      written  back to both replicas. If either CURRENT1 or CURRENT2 has\n\
+      \032      been  deleted,  then the contents of the other are written back to\n\
+      \032      both replicas.\n\
       \032    * If  the  files NEW1, NEW2, and NEWARCH have all been created, they\n\
       \032      are  written back to the local replica, remote replica, and backup\n\
       \032      directory,  respectively.  If  the  files  NEW1,  NEW2  have  been\n\
       \032      created, but NEWARCH has not, then these files are written back to\n\
       \032      the  local replica and remote replica, respectively. Also, if NEW1\n\
       \032      and  NEW2  have  identical  contents,  then  the same contents are\n\
-      \032      stored  in  the backup directory to reflect the fact that the file\n\
-      \032      is currently in sync.\n\
+      \032      stored  as  a  backup  (if the backupcurrent preference is set for\n\
+      \032      this path) to reflect the fact that the path is currently in sync.\n\
       \032    * If  NEW1 and NEW2 (resp. CURRENT1 and CURRENT2) are created (resp.\n\
-      \032      overwritten)  with  different  contents, but the merge command did\n\
-      \032      not  fail  --  exited  with  0, then we arbitrarily propagate NEW1\n\
-      \032      (resp.  CURRENT1) to the other replica and to the archive. This is\n\
-      \032      a design choice made to handle the case where a merge command only\n\
-      \032      synchronizes  some  specific  contents between two files, skipping\n\
-      \032      some irrelevant information (order between entries, for instance).\n\
-      \032      We  assume  that  only not important information is trimmed during\n\
-      \032      the merge process. If some important information is ignored by the\n\
-      \032      merge  command,  then  it  will  eventually be lost on the distant\n\
-      \032      replica, after running Unison.\n\
+      \032      overwritten) with different contents but the merge command did not\n\
+      \032      fail  (i.e.,  it  exited  with  status  code 0), then we copy NEW1\n\
+      \032      (resp. CURRENT1) to the other replica and to the archive.\n\
+      \032      This  behavior  is a design choice made to handle the case where a\n\
+      \032      merge command only synchronizes some specific contents between two\n\
+      \032      files,   skipping   some  irrelevant  information  (order  between\n\
+      \032      entries, for instance). We assume that, if the merge command exits\n\
+      \032      normally,  then  the two resulting files are ``as good as equal.''\n\
+      \032      (The  reason  we  copy  one on top of the other is to avoid Unison\n\
+      \032      detecting  that  the files are unequal the next time it is run and\n\
+      \032      trying  again  to  merge them when, in fact, the merge program has\n\
+      \032      already made them as similar as it is able to.)\n\
+      \n\
+      \032  If  the  confirmmerge preference is set and Unison is not run in batch\n\
+      \032  mode,  then  Unison  will  always ask for confirmation before actually\n\
+      \032  committing the results of the merge to the replicas.\n\
       \n\
       \032  A  large  number  of  external  merging  programs  are  available. For\n\
       \032  example, on Unix systems setting the merge preference to\n\
@@ -2364,8 +2379,8 @@ let docs =
       \n\
       "))
 ::
-    ("news", ("Changes in Version 2.15.1", 
-     "Changes in Version 2.15.1\n\
+    ("news", ("Changes in Version 2.15.7", 
+     "Changes in Version 2.15.7\n\
       \n\
       \032  Changes since 2.12.0:\n\
       \032    * New convention for release numbering: Releases will continue to be\n\

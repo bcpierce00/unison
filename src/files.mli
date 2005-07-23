@@ -69,13 +69,14 @@ val ls : string -> string -> string list
 val get_files_in_directory : string -> string list
 
 val merge :
-     Common.root                (* first root *)
-  -> Common.root                (* second root *)
-  -> Path.t                     (* path to merge *)
-  -> Uutil.File.t               (* id for showing progress of transfer *)
-  -> Common.updateItem          (* differences from the archive *)
-  -> Common.updateItem          (* ... *)
-  -> (string->string->bool)     (* function to display the (title and) result and ask user for confirmation
-                                   (when -batch is true, the function should not ask any questions and should
-                                   always return true) *)
+     Common.root                  (* first root *)
+  -> Common.root                  (* second root *)
+  -> Path.t                       (* path to merge *)
+  -> Uutil.File.t                 (* id for showing progress of transfer *)
+  -> Common.updateItem            (* differences from the archive *)
+  -> Common.updateItem            (* ... *)
+  -> (bool->string->string->bool) (* function to display the (title and) result 
+				     and ask user for confirmation (when -batch 
+				     is true, the function should not ask any 
+				     questions and should always return true) *)
   -> unit

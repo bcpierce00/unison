@@ -38,6 +38,9 @@ val repeat : string Prefs.t
 (* User preference: Try failing paths N times *)
 val retry : int Prefs.t
 
+(* User preference: confirmation before commiting merge results *)
+val confirmmerge : bool Prefs.t
+
 (* Format the information about current contents of a path in one replica (the second argument
    is used as a separator) *)
 val details2string : Common.reconItem -> string -> string

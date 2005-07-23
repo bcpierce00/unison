@@ -91,7 +91,7 @@ let icon =
 
 type stateItem = { mutable ri : reconItem;
                    mutable bytesTransferred : Uutil.Filesize.t;
-                   mutable whatHappened : Util.confirmation option }
+                   mutable whatHappened : (Util.confirmation * string option) option}
 let theState = ref [||]
 
 let current = ref None
@@ -1117,10 +1117,10 @@ let documentation sect =
 
 (* ------ *)
 
-let messageBox ~title ?(action = fun t -> t#destroy)
+let messageBox ~title ~parent ?(action = fun t -> t#destroy)
     ?(modal = false) message =
   let utitle = transcode title in
-  let t = GWindow.dialog ~title:utitle ~modal ~position:`CENTER () in
+  let t = GWindow.dialog ~title:utitle ~parent ~modal ~position:`CENTER () in
   let t_dismiss = GButton.button ~stock:`CLOSE ~packing:t#action_area#add () in
   t_dismiss#grab_default ();
   ignore (t_dismiss#connect#clicked ~callback:(action t));
@@ -1136,6 +1136,44 @@ let messageBox ~title ?(action = fun t -> t#destroy)
     GMain.Main.main ();
     releaseFocus ()
   end
+
+(* twoBoxAdvanced: Display a message in a window and wait for the user
+   to hit one of two buttons.  Return true if the first button is
+   chosen, false if the second button is chosen. Also has a button for 
+   showing more details to the user in a messageBox dialog *)
+let twoBoxAdvanced ~title ~message ~longtext ~advLabel ~astock ~bstock =
+  let t =
+    GWindow.dialog ~border_width:6 ~modal:false ~no_separator:true
+      ~allow_grow:false () in
+  t#vbox#set_spacing 12;
+  let h1 = GPack.hbox ~border_width:6 ~spacing:12 ~packing:t#vbox#pack () in
+  ignore (GMisc.image ~stock:`DIALOG_WARNING ~icon_size:`DIALOG
+            ~yalign:0. ~packing:h1#pack ());
+  let v1 = GPack.vbox ~spacing:12 ~packing:h1#pack () in
+  ignore (GMisc.label
+            ~markup:(primaryText title ^ "\n\n" ^ escapeMarkup message)
+            ~selectable:true ~yalign:0. ~packing:v1#add ());
+  t#add_button_stock `CANCEL `NO;
+  let cmd () =
+    messageBox ~title:"Details" ~parent:t ~modal:false longtext
+  in
+  t#add_button advLabel `HELP;
+  t#add_button_stock `APPLY `YES;
+  t#set_default_response `NO;
+  let res = ref false in
+  let setRes signal =
+    match signal with
+      `YES -> res := true; t#destroy ()
+    | `NO -> res := false; t#destroy ()
+    | `HELP -> cmd ()
+    | _ -> ()
+  in
+  ignore (t#connect#response ~callback:setRes);
+  ignore (t#connect#destroy ~callback:GMain.Main.quit);
+  grabFocus t; t#show();
+  GMain.Main.main();
+  releaseFocus ();
+  !res
 
 
 (**********************************************************************
@@ -1337,34 +1375,59 @@ let rec createToplevelWindow () =
     Create the details window
    *********************************************************************)
 
-  let detailsWindow =
+  let (showDetailsButton, detailsWindow) =
     let sw =
       GBin.frame ~packing:(toplevelVBox#pack ~expand:false)
         ~shadow_type:`IN (*~hpolicy:`AUTOMATIC ~vpolicy:`NEVER*) () in
-    GText.view ~editable:false
-      ~wrap_mode:`NONE ~packing:sw#add () in
+    let hb =GPack.hbox ~packing:sw#add () in
+    (GButton.button ~label:"View details..." ~packing:hb#add (),
+     GText.view ~editable:false ~wrap_mode:`NONE ~packing:hb#add ())
+
+  in
   detailsWindow#misc#modify_font (Lazy.force fontMonospaceMediumPango);
   detailsWindow#misc#set_size_chars ~height:3 ~width:104 ();
   detailsWindow#misc#set_can_focus false;
-
+  let showDetCommand () = 
+    let details =
+      match !current with
+	None -> "[No details available]"
+      | Some row -> 
+	  (match !theState.(row).whatHappened with
+	    Some (Util.Failed _, Some det) -> det
+	  |  _ -> "[No details available]") in
+    messageBox ~title:"Merge execution details" ~parent:(getMyWindow ()) details
+  in
+  ignore (showDetailsButton#connect#clicked ~callback:showDetCommand);
+  
   let updateButtons () =
     match !current with
       None ->
         grSet grAction false;
-        grSet grDiff false
+        grSet grDiff false;
+	showDetailsButton#misc#set_sensitive false
     | Some row ->
-        let (activate1, activate2) =
+        let (details, activate1, activate2) =
           match !theState.(row).whatHappened, !theState.(row).ri.replicas with
           | None,   Different((`FILE, _, _, _),(`FILE, _, _, _), _, _) ->
-              (true, true)
-          | Some _,   Different((`FILE, _, _, _),(`FILE, _, _, _), _, _) ->
-              (false, true)
-          | Some _, _ ->
-              (false, false)
+              (false, true, true)
+          | Some res,   Different((`FILE, _, _, _),(`FILE, _, _, _), _, _) ->
+	      (match res with 
+		Util.Succeeded, _ -> (false, false, true)
+	      |	Util.Failed s, None -> (false, false, true)
+	      |	Util.Failed s, Some dText -> (true, false, false)
+		    )
+          | Some res, _ ->
+	      (match res with 
+		Util.Succeeded, _ -> (false, false, false)
+	      |	Util.Failed s, None -> (false, false, false)
+	      |	Util.Failed s, Some dText -> (true, false, false)
+		    )
           | None,   _ ->
-              (true, false) in
+              (false, true, false) in
         grSet grAction activate1;
-        grSet grDiff activate2 in
+        grSet grDiff activate2;
+	showDetailsButton#misc#set_sensitive details
+  in
 
   let makeRowVisible row =
     if mainWindow#row_is_visible row <> `FULL then begin
@@ -1396,8 +1459,9 @@ let rec createToplevelWindow () =
         let details =
           match !theState.(row).whatHappened with
             None -> Uicommon.details2string !theState.(row).ri "  "
-          | Some(Util.Succeeded) -> Uicommon.details2string !theState.(row).ri "  "
-          | Some(Util.Failed(s)) -> s in
+          | Some(Util.Succeeded, _) -> Uicommon.details2string !theState.(row).ri "  "
+          | Some(Util.Failed(s), None) -> s
+	  | Some(Util.Failed(s), Some resultLog) -> s in 
 	let path = Path.toString !theState.(row).ri.path in
         detailsWindow#buffer#set_text
           (transcodeFilename path ^ "\n" ^ transcode details);
@@ -1475,8 +1539,8 @@ let rec createToplevelWindow () =
               "      "
           | _ ->
               match conf with
-                Util.Succeeded -> "done  "
-              | Util.Failed _  -> "failed" in
+                Util.Succeeded, _ -> "done  "
+              | Util.Failed _, _  -> "failed" in
     let s = Uicommon.reconItem2string oldPath !theState.(i).ri status in
     (* FIX: This is ugly *)
     (String.sub s  0 8,
@@ -1822,6 +1886,7 @@ lst_store#set ~row ~column:c_path path;
       let rec loop i actions pRiThisRound =
         if i < im then begin
           let theSI = !theState.(i) in
+	  let textDetailed = ref None in
           let action =
             match theSI.whatHappened with
               None ->
@@ -1831,17 +1896,38 @@ lst_store#set ~row ~column:c_path path;
                   catch (fun () ->
                            Transport.transportItem
                              theSI.ri (Uutil.File.ofLine i)
-                             (fun title text -> Trace.status (Printf.sprintf "\n%s\n\n%s\n\n" title text); true)
+                             (fun proceed title text -> 
+			    (*    Trace.status (Printf.sprintf "\n%s\n\n%s\n\n" title text); *)
+			       textDetailed := (Some text);
+			       if proceed then
+				 if Prefs.read Uicommon.confirmmerge then
+				   twoBoxAdvanced
+				     ~title:title
+				     ~message:("The merge exited successfully."
+					       ^ " Do you want to commit the changes to"
+					       ^ " the replicas ?")
+				     ~longtext:text 
+				     ~advLabel:"View details..."
+				     ~astock:`YES
+				     ~bstock:`NO
+				 else
+				   true
+			       else
+				 (okBox ~title:title ~typ:`INFO 
+				    ~message:("\nThe merge function was unsuccessful, "
+					      ^ "changes will not be commited to "
+					      ^ "the replicas.");
+				  false))
                            >>= (fun () ->
-                           return Util.Succeeded))
-                        (fun e ->
+                             return Util.Succeeded))
+                         (fun e ->
                            match e with
                              Util.Transient s ->
                                return (Util.Failed s)
                            | _ ->
                                fail e)
                     >>= (fun res ->
-                  theSI.whatHappened <- Some res;
+                      theSI.whatHappened <- Some (res, !textDetailed);
                   redisplay i;
                   makeFirstUnfinishedVisible pRiThisRound;
                   gtk_sync ();
@@ -1870,7 +1956,7 @@ lst_store#set ~row ~column:c_path path;
         let count =
           Array.fold_left
             (fun l si ->
-               l + (match si.whatHappened with Some(Util.Failed(_)) -> 1 | _ -> 0))
+               l + (match si.whatHappened with Some(Util.Failed(_), _) -> 1 | _ -> 0))
             0 !theState in
         if count = 0 then "" else
           Printf.sprintf "%d failure%s" count (if count=1 then "" else "s") in
@@ -1988,7 +2074,7 @@ lst_store#set ~row ~column:c_path path;
       Some i ->
         getLock (fun () ->
           Uicommon.showDiffs !theState.(i).ri
-            (fun title text -> messageBox ~title (transcode text))
+            (fun title text -> messageBox ~title ~parent:(getMyWindow ()) (transcode text))
             Trace.status (Uutil.File.ofLine i);
           displayGlobalProgress 0.)
     | None ->
@@ -2208,8 +2294,8 @@ lst_store#set ~row ~column:c_path path;
              let notok =
                (match !theState.(i).whatHappened with
                    None-> true
-                 | Some(Util.Failed _) -> true
-                 | Some(Util.Succeeded) -> false)
+                 | Some(Util.Failed _, _) -> true
+                 | Some(Util.Succeeded, _) -> false)
               || match !theState.(i).ri.replicas with
                    Problem _ -> true
                  | Different(rc1,rc2,dir,_) ->

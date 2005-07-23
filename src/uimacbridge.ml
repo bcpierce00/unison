@@ -348,7 +348,8 @@ let unisonSynchronize () =
                 catch (fun () ->
                          Transport.transportItem
                            theSI.ri (Uutil.File.ofLine i)
-                           (fun title text -> Trace.status (Printf.sprintf "MERGE %s: %s" title text); true)
+                           (fun proceed title text -> 
+			     Trace.status (Printf.sprintf "MERGE %s: %s" title text); proceed)
                          >>= (fun () ->
                          return Util.Succeeded))
                       (fun e ->

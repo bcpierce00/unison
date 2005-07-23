@@ -1,3 +1,5 @@
+src/abort.cmo: src/abort.cmi 
+src/abort.cmx: src/abort.cmi 
 src/case.cmo: src/case.cmi 
 src/case.cmx: src/case.cmi 
 src/checksum.cmo: src/checksum.cmi 
@@ -40,6 +42,10 @@ src/remote.cmo: src/remote.cmi
 src/remote.cmx: src/remote.cmi 
 src/sortri.cmo: src/sortri.cmi 
 src/sortri.cmx: src/sortri.cmi 
+src/stasher.cmo: src/stasher.cmi 
+src/stasher.cmx: src/stasher.cmi 
+src/strings.cmo: src/strings.cmi 
+src/strings.cmx: src/strings.cmi 
 src/terminal.cmo: src/terminal.cmi 
 src/terminal.cmx: src/terminal.cmi 
 src/transfer.cmo: src/transfer.cmi 
@@ -50,10 +56,10 @@ src/tree.cmo: src/tree.cmi
 src/tree.cmx: src/tree.cmi 
 src/uicommon.cmo: src/uicommon.cmi 
 src/uicommon.cmx: src/uicommon.cmi 
-src/uigtk.cmo: src/uigtk.cmi 
-src/uigtk.cmx: src/uigtk.cmi 
 src/uigtk2.cmo: src/uigtk2.cmi 
 src/uigtk2.cmx: src/uigtk2.cmi 
+src/uigtk.cmo: src/uigtk.cmi 
+src/uigtk.cmx: src/uigtk.cmi 
 src/uitext.cmo: src/uitext.cmi 
 src/uitext.cmx: src/uitext.cmi 
 src/update.cmo: src/update.cmi 
