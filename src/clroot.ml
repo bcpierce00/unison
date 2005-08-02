@@ -33,11 +33,11 @@ type clroot =
           string        (* shell = "rsh" or "ssh" *)
         * string        (* name of host *)
         * string option (* user name to log in as *)
-        * int option    (* port *)
+        * string option (* port *)
         * string option (* root of replica in host fs *)
   | ConnectBySocket of
           string        (* name of host *)
-        * int           (* port where server should be listening *)
+        * string        (* port where server should be listening *)
         * string option (* root of replica in host fs *)
 
 (* Internal datatypes used in parsing command-line roots *)
@@ -107,13 +107,13 @@ let getHost s =
     (Some host,s')
   else (None,s)
 
-let colonPortRegexp = Str.regexp ":[0-9]+"
+let colonPortRegexp = Str.regexp ":[^/]+"
 let getPort s =
   if Str.string_match colonPortRegexp s 0
   then
     let colonPort = Str.matched_string s in
     let len = String.length colonPort in
-    let port = int_of_string(String.sub colonPort 1 (len-1)) in
+    let port = String.sub colonPort 1 (len-1) in
     let s' = Str.string_after s len in
     (Some port,s')
   else (None,s)
@@ -178,11 +178,11 @@ let clroot2string = function
     else Printf.sprintf "file:///%s" s
     else s
 | ConnectBySocket(h,p,s) ->
-    Printf.sprintf "socket://%s:%d/%s" h p
+    Printf.sprintf "socket://%s:%s/%s" h p
       (match s with None -> "" | Some x -> x)
 | ConnectByShell(sh,h,u,p,s) ->
     let user = match u with None -> "" | Some x -> x^"@" in
-    let port = match p with None -> "" | Some x -> ":"^(string_of_int x) in
+    let port = match p with None -> "" | Some x -> ":"^x in
     let path = match s with None -> "" | Some x -> x in
     Printf.sprintf "%s://%s%s%s/%s" sh user h port path
 

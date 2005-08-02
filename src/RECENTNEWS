@@ -1,3 +1,12 @@
+CHANGES FROM VERSION 2.16.1
+
+* Applied patches for ipv6 support, contributed by Samuel Thibault.
+  (Note that, due to a bug in OCaml 3.08.3, this code will not
+  actually work with ipv6 unless compiled with the CVS version of the
+  OCaml compiler, where the bug has been fixed; however, ipv4 should
+  continue to work normally.)
+
+-------------------------------
 CHANGES FROM VERSION 2.16.-2
 
 * Bumped version number to 2.16.  (Everybody doing committs should

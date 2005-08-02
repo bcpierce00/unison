@@ -10,11 +10,11 @@ type clroot =
           string        (* shell = "rsh" or "ssh" *)
         * string        (* name of host *)
         * string option (* user name to log in as *)
-        * int option    (* port *)
+        * string option (* port *)
         * string option (* root of replica in host fs *)
   | ConnectBySocket of
           string        (* name of host *)
-        * int           (* port where server should be listening *)
+        * string        (* port where server should be listening *)
         * string option (* root of replica in host fs *)
 
 val clroot2string : clroot -> string

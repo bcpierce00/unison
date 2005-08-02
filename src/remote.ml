@@ -811,25 +811,26 @@ let inetAddr host =
 
 let buildSocketConnection host port =
   Util.convertUnixErrorsToFatal "canonizeRoot" (fun () ->
-    let targetInetAddr =
-      try
-        inetAddr host
-      with Not_found ->
+    let rec loop = function
+      [] ->
         raise (Util.Fatal
                  (Printf.sprintf
-                    "Can't find the IP address of the server (%s)" host))
-    in
-    (* create a socket to talk to the remote host *)
-    let socket = Unix.socket Unix.PF_INET Unix.SOCK_STREAM 0 in
-    begin try
-      Unix.connect socket (Unix.ADDR_INET(targetInetAddr,port))
-    with
-      Unix.Unix_error (_, _, reason) ->
-        raise (Util.Fatal
-                 (Printf.sprintf
-                    "Can't connect to server (%s): %s" host reason))
-    end;
-    initConnection socket socket)
+                    "Can't find the IP address of the server (%s:%s)" host
+		    port))
+    | ai::r ->
+      (* create a socket to talk to the remote host *)
+      let socket = Unix.socket ai.Unix.ai_family ai.Unix.ai_socktype ai.Unix.ai_protocol in
+      begin try
+        Unix.connect socket ai.Unix.ai_addr;
+        initConnection socket socket
+      with
+        Unix.Unix_error (_, _, reason) ->
+          (Util.warn
+            (Printf.sprintf
+                    "Can't connect to server (%s:%s): %s" host port reason);
+           loop r)
+    end
+    in loop (Unix.getaddrinfo host port [ Unix.AI_SOCKTYPE Unix.SOCK_STREAM ]))
 
 let buildShellConnection shell host userOpt portOpt rootName termInteract =
   let remoteCmd =
@@ -844,7 +845,7 @@ let buildShellConnection shell host userOpt portOpt rootName termInteract =
   let portArgs =
     match portOpt with
       None -> []
-    | Some port -> ["-p"; string_of_int port] in
+    | Some port -> ["-p"; port] in
   let shellCmd =
     (if shell = "ssh" then
       Prefs.read sshCmd
@@ -980,7 +981,7 @@ let openConnectionStart clroot =
         let portArgs =
           match portOpt with
             None -> []
-          | Some port -> ["-p"; string_of_int port] in
+          | Some port -> ["-p"; port] in
         let shellCmd =
           (if shell = "ssh" then
             Prefs.read sshCmd
@@ -1113,30 +1114,38 @@ let _ = Prefs.alias killServer "killServer"
 (* Used by the socket mechanism: Create a socket on portNum and wait
    for a request. Each request is processed by commandLoop. When a
    session finishes, the server waits for another request. *)
-let waitOnPort hostOpt portnum =
+let waitOnPort hostOpt port =
   Util.convertUnixErrorsToFatal
     "waiting on port"
     (fun () ->
-      (* Open a socket to listen for queries *)
-      let listening = Unix.socket Unix.PF_INET Unix.SOCK_STREAM 0 in
-      (* Allow reuse of local addresses for bind *)
-      Unix.setsockopt listening Unix.SO_REUSEADDR true;
-      (* Bind the socket to portnum on the local host *)
-      let addr =
-        match hostOpt with
-          Some host ->
-            begin try inetAddr host with Not_found ->
-              raise (Util.Fatal
-                       (Printf.sprintf
-                          "Can't find the IP address of the host (%s)" host))
-            end
-        | None ->
-            Unix.inet_addr_any
-      in
-      Unix.bind listening
-        (Unix.ADDR_INET (addr, portnum));
-      (* Start listening, allow up to 1 pending request *)
-      Unix.listen listening 1;
+      let host = match hostOpt with
+        Some host -> host
+      | None -> "" in
+      let rec loop = function
+        [] -> raise (Util.Fatal
+		       (Printf.sprintf "Can't find host (%s:%s)" host port))
+      | ai::r ->
+        (* Open a socket to listen for queries *)
+        let socket = Unix.socket ai.Unix.ai_family ai.Unix.ai_socktype
+	  ai.Unix.ai_protocol in
+	begin try
+          (* Allow reuse of local addresses for bind *)
+          Unix.setsockopt socket Unix.SO_REUSEADDR true;
+          (* Bind the socket to portnum on the local host *)
+	  Unix.bind socket ai.Unix.ai_addr;
+          (* Start listening, allow up to 1 pending request *)
+          Unix.listen socket 1;
+	  socket
+	with
+	  Unix.Unix_error (_, _, reason) ->
+            (Util.warn
+               (Printf.sprintf
+                  "Can't bind to host (%s:%s): %s" ai.Unix.ai_canonname port
+		  reason);
+	     loop r)
+	end in
+      let listening = loop (Unix.getaddrinfo host port [ Unix.AI_SOCKTYPE
+        Unix.SOCK_STREAM ; Unix.AI_PASSIVE ]) in
       Util.msg "server started\n";
       while
         (* Accept a connection *)
