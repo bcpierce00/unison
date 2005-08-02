@@ -655,21 +655,17 @@ let getSecondRoot () =
       `Local ->
         Clroot.clroot2string(Clroot.ConnectLocal(Some file))
     | `SSH | `RSH ->
-        let portOpt =
-          (* FIX: report an error if the port entry is not well formed *)
-          try Some(int_of_string(portE#text))
-          with _ -> None in
         Clroot.clroot2string(
         Clroot.ConnectByShell((if !varLocalRemote=`SSH then "ssh" else "rsh"),
                               host,
                               (if user="" then None else Some user),
-                              portOpt,
+                              Some portE#text,
                               Some file))
     | `SOCKET ->
         Clroot.clroot2string(
         (* FIX: report an error if the port entry is not well formed *)
         Clroot.ConnectBySocket(host,
-                               int_of_string(portE#text),
+                               portE#text,
                                Some file)) in
   let contCommand() =
     try

@@ -183,15 +183,7 @@ let init() = begin
 
   (* Start a socket server if requested *)
   begin try
-    let i =
-      match Util.StringMap.find socketPrefName argv with
-        [] ->
-          assert false
-      | i::_ ->
-          try int_of_string i with Failure _ ->
-            Util.msg "-socket must be followed by a number\n";
-            exit 1
-    in
+    let i = List.hd (Util.StringMap.find socketPrefName argv) in
     catch_all (fun () ->
       Os.createUnisonDir();
       Remote.waitOnPort
