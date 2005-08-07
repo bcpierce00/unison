@@ -1,3 +1,8 @@
+CHANGES FROM VERSION 2.16.2
+
+* Debugging help for a problem with backups of symlinks (I think)
+
+-------------------------------
 CHANGES FROM VERSION 2.16.1
 
 * Applied patches for ipv6 support, contributed by Samuel Thibault.

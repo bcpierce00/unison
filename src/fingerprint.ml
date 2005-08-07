@@ -9,11 +9,10 @@ type t = string
 (* Assumes that (fspath, path) is a file and gives its ``digest '', that is  *)
 (* a short string of cryptographic quality representing it.                  *)
 let file fspath path =
+  let f = Fspath.toString (Fspath.concat fspath path) in
   Util.convertUnixErrorsToTransient
-  "digesting file"
-    (fun () ->
-       let f = Fspath.toString (Fspath.concat fspath path) in
-       Digest.file f)
+    ("digesting " ^ f)
+    (fun () -> Digest.file f)
 
 let maxLength = Uutil.Filesize.ofInt max_int
 let subfile path offset len =
