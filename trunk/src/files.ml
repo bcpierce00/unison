@@ -752,9 +752,15 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
 (*         raise (Util.Transient "Merge program exited with non-zero status"); *)
    
       let mergeResultLog =
-        cmd ^ "\n\nStandard Output:\n" ^ mergeLogOut ^ "\n\n" ^ 
-	(("Error Output:"^mergeLogErr) ^"\n\n" ^
-	 Util.process_status_to_string returnValue)
+          cmd
+        ^ "\n\n" ^
+          (if mergeLogOut = "" || mergeLogErr = ""
+             then mergeLogOut ^ mergeLogErr
+           else mergeLogOut ^ "\n\n" ^ ("Error Output:"^mergeLogErr))
+        ^"\n\n" 
+        ^ (if returnValue = Unix.WEXITED 0
+           then ""
+           else Util.process_status_to_string returnValue)
       in
       
       if not
