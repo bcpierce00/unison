@@ -1,3 +1,8 @@
+CHANGES FROM VERSION 2.16.3
+
+* Smarter stashing of marked equal paths
+* Fixed bugs when stashing symlinks that were not to be followed
+-------------------------------
 CHANGES FROM VERSION 2.16.2
 
 * Debugging help for a problem with backups of symlinks (I think)

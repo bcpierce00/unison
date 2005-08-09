@@ -129,7 +129,13 @@ let backupcurrent =
      ^"\n\n The syntax of \\ARG{pathspec} is described in "
      ^ "\\sectionref{pathspec}{Path Specification}.")
 
-let shouldBackupCurrent p = Pred.test backupcurrent (Path.toString p)
+let backupcurrentnot =
+  Pred.create "backupcurrentnot" 
+   "Exceptions to \\verb|backupcurrent|, like the \\verb|ignorenot| preference."
+
+let shouldBackupCurrent p =
+  let s = Path.toString p in
+  Pred.test backupcurrent s && not (Pred.test backupcurrentnot s)
 
 (*------------------------------------------------------------------------------------*)
 
@@ -310,15 +316,21 @@ let removeAndBackupAsAppropriate fspath path fakeFspath fakePath =
 	try Os.rename fspath path backRoot backPath
 	with
 	  _ -> 
-	    (let info = Fileinfo.get (Path.followLink path) fspath path in
-	    Copy.localFile
-	      fspath path 
-	      backRoot backPath backPath 
-	      `Copy 
-	      info.Fileinfo.desc
-	      (Osx.ressLength info.Fileinfo.osX.Osx.ressInfo)
-	      None;
-	    Os.delete fspath path)
+	    ((let info = Fileinfo.get true fspath path in
+	    match info.Fileinfo.typ with
+	      `SYMLINK ->
+		Os.symlink 
+		  backRoot backPath 
+		  (Os.readLink fspath path)
+	    | _ ->
+		Copy.localFile
+		  fspath path 
+		  backRoot backPath backPath 
+		  `Copy 
+		  info.Fileinfo.desc
+		  (Osx.ressLength info.Fileinfo.osX.Osx.ressInfo)
+		  None);
+	     Os.delete fspath path)
       end else begin
 	debug ( fun () -> Util.msg
 	    "File %s in %s will not be backed up.\n" 
@@ -344,9 +356,20 @@ let findStash path i =
   else
     Path.addSuffixToFinalName 
       (Path.addPrefixToFinalName path (!prefix_string i))
-      (!suffix_string i) 
-    
-let stashPath fspath path =
+      (!suffix_string i)
+      
+(* Fingerprint.file follows symlinks, and we do not want that here *)
+let digest_safe st fspath path =
+  match st with
+    `ABSENT | `DIRECTORY -> 
+      raise (Util.Fatal (Printf.sprintf 
+			   ("Trying to digest a directory or a file that doesn't exist :\n%s/%s")
+			   (Fspath.toString fspath)
+			   (Path.toString path)))
+  | `SYMLINK -> Fingerprint.string (Os.readLink fspath path)
+  | `FILE -> Fingerprint.file fspath path
+	
+let stashPath st fspath path =
   let tempfspath = stashDirectory fspath in
   let tempPath = findStash path 0 in
 
@@ -355,10 +378,12 @@ let stashPath fspath path =
       None -> ()
     | Some (_, dir) when dir = Path.empty ->  ()
     | Some (_, backdir) -> mkdirectories tempfspath backdir in
-  
-  if Os.exists tempfspath tempPath then begin
+
+  let tempSt = (Fileinfo.get true tempfspath tempPath).Fileinfo.typ in
+  if tempSt <> `ABSENT then begin
     if Os.exists fspath path &&
-      Fingerprint.file fspath path <> Fingerprint.file tempfspath tempPath then begin
+      ((tempSt <> st) ||
+      digest_safe st fspath path <> digest_safe st tempfspath tempPath) then begin
 	if shouldBackup path then 
         (* this is safe because this is done *after* backup *)
 	  Os.delete tempfspath tempPath 
@@ -377,34 +402,46 @@ let stashPath fspath path =
   end else
     Some (tempfspath, tempPath)
       
-	
-let rec stashCurrentVersion fspath path =
+let rec stashCurrentVersion go_rec fspath path =
   debug (fun () -> 
     Util.msg "stashCurrentVersion of %s in %s\n" 
       (Path.toString path) (Fspath.toString fspath));
   Util.convertUnixErrorsToTransient "stashCurrentVersion" (fun () ->
     if shouldBackupCurrent path then
-      let stat = (Fileinfo.get (Path.followLink path) fspath path).Fileinfo.typ in
-      if stat <> `ABSENT then
-	if stat = `DIRECTORY then begin
-	  debug (fun () -> Util.msg "Stashing recursively because file is a directory\n");
-	  ignore (Safelist.iter
-		    (fun n -> 
-		      let pathChild = Path.child path n in 
-		      if not (Globals.shouldIgnore pathChild) then 
-			stashCurrentVersion fspath (Path.child path n))
-		    (Os.childrenOf fspath path))
-	end else
-	  match stashPath fspath path with
+      let stat = (Fileinfo.get true fspath path) in
+      match stat.Fileinfo.typ with
+	`ABSENT -> ()
+      |	`DIRECTORY ->
+	  if go_rec then begin
+	    debug (fun () -> Util.msg "Stashing recursively because file is a directory\n");
+	    ignore (Safelist.iter
+		      (fun n ->
+			let pathChild = Path.child path n in 
+			if not (Globals.shouldIgnore pathChild) then 
+			  stashCurrentVersion true fspath (Path.child path n))
+		      (Os.childrenOf fspath path))
+	  end else
+	    debug (fun () -> Util.msg "The file is a directory but no recursive stashing\n")
+      |	st ->
+	  match stashPath st fspath path with
 	    Some (stashDir, stashPath) ->
-	      let info = Fileinfo.get (Path.followLink path) fspath path in
-	      Copy.localFile 
-		fspath path 
-		stashDir stashPath stashPath 
-		`Copy 
-		info.Fileinfo.desc
-		(Osx.ressLength info.Fileinfo.osX.Osx.ressInfo)
-		None
+	      if st = `SYMLINK then
+		Os.symlink 
+		  stashDir stashPath 
+		  (Os.readLink fspath path)
+	      else
+		Copy.localFile 
+		  fspath path 
+		  stashDir stashPath stashPath 
+		  `Copy 
+		  stat.Fileinfo.desc
+		  (Osx.ressLength stat.Fileinfo.osX.Osx.ressInfo)
+		  None;
+	      debug(fun () ->
+		Util.msg "%s has been stashed to %s/%s\n" 
+		  (Path.toString path)
+		  (Fspath.toString stashDir)
+		  (Path.toString stashPath))
 	  | None ->
 	      debug (fun () -> Util.msg "Stashing was not required, contents were equal.\n"))
       

@@ -7,7 +7,7 @@
 
 (* Archives for merge purposes *)
 (* val stashCurrentVersion: Path.local -> unit *)
-val stashCurrentVersion: Fspath.t -> Path.local -> unit
+val stashCurrentVersion: bool -> Fspath.t -> Path.local -> unit
 val getRecentVersion: Fspath.t -> Path.local -> Os.fullfingerprint -> Fspath.t option
 
 (* Backups *)

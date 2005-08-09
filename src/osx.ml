@@ -273,7 +273,7 @@ let setFileInfos fspath path finfo =
       setFileInfosInternal (Fspath.concatToString fspath path)
         (insertInfo fullFinfo finfo)
     with Unix.Unix_error ((Unix.EOPNOTSUPP | Unix.ENOSYS), _, _) ->
-      (* Not a HFS volume.  Look for an AppleDouble file *)
+      (* Not an HFS volume.  Look for an AppleDouble file *)
       let (fspath, path) = Fspath.findWorkingDir fspath path in
       begin try
         let (doublePath, inch, entries) = openDouble fspath path in
