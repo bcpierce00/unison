@@ -4,7 +4,7 @@
 let docs =
     ("about", ("About Unison", 
      "Unison File Synchronizer\n\
-      Version 2.15.7\n\
+      Version 2.16.3\n\
       \n\
       \032  Unison  is a file-synchronization tool for Unix and Windows. It allows\n\
       \032  two  replicas of a collection of files and directories to be stored on\n\
@@ -1103,8 +1103,7 @@ let docs =
       \032 -backups            keep backup copies of all files (see also 'backup')\n\
       \032 -backupsuffix xxx   a suffix to be added to names of backup files\n\
       \032 -batch              batch mode: ask no questions at all\n\
-      \032 -confirmmerge       asks for confirmation before commiting the results of a m\n\
-      erge command\n\
+      \032 -confirmmerge       ask for confirmation before commiting results of a merge\n\
       \032 -contactquietly      Suppress the 'contacting server' message during startup\n\
       \032 -debug xxx          debug module xxx ('all' -> everything, 'verbose' -> more)\n\
       \032 -doc xxx            show documentation ('-doc topics' lists topics)\n\
@@ -1250,8 +1249,8 @@ let docs =
       \032         may  be commited to the replica or not. Since the merge command\n\
       \032         works  on  temporary  files,  the  user can then cancel all the\n\
       \032         effects  of  applying the merge if it turns out that the result\n\
-      \032         is  not  satisfactory.  Note though that in batch-mode, turning\n\
-      \032         this preference to true will have no effect.\n\
+      \032         is  not  satisfactory.  In  batch-mode,  this preference has no\n\
+      \032         effect.\n\
       \032  contactquietly\n\
       \032         If   this   flag  is  set,  Unison  will  skip  displaying  the\n\
       \032         `Contacting  server'  window  (which  some users find annoying)\n\
@@ -2379,8 +2378,8 @@ let docs =
       \n\
       "))
 ::
-    ("news", ("Changes in Version 2.15.7", 
-     "Changes in Version 2.15.7\n\
+    ("news", ("Changes in Version 2.16.3", 
+     "Changes in Version 2.16.3\n\
       \n\
       \032  Changes since 2.12.0:\n\
       \032    * New convention for release numbering: Releases will continue to be\n\
