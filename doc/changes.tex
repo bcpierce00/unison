@@ -1,3 +1,30 @@
+\begin{changesfromversion}{2.13.0}
+\item The features for performing backups and for invoking external merge
+programs have been completely rewritten by Stephane Lescuyer (thanks,
+Stephane!).  The user-visible functionality should not change, but the
+internals have been rationalized and there are a number of new features.
+See the manual (in particular, the description of the \verb|backupXXX|
+preferences) for details.
+
+\item Incorporated patches for ipv6 support, contributed by Samuel Thibault.
+(Note that, due to a bug in the released OCaml 3.08.3 compiler, this code
+will not actually work with ipv6 unless compiled with the CVS version of the
+OCaml compiler, where the bug has been fixed; however, ipv4 should continue
+to work normally.)
+
+\item OSX interface:
+\begin{itemize}
+\item Incorporated Ben Willmore's cool new icon for the Mac UI.
+\end{itemize}
+
+\item Small fixes:
+\begin{itemize}
+\item Fixed off by one error in month numbers (in printed dates) reported 
+  by Bob Burger
+\end{itemize}
+
+\end{changesfromversion}
+
 \begin{changesfromversion}{2.12.0}
 \item New convention for release numbering: Releases will continue to be
 given numbers of the form \verb|X.Y.Z|, but, 
