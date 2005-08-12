@@ -2,8 +2,8 @@
 
 let projectName = "unison"
 let majorVersion = 2
-let minorVersion = 16
-let pointVersionOrigin = 93 (* Revision that corresponds to point version 0 *)
+let minorVersion = 17
+let pointVersionOrigin = 99 (* Revision that corresponds to point version 0 *)
 
 (* You shouldn't need to edit below. *)
 
