@@ -1,0 +1,52 @@
+SOME IDEAS FOR "LIGHTWEIGHT LITERATE PROGRAMMING" AND THE UNISON SOURCES
+========================================================================
+
+* The formatting tool should take
+     bare ocaml sources
+     a pattern file
+     maybe some kind of "table of contents" file (better to have this
+       info embedded in the sources, though)
+  and produce
+     hevea sources
+  that can be used to generate
+     a printable dvi file
+     a collection of HTML files with 
+        all identifiers active -- clicking on a use takes you to its def, etc.
+        nice formatting of comments
+        nice (and configurable) use of colors
+        nice TOC, "overview," "tourist routes" through the code, etc.
+     a PDF document with similar "live links"
+     each def site can be used to get to an index of use sites
+
+===========================================================================
+SOME SAMPLE PATTERNS...
+
+headers like
+  (* $I1: Unison file synchronizer: private/formatting-ideas.txt $ *)
+  (* $I2: Last modified by bcpierce on Tue, 16 Oct 2001 07:48:33 -0400 $ *)
+  (* $I3: Copyright 1999-2004 (see COPYING for details) $ *)
+can be nuked
+
+double blank lines, or lines like (*----------------*) turn into \medskip
+
+Comments in code are just set in an appropriate color (but remain in tt font)
+
+Comments like this
+    (**************************************************
+                          Header
+     **************************************************)
+turn into section headers
+
+Top-level comments like this
+    (* Text text text text text text text text text text text text text
+    text text text text text text [keyword] text text text text text text text
+    text text text text text text text text text text *)
+are set in roman font, with embedded keywords processed as ocaml phrases
+(i.e., set in typewriter, identifiers active, etc.)
+
+===========================================================================
+MISCELLANEOUS IDEAS
+
+When a function in some structure has documentation defined in the
+corresponding interface, it would be nice to replicate this documentation
+in the file we generate

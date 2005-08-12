@@ -1,0 +1,174 @@
+SPECIFICATION
+=============
+
+PRELIMINARIES
+-------------
+
+PRED is the set of prefix-closed predicates on paths
+
+
+TOP-LEVEL
+---------
+
+a synchronizer S comprises
+    hidden state type STATE
+    a predicate ok : STATE * FS -> BOOL
+    an initial state initstate with ok(initstate,emptyFS)
+    a synchronization relation
+       snc : (FS * FS * STATE) * (FS * FS * STATE) * BOOL
+
+a synchronizer S is CORRECT if
+  forall A,B,A',B',O : FS
+  forall state,state' : STATE with ok(state,O)
+  if snc(A,B,state, A',B',state', failed), then
+    for some O' : FS
+      for all p.
+        if isdir_AB(p) then
+              isdir_A'B'(p)
+          and isdir_O'(p) or (O'(p)=O(p) and failed)
+        else 
+            if A(p)=O(p) then
+              A'(p)=B(p) and (O'(p)=A'(p) or (O'(p)=O(p) and failed))
+              or (A'(p)=A(p) and O'(p)=O(p) and failed)
+          and 
+            similarly for B
+
+
+[Idea: Define a looser spec that simply says "if it failed, then some
+paths have not changed.  Prove that the tighter spec implies the
+looser one.]
+
+
+REFINED SPEC
+------------
+
+an updateDetector comprises
+     a hidden type STATE
+     a predicate ok : STATE * FS -> BOOL
+     an initial state initstate with ok(initstate,emptyFS)
+     a detection function
+        detectUpdates : (FS * FS * STATE) -> PRED * PRED
+
+an updateDetector is correct iff
+   forall A,B,O : FS and state : STATE
+   if ok(state,O) and (dirtyA,dirtyB) = detectUpdates(A,B,state) then
+     forall p. 
+           if A(p)!=O(p) then dirtyA(p)
+       and if B(p)!=O(p) then dirtyB(p)
+
+
+
+a reconcilerAndTransportAgent comprises
+  a relation
+     reconcileAndTransport : (FS * FS * PRED * PRED) * (FS * FS)
+
+a reconcilerAndTransportAgent is correct iff
+   forall A,B : FS and dirtyA,dirtyB : PRED
+   if 
+     forall p. (not dirtyA(p) and not dirtyB(p)) ==> A(p)=B(p)
+     reconcileAndTransport(A,B,dirtyA,dirtyB, A',B')
+   then 
+     ...
+
+
+an updateMarker comprises
+  a hidden type STATE
+  a predicate ok : STATE * FS -> BOOL
+  a relation markUpdates : (FS * FS * STATE) * STATE
+such that
+  for all A',B',O : FS and state : STATE
+    if
+      ok(state, O)
+      markUpdates(A',B',O, state')
+    then there exists O' : FS.
+      ok(state',O')
+      for all p. 
+        ...
+
+
+
+
+======================================================================
+OLD:
+
+PRELIMINARIES
+-------------
+
+PRED is the set of predicates over paths
+
+TOP-LEVEL
+---------
+
+a synchronizer S comprises
+    hidden state type STATE
+    a predicate ok : STATE * FS -> BOOL
+    an initial state initstate with ok(initstate,emptyFS)
+    a synchronization relation
+       snc : (FS * FS * STATE) * (FS * FS * STATE) * PRED
+
+a synchronizer S is CORRECT if
+  forall A,B,A',B',O : FS
+  forall state,state' : STATE with ok(state,O)
+  if snc(A,B,state, A',B',state', failure), then
+    for some O' : FS
+      for all p.
+        if not failure(p) then
+          1) if A(p)=O(p) then A'(p)=B'(p)=O'(p)=B(p)
+          2) similarly for B
+          3) if A(p)=B(p) then A'(p)=B'(p)=O'(p)=A(p)
+          4) if A(p)!=B(p) and A(p)!=O(p) and B(p)!=O(p) then
+               if isdir_A,B(p) 
+                 then isdir_A',B',O'(p) 
+                 else A'(p)=A(p) and B'(p)=B(p) and O'(p)=O(p)
+        else 
+          "the same except that some of the primed structures
+          may not have been changed at p"  (N.b.: is this right when
+          p refers to a directory??)
+          
+
+
+
+
+
+PRED is the set of predicates over paths
+
+TOP-LEVEL
+---------
+
+a synchronizer S comprises
+    hidden state type STATE
+    a predicate ok : STATE * FS -> BOOL
+    an initial state initstate with ok(initstate,emptyFS)
+    a synchronization relation
+       snc : (FS * FS * STATE) * (FS * FS * STATE) * BOOL
+
+a synchronizer S is CORRECT if
+  forall A,B,A',B',O : FS
+  forall state,state' : STATE with ok(state,O)
+  if snc(A,B,state, A',B',state', success), then
+    for some failedpaths : PRED
+    for some O' : FS
+      if success then failedpaths = \p.false
+      forall p : PATH
+        if A(p) = O(p) then (A'(p) = B(p)) or (A'(p) = A(p) and failedpaths(p))
+        similarly for B 
+      ok(state',O')
+      for all p. if A'(p) = B'(p)
+                   then if failedpath(p) 
+                          then O'(p) = O(p) or A'(p)
+                          else O'(p) = A'(p) 
+                   else O'(p) = O(p)
+
+
+
+
+
+
+
+
+VERSION LOG
+-----------
+
+$I1: Unison file synchronizer: private/SPEC.txt $
+$I2: Last modified by bcpierce on Mon, 19 Jul 1999 18:14:04 -0400 $
+$I3: Copyright 1999-2004 (see COPYING for details) $
