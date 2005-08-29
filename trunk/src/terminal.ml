@@ -32,7 +32,7 @@ Host key verification failed." (to stderr)
 *)
 
 let passwordRx =
-  Rx.rx ".*assword: "
+  Rx.rx ".*assword:"
 let authenticityRx =
   Rx.rx "The authenticity of host .* continue connecting \\(yes/no\\)\\? "
 let password s = Rx.match_string passwordRx s
