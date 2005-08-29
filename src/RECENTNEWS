@@ -1,3 +1,9 @@
+CHANGES FROM VERSION 2.16.5
+
+terminal.ml: more liberal parsing of password prompt
+for ssh.
+
+-------------------------------
 CHANGES FROM VERSION 2.16.4
 
 * Beginning preparations for a new beta-release
