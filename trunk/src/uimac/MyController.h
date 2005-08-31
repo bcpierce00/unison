@@ -11,6 +11,11 @@
 @interface MyController : NSObject
 {
     IBOutlet NSWindow *mainWindow;
+	
+	IBOutlet NSMenuItem *restartMenuItem;
+	IBOutlet NSButton *restartButton;
+	IBOutlet NSMenuItem *synchronizeMenuItem;
+	IBOutlet NSButton *synchronizeButton;
 
     IBOutlet ProfileController *profileController;
     IBOutlet NSView *chooseProfileView;

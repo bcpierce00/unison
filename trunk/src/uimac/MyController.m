@@ -74,6 +74,8 @@ static MyController *me; // needed by reloadTable and displayStatus, below
         [reconItems insertObject:[ReconItem initWithRi:Field(caml_reconItems,j)]
             atIndex:j];
     }
+    [synchronizeButton setEnabled:YES];
+    [synchronizeMenuItem setEnabled:YES];
 }
 
 - (void)displayDetails:(int)i
@@ -129,6 +131,8 @@ static MyController *me; // needed by reloadTable and displayStatus, below
     [mainWindow setContentView:blankView];
     [self resizeWindowToSize:updatesSize];
     [mainWindow setContentView:updatesView];
+    [synchronizeButton setEnabled:NO];
+    [synchronizeMenuItem setEnabled:NO];
 
     // reconItems table gets keyboard input
     [mainWindow makeFirstResponder:tableView];
@@ -203,6 +207,8 @@ static MyController *me; // needed by reloadTable and displayStatus, below
     [[NSNotificationCenter defaultCenter] removeObserver:self
         name:NSThreadWillExitNotification
         object:nil];
+    [restartButton setEnabled:YES];
+    [restartMenuItem setEnabled:YES];
     int i;
     for (i = 0; i < [reconItems count]; i++) {
         [[reconItems objectAtIndex:i] resetProgress];
@@ -213,6 +219,10 @@ static MyController *me; // needed by reloadTable and displayStatus, below
 - (IBAction)syncButton:(id)sender
 {
     [tableView setEditable:NO];
+    [restartButton setEnabled:NO];
+    [restartMenuItem setEnabled:NO];
+    [synchronizeButton setEnabled:NO];
+    [synchronizeMenuItem setEnabled:NO];
     [[NSNotificationCenter defaultCenter] addObserver:self
         selector:@selector(afterSync:)
         name:NSThreadWillExitNotification object:nil];

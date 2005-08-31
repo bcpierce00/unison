@@ -1,3 +1,9 @@
+CHANGES FROM VERSION 2.17.4
+
+Mac GUI: enable/disable synchronize and restart buttons
+and menu items as appropriate.  Thanks to Ben Willmore.
+
+-------------------------------
 CHANGES FROM VERSION 2.17.3
 
 A couple of fixes for system-dependent compilation issues.
