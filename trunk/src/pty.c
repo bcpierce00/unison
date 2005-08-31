@@ -40,9 +40,10 @@ CAMLprim value setControllingTerminal(value fdVal) {
 /* c_openpty: unit -> (int * Unix.file_descr) */
 CAMLprim value c_openpty() {
   int master,slave;
+  value pair;
   if (openpty(&master,&slave,NULL,NULL,NULL) < 0)
     uerror("openpty", (value) 0);
-  value pair = alloc_tuple(2);
+  pair = alloc_tuple(2);
   Store_field(pair,0,Val_int(master));
   Store_field(pair,1,Val_int(slave));
   return pair;

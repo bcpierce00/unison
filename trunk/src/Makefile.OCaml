@@ -141,9 +141,12 @@ else
 endif
 
 # NOTE: the OCAMLLIBDIR is not getting passed correctly?
+# The two cases (||) for cltool are needed because on Xcode 2.1+
+# there is a Default directory, but there is not one for
+# earlier versions of Xcode.
 macexecutable: $(NAME)-blob.o
 	(cd uimac; xcodebuild OCAMLLIBDIR="$(OCAMLLIBDIR)")
-	gcc uimac/cltool.c -o uimac/build/Unison.app/Contents/MacOS/cltool -framework Carbon
+	gcc uimac/cltool.c -o uimac/build/Unison.app/Contents/MacOS/cltool -framework Carbon || gcc uimac/cltool.c -o uimac/build/Default/Unison.app/Contents/MacOS/cltool -framework Carbon
 
 # OCaml objects for the bytecode version
 # File extensions will be substituted for the native code version
