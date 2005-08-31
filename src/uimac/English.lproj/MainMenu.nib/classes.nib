@@ -45,7 +45,11 @@
                 preferencesController = PreferencesController; 
                 preferencesView = NSView; 
                 profileController = ProfileController; 
+                restartButton = NSButton; 
+                restartMenuItem = NSMenuItem; 
                 statusText = NSTextField; 
+                synchronizeButton = NSButton; 
+                synchronizeMenuItem = NSMenuItem; 
                 tableView = ReconTableView; 
                 updatesText = NSTextField; 
                 updatesView = NSView; 
