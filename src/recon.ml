@@ -129,13 +129,6 @@ let preferRootPartial: Pred.t =
 (* preferences "force"/"preference", returns a pair (root, force)            *)
 let lookupPreferredRoot () =
   if Prefs.read forceRoot <> "" then
-    if not (Prefs.read Props.syncModtimes)
-       && (   (Prefs.read forceRoot = "newer")
-           || (Prefs.read forceRoot = "older"))
-    then
-      raise (Util.Transient (Printf.sprintf
-       "The 'force=%s' preference can only be used with 'times=true'"
-       (Prefs.read forceRoot))) else
     (Prefs.read forceRoot, `Force)
   else if Prefs.read preferRoot <> "" then
     (Prefs.read preferRoot, `Prefer)
@@ -147,13 +140,6 @@ let lookupPreferredRoot () =
 let lookupPreferredRootPartial p =
   let s = Path.toString p in
   if Pred.test forceRootPartial s then
-    if not (Prefs.read Props.syncModtimes)
-       && (   (Pred.assoc forceRootPartial s = "newer")
-           || (Pred.assoc forceRootPartial s = "older"))
-    then
-      raise (Util.Transient (Printf.sprintf
-       "The 'forcepartial=%s' preference can only be used with 'times=true'"
-       (Pred.assoc forceRootPartial s))) else
     (Pred.assoc forceRootPartial s, `Force)
   else if Pred.test preferRootPartial s then
     (Pred.assoc preferRootPartial s, `Prefer)
@@ -181,8 +167,18 @@ let overrideReconcilerChoices ris =
 (* This should also check for the partial version, but this needs a way to   *)
 (* extract the associated values from a Pred.t                               *)
 let checkThatPreferredRootIsValid () =
-  let (root,_) = lookupPreferredRoot() in
-  if root<>"" then ignore(root2direction root)
+  let test_root predname = function
+    | "" -> ()
+    | ("newer" | "older") as r -> 
+        if not (Prefs.read Props.syncModtimes) then
+          raise (Util.Transient (Printf.sprintf
+                                   "The '%s=%s' preference can only be used with 'times=true'"
+                                   predname r))
+    | r -> ignore (root2direction r) in
+  let (root,pred) = lookupPreferredRoot() in
+  if root<>"" then test_root (match pred with `Force -> "force" | `Prefer -> "prefer") root;
+  Safelist.iter (test_root "forcepartial") (Pred.extern_associated_strings forceRootPartial);
+  Safelist.iter (test_root "preferpartial") (Pred.extern_associated_strings preferRootPartial)
 
 (* ------------------------------------------------------------------------- *)
 (*                    Main Reconciliation stuff                              *)

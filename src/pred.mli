@@ -48,6 +48,9 @@ val intern : t -> string list -> unit
 (* Return the current list of patterns *)
 val extern : t -> string list
 
+(* Return the current list of associated strings *)
+val extern_associated_strings : t -> string list
+
 (* Create an alternate name for a predicate (the new name will not appear   *)
 (* in usage messages or generated documentation)                             *)
 val alias : t                 (* existing predicate *)
