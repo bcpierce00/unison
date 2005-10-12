@@ -80,6 +80,23 @@ let forceRoot: string Prefs.t =
      ^ "to force Unison to choose the file with the later (earlier) "
      ^ "modtime.  In this case, the \\verb|-times| preference must also "
      ^ "be enabled.\n\n"
+     ^ "This preference is overridden by the \\verb|forcepartial| preference.\n\n"
+     ^ "This preference should be used only if you are {\\em sure} you "
+     ^ "know what you are doing!")
+
+let forceRootPartial: Pred.t =
+  Pred.create "forcepartial"
+    ("Including the preference \\texttt{forcepartial \\AGR{PATHSPEC} -> \\ARG{root}} causes Unison to "
+     ^ "resolve all differences (even non-conflicting changes) in favor of "
+     ^ "\\ARG{root} for the files in \\ARG{PATHSPEC} (see \\sectionref{pathspec}{Path Specification} "
+     ^ "for more information).  "
+     ^ "This effectively changes Unison from a synchronizer into a mirroring "
+     ^ "utility.  \n\n"
+     ^ "You can also specify \\verb|forcepartial PATHSPEC -> newer| "
+     ^ "(or \\verb|forcepartial PATHSPEC older|) "
+     ^ "to force Unison to choose the file with the later (earlier) "
+     ^ "modtime.  In this case, the \\verb|-times| preference must also "
+     ^ "be enabled.\n\n"
      ^ "This preference should be used only if you are {\\em sure} you "
      ^ "know what you are doing!")
 
@@ -89,6 +106,20 @@ let preferRoot: string Prefs.t =
     ("Including the preference \\texttt{-prefer \\ARG{root}} causes Unison always to "
      ^ "resolve conflicts in favor of \\ARG{root}, rather than asking for "
      ^ "guidance from the user.  (The syntax of \\ARG{root} is the same as "
+     ^ "for the \\verb|root| preference, plus the special values "
+     ^ "\\verb|newer| and \\verb|older|.)  \n\n"
+     ^ "This preference is overridden by the \\verb|preferpartial| preference.\n\n"
+     ^ "This preference should be used only if you are {\\em sure} you "
+     ^ "know what you are doing!")
+
+let preferRootPartial: Pred.t =
+  Pred.create "preferpartial"
+    ("Including the preference \\texttt{preferpartial \\ARG{PATHSPEC} -> \\ARG{root}} "
+     ^ "causes Unison always to "
+     ^ "resolve conflicts in favor of \\ARG{root}, rather than asking for "
+     ^ "guidance from the user, for the files in \\ARG{PATHSPEC} (see "
+     ^ "\\sectionref{pathspec}{Path Specification} "
+     ^ "for more information).  (The syntax of \\ARG{root} is the same as "
      ^ "for the \\verb|root| preference, plus the special values "
      ^ "\\verb|newer| and \\verb|older|.)  \n\n"
      ^ "This preference should be used only if you are {\\em sure} you "
@@ -111,6 +142,24 @@ let lookupPreferredRoot () =
   else
     ("",`Prefer)
 
+(* [lookupPreferredRootPartial: Path.t -> string * [`Force | `Prefer]] checks validity of  *)
+(* preferences "forcepartial", returns a pair (root, force)                                *)
+let lookupPreferredRootPartial p =
+  let s = Path.toString p in
+  if Pred.test forceRootPartial s then
+    if not (Prefs.read Props.syncModtimes)
+       && (   (Pred.assoc forceRootPartial s = "newer")
+           || (Pred.assoc forceRootPartial s = "older"))
+    then
+      raise (Util.Transient (Printf.sprintf
+       "The 'forcepartial=%s' preference can only be used with 'times=true'"
+       (Pred.assoc forceRootPartial s))) else
+    (Pred.assoc forceRootPartial s, `Force)
+  else if Pred.test preferRootPartial s then
+    (Pred.assoc preferRootPartial s, `Prefer)
+  else
+    ("",`Prefer)
+
 (* Use the current values of the '-prefer <ROOT>' and '-force <ROOT>'        *)
 (* preferences to override the reconciler's choices                          *)
 let overrideReconcilerChoices ris =
@@ -118,11 +167,19 @@ let overrideReconcilerChoices ris =
   if root<>"" then begin
     let dir = root2direction root in
     Safelist.iter (fun ri -> setDirection ri dir force) ris
-  end
+  end;
+  Safelist.iter (fun ri ->
+                   let (rootp,forcep) = lookupPreferredRootPartial ri.path in
+                   if rootp<>"" then begin
+                     let dir = root2direction rootp in
+                       setDirection ri dir forcep
+                   end) ris
 
 (* Look up the preferred root and verify that it is OK (this is called at    *)
 (* the beginning of the run, so that we don't have to wait to hear about     *)
 (* errors                                                                    *)
+(* This should also check for the partial version, but this needs a way to   *)
+(* extract the associated values from a Pred.t                               *)
 let checkThatPreferredRootIsValid () =
   let (root,_) = lookupPreferredRoot() in
   if root<>"" then ignore(root2direction root)

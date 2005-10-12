@@ -333,7 +333,7 @@ let unisonSynchronize () =
     Trace.status "Nothing to synchronize"
   else begin
     Trace.status "Propagating changes";
-    Transport.start ();
+    Transport.logStart ();
     let t = Trace.startTimer "Propagating changes" in
     let im = Array.length !theState in
     let rec loop i actions pRiThisRound =
@@ -374,7 +374,7 @@ let unisonSynchronize () =
     Lwt_unix.run
       (loop 0 [] Common.isDeletion >>= (fun actions ->
         Lwt_util.join actions));
-    Transport.finish ();
+    Transport.logFinish ();
     Trace.showTimer t;
     Trace.status "Updating synchronizer state";
     let t = Trace.startTimer "Updating synchronizer state" in
