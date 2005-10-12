@@ -1,3 +1,9 @@
+CHANGES FROM VERSION 2.17.7
+
+Applied another patch from Alan Schmitt improving the implementation
+of forcepatial and preferpartial.
+
+-------------------------------
 CHANGES FROM VERSION 2.17.6
 
 Applied patch from Alan Schmitt adding forcepatial and preferpartial

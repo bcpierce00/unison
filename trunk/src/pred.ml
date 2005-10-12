@@ -121,6 +121,10 @@ let intern p regexpStringList = Prefs.set p.pref regexpStringList
 
 let extern p = Prefs.read p.pref
 
+let extern_associated_strings p =
+  recompile_if_needed p;
+  Safelist.map snd p.associated_strings
+
 (********************************************************************)
 (*                             TESTING                              *)
 (********************************************************************)
