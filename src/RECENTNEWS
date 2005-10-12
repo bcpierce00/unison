@@ -1,3 +1,17 @@
+CHANGES FROM VERSION 2.17.6
+
+Applied patch from Alan Schmitt adding forcepatial and preferpartial
+preferences, which behave like 'force' and 'prefer' but can be
+specified on a per-path basis (see documentation for details).
+
+Applied fix to IPv6 code from Samuel Thibault
+
+Corrected Props.set as suggested by Dale Worley
+
+Small fix to the text UI from Joseph Dunn.
+
+
+-------------------------------
 CHANGES FROM VERSION 2.17.5
 
 * Incorporated old patch to set read-only file to R/W on OSX before

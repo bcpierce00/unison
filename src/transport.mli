@@ -11,5 +11,5 @@ val transportItem :
 
 (* Should be called respectively when starting the synchronization and
    once it is finished *)
-val start : unit -> unit
-val finish : unit -> unit
+val logStart : unit -> unit
+val logFinish : unit -> unit

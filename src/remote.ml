@@ -824,9 +824,10 @@ let buildSocketConnection host port =
         Unix.connect socket ai.Unix.ai_addr;
         initConnection socket socket
       with
-        Unix.Unix_error (_, _, reason) ->
-          (Util.warn
-            (Printf.sprintf
+        Unix.Unix_error (error, _, reason) ->
+          (if error != Unix.EAFNOSUPPORT then
+            Util.warn
+              (Printf.sprintf
                     "Can't connect to server (%s:%s): %s" host port reason);
            loop r)
     end
@@ -1137,11 +1138,12 @@ let waitOnPort hostOpt port =
           Unix.listen socket 1;
 	  socket
 	with
-	  Unix.Unix_error (_, _, reason) ->
-            (Util.warn
-               (Printf.sprintf
-                  "Can't bind to host (%s:%s): %s" ai.Unix.ai_canonname port
-		  reason);
+	  Unix.Unix_error (error, _, reason) ->
+            (if error != Unix.EAFNOSUPPORT then
+               Util.warn
+                 (Printf.sprintf
+                    "Can't bind to host (%s:%s): %s" ai.Unix.ai_canonname port
+		    reason);
 	     loop r)
 	end in
       let listening = loop (Unix.getaddrinfo host port [ Unix.AI_SOCKTYPE

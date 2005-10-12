@@ -164,7 +164,7 @@ let syncedPartsToString =
      bit 0o0001 "?" "-" "x"
 
 let set fspath path kind (fp, mask) =
-  if mask <> 0 || kind <> `Update then
+  if mask <> 0 then  (* BCP: removed "|| kind <> `Update"  10/2005 *)
     Util.convertUnixErrorsToTransient
     "setting permissions"
       (fun () ->

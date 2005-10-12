@@ -222,8 +222,11 @@ let interact rilist =
                   "from "^host1^" to "^host2,
                   "from "^host2^" to "^host1
               in
-              if Prefs.read Globals.batch && not (Prefs.read Trace.terse) then
-                (display "\n"; displayDetails ri);
+              if Prefs.read Globals.batch then begin
+                display "\n";
+                if not (Prefs.read Trace.terse) then
+                  displayDetails ri
+              end;
               selectAction
                 (if Prefs.read Globals.batch then Some " " else None)
                 [((if !dir=Conflict && not (Prefs.read Globals.batch)
@@ -380,7 +383,7 @@ let doTransport reconItemList =
   if not (Prefs.read Trace.terse) && (Prefs.read Trace.debugmods = []) then
     Uutil.setProgressPrinter showProgress;
 
-  Transport.start ();
+  Transport.logStart ();
   let fFailedPaths = ref [] in
   let uiWrapper ri f =
     catch f
@@ -414,7 +417,7 @@ let doTransport reconItemList =
   Lwt_unix.run
     (let actions = loop reconItemList [] Common.isDeletion in
     Lwt_util.join actions);
-  Transport.finish ();
+  Transport.logFinish ();
 
   Uutil.setProgressPrinter (fun _ _ _ -> ());
   Util.set_infos "";
