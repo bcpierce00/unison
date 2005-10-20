@@ -481,6 +481,7 @@ let unisonProfileInit (profileName:string) (r1:string) (r2:string) =
 Callback.register "unisonProfileInit" unisonProfileInit;;
 
 Callback.register "unisonPasswordMsg" Terminal.password;;
+Callback.register "unisonPassphraseMsg" Terminal.passphrase;;
 Callback.register "unisonAuthenticityMsg" Terminal.authenticity;;
 
 let unisonExnInfo e =

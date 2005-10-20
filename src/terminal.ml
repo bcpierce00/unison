@@ -32,10 +32,13 @@ Host key verification failed." (to stderr)
 *)
 
 let passwordRx =
-  Rx.rx ".*assword:"
+  Rx.rx ".*assword:[ ]*"
+let passphraseRx =
+  Rx.rx "Enter passphrase for key.*"
 let authenticityRx =
   Rx.rx "The authenticity of host .* continue connecting \\(yes/no\\)\\? "
 let password s = Rx.match_string passwordRx s
+let passphrase s = Rx.match_string passphraseRx s
 let authenticity s = Rx.match_string authenticityRx s
 
 (* Create a new process with a new controlling terminal, useful for

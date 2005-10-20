@@ -1,3 +1,15 @@
+CHANGES FROM VERSION 2.17.8
+
+Applied Ben Willmore's patches for OS X:
+
+* Recognize more ssh password prompts
+
+* Recognize and prompt for ssh passphrase if asked by ssh
+
+* Fixed bug where GUI would get confused if invoked on the command line with
+  a profile.
+
+-------------------------------
 CHANGES FROM VERSION 2.17.7
 
 Applied another patch from Alan Schmitt improving the implementation

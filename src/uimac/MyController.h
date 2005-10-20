@@ -11,11 +11,11 @@
 @interface MyController : NSObject
 {
     IBOutlet NSWindow *mainWindow;
-	
-	IBOutlet NSMenuItem *restartMenuItem;
-	IBOutlet NSButton *restartButton;
-	IBOutlet NSMenuItem *synchronizeMenuItem;
-	IBOutlet NSButton *synchronizeButton;
+
+    IBOutlet NSMenuItem *restartMenuItem;
+    IBOutlet NSButton *restartButton;
+    IBOutlet NSMenuItem *synchronizeMenuItem;
+    IBOutlet NSButton *synchronizeButton;
 
     IBOutlet ProfileController *profileController;
     IBOutlet NSView *chooseProfileView;
@@ -35,12 +35,13 @@
     IBOutlet NSTextField *updatesText;
 
     IBOutlet NSWindow *passwordWindow;
+    IBOutlet NSTextField *passwordPrompt;
     IBOutlet NSTextField *passwordText;
     IBOutlet NSTextView *detailsTextView;
     IBOutlet NSTextField *statusText;
-    
+
     IBOutlet NSButton *passwordCancelButton;
-	
+
     IBOutlet NSWindow *aboutWindow;
     IBOutlet NSTextField *versionText;
 
