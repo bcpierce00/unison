@@ -19,4 +19,5 @@ val handlePasswordRequests :
 
 (* For recognizing messages from OpenSSH *)
 val password : string -> bool
+val passphrase : string -> bool
 val authenticity : string -> bool

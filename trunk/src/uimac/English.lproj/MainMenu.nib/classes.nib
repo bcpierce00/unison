@@ -40,6 +40,7 @@
                 detailsTextView = NSTextView; 
                 mainWindow = NSWindow; 
                 passwordCancelButton = NSButton; 
+                passwordPrompt = NSTextField; 
                 passwordText = NSTextField; 
                 passwordWindow = NSWindow; 
                 preferencesController = PreferencesController; 

@@ -279,6 +279,18 @@ CAMLprim value reloadTable(value row)
     value *f = caml_named_value("unisonPasswordMsg");
     value v = Callback_checkexn(*f, caml_copy_string([prompt cString]));
     if (v == Val_true) {
+	[passwordPrompt setStringValue:@"Please enter your password"];
+        [NSApp beginSheet:passwordWindow
+            modalForWindow:mainWindow
+            modalDelegate:nil
+            didEndSelector:nil
+            contextInfo:nil];
+        return;
+    }
+    f = caml_named_value("unisonPassphraseMsg");
+    v = Callback_checkexn(*f, caml_copy_string([prompt cString]));
+    if (v == Val_true) {
+	[passwordPrompt setStringValue:@"Please enter your passphrase"];
         [NSApp beginSheet:passwordWindow
             modalForWindow:mainWindow
             modalDelegate:nil
@@ -440,6 +452,7 @@ CAMLprim value displayStatus(value s)
                                             profile]];
       /* If invoked from terminal we need to bring the app to the front */
       [NSApp activateIgnoringOtherApps:YES];
+      [mainWindow orderFront:self];
 
       /* Start the connection */
       [self connect:caml_profile];
