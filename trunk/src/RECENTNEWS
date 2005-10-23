@@ -1,3 +1,9 @@
+CHANGES FROM VERSION 2.18.0
+
+Increment major version number (forgot to do this when the new
+preferences were added recently)
+
+-------------------------------
 CHANGES FROM VERSION 2.17.8
 
 Applied Ben Willmore's patches for OS X:
