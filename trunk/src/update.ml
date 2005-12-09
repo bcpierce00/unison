@@ -815,7 +815,11 @@ let doArchiveCrashRecovery () =
    ^ "was completely empty.  This means that any files that are different\n"
    ^ "will be reported as conflicts, and any files that exist only on one\n"
    ^ "replica will be judged as new and propagated to the other replica.\n"
-   ^ "If the two replicas are identical, then no changes will be reported.\n"
+   ^ "If the two replicas are identical, then no changes will be reported.\n\n"
+   ^ "If you see this message repeatedly, it may be because one of your machines\n"
+   ^ "is getting its address from DHCP, which is causing its host name to change\n"
+   ^ "between synchronizations.  See the documentation for the UNISONLOCALHOSTNAME\n"
+   ^ "environment variable for advice on how to correct this.\n"
      (* ^ "\nThe expected archive names were:\n" ^ expectedNames *) );
     Lwt.return ()
   end))

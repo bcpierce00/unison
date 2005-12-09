@@ -67,6 +67,9 @@ val propagatePrefs : unit -> unit Lwt.t
 (* User preference: when true, don't ask any questions *)
 val batch : bool Prefs.t
 
+(* User preference: ask for confirmation when propagating a deletion of a whole replica or top-level path *)
+val confirmBigDeletes : bool Prefs.t
+
 (* Predicates on paths *)
 val ignore : Pred.t
 val shouldIgnore : 'a Path.path -> bool

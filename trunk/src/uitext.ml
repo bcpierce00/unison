@@ -531,25 +531,26 @@ let rec interactAndPropagateChanges reconItemList
   end
 
 let checkForDangerousPath dangerousPaths =
-  if dangerousPaths <> [] then begin
-    alwaysDisplayAndLog (Uicommon.dangerousPathMsg dangerousPaths);
-    if Prefs.read Globals.batch then begin
-      (* FIX: there should probably be an option to force proceeding *)
-      alwaysDisplay "Aborting...\n"; restoreTerminal ();
-      exit Uicommon.fatalExit
-    end else begin
-      displayWhenInteractive "Do you really want to proceed? ";
-      selectAction
-        None
-        [(["y"],
-          "Continue",
-          (fun() -> ()));
-         (["n"; "q"; "x"; ""],
-          "Exit",
-          (fun () -> alwaysDisplay "\n"; restoreTerminal ();
-                     exit Uicommon.fatalExit))]
-        (fun () -> display "Do you really want to proceed? ")
-    end
+  if Prefs.read Globals.confirmBigDeletes then begin
+    if dangerousPaths <> [] then begin
+      alwaysDisplayAndLog (Uicommon.dangerousPathMsg dangerousPaths);
+      if Prefs.read Globals.batch then begin
+          alwaysDisplay "Aborting...\n"; restoreTerminal ();
+          exit Uicommon.fatalExit
+      end else begin
+        displayWhenInteractive "Do you really want to proceed? ";
+        selectAction
+          None
+          [(["y"],
+            "Continue",
+            (fun() -> ()));
+           (["n"; "q"; "x"; ""],
+            "Exit",
+            (fun () -> alwaysDisplay "\n"; restoreTerminal ();
+                       exit Uicommon.fatalExit))]
+          (fun () -> display "Do you really want to proceed? ")
+      end
+    end 
   end
 
 let synchronizeOnce() =

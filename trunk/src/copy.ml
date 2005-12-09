@@ -113,7 +113,6 @@ let localFile
    algorithm for optimizing the file transfer in the case where a
    similar file already exists on the target. *)
 
-(* BCPFIX: This preference is probably not needed any more. *)
 let rsyncActivated =
   Prefs.createBool "rsync" true
     "activate the rsync transfer mode"
@@ -391,6 +390,10 @@ let tryCopyMovedFile fspathTo pathTo realPathTo update desc fp ress id =
       None ->
         false
     | Some (candidateFspath, candidatePath) ->
+        Trace.log (Printf.sprintf
+          "Shortcut: copying %s from local file %s\n"
+          (Path.toString realPathTo)
+          (Path.toString candidatePath));
         debug (fun () ->
           Util.msg
             "tryCopyMovedFile: found match at %s,%s. Try local copying\n"
@@ -411,6 +414,9 @@ let tryCopyMovedFile fspathTo pathTo realPathTo update desc fp ress id =
               Util.msg "tryCopyMoveFile: candidate file modified!");
             Xferhint.deleteEntry (candidateFspath, candidatePath);
             Os.delete fspathTo pathTo;
+            Trace.log (Printf.sprintf
+              "Shortcut failed because %s was modified\n"
+              (Path.toString candidatePath));
             false
           end
         with
@@ -419,6 +425,9 @@ let tryCopyMovedFile fspathTo pathTo realPathTo update desc fp ress id =
               Util.msg "tryCopyMovedFile: failed local copy [%s]" s);
             Xferhint.deleteEntry (candidateFspath, candidatePath);
             Os.delete fspathTo pathTo;
+            Trace.log (Printf.sprintf
+              "Local copy of %s failed\n"
+              (Path.toString candidatePath));
             false
   end
 
