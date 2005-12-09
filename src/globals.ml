@@ -203,6 +203,14 @@ let batch =
      ^ "interface will ask no questions at all.  Non-conflicting changes "
      ^ "will be propagated; conflicts will be skipped.")
 
+let confirmBigDeletes =
+  Prefs.createBool "confirmbigdeletes" true "request confirmation for whole-replica deletes"
+    ("When this is set to {\\tt true}, Unison will request an extra confirmation if it appears "
+     ^ "that the entire replica has been deleted, before propagating the change.  If the {\\tt batch} "
+     ^ "flag is also set, synchronization will be aborted.  When the {\\tt path} preference is used, "
+     ^ "the same confirmation will be requested for top-level paths.  (At the moment, this flag only "
+     ^ "affects the text user interface.)")
+
 let ignore =
   Pred.create "ignore"
     ("Including the preference \\texttt{-ignore \\ARG{pathspec}} causes Unison to "

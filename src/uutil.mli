@@ -10,6 +10,7 @@
 val myMajorVersion : string
 val myVersion : string
 val myName : string
+val myNameAndVersion : string
 
 (* Hashing *)
 val hash2 : int -> int -> int

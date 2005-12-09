@@ -12,6 +12,8 @@ let myVersion = ProjectInfo.myVersion
 
 let myMajorVersion = ProjectInfo.myMajorVersion
 
+let myNameAndVersion = myName ^ " " ^ myVersion
+
 (*****************************************************************************)
 (*                             HASHING                                       *)
 (*****************************************************************************)

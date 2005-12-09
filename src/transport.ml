@@ -148,7 +148,7 @@ let logStart () =
   let m =
     Printf.sprintf
       "\n\n%s started propagating changes at %02d:%02d:%02d on %02d %s %04d\n"
-      (String.uppercase Uutil.myName)
+      (String.uppercase Uutil.myNameAndVersion)
       tm.Unix.tm_hour tm.Unix.tm_min tm.Unix.tm_sec
       tm.Unix.tm_mday (Safelist.nth months tm.Unix.tm_mon)
       (tm.Unix.tm_year+1900) in
@@ -159,7 +159,7 @@ let logFinish () =
   let m =
     Printf.sprintf
       "%s finished propagating changes at %02d:%02d:%02d on %02d %s %04d\n\n\n"
-      (String.uppercase Uutil.myName)
+      (String.uppercase Uutil.myNameAndVersion)
       tm.Unix.tm_hour tm.Unix.tm_min tm.Unix.tm_sec
       tm.Unix.tm_mday (Safelist.nth months tm.Unix.tm_mon)
       (tm.Unix.tm_year+1900) in

@@ -1,3 +1,16 @@
+CHANGES FROM VERSION 2.18.1
+
+* Added some status messages recording when the xferbycopying hint is
+  actually used  
+
+* Added version number to log header
+
+* The confirmation of "big deletes" is now controlled by a flag,
+  -confirmbigdeletes.  Default is true, which gives the same behavior as
+  previously.
+
+
+-------------------------------
 CHANGES FROM VERSION 2.18.0
 
 Increment major version number (forgot to do this when the new
