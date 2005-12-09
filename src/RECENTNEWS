@@ -1,3 +1,10 @@
+CHANGES FROM VERSION 2.19.-1
+
+* Bump minor version number
+
+
+
+-------------------------------
 CHANGES FROM VERSION 2.18.1
 
 * Added some status messages recording when the xferbycopying hint is
