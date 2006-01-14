@@ -359,22 +359,24 @@ let copy
             (root2string rootTo) (Path.toString pTo));
           mkdir rootTo workingDir pTo) >>= (fun initialDesc ->
         Abort.check id;
-        let actions =
-          Update.NameMap.fold
-            (fun name child rem ->
-               copyRec (Path.child pFrom name)
-                       (Path.child pTo name)
-                       (Path.child realPTo name)
-                       child
-               :: rem)
-            children []
-        in
+        let runningThreads = ref [] in
         Lwt.catch
-          (fun () -> Lwt_util.join actions)
+          (fun () ->
+             Update.NameMap.iter
+               (fun name child ->
+                  let thread =
+                    copyRec (Path.child pFrom name)
+                            (Path.child pTo name)
+                            (Path.child realPTo name)
+                            child
+                  in
+                  runningThreads := thread :: !runningThreads)
+               children;
+             Lwt_util.join !runningThreads)
           (fun e ->
              (* If one thread fails (in a non-fatal way), we wait for
                 all other threads to terminate before continuing *)
-             Abort.file id;
+             if not (Abort.testException e) then Abort.file id;
              match e with
                Util.Transient _ ->
                  let e = ref e in
@@ -389,7 +391,7 @@ let copy
                                 Lwt.return ()
                             | _                ->
                                 Lwt.fail e'))
-                   actions >>= (fun () ->
+                   !runningThreads >>= (fun () ->
                  Lwt.fail !e)
              | _ ->
                  Lwt.fail e) >>= (fun () ->
@@ -422,6 +424,125 @@ let copy
          rename rootTo pathTo workingDir tempPathTo realPathTo uiTo ))))))
     (fun _ ->
        performDelete rootTo (Some workingDir, tempPathTo)))
+
+(* A PARTIALLY COMPLETE HACKED VERSION THAT COPIES DIRECTORIES IN PLACE -- Jan 14, 2006
+
+(This is left here in case Jerome gets a chance to finish it...)
+
+let copy
+      update
+      rootFrom pathFrom   (* copy from here... *)
+      uiFrom              (* (and then check that this updateItem still
+                             describes the current state of the src replica) *)
+      rootTo pathTo       (* ...to here *)
+      uiTo                (* (but, before committing the copy, check that
+                             this updateItem still describes the current
+                             state of the target replica) *)
+      id =                (* for progress display *)
+  debug (fun() ->
+    Util.msg
+      "copy %s %s ---> %s %s \n"
+      (root2string rootFrom) (Path.toString pathFrom)
+      (root2string rootTo) (Path.toString pathTo));
+  (* Inner loop for recursive copy... *)
+  let rec copyRec pFrom      (* Path to copy from *)
+                  pTo        (* (Temp) path to copy to *)
+                  f =        (* Source archive subtree for this path *)
+    debug (fun() ->
+      Util.msg "copyRec %s --> %s\n"
+        (Path.toString pFrom) (Path.toString pTo));
+    (* Calculate target paths *)
+    setupTargetPaths rootTo pTo
+       >>= (fun (workingDir, realPathTo, tempPathTo, _) ->
+    match f with
+      Update.ArchiveFile (desc, dig, stamp, ress) ->
+        Lwt_util.run_in_region copyReg 1 (fun () ->
+          Abort.check id;
+          Copy.file
+            rootFrom pFrom rootTo workingDir tempPathTo realPathTo
+            update desc dig ress id
+            >>= (fun () ->
+          checkContentsChange rootFrom pFrom desc dig stamp ress))
+    | Update.ArchiveSymlink l ->
+        Lwt_util.run_in_region copyReg 1 (fun () ->
+          debug (fun() -> Util.msg "Making symlink %s/%s -> %s\n"
+                            (root2string rootTo) (Path.toString pTo) l);
+          Abort.check id;
+          makeSymlink rootTo (workingDir, tempPathTo, l))
+    | Update.ArchiveDir (desc, children) ->
+        Lwt_util.run_in_region copyReg 1 (fun () ->
+          debug (fun() -> Util.msg "Creating directory %s/%s\n"
+            (root2string rootTo) (Path.toString pTo));
+          mkdir rootTo workingDir realPathTo) >>= (fun initialDesc ->
+        Abort.check id;
+        let runningThreads = ref [] in
+        Lwt.catch
+          (fun () ->
+             Update.NameMap.iter
+               (fun name child ->
+                  let thread =
+                    copyRec (Path.child pFrom name)
+                            (Path.child pTo name)
+                            child
+                  in
+                  runningThreads := thread :: !runningThreads)
+               children;
+             Lwt_util.join !runningThreads)
+          (fun e ->
+             (* If one thread fails (in a non-fatal way), we wait for
+                all other threads to terminate before continuing *)
+             if not (Abort.testException e) then Abort.file id;
+             match e with
+               Util.Transient _ ->
+                 let e = ref e in
+                 Lwt_util.iter
+                   (fun act ->
+                      Lwt.catch
+                         (fun () -> act)
+                         (fun e' ->
+                            match e' with
+                              Util.Transient _ ->
+                                if Abort.testException !e then e := e';
+                                Lwt.return ()
+                            | _                ->
+                                Lwt.fail e'))
+                   !runningThreads >>= (fun () ->
+                 Lwt.fail !e)
+             | _ ->
+                 Lwt.fail e) >>= (fun () ->
+        Lwt_util.run_in_region copyReg 1 (fun () ->
+          (* We use the actual file permissions so as to preserve
+             inherited bits *)
+          Abort.check id;
+          setPropRemote rootTo
+            (workingDir, realPathTo, `Set initialDesc, desc))))
+    | Update.NoArchive ->
+        assert false)
+  in
+  Update.transaction (fun id ->
+    (* Update the archive on the source replica (but don't commit
+       the changes yet) and return the part of the new archive
+       corresponding to this path *)
+    Update.updateArchive rootFrom pathFrom uiFrom id
+      >>= (fun (localPathFrom, archFrom) ->
+    (* Perform (asynchronously) a backup of the destination files *)
+    Update.updateArchive rootTo pathTo uiTo id >>= (fun _ ->
+(*
+  Remote.Thread.unwindProtect
+      (fun () ->
+*)
+           copyRec localPathFrom pathTo archFrom >>= (fun () ->
+(*
+           rename rootTo pathTo workingDir tempPathTo realPathTo uiTo ))
+      (fun _ ->
+         performDelete rootTo (Some workingDir, tempPathTo)) >>= (fun () ->
+*)
+    Update.replaceArchive
+      rootTo pathTo (Some (workingDir, tempPathTo))
+      archFrom id true))))
+
+*)   
+   
 
 (* ------------------------------------------------------------ *)
 
@@ -668,7 +789,7 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
   
   Util.convertUnixErrorsToTransient "merging files" (fun () ->
     (* Install finalizer (see below) in case we unwind the stack *)
-    Util.finalize  (fun () ->
+    Util.finalize (fun () ->
       
     (* Make local copies of the two replicas *)
       Os.delete workingDirForMerge working1;

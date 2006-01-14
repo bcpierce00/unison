@@ -1,3 +1,9 @@
+CHANGES FROM VERSION 2.19.0
+
+* Fixed bug resulting in spurious "Aborted" errors during transport (thanks to Jerome for the fix!)
+
+
+-------------------------------
 CHANGES FROM VERSION 2.19.-1
 
 * Bump minor version number
