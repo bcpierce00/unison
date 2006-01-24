@@ -120,6 +120,12 @@ let encodeException m kind e =
       debug "exn"
         (fun() -> msg "Converting a Not_found to %s:\n%s\n" kindStr s);
       reraise s
+  | Invalid_argument a ->
+      let s = "Invalid_argument("^a^") raised in " ^ m
+              ^ " (this indicates a bug!)" in
+      debug "exn"
+        (fun() -> msg "Converting an Invalid_argument to %s:\n%s\n" kindStr s);
+      reraise s
   | Sys_error(s) ->
       let s = "Error in " ^ m ^ ":\n" ^ s in
       debug "exn"

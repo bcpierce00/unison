@@ -137,7 +137,7 @@ let mkdir onRoot workingDir path = mkdirRemote onRoot (workingDir,path)
 (* ------------------------------------------------------------ *)
     
 let renameLocal (root, (fspath, pathFrom, pathTo)) =
-  debug (fun () -> Util.msg "Renaming %s to %s in %s ; root is %s\n" 
+  debug (fun () -> Util.msg "Renaming %s to %s in %s; root is %s\n" 
       (Path.toString pathFrom) 
       (Path.toString pathTo) 
       (Fspath.toString fspath) 
