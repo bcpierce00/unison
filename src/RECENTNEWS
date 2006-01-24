@@ -1,3 +1,14 @@
+CHANGES FROM VERSION 2.19.1
+
+* Fixed a bug where the "directory prefix" part of the backupprefix
+  preference was being ignored.  (But, while looking at the code in
+  the stasher module and experimenting with its behavior, I'm still
+  not very convinced that we're doing backups completely right -- looks
+  like too many backup files are getting created.)
+
+
+
+-------------------------------
 CHANGES FROM VERSION 2.19.0
 
 * Fixed bug resulting in spurious "Aborted" errors during transport (thanks to Jerome for the fix!)

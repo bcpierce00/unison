@@ -154,8 +154,11 @@ let suffix_rx = ref ""
 (* A tuple of string option * string * string, describing a regular
    expression that matches the filenames of unison backups according
    to the current preferences. The first regexp is an option to match
-   local directory, if ever, in which backups are stored ; the second
-   one matches the prefix, the third the suffix.                     *)
+   the local directory, if any, in which backups are stored; the second
+   one matches the prefix, the third the suffix.
+
+BUG: Does this work on windows??
+ *)
 let backup_rx () =
   let sp = Prefs.read backupprefix in
   let suffix = Str.quote (Prefs.read backupsuffix) in
@@ -164,12 +167,11 @@ let backup_rx () =
      Filename.basename sp) in
   let (dir, prefix) = 
     ((match udir with "" -> None | _ -> Some(Str.quote udir)), Str.quote uprefix) in
-  
-  if Str.string_match (Str.regexp ".*\\\\\\$VERSION.*") (prefix^suffix) 0 then begin
+  if Str.string_match (Str.regexp ".*\\\\\\$VERSION.*") (prefix^suffix) 0 then 
     (dir,
      Str.global_replace (Str.regexp "\\\\\\$VERSION") version_rx prefix,
      Str.global_replace (Str.regexp "\\\\\\$VERSION") version_rx suffix)
-  end else
+  else
     (dir, prefix, version_rx^suffix)
    
 (* This function updates the regular expressions for backups' filenames *)   
@@ -198,6 +200,7 @@ let addBackupFilesToIgnorePref () =
       | Some s -> regexp_to_rx s in
     let p = regexp_to_rx !prefix_rx in
     let s = regexp_to_rx !suffix_rx in
+    debug (fun() -> Util.msg "d = %s\n" d);
     (".*"^p^".*"^s, ".*"^(String.sub d 0 (String.length d - 1))) in
   let theRegExp = 
     match !dir_rx with 
@@ -244,11 +247,8 @@ let updatePrefixAndSuffix () =
 			   ^"once in the backups(prefix|suffix) preferences."))
   in
   
-  let (dir, prefix) =
-    ((match Filename.dirname sp with "." -> "" | s -> s), Filename.basename sp) in
-  
-  let _ = version_appears_once (prefix^suffix) true in
-  prefix_string := version_appears_once prefix false;
+  let _ = version_appears_once (sp^suffix) true in
+  prefix_string := version_appears_once sp false;
   suffix_string := version_appears_once suffix false;
   debug (fun () -> 
            Util.msg "Prefix and Suffix for backup filenames have been updated.\n")
@@ -403,11 +403,11 @@ let stashPath st fspath path =
     Some (tempfspath, tempPath)
       
 let rec stashCurrentVersion go_rec fspath path =
-  debug (fun () -> 
-    Util.msg "stashCurrentVersion of %s in %s\n" 
-      (Path.toString path) (Fspath.toString fspath));
   Util.convertUnixErrorsToTransient "stashCurrentVersion" (fun () ->
     if shouldBackupCurrent path then
+      debug (fun () -> 
+        Util.msg "stashCurrentVersion of %s in %s\n" 
+          (Path.toString path) (Fspath.toString fspath));
       let stat = (Fileinfo.get true fspath path) in
       match stat.Fileinfo.typ with
 	`ABSENT -> ()

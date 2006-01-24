@@ -204,17 +204,19 @@ let localString2fspath s =
     raise(Invalid_argument "Os.localString2fspath")
 
 (* If the string is the name of the local root, returns a localPath such     *)
-(* that concatenated to the root, it points to the same file as              *)
+(* that, concatenated to the root, it points to the same file as             *)
 (* (fspath, path) in this replica.                                           *)
 let rec fullLocalPath roots fspath path =
   let r = String.length roots in
   let fspaths = toString fspath in
+  debug (fun() -> Util.msg "roots = %s  r = %d  fspaths = %s  path = '%s'\n" roots r fspaths (Path.toString path));
   if fspaths = roots then 
     path 
   else 
     let parent = Path.parent path in
     if Path.isEmpty parent then
       let name = Name.fromString (Path.toString path) in
+      if (String.length fspaths - r - 1) <= 0 then raise (Util.Transient "Fspath.fullLocalPath: Can't create root (probably a bug)");
       Path.child (Path.fromString (String.sub fspaths (r+1) (String.length fspaths - r - 1))) name
     else
       let localParentPath = fullLocalPath roots fspath parent in

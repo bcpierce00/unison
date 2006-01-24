@@ -14,7 +14,7 @@ val toString : t -> string
 val concatToString : t -> Path.local -> string
 
 (* If the string is the name of the local root, returns a localPath such     *)
-(* that concatenated to the root, it points to the same file as              *)
+(* that, concatenated to the root, it points to the same file as             *)
 (* (fspath, path) in this replica.                                           *)
 val fullLocalPath : string -> t -> Path.local -> Path.local
 

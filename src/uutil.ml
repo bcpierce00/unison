@@ -113,7 +113,7 @@ let readWriteBounded source target len notify =
           (if len > bufsizeFS then bufsize else Filesize.toInt len)
       in
       if n > 0 then begin
-        let w = output target buf 0 n in
+        let _ = output target buf 0 n in
         l := !l + n;
         if !l > 100 * 1024 then begin
           notify !l;
