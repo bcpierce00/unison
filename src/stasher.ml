@@ -404,7 +404,7 @@ let stashPath st fspath path =
       
 let rec stashCurrentVersion go_rec fspath path =
   Util.convertUnixErrorsToTransient "stashCurrentVersion" (fun () ->
-    if shouldBackupCurrent path then
+    if shouldBackupCurrent path then (
       debug (fun () -> 
         Util.msg "stashCurrentVersion of %s in %s\n" 
           (Path.toString path) (Fspath.toString fspath));
@@ -443,7 +443,7 @@ let rec stashCurrentVersion go_rec fspath path =
 		  (Fspath.toString stashDir)
 		  (Path.toString stashPath))
 	  | None ->
-	      debug (fun () -> Util.msg "Stashing was not required, contents were equal.\n"))
+	      debug (fun () -> Util.msg "Stashing was not required, contents were equal.\n")))
       
 (* let stashCurrentVersionOnRoot: Common.root -> Path.local -> unit Lwt.t = *)
 (*   Remote.registerRootCmd *)
