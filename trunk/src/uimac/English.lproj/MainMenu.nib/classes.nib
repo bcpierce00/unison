@@ -39,6 +39,7 @@
                 chooseProfileView = NSView; 
                 detailsTextView = NSTextView; 
                 mainWindow = NSWindow; 
+                notificationController = NotificationController; 
                 passwordCancelButton = NSButton; 
                 passwordPrompt = NSTextField; 
                 passwordText = NSTextField; 
@@ -58,6 +59,7 @@
             }; 
             SUPERCLASS = NSObject; 
         }, 
+        {CLASS = NotificationController; LANGUAGE = ObjC; SUPERCLASS = NSObject; }, 
         {
             ACTIONS = {anyEnter = id; localClick = id; remoteClick = id; }; 
             CLASS = PreferencesController; 

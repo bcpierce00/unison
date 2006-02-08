@@ -1,0 +1,497 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 42;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		2A3C3F3309922A8000E404E9 /* Growl.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = 2A3C3F3209922A8000E404E9 /* Growl.framework */; };
+		2A3C3F7C09922D4900E404E9 /* NotificationController.h in Headers */ = {isa = PBXBuildFile; fileRef = 2A3C3F7A09922D4900E404E9 /* NotificationController.h */; };
+		2A3C3F7D09922D4900E404E9 /* NotificationController.m in Sources */ = {isa = PBXBuildFile; fileRef = 2A3C3F7B09922D4900E404E9 /* NotificationController.m */; };
+		2A3C3FAE0992323F00E404E9 /* Growl.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2A3C3F3209922A8000E404E9 /* Growl.framework */; };
+		69C625DF0664EC3300B3C46A /* MyController.h in Headers */ = {isa = PBXBuildFile; fileRef = 69660DC604F08CC100CF23A4 /* MyController.h */; };
+		69C625E00664EC3300B3C46A /* ProfileController.h in Headers */ = {isa = PBXBuildFile; fileRef = 690F564404F11EC300CF23A4 /* ProfileController.h */; };
+		69C625E10664EC3300B3C46A /* ReconItem.h in Headers */ = {isa = PBXBuildFile; fileRef = 69D3C6FA04F1CC3700CF23A4 /* ReconItem.h */; };
+		69C625E20664EC3300B3C46A /* ReconTableView.h in Headers */ = {isa = PBXBuildFile; fileRef = 69BA7DA804FD695200CF23A4 /* ReconTableView.h */; };
+		69C625E30664EC3300B3C46A /* PreferencesController.h in Headers */ = {isa = PBXBuildFile; fileRef = 697985CD050CFA2D00CF23A4 /* PreferencesController.h */; };
+		69C625E40664EC3300B3C46A /* ProfileTableView.h in Headers */ = {isa = PBXBuildFile; fileRef = 691CE180051BB44A00CF23A4 /* ProfileTableView.h */; };
+		69C625E60664EC3300B3C46A /* MainMenu.nib in Resources */ = {isa = PBXBuildFile; fileRef = 29B97318FDCFA39411CA2CEA /* MainMenu.nib */; };
+		69C625E70664EC3300B3C46A /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C165CFE840E0CC02AAC07 /* InfoPlist.strings */; };
+		69C625E80664EC3300B3C46A /* Unison.icns in Resources */ = {isa = PBXBuildFile; fileRef = 69C625CA0664E94E00B3C46A /* Unison.icns */; };
+		69C625EA0664EC3300B3C46A /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 29B97316FDCFA39411CA2CEA /* main.m */; settings = {ATTRIBUTES = (); }; };
+		69C625EB0664EC3300B3C46A /* MyController.m in Sources */ = {isa = PBXBuildFile; fileRef = 69660DC704F08CC100CF23A4 /* MyController.m */; };
+		69C625EC0664EC3300B3C46A /* ProfileController.m in Sources */ = {isa = PBXBuildFile; fileRef = 690F564504F11EC300CF23A4 /* ProfileController.m */; };
+		69C625ED0664EC3300B3C46A /* ReconItem.m in Sources */ = {isa = PBXBuildFile; fileRef = 69D3C6F904F1CC3700CF23A4 /* ReconItem.m */; };
+		69C625EE0664EC3300B3C46A /* ReconTableView.m in Sources */ = {isa = PBXBuildFile; fileRef = 69BA7DA904FD695200CF23A4 /* ReconTableView.m */; };
+		69C625EF0664EC3300B3C46A /* PreferencesController.m in Sources */ = {isa = PBXBuildFile; fileRef = 697985CE050CFA2D00CF23A4 /* PreferencesController.m */; };
+		69C625F00664EC3300B3C46A /* ProfileTableView.m in Sources */ = {isa = PBXBuildFile; fileRef = 691CE181051BB44A00CF23A4 /* ProfileTableView.m */; };
+		69C625F20664EC3300B3C46A /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */; };
+		69E407BA07EB95AA00D37AA1 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 69E407B907EB95AA00D37AA1 /* Security.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXBuildStyle section */
+		4A9504CCFFE6A4B311CA0CBA /* Development */ = {
+			isa = PBXBuildStyle;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				NSZombieEnabled = YES;
+				OPTIMIZATION_CFLAGS = "-O0";
+				ZERO_LINK = YES;
+			};
+			name = Development;
+		};
+		4A9504CDFFE6A4B311CA0CBA /* Deployment */ = {
+			isa = PBXBuildStyle;
+			buildSettings = {
+				COPY_PHASE_STRIP = YES;
+				GCC_ENABLE_FIX_AND_CONTINUE = NO;
+				GCC_WARN_FOUR_CHARACTER_CONSTANTS = YES;
+				ZERO_LINK = NO;
+			};
+			name = Deployment;
+		};
+/* End PBXBuildStyle section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		2A3C3F3709922AA600E404E9 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				2A3C3F3309922A8000E404E9 /* Growl.framework in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		089C165DFE840E0CC02AAC07 /* English */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; name = English; path = English.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = /System/Library/Frameworks/Cocoa.framework; sourceTree = "<absolute>"; };
+		29B97316FDCFA39411CA2CEA /* main.m */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
+		29B97319FDCFA39411CA2CEA /* English */ = {isa = PBXFileReference; lastKnownFileType = wrapper.nib; name = English; path = English.lproj/MainMenu.nib; sourceTree = "<group>"; };
+		29B97324FDCFA39411CA2CEA /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = /System/Library/Frameworks/AppKit.framework; sourceTree = "<absolute>"; };
+		29B97325FDCFA39411CA2CEA /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = /System/Library/Frameworks/Foundation.framework; sourceTree = "<absolute>"; };
+		2A3C3F3209922A8000E404E9 /* Growl.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = Growl.framework; sourceTree = "<group>"; };
+		2A3C3F7A09922D4900E404E9 /* NotificationController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NotificationController.h; sourceTree = "<group>"; };
+		2A3C3F7B09922D4900E404E9 /* NotificationController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = NotificationController.m; sourceTree = "<group>"; };
+		690F564404F11EC300CF23A4 /* ProfileController.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ProfileController.h; sourceTree = "<group>"; };
+		690F564504F11EC300CF23A4 /* ProfileController.m */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.objc; path = ProfileController.m; sourceTree = "<group>"; };
+		691CE180051BB44A00CF23A4 /* ProfileTableView.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ProfileTableView.h; sourceTree = "<group>"; };
+		691CE181051BB44A00CF23A4 /* ProfileTableView.m */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.objc; path = ProfileTableView.m; sourceTree = "<group>"; };
+		69660DC604F08CC100CF23A4 /* MyController.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = MyController.h; sourceTree = "<group>"; };
+		69660DC704F08CC100CF23A4 /* MyController.m */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.objc; path = MyController.m; sourceTree = "<group>"; };
+		697985CD050CFA2D00CF23A4 /* PreferencesController.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = PreferencesController.h; sourceTree = "<group>"; };
+		697985CE050CFA2D00CF23A4 /* PreferencesController.m */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.objc; path = PreferencesController.m; sourceTree = "<group>"; };
+		69BA7DA804FD695200CF23A4 /* ReconTableView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ReconTableView.h; sourceTree = "<group>"; };
+		69BA7DA904FD695200CF23A4 /* ReconTableView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ReconTableView.m; sourceTree = "<group>"; };
+		69C625CA0664E94E00B3C46A /* Unison.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = Unison.icns; sourceTree = "<group>"; };
+		69C625F40664EC3300B3C46A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Info.plist; sourceTree = "<group>"; };
+		69C625F50664EC3300B3C46A /* Unison.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Unison.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		69D3C6F904F1CC3700CF23A4 /* ReconItem.m */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.objc; path = ReconItem.m; sourceTree = "<group>"; };
+		69D3C6FA04F1CC3700CF23A4 /* ReconItem.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ReconItem.h; sourceTree = "<group>"; };
+		69E407B907EB95AA00D37AA1 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = /System/Library/Frameworks/Security.framework; sourceTree = "<absolute>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		69C625F10664EC3300B3C46A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				69C625F20664EC3300B3C46A /* Cocoa.framework in Frameworks */,
+				69E407BA07EB95AA00D37AA1 /* Security.framework in Frameworks */,
+				2A3C3FAE0992323F00E404E9 /* Growl.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		080E96DDFE201D6D7F000001 /* Classes */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Classes;
+			sourceTree = "<group>";
+		};
+		1058C7A0FEA54F0111CA2CBB /* Linked Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */,
+			);
+			name = "Linked Frameworks";
+			sourceTree = "<group>";
+		};
+		1058C7A2FEA54F0111CA2CBB /* Other Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				29B97325FDCFA39411CA2CEA /* Foundation.framework */,
+				29B97324FDCFA39411CA2CEA /* AppKit.framework */,
+			);
+			name = "Other Frameworks";
+			sourceTree = "<group>";
+		};
+		19C28FACFE9D520D11CA2CBB /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				69C625F50664EC3300B3C46A /* Unison.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		29B97314FDCFA39411CA2CEA /* uimac */ = {
+			isa = PBXGroup;
+			children = (
+				2A3C3F3209922A8000E404E9 /* Growl.framework */,
+				69E407B907EB95AA00D37AA1 /* Security.framework */,
+				080E96DDFE201D6D7F000001 /* Classes */,
+				29B97315FDCFA39411CA2CEA /* Other Sources */,
+				29B97317FDCFA39411CA2CEA /* Resources */,
+				29B97323FDCFA39411CA2CEA /* Frameworks */,
+				19C28FACFE9D520D11CA2CBB /* Products */,
+				69C625F40664EC3300B3C46A /* Info.plist */,
+			);
+			name = uimac;
+			sourceTree = "<group>";
+		};
+		29B97315FDCFA39411CA2CEA /* Other Sources */ = {
+			isa = PBXGroup;
+			children = (
+				29B97316FDCFA39411CA2CEA /* main.m */,
+				69660DC604F08CC100CF23A4 /* MyController.h */,
+				69660DC704F08CC100CF23A4 /* MyController.m */,
+				2A3C3F7A09922D4900E404E9 /* NotificationController.h */,
+				2A3C3F7B09922D4900E404E9 /* NotificationController.m */,
+				69BA7DA804FD695200CF23A4 /* ReconTableView.h */,
+				69BA7DA904FD695200CF23A4 /* ReconTableView.m */,
+				690F564404F11EC300CF23A4 /* ProfileController.h */,
+				690F564504F11EC300CF23A4 /* ProfileController.m */,
+				69D3C6FA04F1CC3700CF23A4 /* ReconItem.h */,
+				69D3C6F904F1CC3700CF23A4 /* ReconItem.m */,
+				697985CD050CFA2D00CF23A4 /* PreferencesController.h */,
+				697985CE050CFA2D00CF23A4 /* PreferencesController.m */,
+				691CE180051BB44A00CF23A4 /* ProfileTableView.h */,
+				691CE181051BB44A00CF23A4 /* ProfileTableView.m */,
+			);
+			name = "Other Sources";
+			sourceTree = "<group>";
+		};
+		29B97317FDCFA39411CA2CEA /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				29B97318FDCFA39411CA2CEA /* MainMenu.nib */,
+				089C165CFE840E0CC02AAC07 /* InfoPlist.strings */,
+				69C625CA0664E94E00B3C46A /* Unison.icns */,
+			);
+			name = Resources;
+			sourceTree = "<group>";
+		};
+		29B97323FDCFA39411CA2CEA /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				1058C7A0FEA54F0111CA2CBB /* Linked Frameworks */,
+				1058C7A2FEA54F0111CA2CBB /* Other Frameworks */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXHeadersBuildPhase section */
+		69C625DE0664EC3300B3C46A /* Headers */ = {
+			isa = PBXHeadersBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				69C625DF0664EC3300B3C46A /* MyController.h in Headers */,
+				69C625E00664EC3300B3C46A /* ProfileController.h in Headers */,
+				69C625E10664EC3300B3C46A /* ReconItem.h in Headers */,
+				69C625E20664EC3300B3C46A /* ReconTableView.h in Headers */,
+				69C625E30664EC3300B3C46A /* PreferencesController.h in Headers */,
+				69C625E40664EC3300B3C46A /* ProfileTableView.h in Headers */,
+				2A3C3F7C09922D4900E404E9 /* NotificationController.h in Headers */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXHeadersBuildPhase section */
+
+/* Begin PBXNativeTarget section */
+		69C625DD0664EC3300B3C46A /* uimac */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2A3C3F280992245300E404E9 /* Build configuration list for PBXNativeTarget "uimac" */;
+			buildPhases = (
+				69C625DE0664EC3300B3C46A /* Headers */,
+				69C625E50664EC3300B3C46A /* Resources */,
+				69C625E90664EC3300B3C46A /* Sources */,
+				69C625F10664EC3300B3C46A /* Frameworks */,
+				2A3C3F3709922AA600E404E9 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			buildSettings = {
+				FRAMEWORK_SEARCH_PATHS = "";
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				HEADER_SEARCH_PATHS = "$(OCAMLLIBDIR)";
+				INFOPLIST_FILE = Info.plist;
+				INSTALL_PATH = "$(HOME)/Applications";
+				LIBRARY_SEARCH_PATHS = "";
+				OCAMLLIBDIR = /usr/local/lib/ocaml;
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = (
+					"$(SRCROOT)/../unison-blob.o",
+					"-L$(OCAMLLIBDIR)",
+					"-lunix",
+					"-lstr",
+					"-lasmrun",
+				);
+				PREBINDING = NO;
+				PRODUCT_NAME = Unison;
+				SECTORDER_FLAGS = "";
+				WARNING_CFLAGS = (
+					"-Wmost",
+					"-Wno-four-char-constants",
+					"-Wno-unknown-pragmas",
+				);
+				WRAPPER_EXTENSION = app;
+			};
+			dependencies = (
+			);
+			name = uimac;
+			productInstallPath = "$(HOME)/Applications";
+			productName = uimac;
+			productReference = 69C625F50664EC3300B3C46A /* Unison.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		29B97313FDCFA39411CA2CEA /* Project object */ = {
+			isa = PBXProject;
+			buildConfigurationList = 2A3C3F2C0992245300E404E9 /* Build configuration list for PBXProject "uimac" */;
+			buildSettings = {
+			};
+			buildStyles = (
+				4A9504CCFFE6A4B311CA0CBA /* Development */,
+				4A9504CDFFE6A4B311CA0CBA /* Deployment */,
+			);
+			hasScannedForEncodings = 1;
+			mainGroup = 29B97314FDCFA39411CA2CEA /* uimac */;
+			projectDirPath = "";
+			targets = (
+				69C625DD0664EC3300B3C46A /* uimac */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		69C625E50664EC3300B3C46A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				69C625E60664EC3300B3C46A /* MainMenu.nib in Resources */,
+				69C625E70664EC3300B3C46A /* InfoPlist.strings in Resources */,
+				69C625E80664EC3300B3C46A /* Unison.icns in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		69C625E90664EC3300B3C46A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				69C625EA0664EC3300B3C46A /* main.m in Sources */,
+				69C625EB0664EC3300B3C46A /* MyController.m in Sources */,
+				69C625EC0664EC3300B3C46A /* ProfileController.m in Sources */,
+				69C625ED0664EC3300B3C46A /* ReconItem.m in Sources */,
+				69C625EE0664EC3300B3C46A /* ReconTableView.m in Sources */,
+				69C625EF0664EC3300B3C46A /* PreferencesController.m in Sources */,
+				69C625F00664EC3300B3C46A /* ProfileTableView.m in Sources */,
+				2A3C3F7D09922D4900E404E9 /* NotificationController.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXVariantGroup section */
+		089C165CFE840E0CC02AAC07 /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				089C165DFE840E0CC02AAC07 /* English */,
+			);
+			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
+		29B97318FDCFA39411CA2CEA /* MainMenu.nib */ = {
+			isa = PBXVariantGroup;
+			children = (
+				29B97319FDCFA39411CA2CEA /* English */,
+			);
+			name = MainMenu.nib;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin XCBuildConfiguration section */
+		2A3C3F290992245300E404E9 /* Development */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(FRAMEWORK_SEARCH_PATHS)",
+					"$(SRCROOT)",
+				);
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				HEADER_SEARCH_PATHS = "$(OCAMLLIBDIR)";
+				INFOPLIST_FILE = Info.plist;
+				INSTALL_PATH = "$(HOME)/Applications";
+				LIBRARY_SEARCH_PATHS = "";
+				NSZombieEnabled = YES;
+				OCAMLLIBDIR = /usr/local/lib/ocaml;
+				OPTIMIZATION_CFLAGS = "-O0";
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = (
+					"$(SRCROOT)/../unison-blob.o",
+					"-L$(OCAMLLIBDIR)",
+					"-lunix",
+					"-lstr",
+					"-lasmrun",
+				);
+				PREBINDING = NO;
+				PRODUCT_NAME = Unison;
+				SECTORDER_FLAGS = "";
+				WARNING_CFLAGS = (
+					"-Wmost",
+					"-Wno-four-char-constants",
+					"-Wno-unknown-pragmas",
+				);
+				WRAPPER_EXTENSION = app;
+				ZERO_LINK = YES;
+			};
+			name = Development;
+		};
+		2A3C3F2A0992245300E404E9 /* Deployment */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(FRAMEWORK_SEARCH_PATHS)",
+					"$(SRCROOT)",
+				);
+				GCC_ENABLE_FIX_AND_CONTINUE = NO;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_WARN_FOUR_CHARACTER_CONSTANTS = YES;
+				HEADER_SEARCH_PATHS = "$(OCAMLLIBDIR)";
+				INFOPLIST_FILE = Info.plist;
+				INSTALL_PATH = "$(HOME)/Applications";
+				LIBRARY_SEARCH_PATHS = "";
+				OCAMLLIBDIR = /usr/local/lib/ocaml;
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = (
+					"$(SRCROOT)/../unison-blob.o",
+					"-L$(OCAMLLIBDIR)",
+					"-lunix",
+					"-lstr",
+					"-lasmrun",
+				);
+				PREBINDING = NO;
+				PRODUCT_NAME = Unison;
+				SECTORDER_FLAGS = "";
+				WARNING_CFLAGS = (
+					"-Wmost",
+					"-Wno-four-char-constants",
+					"-Wno-unknown-pragmas",
+				);
+				WRAPPER_EXTENSION = app;
+				ZERO_LINK = NO;
+			};
+			name = Deployment;
+		};
+		2A3C3F2B0992245300E404E9 /* Default */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(FRAMEWORK_SEARCH_PATHS)",
+					"$(SRCROOT)",
+				);
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				HEADER_SEARCH_PATHS = "$(OCAMLLIBDIR)";
+				INFOPLIST_FILE = Info.plist;
+				INSTALL_PATH = "$(HOME)/Applications";
+				LIBRARY_SEARCH_PATHS = "";
+				OCAMLLIBDIR = /usr/local/lib/ocaml;
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = (
+					"$(SRCROOT)/../unison-blob.o",
+					"-L$(OCAMLLIBDIR)",
+					"-lunix",
+					"-lstr",
+					"-lasmrun",
+				);
+				PREBINDING = NO;
+				PRODUCT_NAME = Unison;
+				SECTORDER_FLAGS = "";
+				WARNING_CFLAGS = (
+					"-Wmost",
+					"-Wno-four-char-constants",
+					"-Wno-unknown-pragmas",
+				);
+				WRAPPER_EXTENSION = app;
+			};
+			name = Default;
+		};
+		2A3C3F2D0992245300E404E9 /* Development */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+			};
+			name = Development;
+		};
+		2A3C3F2E0992245300E404E9 /* Deployment */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+			};
+			name = Deployment;
+		};
+		2A3C3F2F0992245300E404E9 /* Default */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+			};
+			name = Default;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		2A3C3F280992245300E404E9 /* Build configuration list for PBXNativeTarget "uimac" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2A3C3F290992245300E404E9 /* Development */,
+				2A3C3F2A0992245300E404E9 /* Deployment */,
+				2A3C3F2B0992245300E404E9 /* Default */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Default;
+		};
+		2A3C3F2C0992245300E404E9 /* Build configuration list for PBXProject "uimac" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2A3C3F2D0992245300E404E9 /* Development */,
+				2A3C3F2E0992245300E404E9 /* Deployment */,
+				2A3C3F2F0992245300E404E9 /* Default */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Default;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 29B97313FDCFA39411CA2CEA /* Project object */;
+}

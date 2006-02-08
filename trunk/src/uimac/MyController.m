@@ -102,6 +102,7 @@ static MyController *me; // needed by reloadTable and displayStatus, below
     [[NSNotificationCenter defaultCenter] removeObserver:self
         name:NSThreadWillExitNotification
         object:nil];
+	[notificationController updateFinishedFor:[self profile]];
     [self updateReconItems];
     if ([reconItems count] > 0)
         [tableView selectRow:0 byExtendingSelection:NO];
@@ -180,8 +181,7 @@ static MyController *me; // needed by reloadTable and displayStatus, below
 - (IBAction)openButton:(id)sender
 {
     NSString *profile = [profileController selected];
-    [updatesText setStringValue:[NSString stringWithFormat:@"Synchronizing profile '%@'",
-                                          profile]];
+    [self profileSelected:profile];
     const char *s = [profile cString];
     value caml_s = caml_copy_string(s);
     [self connect:caml_s];
@@ -207,6 +207,7 @@ static MyController *me; // needed by reloadTable and displayStatus, below
     [[NSNotificationCenter defaultCenter] removeObserver:self
         name:NSThreadWillExitNotification
         object:nil];
+	[notificationController syncFinishedFor:[self profile]];
     [restartButton setEnabled:YES];
     [restartMenuItem setEnabled:YES];
     int i;
@@ -447,9 +448,8 @@ CAMLprim value displayStatus(value s)
     if (Is_block(clprofile)) {
       /* A profile name was given on the command line */
       value caml_profile = Field(clprofile,0);
-      NSString *profile = [NSString stringWithCString:String_val(caml_profile)];
-      [updatesText setStringValue:[NSString stringWithFormat:@"Synchronizing profile '%@'",
-                                            profile]];
+	  [self profileSelected:[NSString stringWithCString:String_val(caml_profile)]];
+
       /* If invoked from terminal we need to bring the app to the front */
       [NSApp activateIgnoringOtherApps:YES];
       [mainWindow orderFront:self];
@@ -515,6 +515,21 @@ CAMLprim value displayStatus(value s)
     NSLog(@"The attempt was canceled\n");
   else if (myStatus) NSLog(@"There was an authorization error: %ld\n", myStatus);
   */
+}
+
+/* Only valid once a profile has been selected */
+- (NSString *)profile
+{
+	return myProfile;
+}
+
+- (void)profileSelected:(NSString *)aProfile
+{
+	[aProfile retain];
+	[myProfile release];
+	myProfile = aProfile;
+	[updatesText setStringValue:[NSString stringWithFormat:@"Synchronizing profile '%@'",
+										  myProfile]];
 }
 
 @end

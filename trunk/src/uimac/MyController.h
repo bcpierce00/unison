@@ -6,6 +6,7 @@
 #include <caml/mlvalues.h>
 #import "ProfileController.h"
 #import "PreferencesController.h"
+#import "NotificationController.h"
 #import "ReconTableView.h"
 
 @interface MyController : NSObject
@@ -45,6 +46,8 @@
     IBOutlet NSWindow *aboutWindow;
     IBOutlet NSTextField *versionText;
 
+	IBOutlet NotificationController *notificationController;
+	NSString *myProfile;
 
     NSView *blankView;
     value caml_reconItems;
@@ -72,4 +75,7 @@
 - (int)updateForIgnore:(int)i;
 - (void)displayDetails:(int)i;
 - (IBAction)installCommandLineTool:(id)sender;
+
+- (void)profileSelected:(NSString *)aProfile;
+- (NSString *)profile;
 @end
