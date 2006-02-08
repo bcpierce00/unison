@@ -201,7 +201,7 @@ let addBackupFilesToIgnorePref () =
     let p = regexp_to_rx !prefix_rx in
     let s = regexp_to_rx !suffix_rx in
     debug (fun() -> Util.msg "d = %s\n" d);
-    (".*"^p^".*"^s, ".*"^(String.sub d 0 (String.length d - 1))) in
+    ("(.*/)?"^p^".*"^s, "(.*/)?"^(String.sub d 0 (String.length d - 1))) in
   let theRegExp = 
     match !dir_rx with 
       None   -> "Regex " ^ full 
