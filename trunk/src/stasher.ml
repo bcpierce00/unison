@@ -269,8 +269,11 @@ let backupPath fspath path =
     let tempPath = 
       Path.addSuffixToFinalName 
 	(Path.addPrefixToFinalName path prefix) suffix in
-    if Os.exists fspath tempPath && i < Prefs.read maxbackups then
-      Os.rename fspath tempPath fspath (f (i + 1));
+    if Os.exists fspath tempPath then
+      if i < Prefs.read maxbackups then
+        Os.rename fspath tempPath fspath (f (i + 1))
+      else if i = Prefs.read maxbackups then
+        Os.delete fspath tempPath;
     tempPath in
   (fspath, f 1)
     
