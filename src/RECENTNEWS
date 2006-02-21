@@ -1,3 +1,21 @@
+CHANGES FROM VERSION 2.19.5
+
+* Converted the assertion failure reported by Eli Barzilay into an exception.
+
+* Fixed bug in stasher.ml that would cause backups to fail on Windows when
+  the number of backup versions becomes equal to maxbackups.
+
+
+-------------------------------
+CHANGES FROM VERSION 2.19.5
+
+* Converted the assertion failure reported by Eli Barzilay into an exception.
+
+* Fixed bug in stasher.ml that would cause backups to fail on Windows when
+  the number of backup versions becomes equal to maxbackups.
+
+
+-------------------------------
 CHANGES FROM VERSION 2.19.2
 
 * Fixed bug that would cause filenames CONTAINING (as opposed to BEGINNING WITH) a 

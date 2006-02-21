@@ -169,7 +169,7 @@ let fileInfos ui1 ui2 =
      Updates (File (desc2, ContentsUpdated (fp2, _, ress2)), _)) ->
        (desc1, fp1, ress1, desc2, fp2, ress2)
   | _ ->
-      assert false
+      raise (Util.Transient "Can't diff")
 
 let problematic ri =
   match ri.replicas with
