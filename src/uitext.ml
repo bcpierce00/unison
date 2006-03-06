@@ -396,6 +396,7 @@ let doTransport reconItemList =
             return ()
         | _ ->
             fail e) in
+  let counter = ref 0 in
   let rec loop ris actions pRiThisRound =
     match ris with
       [] ->
@@ -403,8 +404,11 @@ let doTransport reconItemList =
     | ri :: rest when pRiThisRound ri ->
         loop rest
           (uiWrapper ri
-             (fun () -> Transport.transportItem ri
-                          (Uutil.File.ofLine 0) verifyMerge)
+             (fun () -> (* We need different line numbers so that
+                           transport operations are aborted independently *)
+                        incr counter;
+                        Transport.transportItem ri
+                          (Uutil.File.ofLine !counter) verifyMerge)
            :: actions)
           pRiThisRound
     | _ :: rest ->
