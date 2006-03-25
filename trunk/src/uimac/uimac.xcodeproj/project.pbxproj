@@ -29,6 +29,17 @@
 		69C625F00664EC3300B3C46A /* ProfileTableView.m in Sources */ = {isa = PBXBuildFile; fileRef = 691CE181051BB44A00CF23A4 /* ProfileTableView.m */; };
 		69C625F20664EC3300B3C46A /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */; };
 		69E407BA07EB95AA00D37AA1 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 69E407B907EB95AA00D37AA1 /* Security.framework */; };
+		B554003F09C4E5A00089E1C3 /* UnisonToolbar.h in Headers */ = {isa = PBXBuildFile; fileRef = B554003E09C4E5A00089E1C3 /* UnisonToolbar.h */; };
+		B554004109C4E5AA0089E1C3 /* UnisonToolbar.m in Sources */ = {isa = PBXBuildFile; fileRef = B554004009C4E5AA0089E1C3 /* UnisonToolbar.m */; };
+		B56E5D8509D52AE700E84382 /* add.tif in Resources */ = {isa = PBXBuildFile; fileRef = B56E5D7C09D52AE700E84382 /* add.tif */; };
+		B56E5D8609D52AE700E84382 /* go.tif in Resources */ = {isa = PBXBuildFile; fileRef = B56E5D7D09D52AE700E84382 /* go.tif */; };
+		B56E5D8709D52AE700E84382 /* left.tif in Resources */ = {isa = PBXBuildFile; fileRef = B56E5D7E09D52AE700E84382 /* left.tif */; };
+		B56E5D8809D52AE700E84382 /* merge.tif in Resources */ = {isa = PBXBuildFile; fileRef = B56E5D7F09D52AE700E84382 /* merge.tif */; };
+		B56E5D8909D52AE700E84382 /* quit.tif in Resources */ = {isa = PBXBuildFile; fileRef = B56E5D8009D52AE700E84382 /* quit.tif */; };
+		B56E5D8A09D52AE700E84382 /* restart.tif in Resources */ = {isa = PBXBuildFile; fileRef = B56E5D8109D52AE700E84382 /* restart.tif */; };
+		B56E5D8B09D52AE700E84382 /* right.tif in Resources */ = {isa = PBXBuildFile; fileRef = B56E5D8209D52AE700E84382 /* right.tif */; };
+		B56E5D8C09D52AE700E84382 /* save.tif in Resources */ = {isa = PBXBuildFile; fileRef = B56E5D8309D52AE700E84382 /* save.tif */; };
+		B56E5D8D09D52AE700E84382 /* skip.tif in Resources */ = {isa = PBXBuildFile; fileRef = B56E5D8409D52AE700E84382 /* skip.tif */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXBuildStyle section */
@@ -97,6 +108,17 @@
 		69D3C6F904F1CC3700CF23A4 /* ReconItem.m */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.objc; path = ReconItem.m; sourceTree = "<group>"; };
 		69D3C6FA04F1CC3700CF23A4 /* ReconItem.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ReconItem.h; sourceTree = "<group>"; };
 		69E407B907EB95AA00D37AA1 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = /System/Library/Frameworks/Security.framework; sourceTree = "<absolute>"; };
+		B554003E09C4E5A00089E1C3 /* UnisonToolbar.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = UnisonToolbar.h; sourceTree = "<group>"; };
+		B554004009C4E5AA0089E1C3 /* UnisonToolbar.m */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.objc; path = UnisonToolbar.m; sourceTree = "<group>"; };
+		B56E5D7C09D52AE700E84382 /* add.tif */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; name = add.tif; path = toolbar/add.tif; sourceTree = "<group>"; };
+		B56E5D7D09D52AE700E84382 /* go.tif */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; name = go.tif; path = toolbar/go.tif; sourceTree = "<group>"; };
+		B56E5D7E09D52AE700E84382 /* left.tif */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; name = left.tif; path = toolbar/left.tif; sourceTree = "<group>"; };
+		B56E5D7F09D52AE700E84382 /* merge.tif */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; name = merge.tif; path = toolbar/merge.tif; sourceTree = "<group>"; };
+		B56E5D8009D52AE700E84382 /* quit.tif */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; name = quit.tif; path = toolbar/quit.tif; sourceTree = "<group>"; };
+		B56E5D8109D52AE700E84382 /* restart.tif */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; name = restart.tif; path = toolbar/restart.tif; sourceTree = "<group>"; };
+		B56E5D8209D52AE700E84382 /* right.tif */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; name = right.tif; path = toolbar/right.tif; sourceTree = "<group>"; };
+		B56E5D8309D52AE700E84382 /* save.tif */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; name = save.tif; path = toolbar/save.tif; sourceTree = "<group>"; };
+		B56E5D8409D52AE700E84382 /* skip.tif */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; name = skip.tif; path = toolbar/skip.tif; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -178,6 +200,8 @@
 				697985CE050CFA2D00CF23A4 /* PreferencesController.m */,
 				691CE180051BB44A00CF23A4 /* ProfileTableView.h */,
 				691CE181051BB44A00CF23A4 /* ProfileTableView.m */,
+				B554003E09C4E5A00089E1C3 /* UnisonToolbar.h */,
+				B554004009C4E5AA0089E1C3 /* UnisonToolbar.m */,
 			);
 			name = "Other Sources";
 			sourceTree = "<group>";
@@ -187,6 +211,15 @@
 			children = (
 				29B97318FDCFA39411CA2CEA /* MainMenu.nib */,
 				089C165CFE840E0CC02AAC07 /* InfoPlist.strings */,
+				B56E5D7C09D52AE700E84382 /* add.tif */,
+				B56E5D7D09D52AE700E84382 /* go.tif */,
+				B56E5D7E09D52AE700E84382 /* left.tif */,
+				B56E5D7F09D52AE700E84382 /* merge.tif */,
+				B56E5D8009D52AE700E84382 /* quit.tif */,
+				B56E5D8109D52AE700E84382 /* restart.tif */,
+				B56E5D8209D52AE700E84382 /* right.tif */,
+				B56E5D8309D52AE700E84382 /* save.tif */,
+				B56E5D8409D52AE700E84382 /* skip.tif */,
 				69C625CA0664E94E00B3C46A /* Unison.icns */,
 			);
 			name = Resources;
@@ -215,6 +248,7 @@
 				69C625E30664EC3300B3C46A /* PreferencesController.h in Headers */,
 				69C625E40664EC3300B3C46A /* ProfileTableView.h in Headers */,
 				2A3C3F7C09922D4900E404E9 /* NotificationController.h in Headers */,
+				B554003F09C4E5A00089E1C3 /* UnisonToolbar.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -296,6 +330,15 @@
 				69C625E60664EC3300B3C46A /* MainMenu.nib in Resources */,
 				69C625E70664EC3300B3C46A /* InfoPlist.strings in Resources */,
 				69C625E80664EC3300B3C46A /* Unison.icns in Resources */,
+				B56E5D8509D52AE700E84382 /* add.tif in Resources */,
+				B56E5D8609D52AE700E84382 /* go.tif in Resources */,
+				B56E5D8709D52AE700E84382 /* left.tif in Resources */,
+				B56E5D8809D52AE700E84382 /* merge.tif in Resources */,
+				B56E5D8909D52AE700E84382 /* quit.tif in Resources */,
+				B56E5D8A09D52AE700E84382 /* restart.tif in Resources */,
+				B56E5D8B09D52AE700E84382 /* right.tif in Resources */,
+				B56E5D8C09D52AE700E84382 /* save.tif in Resources */,
+				B56E5D8D09D52AE700E84382 /* skip.tif in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -314,6 +357,7 @@
 				69C625EF0664EC3300B3C46A /* PreferencesController.m in Sources */,
 				69C625F00664EC3300B3C46A /* ProfileTableView.m in Sources */,
 				2A3C3F7D09922D4900E404E9 /* NotificationController.m in Sources */,
+				B554004109C4E5AA0089E1C3 /* UnisonToolbar.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -453,18 +497,24 @@
 		2A3C3F2D0992245300E404E9 /* Development */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				LIBRARY_SEARCH_PATHS = "";
+				USER_HEADER_SEARCH_PATHS = "";
 			};
 			name = Development;
 		};
 		2A3C3F2E0992245300E404E9 /* Deployment */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				LIBRARY_SEARCH_PATHS = "";
+				USER_HEADER_SEARCH_PATHS = "";
 			};
 			name = Deployment;
 		};
 		2A3C3F2F0992245300E404E9 /* Default */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				LIBRARY_SEARCH_PATHS = "";
+				USER_HEADER_SEARCH_PATHS = "";
 			};
 			name = Default;
 		};

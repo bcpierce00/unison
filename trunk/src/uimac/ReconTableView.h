@@ -28,5 +28,6 @@
 - (IBAction)merge:(id)sender;
 - (BOOL)validateItem:(IBAction *) action;
 - (BOOL)validateMenuItem:(NSMenuItem *)menuItem;
+- (BOOL)validateToolbarItem:(NSToolbarItem *)toolbarItem;
 
 @end
