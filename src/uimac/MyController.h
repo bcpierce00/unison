@@ -5,16 +5,13 @@
 #define CAML_NAME_SPACE
 #include <caml/mlvalues.h>
 
-@class ProfileController, PreferencesController, NotificationController, ReconTableView;
+@class ProfileController, PreferencesController, NotificationController, ReconTableView, UnisonToolbar;
 
 @interface MyController : NSObject
 {
     IBOutlet NSWindow *mainWindow;
 
-    IBOutlet NSMenuItem *restartMenuItem;
-    IBOutlet NSButton *restartButton;
-    IBOutlet NSMenuItem *synchronizeMenuItem;
-    IBOutlet NSButton *synchronizeButton;
+    UnisonToolbar *toolbar;
 
     IBOutlet ProfileController *profileController;
     IBOutlet NSView *chooseProfileView;
@@ -79,6 +76,7 @@
 - (NSString *)profile;
 - (BOOL)validateItem:(IBAction *) action;
 - (BOOL)validateMenuItem:(NSMenuItem *)menuItem;
+- (BOOL)validateToolbarItem:(NSToolbarItem *)toolbarItem;
 - (void)forceUpdatesViewRefresh;
 
 @end

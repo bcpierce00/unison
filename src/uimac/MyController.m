@@ -6,6 +6,8 @@
 #import "NotificationController.h"
 #import "ReconItem.h"
 #import "ReconTableView.h"
+#import "UnisonToolbar.h"
+
 #include <caml/callback.h>
 #include <caml/alloc.h>
 #include <caml/mlvalues.h>
@@ -47,6 +49,7 @@ static MyController *me; // needed by reloadTable and displayStatus, below
     [mainWindow setContentView:blankView];
     [self resizeWindowToSize:chooseProfileSize];
     [mainWindow setContentView:chooseProfileView];
+    [toolbar setView:@"chooseProfileView"];
     [mainWindow makeFirstResponder:[profileController tableView]]; // profiles get keyboard input
 }
 
@@ -56,6 +59,7 @@ static MyController *me; // needed by reloadTable and displayStatus, below
     [mainWindow setContentView:blankView];
     [self resizeWindowToSize:preferencesSize];
     [mainWindow setContentView:preferencesView];
+    [toolbar setView:@"preferencesView"];
 }
 
 - (IBAction)saveProfileButton:(id)sender
@@ -81,12 +85,11 @@ static MyController *me; // needed by reloadTable and displayStatus, below
         [reconItems insertObject:[ReconItem initWithRi:Field(caml_reconItems,j)]
             atIndex:j];
     }
-
+	
     // Only enable sync if there are reconitems
     if ([reconItems count]>0) {
         [tableView setEditable:YES];
-        [synchronizeButton setEnabled:YES];
-        [synchronizeMenuItem setEnabled:YES];
+
         // Make sure details get updated
         [self tableViewSelectionDidChange:[NSNotification init]];
         syncable = YES;
@@ -159,8 +162,7 @@ static MyController *me; // needed by reloadTable and displayStatus, below
     [mainWindow setContentView:blankView];
     [self resizeWindowToSize:updatesSize];
     [mainWindow setContentView:updatesView];
-    [synchronizeButton setEnabled:NO];
-    [synchronizeMenuItem setEnabled:NO];
+    [toolbar setView:@"updatesView"];
     syncable = NO;
 
     // reconItems table gets keyboard input
@@ -182,6 +184,7 @@ static MyController *me; // needed by reloadTable and displayStatus, below
     [mainWindow setContentView:blankView];
     [self resizeWindowToSize:ConnectingSize];
     [mainWindow setContentView:ConnectingView];
+    [toolbar setView:@"ConnectingView"];
 
     // Update (almost) immediately
     [ConnectingView display];
@@ -252,8 +255,6 @@ static MyController *me; // needed by reloadTable and displayStatus, below
 - (IBAction)syncButton:(id)sender
 {
     [tableView setEditable:NO];
-    [synchronizeButton setEnabled:NO];
-    [synchronizeMenuItem setEnabled:NO];
     syncable = NO;
     duringSync = YES;
     
@@ -477,6 +478,11 @@ CAMLprim value displayStatus(value s)
     f = caml_named_value("unisonInit0");
     value clprofile = Callback_checkexn(*f, Val_unit);
 
+    /* Add toolbar */
+    toolbar = [[[UnisonToolbar alloc] initWithIdentifier: @"unisonToolbar"
+	:self :tableView] autorelease];
+    [mainWindow setToolbar: toolbar];
+
     /* Set up the first window the user will see */
     if (Is_block(clprofile)) {
       /* A profile name was given on the command line */
@@ -578,10 +584,16 @@ CAMLprim value displayStatus(value s)
 	return [self validateItem:[menuItem action]];
 }
 
+- (BOOL)validateToolbarItem:(NSToolbarItem *)toolbarItem
+{
+       return [self validateItem:[toolbarItem action]];
+}
+
 - (void)forceUpdatesViewRefresh
 {
     /* awful kludge to force all elements to update correctly */
     [updatesView display];
+    [toolbar validateVisibleItems];
     [statusText setStringValue:[statusText stringValue]];
     [updatesView display];
 }

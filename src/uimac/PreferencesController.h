@@ -4,12 +4,10 @@
 
 @interface PreferencesController : NSObject
 {
-    IBOutlet NSButton *cancelButton;
     IBOutlet NSTextField *firstRootText;
     IBOutlet NSButtonCell *localButtonCell;
     IBOutlet NSTextField *profileNameText;
     IBOutlet NSButtonCell *remoteButtonCell;
-    IBOutlet NSButton *saveButton;
     IBOutlet NSTextField *secondRootHost;
     IBOutlet NSTextField *secondRootText;
     IBOutlet NSTextField *secondRootUser;

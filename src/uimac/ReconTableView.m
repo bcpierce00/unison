@@ -50,6 +50,11 @@
 	return [self validateItem:[menuItem action]];
 }
 
+- (BOOL)validateToolbarItem:(NSToolbarItem *)toolbarItem
+{
+       return [self validateItem:[toolbarItem action]];
+}
+
 - (void)doIgnore:(unichar)c
 {
     NSMutableArray *reconItems = [[self dataSource] reconItems];

@@ -47,11 +47,7 @@
                 preferencesController = PreferencesController; 
                 preferencesView = NSView; 
                 profileController = ProfileController; 
-                restartButton = NSButton; 
-                restartMenuItem = NSMenuItem; 
                 statusText = NSTextField; 
-                synchronizeButton = NSButton; 
-                synchronizeMenuItem = NSMenuItem; 
                 tableView = ReconTableView; 
                 updatesText = NSTextField; 
                 updatesView = NSView; 
@@ -65,12 +61,10 @@
             CLASS = PreferencesController; 
             LANGUAGE = ObjC; 
             OUTLETS = {
-                cancelButton = NSButton; 
                 firstRootText = NSTextField; 
                 localButtonCell = NSButtonCell; 
                 profileNameText = NSTextField; 
                 remoteButtonCell = NSButtonCell; 
-                saveButton = NSButton; 
                 secondRootHost = NSTextField; 
                 secondRootText = NSTextField; 
                 secondRootUser = NSTextField; 
