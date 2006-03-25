@@ -1,3 +1,8 @@
+CHANGES FROM VERSION 2.19.9
+
+Add toolbar-related files missing from previous commit
+
+-------------------------------
 CHANGES FROM VERSION 2.19.8
 
 Add Toolbar for common actions to the Mac GUI, similar to the GTK2 one.  It replaces various buttons.
