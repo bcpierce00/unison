@@ -27,22 +27,27 @@
     editable = NO;
 }
 
-- (BOOL)validateMenuItem:(NSMenuItem *)menuItem
+- (BOOL)validateItem:(IBAction *) action
 {
-    if ([menuItem action] == @selector(selectAll:)
-        || [menuItem action] == @selector(selectConflicts:)
-        || [menuItem action] == @selector(copyLR:)
-        || [menuItem action] == @selector(copyRL:)
-        || [menuItem action] == @selector(leaveAlone:)
-        || [menuItem action] == @selector(forceNewer:)
-        || [menuItem action] == @selector(forceOlder:)
-        || [menuItem action] == @selector(revert:)
-        || [menuItem action] == @selector(merge:)
-        || [menuItem action] == @selector(ignorePath:)
-        || [menuItem action] == @selector(ignoreExt:)
-        || [menuItem action] == @selector(ignoreName:))
+    if (action == @selector(selectAll:)
+        || action == @selector(selectConflicts:)
+        || action == @selector(copyLR:)
+        || action == @selector(copyRL:)
+        || action == @selector(leaveAlone:)
+        || action == @selector(forceNewer:)
+        || action == @selector(forceOlder:)
+        || action == @selector(revert:)
+        || action == @selector(merge:)
+        || action == @selector(ignorePath:)
+        || action == @selector(ignoreExt:)
+        || action == @selector(ignoreName:))
         return editable;
     else return YES;
+}
+
+- (BOOL)validateMenuItem:(NSMenuItem *)menuItem
+{
+	return [self validateItem:[menuItem action]];
 }
 
 - (void)doIgnore:(unichar)c

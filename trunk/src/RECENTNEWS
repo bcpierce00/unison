@@ -1,3 +1,20 @@
+CHANGES FROM VERSION 2.19.6
+
+Several minor fixes for Mac GUI:
+* Fix bug where status text wrote on top of old values
+* Make reconitem details update after scan
+* Make connectingView update faster
+* Make connectingView the same size as updatesView 
+  to minimise zooming
+* Make sure an item is selected in updatesView after scan
+* Use fixed-width font for details and enlarge updatesView 
+  so it doesn't wrap
+* Enlarge preferencesView slightly
+* Tidy headers
+* Clean up menu item validation code
+* Update copyright message to 2006
+
+-------------------------------
 CHANGES FROM VERSION 2.19.5
 
 * Converted the assertion failure reported by Eli Barzilay into an exception.

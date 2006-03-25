@@ -4,10 +4,8 @@
 #import <Cocoa/Cocoa.h>
 #define CAML_NAME_SPACE
 #include <caml/mlvalues.h>
-#import "ProfileController.h"
-#import "PreferencesController.h"
-#import "NotificationController.h"
-#import "ReconTableView.h"
+
+@class ProfileController, PreferencesController, NotificationController, ReconTableView;
 
 @interface MyController : NSObject
 {
@@ -55,7 +53,9 @@
     value preconn;
 
     NSString *pName;
+		
 }
+
 - (IBAction)createButton:(id)sender;
 - (IBAction)saveProfileButton:(id)sender;
 - (IBAction)cancelProfileButton:(id)sender;
@@ -75,7 +75,10 @@
 - (int)updateForIgnore:(int)i;
 - (void)displayDetails:(int)i;
 - (IBAction)installCommandLineTool:(id)sender;
-
 - (void)profileSelected:(NSString *)aProfile;
 - (NSString *)profile;
+- (BOOL)validateItem:(IBAction *) action;
+- (BOOL)validateMenuItem:(NSMenuItem *)menuItem;
+- (void)forceUpdatesViewRefresh;
+
 @end

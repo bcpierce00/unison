@@ -1,7 +1,11 @@
 /* Copyright (c) 2003, see file COPYING for details. */
 
 #import "MyController.h"
+#import "ProfileController.h"
+#import "PreferencesController.h"
+#import "NotificationController.h"
 #import "ReconItem.h"
+#import "ReconTableView.h"
 #include <caml/callback.h>
 #include <caml/alloc.h>
 #include <caml/mlvalues.h>
@@ -9,6 +13,9 @@
 
 extern value Callback_checkexn(value,value);
 extern value Callback2_checkexn(value,value,value);
+
+static BOOL syncable;
+static BOOL duringSync;
 
 @implementation MyController
 
@@ -74,14 +81,28 @@ static MyController *me; // needed by reloadTable and displayStatus, below
         [reconItems insertObject:[ReconItem initWithRi:Field(caml_reconItems,j)]
             atIndex:j];
     }
-    [synchronizeButton setEnabled:YES];
-    [synchronizeMenuItem setEnabled:YES];
+
+    // Only enable sync if there are reconitems
+    if ([reconItems count]>0) {
+        [tableView setEditable:YES];
+        [synchronizeButton setEnabled:YES];
+        [synchronizeMenuItem setEnabled:YES];
+        // Make sure details get updated
+        [self tableViewSelectionDidChange:[NSNotification init]];
+        syncable = YES;
+    }
+    else {
+        [tableView setEditable:NO];
+    }
 }
 
 - (void)displayDetails:(int)i
 {
     if (i >= 0 && i < [reconItems count])
+        {
+        [detailsTextView setFont:[NSFont fontWithName:@"Monaco" size:10]];
         [detailsTextView setString:[[reconItems objectAtIndex:i] details]];
+    }
 }
 - (void)clearDetails
 {
@@ -104,8 +125,6 @@ static MyController *me; // needed by reloadTable and displayStatus, below
         object:nil];
 	[notificationController updateFinishedFor:[self profile]];
     [self updateReconItems];
-    if ([reconItems count] > 0)
-        [tableView selectRow:0 byExtendingSelection:NO];
 
     // label the left and right columns with the roots
     NSTableHeaderCell *left = [[[tableView tableColumns] objectAtIndex:0] headerCell];
@@ -118,8 +137,16 @@ static MyController *me; // needed by reloadTable and displayStatus, below
     // cause scrollbar to display if necessary
     [tableView reloadData];
 
+    // have to select after reload for it to stick
+    if ([reconItems count] > 0)
+        [tableView selectRow:0 byExtendingSelection:NO];
+
     // activate menu items
-    [tableView setEditable:YES];
+    // this should depend on the number of reconitems, and is now done
+    // in updateReconItems
+    //[tableView setEditable:YES];
+   
+   [self forceUpdatesViewRefresh];
 }
 
 - (void)afterOpen
@@ -134,6 +161,7 @@ static MyController *me; // needed by reloadTable and displayStatus, below
     [mainWindow setContentView:updatesView];
     [synchronizeButton setEnabled:NO];
     [synchronizeMenuItem setEnabled:NO];
+    syncable = NO;
 
     // reconItems table gets keyboard input
     [mainWindow makeFirstResponder:tableView];
@@ -154,7 +182,9 @@ static MyController *me; // needed by reloadTable and displayStatus, below
     [mainWindow setContentView:blankView];
     [self resizeWindowToSize:ConnectingSize];
     [mainWindow setContentView:ConnectingView];
-    [ConnectingView setNeedsDisplay:YES]; // FIX: this doesn't seem to work fast enough
+
+    // Update (almost) immediately
+    [ConnectingView display];
 
     // possibly slow -- need another thread?  Print "contacting server"
     value *f = NULL;
@@ -207,9 +237,11 @@ static MyController *me; // needed by reloadTable and displayStatus, below
     [[NSNotificationCenter defaultCenter] removeObserver:self
         name:NSThreadWillExitNotification
         object:nil];
-	[notificationController syncFinishedFor:[self profile]];
-    [restartButton setEnabled:YES];
-    [restartMenuItem setEnabled:YES];
+    [notificationController syncFinishedFor:[self profile]];
+    duringSync = NO;
+
+    [self forceUpdatesViewRefresh];
+
     int i;
     for (i = 0; i < [reconItems count]; i++) {
         [[reconItems objectAtIndex:i] resetProgress];
@@ -220,10 +252,11 @@ static MyController *me; // needed by reloadTable and displayStatus, below
 - (IBAction)syncButton:(id)sender
 {
     [tableView setEditable:NO];
-    [restartButton setEnabled:NO];
-    [restartMenuItem setEnabled:NO];
     [synchronizeButton setEnabled:NO];
     [synchronizeMenuItem setEnabled:NO];
+    syncable = NO;
+    duringSync = YES;
+    
     [[NSNotificationCenter defaultCenter] addObserver:self
         selector:@selector(afterSync:)
         name:NSThreadWillExitNotification object:nil];
@@ -530,6 +563,27 @@ CAMLprim value displayStatus(value s)
 	myProfile = aProfile;
 	[updatesText setStringValue:[NSString stringWithFormat:@"Synchronizing profile '%@'",
 										  myProfile]];
+}
+
+- (BOOL)validateItem:(IBAction *) action
+{
+    if (action == @selector(syncButton:)) return syncable;
+	// FIXME Restarting during sync is disabled because it causes UI corruption
+	else if (action == @selector(restartButton:)) return !duringSync;
+    else return YES;
+}
+
+- (BOOL)validateMenuItem:(NSMenuItem *)menuItem
+{
+	return [self validateItem:[menuItem action]];
+}
+
+- (void)forceUpdatesViewRefresh
+{
+    /* awful kludge to force all elements to update correctly */
+    [updatesView display];
+    [statusText setStringValue:[statusText stringValue]];
+    [updatesView display];
 }
 
 @end
