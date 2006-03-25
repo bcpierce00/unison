@@ -1,3 +1,4 @@
+#import "MyController.h"
 #import "ProfileTableView.h"
 
 @implementation ProfileTableView

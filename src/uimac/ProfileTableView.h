@@ -1,7 +1,8 @@
 /* ProfileTableView */
 
 #import <Cocoa/Cocoa.h>
-#import "MyController.h"
+
+@class MyController;
 
 @interface ProfileTableView : NSTableView
 {
