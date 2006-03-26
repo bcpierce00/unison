@@ -93,7 +93,7 @@ static NSString*        DiffItemIdentifier      = @"Diff";
         [toolbarItem setLabel: @"Merge"];
         [toolbarItem setImage: [NSImage imageNamed: @"merge.tif"]];
         [toolbarItem setTarget:tableView];
-	[toolbarItem setAction:@selector(leaveAlone:)];
+	[toolbarItem setAction:@selector(merge:)];
     }
 	else if ([itemIdent isEqual: LToRItemIdentifier]) {
         [toolbarItem setLabel: @"Left to right"];
