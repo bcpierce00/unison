@@ -553,6 +553,19 @@ let readChannelTillEof c =
     with End_of_file -> lines in
   String.concat "\n" (Safelist.rev (loop []))
 
+let readChannelTillEof_lwt c =
+  let rec loop lines =
+    let lo =
+      try
+        Some(Lwt_unix.run (Lwt_unix.input_line c))
+      with End_of_file -> None
+    in
+    match lo with
+      Some l -> loop (l :: lines)
+    | None   -> lines
+  in
+  String.concat "\n" (Safelist.rev (loop []))
+
 let diffCmd =
   Prefs.createString "diff" "diff -u"
     "*command for showing differences between files"
@@ -590,9 +603,9 @@ let rec diff root1 path1 ui1 root2 path2 ui2 showDiff id =
         Util.replacesubstrings (Prefs.read diffCmd)
           ["CURRENT1", quotes (Fspath.toString fspath1);
            "CURRENT2", quotes (Fspath.toString fspath2)] in
-    let c = Unix.open_process_in cmd in
-    showDiff cmd (readChannelTillEof c);
-    ignore(Unix.close_process_in c) in
+    let c = Lwt_unix.run (Lwt_unix.open_process_in cmd) in
+    showDiff cmd (readChannelTillEof_lwt c);
+    ignore (Lwt_unix.run (Lwt_unix.close_process_in c)) in
   let (desc1, fp1, ress1, desc2, fp2, ress2) = Common.fileInfos ui1 ui2 in
   match root1,root2 with
     (Local,fspath1),(Local,fspath2) ->
@@ -675,19 +688,6 @@ let ls dir pattern =
 (***********************************************************************
                   CALL OUT TO EXTERNAL MERGE PROGRAM
 ************************************************************************)
-
-let readChannelTillEof_lwt c =
-  let rec loop lines =
-    let lo =
-      try
-        Some(Lwt_unix.run (Lwt_unix.input_line c))
-      with End_of_file -> None
-    in
-    match lo with
-      Some l -> loop (l :: lines)
-    | None   -> lines
-  in
-  String.concat "\n" (Safelist.rev (loop []))
 
 let formatMergeCmd p f1 f2 backup out1 out2 outarch =
   if not (Globals.shouldMerge p) then
