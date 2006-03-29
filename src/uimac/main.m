@@ -15,6 +15,7 @@ void reportExn(value e) {
     value *f = caml_named_value("unisonExnInfo");
     char *m = String_val(caml_callback(*f,Extract_exception(e)));
     NSString *s = [NSString stringWithFormat:@"Uncaught exception: %s", m];
+    s = [[s componentsSeparatedByString:@"\n"] componentsJoinedByString:@" "];
     NSLog(@"%@",s);
     NSRunAlertPanel(@"Fatal error",s,@"Exit",nil,nil);
 }
