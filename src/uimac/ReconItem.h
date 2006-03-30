@@ -13,8 +13,9 @@
     NSString *progress;
     NSString *details;
     value ri; // an ocaml Common.reconItem
+    value index; // ocaml value indicating index in Ri list
 }
-+ initWithRi:(value)ri;
++ (id)initWithRiAndIndex:(value)v index:(int)i;
 - (NSString *) path;
 - (NSString *) left;
 - (NSString *) right;
@@ -26,5 +27,6 @@
 - (NSString *) details;
 - (BOOL)isConflict;
 - (void)revertDirection;
+- (void)showDiffs;
 
 @end

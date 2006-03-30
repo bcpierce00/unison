@@ -106,6 +106,12 @@ static NSString*        DiffItemIdentifier      = @"Diff";
         [toolbarItem setImage: [NSImage imageNamed: @"skip.tif"]];
         [toolbarItem setTarget:tableView];
         [toolbarItem setAction:@selector(leaveAlone:)];
+        }
+	else if ([itemIdent isEqual: DiffItemIdentifier]) {
+        [toolbarItem setLabel: @"Diff"];
+        [toolbarItem setImage: [NSImage imageNamed: @"diff.tif"]];
+        [toolbarItem setTarget:tableView];
+        [toolbarItem setAction:@selector(showDiff:)];
 
     }
 
@@ -126,7 +132,8 @@ static NSString*        DiffItemIdentifier      = @"Diff";
 		return [NSArray arrayWithObjects:   QuitItemIdentifier, GoItemIdentifier, RestartItemIdentifier,
 											NSToolbarSeparatorItemIdentifier,
 											RToLItemIdentifier, MergeItemIdentifier, LToRItemIdentifier, 
-											SkipItemIdentifier, nil];
+											SkipItemIdentifier, NSToolbarSeparatorItemIdentifier,
+			                                                                DiffItemIdentifier, nil];
 	}
 	else {
 		return [NSArray arrayWithObjects: QuitItemIdentifier, Nil];

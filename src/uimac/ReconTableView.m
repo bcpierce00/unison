@@ -40,7 +40,8 @@
         || action == @selector(merge:)
         || action == @selector(ignorePath:)
         || action == @selector(ignoreExt:)
-        || action == @selector(ignoreName:))
+        || action == @selector(ignoreName:)
+        || action == @selector(showDiff:))
         return editable;
     else return YES;
 }
@@ -100,7 +101,7 @@
         [[reconItems objectAtIndex:i] doAction:c];
     }
     if (numSelected>0) {
-      if (numSelected == 1 && [self numberOfRows] > i+1) {
+      if (numSelected == 1 && [self numberOfRows] > i+1 && c!='d') {
             // Move to next row, unless already at last row, or if more than one row selected
             [self selectRow:i+1 byExtendingSelection:NO];
             [self scrollRowToVisible:i+1];
@@ -161,6 +162,11 @@
 - (IBAction)merge:(id)sender
 {
     [self doAction:'m'];
+}
+
+- (IBAction)showDiff:(id)sender
+{
+    [self doAction:'d'];
 }
 
 /* There are menu commands for these, but we add some shortcuts so you don't

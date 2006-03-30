@@ -3,6 +3,7 @@
 #include <caml/memory.h>
 
 extern value Callback_checkexn(value,value);
+extern value Callback2_checkexn(value,value,value);
 
 @implementation ReconItem
 
@@ -19,10 +20,16 @@ extern value Callback_checkexn(value,value);
     ri = v;
 }
 
-+ (id)initWithRi:(value)v
+- (void)setIndex:(int)i
+{
+    index = i;
+}
+
++ (id)initWithRiAndIndex:(value)v index:(int)i
 {
     ReconItem *r = [[ReconItem alloc] init];
     [r setRi:v];
+    [r setIndex:i];
     return r;
 }
 
@@ -101,6 +108,9 @@ extern value Callback_checkexn(value,value);
     case 'm':
         [self setDirection:"unisonRiSetMerge"];
         break;
+    case 'd':
+        [self showDiffs];
+        break;
     default:
         NSLog(@"ReconItem.doAction : unknown action");
         break;
@@ -169,6 +179,12 @@ extern value Callback_checkexn(value,value);
     Callback_checkexn(*f, ri);
     [direction release];
     direction = nil;
+}
+
+- (void)showDiffs
+{
+    value *f = caml_named_value("runShowDiffs");
+    Callback2_checkexn(*f, ri, Val_int(index));
 }
 
 @end

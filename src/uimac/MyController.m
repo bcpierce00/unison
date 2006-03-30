@@ -82,7 +82,8 @@ static MyController *me; // needed by reloadTable and displayStatus, below
     int j = 0;
     int n = Wosize_val(caml_reconItems);
     for (; j<n; j++) {
-        [reconItems insertObject:[ReconItem initWithRi:Field(caml_reconItems,j)]
+        [reconItems 
+            insertObject:[ReconItem initWithRiAndIndex:Field(caml_reconItems,j) index:j]
             atIndex:j];
     }
 	
@@ -438,11 +439,34 @@ CAMLprim value reloadTable(value row)
     [statusText setStringValue:s];
 }
 
+- (void)diffViewTextSet:(NSString *)title bodyText:(NSString *)body {
+   [diffWindow setTitle:title];
+   [diffView setFont:[NSFont fontWithName:@"Monaco" size:10]];
+   [diffView setString:body];
+   [diffWindow orderFront:nil];
+}
+
 // A function called from ocaml
 CAMLprim value displayStatus(value s)
 {
     [me statusTextSet:[NSString stringWithCString:String_val(s)]];
 //    NSLog(@"dS: %s",String_val(s));
+    return Val_unit;
+}
+
+// Called from ocaml to display diff
+CAMLprim value displayDiff(value s, value s2)
+{
+    [me diffViewTextSet:
+        [NSString stringWithCString:String_val(s)]
+        bodyText:[NSString stringWithCString:String_val(s2)]];
+    return Val_unit;
+}
+
+// Called from ocaml to display diff error messages
+CAMLprim value displayDiffErr(value s)
+{
+    [me statusTextSet:[NSString stringWithCString:String_val(s)]];
     return Val_unit;
 }
 
