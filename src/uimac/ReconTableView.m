@@ -10,6 +10,8 @@
 #import "ReconItem.h"
 #import "MyController.h"
 
+static editable = NO;
+
 @implementation ReconTableView
 
 - (BOOL)editable
@@ -20,11 +22,6 @@
 - (void)setEditable:(BOOL)x
 {
     editable = x;
-}
-
-- (void)awakeFromNib
-{
-    editable = NO;
 }
 
 - (BOOL)validateItem:(IBAction *) action

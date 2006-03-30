@@ -11,7 +11,6 @@
 #import <AppKit/AppKit.h>
 
 @interface ReconTableView : NSTableView {
-    BOOL editable;
 }
 - (BOOL)editable;
 - (void)setEditable:(BOOL)x;
