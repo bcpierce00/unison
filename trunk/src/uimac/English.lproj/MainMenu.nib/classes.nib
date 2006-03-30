@@ -13,6 +13,7 @@
                 merge = id; 
                 revert = id; 
                 selectConflicts = id; 
+                showDiff = id; 
             }; 
             CLASS = FirstResponder; 
             LANGUAGE = ObjC; 
@@ -38,6 +39,8 @@
                 aboutWindow = NSWindow; 
                 chooseProfileView = NSView; 
                 detailsTextView = NSTextView; 
+                diffView = NSTextView; 
+                diffWindow = NSWindow; 
                 mainWindow = NSWindow; 
                 notificationController = NotificationController; 
                 passwordCancelButton = NSButton; 
@@ -97,6 +100,7 @@
                 merge = id; 
                 revert = id; 
                 selectConflicts = id; 
+                showDiff = id; 
             }; 
             CLASS = ReconTableView; 
             LANGUAGE = ObjC; 

@@ -26,6 +26,10 @@ Callback.register "unisonDirectory" unisonDirectory;;
    when the status for a row changes *)
 external displayStatus : string -> unit = "displayStatus";;
 
+(* Defined in MyController.m, used to show diffs *)
+external displayDiff : string -> string -> unit = "displayDiff";;
+external displayDiffErr : string -> unit = "displayDiffErr";;
+
 (* Defined in MyController.m, used to redisplay the table
    when the status for a row changes *)
 external reloadTable : int -> unit = "reloadTable";;
@@ -492,3 +496,24 @@ let unisonExnInfo e =
       Printf.sprintf "Unix error(%s,%s,%s)" (Unix.error_message ue) s1 s2
   | _ -> Printexc.to_string e;;
 Callback.register "unisonExnInfo" unisonExnInfo;;
+
+(* from Uicommon *)
+(* precondition: uc = File (Updates(_, ..) on both sides *)
+let showDiffs ri printer errprinter id =
+  let p = ri.path in
+  match ri.replicas with
+    Problem _ ->
+      errprinter
+        "Can't diff files: there was a problem during update detection"
+  | Different((`FILE, _, _, ui1), (`FILE, _, _, ui2), _, _) ->
+      let (root1,root2) = Globals.roots() in
+      begin
+        try Files.diff root1 p ui1 root2 p ui2 printer id
+        with Util.Transient e -> errprinter e
+      end
+  | Different _ ->
+      errprinter "Can't diff: path doesn't refer to a file in both replicas"
+
+let runShowDiffs ri i =
+  showDiffs ri.ri displayDiff displayDiffErr (Uutil.File.ofLine i);;
+Callback.register "runShowDiffs" runShowDiffs;;

@@ -26,8 +26,8 @@
 - (IBAction)selectConflicts:(id)sender;
 - (IBAction)revert:(id)sender;
 - (IBAction)merge:(id)sender;
+- (IBAction)showDiff:(id)sender;
 - (BOOL)validateItem:(IBAction *) action;
 - (BOOL)validateMenuItem:(NSMenuItem *)menuItem;
 - (BOOL)validateToolbarItem:(NSToolbarItem *)toolbarItem;
-
 @end

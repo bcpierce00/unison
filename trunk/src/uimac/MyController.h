@@ -10,8 +10,10 @@
 @interface MyController : NSObject
 {
     IBOutlet NSWindow *mainWindow;
-
     UnisonToolbar *toolbar;
+
+    IBOutlet NSWindow *diffWindow;
+    IBOutlet NSTextView *diffView;
 
     IBOutlet ProfileController *profileController;
     IBOutlet NSView *chooseProfileView;
