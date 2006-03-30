@@ -1,3 +1,9 @@
+CHANGES FROM VERSION 2.19.10
+
+Mac GUI: Fix bug where controls were sometimes disabled when called with 'unison profilename' 
+because the order in which objects receive awakeFromNib is variable.
+
+-------------------------------
 CHANGES FROM VERSION 2.19.13
 
 Mac GUI: Add basic diff functionality
