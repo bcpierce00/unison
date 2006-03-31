@@ -1,3 +1,9 @@
+CHANGES FROM VERSION 2.19.15
+
+Mac GUI: Restrict window resizes to prevent user from breaking UI
+Add missing type declaration
+
+-------------------------------
 CHANGES FROM VERSION 2.19.10
 
 Mac GUI: Fix bug where controls were sometimes disabled when called with 'unison profilename' 
