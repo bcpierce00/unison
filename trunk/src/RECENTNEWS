@@ -1,4 +1,13 @@
-CHANGES FROM VERSION 2.19.10
+CHANGES FROM VERSION 2.19.17
+
+Mac GUI -- fix reconitem table:
+* Remove keyboard focus when there are no reconitems.
+* Disable keypresses when their actions are inappropriate 
+  (e.g. after sync)
+
+* Also fix version numbers and formatting in RECENTNEWS
+-------------------------------
+CHANGES FROM VERSION 2.19.16
 
 Small Mac GUI improvements:
 * During sync, scroll updates table to the bottommost item that is being updated
@@ -11,10 +20,11 @@ Mac GUI: Restrict window resizes to prevent user from breaking UI
 Add missing type declaration
 
 -------------------------------
-CHANGES FROM VERSION 2.19.10
+CHANGES FROM VERSION 2.19.14
 
-Mac GUI: Fix bug where controls were sometimes disabled when called with 'unison profilename' 
-because the order in which objects receive awakeFromNib is variable.
+Mac GUI: Fix bug where controls were sometimes disabled when called with 
+'unison profilename' because the order in which objects receive awakeFromNib 
+is variable.
 
 -------------------------------
 CHANGES FROM VERSION 2.19.13
@@ -22,12 +32,13 @@ CHANGES FROM VERSION 2.19.13
 Mac GUI: Add basic diff functionality
 
 -------------------------------
-CHANGES FROM VERSION 2.19.10
+CHANGES FROM VERSION 2.19.12
 
-Jerome's fix for calling diff on the Mac, which would previously fail when interrupted.
+Jerome's fix for calling diff on the Mac, which would previously fail 
+when interrupted.
 
 -------------------------------
-CHANGES FROM VERSION 2.19.10
+CHANGES FROM VERSION 2.19.11
 
 Mac UI: Fix line wrapping in error messages
 
@@ -44,7 +55,14 @@ Add toolbar-related files missing from previous commit
 -------------------------------
 CHANGES FROM VERSION 2.19.8
 
-Add Toolbar for common actions to the Mac GUI, similar to the GTK2 one.  It replaces various buttons.
+Add Toolbar for common actions to the Mac GUI, similar to the GTK2 one.  
+It replaces various buttons.
+
+-------------------------------
+CHANGES FROM VERSION 2.19.7
+
+Bug fixed: in text mode, all synchronizations was aborted after the
+first failure
 
 -------------------------------
 CHANGES FROM VERSION 2.19.6
