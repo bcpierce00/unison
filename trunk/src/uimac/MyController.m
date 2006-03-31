@@ -174,6 +174,7 @@ static MyController *me; // needed by reloadTable and displayStatus, below
 
     // reconItems table gets keyboard input
     [mainWindow makeFirstResponder:tableView];
+    [tableView scrollRowToVisible:0];
 
     [[NSNotificationCenter defaultCenter] addObserver:self
         selector:@selector(afterUpdate:)
@@ -285,6 +286,21 @@ CAMLprim value reloadTable(value row)
 {
     int i = Int_val(row);
     [me updateTableView:i]; // we need 'me' to access its instance variables
+    return Val_unit;
+}
+
+- (void)scrollTableViewToRow:(int)i
+{
+    [tableView selectRow:i byExtendingSelection:NO];
+    [tableView scrollRowToVisible:i];
+}
+
+// Called from ocaml to scroll the table to the item that is
+// currently being updated
+CAMLprim value scrollTableToRow(value row)
+{
+    int i = Int_val(row);
+    [me scrollTableViewToRow:i];
     return Val_unit;
 }
 
@@ -445,6 +461,7 @@ CAMLprim value reloadTable(value row)
 
 - (void)statusTextSet:(NSString *)s {
     [statusText setStringValue:s];
+    [self forceUpdatesViewRefresh];
 }
 
 - (void)diffViewTextSet:(NSString *)title bodyText:(NSString *)body {
@@ -474,7 +491,10 @@ CAMLprim value displayDiff(value s, value s2)
 // Called from ocaml to display diff error messages
 CAMLprim value displayDiffErr(value s)
 {
-    [me statusTextSet:[NSString stringWithCString:String_val(s)]];
+    NSString * str = [NSString stringWithCString:String_val(s)];
+    str = [[str componentsSeparatedByString:@"\n"] componentsJoinedByString:@" "];
+    [me statusTextSet:str];
+//    [me statusTextSet:[NSString stringWithCString:String_val(s)]];
     return Val_unit;
 }
 
