@@ -1,3 +1,10 @@
+CHANGES FROM VERSION 2.19.10
+
+Small Mac GUI improvements:
+* During sync, scroll updates table to the bottommost item that is being updated
+* Fix display of status and diff error messages
+
+-------------------------------
 CHANGES FROM VERSION 2.19.15
 
 Mac GUI: Restrict window resizes to prevent user from breaking UI

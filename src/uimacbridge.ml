@@ -51,6 +51,10 @@ let showProgress i bytes dbg =
 (* FIX: No status window in Mac version, see GTK version for how to do it *)
   reloadTable i;;
 
+(* defined in MyController.m, used to scroll the table to the line that is
+   currently being updated during sync *)
+external scrollTableToRow: int -> unit = "scrollTableToRow";;
+
 let unisonGetVersion() = Uutil.myVersion
 ;;
 Callback.register "unisonGetVersion" unisonGetVersion;;
@@ -342,6 +346,7 @@ let unisonSynchronize () =
     let im = Array.length !theState in
     let rec loop i actions pRiThisRound =
       if i < im then begin
+        scrollTableToRow i;
         let theSI = !theState.(i) in
         let action =
           match theSI.whatHappened with
