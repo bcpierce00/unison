@@ -10,7 +10,7 @@
 #import "ReconItem.h"
 #import "MyController.h"
 
-static editable = NO;
+static BOOL editable = NO;
 
 @implementation ReconTableView
 

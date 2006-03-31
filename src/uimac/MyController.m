@@ -48,6 +48,8 @@ static MyController *me; // needed by reloadTable and displayStatus, below
 {
     [mainWindow setContentView:blankView];
     [self resizeWindowToSize:chooseProfileSize];
+    [mainWindow setContentMinSize:NSMakeSize(NSWidth([[mainWindow contentView] frame]),150)];
+    [mainWindow setContentMaxSize:NSMakeSize(FLT_MAX, FLT_MAX)];
     [mainWindow setContentView:chooseProfileView];
     [toolbar setView:@"chooseProfileView"];
     [mainWindow makeFirstResponder:[profileController tableView]]; // profiles get keyboard input
@@ -58,6 +60,8 @@ static MyController *me; // needed by reloadTable and displayStatus, below
     [preferencesController reset];
     [mainWindow setContentView:blankView];
     [self resizeWindowToSize:preferencesSize];
+    [mainWindow setContentMinSize:NSMakeSize(400,NSHeight([[mainWindow contentView] frame]))];
+    [mainWindow setContentMaxSize:NSMakeSize(FLT_MAX,NSHeight([[mainWindow contentView] frame]))];
     [mainWindow setContentView:preferencesView];
     [toolbar setView:@"preferencesView"];
 }
@@ -162,6 +166,8 @@ static MyController *me; // needed by reloadTable and displayStatus, below
     reconItems = nil;
     [mainWindow setContentView:blankView];
     [self resizeWindowToSize:updatesSize];
+    [mainWindow setContentMinSize:NSMakeSize(NSWidth([[mainWindow contentView] frame]),200)];
+    [mainWindow setContentMaxSize:NSMakeSize(FLT_MAX, FLT_MAX)];
     [mainWindow setContentView:updatesView];
     [toolbar setView:@"updatesView"];
     syncable = NO;
@@ -184,6 +190,8 @@ static MyController *me; // needed by reloadTable and displayStatus, below
     // Switch to ConnectingView
     [mainWindow setContentView:blankView];
     [self resizeWindowToSize:ConnectingSize];
+    [mainWindow setContentMinSize:NSMakeSize(150,150)];
+    [mainWindow setContentMaxSize:NSMakeSize(FLT_MAX, FLT_MAX)];
     [mainWindow setContentView:ConnectingView];
     [toolbar setView:@"ConnectingView"];
 
