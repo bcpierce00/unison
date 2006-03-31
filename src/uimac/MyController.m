@@ -95,12 +95,18 @@ static MyController *me; // needed by reloadTable and displayStatus, below
     if ([reconItems count]>0) {
         [tableView setEditable:YES];
 
+        // reconItems table gets keyboard input
+        [mainWindow makeFirstResponder:tableView];
+
         // Make sure details get updated
         [self tableViewSelectionDidChange:[NSNotification init]];
         syncable = YES;
     }
     else {
         [tableView setEditable:NO];
+
+        // reconItems table no longer gets keyboard input
+        [mainWindow makeFirstResponder:nil];
     }
 }
 
@@ -172,8 +178,10 @@ static MyController *me; // needed by reloadTable and displayStatus, below
     [toolbar setView:@"updatesView"];
     syncable = NO;
 
+    // this should depend on the number of reconitems, and is now done
+    // in updateReconItems:
     // reconItems table gets keyboard input
-    [mainWindow makeFirstResponder:tableView];
+    //[mainWindow makeFirstResponder:tableView];
     [tableView scrollRowToVisible:0];
 
     [[NSNotificationCenter defaultCenter] addObserver:self

@@ -170,6 +170,12 @@ static BOOL editable = NO;
    have to press the Command key */
 - (void)keyDown:(NSEvent *)event
 {
+    /* actions are disabled when when menu items are */
+    if (!editable) {
+        [super keyDown:event];
+        return;
+    }
+
     unichar c = [[event characters] characterAtIndex:0];
     switch (c) {
     case '>':
