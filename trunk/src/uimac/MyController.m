@@ -328,7 +328,7 @@ CAMLprim value scrollTableToRow(value row)
     if (rowIndex >= 0 && rowIndex < [reconItems count]) {
         NSString *identifier = [aTableColumn identifier];
         ReconItem *ri = [reconItems objectAtIndex:rowIndex];
-        NSString *s = [ri valueForKey:identifier];
+        NSObject *s = [ri valueForKey:identifier];
         return s;
     }
     else return @"[internal error!]";
@@ -560,6 +560,13 @@ CAMLprim value displayDiffErr(value s)
     f = caml_named_value("unisonInit0");
     value clprofile = Callback_checkexn(*f, Val_unit);
 
+    /* enable images in the direction column of the reconitems table */
+    NSImageCell * tPrototypeCell = [[NSImageCell alloc] init];
+    NSTableColumn * tColumn = [tableView  
+                   tableColumnWithIdentifier:@"direction"];
+    [tPrototypeCell setImageScaling:NSScaleNone];
+    [tColumn setDataCell:[tPrototypeCell autorelease]];
+    
     /* Initialize reconitems table */
     [tableView init];
     
