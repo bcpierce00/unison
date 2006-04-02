@@ -1,3 +1,8 @@
+CHANGES FROM VERSION 2.19.20
+
+Mac GUI: Add coloured icons indicating status of reconItems, similar to GTK2 GUI.
+
+-------------------------------
 CHANGES FROM VERSION 2.19.19
 
 Mac GUI: More correct handling of tableView initialisation (supercedes 2.19.15)

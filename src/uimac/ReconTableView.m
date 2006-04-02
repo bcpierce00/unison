@@ -221,4 +221,16 @@
     return canDiff;
 }
 
+/* Override default highlight colour because it's hard to see the 
+   conflict/resolution icons */
+- (id)_highlightColorForCell:(NSCell *)cell
+{   
+    if(([[self window] firstResponder] == self) &&
+        [[self window] isMainWindow] &&
+        [[self window] isKeyWindow])
+
+        return [NSColor colorWithCalibratedRed:0.7 green:0.75 blue:0.8 alpha:1.0];
+    else return [NSColor colorWithCalibratedRed:0.8 green:0.8 blue:0.8 alpha:1.0];
+}
+
 @end

@@ -471,6 +471,16 @@ let unisonRiIsConflict ri =
   | Different(_,_,_,Conflict) -> true
   | _ -> false;;
 Callback.register "unisonRiIsConflict" unisonRiIsConflict;;
+
+(* Test whether reconItem's current state is different from 
+   Unison's recommendation.  Used to colour arrows in 
+   the reconItems table *)
+let changedFromDefault ri = 
+  match ri.ri.replicas with
+    Different(_,_,{contents=curr},default) -> curr<>default
+   | _ -> false;;
+Callback.register "changedFromDefault" changedFromDefault;;
+
 let unisonRiRevert ri =
   match ri.ri.replicas with
   | Different(_,_,d,d0) -> d := d0
@@ -530,3 +540,4 @@ let showDiffs ri printer errprinter id =
 let runShowDiffs ri i =
   showDiffs ri.ri displayDiff displayDiffErr (Uutil.File.ofLine i);;
 Callback.register "runShowDiffs" runShowDiffs;;
+

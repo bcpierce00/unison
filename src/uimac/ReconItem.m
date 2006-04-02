@@ -18,11 +18,20 @@ extern value Callback2_checkexn(value,value,value);
 {
     caml_register_global_root(&ri); // needed in case of ocaml garbage collection
     ri = v;
+    resolved = NO;
 }
 
 - (void)setIndex:(int)i
 {
     index = i;
+}
+
+- init
+{
+    if ((self = [super init]))
+        resolved = NO;
+
+    return self;
 }
 
 + (id)initWithRiAndIndex:(value)v index:(int)i
@@ -66,7 +75,7 @@ extern value Callback2_checkexn(value,value,value);
     return right;
 }
 
-- (NSString *)direction
+- (NSImage *)direction
 {
     if (direction) return direction;
     
@@ -74,7 +83,36 @@ extern value Callback2_checkexn(value,value,value);
     value v = Callback_checkexn(*f, ri);
     char *s = String_val(v);
     [direction release];
-    direction = [NSString stringWithCString:s];
+    NSString * dirString = [NSString stringWithCString:s];
+
+    BOOL changedFromDefault = [self changedFromDefault];
+    
+    if ([dirString isEqual:@"<-?->"]) {
+        if (changedFromDefault | resolved)
+            direction = [NSImage imageNamed: @"table-skip.tif"];
+        else
+            direction = [NSImage imageNamed: @"table-conflict.tif"];
+    }
+    
+    else if ([dirString isEqual:@"---->"]) {
+        if (changedFromDefault)
+            direction = [NSImage imageNamed: @"table-right-blue.tif"];
+        else
+            direction = [NSImage imageNamed: @"table-right-green.tif"];
+    }
+    
+    else if ([dirString isEqual:@"<----"]) {
+        if (changedFromDefault)
+            direction = [NSImage imageNamed: @"table-left-blue.tif"];
+        else
+            direction = [NSImage imageNamed: @"table-left-green.tif"];
+    }
+
+    else if ([dirString isEqual:@"<-M->"])
+        direction = [NSImage imageNamed: @"table-merge.tif"];
+    else
+        direction = [NSImage imageNamed: @"table-error.tif"];
+    
     [direction retain];
     return direction;
 }
@@ -98,6 +136,7 @@ extern value Callback2_checkexn(value,value,value);
         break;
     case '/':
         [self setDirection:"unisonRiSetConflict"];
+        resolved = YES;
         break;
     case '-':
         [self setDirection:"unisonRiForceOlder"];
@@ -173,12 +212,20 @@ extern value Callback2_checkexn(value,value,value);
     else return NO;
 }
 
+- (BOOL)changedFromDefault
+{
+    value *f = caml_named_value("changedFromDefault");
+    if (Callback_checkexn(*f, ri) == Val_true) return YES;
+    else return NO;
+}
+
 - (void)revertDirection
 {
     value *f = caml_named_value("unisonRiRevert");
     Callback_checkexn(*f, ri);
     [direction release];
     direction = nil;
+    resolved = NO;
 }
 
 - (BOOL)canDiff
