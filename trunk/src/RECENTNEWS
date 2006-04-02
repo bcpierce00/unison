@@ -1,3 +1,9 @@
+CHANGES FROM VERSION 2.19.21
+
+Mac GUI: Strip metadata from toolbar tiff files, dramatically reducing 
+file size, apparently without ill effects
+
+-------------------------------
 CHANGES FROM VERSION 2.19.20
 
 Mac GUI: Add coloured icons indicating status of reconItems, similar to GTK2 GUI.
