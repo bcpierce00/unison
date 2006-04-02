@@ -181,6 +181,13 @@ extern value Callback2_checkexn(value,value,value);
     direction = nil;
 }
 
+- (BOOL)canDiff
+{
+    value *f = caml_named_value("canDiff");
+    if (Callback_checkexn(*f, ri) == Val_true) return YES;
+    else return NO;
+}
+
 - (void)showDiffs
 {
     value *f = caml_named_value("runShowDiffs");

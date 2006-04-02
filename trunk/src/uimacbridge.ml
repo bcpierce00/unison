@@ -26,10 +26,6 @@ Callback.register "unisonDirectory" unisonDirectory;;
    when the status for a row changes *)
 external displayStatus : string -> unit = "displayStatus";;
 
-(* Defined in MyController.m, used to show diffs *)
-external displayDiff : string -> string -> unit = "displayDiff";;
-external displayDiffErr : string -> unit = "displayDiffErr";;
-
 (* Defined in MyController.m, used to redisplay the table
    when the status for a row changes *)
 external reloadTable : int -> unit = "reloadTable";;
@@ -501,6 +497,18 @@ let unisonExnInfo e =
       Printf.sprintf "Unix error(%s,%s,%s)" (Unix.error_message ue) s1 s2
   | _ -> Printexc.to_string e;;
 Callback.register "unisonExnInfo" unisonExnInfo;;
+
+(* Defined in MyController.m, used to show diffs *)
+external displayDiff : string -> string -> unit = "displayDiff";;
+external displayDiffErr : string -> unit = "displayDiffErr";;
+
+(* check precondition for diff; used to disable diff button *)
+let canDiff ri = 
+  match ri.ri.replicas with
+    Problem _ -> false
+   | Different((`FILE, _, _, ui1),(`FILE, _, _, ui2), _, _) -> true
+   | Different _ -> false;;
+Callback.register "canDiff" canDiff;;
 
 (* from Uicommon *)
 (* precondition: uc = File (Updates(_, ..) on both sides *)
