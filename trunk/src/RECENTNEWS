@@ -1,3 +1,8 @@
+CHANGES FROM VERSION 2.19.19
+
+Mac GUI: More correct handling of tableView initialisation (supercedes 2.19.15)
+
+-------------------------------
 CHANGES FROM VERSION 2.19.18
 
 Mac GUI -- improve diff and merge behaviour:

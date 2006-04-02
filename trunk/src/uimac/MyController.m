@@ -560,6 +560,9 @@ CAMLprim value displayDiffErr(value s)
     f = caml_named_value("unisonInit0");
     value clprofile = Callback_checkexn(*f, Val_unit);
 
+    /* Initialize reconitems table */
+    [tableView init];
+    
     /* Add toolbar */
     toolbar = [[[UnisonToolbar alloc] initWithIdentifier: @"unisonToolbar"
 	:self :tableView] autorelease];
