@@ -1,3 +1,7 @@
+CHANGES FROM VERSION 2.19.22
+
+Mac GUI: Remove broken autoscroll code (from 2.19.17)
+-------------------------------
 CHANGES FROM VERSION 2.19.21
 
 Mac GUI: Strip metadata from toolbar tiff files, dramatically reducing 

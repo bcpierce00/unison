@@ -297,21 +297,6 @@ CAMLprim value reloadTable(value row)
     return Val_unit;
 }
 
-- (void)scrollTableViewToRow:(int)i
-{
-    [tableView selectRow:i byExtendingSelection:NO];
-    [tableView scrollRowToVisible:i];
-}
-
-// Called from ocaml to scroll the table to the item that is
-// currently being updated
-CAMLprim value scrollTableToRow(value row)
-{
-    int i = Int_val(row);
-    [me scrollTableViewToRow:i];
-    return Val_unit;
-}
-
 - (int)numberOfRowsInTableView:(NSTableView *)aTableView
 {
     if (!reconItems) return 0;
