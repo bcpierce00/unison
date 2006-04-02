@@ -27,6 +27,7 @@
 - (NSString *) details;
 - (BOOL)isConflict;
 - (void)revertDirection;
+- (BOOL)canDiff;
 - (void)showDiffs;
 
 @end

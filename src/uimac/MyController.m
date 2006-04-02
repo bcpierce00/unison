@@ -476,6 +476,27 @@ CAMLprim value scrollTableToRow(value row)
    [diffWindow setTitle:title];
    [diffView setFont:[NSFont fontWithName:@"Monaco" size:10]];
    [diffView setString:body];
+   if (!doneFirstDiff) {
+       /* On first open, position the diff window to the right of
+       the main window, but without going off the mainwindow's screen */
+       float screenOriginX = [[mainWindow screen] frame].origin.x;
+       float screenWidth = [[mainWindow screen] frame].size.width;
+       float mainOriginX = [mainWindow frame].origin.x;
+       float mainOriginY = [mainWindow frame].origin.y;
+       float mainWidth = [mainWindow frame].size.width;
+       float mainHeight = [mainWindow frame].size.height;       
+       float diffWidth = [diffWindow frame].size.width;
+
+       float diffX = mainOriginX+mainWidth;
+       float maxX = screenOriginX+screenWidth-diffWidth;
+       if (diffX > maxX) diffX = maxX;
+       float diffY = mainOriginY + mainHeight;
+       
+       NSPoint diffOrigin = NSMakePoint(diffX,diffY);
+       [diffWindow cascadeTopLeftFromPoint:diffOrigin];
+       
+       doneFirstDiff = YES;
+   }
    [diffWindow orderFront:nil];
 }
 
@@ -527,7 +548,8 @@ CAMLprim value displayDiffErr(value s)
     [versionText setStringValue:
 		   [NSString stringWithCString:
 			       String_val(Callback_checkexn(*f, Val_unit))]];
-
+    doneFirstDiff = NO;
+    
     /* Ocaml initialization */
     // FIX: Does this occur before ProfileController awakeFromNib?
     caml_reconItems = preconn = Val_int(0);

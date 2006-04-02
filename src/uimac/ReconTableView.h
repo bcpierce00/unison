@@ -29,4 +29,5 @@
 - (BOOL)validateItem:(IBAction *) action;
 - (BOOL)validateMenuItem:(NSMenuItem *)menuItem;
 - (BOOL)validateToolbarItem:(NSToolbarItem *)toolbarItem;
+- (BOOL)canDiffSelection;
 @end

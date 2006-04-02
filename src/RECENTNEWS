@@ -1,3 +1,11 @@
+CHANGES FROM VERSION 2.19.18
+
+Mac GUI -- improve diff and merge behaviour:
+
+* Disable diff and merge buttons/menuitems when appropriate
+* Open the diff window in a useful place the first time it's used
+
+-------------------------------
 CHANGES FROM VERSION 2.19.17
 
 Mac GUI -- fix reconitem table:

@@ -12,6 +12,7 @@
     IBOutlet NSWindow *mainWindow;
     UnisonToolbar *toolbar;
 
+    BOOL doneFirstDiff;
     IBOutlet NSWindow *diffWindow;
     IBOutlet NSTextView *diffView;
 

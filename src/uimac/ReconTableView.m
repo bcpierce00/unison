@@ -34,12 +34,19 @@ static BOOL editable = NO;
         || action == @selector(forceNewer:)
         || action == @selector(forceOlder:)
         || action == @selector(revert:)
-        || action == @selector(merge:)
         || action == @selector(ignorePath:)
         || action == @selector(ignoreExt:)
-        || action == @selector(ignoreName:)
-        || action == @selector(showDiff:))
+        || action == @selector(ignoreName:))
         return editable;
+    else if (action == @selector(merge:)) {
+        if (!editable) return NO;
+        else return [self canDiffSelection];
+    }
+    else if (action == @selector(showDiff:)) {
+        if ((!editable) || (!([self numberOfSelectedRows]==1)))
+            return NO;
+	else return [self canDiffSelection];
+    }
     else return YES;
 }
 
@@ -194,6 +201,20 @@ static BOOL editable = NO;
         [super keyDown:event];
         break;
     }
+}
+
+- (BOOL)canDiffSelection
+{
+    NSMutableArray *reconItems = [[self dataSource] reconItems];
+    NSEnumerator *e = [self selectedRowEnumerator];
+    NSNumber *n = [e nextObject];
+    int i;
+    BOOL canDiff = YES;
+    for (; n != nil; n = [e nextObject]) {
+        i = [n intValue];
+        if (![[reconItems objectAtIndex:i] canDiff]) canDiff= NO;
+    }    
+    return canDiff;
 }
 
 @end
