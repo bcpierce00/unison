@@ -15,6 +15,9 @@
 }
 - (BOOL)editable;
 - (void)setEditable:(BOOL)x;
+- (BOOL)validateItem:(IBAction *) action;
+- (BOOL)validateMenuItem:(NSMenuItem *)menuItem;
+- (BOOL)validateToolbarItem:(NSToolbarItem *)toolbarItem;
 - (IBAction)ignorePath:(id)sender;
 - (IBAction)ignoreExt:(id)sender;
 - (IBAction)ignoreName:(id)sender;
@@ -27,8 +30,7 @@
 - (IBAction)revert:(id)sender;
 - (IBAction)merge:(id)sender;
 - (IBAction)showDiff:(id)sender;
-- (BOOL)validateItem:(IBAction *) action;
-- (BOOL)validateMenuItem:(NSMenuItem *)menuItem;
-- (BOOL)validateToolbarItem:(NSToolbarItem *)toolbarItem;
 - (BOOL)canDiffSelection;
+- (void)sortReconItemsByColumn:(NSTableColumn *)tableColumn;
+
 @end

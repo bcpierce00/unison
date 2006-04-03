@@ -19,6 +19,7 @@ extern value Callback2_checkexn(value,value,value);
     caml_register_global_root(&ri); // needed in case of ocaml garbage collection
     ri = v;
     resolved = NO;
+    directionSortString = @"";
 }
 
 - (void)setIndex:(int)i
@@ -88,30 +89,47 @@ extern value Callback2_checkexn(value,value,value);
     BOOL changedFromDefault = [self changedFromDefault];
     
     if ([dirString isEqual:@"<-?->"]) {
-        if (changedFromDefault | resolved)
+        if (changedFromDefault | resolved) {
             direction = [NSImage imageNamed: @"table-skip.tif"];
-        else
+	    directionSortString = @"2";
+	}
+        else {
             direction = [NSImage imageNamed: @"table-conflict.tif"];
+	    directionSortString = @"1";
+        }
     }
     
     else if ([dirString isEqual:@"---->"]) {
-        if (changedFromDefault)
+        if (changedFromDefault) {
             direction = [NSImage imageNamed: @"table-right-blue.tif"];
-        else
+            directionSortString = @"5";
+        }
+	else {
             direction = [NSImage imageNamed: @"table-right-green.tif"];
+            directionSortString = @"7";
+        }
     }
     
     else if ([dirString isEqual:@"<----"]) {
-        if (changedFromDefault)
+        if (changedFromDefault) {
             direction = [NSImage imageNamed: @"table-left-blue.tif"];
-        else
+            directionSortString = @"4";
+        }
+        else {
             direction = [NSImage imageNamed: @"table-left-green.tif"];
+            directionSortString = @"6";
+        }
     }
 
-    else if ([dirString isEqual:@"<-M->"])
+    else if ([dirString isEqual:@"<-M->"]) {
         direction = [NSImage imageNamed: @"table-merge.tif"];
-    else
+        directionSortString = @"3";
+    }
+
+    else {
         direction = [NSImage imageNamed: @"table-error.tif"];
+        directionSortString = @"8";
+    }
     
     [direction retain];
     return direction;
@@ -239,6 +257,57 @@ extern value Callback2_checkexn(value,value,value);
 {
     value *f = caml_named_value("runShowDiffs");
     Callback2_checkexn(*f, ri, Val_int(index));
+}
+
+/* Sorting functions. These have names equal to
+   column identifiers + "SortKey", and return NSStrings that
+   can be automatically sorted with their compare method */
+
+- (NSString *) leftSortKey
+{
+    return [self replicaSortKey:[self left]];
+}
+
+- (NSString *) rightSortKey
+{
+    return [self replicaSortKey:[self right]];
+}
+
+- (NSString *) replicaSortKey:(NSString *)sortString
+{
+    /* sort order for left and right replicas */
+
+    if ([sortString isEqualToString:@"Created"]) return @"1";
+    else if ([sortString isEqualToString:@"Deleted"]) return @"2";
+    else if ([sortString isEqualToString:@"Modified"]) return @"3";
+    else if ([sortString isEqualToString:@""]) return @"4";
+    else return @"5";
+}
+
+- (NSString *) directionSortKey
+{
+    /* Since the direction indicators are unsortable images, use
+       directionSortString instead */
+
+    if ([directionSortString isEqual:@""])
+        [self direction];
+    return directionSortString;
+}
+
+- (NSString *) progressSortKey
+{
+    /* Percentages, "done" and "" are sorted OK without help,
+       but "start " should be sorted after "" and before "0%" */
+
+    NSString * progressString = [self progress];
+    if ([progressString isEqualToString:@"start "]) progressString = @" ";
+    return progressString;
+}
+
+- (NSString *) pathSortKey
+{
+    /* default alphanumeric sort is fine for paths */
+    return [self path];
 }
 
 @end

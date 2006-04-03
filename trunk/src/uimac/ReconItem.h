@@ -10,6 +10,7 @@
     NSString *left;
     NSString *right;
     NSImage *direction;
+    NSString *directionSortString;
     NSString *progress;
     NSString *details;
     value ri; // an ocaml Common.reconItem
@@ -21,6 +22,7 @@
 - (NSString *) left;
 - (NSString *) right;
 - (NSImage *) direction;
+- (void)setDirection:(char *)d;
 - (void) doAction:(unichar)action;
 - (void) doIgnore:(unichar)action;
 - (NSString *) progress;
@@ -31,5 +33,11 @@
 - (void)revertDirection;
 - (BOOL)canDiff;
 - (void)showDiffs;
+- (NSString *) leftSortKey;
+- (NSString *) rightSortKey;
+- (NSString *) replicaSortKey:(NSString *)sortString;
+- (NSString *) directionSortKey;
+- (NSString *) progressSortKey;
+- (NSString *) pathSortKey;
 
 @end
