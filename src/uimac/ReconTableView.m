@@ -221,6 +221,58 @@
     return canDiff;
 }
 
+- (void)sortReconItemsByColumn:(NSTableColumn *)tableColumn
+{
+   /* Sort the table (e.g. when a column header is clicked) */
+
+    NSMutableArray *reconItems = [[self dataSource] reconItems];
+    BOOL ascending;
+
+    /* Most columns can be sorted ascending or descending, and
+       flip when you click the column header, using the state of the
+       column indicator image to do the flipping.  However,
+       we're forcing direction and progress to always sort ascending
+       because this means you can click multiple times to update the
+       sort order when the items change */
+
+    NSImage *indicatorImage = [self indicatorImageInTableColumn:tableColumn];
+    if (([indicatorImage isEqual:[NSImage imageNamed:@"NSAscendingSortIndicator"]]) &&
+            (![[tableColumn identifier] isEqual:@"direction"]) &&
+            (![[tableColumn identifier] isEqual:@"progress"])) {
+        ascending = NO;
+        indicatorImage = [NSImage imageNamed:@"NSDescendingSortIndicator"];
+    }
+    else { 
+        ascending = YES;
+        indicatorImage = [NSImage imageNamed:@"NSAscendingSortIndicator"];
+    }
+
+    /* Get rid of any indicators in other columns */
+    NSArray * tableColumns = [self tableColumns];
+    int i;
+    for (i=0; i<[tableColumns count]; i++) {
+        [self setIndicatorImage:NULL 
+	    inTableColumn:[tableColumns objectAtIndex:i]];
+    }
+    
+    /* Sort by the selected column, followed by ascending pathname order. 
+       The keys correspond to methods of ReconItem */
+    NSSortDescriptor *colDescriptor=[[[NSSortDescriptor alloc]
+        initWithKey:[NSString stringWithFormat:@"%@SortKey", [tableColumn identifier]]
+        ascending:ascending] autorelease];
+    NSSortDescriptor *pathDescriptor=[[[NSSortDescriptor alloc]
+        initWithKey:@"pathSortKey"
+        ascending:YES] autorelease];		    
+    NSArray *sortDescriptors=[NSArray 
+	arrayWithObjects:colDescriptor, pathDescriptor,  nil];
+
+    [reconItems setArray:[reconItems sortedArrayUsingDescriptors:sortDescriptors]];
+
+    /* Update the column header indicator and redisplay the table */
+    [self setIndicatorImage:indicatorImage inTableColumn:tableColumn];
+    [self reloadData];
+}
+
 /* Override default highlight colour because it's hard to see the 
    conflict/resolution icons */
 - (id)_highlightColorForCell:(NSCell *)cell

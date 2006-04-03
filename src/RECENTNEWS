@@ -1,3 +1,14 @@
+CHANGES FROM VERSION 2.19.23
+
+Mac GUI: Add ability to sort the reconitem table by the various columns.
+         Clicking on a column header sorts on that column.
+         By default, the reconitems are sorted by action in the following 
+         order of decreasing urgency:
+           Conflict Skip Merge Left-against-recommendation 
+           Right-against-recommendation Left-following-recommendation
+           Right-following-recommendation (Error)
+
+-------------------------------
 CHANGES FROM VERSION 2.19.22
 
 Mac GUI: Remove broken autoscroll code (from 2.19.17)

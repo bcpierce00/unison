@@ -151,6 +151,8 @@ static MyController *me; // needed by reloadTable and displayStatus, below
     // cause scrollbar to display if necessary
     [tableView reloadData];
 
+    [tableView sortReconItemsByColumn:[tableView tableColumnWithIdentifier:@"direction"]];
+    
     // have to select after reload for it to stick
     if ([reconItems count] > 0)
         [tableView selectRow:0 byExtendingSelection:NO];
@@ -673,6 +675,11 @@ CAMLprim value displayDiffErr(value s)
     [toolbar validateVisibleItems];
     [statusText setStringValue:[statusText stringValue]];
     [updatesView display];
+}
+
+- (void)tableView:(NSTableView *)aTableView didClickTableColumn:(NSTableColumn *)tableColumn
+{
+    if ([aTableView isEqual:tableView]) [tableView sortReconItemsByColumn:tableColumn];
 }
 
 @end
