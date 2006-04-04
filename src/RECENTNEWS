@@ -1,3 +1,8 @@
+CHANGES FROM VERSION 2.19.24
+
+Mac GUI: Fix bug spotted by Benjamin where pressing a 'dead' key in tables causes a crash
+
+-------------------------------
 CHANGES FROM VERSION 2.19.23
 
 Mac GUI: Add ability to sort the reconitem table by the various columns.

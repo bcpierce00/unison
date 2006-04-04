@@ -53,7 +53,9 @@
     value preconn;
 
     NSString *pName;
-		
+
+    BOOL syncable;
+    BOOL duringSync;	
 }
 
 - (IBAction)createButton:(id)sender;
