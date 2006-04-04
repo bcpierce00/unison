@@ -16,9 +16,6 @@
 extern value Callback_checkexn(value,value);
 extern value Callback2_checkexn(value,value,value);
 
-static BOOL syncable;
-static BOOL duringSync;
-
 @implementation MyController
 
 static MyController *me; // needed by reloadTable and displayStatus, below
@@ -553,9 +550,6 @@ CAMLprim value displayDiffErr(value s)
                    tableColumnWithIdentifier:@"direction"];
     [tPrototypeCell setImageScaling:NSScaleNone];
     [tColumn setDataCell:[tPrototypeCell autorelease]];
-    
-    /* Initialize reconitems table */
-    [tableView init];
     
     /* Add toolbar */
     toolbar = [[[UnisonToolbar alloc] initWithIdentifier: @"unisonToolbar"

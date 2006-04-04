@@ -12,9 +12,11 @@
 
 @implementation ReconTableView
 
-- init
+- (id)initWithCoder:(NSCoder *)decoder
 {
-    editable = NO;
+    if (([super initWithCoder:decoder])) {
+        editable = NO;
+    }
     return self;
 }
 
@@ -181,6 +183,12 @@
    have to press the Command key */
 - (void)keyDown:(NSEvent *)event
 {
+    /* some keys return zero-length strings */
+    if ([[event characters] length] == 0) {
+        [super keyDown:event];
+        return;
+    }
+
     /* actions are disabled when when menu items are */
     if (!editable) {
         [super keyDown:event];

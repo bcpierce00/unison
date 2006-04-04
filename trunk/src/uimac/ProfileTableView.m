@@ -5,6 +5,12 @@
 
 - (void)keyDown:(NSEvent *)event
 {
+    /* some keys return zero-length strings */
+    if ([[event characters] length] == 0) {
+        [super keyDown:event];
+        return;
+    }
+
     unichar c = [[event characters] characterAtIndex:0];
     switch (c) {
     case '\r':
