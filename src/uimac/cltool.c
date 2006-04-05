@@ -38,7 +38,7 @@ int main(int argc, char **argv) {
     exit(1);
   }
 
-  status = FSRefMakePath(&fsref,buf,BUFSIZE);
+  status = FSRefMakePath(&fsref,(UInt8 *)buf,BUFSIZE);
   if (status) {
     fprintf(stderr,"Error: problem building path to Unison application (%d).\n",status);
     exit(1);

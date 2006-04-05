@@ -1,3 +1,8 @@
+CHANGES FROM VERSION 2.19.25
+
+Get rid of harmless build erros
+
+-------------------------------
 CHANGES FROM VERSION 2.19.24
 
 Mac GUI: Fix bug spotted by Benjamin where pressing a 'dead' key in tables causes a crash
