@@ -356,7 +356,7 @@ testmerge:
 .PHONY: tags
 
 tags:
-	-$(ETAGS) *.mli */*.mli *.ml */*.ml *.m */*.m *.c */*.c *.txt
+	-$(ETAGS) *.mli */*.mli *.ml */*.ml */*.m *.c */*.c *.txt
 
 all:: TAGS
 
