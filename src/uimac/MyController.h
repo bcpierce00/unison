@@ -63,6 +63,7 @@
 - (IBAction)cancelProfileButton:(id)sender;
 - (IBAction)openButton:(id)sender;
 - (IBAction)restartButton:(id)sender;
+- (IBAction)rescan:(id)sender;
 - (IBAction)syncButton:(id)sender;
 - (IBAction)onlineHelp:(id)sender;
 - (int)numberOfRowsInTableView:(NSTableView *)aTableView;

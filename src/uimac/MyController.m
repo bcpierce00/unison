@@ -164,7 +164,6 @@ static MyController *me; // needed by reloadTable and displayStatus, below
 
 - (void)afterOpen
 {
-    NSLog(@"Connected.");
     // move to updates window after clearing it
     [self clearDetails];
     [reconItems release];
@@ -201,7 +200,7 @@ static MyController *me; // needed by reloadTable and displayStatus, below
     [mainWindow setContentMinSize:NSMakeSize(150,150)];
     [mainWindow setContentMaxSize:NSMakeSize(FLT_MAX, FLT_MAX)];
     [mainWindow setContentView:ConnectingView];
-    [toolbar setView:@"ConnectingView"];
+    [toolbar setView:@"connectingView"];
 
     // Update (almost) immediately
     [ConnectingView display];
@@ -226,6 +225,7 @@ static MyController *me; // needed by reloadTable and displayStatus, below
         return;
     }
     [self raisePasswordWindow:[NSString stringWithCString:String_val(Field(prompt,0))]];
+    NSLog(@"Connected.");
 }
 
 - (IBAction)openButton:(id)sender
@@ -242,6 +242,11 @@ static MyController *me; // needed by reloadTable and displayStatus, below
 {
     [tableView setEditable:NO];
     [self chooseProfiles];
+}
+
+- (IBAction)rescan:(id)sender
+{
+    [self afterOpen];
 }
 
 - (void)doSyncThread:(id)whatever
@@ -452,6 +457,8 @@ CAMLprim value reloadTable(value row)
 }
 
 - (void)statusTextSet:(NSString *)s {
+    if (!NSEqualRanges([s rangeOfString:@"reconitems"], 
+		      NSMakeRange(NSNotFound,0))) return;
     [statusText setStringValue:s];
     [self forceUpdatesViewRefresh];
 }
@@ -647,8 +654,9 @@ CAMLprim value displayDiffErr(value s)
 - (BOOL)validateItem:(IBAction *) action
 {
     if (action == @selector(syncButton:)) return syncable;
-	// FIXME Restarting during sync is disabled because it causes UI corruption
-	else if (action == @selector(restartButton:)) return !duringSync;
+    // FIXME Restarting during sync is disabled because it causes UI corruption
+    else if ((action == @selector(restartButton:)) || (action == @selector(rescan:)))
+        return !duringSync;
     else return YES;
 }
 

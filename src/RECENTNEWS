@@ -1,3 +1,11 @@
+CHANGES FROM VERSION 2.19.26
+
+Mac GUI:
+* Add button and menu item to rescan current profile
+* Filter out 'There are N reconitems' messages in status text, to make way
+  for more informative ones
+
+-------------------------------
 CHANGES FROM VERSION 2.19.25
 
 Get rid of harmless build erros

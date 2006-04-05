@@ -15,6 +15,7 @@
 {
 	ReconTableView*  tableView;
 	MyController*    myController;
+	NSString*        currentView;
 }
 
 - initWithIdentifier:(NSString *) identifier :(MyController *) aController :(ReconTableView *) aTableView;

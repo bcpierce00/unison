@@ -17,6 +17,7 @@ static NSString*        GoItemIdentifier        = @"Go";
 static NSString*        CancelItemIdentifier    = @"Cancel";
 static NSString*        SaveItemIdentifier      = @"Save";
 static NSString*        RestartItemIdentifier   = @"Restart";
+static NSString*        RescanItemIdentifier    = @"Rescan";
 static NSString*        RToLItemIdentifier      = @"RToL";
 static NSString*        MergeItemIdentifier     = @"Merge";
 static NSString*        LToRItemIdentifier      = @"LToR";
@@ -33,6 +34,7 @@ static NSString*        DiffItemIdentifier      = @"Diff";
 		[self setDelegate: self];
 		myController = aController;
 		tableView = aTableView;
+		currentView = @"";	
     }
 
     return self;
@@ -83,6 +85,12 @@ static NSString*        DiffItemIdentifier      = @"Diff";
         [toolbarItem setTarget:myController];
         [toolbarItem setAction:@selector(restartButton:)];
     }
+    else if ([itemIdent isEqual: RescanItemIdentifier]) {
+        [toolbarItem setLabel: @"Rescan"];
+        [toolbarItem setImage: [NSImage imageNamed: @"rescan.tif"]];
+        [toolbarItem setTarget:myController];
+        [toolbarItem setAction:@selector(rescan:)];
+    }
     else if ([itemIdent isEqual: RToLItemIdentifier]) {
         [toolbarItem setLabel: @"Right to left"];
         [toolbarItem setImage: [NSImage imageNamed: @"left.tif"]];
@@ -120,20 +128,21 @@ static NSString*        DiffItemIdentifier      = @"Diff";
 
 - (NSArray *) itemIdentifiersForView: (NSString *) whichView {
     if ([whichView isEqual: @"chooseProfileView"]) {
-	    return [NSArray arrayWithObjects:   QuitItemIdentifier, OpenItemIdentifier, NewItemIdentifier, nil];
+	    return [NSArray arrayWithObjects:   QuitItemIdentifier, NewItemIdentifier, OpenItemIdentifier, nil];
 	}
 	else if ([whichView isEqual: @"preferencesView"]) {
 		return [NSArray arrayWithObjects:   QuitItemIdentifier, SaveItemIdentifier, CancelItemIdentifier, nil];
 	}
 	else if ([whichView isEqual: @"ConnectingView"]) {
-		return [NSArray arrayWithObjects:   QuitItemIdentifier, RestartItemIdentifier, NewItemIdentifier, nil];
+		return [NSArray arrayWithObjects:   QuitItemIdentifier, nil];
 	}
 	else if ([whichView isEqual: @"updatesView"]) {
-		return [NSArray arrayWithObjects:   QuitItemIdentifier, GoItemIdentifier, RestartItemIdentifier,
-											NSToolbarSeparatorItemIdentifier,
-											RToLItemIdentifier, MergeItemIdentifier, LToRItemIdentifier, 
-											SkipItemIdentifier, NSToolbarSeparatorItemIdentifier,
-			                                                                DiffItemIdentifier, nil];
+		return [NSArray arrayWithObjects:   QuitItemIdentifier,
+			RestartItemIdentifier, RescanItemIdentifier, GoItemIdentifier,
+			NSToolbarSeparatorItemIdentifier,
+			RToLItemIdentifier, MergeItemIdentifier, LToRItemIdentifier, 
+			SkipItemIdentifier, NSToolbarSeparatorItemIdentifier,
+			DiffItemIdentifier, nil];
 	}
 	else {
 		return [NSArray arrayWithObjects: QuitItemIdentifier, Nil];
@@ -141,20 +150,24 @@ static NSString*        DiffItemIdentifier      = @"Diff";
 }
 
 - (NSArray *) toolbarDefaultItemIdentifiers: (NSToolbar *) toolbar {
-    return [NSArray arrayWithObjects:   QuitItemIdentifier, OpenItemIdentifier, NewItemIdentifier, nil];
+    return [NSArray arrayWithObjects:   QuitItemIdentifier, NewItemIdentifier, OpenItemIdentifier, nil];
 }
 
 - (NSArray *) toolbarAllowedItemIdentifiers: (NSToolbar *) toolbar {
     return [NSArray arrayWithObjects:   QuitItemIdentifier, OpenItemIdentifier, NewItemIdentifier, 
-										CancelItemIdentifier, SaveItemIdentifier,
-										GoItemIdentifier, RestartItemIdentifier,
-                                        RToLItemIdentifier, MergeItemIdentifier, LToRItemIdentifier, 
-										SkipItemIdentifier, DiffItemIdentifier,
-                                        NSToolbarSeparatorItemIdentifier, nil];
+	    CancelItemIdentifier, SaveItemIdentifier,
+	    GoItemIdentifier, RestartItemIdentifier, RescanItemIdentifier,
+	    RToLItemIdentifier, MergeItemIdentifier, LToRItemIdentifier, 
+	    SkipItemIdentifier, DiffItemIdentifier,
+	    NSToolbarSeparatorItemIdentifier, nil];
 }
 
 - (void) setView: (NSString *) whichView {
-    int i;
+	if ([whichView isEqual:currentView]) return;
+
+	currentView = whichView;
+
+	int i;
 	NSArray *identifiers;
 	NSString *oldIdentifier;
 	NSString *newIdentifier;
