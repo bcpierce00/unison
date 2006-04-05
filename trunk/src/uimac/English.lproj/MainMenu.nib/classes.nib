@@ -28,6 +28,7 @@
                 onlineHelp = id; 
                 openButton = id; 
                 raiseAboutWindow = id; 
+                rescan = id; 
                 restartButton = id; 
                 saveProfileButton = id; 
                 syncButton = id; 
