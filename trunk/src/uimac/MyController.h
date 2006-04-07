@@ -48,6 +48,7 @@
 	NSString *myProfile;
 
     NSView *blankView;
+    value thisProfileName;
     value caml_reconItems;
     NSMutableArray *reconItems;
     value preconn;
@@ -66,6 +67,9 @@
 - (IBAction)rescan:(id)sender;
 - (IBAction)syncButton:(id)sender;
 - (IBAction)onlineHelp:(id)sender;
+- (void)doOpenThread:(id)whatever;
+- (void)afterOpen:(NSNotification *)notification;
+- (void)afterOpen;
 - (int)numberOfRowsInTableView:(NSTableView *)aTableView;
 - (id)tableView:(NSTableView *)aTableView
     objectValueForTableColumn:(NSTableColumn *)aTableColumn
