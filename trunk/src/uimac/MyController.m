@@ -164,6 +164,10 @@ static MyController *me; // needed by reloadTable and displayStatus, below
 
 - (void)afterOpen:(NSNotification *)notification
 {
+    [[NSNotificationCenter defaultCenter] removeObserver:self
+        name:NSThreadWillExitNotification
+        object:nil];
+
     [self afterOpen];
 }
 
@@ -228,6 +232,8 @@ static MyController *me; // needed by reloadTable and displayStatus, below
     f = caml_named_value("unisonInit1");
     preconn = Callback_checkexn(*f, thisProfileName);
     if (preconn == Val_unit) {
+        NSLog(@"Connected.");
+        [pool release];
         return;
     }
     // prompting required
@@ -238,11 +244,13 @@ static MyController *me; // needed by reloadTable and displayStatus, below
         // turns out, no prompt needed, but must finish opening connection
         f = caml_named_value("openConnectionEnd");
         Callback_checkexn(*f, preconn);
+        NSLog(@"Connected.");
+        [pool release];
         return;
     }
     [self raisePasswordWindow:[NSString stringWithCString:String_val(Field(prompt,0))]];
+    
     NSLog(@"Connected.");
-
     [pool release];
 }
 
