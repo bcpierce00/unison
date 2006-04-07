@@ -144,6 +144,7 @@ endif
 # The two cases for cltool are needed because Xcode 2.1+
 # builds in build/Default/, and earlier versions use build/
 macexecutable: $(NAME)-blob.o
+	sed -e's/@@VERSION@@/$(VERSION)/' uimac/Info.plist.template > uimac/Info.plist
 	(cd uimac; xcodebuild OCAMLLIBDIR="$(OCAMLLIBDIR)")
 	if [ -e uimac/build/Default ]; then \
 	  gcc uimac/cltool.c -o uimac/build/Default/Unison.app/Contents/MacOS/cltool -framework Carbon; \

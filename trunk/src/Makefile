@@ -370,7 +370,7 @@ clean::
 	-$(RM) *.log *.aux *.log *.dvi *.out *.bak
 	-$(RM) -r obsolete
 	-$(RM) $(NAME) $(NAME).exe
-	-$(RM) $(NAME)-blob.o
+	-$(RM) $(NAME)-blob.o uimac/*.plist
 
 clean::
 	$(MAKE) -C ubase clean
