@@ -138,7 +138,10 @@ static NSString*        DiffItemIdentifier      = @"Diff";
 	}
 	else if ([whichView isEqual: @"updatesView"]) {
 		return [NSArray arrayWithObjects:   QuitItemIdentifier,
-			RestartItemIdentifier, RescanItemIdentifier, GoItemIdentifier,
+			RestartItemIdentifier, 
+			NSToolbarSeparatorItemIdentifier,
+			GoItemIdentifier,
+			RescanItemIdentifier,
 			NSToolbarSeparatorItemIdentifier,
 			RToLItemIdentifier, MergeItemIdentifier, LToRItemIdentifier, 
 			SkipItemIdentifier, NSToolbarSeparatorItemIdentifier,

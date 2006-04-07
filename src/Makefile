@@ -370,7 +370,7 @@ clean::
 	-$(RM) *.log *.aux *.log *.dvi *.out *.bak
 	-$(RM) -r obsolete
 	-$(RM) $(NAME) $(NAME).exe
-	-$(RM) $(NAME)-blob.o uimac/*.plist
+	-$(RM) $(NAME)-blob.o
 
 clean::
 	$(MAKE) -C ubase clean
@@ -379,6 +379,7 @@ clean::
 ifeq (${OSARCH},osx)
 clean::
 	-(cd uimac; xcodebuild clean)
+	-(cd uimac; $(RM) -r build *.plist)
 endif
 
 checkin:

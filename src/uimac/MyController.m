@@ -162,6 +162,11 @@ static MyController *me; // needed by reloadTable and displayStatus, below
    [self forceUpdatesViewRefresh];
 }
 
+- (void)afterOpen:(NSNotification *)notification
+{
+    [self afterOpen];
+}
+
 - (void)afterOpen
 {
     // move to updates window after clearing it
@@ -205,12 +210,24 @@ static MyController *me; // needed by reloadTable and displayStatus, below
     // Update (almost) immediately
     [ConnectingView display];
 
-    // possibly slow -- need another thread?  Print "contacting server"
+    thisProfileName = profileName;
+
+    [[NSNotificationCenter defaultCenter] addObserver:self
+        selector:@selector(afterOpen:)
+        name:NSThreadWillExitNotification object:nil];
+    [NSThread detachNewThreadSelector:@selector(doOpenThread:)
+        toTarget:self withObject:nil];
+
+}
+
+- (void)doOpenThread:(id)whatever
+{
+    NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+
     value *f = NULL;
     f = caml_named_value("unisonInit1");
-    preconn = Callback_checkexn(*f, profileName);
+    preconn = Callback_checkexn(*f, thisProfileName);
     if (preconn == Val_unit) {
-        [self afterOpen]; // no prompting required
         return;
     }
     // prompting required
@@ -221,11 +238,12 @@ static MyController *me; // needed by reloadTable and displayStatus, below
         // turns out, no prompt needed, but must finish opening connection
         f = caml_named_value("openConnectionEnd");
         Callback_checkexn(*f, preconn);
-        [self afterOpen];
         return;
     }
     [self raisePasswordWindow:[NSString stringWithCString:String_val(Field(prompt,0))]];
     NSLog(@"Connected.");
+
+    [pool release];
 }
 
 - (IBAction)openButton:(id)sender
@@ -368,7 +386,6 @@ CAMLprim value reloadTable(value row)
                 // all done with prompts, finish opening connection
                 f = caml_named_value("openConnectionEnd");
                 Callback_checkexn(*f, preconn);
-                [self afterOpen];
                 return;
             }
             else {
@@ -424,7 +441,6 @@ CAMLprim value reloadTable(value row)
         // all done with prompts, finish opening connection
         f = caml_named_value("openConnectionEnd");
         Callback_checkexn(*f, preconn);
-        [self afterOpen];
     }
     else [self raisePasswordWindow:[NSString stringWithCString:String_val(Field(prompt,0))]];
 }

@@ -1,3 +1,11 @@
+CHANGES FROM VERSION 2.19.28
+
+Mac GUI: 
+* Get rid of beachball by using a new thread to open new profile
+* Rearrange toolbar
+* Fix 'make clean'
+
+-------------------------------
 CHANGES FROM VERSION 2.19.27
 
 Mac GUI: Add accurate version number to Info.plist, so that
