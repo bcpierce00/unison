@@ -114,7 +114,7 @@
 		69BA7DA904FD695200CF23A4 /* ReconTableView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ReconTableView.m; sourceTree = "<group>"; };
 		69C625CA0664E94E00B3C46A /* Unison.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = Unison.icns; sourceTree = "<group>"; };
 		69C625F40664EC3300B3C46A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Info.plist; sourceTree = "<group>"; };
-		69C625F50664EC3300B3C46A /* Unison.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Unison.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		69C625F50664EC3300B3C46A /* Unison.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Unison.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		69D3C6F904F1CC3700CF23A4 /* ReconItem.m */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.objc; path = ReconItem.m; sourceTree = "<group>"; };
 		69D3C6FA04F1CC3700CF23A4 /* ReconItem.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ReconItem.h; sourceTree = "<group>"; };
 		69E407B907EB95AA00D37AA1 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = /System/Library/Frameworks/Security.framework; sourceTree = "<absolute>"; };

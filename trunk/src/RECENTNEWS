@@ -1,3 +1,8 @@
+CHANGES FROM VERSION 2.19.33
+
+Mac GUI: Add global progress bar
+
+-------------------------------
 CHANGES FROM VERSION 2.19.32
 
 Mac GUI: Fix numerous GUI glitches caused by attempting to update GUI from

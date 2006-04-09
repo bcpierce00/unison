@@ -28,7 +28,8 @@ static MyController *me; // needed by reloadTable and displayStatus, below
         me = self;
         doneFirstDiff = NO;
         newStatusText = [[NSMutableString alloc] initWithCapacity:1024];
-
+        newProgress = 0.;
+	
         /* Ocaml initialization */
         caml_reconItems = preconn = Val_int(0);
         caml_register_global_root(&caml_reconItems);
@@ -44,11 +45,15 @@ static MyController *me; // needed by reloadTable and displayStatus, below
 
         [[NSNotificationCenter defaultCenter] addObserver:self
             selector:@selector(processNotification:)
-            name:@"tableViewNeedsUpdate" object:nil];
+            name:@"tableViewNeedsUpdate" object:nil];	
 
         [[NSNotificationCenter defaultCenter] addObserver:self
             selector:@selector(processNotification:)
             name:@"toolbarNeedsUpdate" object:nil];
+	
+        [[NSNotificationCenter defaultCenter] addObserver:self
+            selector:@selector(processNotification:)
+            name:@"progressBarNeedsUpdate" object:nil];
     }
     return self;
 }
@@ -107,6 +112,9 @@ static MyController *me; // needed by reloadTable and displayStatus, below
         else if ([[notification name] isEqual:@"toolbarNeedsUpdate"]) {
            [toolbar validateVisibleItems];
            [updatesView setNeedsDisplay:YES];
+        }
+        else if ([[notification name] isEqual:@"progressBarNeedsUpdate"]) {
+            [progressBar incrementBy:(newProgress - [progressBar doubleValue])];
         }
     }
 }
@@ -429,11 +437,17 @@ static MyController *me; // needed by reloadTable and displayStatus, below
     [mainWindow setContentMaxSize:NSMakeSize(FLT_MAX, FLT_MAX)];
     [mainWindow setContentView:updatesView];
     [toolbar setView:@"updatesView"];
+
     syncable = NO;
     afterSync = NO;
-
+    
     [[NSNotificationCenter defaultCenter]
         postNotificationName:@"toolbarNeedsUpdate"
+        object:self];
+
+    newProgress = 0.;
+    [[NSNotificationCenter defaultCenter]
+        postNotificationName:@"progressBarNeedsUpdate"
         object:self];
     
     // this should depend on the number of reconitems, and is now done
@@ -655,6 +669,21 @@ CAMLprim value displayStatus(value s)
     [newStatusText setString:s];
     [[NSNotificationCenter defaultCenter]
         postNotificationName:@"statusTextNeedsUpdate"
+        object:self];
+}
+
+// Called from ocaml to dislpay progress bar
+CAMLprim value displayGlobalProgress(value p)
+{
+    [me setGlobalProgressToValue:Double_val(p)];
+    return Val_unit;
+}
+
+- (void)setGlobalProgressToValue:(double) progress
+{
+    newProgress = progress;
+    [[NSNotificationCenter defaultCenter]
+        postNotificationName:@"progressBarNeedsUpdate"
         object:self];
 }
 

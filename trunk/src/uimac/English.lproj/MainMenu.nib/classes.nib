@@ -51,6 +51,7 @@
                 preferencesController = PreferencesController; 
                 preferencesView = NSView; 
                 profileController = ProfileController; 
+                progressBar = NSProgressIndicator; 
                 statusText = NSTextField; 
                 tableView = ReconTableView; 
                 updatesText = NSTextField; 
