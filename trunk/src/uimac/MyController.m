@@ -20,18 +20,35 @@ extern value Callback2_checkexn(value,value,value);
 
 static MyController *me; // needed by reloadTable and displayStatus, below
 
+- (id)init
+{
+    if (([super init])) {
+	
+        /* Initialize locals */
+        me = self;
+        doneFirstDiff = NO;
+
+        /* Ocaml initialization */
+        caml_reconItems = preconn = Val_int(0);
+        caml_register_global_root(&caml_reconItems);
+        caml_register_global_root(&preconn);
+
+    }
+    return self;
+}
+
 - (void)awakeFromNib
 {
-    /**** Initialize locals ****/
-    me = self;
     chooseProfileSize = [chooseProfileView frame].size;
     updatesSize = [updatesView frame].size;
     preferencesSize = [preferencesView frame].size;
     ConnectingSize = [ConnectingView frame].size;
     blankView = [[NSView alloc] init];
+
     /* Double clicking in the profile list will open the profile */
     [[profileController tableView] setTarget:self];
     [[profileController tableView] setDoubleAction:@selector(openButton:)];
+
     /* Set up the version string in the about box.  We use a custom
        about box just because PRCS doesn't seem capable of getting the
        version into the InfoPlist.strings file; otherwise we'd use the
@@ -41,24 +58,10 @@ static MyController *me; // needed by reloadTable and displayStatus, below
     [versionText setStringValue:
         [NSString stringWithCString:
         String_val(Callback_checkexn(*f, Val_unit))]];
-    doneFirstDiff = NO;
     
-    /* Ocaml initialization */
-    // FIX: Does this occur before ProfileController awakeFromNib?
-    caml_reconItems = preconn = Val_int(0);
-    caml_register_global_root(&caml_reconItems);
-    caml_register_global_root(&preconn);
-
     /* Command-line processing */
     f = caml_named_value("unisonInit0");
     value clprofile = Callback_checkexn(*f, Val_unit);
-
-    /* enable images in the direction column of the reconitems table */
-    NSImageCell * tPrototypeCell = [[NSImageCell alloc] init];
-    NSTableColumn * tColumn = [tableView  
-                   tableColumnWithIdentifier:@"direction"];
-    [tPrototypeCell setImageScaling:NSScaleNone];
-    [tColumn setDataCell:[tPrototypeCell autorelease]];
     
     /* Add toolbar */
     toolbar = [[[UnisonToolbar alloc] 
@@ -150,7 +153,10 @@ static MyController *me; // needed by reloadTable and displayStatus, below
 
 - (IBAction)rescan:(id)sender
 {
-    [self afterOpen];
+    /* There is a delay between turning off the button and it
+       actually being disabled. Make sure we don't respond. */
+    if ([self validateItem:@selector(rescan:)]) [self afterOpen];
+//    if ((syncable && !duringSync) || afterSync) [self afterOpen];
 }
 
 - (IBAction)openButton:(id)sender
@@ -181,6 +187,9 @@ static MyController *me; // needed by reloadTable and displayStatus, below
 
     thisProfileName = profileName;
 
+    syncable = NO;
+    afterSync = NO;    
+    
     [[NSNotificationCenter defaultCenter] addObserver:self
         selector:@selector(afterOpen:)
         name:NSThreadWillExitNotification object:nil];
@@ -344,6 +353,7 @@ static MyController *me; // needed by reloadTable and displayStatus, below
     [mainWindow setContentView:updatesView];
     [toolbar setView:@"updatesView"];
     syncable = NO;
+    afterSync = NO;
 
     // this should depend on the number of reconitems, and is now done
     // in updateReconItems:
@@ -398,12 +408,7 @@ static MyController *me; // needed by reloadTable and displayStatus, below
     if ([reconItems count] > 0)
         [tableView selectRow:0 byExtendingSelection:NO];
 
-    // activate menu items
-    // this should depend on the number of reconitems, and is now done
-    // in updateReconItems
-    //[tableView setEditable:YES];
-   
-   [self forceUpdatesViewRefresh];
+    [self forceUpdatesViewRefresh];
 }
 
 - (IBAction)syncButton:(id)sender
@@ -434,6 +439,7 @@ static MyController *me; // needed by reloadTable and displayStatus, below
         object:nil];
     [notificationController syncFinishedFor:[self profile]];
     duringSync = NO;
+    afterSync = YES;
 
     [self forceUpdatesViewRefresh];
 
@@ -523,7 +529,8 @@ CAMLprim value reloadTable(value row)
     }
     else {
         [tableView setEditable:NO];
-
+        afterSync = YES; // rescan should be enabled
+	
         // reconItems table no longer gets keyboard input
         [mainWindow makeFirstResponder:nil];
     }
@@ -684,9 +691,10 @@ CAMLprim value displayDiffErr(value s)
 {
     if (action == @selector(syncButton:)) return syncable;
     // FIXME Restarting during sync is disabled because it causes UI corruption
-    else if ((action == @selector(restartButton:)) || 
-             (action == @selector(rescan:)))
-        return !duringSync;
+    else if (action == @selector(restartButton:))
+	return !duringSync;
+    else if (action == @selector(rescan:))
+	return ((syncable && !duringSync) || afterSync);
     else return YES;
 }
 

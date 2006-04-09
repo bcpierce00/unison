@@ -16,6 +16,13 @@
 {
     if (([super initWithCoder:decoder])) {
         editable = NO;
+	
+        /* enable images in the direction column */
+        NSImageCell * tPrototypeCell = [[NSImageCell alloc] init];
+        NSTableColumn * tColumn = 
+	    [self tableColumnWithIdentifier:@"direction"];
+        [tPrototypeCell setImageScaling:NSScaleNone];
+        [tColumn setDataCell:[tPrototypeCell autorelease]];	
     }
     return self;
 }
