@@ -20,19 +20,14 @@
 
     IBOutlet ProfileController *profileController;
     IBOutlet NSView *chooseProfileView;
-    NSSize chooseProfileSize;
     NSString *myProfile;
     value thisProfileName;
 
     IBOutlet PreferencesController *preferencesController;
     IBOutlet NSView *preferencesView;
-    NSSize preferencesSize;
 
     IBOutlet NSView *updatesView;
-    NSSize updatesSize;
-
     IBOutlet NSView *ConnectingView;
-    NSSize ConnectingSize;
 
     NSView *blankView;
 
@@ -62,6 +57,7 @@
     value caml_reconItems;
     NSMutableArray *reconItems;
     value preconn;
+    BOOL shouldResetSelection;
 
     BOOL doneFirstDiff;
     IBOutlet NSWindow *diffWindow;
@@ -128,5 +124,6 @@
 - (BOOL)validateToolbarItem:(NSToolbarItem *)toolbarItem;
 
 - (void)resizeWindowToSize:(NSSize)newSize;
+- (float)toolbarHeightForWindow:(NSWindow *)window;
 
 @end

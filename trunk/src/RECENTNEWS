@@ -1,3 +1,11 @@
+CHANGES FROM VERSION 2.19.34
+
+Mac GUI: Small fixes:
+* Threadsafe row selection and sorting
+* Allow user to resize windows
+* Stop column indicator flashing on rescan
+
+-------------------------------
 CHANGES FROM VERSION 2.19.33
 
 Mac GUI: Add global progress bar
