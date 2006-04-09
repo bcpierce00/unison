@@ -27,14 +27,88 @@ static MyController *me; // needed by reloadTable and displayStatus, below
         /* Initialize locals */
         me = self;
         doneFirstDiff = NO;
+        newStatusText = [[NSMutableString alloc] initWithCapacity:1024];
 
         /* Ocaml initialization */
         caml_reconItems = preconn = Val_int(0);
         caml_register_global_root(&caml_reconItems);
         caml_register_global_root(&preconn);
 
+        /* Cross-thread notification support to ensure GUI updates 
+           only happen in main thread */
+        [self setupThreadingSupport];
+
+        [[NSNotificationCenter defaultCenter] addObserver:self
+            selector:@selector(processNotification:)
+            name:@"statusTextNeedsUpdate" object:nil];
+
+        [[NSNotificationCenter defaultCenter] addObserver:self
+            selector:@selector(processNotification:)
+            name:@"tableViewNeedsUpdate" object:nil];
+
+        [[NSNotificationCenter defaultCenter] addObserver:self
+            selector:@selector(processNotification:)
+            name:@"toolbarNeedsUpdate" object:nil];
     }
     return self;
+}
+
+- (void) setupThreadingSupport
+{
+    if ( notifications ) return;
+
+    notifications      = [[NSMutableArray alloc] init];
+    notificationLock   = [[NSLock alloc] init];
+    notificationThread = [[NSThread currentThread] retain];
+
+
+    notificationPort = [[NSMachPort alloc] init];
+    [notificationPort setDelegate:self];
+    [[NSRunLoop currentRunLoop] addPort:notificationPort
+            forMode:(NSString *) kCFRunLoopCommonModes];
+}
+
+- (void) handleMachMessage:(void *) msg {
+    [notificationLock lock];
+
+    while ( [notifications count] ) {
+        NSNotification *notification = [[notifications objectAtIndex:0] retain];
+        [notifications removeObjectAtIndex:0];
+        [notificationLock unlock];
+        [self processNotification:notification];
+        [notification release];
+        [notificationLock lock];
+    };
+
+    [notificationLock unlock];
+}
+ 
+- (void) processNotification:(NSNotification *) notification
+{
+    /* Handle GUI update requests from subsidiary threads. 
+       If we're not the main thread, forward the notification
+       to it and exit */
+    if( [NSThread currentThread] != notificationThread ) {
+        // Forward the notification to the correct thread
+        [notificationLock lock];
+        [notifications addObject:notification];
+        [notificationLock unlock];
+        [notificationPort sendBeforeDate:[NSDate date]
+            components:nil from:nil reserved:0];
+    }
+    else {
+        if ([[notification name] isEqual:@"statusTextNeedsUpdate"]) {
+            [statusText setStringValue:newStatusText];
+        }
+        else if ([[notification name] isEqual:@"tableViewNeedsUpdate"]) {
+           [tableView reloadData];
+           [updatesView setNeedsDisplay:YES];	    
+        }
+        else if ([[notification name] isEqual:@"toolbarNeedsUpdate"]) {
+           [toolbar validateVisibleItems];
+           [updatesView setNeedsDisplay:YES];
+        }
+    }
 }
 
 - (void)awakeFromNib
@@ -156,7 +230,6 @@ static MyController *me; // needed by reloadTable and displayStatus, below
     /* There is a delay between turning off the button and it
        actually being disabled. Make sure we don't respond. */
     if ([self validateItem:@selector(rescan:)]) [self afterOpen];
-//    if ((syncable && !duringSync) || afterSync) [self afterOpen];
 }
 
 - (IBAction)openButton:(id)sender
@@ -189,6 +262,10 @@ static MyController *me; // needed by reloadTable and displayStatus, below
 
     syncable = NO;
     afterSync = NO;    
+    
+    [[NSNotificationCenter defaultCenter]
+        postNotificationName:@"toolbarNeedsUpdate"
+        object:self];
     
     [[NSNotificationCenter defaultCenter] addObserver:self
         selector:@selector(afterOpen:)
@@ -355,6 +432,10 @@ static MyController *me; // needed by reloadTable and displayStatus, below
     syncable = NO;
     afterSync = NO;
 
+    [[NSNotificationCenter defaultCenter]
+        postNotificationName:@"toolbarNeedsUpdate"
+        object:self];
+    
     // this should depend on the number of reconitems, and is now done
     // in updateReconItems:
     // reconItems table gets keyboard input
@@ -398,17 +479,16 @@ static MyController *me; // needed by reloadTable and displayStatus, below
     [right setObjectValue:[NSString stringWithCString:
         String_val(Callback_checkexn(*f, Val_unit))]];
 
-    // cause scrollbar to display if necessary
-    [tableView reloadData];
-
+    [[NSNotificationCenter defaultCenter]
+        postNotificationName:@"tableViewNeedsUpdate"
+        object:self];
+    
     [tableView sortReconItemsByColumn:
         [tableView tableColumnWithIdentifier:@"direction"]];
     
     // have to select after reload for it to stick
     if ([reconItems count] > 0)
         [tableView selectRow:0 byExtendingSelection:NO];
-
-    [self forceUpdatesViewRefresh];
 }
 
 - (IBAction)syncButton:(id)sender
@@ -416,6 +496,10 @@ static MyController *me; // needed by reloadTable and displayStatus, below
     [tableView setEditable:NO];
     syncable = NO;
     duringSync = YES;
+ 
+    [[NSNotificationCenter defaultCenter]
+        postNotificationName:@"toolbarNeedsUpdate"
+        object:self];
     
     [[NSNotificationCenter defaultCenter] addObserver:self
         selector:@selector(afterSync:)
@@ -440,14 +524,18 @@ static MyController *me; // needed by reloadTable and displayStatus, below
     [notificationController syncFinishedFor:[self profile]];
     duringSync = NO;
     afterSync = YES;
-
-    [self forceUpdatesViewRefresh];
-
+    
+    [[NSNotificationCenter defaultCenter]
+        postNotificationName:@"toolbarNeedsUpdate"
+        object:self];
+    
     int i;
     for (i = 0; i < [reconItems count]; i++) {
         [[reconItems objectAtIndex:i] resetProgress];
     }
-    [tableView reloadData];
+    [[NSNotificationCenter defaultCenter]
+        postNotificationName:@"tableViewNeedsUpdate"
+        object:self];
 }
 
 // A function called from ocaml
@@ -461,7 +549,9 @@ CAMLprim value reloadTable(value row)
 - (void)updateTableView:(int)i
 {
     [[reconItems objectAtIndex:i] resetProgress];
-    [tableView reloadData]; // FIX: can we redisplay just row i?
+    [[NSNotificationCenter defaultCenter]
+        postNotificationName:@"tableViewNeedsUpdate"
+        object:self];
 }
 
 - (int)numberOfRowsInTableView:(NSTableView *)aTableView
@@ -534,6 +624,9 @@ CAMLprim value reloadTable(value row)
         // reconItems table no longer gets keyboard input
         [mainWindow makeFirstResponder:nil];
     }
+    [[NSNotificationCenter defaultCenter]
+        postNotificationName:@"toolbarNeedsUpdate"
+        object:self];
 }
 
 - (int)updateForIgnore:(int)i
@@ -557,8 +650,12 @@ CAMLprim value displayStatus(value s)
 - (void)statusTextSet:(NSString *)s {
     if (!NSEqualRanges([s rangeOfString:@"reconitems"], 
          NSMakeRange(NSNotFound,0))) return;
-    [statusText setStringValue:s];
-    [self forceUpdatesViewRefresh];
+    /* store the new value and call the main thread 
+       to actually do the display */
+    [newStatusText setString:s];
+    [[NSNotificationCenter defaultCenter]
+        postNotificationName:@"statusTextNeedsUpdate"
+        object:self];
 }
 
 // Called from ocaml to display diff
@@ -706,15 +803,6 @@ CAMLprim value displayDiffErr(value s)
 - (BOOL)validateToolbarItem:(NSToolbarItem *)toolbarItem
 {
     return [self validateItem:[toolbarItem action]];
-}
-
-- (void)forceUpdatesViewRefresh
-{
-    /* awful kludge to force all elements to update correctly */
-    [updatesView display];
-    [toolbar validateVisibleItems];
-    [statusText setStringValue:[statusText stringValue]];
-    [updatesView display];
 }
 
 - (void)resizeWindowToSize:(NSSize)newSize

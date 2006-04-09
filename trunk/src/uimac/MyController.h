@@ -10,6 +10,11 @@
 
 @interface MyController : NSObject
 {
+    NSMutableArray *notifications;
+    NSThread *notificationThread;
+    NSLock *notificationLock;
+    NSMachPort *notificationPort;
+
     IBOutlet NSWindow *mainWindow;
     UnisonToolbar *toolbar;
 
@@ -35,6 +40,7 @@
     IBOutlet NSTextField *updatesText;
     IBOutlet NSTextView *detailsTextView;
     IBOutlet NSTextField *statusText;
+    NSMutableString *newStatusText;
 
     IBOutlet NSWindow *passwordWindow;
     IBOutlet NSTextField *passwordPrompt;
@@ -59,6 +65,10 @@
     IBOutlet NSTextView *diffView;
 }
 
+- (id)init;
+- (void)setupThreadingSupport;
+- (void)handleMachMessage:(void *) msg;
+- (void)processNotification:(NSNotification *) notification;
 - (void)awakeFromNib;
 
 - (void)chooseProfiles;
@@ -113,7 +123,6 @@
 - (BOOL)validateMenuItem:(NSMenuItem *)menuItem;
 - (BOOL)validateToolbarItem:(NSToolbarItem *)toolbarItem;
 
-- (void)forceUpdatesViewRefresh;
 - (void)resizeWindowToSize:(NSSize)newSize;
 
 @end
