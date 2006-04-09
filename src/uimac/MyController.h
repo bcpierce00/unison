@@ -5,20 +5,19 @@
 #define CAML_NAME_SPACE
 #include <caml/mlvalues.h>
 
-@class ProfileController, PreferencesController, NotificationController, ReconTableView, UnisonToolbar;
+@class ProfileController, PreferencesController, NotificationController, 
+    ReconTableView, UnisonToolbar;
 
 @interface MyController : NSObject
 {
     IBOutlet NSWindow *mainWindow;
     UnisonToolbar *toolbar;
 
-    BOOL doneFirstDiff;
-    IBOutlet NSWindow *diffWindow;
-    IBOutlet NSTextView *diffView;
-
     IBOutlet ProfileController *profileController;
     IBOutlet NSView *chooseProfileView;
     NSSize chooseProfileSize;
+    NSString *myProfile;
+    value thisProfileName;
 
     IBOutlet PreferencesController *preferencesController;
     IBOutlet NSView *preferencesView;
@@ -30,63 +29,90 @@
     IBOutlet NSView *ConnectingView;
     NSSize ConnectingSize;
 
+    NSView *blankView;
+
     IBOutlet ReconTableView *tableView;
     IBOutlet NSTextField *updatesText;
+    IBOutlet NSTextView *detailsTextView;
+    IBOutlet NSTextField *statusText;
 
     IBOutlet NSWindow *passwordWindow;
     IBOutlet NSTextField *passwordPrompt;
     IBOutlet NSTextField *passwordText;
-    IBOutlet NSTextView *detailsTextView;
-    IBOutlet NSTextField *statusText;
-
     IBOutlet NSButton *passwordCancelButton;
 
     IBOutlet NSWindow *aboutWindow;
     IBOutlet NSTextField *versionText;
 
-	IBOutlet NotificationController *notificationController;
-	NSString *myProfile;
+    IBOutlet NotificationController *notificationController;
 
-    NSView *blankView;
-    value thisProfileName;
+    BOOL syncable;
+    BOOL duringSync;	
+
     value caml_reconItems;
     NSMutableArray *reconItems;
     value preconn;
 
-    NSString *pName;
-
-    BOOL syncable;
-    BOOL duringSync;	
+    BOOL doneFirstDiff;
+    IBOutlet NSWindow *diffWindow;
+    IBOutlet NSTextView *diffView;
 }
 
+- (void)awakeFromNib;
+
+- (void)chooseProfiles;
 - (IBAction)createButton:(id)sender;
 - (IBAction)saveProfileButton:(id)sender;
 - (IBAction)cancelProfileButton:(id)sender;
-- (IBAction)openButton:(id)sender;
+- (NSString *)profile;
+- (void)profileSelected:(NSString *)aProfile;
+
 - (IBAction)restartButton:(id)sender;
 - (IBAction)rescan:(id)sender;
-- (IBAction)syncButton:(id)sender;
-- (IBAction)onlineHelp:(id)sender;
+
+- (IBAction)openButton:(id)sender;
+- (void)connect:(value)profileName;
 - (void)doOpenThread:(id)whatever;
+- (void)raisePasswordWindow:(NSString *)prompt;
+- (void)controlTextDidEndEditing:(NSNotification *)notification;
+- (IBAction)endPasswordWindow:(id)sender;
 - (void)afterOpen:(NSNotification *)notification;
 - (void)afterOpen;
+
+- (void)doUpdateThread:(id)whatever;
+- (void)afterUpdate:(NSNotification *)notification;
+
+- (IBAction)syncButton:(id)sender;
+- (void)doSyncThread:(id)whatever;
+- (void)afterSync:(NSNotification *)notification;
+
+- (void)updateTableView:(int)i;
 - (int)numberOfRowsInTableView:(NSTableView *)aTableView;
 - (id)tableView:(NSTableView *)aTableView
     objectValueForTableColumn:(NSTableColumn *)aTableColumn
     row:(int)rowIndex;
-- (void)raisePasswordWindow:(NSString *)prompt;
-- (IBAction)raiseAboutWindow:(id)sender;
-- (void)controlTextDidEndEditing:(NSNotification *)notification;
-- (IBAction)endPasswordWindow:(id)sender;
+- (void)tableViewSelectionDidChange:(NSNotification *)note;
+- (void)tableView:(NSTableView *)aTableView 
+    didClickTableColumn:(NSTableColumn *)tableColumn;
+
 - (NSMutableArray *)reconItems;
+- (void)updateReconItems;
 - (int)updateForIgnore:(int)i;
+
+- (void)statusTextSet:(NSString *)s;
+- (void)diffViewTextSet:(NSString *)title bodyText:(NSString *)body;
 - (void)displayDetails:(int)i;
+- (void)clearDetails;
+
+- (IBAction)raiseAboutWindow:(id)sender;
+- (IBAction)onlineHelp:(id)sender;
 - (IBAction)installCommandLineTool:(id)sender;
-- (void)profileSelected:(NSString *)aProfile;
-- (NSString *)profile;
+
 - (BOOL)validateItem:(IBAction *) action;
 - (BOOL)validateMenuItem:(NSMenuItem *)menuItem;
 - (BOOL)validateToolbarItem:(NSToolbarItem *)toolbarItem;
+
 - (void)forceUpdatesViewRefresh;
+- (void)resizeWindowToSize:(NSSize)newSize;
 
 @end

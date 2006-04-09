@@ -20,36 +20,84 @@ extern value Callback2_checkexn(value,value,value);
 
 static MyController *me; // needed by reloadTable and displayStatus, below
 
-- (void)resizeWindowToSize:(NSSize)newSize
+- (void)awakeFromNib
 {
-    NSRect aFrame;
+    /**** Initialize locals ****/
+    me = self;
+    chooseProfileSize = [chooseProfileView frame].size;
+    updatesSize = [updatesView frame].size;
+    preferencesSize = [preferencesView frame].size;
+    ConnectingSize = [ConnectingView frame].size;
+    blankView = [[NSView alloc] init];
+    /* Double clicking in the profile list will open the profile */
+    [[profileController tableView] setTarget:self];
+    [[profileController tableView] setDoubleAction:@selector(openButton:)];
+    /* Set up the version string in the about box.  We use a custom
+       about box just because PRCS doesn't seem capable of getting the
+       version into the InfoPlist.strings file; otherwise we'd use the
+       standard about box. */
+    value *f = NULL;
+    f = caml_named_value("unisonGetVersion");
+    [versionText setStringValue:
+        [NSString stringWithCString:
+        String_val(Callback_checkexn(*f, Val_unit))]];
+    doneFirstDiff = NO;
+    
+    /* Ocaml initialization */
+    // FIX: Does this occur before ProfileController awakeFromNib?
+    caml_reconItems = preconn = Val_int(0);
+    caml_register_global_root(&caml_reconItems);
+    caml_register_global_root(&preconn);
 
-    float newHeight = newSize.height;
-    float newWidth = newSize.width;
+    /* Command-line processing */
+    f = caml_named_value("unisonInit0");
+    value clprofile = Callback_checkexn(*f, Val_unit);
 
-    aFrame = [NSWindow contentRectForFrameRect:[mainWindow frame]
-                       styleMask:[mainWindow styleMask]];
+    /* enable images in the direction column of the reconitems table */
+    NSImageCell * tPrototypeCell = [[NSImageCell alloc] init];
+    NSTableColumn * tColumn = [tableView  
+                   tableColumnWithIdentifier:@"direction"];
+    [tPrototypeCell setImageScaling:NSScaleNone];
+    [tColumn setDataCell:[tPrototypeCell autorelease]];
+    
+    /* Add toolbar */
+    toolbar = [[[UnisonToolbar alloc] 
+        initWithIdentifier: @"unisonToolbar" :self :tableView] autorelease];
+    [mainWindow setToolbar: toolbar];
 
-    aFrame.origin.y += aFrame.size.height;
-    aFrame.origin.y -= newHeight;
-    aFrame.size.height = newHeight;
-    aFrame.size.width = newWidth;
+    /* Set up the first window the user will see */
+    if (Is_block(clprofile)) {
+        /* A profile name was given on the command line */
+        value caml_profile = Field(clprofile,0);
+        [self profileSelected:[NSString 
+            stringWithCString:String_val(caml_profile)]];
 
-    aFrame = [NSWindow frameRectForContentRect:aFrame
-                       styleMask:[mainWindow styleMask]];
+        /* If invoked from terminal we need to bring the app to the front */
+        [NSApp activateIgnoringOtherApps:YES];
+        [mainWindow orderFront:self];
 
-    [mainWindow setFrame:aFrame display:YES animate:YES];
+        /* Start the connection */
+        [self connect:caml_profile];
+    }
+    else {
+        /* If invoked from terminal we need to bring the app to the front */
+        [NSApp activateIgnoringOtherApps:YES];
+        /* Bring up the dialog to choose a profile */
+        [self chooseProfiles];
+    }
 }
 
 - (void)chooseProfiles
 {
     [mainWindow setContentView:blankView];
     [self resizeWindowToSize:chooseProfileSize];
-    [mainWindow setContentMinSize:NSMakeSize(NSWidth([[mainWindow contentView] frame]),150)];
+    [mainWindow setContentMinSize:
+        NSMakeSize(NSWidth([[mainWindow contentView] frame]),150)];
     [mainWindow setContentMaxSize:NSMakeSize(FLT_MAX, FLT_MAX)];
     [mainWindow setContentView:chooseProfileView];
     [toolbar setView:@"chooseProfileView"];
-    [mainWindow makeFirstResponder:[profileController tableView]]; // profiles get keyboard input
+    // profiles get keyboard input
+    [mainWindow makeFirstResponder:[profileController tableView]];
 }
 
 - (IBAction)createButton:(id)sender
@@ -57,8 +105,10 @@ static MyController *me; // needed by reloadTable and displayStatus, below
     [preferencesController reset];
     [mainWindow setContentView:blankView];
     [self resizeWindowToSize:preferencesSize];
-    [mainWindow setContentMinSize:NSMakeSize(400,NSHeight([[mainWindow contentView] frame]))];
-    [mainWindow setContentMaxSize:NSMakeSize(FLT_MAX,NSHeight([[mainWindow contentView] frame]))];
+    [mainWindow setContentMinSize:
+        NSMakeSize(400,NSHeight([[mainWindow contentView] frame]))];
+    [mainWindow setContentMaxSize:
+        NSMakeSize(FLT_MAX,NSHeight([[mainWindow contentView] frame]))];
     [mainWindow setContentView:preferencesView];
     [toolbar setView:@"preferencesView"];
 }
@@ -66,7 +116,8 @@ static MyController *me; // needed by reloadTable and displayStatus, below
 - (IBAction)saveProfileButton:(id)sender
 {
     if ([preferencesController validatePrefs]) {
-        [profileController initProfiles]; // so the list contains the new profile
+        // so the list contains the new profile
+        [profileController initProfiles];
         [self chooseProfiles];
     }
 }
@@ -76,126 +127,40 @@ static MyController *me; // needed by reloadTable and displayStatus, below
     [self chooseProfiles];
 }
 
-- (void)updateReconItems
+/* Only valid once a profile has been selected */
+- (NSString *)profile
 {
-    [reconItems release];
-    reconItems = [[NSMutableArray alloc] init];
-    int j = 0;
-    int n = Wosize_val(caml_reconItems);
-    for (; j<n; j++) {
-        [reconItems 
-            insertObject:[ReconItem initWithRiAndIndex:Field(caml_reconItems,j) index:j]
-            atIndex:j];
-    }
-	
-    // Only enable sync if there are reconitems
-    if ([reconItems count]>0) {
-        [tableView setEditable:YES];
-
-        // reconItems table gets keyboard input
-        [mainWindow makeFirstResponder:tableView];
-
-        // Make sure details get updated
-        [self tableViewSelectionDidChange:[NSNotification init]];
-        syncable = YES;
-    }
-    else {
-        [tableView setEditable:NO];
-
-        // reconItems table no longer gets keyboard input
-        [mainWindow makeFirstResponder:nil];
-    }
+    return myProfile;
 }
 
-- (void)displayDetails:(int)i
+- (void)profileSelected:(NSString *)aProfile
 {
-    if (i >= 0 && i < [reconItems count])
-        {
-        [detailsTextView setFont:[NSFont fontWithName:@"Monaco" size:10]];
-        [detailsTextView setString:[[reconItems objectAtIndex:i] details]];
-    }
-}
-- (void)clearDetails
-{
-    [detailsTextView setString:@""];
+    [aProfile retain];
+    [myProfile release];
+    myProfile = aProfile;
+    [updatesText setStringValue:
+        [NSString stringWithFormat:@"Synchronizing profile '%@'", myProfile]];
 }
 
-- (void)doUpdateThread:(id)whatever
+- (IBAction)restartButton:(id)sender
 {
-    NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
-    preconn = Val_unit; // so old preconn can be garbage collected
-    value *f = caml_named_value("unisonInit2");
-    caml_reconItems = Callback_checkexn(*f, Val_unit);
-    [pool release];
+    [tableView setEditable:NO];
+    [self chooseProfiles];
 }
 
-- (void)afterUpdate:(NSNotification *)notification
+- (IBAction)rescan:(id)sender
 {
-    [[NSNotificationCenter defaultCenter] removeObserver:self
-        name:NSThreadWillExitNotification
-        object:nil];
-	[notificationController updateFinishedFor:[self profile]];
-    [self updateReconItems];
-
-    // label the left and right columns with the roots
-    NSTableHeaderCell *left = [[[tableView tableColumns] objectAtIndex:0] headerCell];
-    value *f = caml_named_value("unisonFirstRootString");
-    [left setObjectValue:[NSString stringWithCString:String_val(Callback_checkexn(*f, Val_unit))]];
-    NSTableHeaderCell *right = [[[tableView tableColumns] objectAtIndex:2] headerCell];
-    f = caml_named_value("unisonSecondRootString");
-    [right setObjectValue:[NSString stringWithCString:String_val(Callback_checkexn(*f, Val_unit))]];
-
-    // cause scrollbar to display if necessary
-    [tableView reloadData];
-
-    [tableView sortReconItemsByColumn:[tableView tableColumnWithIdentifier:@"direction"]];
-    
-    // have to select after reload for it to stick
-    if ([reconItems count] > 0)
-        [tableView selectRow:0 byExtendingSelection:NO];
-
-    // activate menu items
-    // this should depend on the number of reconitems, and is now done
-    // in updateReconItems
-    //[tableView setEditable:YES];
-   
-   [self forceUpdatesViewRefresh];
-}
-
-- (void)afterOpen:(NSNotification *)notification
-{
-    [[NSNotificationCenter defaultCenter] removeObserver:self
-        name:NSThreadWillExitNotification
-        object:nil];
-
     [self afterOpen];
 }
 
-- (void)afterOpen
+- (IBAction)openButton:(id)sender
 {
-    // move to updates window after clearing it
-    [self clearDetails];
-    [reconItems release];
-    reconItems = nil;
-    [mainWindow setContentView:blankView];
-    [self resizeWindowToSize:updatesSize];
-    [mainWindow setContentMinSize:NSMakeSize(NSWidth([[mainWindow contentView] frame]),200)];
-    [mainWindow setContentMaxSize:NSMakeSize(FLT_MAX, FLT_MAX)];
-    [mainWindow setContentView:updatesView];
-    [toolbar setView:@"updatesView"];
-    syncable = NO;
-
-    // this should depend on the number of reconitems, and is now done
-    // in updateReconItems:
-    // reconItems table gets keyboard input
-    //[mainWindow makeFirstResponder:tableView];
-    [tableView scrollRowToVisible:0];
-
-    [[NSNotificationCenter defaultCenter] addObserver:self
-        selector:@selector(afterUpdate:)
-        name:NSThreadWillExitNotification object:nil];
-    [NSThread detachNewThreadSelector:@selector(doUpdateThread:)
-        toTarget:self withObject:nil];
+    NSString *profile = [profileController selected];
+    [self profileSelected:profile];
+    const char *s = [profile cString];
+    value caml_s = caml_copy_string(s);
+    [self connect:caml_s];
+    return;
 }
 
 - (void)connect:(value)profileName
@@ -248,111 +213,11 @@ static MyController *me; // needed by reloadTable and displayStatus, below
         [pool release];
         return;
     }
-    [self raisePasswordWindow:[NSString stringWithCString:String_val(Field(prompt,0))]];
+    [self raisePasswordWindow:
+        [NSString stringWithCString:String_val(Field(prompt,0))]];
     
     NSLog(@"Connected.");
     [pool release];
-}
-
-- (IBAction)openButton:(id)sender
-{
-    NSString *profile = [profileController selected];
-    [self profileSelected:profile];
-    const char *s = [profile cString];
-    value caml_s = caml_copy_string(s);
-    [self connect:caml_s];
-    return;
-}
-
-- (IBAction)restartButton:(id)sender
-{
-    [tableView setEditable:NO];
-    [self chooseProfiles];
-}
-
-- (IBAction)rescan:(id)sender
-{
-    [self afterOpen];
-}
-
-- (void)doSyncThread:(id)whatever
-{
-    NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
-    value *f = caml_named_value("unisonSynchronize");
-    Callback_checkexn(*f, Val_unit);
-    [pool release];
-}
-
-- (void)afterSync:(NSNotification *)notification
-{
-    [[NSNotificationCenter defaultCenter] removeObserver:self
-        name:NSThreadWillExitNotification
-        object:nil];
-    [notificationController syncFinishedFor:[self profile]];
-    duringSync = NO;
-
-    [self forceUpdatesViewRefresh];
-
-    int i;
-    for (i = 0; i < [reconItems count]; i++) {
-        [[reconItems objectAtIndex:i] resetProgress];
-    }
-    [tableView reloadData];
-}
-
-- (IBAction)syncButton:(id)sender
-{
-    [tableView setEditable:NO];
-    syncable = NO;
-    duringSync = YES;
-    
-    [[NSNotificationCenter defaultCenter] addObserver:self
-        selector:@selector(afterSync:)
-        name:NSThreadWillExitNotification object:nil];
-    [NSThread detachNewThreadSelector:@selector(doSyncThread:)
-        toTarget:self withObject:nil];
-}
-
-- (void)updateTableView:(int)i
-{
-    [[reconItems objectAtIndex:i] resetProgress];
-    [tableView reloadData]; // FIX: can we redisplay just row i?
-}
-
-// A function called from ocaml
-CAMLprim value reloadTable(value row)
-{
-    int i = Int_val(row);
-    [me updateTableView:i]; // we need 'me' to access its instance variables
-    return Val_unit;
-}
-
-- (int)numberOfRowsInTableView:(NSTableView *)aTableView
-{
-    if (!reconItems) return 0;
-    else return [reconItems count];
-}
-
-- (id)tableView:(NSTableView *)aTableView
-    objectValueForTableColumn:(NSTableColumn *)aTableColumn
-    row:(int)rowIndex
-{
-    if (!reconItems) {
-        return @"[internal error]";
-    }
-    if (rowIndex >= 0 && rowIndex < [reconItems count]) {
-        NSString *identifier = [aTableColumn identifier];
-        ReconItem *ri = [reconItems objectAtIndex:rowIndex];
-        NSObject *s = [ri valueForKey:identifier];
-        return s;
-    }
-    else return @"[internal error!]";
-}
-- (void)tableViewSelectionDidChange:(NSNotification *)note
-{
-    int n = [tableView numberOfSelectedRows];
-    if (n == 1) [self displayDetails:[tableView selectedRow]];
-    else [self clearDetails];
 }
 
 - (void)raisePasswordWindow:(NSString *)prompt
@@ -362,7 +227,7 @@ CAMLprim value reloadTable(value row)
     value *f = caml_named_value("unisonPasswordMsg");
     value v = Callback_checkexn(*f, caml_copy_string([prompt cString]));
     if (v == Val_true) {
-	[passwordPrompt setStringValue:@"Please enter your password"];
+        [passwordPrompt setStringValue:@"Please enter your password"];
         [NSApp beginSheet:passwordWindow
             modalForWindow:mainWindow
             modalDelegate:nil
@@ -373,7 +238,7 @@ CAMLprim value reloadTable(value row)
     f = caml_named_value("unisonPassphraseMsg");
     v = Callback_checkexn(*f, caml_copy_string([prompt cString]));
     if (v == Val_true) {
-	[passwordPrompt setStringValue:@"Please enter your passphrase"];
+        [passwordPrompt setStringValue:@"Please enter your passphrase"];
         [NSApp beginSheet:passwordWindow
             modalForWindow:mainWindow
             modalDelegate:nil
@@ -397,7 +262,8 @@ CAMLprim value reloadTable(value row)
                 return;
             }
             else {
-                [self raisePasswordWindow:[NSString stringWithCString:String_val(Field(prompt,0))]];
+                [self raisePasswordWindow:
+                    [NSString stringWithCString:String_val(Field(prompt,0))]];
                 return;
             }
         }
@@ -417,6 +283,7 @@ CAMLprim value reloadTable(value row)
     f = caml_named_value("openConnectionCancel");
     Callback_checkexn(*f, preconn);
 }
+
 // The password window will invoke this when Enter occurs, b/c we
 // are the delegate.
 - (void)controlTextDidEndEditing:(NSNotification *)notification
@@ -450,24 +317,216 @@ CAMLprim value reloadTable(value row)
         f = caml_named_value("openConnectionEnd");
         Callback_checkexn(*f, preconn);
     }
-    else [self raisePasswordWindow:[NSString stringWithCString:String_val(Field(prompt,0))]];
+    else [self raisePasswordWindow:
+        [NSString stringWithCString:String_val(Field(prompt,0))]];
 }
 
-- (IBAction)raiseAboutWindow:(id)sender
+- (void)afterOpen:(NSNotification *)notification
 {
-    [aboutWindow makeKeyAndOrderFront:nil];
+    [[NSNotificationCenter defaultCenter] removeObserver:self
+        name:NSThreadWillExitNotification
+        object:nil];
+
+    [self afterOpen];
 }
 
-- (IBAction)onlineHelp:(id)sender
+- (void)afterOpen
 {
-	[[NSWorkspace sharedWorkspace]
-		openURL:[NSURL URLWithString:@"http://www.cis.upenn.edu/~bcpierce/unison/docs.html"]];
+    // move to updates window after clearing it
+    [self clearDetails];
+    [reconItems release];
+    reconItems = nil;
+    [mainWindow setContentView:blankView];
+    [self resizeWindowToSize:updatesSize];
+    [mainWindow setContentMinSize:
+        NSMakeSize(NSWidth([[mainWindow contentView] frame]),200)];
+    [mainWindow setContentMaxSize:NSMakeSize(FLT_MAX, FLT_MAX)];
+    [mainWindow setContentView:updatesView];
+    [toolbar setView:@"updatesView"];
+    syncable = NO;
+
+    // this should depend on the number of reconitems, and is now done
+    // in updateReconItems:
+    // reconItems table gets keyboard input
+    //[mainWindow makeFirstResponder:tableView];
+    [tableView scrollRowToVisible:0];
+
+    [[NSNotificationCenter defaultCenter] addObserver:self
+        selector:@selector(afterUpdate:)
+        name:NSThreadWillExitNotification object:nil];
+    [NSThread detachNewThreadSelector:@selector(doUpdateThread:)
+        toTarget:self withObject:nil];
 }
 
+- (void)doUpdateThread:(id)whatever
+{
+    NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+    preconn = Val_unit; // so old preconn can be garbage collected
+    value *f = caml_named_value("unisonInit2");
+    caml_reconItems = Callback_checkexn(*f, Val_unit);
+    [pool release];
+}
+
+- (void)afterUpdate:(NSNotification *)notification
+{
+    [[NSNotificationCenter defaultCenter] removeObserver:self
+        name:NSThreadWillExitNotification
+        object:nil];
+        [notificationController updateFinishedFor:[self profile]];
+    [self updateReconItems];
+
+    // label the left and right columns with the roots
+    NSTableHeaderCell *left = 
+        [[[tableView tableColumns] objectAtIndex:0] headerCell];
+    value *f = caml_named_value("unisonFirstRootString");
+    [left setObjectValue:[NSString stringWithCString:
+        String_val(Callback_checkexn(*f, Val_unit))]];
+
+    NSTableHeaderCell *right = 
+        [[[tableView tableColumns] objectAtIndex:2] headerCell];
+    f = caml_named_value("unisonSecondRootString");
+    [right setObjectValue:[NSString stringWithCString:
+        String_val(Callback_checkexn(*f, Val_unit))]];
+
+    // cause scrollbar to display if necessary
+    [tableView reloadData];
+
+    [tableView sortReconItemsByColumn:
+        [tableView tableColumnWithIdentifier:@"direction"]];
+    
+    // have to select after reload for it to stick
+    if ([reconItems count] > 0)
+        [tableView selectRow:0 byExtendingSelection:NO];
+
+    // activate menu items
+    // this should depend on the number of reconitems, and is now done
+    // in updateReconItems
+    //[tableView setEditable:YES];
+   
+   [self forceUpdatesViewRefresh];
+}
+
+- (IBAction)syncButton:(id)sender
+{
+    [tableView setEditable:NO];
+    syncable = NO;
+    duringSync = YES;
+    
+    [[NSNotificationCenter defaultCenter] addObserver:self
+        selector:@selector(afterSync:)
+        name:NSThreadWillExitNotification object:nil];
+    [NSThread detachNewThreadSelector:@selector(doSyncThread:)
+        toTarget:self withObject:nil];
+}
+
+- (void)doSyncThread:(id)whatever
+{
+    NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+    value *f = caml_named_value("unisonSynchronize");
+    Callback_checkexn(*f, Val_unit);
+    [pool release];
+}
+
+- (void)afterSync:(NSNotification *)notification
+{
+    [[NSNotificationCenter defaultCenter] removeObserver:self
+        name:NSThreadWillExitNotification
+        object:nil];
+    [notificationController syncFinishedFor:[self profile]];
+    duringSync = NO;
+
+    [self forceUpdatesViewRefresh];
+
+    int i;
+    for (i = 0; i < [reconItems count]; i++) {
+        [[reconItems objectAtIndex:i] resetProgress];
+    }
+    [tableView reloadData];
+}
+
+// A function called from ocaml
+CAMLprim value reloadTable(value row)
+{
+    int i = Int_val(row);
+    [me updateTableView:i]; // we need 'me' to access its instance variables
+    return Val_unit;
+}
+
+- (void)updateTableView:(int)i
+{
+    [[reconItems objectAtIndex:i] resetProgress];
+    [tableView reloadData]; // FIX: can we redisplay just row i?
+}
+
+- (int)numberOfRowsInTableView:(NSTableView *)aTableView
+{
+    if (!reconItems) return 0;
+    else return [reconItems count];
+}
+
+- (id)tableView:(NSTableView *)aTableView
+    objectValueForTableColumn:(NSTableColumn *)aTableColumn
+    row:(int)rowIndex
+{
+    if (!reconItems) {
+        return @"[internal error]";
+    }
+    if (rowIndex >= 0 && rowIndex < [reconItems count]) {
+        NSString *identifier = [aTableColumn identifier];
+        ReconItem *ri = [reconItems objectAtIndex:rowIndex];
+        NSObject *s = [ri valueForKey:identifier];
+        return s;
+    }
+    else return @"[internal error!]";
+}
+- (void)tableViewSelectionDidChange:(NSNotification *)note
+{
+    int n = [tableView numberOfSelectedRows];
+    if (n == 1) [self displayDetails:[tableView selectedRow]];
+    else [self clearDetails];
+}
+
+- (void)tableView:(NSTableView *)aTableView 
+    didClickTableColumn:(NSTableColumn *)tableColumn
+{
+    if ([aTableView isEqual:tableView])
+        [tableView sortReconItemsByColumn:tableColumn];
+}
 
 - (NSMutableArray *)reconItems // used in ReconTableView only
 {
     return reconItems;
+}
+
+- (void)updateReconItems
+{
+    [reconItems release];
+    reconItems = [[NSMutableArray alloc] init];
+    int j = 0;
+    int n = Wosize_val(caml_reconItems);
+    for (; j<n; j++) {
+        [reconItems insertObject:
+            [ReconItem initWithRiAndIndex:Field(caml_reconItems,j) index:j]
+            atIndex:j];
+    }
+      
+    // Only enable sync if there are reconitems
+    if ([reconItems count]>0) {
+        [tableView setEditable:YES];
+
+        // reconItems table gets keyboard input
+        [mainWindow makeFirstResponder:tableView];
+
+        // Make sure details get updated
+        [self tableViewSelectionDidChange:[NSNotification init]];
+        syncable = YES;
+    }
+    else {
+        [tableView setEditable:NO];
+
+        // reconItems table no longer gets keyboard input
+        [mainWindow makeFirstResponder:nil];
+    }
 }
 
 - (int)updateForIgnore:(int)i
@@ -480,11 +539,38 @@ CAMLprim value reloadTable(value row)
     return j;
 }
 
+// A function called from ocaml
+CAMLprim value displayStatus(value s)
+{
+    [me statusTextSet:[NSString stringWithCString:String_val(s)]];
+//    NSLog(@"dS: %s",String_val(s));
+    return Val_unit;
+}
+
 - (void)statusTextSet:(NSString *)s {
     if (!NSEqualRanges([s rangeOfString:@"reconitems"], 
-		      NSMakeRange(NSNotFound,0))) return;
+         NSMakeRange(NSNotFound,0))) return;
     [statusText setStringValue:s];
     [self forceUpdatesViewRefresh];
+}
+
+// Called from ocaml to display diff
+CAMLprim value displayDiff(value s, value s2)
+{
+    [me diffViewTextSet:
+        [NSString stringWithCString:String_val(s)]
+        bodyText:[NSString stringWithCString:String_val(s2)]];
+    return Val_unit;
+}
+
+// Called from ocaml to display diff error messages
+CAMLprim value displayDiffErr(value s)
+{
+    NSString * str = [NSString stringWithCString:String_val(s)];
+    str = [[str componentsSeparatedByString:@"\n"] 
+        componentsJoinedByString:@" "];
+    [me statusTextSet:str];
+    return Val_unit;
 }
 
 - (void)diffViewTextSet:(NSString *)title bodyText:(NSString *)body {
@@ -515,97 +601,28 @@ CAMLprim value reloadTable(value row)
    [diffWindow orderFront:nil];
 }
 
-// A function called from ocaml
-CAMLprim value displayStatus(value s)
+- (void)displayDetails:(int)i
 {
-    [me statusTextSet:[NSString stringWithCString:String_val(s)]];
-//    NSLog(@"dS: %s",String_val(s));
-    return Val_unit;
-}
-
-// Called from ocaml to display diff
-CAMLprim value displayDiff(value s, value s2)
-{
-    [me diffViewTextSet:
-        [NSString stringWithCString:String_val(s)]
-        bodyText:[NSString stringWithCString:String_val(s2)]];
-    return Val_unit;
-}
-
-// Called from ocaml to display diff error messages
-CAMLprim value displayDiffErr(value s)
-{
-    NSString * str = [NSString stringWithCString:String_val(s)];
-    str = [[str componentsSeparatedByString:@"\n"] componentsJoinedByString:@" "];
-    [me statusTextSet:str];
-//    [me statusTextSet:[NSString stringWithCString:String_val(s)]];
-    return Val_unit;
-}
-
-- (void)awakeFromNib
-{
-    /**** Initialize locals ****/
-    me = self;
-    chooseProfileSize = [chooseProfileView frame].size;
-    updatesSize = [updatesView frame].size;
-    preferencesSize = [preferencesView frame].size;
-    ConnectingSize = [ConnectingView frame].size;
-    blankView = [[NSView alloc] init];
-    /* Double clicking in the profile list will open the profile */
-    [[profileController tableView] setTarget:self];
-    [[profileController tableView] setDoubleAction:@selector(openButton:)];
-    /* Set up the version string in the about box.  We use a custom
-       about box just because PRCS doesn't seem capable of getting the
-       version into the InfoPlist.strings file; otherwise we'd use the
-       standard about box. */
-    value *f = NULL;
-    f = caml_named_value("unisonGetVersion");
-    [versionText setStringValue:
-		   [NSString stringWithCString:
-			       String_val(Callback_checkexn(*f, Val_unit))]];
-    doneFirstDiff = NO;
-    
-    /* Ocaml initialization */
-    // FIX: Does this occur before ProfileController awakeFromNib?
-    caml_reconItems = preconn = Val_int(0);
-    caml_register_global_root(&caml_reconItems);
-    caml_register_global_root(&preconn);
-
-    /* Command-line processing */
-    f = caml_named_value("unisonInit0");
-    value clprofile = Callback_checkexn(*f, Val_unit);
-
-    /* enable images in the direction column of the reconitems table */
-    NSImageCell * tPrototypeCell = [[NSImageCell alloc] init];
-    NSTableColumn * tColumn = [tableView  
-                   tableColumnWithIdentifier:@"direction"];
-    [tPrototypeCell setImageScaling:NSScaleNone];
-    [tColumn setDataCell:[tPrototypeCell autorelease]];
-    
-    /* Add toolbar */
-    toolbar = [[[UnisonToolbar alloc] initWithIdentifier: @"unisonToolbar"
-	:self :tableView] autorelease];
-    [mainWindow setToolbar: toolbar];
-
-    /* Set up the first window the user will see */
-    if (Is_block(clprofile)) {
-      /* A profile name was given on the command line */
-      value caml_profile = Field(clprofile,0);
-	  [self profileSelected:[NSString stringWithCString:String_val(caml_profile)]];
-
-      /* If invoked from terminal we need to bring the app to the front */
-      [NSApp activateIgnoringOtherApps:YES];
-      [mainWindow orderFront:self];
-
-      /* Start the connection */
-      [self connect:caml_profile];
+    if (i >= 0 && i < [reconItems count])
+        {
+        [detailsTextView setFont:[NSFont fontWithName:@"Monaco" size:10]];
+        [detailsTextView setString:[[reconItems objectAtIndex:i] details]];
     }
-    else {
-      /* If invoked from terminal we need to bring the app to the front */
-      [NSApp activateIgnoringOtherApps:YES];
-      /* Bring up the dialog to choose a profile */
-      [self chooseProfiles];
-    }
+}
+- (void)clearDetails
+{
+    [detailsTextView setString:@""];
+}
+
+- (IBAction)raiseAboutWindow:(id)sender
+{
+    [aboutWindow makeKeyAndOrderFront:nil];
+}
+
+- (IBAction)onlineHelp:(id)sender
+{
+    [[NSWorkspace sharedWorkspace]
+        openURL:[NSURL URLWithString:@"http://www.cis.upenn.edu/~bcpierce/unison/docs.html"]];
 }
 
 /* from http://developer.apple.com/documentation/Security/Conceptual/authorization_concepts/index.html */
@@ -614,7 +631,8 @@ CAMLprim value displayDiffErr(value s)
 - (IBAction)installCommandLineTool:(id)sender
 {
   /* Install the command-line tool in /usr/bin/unison.
-     Requires root privilege, so we ask for it and pass the task off to /bin/sh. */
+     Requires root privilege, so we ask for it and 
+     pass the task off to /bin/sh. */
 
   OSStatus myStatus;
 
@@ -644,7 +662,8 @@ CAMLprim value displayDiffErr(value s)
     // [bundle pathForResource:@"cltool" ofType:nil];
 
     if (exec_path == nil) return;
-    char *args[] = { "-f", (char *)[exec_path cString], "/usr/bin/unison", NULL };
+    char *args[] = { "-f", (char *)[exec_path cString], 
+		     "/usr/bin/unison", NULL };
 
     myFlags = kAuthorizationFlagDefaults;
     myStatus = AuthorizationExecuteWithPrivileges
@@ -656,42 +675,29 @@ CAMLprim value displayDiffErr(value s)
   /*
   if (myStatus == errAuthorizationCanceled)
     NSLog(@"The attempt was canceled\n");
-  else if (myStatus) NSLog(@"There was an authorization error: %ld\n", myStatus);
+  else if (myStatus) 
+      NSLog(@"There was an authorization error: %ld\n", myStatus);
   */
-}
-
-/* Only valid once a profile has been selected */
-- (NSString *)profile
-{
-	return myProfile;
-}
-
-- (void)profileSelected:(NSString *)aProfile
-{
-	[aProfile retain];
-	[myProfile release];
-	myProfile = aProfile;
-	[updatesText setStringValue:[NSString stringWithFormat:@"Synchronizing profile '%@'",
-										  myProfile]];
 }
 
 - (BOOL)validateItem:(IBAction *) action
 {
     if (action == @selector(syncButton:)) return syncable;
     // FIXME Restarting during sync is disabled because it causes UI corruption
-    else if ((action == @selector(restartButton:)) || (action == @selector(rescan:)))
+    else if ((action == @selector(restartButton:)) || 
+             (action == @selector(rescan:)))
         return !duringSync;
     else return YES;
 }
 
 - (BOOL)validateMenuItem:(NSMenuItem *)menuItem
 {
-	return [self validateItem:[menuItem action]];
+    return [self validateItem:[menuItem action]];
 }
 
 - (BOOL)validateToolbarItem:(NSToolbarItem *)toolbarItem
 {
-       return [self validateItem:[toolbarItem action]];
+    return [self validateItem:[toolbarItem action]];
 }
 
 - (void)forceUpdatesViewRefresh
@@ -703,9 +709,25 @@ CAMLprim value displayDiffErr(value s)
     [updatesView display];
 }
 
-- (void)tableView:(NSTableView *)aTableView didClickTableColumn:(NSTableColumn *)tableColumn
+- (void)resizeWindowToSize:(NSSize)newSize
 {
-    if ([aTableView isEqual:tableView]) [tableView sortReconItemsByColumn:tableColumn];
+    NSRect aFrame;
+
+    float newHeight = newSize.height;
+    float newWidth = newSize.width;
+
+    aFrame = [NSWindow contentRectForFrameRect:[mainWindow frame]
+                       styleMask:[mainWindow styleMask]];
+
+    aFrame.origin.y += aFrame.size.height;
+    aFrame.origin.y -= newHeight;
+    aFrame.size.height = newHeight;
+    aFrame.size.width = newWidth;
+
+    aFrame = [NSWindow frameRectForContentRect:aFrame
+                       styleMask:[mainWindow styleMask]];
+
+    [mainWindow setFrame:aFrame display:YES animate:YES];
 }
 
 @end
