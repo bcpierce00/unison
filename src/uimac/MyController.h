@@ -50,6 +50,9 @@
     IBOutlet NSWindow *aboutWindow;
     IBOutlet NSTextField *versionText;
 
+    IBOutlet NSProgressIndicator *progressBar;
+    double newProgress;
+
     IBOutlet NotificationController *notificationController;
 
     BOOL syncable;
@@ -111,6 +114,7 @@
 - (int)updateForIgnore:(int)i;
 
 - (void)statusTextSet:(NSString *)s;
+- (void)setGlobalProgressToValue:(double) progress;
 - (void)diffViewTextSet:(NSString *)title bodyText:(NSString *)body;
 - (void)displayDetails:(int)i;
 - (void)clearDetails;

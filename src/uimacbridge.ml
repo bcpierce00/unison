@@ -21,7 +21,28 @@ let theState = ref [| |];;
 let unisonDirectory() = Fspath.toString Os.unisonDir
 ;;
 Callback.register "unisonDirectory" unisonDirectory;;
- 
+
+(* Global progress indicator, similar to uigtk2.m; *) 
+external displayGlobalProgress : float -> unit = "displayGlobalProgress";;
+
+let totalBytesToTransfer = ref Uutil.Filesize.zero;;
+let totalBytesTransferred = ref Uutil.Filesize.zero;;
+
+let showGlobalProgress b =
+  (* Concatenate the new message *)
+  totalBytesTransferred := Uutil.Filesize.add !totalBytesTransferred b;
+  let v = 
+    if !totalBytesToTransfer  = Uutil.Filesize.zero then 100.
+    else (Uutil.Filesize.percentageOfTotalSize
+       !totalBytesTransferred !totalBytesToTransfer)
+  in
+  displayGlobalProgress v;;
+
+let initGlobalProgress b =
+  totalBytesToTransfer := b;
+  totalBytesTransferred := Uutil.Filesize.zero;
+  showGlobalProgress Uutil.Filesize.zero;;
+
 (* Defined in MyController.m, used to redisplay the table
    when the status for a row changes *)
 external displayStatus : string -> unit = "displayStatus";;
@@ -44,6 +65,7 @@ let showProgress i bytes dbg =
       Printf.sprintf "%5s " (Uutil.Filesize.toString b)
     else Util.percent2string (Uutil.Filesize.percentageOfTotalSize b len) in
   item.statusMessage <- Some newstatus;
+  showGlobalProgress bytes;
 (* FIX: No status window in Mac version, see GTK version for how to do it *)
   reloadTable i;;
 
@@ -334,6 +356,12 @@ let unisonSynchronize () =
   else begin
     Trace.status "Propagating changes";
     Transport.logStart ();
+    let totalLength =
+      Array.fold_left
+        (fun l si -> Uutil.Filesize.add l (Common.riLength si.ri))
+        Uutil.Filesize.zero !theState in
+    displayGlobalProgress 0.;
+    initGlobalProgress totalLength;
     let t = Trace.startTimer "Propagating changes" in
     let im = Array.length !theState in
     let rec loop i actions pRiThisRound =
