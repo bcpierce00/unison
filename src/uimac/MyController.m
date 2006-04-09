@@ -29,6 +29,7 @@ static MyController *me; // needed by reloadTable and displayStatus, below
         doneFirstDiff = NO;
         newStatusText = [[NSMutableString alloc] initWithCapacity:1024];
         newProgress = 0.;
+        shouldResetSelection = NO;
 	
         /* Ocaml initialization */
         caml_reconItems = preconn = Val_int(0);
@@ -107,6 +108,10 @@ static MyController *me; // needed by reloadTable and displayStatus, below
         }
         else if ([[notification name] isEqual:@"tableViewNeedsUpdate"]) {
            [tableView reloadData];
+           if (shouldResetSelection) {
+               [tableView selectRow:0 byExtendingSelection:NO];
+               shouldResetSelection = NO;
+           }
            [updatesView setNeedsDisplay:YES];	    
         }
         else if ([[notification name] isEqual:@"toolbarNeedsUpdate"]) {
@@ -121,10 +126,6 @@ static MyController *me; // needed by reloadTable and displayStatus, below
 
 - (void)awakeFromNib
 {
-    chooseProfileSize = [chooseProfileView frame].size;
-    updatesSize = [updatesView frame].size;
-    preferencesSize = [preferencesView frame].size;
-    ConnectingSize = [ConnectingView frame].size;
     blankView = [[NSView alloc] init];
 
     /* Double clicking in the profile list will open the profile */
@@ -175,7 +176,7 @@ static MyController *me; // needed by reloadTable and displayStatus, below
 - (void)chooseProfiles
 {
     [mainWindow setContentView:blankView];
-    [self resizeWindowToSize:chooseProfileSize];
+    [self resizeWindowToSize:[chooseProfileView frame].size];
     [mainWindow setContentMinSize:
         NSMakeSize(NSWidth([[mainWindow contentView] frame]),150)];
     [mainWindow setContentMaxSize:NSMakeSize(FLT_MAX, FLT_MAX)];
@@ -189,7 +190,7 @@ static MyController *me; // needed by reloadTable and displayStatus, below
 {
     [preferencesController reset];
     [mainWindow setContentView:blankView];
-    [self resizeWindowToSize:preferencesSize];
+    [self resizeWindowToSize:[preferencesView frame].size];
     [mainWindow setContentMinSize:
         NSMakeSize(400,NSHeight([[mainWindow contentView] frame]))];
     [mainWindow setContentMaxSize:
@@ -257,7 +258,7 @@ static MyController *me; // needed by reloadTable and displayStatus, below
 
     // Switch to ConnectingView
     [mainWindow setContentView:blankView];
-    [self resizeWindowToSize:ConnectingSize];
+    [self resizeWindowToSize:[updatesView frame].size];
     [mainWindow setContentMinSize:NSMakeSize(150,150)];
     [mainWindow setContentMaxSize:NSMakeSize(FLT_MAX, FLT_MAX)];
     [mainWindow setContentView:ConnectingView];
@@ -431,7 +432,7 @@ static MyController *me; // needed by reloadTable and displayStatus, below
     [reconItems release];
     reconItems = nil;
     [mainWindow setContentView:blankView];
-    [self resizeWindowToSize:updatesSize];
+    [self resizeWindowToSize:[updatesView frame].size];
     [mainWindow setContentMinSize:
         NSMakeSize(NSWidth([[mainWindow contentView] frame]),200)];
     [mainWindow setContentMaxSize:NSMakeSize(FLT_MAX, FLT_MAX)];
@@ -492,17 +493,21 @@ static MyController *me; // needed by reloadTable and displayStatus, below
     f = caml_named_value("unisonSecondRootString");
     [right setObjectValue:[NSString stringWithCString:
         String_val(Callback_checkexn(*f, Val_unit))]];
+    
+    [tableView sortReconItemsByColumn:
+        [tableView tableColumnWithIdentifier:@"direction"]];
 
     [[NSNotificationCenter defaultCenter]
         postNotificationName:@"tableViewNeedsUpdate"
         object:self];
-    
-    [tableView sortReconItemsByColumn:
-        [tableView tableColumnWithIdentifier:@"direction"]];
-    
-    // have to select after reload for it to stick
+
     if ([reconItems count] > 0)
-        [tableView selectRow:0 byExtendingSelection:NO];
+        shouldResetSelection = YES;
+
+    [[NSNotificationCenter defaultCenter]
+        postNotificationName:@"toolbarNeedsUpdate"
+        object:self];
+
 }
 
 - (IBAction)syncButton:(id)sender
@@ -599,8 +604,12 @@ CAMLprim value reloadTable(value row)
 - (void)tableView:(NSTableView *)aTableView 
     didClickTableColumn:(NSTableColumn *)tableColumn
 {
-    if ([aTableView isEqual:tableView])
+    if ([aTableView isEqual:tableView]) {
         [tableView sortReconItemsByColumn:tableColumn];
+        [[NSNotificationCenter defaultCenter]
+            postNotificationName:@"tableViewNeedsUpdate"
+            object:self];
+    }
 }
 
 - (NSMutableArray *)reconItems // used in ReconTableView only
@@ -662,6 +671,7 @@ CAMLprim value displayStatus(value s)
 }
 
 - (void)statusTextSet:(NSString *)s {
+    /* filter out strings with # reconitems, and empty strings */
     if (!NSEqualRanges([s rangeOfString:@"reconitems"], 
          NSMakeRange(NSNotFound,0))) return;
     /* store the new value and call the main thread 
@@ -838,7 +848,7 @@ CAMLprim value displayDiffErr(value s)
 {
     NSRect aFrame;
 
-    float newHeight = newSize.height;
+    float newHeight = newSize.height+[self toolbarHeightForWindow:mainWindow];
     float newWidth = newSize.width;
 
     aFrame = [NSWindow contentRectForFrameRect:[mainWindow frame]
@@ -853,6 +863,23 @@ CAMLprim value displayDiffErr(value s)
                        styleMask:[mainWindow styleMask]];
 
     [mainWindow setFrame:aFrame display:YES animate:YES];
+}
+
+- (float)toolbarHeightForWindow:(NSWindow *)window
+{
+    NSToolbar *aToolbar;
+    float toolbarHeight = 0.0;
+    NSRect windowFrame;
+
+    aToolbar = [window toolbar];
+    if(aToolbar && [aToolbar isVisible])
+    {
+        windowFrame = [NSWindow contentRectForFrameRect:[window frame]
+            styleMask:[window styleMask]];
+        toolbarHeight = NSHeight(windowFrame)
+            - NSHeight([[window contentView] frame]);
+    }
+    return toolbarHeight;
 }
 
 @end

@@ -266,8 +266,9 @@
     NSArray * tableColumns = [self tableColumns];
     int i;
     for (i=0; i<[tableColumns count]; i++) {
-        [self setIndicatorImage:NULL 
-	    inTableColumn:[tableColumns objectAtIndex:i]];
+        if (![[tableColumns objectAtIndex:i] isEqual:tableColumn])
+            [self setIndicatorImage:NULL 
+	        inTableColumn:[tableColumns objectAtIndex:i]];
     }
     
     /* Sort by the selected column, followed by ascending pathname order. 
@@ -285,7 +286,6 @@
 
     /* Update the column header indicator and redisplay the table */
     [self setIndicatorImage:indicatorImage inTableColumn:tableColumn];
-    [self reloadData];
 }
 
 /* Override default highlight colour because it's hard to see the 
