@@ -48,6 +48,7 @@
 
     BOOL syncable;
     BOOL duringSync;	
+    BOOL afterSync;
 
     value caml_reconItems;
     NSMutableArray *reconItems;
