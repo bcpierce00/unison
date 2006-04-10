@@ -1,3 +1,11 @@
+CHANGES FROM VERSION 2.19.36
+
+Mac GUI: 
+* make sure progress bar always gets to the end
+* improve handing of reconitems with errors
+* fix window positioning
+
+-------------------------------
 CHANGES FROM VERSION 2.19.35
 
 Mac GUI:

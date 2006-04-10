@@ -431,6 +431,7 @@ let unisonSynchronize () =
     Trace.status
       (Printf.sprintf "Synchronization complete         %s%s%s"
          failures (if failures=""||skipped="" then "" else ", ") skipped);
+    initGlobalProgress Uutil.Filesize.zero;
   end;;
 Callback.register "unisonSynchronize" unisonSynchronize;;
 
