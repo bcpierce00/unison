@@ -453,7 +453,8 @@ static MyController *me; // needed by reloadTable and displayStatus, below
 
     syncable = NO;
     afterSync = NO;
-    
+
+    [tableView deselectAll:self];
     [[NSNotificationCenter defaultCenter]
         postNotificationName:@"toolbarNeedsUpdate"
         object:self];
