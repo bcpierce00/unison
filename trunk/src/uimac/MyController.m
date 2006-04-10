@@ -71,7 +71,6 @@ static MyController *me; // needed by reloadTable and displayStatus, below
     notificationLock   = [[NSLock alloc] init];
     notificationThread = [[NSThread currentThread] retain];
 
-
     notificationPort = [[NSMachPort alloc] init];
     [notificationPort setDelegate:self];
     [[NSRunLoop currentRunLoop] addPort:notificationPort
@@ -133,6 +132,12 @@ static MyController *me; // needed by reloadTable and displayStatus, below
 
 - (void)awakeFromNib
 {
+    // Window positioning
+    NSRect screenFrame = [[mainWindow screen] visibleFrame];
+    [mainWindow cascadeTopLeftFromPoint:
+        NSMakePoint(screenFrame.origin.x, 
+        screenFrame.origin.y+screenFrame.size.height)];
+    
     blankView = [[NSView alloc] init];
 
     /* Double clicking in the profile list will open the profile */
@@ -734,8 +739,8 @@ CAMLprim value displayDiffErr(value s)
    if (!doneFirstDiff) {
        /* On first open, position the diff window to the right of
        the main window, but without going off the mainwindow's screen */
-       float screenOriginX = [[mainWindow screen] frame].origin.x;
-       float screenWidth = [[mainWindow screen] frame].size.width;
+       float screenOriginX = [[mainWindow screen] visibleFrame].origin.x;
+       float screenWidth = [[mainWindow screen] visibleFrame].size.width;
        float mainOriginX = [mainWindow frame].origin.x;
        float mainOriginY = [mainWindow frame].origin.y;
        float mainWidth = [mainWindow frame].size.width;
@@ -770,6 +775,17 @@ CAMLprim value displayDiffErr(value s)
 
 - (IBAction)raiseAboutWindow:(id)sender
 {
+    NSRect mainWindowFrame = [mainWindow frame];
+    NSRect aboutWindowFrame = [aboutWindow frame];
+    
+    float aboutX = mainWindowFrame.origin.x + 
+        (mainWindowFrame.size.width - aboutWindowFrame.size.width)/2;
+    float aboutY = mainWindowFrame.origin.y + 
+        (mainWindowFrame.size.height + aboutWindowFrame.size.height)/2;
+    
+    [aboutWindow cascadeTopLeftFromPoint:
+        NSMakePoint(aboutX,aboutY)];
+    
     [aboutWindow makeKeyAndOrderFront:nil];
 }
 

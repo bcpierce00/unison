@@ -91,44 +91,44 @@ extern value Callback2_checkexn(value,value,value);
     if ([dirString isEqual:@"<-?->"]) {
         if (changedFromDefault | resolved) {
             direction = [NSImage imageNamed: @"table-skip.tif"];
-	    directionSortString = @"2";
+	    directionSortString = @"3";
 	}
         else {
             direction = [NSImage imageNamed: @"table-conflict.tif"];
-	    directionSortString = @"1";
+	    directionSortString = @"2";
         }
     }
     
     else if ([dirString isEqual:@"---->"]) {
         if (changedFromDefault) {
             direction = [NSImage imageNamed: @"table-right-blue.tif"];
-            directionSortString = @"5";
+            directionSortString = @"6";
         }
 	else {
             direction = [NSImage imageNamed: @"table-right-green.tif"];
-            directionSortString = @"7";
+            directionSortString = @"8";
         }
     }
     
     else if ([dirString isEqual:@"<----"]) {
         if (changedFromDefault) {
             direction = [NSImage imageNamed: @"table-left-blue.tif"];
-            directionSortString = @"4";
+            directionSortString = @"5";
         }
         else {
             direction = [NSImage imageNamed: @"table-left-green.tif"];
-            directionSortString = @"6";
+            directionSortString = @"7";
         }
     }
 
     else if ([dirString isEqual:@"<-M->"]) {
         direction = [NSImage imageNamed: @"table-merge.tif"];
-        directionSortString = @"3";
+        directionSortString = @"4";
     }
 
     else {
         direction = [NSImage imageNamed: @"table-error.tif"];
-        directionSortString = @"8";
+        directionSortString = @"1";
     }
     
     [direction retain];
