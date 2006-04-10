@@ -32,7 +32,8 @@ let showGlobalProgress b =
   (* Concatenate the new message *)
   totalBytesTransferred := Uutil.Filesize.add !totalBytesTransferred b;
   let v = 
-    if !totalBytesToTransfer  = Uutil.Filesize.zero then 100.
+    if !totalBytesToTransfer  = Uutil.Filesize.dummy then 0.
+    else if !totalBytesToTransfer  = Uutil.Filesize.zero then 100.
     else (Uutil.Filesize.percentageOfTotalSize
        !totalBytesTransferred !totalBytesToTransfer)
   in
@@ -90,6 +91,8 @@ let unisonInit0() =
   Trace.sendLogMsgsToStderr := false;
   (* Display progress in GUI *)
   Uutil.setProgressPrinter showProgress;
+  (* Initialise global progress so progress bar is not updated *)
+  initGlobalProgress Uutil.Filesize.dummy;
   (* Make sure we have a directory for archives and profiles *)
   Os.createUnisonDir();
   (* Extract any command line profile or roots *)
@@ -535,12 +538,23 @@ Callback.register "unisonExnInfo" unisonExnInfo;;
 external displayDiff : string -> string -> unit = "displayDiff";;
 external displayDiffErr : string -> unit = "displayDiffErr";;
 
+(* If only properties have changed, we can't diff or merge.
+   'Can't diff' is produced (uicommon.ml) if diff is attemped
+   when either side has PropsChanged *)
+let filesAreDifferent status1 status2 = 
+  match status1, status2 with
+   `PropsChanged, `Unchanged -> false
+  | `Unchanged, `PropsChanged -> false
+  | `PropsChanged, `PropsChanged -> false
+  | _, _ -> true;;
+
 (* check precondition for diff; used to disable diff button *)
 let canDiff ri = 
   match ri.ri.replicas with
     Problem _ -> false
-   | Different((`FILE, _, _, ui1),(`FILE, _, _, ui2), _, _) -> true
-   | Different _ -> false;;
+  | Different((`FILE, status1, _, _),(`FILE, status2, _, _), _, _) ->
+      filesAreDifferent status1 status2
+  | Different _ -> false;;
 Callback.register "canDiff" canDiff;;
 
 (* from Uicommon *)
@@ -551,16 +565,17 @@ let showDiffs ri printer errprinter id =
     Problem _ ->
       errprinter
         "Can't diff files: there was a problem during update detection"
-  | Different((`FILE, _, _, ui1), (`FILE, _, _, ui2), _, _) ->
-      let (root1,root2) = Globals.roots() in
-      begin
-        try Files.diff root1 p ui1 root2 p ui2 printer id
-        with Util.Transient e -> errprinter e
-      end
+  | Different((`FILE, status1, _, ui1), (`FILE, status2, _, ui2), _, _) ->
+      if filesAreDifferent status1 status2 then
+        (let (root1,root2) = Globals.roots() in
+         begin
+           try Files.diff root1 p ui1 root2 p ui2 printer id
+           with Util.Transient e -> errprinter e
+         end)
   | Different _ ->
       errprinter "Can't diff: path doesn't refer to a file in both replicas"
 
 let runShowDiffs ri i =
-  showDiffs ri.ri displayDiff displayDiffErr (Uutil.File.ofLine i);;
+  let file = Uutil.File.ofLine i in
+    showDiffs ri.ri displayDiff displayDiffErr file;;
 Callback.register "runShowDiffs" runShowDiffs;;
-

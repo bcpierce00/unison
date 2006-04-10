@@ -1,3 +1,11 @@
+CHANGES FROM VERSION 2.19.35
+
+Mac GUI:
+* Stop diff from affecting progress bar
+* Better validation of diff button
+* Fix threadsafety issue with rescan
+
+-------------------------------
 CHANGES FROM VERSION 2.19.34
 
 Mac GUI: Small fixes:

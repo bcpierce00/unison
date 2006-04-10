@@ -55,6 +55,10 @@ static MyController *me; // needed by reloadTable and displayStatus, below
         [[NSNotificationCenter defaultCenter] addObserver:self
             selector:@selector(processNotification:)
             name:@"progressBarNeedsUpdate" object:nil];
+
+        [[NSNotificationCenter defaultCenter] addObserver:self
+            selector:@selector(processNotification:)
+            name:@"tableViewSelectionDidChange" object:nil];
     }
     return self;
 }
@@ -107,12 +111,12 @@ static MyController *me; // needed by reloadTable and displayStatus, below
             [statusText setStringValue:newStatusText];
         }
         else if ([[notification name] isEqual:@"tableViewNeedsUpdate"]) {
-           [tableView reloadData];
-           if (shouldResetSelection) {
-               [tableView selectRow:0 byExtendingSelection:NO];
-               shouldResetSelection = NO;
-           }
-           [updatesView setNeedsDisplay:YES];	    
+            [tableView reloadData]; 
+            if (shouldResetSelection) {
+                [tableView selectRow:0 byExtendingSelection:NO];
+                shouldResetSelection = NO;
+            }
+            [updatesView setNeedsDisplay:YES];	    
         }
         else if ([[notification name] isEqual:@"toolbarNeedsUpdate"]) {
            [toolbar validateVisibleItems];
@@ -120,6 +124,9 @@ static MyController *me; // needed by reloadTable and displayStatus, below
         }
         else if ([[notification name] isEqual:@"progressBarNeedsUpdate"]) {
             [progressBar incrementBy:(newProgress - [progressBar doubleValue])];
+        }
+        else if ([[notification name] isEqual:@"tableViewSelectionDidChange"]) {
+            [self tableViewSelectionDidChange:notification];
         }
     }
 }
@@ -594,6 +601,7 @@ CAMLprim value reloadTable(value row)
     }
     else return @"[internal error!]";
 }
+
 - (void)tableViewSelectionDidChange:(NSNotification *)note
 {
     int n = [tableView numberOfSelectedRows];
@@ -637,7 +645,10 @@ CAMLprim value reloadTable(value row)
         [mainWindow makeFirstResponder:tableView];
 
         // Make sure details get updated
-        [self tableViewSelectionDidChange:[NSNotification init]];
+        [[NSNotificationCenter defaultCenter]
+            postNotificationName:@"tableViewSelectionDidChange"
+            object:self];
+
         syncable = YES;
     }
     else {
