@@ -203,6 +203,7 @@ extern value Callback2_checkexn(value,value,value);
     value *f = caml_named_value("unisonRiToProgress");
     progress = [NSString stringWithCString:String_val(Callback_checkexn(*f, ri))];
     [progress retain];
+    if ([progress isEqual:@"FAILED"]) [self updateDetails];
     return progress;
 }
 
@@ -216,7 +217,11 @@ extern value Callback2_checkexn(value,value,value);
 - (NSString *)details
 {
     if (details) return details;
-    
+    return [self updateDetails];
+}
+
+- (NSString *)updateDetails
+{
     value *f = caml_named_value("unisonRiToDetails");
     details = [NSString stringWithCString:String_val(Callback_checkexn(*f, ri))];
     [details retain];
