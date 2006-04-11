@@ -281,7 +281,9 @@ let unisonInit2 () =
 Callback.register "unisonInit2" unisonInit2;;
 
 let unisonRiToDetails ri =
-  (Path.toString ri.ri.path) ^ "\n" ^ (Uicommon.details2string ri.ri "  ");;
+  match ri.whatHappened with
+    Some (Util.Failed s) -> (Path.toString ri.ri.path) ^ "\n" ^ s
+  | _ -> (Path.toString ri.ri.path) ^ "\n" ^ (Uicommon.details2string ri.ri "  ");;
 Callback.register "unisonRiToDetails" unisonRiToDetails;;
 
 let unisonRiToPath ri = Path.toString ri.ri.path;;
@@ -482,10 +484,10 @@ let roots2niceStrings length = function
     (Util.truncateString host length, Util.truncateString "local" length)
  | _ -> assert false  (* BOGUS? *);;
 let unisonFirstRootString() =
-  let replica1, replica2 = roots2niceStrings 12 (Globals.roots()) in
+  let replica1, replica2 = roots2niceStrings 32 (Globals.roots()) in
   replica1;;
 let unisonSecondRootString() =
-  let replica1, replica2 = roots2niceStrings 12 (Globals.roots()) in
+  let replica1, replica2 = roots2niceStrings 32 (Globals.roots()) in
   replica2;;
 Callback.register "unisonFirstRootString" unisonFirstRootString;;
 Callback.register "unisonSecondRootString" unisonSecondRootString;;

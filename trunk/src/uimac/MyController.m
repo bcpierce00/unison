@@ -565,6 +565,11 @@ static MyController *me; // needed by reloadTable and displayStatus, below
     for (i = 0; i < [reconItems count]; i++) {
         [[reconItems objectAtIndex:i] resetProgress];
     }
+
+    [[NSNotificationCenter defaultCenter]
+        postNotificationName:@"tableViewSelectionDidChange"
+        object:self];
+
     [[NSNotificationCenter defaultCenter]
         postNotificationName:@"tableViewNeedsUpdate"
         object:self];

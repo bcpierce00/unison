@@ -28,6 +28,7 @@
 - (NSString *) progress;
 - (void)resetProgress;
 - (NSString *) details;
+- (NSString *)updateDetails;
 - (BOOL)isConflict;
 - (BOOL)changedFromDefault;
 - (void)revertDirection;
