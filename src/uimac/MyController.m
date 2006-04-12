@@ -28,6 +28,7 @@ static MyController *me; // needed by reloadTable and displayStatus, below
         me = self;
         doneFirstDiff = NO;
         newStatusText = [[NSMutableString alloc] initWithCapacity:1024];
+        newPasswordPrompt = [[NSMutableString alloc] initWithCapacity:1024];
         newProgress = 0.;
         shouldResetSelection = NO;
 	
@@ -59,6 +60,10 @@ static MyController *me; // needed by reloadTable and displayStatus, below
         [[NSNotificationCenter defaultCenter] addObserver:self
             selector:@selector(processNotification:)
             name:@"tableViewSelectionDidChange" object:nil];
+
+        [[NSNotificationCenter defaultCenter] addObserver:self
+            selector:@selector(processNotification:)
+            name:@"raisePasswordWindow" object:nil];
     }
     return self;
 }
@@ -126,6 +131,9 @@ static MyController *me; // needed by reloadTable and displayStatus, below
         }
         else if ([[notification name] isEqual:@"tableViewSelectionDidChange"]) {
             [self tableViewSelectionDidChange:notification];
+        }
+        else if ([[notification name] isEqual:@"raisePasswordWindow"]) {
+            [self raisePasswordWindow:notification];
         }
     }
 }
@@ -250,7 +258,10 @@ static MyController *me; // needed by reloadTable and displayStatus, below
 {
     /* There is a delay between turning off the button and it
        actually being disabled. Make sure we don't respond. */
-    if ([self validateItem:@selector(rescan:)]) [self afterOpen];
+    if ([self validateItem:@selector(rescan:)]) {
+        waitingForPassword = NO;
+        [self afterOpen];
+    }
 }
 
 - (IBAction)openButton:(id)sender
@@ -317,19 +328,26 @@ static MyController *me; // needed by reloadTable and displayStatus, below
         f = caml_named_value("openConnectionEnd");
         Callback_checkexn(*f, preconn);
         NSLog(@"Connected.");
+        waitingForPassword = NO;
         [pool release];
         return;
     }
-    [self raisePasswordWindow:
-        [NSString stringWithCString:String_val(Field(prompt,0))]];
+    waitingForPassword = YES;
+
+    [newPasswordPrompt 
+        setString:[NSString stringWithCString:String_val(Field(prompt,0))]];
+    [[NSNotificationCenter defaultCenter]
+        postNotificationName:@"raisePasswordWindow"
+        object:self];        
     
     NSLog(@"Connected.");
     [pool release];
 }
 
-- (void)raisePasswordWindow:(NSString *)prompt
+- (void)raisePasswordWindow:(NSNotification *)notification
 {
     // FIX: some prompts don't ask for password, need to look at it
+    NSString * prompt = newPasswordPrompt;
     NSLog(@"Got the prompt: '%@'",prompt);
     value *f = caml_named_value("unisonPasswordMsg");
     value v = Callback_checkexn(*f, caml_copy_string([prompt cString]));
@@ -366,11 +384,17 @@ static MyController *me; // needed by reloadTable and displayStatus, below
                 // all done with prompts, finish opening connection
                 f = caml_named_value("openConnectionEnd");
                 Callback_checkexn(*f, preconn);
+                waitingForPassword = NO;
+                [self afterOpen];
                 return;
             }
             else {
-                [self raisePasswordWindow:
-                    [NSString stringWithCString:String_val(Field(prompt,0))]];
+                [newPasswordPrompt 
+                    setString:[NSString 
+                    stringWithCString:String_val(Field(prompt,0))]];
+                [[NSNotificationCenter defaultCenter]
+                    postNotificationName:@"raisePasswordWindow"
+                    object:self];        
                 return;
             }
         }
@@ -423,9 +447,16 @@ static MyController *me; // needed by reloadTable and displayStatus, below
         // all done with prompts, finish opening connection
         f = caml_named_value("openConnectionEnd");
         Callback_checkexn(*f, preconn);
+        waitingForPassword = NO;
+        [self afterOpen];
     }
-    else [self raisePasswordWindow:
-        [NSString stringWithCString:String_val(Field(prompt,0))]];
+    else {
+        [newPasswordPrompt 
+            setString:[NSString stringWithCString:String_val(Field(prompt,0))]];
+        [[NSNotificationCenter defaultCenter]
+            postNotificationName:@"raisePasswordWindow"
+            object:self];
+    }
 }
 
 - (void)afterOpen:(NSNotification *)notification
@@ -439,6 +470,7 @@ static MyController *me; // needed by reloadTable and displayStatus, below
 
 - (void)afterOpen
 {
+    if (waitingForPassword) return;
     // move to updates window after clearing it
     [self clearDetails];
     [reconItems release];
