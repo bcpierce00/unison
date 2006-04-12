@@ -41,6 +41,8 @@
     IBOutlet NSTextField *passwordPrompt;
     IBOutlet NSTextField *passwordText;
     IBOutlet NSButton *passwordCancelButton;
+    BOOL waitingForPassword;
+    NSMutableString *newPasswordPrompt;
 
     IBOutlet NSWindow *aboutWindow;
     IBOutlet NSTextField *versionText;
@@ -83,7 +85,7 @@
 - (IBAction)openButton:(id)sender;
 - (void)connect:(value)profileName;
 - (void)doOpenThread:(id)whatever;
-- (void)raisePasswordWindow:(NSString *)prompt;
+- (void)raisePasswordWindow:(NSNotification *)notification;
 - (void)controlTextDidEndEditing:(NSNotification *)notification;
 - (IBAction)endPasswordWindow:(id)sender;
 - (void)afterOpen:(NSNotification *)notification;

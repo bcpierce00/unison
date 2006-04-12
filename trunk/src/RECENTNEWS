@@ -1,3 +1,8 @@
+CHANGES FROM VERSION 2.19.41
+
+Mac GUI: Fix password prompt
+
+-------------------------------
 CHANGES FROM VERSION 2.19.40
 
 Mac GUI: Don't open diff window if an external command is used
