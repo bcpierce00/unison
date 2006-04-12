@@ -739,6 +739,7 @@ CAMLprim value displayDiffErr(value s)
 }
 
 - (void)diffViewTextSet:(NSString *)title bodyText:(NSString *)body {
+   if ([body length]==0) return;
    [diffWindow setTitle:title];
    [diffView setFont:[NSFont fontWithName:@"Monaco" size:10]];
    [diffView setString:body];
