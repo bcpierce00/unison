@@ -27,10 +27,23 @@ extern value Callback2_checkexn(value,value,value);
     index = i;
 }
 
+- (BOOL)selected
+{
+    return selected;
+}
+
+- (void)setSelected:(BOOL)x
+{
+    selected = x;
+}
+
 - init
 {
-    if ((self = [super init]))
+    if ((self = [super init])) {
         resolved = NO;
+        selected = NO; // NB only used/updated during sorts. Not a 
+                       // reliable indicator of whether item is selected
+    }
 
     return self;
 }

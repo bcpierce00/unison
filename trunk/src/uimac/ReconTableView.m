@@ -282,7 +282,24 @@
     NSArray *sortDescriptors=[NSArray 
 	arrayWithObjects:colDescriptor, pathDescriptor,  nil];
 
+    /* Remember which rows are selected */
+    NSIndexSet * selectedRows = [self selectedRowIndexes];
+    for (i=0; i<[reconItems count]; i++) {
+        if ([selectedRows containsIndex:i])
+            [[reconItems objectAtIndex:i] setSelected:YES];
+        else
+            [[reconItems objectAtIndex:i] setSelected:NO];
+    }
+
+    /* Sort */
     [reconItems setArray:[reconItems sortedArrayUsingDescriptors:sortDescriptors]];
+
+    /* Reselect the rows */
+    [self deselectAll:self];
+    for (i=0; i<[reconItems count]; i++) {
+        if ([[reconItems objectAtIndex:i] selected])
+            [self selectRow:i byExtendingSelection:YES];
+    }
 
     /* Update the column header indicator and redisplay the table */
     [self setIndicatorImage:indicatorImage inTableColumn:tableColumn];
