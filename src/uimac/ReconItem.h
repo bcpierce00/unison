@@ -16,7 +16,10 @@
     value ri; // an ocaml Common.reconItem
     value index; // ocaml value indicating index in Ri list
     BOOL resolved;
+    BOOL selected;
 }
+- (BOOL)selected;
+- (void)setSelected:(BOOL)x;
 + (id)initWithRiAndIndex:(value)v index:(int)i;
 - (NSString *) path;
 - (NSString *) left;
