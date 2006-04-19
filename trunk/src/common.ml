@@ -162,7 +162,13 @@ let fileInfos ui1 ui2 =
     (Updates (File (desc1, ContentsUpdated (fp1, _, ress1)),
               Previous (`FILE, desc2, fp2, ress2)),
      NoUpdates)
+  | (Updates (File (desc1, ContentsUpdated (fp1, _, ress1)),
+              Previous (`FILE, desc2, fp2, ress2)),
+     Updates (File (_, ContentsSame), _))
   | (NoUpdates,
+     Updates (File (desc2, ContentsUpdated (fp2, _, ress2)),
+              Previous (`FILE, desc1, fp1, ress1)))
+  | (Updates (File (_, ContentsSame), _),
      Updates (File (desc2, ContentsUpdated (fp2, _, ress2)),
               Previous (`FILE, desc1, fp1, ress1)))
   | (Updates (File (desc1, ContentsUpdated (fp1, _, ress1)), _),

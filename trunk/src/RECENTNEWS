@@ -1,3 +1,9 @@
+CHANGES FROM VERSION 2.19.42
+
+Enable diff if file contents have changed in one replica, but
+only properties in the other (all platforms)
+
+-------------------------------
 CHANGES FROM VERSION 2.19.41
 
 Mac GUI: Fix password prompt
