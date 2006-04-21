@@ -14,7 +14,7 @@
     NSString *progress;
     NSString *details;
     value ri; // an ocaml Common.reconItem
-    value index; // ocaml value indicating index in Ri list
+    int index; // index in Ri list
     BOOL resolved;
     BOOL selected;
 }
