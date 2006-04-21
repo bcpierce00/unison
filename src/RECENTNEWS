@@ -1,3 +1,9 @@
+CHANGES FROM VERSION 2.19.43
+
+Mac GUI: Fix 'Get Info' information
+         Fix index declaration in ReconItem.h
+
+-------------------------------
 CHANGES FROM VERSION 2.19.42
 
 Enable diff if file contents have changed in one replica, but
