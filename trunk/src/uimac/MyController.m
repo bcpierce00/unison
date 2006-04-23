@@ -20,6 +20,10 @@ extern value Callback2_checkexn(value,value,value);
 
 static MyController *me; // needed by reloadTable and displayStatus, below
 
+static int unset = 0;
+static int dontAsk = 1;
+static int doAsk = 2;
+
 - (id)init
 {
     if (([super init])) {
@@ -64,6 +68,13 @@ static MyController *me; // needed by reloadTable and displayStatus, below
         [[NSNotificationCenter defaultCenter] addObserver:self
             selector:@selector(processNotification:)
             name:@"raisePasswordWindow" object:nil];
+
+        /* By default, invite user to install cltool */
+        int pref = [[NSUserDefaults standardUserDefaults]
+            integerForKey:@"CheckCltool"]; 
+        if (pref==unset)
+            [[NSUserDefaults standardUserDefaults] 
+                setInteger:doAsk forKey:@"CheckCltool"];
     }
     return self;
 }
@@ -180,7 +191,6 @@ static MyController *me; // needed by reloadTable and displayStatus, below
 
         /* If invoked from terminal we need to bring the app to the front */
         [NSApp activateIgnoringOtherApps:YES];
-        [mainWindow orderFront:self];
 
         /* Start the connection */
         [self connect:caml_profile];
@@ -191,6 +201,16 @@ static MyController *me; // needed by reloadTable and displayStatus, below
         /* Bring up the dialog to choose a profile */
         [self chooseProfiles];
     }
+
+    [mainWindow display];
+    [mainWindow makeKeyAndOrderFront:nil];
+
+    /* unless user has clicked Don't ask me again, ask about cltool */
+    if ( ([[NSUserDefaults standardUserDefaults]
+            integerForKey:@"CheckCltool"]==doAsk) &&
+        (![[NSFileManager defaultManager]
+            fileExistsAtPath:@"/usr/bin/unison"]) )
+            [self raiseCltoolWindow:nil];
 }
 
 - (void)chooseProfiles
@@ -204,6 +224,7 @@ static MyController *me; // needed by reloadTable and displayStatus, below
     [toolbar setView:@"chooseProfileView"];
     // profiles get keyboard input
     [mainWindow makeFirstResponder:[profileController tableView]];
+    [chooseProfileView display];
 }
 
 - (IBAction)createButton:(id)sender
@@ -812,20 +833,72 @@ CAMLprim value displayDiffErr(value s)
     [detailsTextView setString:@""];
 }
 
+- (IBAction)raiseCltoolWindow:(id)sender
+{
+    int pref = [[NSUserDefaults standardUserDefaults]
+        integerForKey:@"CheckCltool"]; 
+    if (pref==doAsk)
+        [cltoolPref setState:NSOffState];
+    else
+        [cltoolPref setState:NSOnState];
+
+    [self raiseWindow: cltoolWindow];
+}
+
+- (IBAction)cltoolYesButton:(id)sender;
+{
+    if ([cltoolPref state]==NSOnState)
+        [[NSUserDefaults standardUserDefaults] 
+            setInteger:dontAsk forKey:@"CheckCltool"];
+    else
+        [[NSUserDefaults standardUserDefaults] 
+            setInteger:doAsk forKey:@"CheckCltool"];
+
+    [self installCommandLineTool:self];
+    [cltoolWindow close];
+}
+
+- (IBAction)cltoolNoButton:(id)sender;
+{
+    if ([cltoolPref state]==NSOnState)
+        [[NSUserDefaults standardUserDefaults] 
+            setInteger:dontAsk forKey:@"CheckCltool"];
+    else
+        [[NSUserDefaults standardUserDefaults] 
+            setInteger:doAsk forKey:@"CheckCltool"];
+
+    [cltoolWindow close];
+}
+
 - (IBAction)raiseAboutWindow:(id)sender
 {
+    [self raiseWindow: aboutWindow];
+}
+
+- (void)raiseWindow:(NSWindow *)theWindow
+{
+    NSRect screenFrame = [[mainWindow screen] visibleFrame];
     NSRect mainWindowFrame = [mainWindow frame];
-    NSRect aboutWindowFrame = [aboutWindow frame];
+    NSRect theWindowFrame = [theWindow frame];
     
-    float aboutX = mainWindowFrame.origin.x + 
-        (mainWindowFrame.size.width - aboutWindowFrame.size.width)/2;
-    float aboutY = mainWindowFrame.origin.y + 
-        (mainWindowFrame.size.height + aboutWindowFrame.size.height)/2;
+    float winX = mainWindowFrame.origin.x + 
+        (mainWindowFrame.size.width - theWindowFrame.size.width)/2;
+    float winY = mainWindowFrame.origin.y + 
+        (mainWindowFrame.size.height + theWindowFrame.size.height)/2;
+
+    if (winX<screenFrame.origin.x) winX=screenFrame.origin.x;
+    float maxX = screenFrame.origin.x+screenFrame.size.width-
+        theWindowFrame.size.width;
+    if (winX>maxX) winX=maxX;
+    float minY = screenFrame.origin.y+theWindowFrame.size.height;
+    if (winY<minY) winY=minY;
+    float maxY = screenFrame.origin.y+screenFrame.size.height;
+    if (winY>maxY) winY=maxY;
+
+    [theWindow cascadeTopLeftFromPoint:
+        NSMakePoint(winX,winY)];
     
-    [aboutWindow cascadeTopLeftFromPoint:
-        NSMakePoint(aboutX,aboutY)];
-    
-    [aboutWindow makeKeyAndOrderFront:nil];
+    [theWindow makeKeyAndOrderFront:nil];
 }
 
 - (IBAction)onlineHelp:(id)sender

@@ -22,12 +22,16 @@
         {
             ACTIONS = {
                 cancelProfileButton = id; 
+                cltoolNoButton = id; 
+                cltoolYesButton = id; 
                 createButton = id; 
                 endPasswordWindow = id; 
                 installCommandLineTool = id; 
                 onlineHelp = id; 
                 openButton = id; 
                 raiseAboutWindow = id; 
+                raiseCltoolWindow = id; 
+                raiseWindow = id; 
                 rescan = id; 
                 restartButton = id; 
                 saveProfileButton = id; 
@@ -39,6 +43,8 @@
                 ConnectingView = NSView; 
                 aboutWindow = NSWindow; 
                 chooseProfileView = NSView; 
+                cltoolPref = NSButton; 
+                cltoolWindow = NSWindow; 
                 detailsTextView = NSTextView; 
                 diffView = NSTextView; 
                 diffWindow = NSWindow; 
