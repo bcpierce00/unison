@@ -1,3 +1,9 @@
+CHANGES FROM VERSION 2.19.44
+
+Mac GUI: If it's not already installed, and she hasn't disabled this check,
+         invite the user to install the command-line tool during startup.
+
+-------------------------------
 CHANGES FROM VERSION 2.19.43
 
 Mac GUI: Fix 'Get Info' information

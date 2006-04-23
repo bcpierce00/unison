@@ -18,6 +18,9 @@
     IBOutlet NSWindow *mainWindow;
     UnisonToolbar *toolbar;
 
+    IBOutlet NSWindow *cltoolWindow;
+    IBOutlet NSButton *cltoolPref;
+
     IBOutlet ProfileController *profileController;
     IBOutlet NSView *chooseProfileView;
     NSString *myProfile;
@@ -117,7 +120,12 @@
 - (void)displayDetails:(int)i;
 - (void)clearDetails;
 
+- (IBAction)raiseCltoolWindow:(id)sender;
+- (IBAction)cltoolYesButton:(id)sender;
+- (IBAction)cltoolNoButton:(id)sender;
+
 - (IBAction)raiseAboutWindow:(id)sender;
+- (IBAction)raiseWindow:(NSWindow *)theWindow;
 - (IBAction)onlineHelp:(id)sender;
 - (IBAction)installCommandLineTool:(id)sender;
 
