@@ -62,7 +62,7 @@ let archive2string = function
    A is A' + A' + B', and the canonical archive name for root B is B' + A' +
    B'.
 
-   Currently, we determine A' + B' in during startup and store this in the
+   Currently, we determine A' + B' during startup and store this in the
    ref cell rootsName, below.  This rootsName is passed as an argument to
    functions that need to determine a canonical archive name.  Note, since
    we have a client/server architecture, there are TWO rootsName ref cells
@@ -71,7 +71,6 @@ let archive2string = function
    the server.  This is not good and we should get rid of the ref cell in
    the future; we have implemented it this way at first for historical
    reasons. *)
-
 
 let rootsName : string Prefs.t =
   Prefs.createString "rootsName" "" "*Canonical root names" ""
@@ -963,8 +962,8 @@ let t0 = ref 0.
 (* Note that we do *not* want to do any status displays from the server
    side, since this will cause the server to block until the client has
    finished its own update detection and can receive and acknowledge
-   the status display message -- effectively serializing the client and
-   server. *)
+   the status display message -- thus effectively serializing the client 
+   and server! *)
 let showStatusAddLength info =
   if not !Trace.runningasserver then begin
     let len1 = Props.length info.Fileinfo.desc in

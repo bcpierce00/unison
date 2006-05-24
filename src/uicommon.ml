@@ -88,7 +88,9 @@ let repeat =
     ("Setting this preference causes the text-mode interface to synchronize "
      ^ "repeatedly, rather than doing it just once and stopping.  If the "
      ^ "argument is a number, Unison will pause for that many seconds before "
-     ^ "beginning again.  If the argument is a path, Unison will wait for the "
+     ^ "beginning again.")
+
+(*   ^ "If the argument is a path, Unison will wait for the "
      ^ "file at this path---called a {\\em changelog}---to "
      ^ "be modified (on either the client or the server "
      ^ "machine), read the contents of the changelog (which should be a newline-"
@@ -100,7 +102,7 @@ let repeat =
      ^ "changed, write the changed pathname to its local changelog where Unison "
      ^ "will find it the next time it looks.  If the changelogs have not been "
      ^ "modified, Unison will wait, checking them again every few seconds."
-    )
+*)
 
 let retry =
   Prefs.createInt "retry" 0
@@ -129,9 +131,28 @@ let confirmmerge =
    *all* files would be marked new and this won't make sense to the user. *)
 let choose s1 s2 = if !Update.foundArchives then s1 else s2
 
+let showprev =
+  Prefs.createBool "showprev" false
+    "*Show previous properties, if they differ from current"
+    ""
+(* This produces nothing, unless the "showprev" preference is set.
+   This is because it tends to make the output too long and
+   annoying. *)
+
+let prevProps newprops ui =
+  if not (Prefs.read showprev) then ""
+  else match ui with
+    NoUpdates | Error _
+      -> ""
+  | Updates (_, New) ->
+      " (new)"
+  | Updates (_, Previous(_,oldprops,_,_)) ->
+      (* || Props.similar newprops oldprops *)
+      " (was: "^(Props.toString oldprops)^")"
+
 let replicaContent2string rc sep = 
-  let (typ, status, desc, _) = rc in
-  let d s = s ^ sep ^ Props.toString desc in
+  let (typ, status, desc, ui) = rc in
+  let d s = s ^ sep ^ Props.toString desc ^ prevProps desc ui in
   match typ, status with
     `ABSENT, `Unchanged ->
       "absent"
@@ -157,6 +178,7 @@ let replicaContent2string rc sep =
      d "changed dir      "
   | `DIRECTORY, `PropsChanged ->
      d "dir props changed" 
+
   (* Some cases that can't happen... *)
   | `ABSENT, (`Created | `Modified | `PropsChanged)
   | `SYMLINK, `PropsChanged
@@ -465,36 +487,33 @@ let initPrefs ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
   (* Check to be sure that there is at most one remote root *)
   let numRemote =
     Safelist.fold_left
-      (fun n (w,_) ->
-         match w with Local -> n | Remote _ -> n+1)
+      (fun n (w,_) -> match w with Local -> n | Remote _ -> n+1)
       0
       (Globals.rootsList()) in
       if numRemote > 1 then
         raise(Util.Fatal "cannot synchronize more than one remote root");
 
   (* If no paths were specified, then synchronize the whole replicas *)
-      if Prefs.read Globals.paths = [] then Prefs.set Globals.paths [Path.empty];
+  if Prefs.read Globals.paths = [] then Prefs.set Globals.paths [Path.empty];
 
   (* Expand any "wildcard" paths [with final component *] *)
-      Globals.expandWildcardPaths();
+  Globals.expandWildcardPaths();
 
-      Update.storeRootsName ();
+  Update.storeRootsName ();
 
-      debug
-  (fun() ->
-     Printf.eprintf "Roots: \n";
-     Safelist.iter (fun clr -> Printf.eprintf "        %s\n" clr)
-       (Globals.rawRoots ());
-     Printf.eprintf "  i.e. \n";
-     Safelist.iter (fun clr -> Printf.eprintf "        %s\n"
-                      (Clroot.clroot2string (Clroot.parseRoot clr)))
-       (Globals.rawRoots ());
-     Printf.eprintf "  i.e. (in canonical order)\n";
-     Safelist.iter (fun r -> 
-                      Printf.eprintf "       %s\n" (root2string r))
-       (Globals.rootsInCanonicalOrder());
-     Printf.eprintf "\n"
-  );
+  debug (fun() ->
+       Printf.eprintf "Roots: \n";
+       Safelist.iter (fun clr -> Printf.eprintf "        %s\n" clr)
+         (Globals.rawRoots ());
+       Printf.eprintf "  i.e. \n";
+       Safelist.iter (fun clr -> Printf.eprintf "        %s\n"
+                        (Clroot.clroot2string (Clroot.parseRoot clr)))
+         (Globals.rawRoots ());
+       Printf.eprintf "  i.e. (in canonical order)\n";
+       Safelist.iter (fun r -> 
+                        Printf.eprintf "       %s\n" (root2string r))
+         (Globals.rootsInCanonicalOrder());
+       Printf.eprintf "\n");
 
   Recon.checkThatPreferredRootIsValid();
   

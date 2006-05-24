@@ -252,12 +252,9 @@ let unisonInit2 () =
     let updates = Update.findUpdates () in
     Trace.showTimer t;
     updates in
-  let reconcile updates =
-    let t = Trace.startTimer "Reconciling" in
-    Recon.reconcileAll updates in
+  let reconcile updates = Recon.reconcileAll updates in
   let (reconItemList, thereAreEqualUpdates, dangerousPaths) =
     reconcile (findUpdates ()) in
-  Trace.showTimer t;
   if reconItemList = [] then
     if thereAreEqualUpdates then
       Trace.status "Replicas have been changed only in identical ways since last sync"

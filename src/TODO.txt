@@ -11,6 +11,8 @@ See the file BUGS.txt for a list of currently open bugs.
 SOON
 ====
 
+**** The third assertion in Remote.fill_buffer failed for me (BCP) during a transfer!
+
 **** Fix backup subsystem.
 
 **** When deleting a directory, we should *not* skip over Unison temp files

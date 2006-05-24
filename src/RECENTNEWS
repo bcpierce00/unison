@@ -1,3 +1,19 @@
+CHANGES FROM VERSION 2.20.0
+
+* Removed misleading documentation for 'repeat' preference.
+
+* The native OSX GUI now adds a scrollbar to the details window at the
+  bottom, when necessary to see (e.g.) long failure messages.  (Also
+  made it selectable.)  Made the starting window size a little larger.
+
+* When properties have changed, display both old and new ones.                  
+  (This behavior can be annoying, so it is controlled by a new flag,            
+  '-showprev', which is not visible to the user or mentioned in the             
+  documentation.  It's really just for debugging.)                              
+                                                                                
+* Tidied the output of '-debug all' to make it a little less                    
+  overwhelming.                                          
+-------------------------------
 CHANGES FROM VERSION 2.19.44
 
 Mac GUI: If it's not already installed, and she hasn't disabled this check,
@@ -258,22 +274,11 @@ CHANGES FROM VERSION 2.19.5
 * Fixed bug in stasher.ml that would cause backups to fail on Windows when
   the number of backup versions becomes equal to maxbackups.
 
-
--------------------------------
-CHANGES FROM VERSION 2.19.5
-
-* Converted the assertion failure reported by Eli Barzilay into an exception.
-
-* Fixed bug in stasher.ml that would cause backups to fail on Windows when
-  the number of backup versions becomes equal to maxbackups.
-
-
 -------------------------------
 CHANGES FROM VERSION 2.19.2
 
 * Fixed bug that would cause filenames CONTAINING (as opposed to BEGINNING WITH) a 
   string matching "backupprefix" to be ignored.
-
 
 -------------------------------
 CHANGES FROM VERSION 2.19.1
@@ -283,8 +288,6 @@ CHANGES FROM VERSION 2.19.1
   the stasher module and experimenting with its behavior, I'm still
   not very convinced that we're doing backups completely right -- looks
   like too many backup files are getting created.)
-
-
 
 -------------------------------
 CHANGES FROM VERSION 2.19.0
@@ -297,8 +300,6 @@ CHANGES FROM VERSION 2.19.-1
 
 * Bump minor version number
 
-
-
 -------------------------------
 CHANGES FROM VERSION 2.18.1
 
@@ -310,7 +311,6 @@ CHANGES FROM VERSION 2.18.1
 * The confirmation of "big deletes" is now controlled by a flag,
   -confirmbigdeletes.  Default is true, which gives the same behavior as
   previously.
-
 
 -------------------------------
 CHANGES FROM VERSION 2.18.0
@@ -339,7 +339,7 @@ of forcepatial and preferpartial.
 -------------------------------
 CHANGES FROM VERSION 2.17.6
 
-Applied patch from Alan Schmitt adding forcepatial and preferpartial
+Applied patch from Alan Schmitt adding forcepartial and preferpartial
 preferences, which behave like 'force' and 'prefer' but can be
 specified on a per-path basis (see documentation for details).
 
@@ -371,12 +371,6 @@ and menu items as appropriate.  Thanks to Ben Willmore.
 CHANGES FROM VERSION 2.17.3
 
 A couple of fixes for system-dependent compilation issues.
-
--------------------------------
-CHANGES FROM VERSION 2.17.2
-
-* Tiny fix to export procedure
-* Bump version number
 
 -------------------------------
 CHANGES FROM VERSION 2.17.1

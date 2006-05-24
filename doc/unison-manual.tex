@@ -96,6 +96,9 @@ with
     Sylvain Gommier, and
     Matthieu Goulay.
 %
+The Mac user interface was started by Trevor Jim and enormously improved by
+Ben Willmore. 
+%
 Our implementation of the
   \URL{http://samba.org/rsync/}{rsync}
   protocol was built by
@@ -111,13 +114,14 @@ Our implementation of the
 % Broder and Mike Burrows.}
 %
 The mirroring and merging functionality was implemented by
-  Sylvain Roy and improved by Malo Denielou.
+  Sylvain Roy, improved by Malo Denielou, and improved yet further by
+  St\'ephane Lescuyer.
 %
  \URL{http://wwwfun.kurims.kyoto-u.ac.jp/\home{garrigue}/}{Jacques Garrigue}
  contributed the original Gtk version of the user
   interface; the Gtk2 version was built by Stephen Tse. 
 %
- Sundar Balasubramaniam helped build a prototype implementation of
+Sundar Balasubramaniam helped build a prototype implementation of
 an earlier synchronizer in Java.
 \URL{http://www.cis.upenn.edu/\home{ishin}/}{Insik Shin}
 and
@@ -1472,8 +1476,7 @@ preference file {\tt workingset.prf} contains
     path = Mail/drafts
     include common
 \end{verbatim}
-causes Unison to synchronize just the subdirectories {\tt current/papers}
-and {\tt older/papers}.
+causes Unison to synchronize just the listed subdirectories.
 
 The {\tt key} preference can be used in combination with the graphical UI
 to quickly switch between different sets of paths.  For example, if the

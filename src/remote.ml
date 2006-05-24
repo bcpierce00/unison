@@ -13,8 +13,14 @@ let (>>=) = Lwt.bind
 
 let debug = Trace.debug "remote"
 let debugV = Trace.debug "verbose"
-let debugE = Trace.debug "remote_emit"
-let debugT = Trace.debug "thread"
+let debugE = Trace.debug "verbose"
+let debugT = Trace.debug "verbose"
+
+(* BCP: The previous definitions of the last two were like this:
+     let debugE = Trace.debug "remote_emit"
+     let debugT = Trace.debug "thread"
+   But that resulted in huge amounts of output from '-debug all'.
+*)
 
 let windowsHack = Sys.os_type <> "Unix"
 

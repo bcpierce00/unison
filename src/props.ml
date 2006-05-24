@@ -413,9 +413,9 @@ let similar t t' =
 let possible_deltas =
   [ -3601L; 3601L; -3600L; 3600L; -3599L; 3599L; -1L; 1L; 0L ]
 
-(*FIX: this is the right similar function (date are approximated
-   on FAT filesystems upward under Windows, downward under Linux)
-  The hash function needs to be updated as well *)
+(* FIX: this is the right similar function (dates are approximated
+   on FAT filesystems upward under Windows, downward under Linux).
+   The hash function needs to be updated as well *)
 let similar_correct t t' =
   not (Prefs.read sync)
     ||
