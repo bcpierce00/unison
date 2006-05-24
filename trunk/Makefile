@@ -65,7 +65,7 @@ else # Solaris
   EXPORTSTATIC=true
 endif
 endif
-  BCPHOME=/home/bcpierce
+  BCPHOME=$(HOME)
 endif
 endif
 
@@ -190,14 +190,13 @@ realexportnative:
 # Export developer sources  (normally run every night by a cron job on
 # saul.cis.upenn.edu; also as a last step of 'make checkin', when performed
 # by bcp.  Can also be run manually if needed.
-# NOTE: the svn checkout assumes this is being run on saul.
 
 DEVELDIR=$(EXPORTDIR)/download/resources/developers-only
 
 nightly:
 	($(RM) -r $(HOME)/tmp/unison; \
          cd $(HOME)/tmp; \
-	 svn co https://cvs.cis.upenn.edu:3690/svnroot/unison/trunk unison; \
+	 svn co https://svn.cis.upenn.edu/svnroot/unison/trunk unison; \
          cd $(HOME)/tmp/unison; \
          $(MAKE) exportdevel)
 
@@ -265,3 +264,10 @@ tools/ask: tools/ask.ml
 
 src/$(NAME):
 	$(MAKE) -C src
+
+bcpgrab:
+	-unison eniac -path current/unison/trunk -batch
+	ssh central-l.cis.upenn.edu "(cd current/unison/trunk; svn update)"
+	-unison eniac -path current/unison/trunk -batch
+	make
+

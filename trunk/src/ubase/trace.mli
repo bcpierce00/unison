@@ -57,6 +57,10 @@ val displayMessageLocally : msg -> unit
    client.) *)
 val messageForwarder : (msg -> unit) option ref
 
+(* Allow outside access to the logging preference, so that the main program
+   can turn it off by default *)
+val logging : bool Prefs.t
+
 
 (* ---------------------------------------------------------------------- *)
 (* Messages *)
