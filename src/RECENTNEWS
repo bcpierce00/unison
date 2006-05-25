@@ -1,3 +1,22 @@
+CHANGES FROM VERSION 2.20.1
+
+* Squashed a very insidious bug in the backup mechanism, which turned
+  out (after much puzzlement) to occur only when running under the Mac
+  GUI.  It seems that the Uimacbridge module includes its own private
+  copy of the initialization code from Uicommon (!), and so the
+  call to Stasher.initBackups that got added to Uicommon last summer
+  was not happening when running with the GUI.  This meant that the
+  internal processing of backupprefix and backupsuffix was not
+  happening, which meant that multiple backup files were getting
+  created with the same names, and this would cause backups to fail
+  occasionally (but not always).
+
+  Lesson: Don't duplicate code!!!
+
+
+
+
+-------------------------------
 CHANGES FROM VERSION 2.20.0
 
 * Removed misleading documentation for 'repeat' preference.

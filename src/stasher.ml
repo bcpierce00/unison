@@ -216,8 +216,8 @@ let addBackupFilesToIgnorePref () =
 
 (* We use references for functions that compute the prefixes and suffixes
    in order to avoid using functions from the Str module each time.       *)
-let prefix_string = ref (fun i -> "")
-let suffix_string = ref (fun i -> "")
+let prefix_string = ref (fun i -> assert false)
+let suffix_string = ref (fun i -> assert false)
     
 (* This function updates the function used to create prefixes and suffixes
    for naming backup files, according to the preferences. *)
@@ -225,10 +225,17 @@ let updatePrefixAndSuffix () =
   let sp = Prefs.read backupprefix in
   let suffix = Prefs.read backupsuffix in
   
-  let version i = Printf.sprintf "%03d" i in
+  let version i = assert (i<=999); Printf.sprintf "%03d" i in
   
-  let version_appears_once s mandatory=
+  if sp="" && suffix="" then
+    raise (Util.Fatal "backupprefix and backupsuffix should not both be empty");
+
+  let version_appears_once s mandatory =
     let regexp = Str.regexp "\\$VERSION" in
+    (* BCP: I don't understand the logic here.  If both backupprefix and backupsuffix 
+       were empty strings, wouldn't we fall into the first case twice and fail to report
+       this as an error?  For the moment, I have added an explicit test for this
+       condition above, but it feels like a hack. *)
     match Str.full_split regexp s with
       [] -> (fun _ -> "")
     | [Str.Text t] ->  
@@ -244,19 +251,22 @@ let updatePrefixAndSuffix () =
 	(fun i -> Printf.sprintf "%s%s%s" t (version i) t')
     | _ -> 
 	raise (Util.Fatal ("The tag $VERSION should only appear "
-			   ^"once in the backups(prefix|suffix) preferences."))
-  in
+			   ^"once in the backup(prefix|suffix) preferences."))
+    in
   
   let _ = version_appears_once (sp^suffix) true in
   prefix_string := version_appears_once sp false;
   suffix_string := version_appears_once suffix false;
-  debug (fun () -> 
-           Util.msg "Prefix and Suffix for backup filenames have been updated.\n")
+  debug (fun () -> Util.msg
+           "Prefix and Suffix for backup filenames have been updated.\n")
 	  
 (* Generates a file name for a backup file.  If backup file already exists,
    the old file will be renamed with the count incremented.  The newest
    backup file is always the one with version number 1, larger numbers mean
    older files. *)
+(* BCP: Note that the way we keep bumping up the backup numbers on all existing
+   backup files could make backups very expensive if someone sets maxbackups to a
+   sufficiently large number! *)
 let backupPath fspath path =
   let fspath = 
     match Prefs.read backuplocation with
@@ -266,13 +276,14 @@ let backupPath fspath path =
 			       ^ "or 'local'.")) in
   let rec f i =
     let (prefix, suffix) = (!prefix_string i, !suffix_string i) in
+    debug (fun() -> Util.msg "backupPath: prefix='%s' suffix='%s'\n" prefix suffix);
     let tempPath = 
       Path.addSuffixToFinalName 
 	(Path.addPrefixToFinalName path prefix) suffix in
     if Os.exists fspath tempPath then
       if i < Prefs.read maxbackups then
-        Os.rename fspath tempPath fspath (f (i + 1))
-      else if i = Prefs.read maxbackups then
+        Os.rename "backupPath" fspath tempPath fspath (f (i + 1))
+      else if i >= Prefs.read maxbackups then
         Os.delete fspath tempPath;
     tempPath in
   (fspath, f 1)
@@ -308,15 +319,16 @@ let removeAndBackupAsAppropriate fspath path fakeFspath fakePath =
       if shouldBackup fakePath then begin
 	let (backRoot, backPath) = backupPath fakeFspath fakePath in
 	(match Path.deconstructRev backPath with
-	  None -> ()
-	| Some (_, dir) when dir = Path.empty -> ()
-	| Some (_, backdir) -> mkdirectories backRoot backdir);
+                  None -> ()
+                | Some (_, dir) when dir = Path.empty -> ()
+                | Some (_, backdir) -> mkdirectories backRoot backdir);
 	debug (fun () -> Util.msg "Backing up [%s] in [%s] to [%s] in [%s]\n" 
 	    (Path.toString fakePath)
 	    (Fspath.toString fakeFspath)
 	    (Path.toString backPath)
 	    (Fspath.toString backRoot));
-	try Os.rename fspath path backRoot backPath
+	try
+          Os.rename "removeAndBackupAsAppropriate" fspath path backRoot backPath
 	with
 	  _ -> 
 	    ((let info = Fileinfo.get true fspath path in
@@ -336,7 +348,7 @@ let removeAndBackupAsAppropriate fspath path fakeFspath fakePath =
 	     Os.delete fspath path)
       end else begin
 	debug ( fun () -> Util.msg
-	    "File %s in %s will not be backed up.\n" 
+	    "File %s in %s is not intended to be backed up.\n" 
 	    (Path.toString fakePath) 
 	    (Fspath.toString fakeFspath));
 	Os.delete fspath path
@@ -397,7 +409,7 @@ let stashPath st fspath path =
 		(Fspath.toString tempfspath) (Path.toString path));
 	  let olBackup = findStash path 1 in
 	  if Os.exists tempfspath olBackup then Os.delete tempfspath olBackup;
-	  Os.rename tempfspath tempPath tempfspath olBackup
+	  Os.rename "stashPath" tempfspath tempPath tempfspath olBackup
 	end;
 	Some (tempfspath, tempPath)
       end else
@@ -508,6 +520,8 @@ let getRecentVersion fspath path fingerprint =
 (* This function initializes the Stasher module according to the preferences
    defined in the profile. It should be called whenever a profile is reloaded. *)
 let initBackupsLocal () =
+  debug (fun () -> Util.msg "initBackupsLocal called\n");
+
   translateOldPrefs ();
   updateRE ();
   addBackupFilesToIgnorePref ();
@@ -529,6 +543,4 @@ let initBackupsRoot: Common.root -> unit -> unit Lwt.t =
 
 let initBackups () =
   Lwt_unix.run (
-  Globals.allRootsIter
-    (fun r -> initBackupsRoot r ())
-    )
+    Globals.allRootsIter (fun r -> initBackupsRoot r ()))

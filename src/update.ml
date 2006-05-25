@@ -397,7 +397,6 @@ let fileUnchanged oldInfo newInfo =
 
 let archiveUnchanged fspath newInfo =
   let (arcName, thisRoot) = archiveName fspath MainArch in
-  let arcFspath = Os.fileInUnisonDir arcName in
   try
     fileUnchanged (Hashtbl.find archiveInfoCache thisRoot) newInfo
   with Not_found ->

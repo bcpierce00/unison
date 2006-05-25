@@ -434,6 +434,7 @@ let promptForRoots getFirstRoot getSecondRoot =
    we ignore the command line *)
 let firstTime = ref(true)
 
+(* BCP: WARNING: Some of the code from here is duplicated in uimacbridge...! *)
 let initPrefs ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
   ~termInteract =
   (* Restore prefs to their default values, if necessary *)

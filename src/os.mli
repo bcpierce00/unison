@@ -17,7 +17,7 @@ val childrenOf : Fspath.t -> Path.local -> Name.t list
 val readLink : Fspath.t -> Path.local -> string
 val symlink : Fspath.t -> Path.local -> string -> unit
 
-val rename : Fspath.t -> Path.local -> Fspath.t -> Path.local -> unit
+val rename : string -> Fspath.t -> Path.local -> Fspath.t -> Path.local -> unit
 val renameIfAllowed :
   Fspath.t -> Path.local -> Fspath.t -> Path.local -> exn option
 val createDir : Fspath.t -> Path.local -> Props.t -> unit
@@ -25,7 +25,7 @@ val delete : Fspath.t -> Path.local -> unit
 
 (* We define a new type of fingerprints here so that clients of
    Os.fingerprint do not need to worry about whether files have resource
-   forks or whatever that need to be fingerprinted separately.  They can
+   forks, or whatever, that need to be fingerprinted separately.  They can
    sensibly be compared for equality using =.  Internally, a fullfingerprint
    is a pair of the main file's fingerprint and the resource fork fingerprint,
    if any. *)

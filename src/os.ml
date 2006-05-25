@@ -146,13 +146,15 @@ and delete fspath path =
       | `ABSENT ->
           ())
     
-let rename sourcefspath sourcepath targetfspath targetpath =
+let rename fname sourcefspath sourcepath targetfspath targetpath =
   let source = Fspath.concat sourcefspath sourcepath in
   let source' = Fspath.toString source in
   let target = Fspath.concat targetfspath targetpath in
   let target' = Fspath.toString target in
+  if source' = target' then
+    raise (Util.Transient ("Rename ("^fname^"): identical source and target " ^ source'));
   Util.convertUnixErrorsToTransient
-  "renaming"
+    ("renaming " ^ source' ^ " to " ^ target')
     (fun () ->
       debug (fun() -> Util.msg "rename %s to %s\n" source' target');
       (!xferRename) (sourcefspath, sourcepath) (targetfspath, targetpath);

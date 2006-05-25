@@ -194,7 +194,7 @@ let renameLocal (root, (fspath, pathFrom, pathTo)) =
             Util.convertUnixErrorsToFatal "renaming with commit log"
               (fun () ->
                 debug (fun() -> Util.msg "rename %s to %s\n" source' target');
-                Os.rename source Path.empty target Path.empty;
+                Os.rename "renameLocal" source Path.empty target Path.empty;
                 Stasher.removeAndBackupAsAppropriate temp Path.empty root localTargetPath;
                 clearCommitLog())
         | Some e ->
@@ -205,7 +205,7 @@ let renameLocal (root, (fspath, pathFrom, pathTo)) =
       end else begin
         debug (fun() -> Util.msg "rename: moveFirst=false\n");
         Stasher.removeAndBackupAsAppropriate root localTargetPath root localTargetPath;
-        Os.rename source Path.empty target Path.empty;
+        Os.rename "renameLocal(2)" source Path.empty target Path.empty;
       end;
       Lwt.return ())
     

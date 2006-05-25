@@ -75,6 +75,7 @@ let unisonGetVersion() = Uutil.myVersion
 Callback.register "unisonGetVersion" unisonGetVersion;;
 
 (* snippets from Uicommon, duplicated for now *)
+(* BCP: Duplicating this is a bad idea!!! *)
 (* First initialization sequence *)
 (* Returns a string option: command line profile, if any *)
 let unisonInit0() =
@@ -237,6 +238,12 @@ let unisonInit2 () =
     (Uicommon.checkCaseSensitivity () >>=
      Globals.propagatePrefs);
 
+  (* Initializes some backups stuff according to the preferences just loaded from the profile.
+     Important to do it here, after prefs are propagated, because the function will also be
+     run on the server, if any. Also, this should be done each time a profile is reloaded
+     on this side, that's why it's here. *) 
+  Stasher.initBackups ();
+  
   (* Turn on GC messages, if the '-debug gc' flag was provided *)
   if Trace.enabled "gc" then Gc.set {(Gc.get ()) with Gc.verbose = 0x3F};
 
