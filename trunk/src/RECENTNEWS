@@ -1,3 +1,14 @@
+CHANGES FROM VERSION 2.20.2
+
+* Fixed a bug in merging code where Unison could sometimes deadlock
+  with the external merge program, if the latter produced large
+  amounts of output.
+
+* Improved the handling of merging in the Mac GUI: merge
+  results are now displayed in a separate window (like "diff") instead
+  of flashing past in the status line at the top.
+
+-------------------------------
 CHANGES FROM VERSION 2.20.1
 
 * Squashed a very insidious bug in the backup mechanism, which turned

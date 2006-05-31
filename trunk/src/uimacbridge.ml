@@ -252,7 +252,7 @@ let unisonInit2 () =
 
   (* from Uigtk2 *)
   (* detect updates and reconcile *)
-  let (r1,r2) = Globals.roots () in
+  let _ = Globals.roots () in
   let t = Trace.startTimer "Checking for updates" in
   let findUpdates () =
     Trace.status "Looking for changes";
@@ -359,6 +359,56 @@ let unisonRiToProgress ri =
   | (_,Some (Util.Failed s),_) -> "FAILED";;
 Callback.register "unisonRiToProgress" unisonRiToProgress;;
 
+(* --------------------------------------------------- *)
+
+(* Defined in MyController.m, used to show diffs *)
+external displayDiff : string -> string -> unit = "displayDiff";;
+external displayDiffErr : string -> unit = "displayDiffErr";;
+
+(* If only properties have changed, we can't diff or merge.
+   'Can't diff' is produced (uicommon.ml) if diff is attemped
+   when either side has PropsChanged *)
+let filesAreDifferent status1 status2 = 
+  match status1, status2 with
+   `PropsChanged, `Unchanged -> false
+  | `Unchanged, `PropsChanged -> false
+  | `PropsChanged, `PropsChanged -> false
+  | _, _ -> true;;
+
+(* check precondition for diff; used to disable diff button *)
+let canDiff ri = 
+  match ri.ri.replicas with
+    Problem _ -> false
+  | Different((`FILE, status1, _, _),(`FILE, status2, _, _), _, _) ->
+      filesAreDifferent status1 status2
+  | Different _ -> false;;
+Callback.register "canDiff" canDiff;;
+
+(* from Uicommon *)
+(* precondition: uc = File (Updates(_, ..) on both sides *)
+let showDiffs ri printer errprinter id =
+  let p = ri.path in
+  match ri.replicas with
+    Problem _ ->
+      errprinter
+        "Can't diff files: there was a problem during update detection"
+  | Different((`FILE, status1, _, ui1), (`FILE, status2, _, ui2), _, _) ->
+      if filesAreDifferent status1 status2 then
+        (let (root1,root2) = Globals.roots() in
+         begin
+           try Files.diff root1 p ui1 root2 p ui2 printer id
+           with Util.Transient e -> errprinter e
+         end)
+  | Different _ ->
+      errprinter "Can't diff: path doesn't refer to a file in both replicas"
+
+let runShowDiffs ri i =
+  let file = Uutil.File.ofLine i in
+    showDiffs ri.ri displayDiff displayDiffErr file;;
+Callback.register "runShowDiffs" runShowDiffs;;
+
+(* --------------------------------------------------- *)
+
 let unisonSynchronize () =
   if Array.length !theState = 0 then
     Trace.status "Nothing to synchronize"
@@ -383,10 +433,12 @@ let unisonSynchronize () =
                 return ()
               else
                 catch (fun () ->
-                         Transport.transportItem
-                           theSI.ri (Uutil.File.ofLine i)
-                           (fun proceed title text -> 
-			     Trace.status (Printf.sprintf "MERGE %s: %s" title text); proceed)
+                  Transport.transportItem
+                    theSI.ri (Uutil.File.ofLine i)
+                    (fun proceed title text -> 
+		       debug (fun () -> Util.msg "MERGE '%s': '%s'"
+                            title text);
+                       displayDiff title text; true)
                          >>= (fun () ->
                          return Util.Succeeded))
                       (fun e ->
@@ -541,48 +593,3 @@ let unisonExnInfo e =
   | _ -> Printexc.to_string e;;
 Callback.register "unisonExnInfo" unisonExnInfo;;
 
-(* Defined in MyController.m, used to show diffs *)
-external displayDiff : string -> string -> unit = "displayDiff";;
-external displayDiffErr : string -> unit = "displayDiffErr";;
-
-(* If only properties have changed, we can't diff or merge.
-   'Can't diff' is produced (uicommon.ml) if diff is attemped
-   when either side has PropsChanged *)
-let filesAreDifferent status1 status2 = 
-  match status1, status2 with
-   `PropsChanged, `Unchanged -> false
-  | `Unchanged, `PropsChanged -> false
-  | `PropsChanged, `PropsChanged -> false
-  | _, _ -> true;;
-
-(* check precondition for diff; used to disable diff button *)
-let canDiff ri = 
-  match ri.ri.replicas with
-    Problem _ -> false
-  | Different((`FILE, status1, _, _),(`FILE, status2, _, _), _, _) ->
-      filesAreDifferent status1 status2
-  | Different _ -> false;;
-Callback.register "canDiff" canDiff;;
-
-(* from Uicommon *)
-(* precondition: uc = File (Updates(_, ..) on both sides *)
-let showDiffs ri printer errprinter id =
-  let p = ri.path in
-  match ri.replicas with
-    Problem _ ->
-      errprinter
-        "Can't diff files: there was a problem during update detection"
-  | Different((`FILE, status1, _, ui1), (`FILE, status2, _, ui2), _, _) ->
-      if filesAreDifferent status1 status2 then
-        (let (root1,root2) = Globals.roots() in
-         begin
-           try Files.diff root1 p ui1 root2 p ui2 printer id
-           with Util.Transient e -> errprinter e
-         end)
-  | Different _ ->
-      errprinter "Can't diff: path doesn't refer to a file in both replicas"
-
-let runShowDiffs ri i =
-  let file = Uutil.File.ofLine i in
-    showDiffs ri.ri displayDiff displayDiffErr file;;
-Callback.register "runShowDiffs" runShowDiffs;;

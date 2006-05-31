@@ -546,12 +546,14 @@ let copy
 
 (* ------------------------------------------------------------ *)
 
+(*
 let readChannelTillEof c =
   let rec loop lines =
     try let l = input_line c in
         loop (l::lines)
     with End_of_file -> lines in
   String.concat "\n" (Safelist.rev (loop []))
+*)
 
 let readChannelTillEof_lwt c =
   let rec loop lines =
@@ -565,6 +567,23 @@ let readChannelTillEof_lwt c =
     | None   -> lines
   in
   String.concat "\n" (Safelist.rev (loop []))
+
+let (>>=) = Lwt.bind
+
+let readChannelsTillEof l =
+  let rec suckitdry lines c =
+    Lwt.catch
+      (fun() -> Lwt_unix.input_line c >>= (fun l -> return (Some l)))
+      (fun e -> match e with End_of_file -> return None | _ -> raise e)
+    >>= (fun lo ->
+           match lo with
+             None -> return lines
+           | Some l -> suckitdry (l :: lines) c) in
+  Lwt_util.map
+    (fun c ->
+       suckitdry [] c
+       >>= (fun res -> return (String.concat "\n" (Safelist.rev res))))
+    l
 
 let diffCmd =
   Prefs.createString "diff" "diff -u"
@@ -862,25 +881,24 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
           (Fspath.concatToString workingDirForMerge newarch) in
       Trace.log (Printf.sprintf "%s\n" cmd);
       
-      let (out, ipt, err) = Unix.open_process_full cmd (Unix.environment ())in
-      let mergeLogOut = readChannelTillEof out in
-      let mergeLogErr = readChannelTillEof err in
-      let returnValue = Unix.close_process_full (out, ipt, err) in
-      
-(*       if returnValue <> Unix.WEXITED 0 then *)
-(*         raise (Util.Transient "Merge program exited with non-zero status"); *)
-   
-      let mergeResultLog =
-          cmd
-        ^ "\n\n" ^
-          (if mergeLogOut = "" || mergeLogErr = ""
-             then mergeLogOut ^ mergeLogErr
-           else mergeLogOut ^ "\n\n" ^ ("Error Output:"^mergeLogErr))
-        ^"\n\n" 
-        ^ (if returnValue = Unix.WEXITED 0
-           then ""
-           else Util.process_status_to_string returnValue)
-      in
+      let returnValue, mergeResultLog = 
+        Lwt_unix.run (
+          Lwt_unix.open_process_full cmd (Unix.environment ()) 
+          >>= (fun (out, ipt, err) ->
+          readChannelsTillEof [out;err]
+          >>= (fun [mergeLogOut;mergeLogErr] ->
+          Lwt_unix.close_process_full (out, ipt, err)
+          >>= (fun returnValue ->
+          return (returnValue, (
+              cmd
+            ^ "\n\n" ^
+              (if mergeLogOut = "" || mergeLogErr = ""
+                 then mergeLogOut ^ mergeLogErr
+               else mergeLogOut ^ "\n\n" ^ ("Error Output:"^mergeLogErr))
+            ^"\n\n" 
+            ^ (if returnValue = Unix.WEXITED 0
+               then ""
+               else Util.process_status_to_string returnValue))))))) in
       
       if not
           (showMergeFn
