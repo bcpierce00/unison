@@ -197,7 +197,6 @@ let sshversion = Prefs.createString "sshversion" ""
 
 (* Main external function *)
 let parseRoot string =
-  let illegal s = raise(Prefs.IllegalValue s) in
   let illegal2 s = raise(Prefs.IllegalValue
                            (Printf.sprintf
                               "%s: %s" string s)) in

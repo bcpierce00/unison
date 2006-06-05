@@ -36,7 +36,7 @@
    characters that could not fill a block.  *)
 
 let debug  = Trace.debug "transfer"
-let debugV = Trace.debug "verbose"
+let debugV = Trace.debug "transfer+"
 let debugToken = Trace.debug "rsynctoken"
 let debugLog =   Trace.debug "rsynclog"
 
@@ -590,7 +590,6 @@ struct
         computeChecksum newOffset toBeSent length miss
       else if length = comprBufSize then begin
         transmitString toBeSent newOffset >>= (fun () ->
-        let toBeSent = newOffset in
         let chunkSize = length - newOffset in
         if chunkSize > 0 then begin
           assert(comprBufSize >= blockSize);
@@ -629,7 +628,7 @@ struct
 
     (* Try to match the current block with one existing in the old file *)
     and processBlock offset toBeSent length checksum =
-      if Trace.enabled "verbose" then
+      if Trace.enabled "transfer+" then
         debugV (fun() -> Util.msg
             "processBlock offset=%d toBeSent=%d length=%d blockSize = %d\n"
             offset toBeSent length blockSize);

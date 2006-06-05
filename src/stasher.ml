@@ -208,9 +208,8 @@ let addBackupFilesToIgnorePref () =
     | Some _ -> "Regex " ^ dir in
   debug (fun () -> 
      Util.msg "New pattern being added to ignore preferences: %s\n" theRegExp);
-  let oldRE = Pred.extern Globals.ignore in
-  let newRE = theRegExp::oldBackupPrefPathspec::oldRE in
-  Pred.intern Globals.ignore newRE
+  Globals.addRegexpToIgnore oldBackupPrefPathspec;
+  Globals.addRegexpToIgnore theRegExp
 
 (*------------------------------------------------------------------------------------*)
 
@@ -404,7 +403,7 @@ let stashPath st fspath path =
 	  Os.delete tempfspath tempPath 
 	else begin 
         (* we still a keep a second backup just in case something go bad *)
-	  Trace.debug "verbose" 
+	  Trace.debug "stasher+" 
 	    (fun () -> Util.msg "Creating a safety backup for (%s, %s)\n" 
 		(Fspath.toString tempfspath) (Path.toString path));
 	  let olBackup = findStash path 1 in

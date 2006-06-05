@@ -1,3 +1,18 @@
+CHANGES FROM VERSION 2.21.-1
+
+* Removed -mergebatch preference.  (I never found it very useful, and
+  its semantics were confusing.)
+
+  Bumped minor version number.
+
+* Refined debugging code so that the verbosity of individual modules
+  can be controlled separately.  Instead of just putting '-debug
+  verbose' on the command line, you can put '-debug update+', which
+  causes all the extra messages in the Update module, but not other
+  modules, to be printed.  Putting '-debug verbose' causes all modules
+  to print with maximum verbosity.
+
+-------------------------------
 CHANGES FROM VERSION 2.20.2
 
 * Fixed a bug in merging code where Unison could sometimes deadlock

@@ -55,7 +55,7 @@ let logLwt (msgBegin: string)
 let rLogCounter = ref 0
 let logLwtNumbered (lwtDescription: string) (lwtShortDescription: string)
     (t: unit -> 'a Lwt.t): 'a Lwt.t =
-  let lwt_id = (rLogCounter := (!rLogCounter) + 1; !rLogCounter) in
+  let _ = (rLogCounter := (!rLogCounter) + 1; !rLogCounter) in
   logLwt (Printf.sprintf "[BGN] %s\n" lwtDescription) t
     (fun _ ->
       Printf.sprintf "[END] %s\n" lwtShortDescription)

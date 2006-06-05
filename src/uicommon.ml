@@ -352,8 +352,7 @@ let ignoreExt path =
 let addIgnorePattern theRegExp =
   if theRegExp = "Path " then
     raise (Util.Transient "Can't ignore the root path!");
-  let theRegExps = theRegExp::(Pred.extern Globals.ignore) in
-  Pred.intern Globals.ignore theRegExps;
+  Globals.addRegexpToIgnore theRegExp;
   let r = Prefs.add "ignore" theRegExp in
   Trace.status r;
   (* Make sure the server has the same ignored paths (in case, for

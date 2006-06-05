@@ -71,8 +71,8 @@ val batch : bool Prefs.t
 val confirmBigDeletes : bool Prefs.t
 
 (* Predicates on paths *)
-val ignore : Pred.t
 val shouldIgnore : 'a Path.path -> bool
+val addRegexpToIgnore : string -> unit
 val shouldMerge : 'a Path.path -> bool
 
 (* Merging commands *)  

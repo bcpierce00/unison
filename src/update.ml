@@ -6,7 +6,7 @@ open Common
 let (>>=)  = Lwt.(>>=)
 
 let debug = Trace.debug "update"
-let debugverbose = Trace.debug "verbose"
+let debugverbose = Trace.debug "update+"
 let debugalias = Trace.debug "rootalias"
 let debugignore = Trace.debug "ignore"
 
