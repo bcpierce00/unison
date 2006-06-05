@@ -134,8 +134,9 @@ let backupcurrentnot =
    "Exceptions to \\verb|backupcurrent|, like the \\verb|ignorenot| preference."
 
 let shouldBackupCurrent p =
-  let s = Path.toString p in
-  Pred.test backupcurrent s && not (Pred.test backupcurrentnot s)
+     Globals.shouldMerge p
+  || (let s = Path.toString p in
+      Pred.test backupcurrent s && not (Pred.test backupcurrentnot s))
 
 (*------------------------------------------------------------------------------------*)
 
@@ -386,13 +387,12 @@ let digest_safe st fspath path =
 let stashPath st fspath path =
   let tempfspath = stashDirectory fspath in
   let tempPath = findStash path 0 in
-
-  let _ =
+  begin
     match Path.deconstructRev tempPath with
       None -> ()
     | Some (_, dir) when dir = Path.empty ->  ()
-    | Some (_, backdir) -> mkdirectories tempfspath backdir in
-
+    | Some (_, backdir) -> mkdirectories tempfspath backdir
+  end; 
   let tempSt = (Fileinfo.get true tempfspath tempPath).Fileinfo.typ in
   if tempSt <> `ABSENT then begin
     if Os.exists fspath path &&
@@ -416,23 +416,24 @@ let stashPath st fspath path =
   end else
     Some (tempfspath, tempPath)
       
-let rec stashCurrentVersion go_rec fspath path =
+let rec stashCurrentVersion go_rec fspath path sourcePathOpt =
   Util.convertUnixErrorsToTransient "stashCurrentVersion" (fun () ->
-    if shouldBackupCurrent path then (
-      debug (fun () -> 
-        Util.msg "stashCurrentVersion of %s in %s\n" 
-          (Path.toString path) (Fspath.toString fspath));
-      let stat = (Fileinfo.get true fspath path) in
+    let sourcePath = match sourcePathOpt with None -> path | Some p -> p in
+    if shouldBackupCurrent path then 
+      debug (fun () -> Util.msg "stashCurrentVersion of %s (drawn from %s) in %s\n" 
+          (Path.toString path) (Path.toString sourcePath) (Fspath.toString fspath);
+      let stat = Fileinfo.get true fspath sourcePath in
       match stat.Fileinfo.typ with
 	`ABSENT -> ()
       |	`DIRECTORY ->
 	  if go_rec then begin
+            assert (sourcePathOpt = None);
 	    debug (fun () -> Util.msg "Stashing recursively because file is a directory\n");
 	    ignore (Safelist.iter
 		      (fun n ->
 			let pathChild = Path.child path n in 
 			if not (Globals.shouldIgnore pathChild) then 
-			  stashCurrentVersion true fspath (Path.child path n))
+			  stashCurrentVersion true fspath (Path.child path n) None)
 		      (Os.childrenOf fspath path))
 	  end else
 	    debug (fun () -> Util.msg "The file is a directory but no recursive stashing\n")
@@ -442,10 +443,10 @@ let rec stashCurrentVersion go_rec fspath path =
 	      if st = `SYMLINK then
 		Os.symlink 
 		  stashDir stashPath 
-		  (Os.readLink fspath path)
+		  (Os.readLink fspath sourcePath)
 	      else
 		Copy.localFile 
-		  fspath path 
+		  fspath sourcePath 
 		  stashDir stashPath stashPath 
 		  `Copy 
 		  stat.Fileinfo.desc
@@ -459,12 +460,6 @@ let rec stashCurrentVersion go_rec fspath path =
 	  | None ->
 	      debug (fun () -> Util.msg "Stashing was not required, contents were equal.\n")))
       
-(* let stashCurrentVersionOnRoot: Common.root -> Path.local -> unit Lwt.t = *)
-(*   Remote.registerRootCmd *)
-(*     "stashCurrentVersion" *)
-(*     (fun (fspath, path) -> *)
-(*       Lwt.return (stashCurrentVersionLocal fspath path)) *)
-    
 (* let stashCurrentVersion path = *)
 (*   match Globals.rootsInCanonicalOrder () with *)
 (*     [r1; r2] -> *)

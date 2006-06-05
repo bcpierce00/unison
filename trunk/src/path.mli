@@ -5,7 +5,7 @@
 (* Abstract type of relative pathnames *)
 type 'a path
 
-(* Pathname valid on both replica (case insensitive in case
+(* Pathname valid on both replicas (case insensitive in case
    insensitive mode) *)
 type t = [`Global] path
 
