@@ -60,6 +60,16 @@ let logLwtNumbered (lwtDescription: string) (lwtShortDescription: string)
     (fun _ ->
       Printf.sprintf "[END] %s\n" lwtShortDescription)
 
+let stashCurrentVersionOnRoot: Common.root -> (Path.t * bool) -> unit Lwt.t = 
+  Remote.registerRootCmd 
+    "stashCurrentVersion" 
+    (fun (fspath, (path,gorec)) -> 
+      Lwt.return (Stasher.stashCurrentVersion gorec fspath (Update.translatePathLocal fspath path) None))
+    
+let stashCurrentVersions fromRoot toRoot path =
+  stashCurrentVersionOnRoot fromRoot (path, false) >>= (fun()->
+  stashCurrentVersionOnRoot toRoot (path, false))
+
 let doAction (fromRoot,toRoot) path fromContents toContents id =
   Lwt_util.resize_region actionReg (Prefs.read maxthreads);
   Lwt_util.run_in_region actionReg 1 (fun () ->
@@ -94,15 +104,18 @@ let doAction (fromRoot,toRoot) path fromContents toContents id =
               ("Updating file " ^ Path.toString path)
               (fun () ->
                 Files.copy (`Update (fileSize uiFrom uiTo))
-                  fromRoot path uiFrom toRoot path uiTo id)
+                  fromRoot path uiFrom toRoot path uiTo id >>= (fun()->
+                stashCurrentVersions fromRoot toRoot path))
         | (_, _, _, uiFrom), (_, _, _, uiTo) ->
             logLwtNumbered
               ("Copying " ^ Path.toString path ^ "\n  from " ^
                root2string fromRoot ^ "\n  to " ^
                root2string toRoot)
               ("Copying " ^ Path.toString path)
-              (fun () -> Files.copy `Copy
-                  fromRoot path uiFrom toRoot path uiTo id))
+              (fun () ->
+                 Files.copy `Copy
+                   fromRoot path uiFrom toRoot path uiTo id >>= (fun()->
+               stashCurrentVersions fromRoot toRoot path)))
       (fun e -> Trace.log
           (Printf.sprintf
              "Failed: %s\n" (Util.printException e));

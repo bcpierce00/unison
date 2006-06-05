@@ -1,3 +1,11 @@
+CHANGES FROM VERSION 2.21.1
+
+* Fixed some problems in the backup and merging code, for better
+  cooperation with external Harmony instances.
+
+
+
+-------------------------------
 CHANGES FROM VERSION 2.21.0
 
 * Updated copyright information and subversion tags in file headers

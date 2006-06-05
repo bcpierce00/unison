@@ -760,6 +760,11 @@ let keeptempfilesaftermerge =
 let makeSureMergeTempfilesAreIgnored () =
   Globals.addRegexpToIgnore "Name .unisonmerge*"
 
+let showStatus = function
+  | Unix.WEXITED i -> Printf.sprintf "exited (%d)" i
+  | Unix.WSIGNALED i -> Printf.sprintf "killed with signal %d" i
+  | Unix.WSTOPPED i -> Printf.sprintf "stopped with signal %d" i
+
 let merge root1 root2 path id ui1 ui2 showMergeFn =
   debug (fun () -> Util.msg "merge path %s between roots %s and %s\n"
       (Path.toString path) (root2string root1) (root2string root2));
@@ -839,9 +844,11 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
 
       in
       
-      (* make a local copy of the archive file (in case the merge program  
-         overwrites it and the program crashes before the call to the Stasher) *)
-      let _ = 
+      (* Make a local copy of the archive file (in case the merge program  
+         overwrites it and the program crashes before the call to the Stasher).
+         Remember its digest so we can see, later, if the merge program has
+         changed it. *)
+      let digarch = 
 	match arch with 
 	  Some fspath ->
 	    let info = Fileinfo.get false fspath Path.empty in
@@ -851,9 +858,11 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
 	      `Copy 
 	      info.Fileinfo.desc
 	      (Osx.ressLength info.Fileinfo.osX.Osx.ressInfo)
-	      None ;
+	      None;
+           let infoarch = Fileinfo.get false workingDirForMerge workingarch in
+           Some(Os.fingerprint workingDirForMerge workingarch infoarch) 
 	| None ->
-	    () in
+	    None in
 	    
       (* run the merge command *)
       Os.delete workingDirForMerge new1;
@@ -874,7 +883,7 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
           (Fspath.concatToString workingDirForMerge new1)
           (Fspath.concatToString workingDirForMerge new2)
           (Fspath.concatToString workingDirForMerge newarch) in
-      Trace.log (Printf.sprintf "%s\n" cmd);
+      Trace.log (Printf.sprintf "Merge command: %s\n" cmd);
       
       let returnValue, mergeResultLog = 
         Lwt_unix.run (
@@ -897,15 +906,21 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
             (* Stop typechechecker from complaining about non-exhaustive pattern above *)
             | _ -> assert false))) in
       
+      Trace.log (Printf.sprintf "Merge result (%s):\n%s\n"
+                   (showStatus returnValue) mergeResultLog);
+      debug (fun () -> Util.msg "Merge result = %s\n"
+                   (showStatus returnValue));
+
       if not
           (showMergeFn
-	     (returnValue = Unix.WEXITED 0)
+	     true 
              (Printf.sprintf "Results of merging %s" (Path.toString path))
              mergeResultLog) then
         raise (Util.Transient ("Merge command failed or cancelled by the user"));
       
       (* Check which files got created by the merge command and do something appropriate
          with them *)
+      debug (fun()-> Util.msg "New file 1 = %s\n" (Fspath.concatToString workingDirForMerge new1));
       let new1exists = Sys.file_exists (Fspath.concatToString workingDirForMerge new1) in
       let new2exists = Sys.file_exists (Fspath.concatToString workingDirForMerge new2) in
       let newarchexists = Sys.file_exists (Fspath.concatToString workingDirForMerge newarch) in
@@ -928,7 +943,10 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
 			      Util.msg "overwrite the other replica and the archive with the first output\n"));
 	    copy [(new1,working1); (new1,working2); (new1,workingarch)];
 	  end else begin
-	    raise (Util.Transient "Merge command exited with non-zero status and left the two files unequal")
+            debug (fun () -> (Util.msg "Two outputs not equal and the merge command exited with nonzero status, \n";
+			      Util.msg "so we will copy back the new files but not update the archive\n"));
+	    copy [(new1,working1); (new2,working2)];
+	    
           end 
       end
 	  
@@ -992,10 +1010,10 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
             raise (Util.Transient ("Error: the merge program deleted both of its "
                                    ^ "inputs and generated no output!"))
 	  else
-	    raise (Util.Transient ("Error: the merge program failed but did not leave"
+	    raise (Util.Transient ("Error: the merge program failed and did not leave"
 				   ^ " both files equal"))
       end;
-      
+
       Lwt_unix.run
 	(debug (fun () -> Util.msg "Committing results of merge\n");
          copyBack workingDirForMerge working1 root1 path desc1 ui1 id >>= (fun () ->
@@ -1021,7 +1039,7 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
                   new_archive_entry transid false >>= (fun _ ->
                 Lwt.return ())))
          end else 
-           (Lwt.return ()) )))))
+           (Lwt.return ()) )))) )
     (fun _ ->
       Util.ignoreTransientErrors
 	(fun () ->

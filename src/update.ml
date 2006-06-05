@@ -1666,7 +1666,7 @@ let markEqualLocal fspath paths =
               let arch = updateArchiveRec (Updates (uc, New)) archive in
               arch, (arch, localPath))
        in
-       Stasher.stashCurrentVersion false fspath localPath;
+       Stasher.stashCurrentVersion false fspath localPath None;
        archive := arch);
   setArchiveLocal root !archive
 
