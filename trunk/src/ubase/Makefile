@@ -52,3 +52,6 @@ uninstall:
 clean::
 	rm -f *.cmi *.cmo *.cmx *.cma *.cmxa *.a *.o *~ *.bak
 
+# Used by BCP to update Harmony's copy of these files from Unison's
+update:
+	cp $(HOME)/current/unison/trunk/src/ubase/{*.ml,*.mli,Makefile} .

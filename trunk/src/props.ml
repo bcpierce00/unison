@@ -280,7 +280,7 @@ let extern id =
         if id = 0 then
           raise (Util.Transient
                    (Printf.sprintf "Trying to map the non-root %s %s to %s 0"
-                      M.kind nm M.kind))
+                      M.kind nm M.kind));
         Hashtbl.add tbl nm id;
         id
 

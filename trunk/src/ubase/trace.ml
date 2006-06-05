@@ -31,12 +31,18 @@ let runningasserver = ref false
 let debugging() = (Prefs.read debugmods) <> []
 
 let enabled modname =
+  let modnamebase,plus =
+    if Util.endswith modname "+" then (Util.replacesubstring modname "+" "", true)
+    else (modname, false) in
   let m = Prefs.read debugmods in
   m <> [] && (   (modname = "")
               || (Safelist.mem "verbose" m)
-              || ((Safelist.mem "all" m || Safelist.mem "-all" m)
-                    && modname <> "verbose")
-              || (Safelist.mem modname m))
+              || (Safelist.mem "all+" m)
+              || (Safelist.mem "all+" m)
+              || (Safelist.mem "all" m && not plus)
+              || (Safelist.mem modname m)
+              || (Safelist.mem modnamebase m && not plus)
+             )
 
 let enable modname onoff =
   let m = Prefs.read debugmods in

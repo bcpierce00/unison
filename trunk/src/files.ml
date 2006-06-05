@@ -7,7 +7,7 @@ open Lwt
 open Fileinfo
   
 let debug = Trace.debug "files"
-let debugverbose = Trace.debug "verbose"
+let debugverbose = Trace.debug "files+"
     
 (* ------------------------------------------------------------ *)
     
@@ -758,12 +758,7 @@ let keeptempfilesaftermerge =
     "keeptempfilesaftermerge" false "*" ""
 
 let makeSureMergeTempfilesAreIgnored () =
-  let oldRE = Pred.extern Globals.ignore in
-  if List.mem "Name .unisonmerge*" oldRE then
-    ()
-  else
-    let newRE = "Name .unisonmerge*"::oldRE in
-    Pred.intern Globals.ignore newRE
+  Globals.addRegexpToIgnore "Name .unisonmerge*"
 
 let merge root1 root2 path id ui1 ui2 showMergeFn =
   debug (fun () -> Util.msg "merge path %s between roots %s and %s\n"
@@ -886,7 +881,7 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
           Lwt_unix.open_process_full cmd (Unix.environment ()) 
           >>= (fun (out, ipt, err) ->
           readChannelsTillEof [out;err]
-          >>= (fun [mergeLogOut;mergeLogErr] ->
+          >>= (function [mergeLogOut;mergeLogErr] ->
           Lwt_unix.close_process_full (out, ipt, err)
           >>= (fun returnValue ->
           return (returnValue, (
@@ -898,7 +893,9 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
             ^"\n\n" 
             ^ (if returnValue = Unix.WEXITED 0
                then ""
-               else Util.process_status_to_string returnValue))))))) in
+               else Util.process_status_to_string returnValue))))
+            (* Stop typechechecker from complaining about non-exhaustive pattern above *)
+            | _ -> assert false))) in
       
       if not
           (showMergeFn

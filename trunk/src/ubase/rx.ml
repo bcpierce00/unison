@@ -722,7 +722,7 @@ let glob_parse init s =
   let test c = not (eos ()) && s.[!i] = c in
   let accept c = let r = test c in if r then incr i; r in
   let get () = let r = s.[!i] in incr i; r in
-  let unget () = decr i in
+  (* let unget () = decr i in *)
 
   let rec expr () = expr' init (Sequence [])
   and expr' beg left =
@@ -746,7 +746,7 @@ let glob_parse init s =
        end,
        Mid)
     else if accept '[' then begin
-      let mask = if beg <> Mid then notdot else gany in
+      (* let mask = if beg <> Mid then notdot else gany in *)
       let set =
         if accept '^' || accept '!' then
           cnegate 0 255 (bracket [])

@@ -12,9 +12,9 @@ XXX
 let (>>=) = Lwt.bind
 
 let debug = Trace.debug "remote"
-let debugV = Trace.debug "verbose"
-let debugE = Trace.debug "verbose"
-let debugT = Trace.debug "verbose"
+let debugV = Trace.debug "remote+"
+let debugE = Trace.debug "remote+"
+let debugT = Trace.debug "remote+"
 
 (* BCP: The previous definitions of the last two were like this:
      let debugE = Trace.debug "remote_emit"

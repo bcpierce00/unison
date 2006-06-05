@@ -15,7 +15,7 @@
 (*                                                                         - *)
 
 let debug = Util.debug "fspath"
-let debugverbose = Util.debug "verbose"
+let debugverbose = Util.debug "fspath+"
 
 type t = Fspath of string
 

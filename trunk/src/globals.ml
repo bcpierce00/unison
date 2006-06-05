@@ -245,6 +245,11 @@ let shouldIgnore p =
   let p = Path.toString p in
   (Pred.test ignore p) && not (Pred.test ignorenot p) 
 
+let addRegexpToIgnore re =
+  let oldRE = Pred.extern ignore in
+  let newRE = re::oldRE in
+  Pred.intern ignore newRE
+
 let merge = 
   Pred.create "merge"
     ("This preference can be used to run a merge program which will create "
@@ -257,21 +262,6 @@ let merge =
      ^ "details on Merging functions are present in "
      ^ "\\sectionref{merge}{Merging files}.")
         
-let mergebatch = 
-  Pred.create "mergebatch"
-    ("Normally, when Unison is run with the {\\tt batch} flag set to true, it does not "
-     ^ "invoke any external merge programs.  To tell it that a given file can be merged "
-     ^ "even when in batch mode, use the {\\tt mergebatch} preference instead of "
-     ^ "{\\tt merge}.  When running in non-batch mode, the {\\tt merge} preference is used "
-     ^ "instead of {\\tt mergebatch} if both are specified for a given path.")
-        
-let shouldMerge p =
-     Pred.test mergebatch (Path.toString p)
-  || (not (Prefs.read batch) && Pred.test merge (Path.toString p))
+let shouldMerge p = Pred.test merge (Path.toString p)
 
-let mergeCmdForPath p =
-  if Prefs.read batch then
-    Pred.assoc mergebatch (Path.toString p)
-  else
-    try Pred.assoc merge (Path.toString p)
-    with Not_found -> Pred.assoc mergebatch (Path.toString p)
+let mergeCmdForPath p = Pred.assoc merge (Path.toString p)
