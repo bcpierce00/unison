@@ -1,6 +1,6 @@
-(* $I1: Unison file synchronizer: src/ubase/rx.ml $ *)
-(* $I2: Last modified by vouillon on Fri, 28 May 2004 16:07:27 -0400 $ *)
-(* $I3: Copyright 1999-2004 (see COPYING for details) $ *)
+(* Unison file synchronizer: src/ubase/rx.ml *)
+(* $Id: $ *)
+(* Copyright 1999-2006 (see COPYING for details) *)
 (*
   Inspired by some code and algorithms from Mark William Hopkins
   (regexp.tar.gz, available in the comp.compilers file archive)

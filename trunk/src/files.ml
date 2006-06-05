@@ -1,6 +1,6 @@
-(* $I1: Unison file synchronizer: src/files.ml $ *)
-(* $I2: Last modified by bcpierce on Fri, 26 Nov 2004 19:34:28 -0500 $ *)
-(* $I3: Copyright 1999-2004 (see COPYING for details) $ *)
+(* Unison file synchronizer: src/files.ml *)
+(* $Id$ *)
+(* Copyright 1999-2006 (see COPYING for details) *)
 
 open Common
 open Lwt

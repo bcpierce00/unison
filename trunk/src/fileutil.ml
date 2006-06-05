@@ -1,6 +1,6 @@
-(* $I1: Unison file synchronizer: src/fileutil.ml $ *)
-(* $I2: Last modified by zheyang on Wed, 12 Dec 2001 02:26:21 -0500 $ *)
-(* $I3: Copyright 1999-2004 (see COPYING for details) $ *)
+(* Unison file synchronizer: src/fileutil.ml *)
+(* $Id$ *)
+(* Copyright 1999-2006 (see COPYING for details) *)
 
 (* Convert backslashes in a string to forward slashes.  Useful in Windows.   *)
 let bs2fs s0 =

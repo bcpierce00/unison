@@ -1,6 +1,6 @@
-(* $I1: Unison file synchronizer: src/pixmaps.ml $ *)
-(* $I2: Last modified by bcpierce on Sat, 01 May 2004 13:01:26 -0400 $ *)
-(* $I3: Copyright 1999-2004 (see COPYING for details) $ *)
+(* Unison file synchronizer: src/pixmaps.ml *)
+(* $Id: $ *)
+(* Copyright 1999-2006 (see COPYING for details) *)
 
 let copyAB color = [|
 (* width height num_colors chars_per_pixel *)

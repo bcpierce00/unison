@@ -1,6 +1,6 @@
-(* $I1: Unison file synchronizer: src/uigtk.ml $ *)
-(* $I2: Last modified by vouillon on Thu, 09 Sep 2004 08:43:03 -0400 $ *)
-(* $I3: Copyright 1999-2004 (see COPYING for details) $ *)
+(* Unison file synchronizer: src/uigtk.ml *)
+(* $Id: $ *)
+(* Copyright 1999-2006 (see COPYING for details) *)
 
 open Common
 open Lwt

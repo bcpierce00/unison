@@ -1,6 +1,6 @@
-(* $I1: Unison file synchronizer: src/tree.ml $ *)
-(* $I2: Last modified by vouillon on Wed, 26 May 2004 17:01:49 -0400 $ *)
-(* $I3: Copyright 1999-2004 (see COPYING for details) $ *)
+(* Unison file synchronizer: src/tree.ml *)
+(* $Id: $ *)
+(* Copyright 1999-2006 (see COPYING for details) *)
 
 type ('a, 'b) t =
     Node of ('a * ('a, 'b) t) list * 'b option
