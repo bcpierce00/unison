@@ -1,6 +1,6 @@
-(* $I1: Unison file synchronizer: src/sortri.mli $ *)
-(* $I2: Last modified by vouillon on Wed, 24 Jan 2001 10:09:52 -0500 $ *)
-(* $I3: Copyright 1999-2004 (see COPYING for details) $ *)
+(* Unison file synchronizer: src/sortri.mli *)
+(* $Id: $ *)
+(* Copyright 1999-2006 (see COPYING for details) *)
 
 (* Sort a list of recon items according to the current setting of 
    various preferences (defined in sort.ml, and accessible from the

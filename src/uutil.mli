@@ -1,6 +1,6 @@
-(* $I1: Unison file synchronizer: src/uutil.mli $ *)
-(* $I2: Last modified by vouillon on Thu, 25 Nov 2004 16:01:48 -0500 $ *)
-(* $I3: Copyright 1999-2004 (see COPYING for details) $ *)
+(* Unison file synchronizer: src/uutil.mli *)
+(* $Id: $ *)
+(* Copyright 1999-2006 (see COPYING for details) *)
 
 (* This module collects a number of low-level, Unison-specific utility
    functions.  It is kept separate from the Util module so that that module

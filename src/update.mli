@@ -1,6 +1,6 @@
-(* $I1: Unison file synchronizer: src/update.mli $ *)
-(* $I2: Last modified by tjim on Tue, 14 Sep 2004 11:51:02 -0400 $ *)
-(* $I3: Copyright 1999-2004 (see COPYING for details) $ *)
+(* Unison file synchronizer: src/update.mli *)
+(* $Id: $ *)
+(* Copyright 1999-2006 (see COPYING for details) *)
 
 module NameMap : Map.S with type key = Name.t
 

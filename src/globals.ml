@@ -1,6 +1,6 @@
-(* $I1: Unison file synchronizer: src/globals.ml $ *)
-(* $I2: Last modified by bcpierce on Mon, 06 Sep 2004 14:48:05 -0400 $ *)
-(* $I3: Copyright 1999-2004 (see COPYING for details) $ *)
+(* Unison file synchronizer: src/globals.ml *)
+(* $Id$ *)
+(* Copyright 1999-2006 (see COPYING for details) *)
 
 open Common
 

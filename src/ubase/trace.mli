@@ -1,6 +1,6 @@
-(* $I1: Unison file synchronizer: src/ubase/trace.mli $ *)
-(* $I2: Last modified by bcpierce on Mon, 15 Sep 2003 11:46:03 -0400 $ *)
-(* $I3: Copyright 1999-2004 (see COPYING for details) $ *)
+(* Unison file synchronizer: src/ubase/trace.mli *)
+(* $Id: $ *)
+(* Copyright 1999-2006 (see COPYING for details) *)
 
 (* ---------------------------------------------------------------------- *)
 (* Debugging support *)

@@ -1,6 +1,6 @@
-(* $I1: Unison file synchronizer: src/pred.mli $ *)
-(* $I2: Last modified by bcpierce on Fri, 18 Jun 2004 10:01:38 -0400 $ *)
-(* $I3: Copyright 1999-2004 (see COPYING for details) $ *)
+(* Unison file synchronizer: src/pred.mli *)
+(* $Id: $ *)
+(* Copyright 1999-2006 (see COPYING for details) *)
 
 (* General description:                                                  
 

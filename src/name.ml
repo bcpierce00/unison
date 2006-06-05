@@ -1,6 +1,6 @@
-(* $I1: Unison file synchronizer: src/name.ml $ *)
-(* $I2: Last modified by vouillon on Wed, 17 Apr 2002 12:03:26 -0400 $ *)
-(* $I3: Copyright 1999-2004 (see COPYING for details) $ *)
+(* Unison file synchronizer: src/name.ml *)
+(* $Id: $ *)
+(* Copyright 1999-2006 (see COPYING for details) *)
 
 (* NOTE: IF YOU CHANGE TYPE "NAME", THE ARCHIVE FORMAT CHANGES;
    INCREMENT "UPDATE.ARCHIVEFORMAT" *)

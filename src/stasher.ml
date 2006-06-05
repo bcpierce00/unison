@@ -1,6 +1,6 @@
-(* $I1: Unison file synchronizer: src/stasher.ml $ *)
+(* Unison file synchronizer: src/stasher.ml *)
 (* $I2: Last modified by lescuyer *)
-(* $I3: Copyright 1999-2004 (see COPYING for details) $ *)
+(* Copyright 1999-2006 (see COPYING for details) *)
 
 (*------------------------------------------------------------------------------------*)
 (* Preferences for backing up and stashing *)

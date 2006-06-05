@@ -1,6 +1,6 @@
-(* $I1: Unison file synchronizer: src/sortri.ml $ *)
-(* $I2: Last modified by zheyang on Sat, 09 Mar 2002 02:42:40 -0500 $ *)
-(* $I3: Copyright 1999-2004 (see COPYING for details) $ *)
+(* Unison file synchronizer: src/sortri.ml *)
+(* $Id: $ *)
+(* Copyright 1999-2006 (see COPYING for details) *)
 
 open Common  
 

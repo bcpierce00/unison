@@ -1,4 +1,4 @@
-(* $I1: Unison file synchronizer: src/stasher.mli $ *)
+(* Unison file synchronizer: src/stasher.mli *)
 (* $I2: Last modified by lescuyer on *)
 (* $I3: Copyright 1999-2005 (see COPYING for details) $ *)
 

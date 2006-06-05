@@ -1,6 +1,6 @@
-(* $I1: Unison file synchronizer: src/ubase/safelist.ml $ *)
-(* $I2: Last modified by vouillon on Tue, 16 Apr 2002 10:32:38 -0400 $ *)
-(* $I3: Copyright 1999-2004 (see COPYING for details) $ *)
+(* Unison file synchronizer: src/ubase/safelist.ml *)
+(* $Id: $ *)
+(* Copyright 1999-2006 (see COPYING for details) *)
 
 let filterBoth f l =
   let rec loop r1 r2 = function

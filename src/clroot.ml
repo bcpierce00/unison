@@ -1,6 +1,6 @@
-(* $I1: Unison file synchronizer: src/clroot.ml $ *)
-(* $I2: Last modified by tjim on Wed, 15 Jan 2003 16:46:16 -0500 $ *)
-(* $I3: Copyright 1999-2004 (see COPYING for details) $ *)
+(* Unison file synchronizer: src/clroot.ml *)
+(* $Id$ *)
+(* Copyright 1999-2006 (see COPYING for details) *)
 
 (*
   This file parses the unison command-line arguments that

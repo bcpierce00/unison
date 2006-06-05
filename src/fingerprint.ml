@@ -1,6 +1,6 @@
-(* $I1: Unison file synchronizer: src/fingerprint.ml $ *)
-(* $I2: Last modified by vouillon on Fri, 05 Nov 2004 10:12:27 -0500 $ *)
-(* $I3: Copyright 1999-2004 (see COPYING for details) $ *)
+(* Unison file synchronizer: src/fingerprint.ml *)
+(* $Id$ *)
+(* Copyright 1999-2006 (see COPYING for details) *)
 
 (* NOTE: IF YOU CHANGE TYPE "FINGERPRINT", THE ARCHIVE FORMAT CHANGES;       *)
 (* INCREMENT "UPDATE.ARCHIVEFORMAT"                                          *)
