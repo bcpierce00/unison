@@ -13,7 +13,16 @@ SOON
 
 **** The third assertion in Remote.fill_buffer failed for me (BCP) during a transfer!
 
-**** Fix backup subsystem.
+**** Remaining problem with merging code: 
+       - create two directories, each containing a .txt file
+       - sync so they are equal
+       - change the file so that one region is in conflict and another
+         region has changes that can be propagated correctly
+       - sync
+       - now we should be able to change the second region in just one file, 
+         sync again, and see the change propagate; instead, it conflicts
+       - diagnosis: the merge stuff is not correctly updating the archive in
+         the event of a partial reconciliation
 
 **** When deleting a directory, we should *not* skip over Unison temp files
      in the process of listing children
@@ -22,8 +31,6 @@ SOON
     moment
 
 *** Fix the pred module to understand negation and delete XXXnot predicates
-
-*** Display and verify results of merge -- add this to uigtk2
 
 *** Web
     - Add a "supported platforms" page mentioning system-specific stuff

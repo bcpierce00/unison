@@ -561,7 +561,8 @@ let ((marshalHeader, unmarshalHeader) : header marshalingFunctions) =
 
 let processRequest conn id cmdName buf =
   let cmd =
-    try Util.StringMap.find cmdName !serverCmds with Not_found -> assert false
+    try Util.StringMap.find cmdName !serverCmds
+    with Not_found -> raise (Util.Fatal (cmdName ^ " not registered!"))
   in
   Lwt.try_bind (fun () -> cmd conn buf)
     (fun marshal ->
