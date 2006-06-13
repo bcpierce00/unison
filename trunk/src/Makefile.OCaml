@@ -53,13 +53,11 @@ OCAMLLIBDIR=$(shell ocamlc -v | tail -n -1 | sed -e 's/.* //g' | sed -e 's/\\/\/
 # User interface style:
 #   Legal values are
 #     UISTYLE=text
-#     UISTYLE=gtk
 #     UISTYLE=gtk2
 #     UISTYLE=mac
 #
 # This should be set to an appropriate value automatically, depending
 # on whether the lablgtk library is available
-LABLGTKLIB=$(OCAMLLIBDIR)/lablgtk
 LABLGTK2LIB=$(OCAMLLIBDIR)/lablgtk2
 ifeq ($(OSARCH),osx)
   UISTYLE=mac
@@ -67,12 +65,7 @@ else
   ifeq ($(wildcard $(LABLGTK2LIB)),$(LABLGTK2LIB))
     UISTYLE=gtk2
   else
-    # BCP: removed defaulting for gtk1 UI, which is now deprecated
-    # ifeq ($(wildcard $(LABLGTKLIB)),$(LABLGTKLIB))
-    #   UISTYLE=gtk
-    # else
-      UISTYLE=text
-    # endif
+    UISTYLE=text
 endif
 endif
 buildexecutable::
@@ -211,13 +204,6 @@ endif
 #    COBJS+=winmain.c
 #    CFLAGS+=-cclib /subsystem:windows
 #  endif
-
-# Gtk GUI
-ifeq ($(UISTYLE), gtk)
-  CAMLFLAGS+=-I +lablgtk
-  OCAMLOBJS+=pixmaps.cmo uigtk.cmo linkgtk.cmo
-  OCAMLLIBS+=lablgtk.cma
-endif
 
 # Gtk2 GUI
 ifeq ($(UISTYLE), gtk2)

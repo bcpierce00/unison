@@ -149,7 +149,7 @@ Installation
        and make install.)
        Now build unison. If your search paths are set up correctly,
        typing
-       make UISTYLE=gtk
+       make UISTYLE=gtk2
        should build a unison executable with a Gtk graphical interface.
 
    If this step does not work, don't worry: Unison works fine with the

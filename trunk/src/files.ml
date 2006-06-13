@@ -845,11 +845,9 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
       in
       
       (* Make a local copy of the archive file (in case the merge program  
-         overwrites it and the program crashes before the call to the Stasher).
-         Remember its digest so we can see, later, if the merge program has
-         changed it. *)
-      let digarch = 
-	match arch with 
+         overwrites it and the program crashes before the call to the Stasher). *)
+      begin
+        match arch with 
 	  Some fspath ->
 	    let info = Fileinfo.get false fspath Path.empty in
 	    Copy.localFile 
@@ -858,11 +856,10 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
 	      `Copy 
 	      info.Fileinfo.desc
 	      (Osx.ressLength info.Fileinfo.osX.Osx.ressInfo)
-	      None;
-           let infoarch = Fileinfo.get false workingDirForMerge workingarch in
-           Some(Os.fingerprint workingDirForMerge workingarch infoarch) 
+	      None
 	| None ->
-	    None in
+	    ()
+      end;
 	    
       (* run the merge command *)
       Os.delete workingDirForMerge new1;
