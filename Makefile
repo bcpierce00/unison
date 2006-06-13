@@ -178,7 +178,7 @@ realexportnative:
 	gzip --best --force -c \
             $(DOWNLOADDIR)/$(EXPORTNAME).$(OSARCH)$(KIND)-textui$(EXEC_EXT) \
           > $(DOWNLOADDIR)/$(EXPORTNAME).$(OSARCH)$(KIND)-textui$(EXEC_EXT).gz
-	$(MAKE) -C $(EXPORTTMP) UISTYLE=gtk DEBUGGING=false \
+	$(MAKE) -C $(EXPORTTMP) UISTYLE=gtk2 DEBUGGING=false \
                        NATIVE=$(EXPORTNATIVE) STATIC=$(EXPORTSTATIC)
 	cp $(EXPORTTMP)/$(NAME)$(EXEC_EXT) \
                $(DOWNLOADDIR)/$(EXPORTNAME).$(OSARCH)$(KIND)-gtkui$(EXEC_EXT)

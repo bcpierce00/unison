@@ -284,8 +284,16 @@ let interact rilist =
                  (["x"],
                   ("show details"),
                   (fun () -> display "\n"; displayDetails ri; repeat()));
+                 (["L"],
+                  ("list all suggested changes tersely"),
+                  (fun () -> display "\n";
+                     Safelist.iter
+                       (fun ri -> displayri ri; display "\n  ")
+                       ril;
+                     display "\n";
+                     repeat()));
                  (["l"],
-                  ("list all suggested changes"),
+                  ("list all suggested changes with details"),
                   (fun () -> display "\n";
                      Safelist.iter
                        (fun ri -> displayri ri; display "\n  ";

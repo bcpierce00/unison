@@ -1,3 +1,23 @@
+CHANGES FROM VERSION 2.22.0
+
+* Removed UISTYLE=gtk option (having received reports that the old gtk 
+  interface doesn't compile any more in any case).  UISTYLE=gtk2 should 
+  still work.
+
+* Workaround for a bug compiling gtk2 user interface against current versions
+  of gtk2+ libraries.  
+
+-------------------------------
+CHANGES FROM VERSION 2.22.0
+
+* Removed UISTYLE=gtk option (having received reports that the old gtk 
+  interface doesn't compile any more in any case).  UISTYLE=gtk2 should 
+  still work.
+
+* Workaround for a bug compiling gtk2 user interface against current versions
+  of gtk2+ libraries.  
+
+-------------------------------
 CHANGES FROM VERSION 2.22.-1
 
 * Bumped version number.

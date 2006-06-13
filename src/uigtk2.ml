@@ -514,7 +514,11 @@ let statistics () =
   ignore (lst#append ["Data received"]);
   ignore (lst#append ["File data written"]);
   let style = lst#misc#style#copy in
-  style#set_font (Lazy.force fontMonospaceMedium);
+  (* BCP: Removed this on 6/13/2006 as a workaround for a bug reported
+     by Norman Ramsey.  Apparently, lablgtl2 uses Gdk.Font, which is
+     deprecated; its associated operations don't work in recent versions
+     of gtk2. *)
+  (* style#set_font (Lazy.force fontMonospaceMedium); *)
   for r = 0 to 2 do
     lst#set_row ~selectable:false r;
     for c = 1 to 3 do
