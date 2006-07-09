@@ -10,8 +10,8 @@ type interface =
 (* The interface of a concrete UI implementation *)
 module type UI =
 sig
- val start : interface -> unit
- val defaultUi : interface
+  val start : interface -> unit
+  val defaultUi : interface
 end
 
 (* User preference: when true, ask fewer questions *)

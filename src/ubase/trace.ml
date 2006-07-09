@@ -3,6 +3,15 @@
 (* Copyright 1999-2006 (see COPYING for details) *)
 
 (* ---------------------------------------------------------------------- *)
+(* Choosing where messages go *)
+
+type trace_printer_choices = [`Stdout | `Stderr | `FormatStdout]
+
+let traceprinter = ref (`Stdout : trace_printer_choices)
+
+let redirect x = (traceprinter := x)
+
+(* ---------------------------------------------------------------------- *)
 (* Debugging messages *)
 
 let debugmods =
@@ -31,17 +40,19 @@ let runningasserver = ref false
 let debugging() = (Prefs.read debugmods) <> []
 
 let enabled modname =
-  let modnamebase,plus =
-    if Util.endswith modname "+" then (Util.replacesubstring modname "+" "", true)
-    else (modname, false) in
   let m = Prefs.read debugmods in
-  m <> [] && (   (modname = "")
-              || (Safelist.mem "verbose" m)
-              || (Safelist.mem "all+" m)
-              || (Safelist.mem "all+" m)
-              || (Safelist.mem "all" m && not plus)
-              || (Safelist.mem modname m)
-              || (Safelist.mem modnamebase m && not plus)
+  m <> [] && (   (* tracing labeled "" is always enabled *)
+                 (modname = "")
+              || (* '-debug verbose' enables everything *)
+                 (Safelist.mem "verbose" m)
+              || (* '-debug all+' likewise *)
+                 (Safelist.mem "all+" m)
+              || (* '-debug all' enables all tracing not marked + *)
+                 (Safelist.mem "all" m && not (Util.endswith modname "+"))
+              || (* '-debug m' enables m and '-debug m+' enables m+ *)
+                 (Safelist.mem modname m)
+              || (* '-debug m+' also enables m *)
+                 (Safelist.mem (modname ^ "+") m)
              )
 
 let enable modname onoff =
@@ -60,7 +71,10 @@ let debug modname thunk =
       else "" in
     if time<>"" || s<>"" || modname<>"" then begin
       let time = if time="" || (s=""&&modname="") then time else time^": " in
-      Printf.eprintf "[%s%s%s] " time s modname
+      match !traceprinter with
+      | `Stdout -> Printf.printf "[%s%s%s] " time s modname
+      | `Stderr -> Printf.eprintf "[%s%s%s] " time s modname
+      | `FormatStdout -> Format.printf "[%s%s%s] " time s modname
       end;
     thunk();
     flush stderr
@@ -109,8 +123,16 @@ let rec getLogch() =
 let sendLogMsgsToStderr = ref true
 
 let writeLog s =
-  if !sendLogMsgsToStderr then Util.msg "%s" s
-  else debug "" (fun() -> Util.msg "%s" s);
+  if !sendLogMsgsToStderr then begin
+      match !traceprinter with
+      | `Stdout -> Printf.printf "%s" s
+      | `Stderr -> Util.msg "%s" s
+      | `FormatStdout -> Format.printf "%s " s
+  end else debug "" (fun() -> 
+      match !traceprinter with
+      | `Stdout -> Printf.printf "%s" s
+      | `Stderr -> Util.msg "%s" s
+      | `FormatStdout -> Format.printf "%s " s);
   if Prefs.read logging then begin
     let ch = getLogch() in
     output_string ch s;

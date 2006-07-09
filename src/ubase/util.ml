@@ -61,6 +61,23 @@ let msg f =
 
 let msg : ('a, out_channel, unit) format -> 'a = msg
 
+(* ------------- Formatting stuff --------------- *)
+
+let curr_formatter = ref Format.std_formatter
+
+let format f = Format.fprintf (!curr_formatter) f
+let format : ('a, Format.formatter, unit) format -> 'a = format
+
+let format_to_string f =
+  let old_formatter = !curr_formatter in
+  curr_formatter := Format.str_formatter;
+  f ();
+  let s = Format.flush_str_formatter () in
+  curr_formatter := old_formatter;
+  s
+    
+let flush () = Format.pp_print_flush (!curr_formatter) ()
+
 (*****************************************************************************)
 (*                  GLOBAL DEBUGGING SWITCH                                  *)
 (*****************************************************************************)

@@ -232,14 +232,7 @@ runjunk: byte
 
 temp:
 	$(MAKE) UISTYLE=text
-	-mkdir a.tmp b.tmp
-	echo "A " > a.tmp/xxx
-	date >> a.tmp/xxx
-	echo "B " > b.tmp/xxx
-	date >> b.tmp/xxx
-	md5 a.tmp/xxx
-	md5 b.tmp/xxx
-	echo "l" | ./unison test -ignorelocks
+	./unison -test
 
 testmerge:
 	$(MAKE) all NATIVE=false UISTYLE=text

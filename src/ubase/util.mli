@@ -100,6 +100,18 @@ val supplyFileInUnisonDirFn : (string -> string) -> unit
 (* Use it like this: *)
 val fileInUnisonDir : string -> string
 
+(* Printing and formatting functions *)
+
+val format : ('a, Format.formatter, unit) format -> 'a
+(** Format some text on the current formatting channel.
+    This is the only formatting function that should be called anywhere in the program! *)
+
+val flush : unit -> unit
+
+val format_to_string : (unit -> unit) -> string 
+(** [format_to_string f] runs [f] in a context where the Format functions are redirected to
+    a string, which it returns. *)
+
 (* Format and print messages on the standard error stream, being careful to
    flush the stream after each one *)
 val msg : ('a, out_channel, unit) format -> 'a

@@ -163,7 +163,7 @@ OCAMLOBJS += \
           transfer.cmo xferhint.cmo remote.cmo copy.cmo \
           globals.cmo stasher.cmo update.cmo \
 	  files.cmo sortri.cmo recon.cmo transport.cmo \
-          strings.cmo uicommon.cmo uitext.cmo
+          strings.cmo uicommon.cmo uitext.cmo test.cmo
 
 OCAMLOBJS+=main.cmo
 
