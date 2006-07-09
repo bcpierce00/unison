@@ -521,7 +521,8 @@ let loadArchives (optimistic: bool) : bool Lwt.t =
 	"Internal error: On-disk archives are not identical.\n"
       ^ "\n"
       ^ "If you get this message repeatedly, please:\n"
-      ^ "  a) Notify unison-help@cis.upenn.edu.\n"
+      ^ "  a) Send a bug report to unison-users@yahoogroups.com (you may need"
+      ^ "     to join the group before you will be allowed to post).\n"
       ^ "  b) Move the archive files on each machine to some other directory\n"
       ^ "     (in case they may be useful for debugging).\n"
       ^ "     The archive files on this machine are in the directory\n"
@@ -1381,8 +1382,13 @@ let rec buildUpdate archive fspath fullpath here path =
                    ("The path " ^ Path.toString fullpath ^
                     " is not allowed in Windows"))
       | `Dup ->
-          raise (Util.Transient ("The path " ^ Path.toString fullpath ^
-                                 " is ambiguous"))
+          raise (Util.Transient
+            ("The path " ^ Path.toString fullpath ^
+             " is ambiguous (i.e., the name of this path or one of its "
+             ^ "ancestors is the same, modulo capitalization, as another "
+             ^ "path in a case-sensitive filesystem, and you are "
+             ^ "synchronizing this filesystem with a case-insensitive "
+             ^ "filesystem.  ")) 
       | `Ok ->
           let (desc, child, otherChildren) =
             match archive with

@@ -1,3 +1,16 @@
+CHANGES FROM VERSION 2.23.0
+
+* Refined some of the low-level printing and debug-tracing code
+  (mainly for the benefit of Harmony, which shares some low-level
+  modules with Unison)
+
+* Added a better error message for "ambiguous paths".
+
+* Restored uigtk.mli (which I forgot to restore the other day)
+
+* Added the beginnings of a self-test suite
+
+-------------------------------
 CHANGES FROM VERSION 2.22.1
 
 * Restored UISTYLE=gtk build option and uigtk.ml module (which ARE apparently still very much used!)

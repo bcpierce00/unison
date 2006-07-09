@@ -27,6 +27,10 @@ val enable : string -> bool -> unit
    debugging messages *)
 val runningasserver : bool ref
 
+(* Tell the Trace module which local stream to use for tracing and
+   debugging messages *)
+val redirect : [`Stdout | `Stderr | `FormatStdout] -> unit 
+
 (* ---------------------------------------------------------------------- *)
 (* Tracing *)
 
@@ -60,7 +64,6 @@ val messageForwarder : (msg -> unit) option ref
 (* Allow outside access to the logging preference, so that the main program
    can turn it off by default *)
 val logging : bool Prefs.t
-
 
 (* ---------------------------------------------------------------------- *)
 (* Messages *)
