@@ -1,3 +1,7 @@
+CHANGES FROM VERSION 2.23.2
+
+* Add missing file
+-------------------------------
 CHANGES FROM VERSION 2.23.1
 
 * If Unison is asked to "follow" a symbolic link but there is nothing
