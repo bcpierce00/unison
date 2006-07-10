@@ -7,7 +7,7 @@
 
 type trace_printer_choices = [`Stdout | `Stderr | `FormatStdout]
 
-let traceprinter = ref (`Stdout : trace_printer_choices)
+let traceprinter = ref (`Stderr : trace_printer_choices)
 
 let redirect x = (traceprinter := x)
 
@@ -41,20 +41,22 @@ let debugging() = (Prefs.read debugmods) <> []
 
 let enabled modname =
   let m = Prefs.read debugmods in
-  m <> [] && (   (* tracing labeled "" is always enabled *)
-                 (modname = "")
-              || (* '-debug verbose' enables everything *)
-                 (Safelist.mem "verbose" m)
-              || (* '-debug all+' likewise *)
-                 (Safelist.mem "all+" m)
-              || (* '-debug all' enables all tracing not marked + *)
-                 (Safelist.mem "all" m && not (Util.endswith modname "+"))
-              || (* '-debug m' enables m and '-debug m+' enables m+ *)
-                 (Safelist.mem modname m)
-              || (* '-debug m+' also enables m *)
-                 (Safelist.mem (modname ^ "+") m)
-             )
-
+  let en = 
+    m <> [] && (   (* tracing labeled "" is enabled if anything is *)
+                   (modname = "")
+                || (* '-debug verbose' enables everything *)
+                   (Safelist.mem "verbose" m)
+                || (* '-debug all+' likewise *)
+                   (Safelist.mem "all+" m)
+                || (* '-debug all' enables all tracing not marked + *)
+                   (Safelist.mem "all" m && not (Util.endswith modname "+"))
+                || (* '-debug m' enables m and '-debug m+' enables m+ *)
+                   (Safelist.mem modname m)
+                || (* '-debug m+' also enables m *)
+                   (Safelist.mem (modname ^ "+") m)
+               ) in
+  en
+    
 let enable modname onoff =
   let m = Prefs.read debugmods in
   let m' = if onoff then (modname::m) else (Safelist.remove modname m) in

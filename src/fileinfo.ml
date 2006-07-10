@@ -19,12 +19,15 @@ type t = { typ : typ; inode : int; ctime : float;
 let statFn fromRoot fspath path =
   let fullpath = Fspath.concat fspath path in
   let stats = Fspath.lstat fullpath in
-  if
-    stats.Unix.LargeFile.st_kind = Unix.S_LNK &&
-    fromRoot &&
-    Path.followLink path
-  then
-    Fspath.stat fullpath
+  if stats.Unix.LargeFile.st_kind = Unix.S_LNK 
+     && fromRoot 
+     && Path.followLink path
+  then 
+    try Fspath.stat fullpath 
+    with Unix.Unix_error((Unix.ENOENT | Unix.ENOTDIR),_,_) ->
+      raise (Util.Transient (Printf.sprintf
+        "Path %s is marked 'follow' but its target is missing"
+        (Fspath.toString fullpath)))
   else
     stats
 

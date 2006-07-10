@@ -47,12 +47,6 @@ let printVersionAndExit =
     ("Print the current version number and exit.  "
      ^ "(This option only makes sense on the command line.)")
 
-let testPrefName = "test"
-let printTestAndExit =
-  Prefs.createBool testPrefName false "run internal tests and exit"
-    ("Run internal tests and exit.  "
-     ^ "(This option only makes sense on the command line.)")
-
 let docsPrefName = "doc"
 let docs =
   Prefs.createString docsPrefName ""
@@ -127,12 +121,6 @@ let init() = begin
   (* Print version if requested *)
   if Util.StringMap.mem versionPrefName argv then begin
     Printf.printf "%s version %s\n" Uutil.myName Uutil.myVersion;
-    exit 0
-  end;
-
-  (* Run unit tests if requested *)
-  if Util.StringMap.mem testPrefName argv then begin
-    Test.test();
     exit 0
   end;
 

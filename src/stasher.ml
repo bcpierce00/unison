@@ -291,12 +291,16 @@ let backupPath fspath path =
 (* backdir may be in subdirectories of fspath, so we recursively 
    create them in order to avoid error in system calls to Os. *)
 let rec mkdirectories fspath backdir =
+  debug (fun () -> Util.msg
+    "mkdirectories %s %s\n" (Fspath.toString fspath) (Path.toString backdir));
+  if not (Os.exists fspath Path.empty) then
+    Os.createDir fspath Path.empty Props.dirDefault;
   match Path.deconstructRev backdir with
     None -> ()
   | Some (_, parent) ->
       mkdirectories fspath parent;
       let props = (Fileinfo.get false fspath Path.empty).Fileinfo.desc in
-      if not(Os.exists fspath backdir) then Os.createDir fspath backdir props
+      if not (Os.exists fspath backdir) then Os.createDir fspath backdir props
 
 (*------------------------------------------------------------------------------------*)
 	  
@@ -313,14 +317,14 @@ let removeAndBackupAsAppropriate fspath path fakeFspath fakePath =
       (Path.toString fakePath));
   Util.convertUnixErrorsToTransient "removeAndBackupAsAppropriate" (fun () ->
     if not (Os.exists fspath path) then 
-      debug (fun () -> Util.msg "File %s in %s does not exist, no need to back up\n"  
-	  (Path.toString path) (Fspath.toString fspath))
+      debug (fun () -> Util.msg
+        "File %s in %s does not exist, so no need to back up\n"  
+        (Path.toString path) (Fspath.toString fspath))
     else
       if shouldBackup fakePath then begin
 	let (backRoot, backPath) = backupPath fakeFspath fakePath in
 	(match Path.deconstructRev backPath with
-                  None -> ()
-                | Some (_, dir) when dir = Path.empty -> ()
+                  None -> mkdirectories backRoot Path.empty
                 | Some (_, backdir) -> mkdirectories backRoot backdir);
 	debug (fun () -> Util.msg "Backing up [%s] in [%s] to [%s] in [%s]\n" 
 	    (Path.toString fakePath)

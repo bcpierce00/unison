@@ -232,7 +232,7 @@ runjunk: byte
 
 temp:
 	$(MAKE) UISTYLE=text
-	./unison -test
+	./unison test 
 
 testmerge:
 	$(MAKE) all NATIVE=false UISTYLE=text

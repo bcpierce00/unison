@@ -123,6 +123,15 @@ let confirmmerge =
      ^ " turns out that the result is not satisfactory.  In "
      ^ " batch-mode, this preference has no effect.")
     
+let runtests =
+  Prefs.createBool "test" false "run internal tests and exit"
+   ("Run internal tests and exit.  This option is mostly for developers and must be used "
+  ^ "carefully: in particular, "
+  ^ "it will delete the contents of both roots, so that it can install its own files "
+  ^ "for testing.  To prevent tragedy, the names of the roots must include the string "
+    ^ "\"test\" or else the tests will be aborted.  (If no roots are provided, dummy "
+    ^ "root names in the current directory will be chosen automatically.)")
+
 (**********************************************************************
                          Formatting functions
  **********************************************************************)
@@ -459,6 +468,14 @@ let initPrefs ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
     Prefs.parseCmdLine usageMsg;
   end;
 
+  (* Install dummy roots and backup directory if we are running self-tests *)
+  if Prefs.read runtests then begin
+    if Globals.rawRoots() = [] then 
+      Prefs.loadStrings ["root = test-a.tmp"; "root = test-b.tmp"];
+    if (Prefs.read Stasher.backupdir) = "" then
+      Prefs.loadStrings ["backupdir = test-backup.tmp"];
+  end;
+
   (* Print the preference settings *)
   debug (fun() -> Prefs.dumpPrefsToStderr() );
 
@@ -636,8 +653,15 @@ let uiInit
   if Trace.enabled "gc" then Gc.set {(Gc.get ()) with Gc.verbose = 0x3F};
 
   if Prefs.read testServer then exit 0;
+
   (* BCPFIX: Should/can this be done earlier?? *)
-  Files.processCommitLogs()
+  Files.processCommitLogs();
+
+  (* Run unit tests if requested *)
+  if Prefs.read runtests then begin
+    Test.test();
+    exit 0
+  end
 
 (* Exit codes *)
 let perfectExit = 0   (* when everything's okay *)
