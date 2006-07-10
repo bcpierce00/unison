@@ -99,6 +99,9 @@ val readAFile : string -> (string * int * string * string) list
 (* Parse the preferences file, raising Fatal if there are any problems       *)
 val loadTheFile : unit -> unit
 
+(* Parse the given strings as if they were part of the preferences file      *)
+val loadStrings : string list -> unit
+
 (* ------------------------------------------------------------------------- *)
 
 type dumpedPrefs

@@ -61,14 +61,14 @@ let processCommitLogs() =
 let deleteLocal (fspath, ( workingDirOpt, path)) =
   (* when the workingDirectory is set, we are dealing with a temporary file *)
   (* so we don't call the stasher in this case.                             *)
-  ( match workingDirOpt with
+  begin match workingDirOpt with
     Some p -> 
       debug (fun () -> Util.msg  "DeleteLocal [%s] (%s, %s)\n" (Fspath.toString fspath) (Fspath.toString p) (Path.toString path));
       Os.delete p path
   | None ->
       debug (fun () -> Util.msg "DeleteLocal [%s] (None, %s)\n" (Fspath.toString fspath) (Path.toString path));
       Stasher.removeAndBackupAsAppropriate fspath path fspath path
-	);
+  end;
   Lwt.return ()
     
 let performDelete = Remote.registerRootCmd "delete" deleteLocal

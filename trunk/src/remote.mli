@@ -14,10 +14,10 @@ end
    requested by a remote client.) *)
 val registerHostCmd :
     string              (* command name *)
- -> ('a -> 'b Lwt.t) (* local command *)
+ -> ('a -> 'b Lwt.t)    (* local command *)
  -> (   string          (* -> host *)
      -> 'a              (*    arguments *)
-     -> 'b Lwt.t)      (*    -> (suspended) result *)
+     -> 'b Lwt.t)       (*    -> (suspended) result *)
 
 (* A variant of registerHostCmd, for constructing a remote command to be
    applied to a particular root (host + fspath).

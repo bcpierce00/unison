@@ -1,3 +1,6 @@
+(* Unison file synchronizer: src/abort.ml *)
+(* $Id$ *)
+(* Copyright 1999-2006 (see COPYING for details) *)
 
 let debug = Trace.debug "abort"
 

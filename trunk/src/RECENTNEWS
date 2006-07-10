@@ -1,3 +1,17 @@
+CHANGES FROM VERSION 2.23.1
+
+* If Unison is asked to "follow" a symbolic link but there is nothing
+  at the other end of the link, it will now flag this path as an
+  error, rather than treating the symlink itself as missing or deleted.  This
+  avoids a potentially dangerous situation where a followed symlink
+  points to an external filesystem that might be offline with Unison
+  is run (whereupon Unison would cheerfully delete the corresponding 
+  files in the other replica!). 
+
+* More progress on self-tests (but there's still a long way to go to
+  make easy to use infrastructure for this -- it's pretty clunky)
+
+-------------------------------
 CHANGES FROM VERSION 2.23.0
 
 * Refined some of the low-level printing and debug-tracing code

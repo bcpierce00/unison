@@ -664,7 +664,8 @@ let registerSpecialServerCmd
     (serverSide : connection -> 'a -> 'b Lwt.t)
     =
   (* Check that this command name has not already been bound *)
-  assert (not (Util.StringMap.mem cmdName !serverCmds));
+  if (Util.StringMap.mem cmdName !serverCmds) then
+    raise (Util.Fatal (cmdName ^ " already registered!"));
   (* Create marshaling and unmarshaling functions *)
   let ((marshalArgs,unmarshalArgs) : 'a marshalingFunctions) =
     makeMarshalingFunctions marshalingFunctionsArgs (cmdName ^ "-args") in

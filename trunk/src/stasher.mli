@@ -26,3 +26,8 @@ val getRecentVersion:
     -> Os.fullfingerprint
     -> Fspath.t option
 
+(* Return the location of the backup directory *)
+val backupDirectory : unit -> Fspath.t
+
+(* Low-level backupdir preference *)
+val backupdir : string Prefs.t  
