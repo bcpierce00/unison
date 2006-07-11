@@ -1,3 +1,15 @@
+CHANGES FROM VERSION 2.23.4
+
+* Major rewrite of the backup module.  No changes in preferences or
+  general behavior, but details of behavior are much simpler, more
+  regular, and more correct.  :-)
+
+  The code has been minimally tested, but there are probably still
+  some rough edges.  Use with caution.
+
+
+
+-------------------------------
 CHANGES FROM VERSION 2.23.3
 
 * Add missing file, take 2
