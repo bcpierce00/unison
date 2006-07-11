@@ -125,4 +125,4 @@ let readWriteBounded source target len notify =
     end else if !l > 0 then
       notify !l
   in
-  Util.convertUnixErrorsToTransient "readWrite" (fun () -> read len)
+  Util.convertUnixErrorsToTransient "readWriteBounded" (fun () -> read len)

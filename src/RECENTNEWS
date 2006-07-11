@@ -1,3 +1,10 @@
+CHANGES FROM VERSION 2.23.5
+
+* Squashed a longstanding bug that would cause file transfer to fail
+  with the message "Failed: Error in readWrite: Is a directory".
+
+
+-------------------------------
 CHANGES FROM VERSION 2.23.4
 
 * Major rewrite of the backup module.  No changes in preferences or
