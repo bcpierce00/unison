@@ -153,8 +153,7 @@ let rename fname sourcefspath sourcepath targetfspath targetpath =
   let target' = Fspath.toString target in
   if source' = target' then
     raise (Util.Transient ("Rename ("^fname^"): identical source and target " ^ source'));
-  Util.convertUnixErrorsToTransient
-    ("renaming " ^ source' ^ " to " ^ target')
+  Util.convertUnixErrorsToTransient ("renaming " ^ source' ^ " to " ^ target')
     (fun () ->
       debug (fun() -> Util.msg "rename %s to %s\n" source' target');
       (!xferRename) (sourcefspath, sourcepath) (targetfspath, targetpath);
@@ -176,7 +175,7 @@ let renameIfAllowed sourcefspath sourcepath targetfspath targetpath =
   Util.convertUnixErrorsToTransient
   "renaming"
     (fun () ->
-       debug (fun() -> Util.msg "rename %s to %s\n" source' target');
+       debug (fun() -> Util.msg "rename %s to %s (if allowed)\n" source' target');
        let allowed =
          try 
 	   (!xferRename) (sourcefspath, sourcepath) (targetfspath, targetpath);

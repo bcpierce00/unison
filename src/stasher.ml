@@ -6,6 +6,7 @@
 (* Preferences for backing up and stashing *)
    
 let debug = Util.debug "stasher"
+let verbose = Util.debug "stasher+"
 
 let backuplocation = 
   Prefs.createString "backuplocation" "central"
@@ -178,7 +179,7 @@ let backup_rx () =
 (* This function updates the regular expressions for backups' filenames *)   
 let updateRE () = 
   let (a,b,c) = backup_rx () in 
-  debug ( fun () -> 
+  debug (fun () -> 
       Util.msg "Regular Expressions for backups updated:\n ";
       Util.msg "dir_rx: %s\n prefix_rx: %s\n suffix_rx: %s\n"
         (match a with None -> "MISSING" | Some s -> s) b c);
@@ -211,8 +212,6 @@ let addBackupFilesToIgnorePref () =
      Util.msg "New pattern being added to ignore preferences: %s\n" theRegExp);
   Globals.addRegexpToIgnore oldBackupPrefPathspec;
   Globals.addRegexpToIgnore theRegExp
-
-(*------------------------------------------------------------------------------------*)
 
 (* We use references for functions that compute the prefixes and suffixes
    in order to avoid using functions from the Str module each time.       *)
@@ -260,47 +259,84 @@ let updatePrefixAndSuffix () =
   debug (fun () -> Util.msg
            "Prefix and Suffix for backup filenames have been updated.\n")
 	  
+(*------------------------------------------------------------------------------------*)
+
+let makeBackupName path i =
+  (* if backups are kept centrally, the current version has exactly
+     the same name as the original, for convenience. *)
+  if i=0 && Prefs.read backuplocation = "central" then
+    path
+  else
+    Path.addSuffixToFinalName 
+      (Path.addPrefixToFinalName path (!prefix_string i))
+      (!suffix_string i)
+
+let stashDirectory fspath =
+  match Prefs.read backuplocation with
+    "central" -> backupDirectory ()
+  | "local" -> fspath
+  |  _ -> raise (Util.Fatal ("backuplocation preference should be set"
+			     ^"to central or local."))
+	
 (* Generates a file name for a backup file.  If backup file already exists,
    the old file will be renamed with the count incremented.  The newest
    backup file is always the one with version number 1, larger numbers mean
    older files. *)
 (* BCP: Note that the way we keep bumping up the backup numbers on all existing
    backup files could make backups very expensive if someone sets maxbackups to a
-   sufficiently large number! *)
+   sufficiently large number! 
+*)
 let backupPath fspath path =
-  let fspath = 
-    match Prefs.read backuplocation with
-      "central" -> backupDirectory ()
-    | "local" -> fspath
-    |  _ -> raise (Util.Fatal ("backuplocation preference should be set to 'central'"
-			       ^ "or 'local'.")) in
+  let sFspath = stashDirectory fspath in
+
   let rec f i =
-    let (prefix, suffix) = (!prefix_string i, !suffix_string i) in
-    debug (fun() -> Util.msg "backupPath: prefix='%s' suffix='%s'\n" prefix suffix);
-    let tempPath = 
-      Path.addSuffixToFinalName 
-	(Path.addPrefixToFinalName path prefix) suffix in
-    if Os.exists fspath tempPath then
+    let tempPath = makeBackupName path i in
+    if Os.exists sFspath tempPath then
       if i < Prefs.read maxbackups then
-        Os.rename "backupPath" fspath tempPath fspath (f (i + 1))
+        Os.rename "backupPath" sFspath tempPath sFspath (f (i + 1))
       else if i >= Prefs.read maxbackups then
-        Os.delete fspath tempPath;
+        Os.delete sFspath tempPath;
     tempPath in
-  (fspath, f 1)
-    
-(* backdir may be in subdirectories of fspath, so we recursively 
-   create them in order to avoid error in system calls to Os. *)
-let rec mkdirectories fspath backdir =
-  debug (fun () -> Util.msg
-    "mkdirectories %s %s\n" (Fspath.toString fspath) (Path.toString backdir));
-  if not (Os.exists fspath Path.empty) then
-    Os.createDir fspath Path.empty Props.dirDefault;
-  match Path.deconstructRev backdir with
-    None -> ()
-  | Some (_, parent) ->
-      mkdirectories fspath parent;
-      let props = (Fileinfo.get false fspath Path.empty).Fileinfo.desc in
-      if not (Os.exists fspath backdir) then Os.createDir fspath backdir props
+
+  let rec mkdirectories backdir =
+    verbose (fun () -> Util.msg
+      "mkdirectories %s %s\n" (Fspath.toString sFspath) (Path.toString backdir));
+    if not (Os.exists sFspath Path.empty) then
+      Os.createDir sFspath Path.empty Props.dirDefault;
+    match Path.deconstructRev backdir with
+      None -> ()
+    | Some (_, parent) ->
+        mkdirectories parent;
+        let props = (Fileinfo.get false sFspath Path.empty).Fileinfo.desc in
+        if not (Os.exists sFspath backdir) then Os.createDir sFspath backdir props in
+
+  let path0 = makeBackupName path 0 in
+  let sourceTyp = (Fileinfo.get true fspath path).Fileinfo.typ in
+  let path0Typ = (Fileinfo.get true sFspath path0).Fileinfo.typ in
+
+  if   (   sourceTyp = `FILE && path0Typ = `FILE
+       && (Fingerprint.file fspath path) = (Fingerprint.file sFspath path0))
+    || (   sourceTyp = `SYMLINK && path0Typ = `SYMLINK
+       && (Os.readLink fspath path) = (Os.readLink sFspath path0))
+  then begin
+    debug (fun()-> Util.msg
+      "[%s / %s] = [%s / %s]: no need to back up\n"
+      (Fspath.toString sFspath) (Path.toString path0)
+      (Fspath.toString fspath) (Path.toString path));
+    None
+  end else begin
+    debug (fun()-> Util.msg
+      "[%s / %s] is not equal to [%s / %s] (or one is a dir): stash!\n"
+      (Fspath.toString sFspath) (Path.toString path0)
+      (Fspath.toString fspath) (Path.toString path));
+    let sPath = f 0 in
+    (* Make sure the parent directory exists *)
+    begin match Path.deconstructRev sPath with
+     | None -> mkdirectories Path.empty
+     | Some (_, backdir) -> mkdirectories backdir
+    end;
+    Some(sFspath, sPath) 
+  end 
 
 (*------------------------------------------------------------------------------------*)
 	  
@@ -309,7 +345,7 @@ let rec mkdirectories fspath backdir =
    name of the backup file, fakeFspath/fakePath is used instead.
    This allows us to deal directly with temporary files. *)
 let removeAndBackupAsAppropriate fspath path fakeFspath fakePath =
-  debug ( fun () -> Util.msg
+  debug (fun () -> Util.msg
       "removeAndBackupAsAppropriate: (%s,%s), for real path (%s,%s)\n"
       (Fspath.toString fspath)
       (Path.toString path)
@@ -322,37 +358,39 @@ let removeAndBackupAsAppropriate fspath path fakeFspath fakePath =
         (Path.toString path) (Fspath.toString fspath))
     else
       if shouldBackup fakePath then begin
-	let (backRoot, backPath) = backupPath fakeFspath fakePath in
-	(match Path.deconstructRev backPath with
-                  None -> mkdirectories backRoot Path.empty
-                | Some (_, backdir) -> mkdirectories backRoot backdir);
-	debug (fun () -> Util.msg "Backing up [%s] in [%s] to [%s] in [%s]\n" 
-	    (Path.toString fakePath)
-	    (Fspath.toString fakeFspath)
-	    (Path.toString backPath)
-	    (Fspath.toString backRoot));
-	try
+	match backupPath fakeFspath fakePath with
+          None -> ()
+        | Some (backRoot, backPath) ->
+            debug (fun () -> Util.msg "Backing up [%s] in [%s] to [%s] in [%s]\n" 
+                (Path.toString fakePath)
+                (Fspath.toString fakeFspath)
+                (Path.toString backPath)
+                (Fspath.toString backRoot));
+            (* try *)
           Os.rename "removeAndBackupAsAppropriate" fspath path backRoot backPath
-	with
-	  _ -> 
-	    ((let info = Fileinfo.get true fspath path in
-	    match info.Fileinfo.typ with
-	      `SYMLINK ->
-		Os.symlink 
-		  backRoot backPath 
-		  (Os.readLink fspath path)
-	    | _ ->
-		Copy.localFile
-		  fspath path 
-		  backRoot backPath backPath 
-		  `Copy 
-		  info.Fileinfo.desc
-		  (Osx.ressLength info.Fileinfo.osX.Osx.ressInfo)
-		  None);
-	     Os.delete fspath path)
+            (*
+               with
+                 (* XXXXXXXXXXXX What is all this about?? *)
+                 _ -> 
+                   ((let info = Fileinfo.get true fspath path in
+                   match info.Fileinfo.typ with
+                     `SYMLINK ->
+                       Os.symlink 
+                         backRoot backPath 
+                         (Os.readLink fspath path)
+                   | _ ->
+                       Copy.localFile
+                         fspath path 
+                         backRoot backPath backPath 
+                         `Copy 
+                         info.Fileinfo.desc
+                         (Osx.ressLength info.Fileinfo.osX.Osx.ressInfo)
+                         None);
+                    Os.delete fspath path)
+              *)
       end else begin
-	debug ( fun () -> Util.msg
-	    "File %s in %s is not intended to be backed up.\n" 
+	debug (fun () -> Util.msg
+	    "File %s in %s is not to be backed up -- just delete it.\n" 
 	    (Path.toString fakePath) 
 	    (Fspath.toString fakeFspath));
 	Os.delete fspath path
@@ -360,77 +398,20 @@ let removeAndBackupAsAppropriate fspath path fakeFspath fakePath =
 	  
 (*------------------------------------------------------------------------------------*)
 
-let stashDirectory fspath =
-  match Prefs.read backuplocation with
-    "central" -> backupDirectory ()
-  | "local" -> fspath
-  |  _ -> raise (Util.Fatal ("backuplocation preference should be set"
-			     ^"to central or local."))
-	
-let findStash path i =
-  (* if backups are kept centrally, the current version has exactly
-     th same name as the original, for convenience. *)
-  if i=0 && Prefs.read backuplocation = "central" then
-    path
-  else
-    Path.addSuffixToFinalName 
-      (Path.addPrefixToFinalName path (!prefix_string i))
-      (!suffix_string i)
-      
-(* Fingerprint.file follows symlinks, and we do not want that here *)
-let digest_safe st fspath path =
-  match st with
-    `ABSENT | `DIRECTORY -> 
-      raise (Util.Fatal (Printf.sprintf 
-			   ("Trying to digest a directory or a file that doesn't exist :\n%s/%s")
-			   (Fspath.toString fspath)
-			   (Path.toString path)))
-  | `SYMLINK -> Fingerprint.string (Os.readLink fspath path)
-  | `FILE -> Fingerprint.file fspath path
-	
-let stashPath st fspath path =
-  let tempfspath = stashDirectory fspath in
-  let tempPath = findStash path 0 in
-  begin
-    match Path.deconstructRev tempPath with
-      None -> ()
-    | Some (_, dir) when dir = Path.empty ->  ()
-    | Some (_, backdir) -> mkdirectories tempfspath backdir
-  end; 
-  let tempSt = (Fileinfo.get true tempfspath tempPath).Fileinfo.typ in
-  if tempSt <> `ABSENT then begin
-    if Os.exists fspath path &&
-      ((tempSt <> st) ||
-      digest_safe st fspath path <> digest_safe st tempfspath tempPath) then begin
-	if shouldBackup path then 
-        (* this is safe because this is done *after* backup *)
-	  Os.delete tempfspath tempPath 
-	else begin 
-        (* we still a keep a second backup just in case something go bad *)
-	  Trace.debug "stasher+" 
-	    (fun () -> Util.msg "Creating a safety backup for (%s, %s)\n" 
-		(Fspath.toString tempfspath) (Path.toString path));
-	  let olBackup = findStash path 1 in
-	  if Os.exists tempfspath olBackup then Os.delete tempfspath olBackup;
-	  Os.rename "stashPath" tempfspath tempPath tempfspath olBackup
-	end;
-	Some (tempfspath, tempPath)
-      end else
-      None
-  end else
-    Some (tempfspath, tempPath)
-      
+(* XXXXXXXXXXXXX what is go_rec??  I'm going to comment it out for now, but later
+   it should really get deleted if it doesn't turn out to be useful! *)
+
 let rec stashCurrentVersion go_rec fspath path sourcePathOpt =
-  Util.convertUnixErrorsToTransient "stashCurrentVersion" (fun () ->
-    let sourcePath = match sourcePathOpt with None -> path | Some p -> p in
-    if shouldBackupCurrent path then 
+  if shouldBackupCurrent path then 
+    Util.convertUnixErrorsToTransient "stashCurrentVersion" (fun () ->
+      let sourcePath = match sourcePathOpt with None -> path | Some p -> p in
       debug (fun () -> Util.msg "stashCurrentVersion of %s (drawn from %s) in %s\n" 
-          (Path.toString path) (Path.toString sourcePath) (Fspath.toString fspath);
+               (Path.toString path) (Path.toString sourcePath) (Fspath.toString fspath));
       let stat = Fileinfo.get true fspath sourcePath in
       match stat.Fileinfo.typ with
 	`ABSENT -> ()
       |	`DIRECTORY ->
-	  if go_rec then begin
+	  if (* go_rec *) true then begin
             assert (sourcePathOpt = None);
 	    debug (fun () -> Util.msg "Stashing recursively because file is a directory\n");
 	    ignore (Safelist.iter
@@ -440,45 +421,26 @@ let rec stashCurrentVersion go_rec fspath path sourcePathOpt =
 			  stashCurrentVersion true fspath (Path.child path n) None)
 		      (Os.childrenOf fspath path))
 	  end else
-	    debug (fun () -> Util.msg "The file is a directory but no recursive stashing\n")
-      |	st ->
-	  match stashPath st fspath path with
-	    Some (stashDir, stashPath) ->
-	      if st = `SYMLINK then
-		Os.symlink 
-		  stashDir stashPath 
-		  (Os.readLink fspath sourcePath)
-	      else
-		Copy.localFile 
-		  fspath sourcePath 
-		  stashDir stashPath stashPath 
-		  `Copy 
-		  stat.Fileinfo.desc
-		  (Osx.ressLength stat.Fileinfo.osX.Osx.ressInfo)
-		  None;
-	      debug(fun () ->
-		Util.msg "%s has been stashed to %s/%s\n" 
-		  (Path.toString path)
-		  (Fspath.toString stashDir)
-		  (Path.toString stashPath))
-	  | None ->
-	      debug (fun () -> Util.msg "Stashing was not required, contents were equal.\n")))
+	    debug (fun () -> Util.msg "The path is a directory but go_rec is false\n")
+      | `SYMLINK -> 
+          begin match backupPath fspath path with
+          | None -> ()
+          | Some (stashFspath,stashPath) ->
+	      Os.symlink stashFspath stashPath (Os.readLink fspath sourcePath)
+          end 
+      |	`FILE ->
+          begin match backupPath fspath path with
+          | None -> ()
+          | Some (stashFspath, stashPath) ->
+              Copy.localFile 
+                fspath sourcePath 
+                stashFspath stashPath stashPath 
+                `Copy 
+                stat.Fileinfo.desc
+                (Osx.ressLength stat.Fileinfo.osX.Osx.ressInfo)
+                None
+          end)
       
-(* let stashCurrentVersion path = *)
-(*   match Globals.rootsInCanonicalOrder () with *)
-(*     [r1; r2] -> *)
-(*       debug (fun () ->  *)
-(* 	Util.msg "Roots are : \n\t%s\n\t%s" *)
-(* 	  (Common.root2string r1) *)
-(* 	  (Common.root2string r2) *)
-(* 	  ); *)
-(*       Lwt_unix.run ( *)
-(*       Globals.allRootsIter *)
-(* 	(fun r -> debug (fun () -> Util.msg "iter on %s\n" (Common.root2string r)); *)
-(* 	  stashCurrentVersionOnRoot r path) *)
-(* 	) *)
-(*   | _ -> raise (Util.Fatal "The server doesn't know about the roots !") *)
-
 (*------------------------------------------------------------------------------------*)    
     
 (* This function tries to find a backup of a recent version of the file at location
@@ -492,10 +454,10 @@ let getRecentVersion fspath path fingerprint =
   Util.convertUnixErrorsToTransient "getRecentVersion" (fun () ->
     let dir = stashDirectory fspath in
     let rec aux_find i =
-      let path = findStash path i in
+      let path = makeBackupName path i in
       if Os.exists dir path &&
 	(let dig = Os.fingerprint dir path (Fileinfo.get false dir path) in 
-	dig = fingerprint)
+ 	 dig = fingerprint)
       then begin
 	debug (fun () ->
 	  Util.msg "recent version %s found in %s\n" 
@@ -518,7 +480,7 @@ let getRecentVersion fspath path fingerprint =
 (* This function initializes the Stasher module according to the preferences
    defined in the profile. It should be called whenever a profile is reloaded. *)
 let initBackupsLocal () =
-  debug (fun () -> Util.msg "initBackupsLocal called\n");
+  debug (fun () -> Util.msg "initBackupsLocal\n");
 
   translateOldPrefs ();
   updateRE ();
