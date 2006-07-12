@@ -1,3 +1,10 @@
+CHANGES FROM VERSION 2.23.7
+
+* Further tidying of code in the Stasher module
+
+
+
+-------------------------------
 CHANGES FROM VERSION 2.23.6
 
 * Small fix to recent changes (making sure preference files are parsed 

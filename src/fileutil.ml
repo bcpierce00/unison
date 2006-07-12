@@ -3,7 +3,7 @@
 (* Copyright 1999-2006 (see COPYING for details) *)
 
 (* Convert backslashes in a string to forward slashes.  Useful in Windows.   *)
-let bs2fs s0 =
+let backslashes2forwardslashes s0 =
   try
     ignore(String.index s0 '\\'); (* avoid alloc if possible *)
     let n = String.length s0 in

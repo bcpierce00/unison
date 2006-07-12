@@ -144,30 +144,30 @@ let shouldBackupCurrent p =
 (* NB: We use Str.regexp here because we need group matching to retrieve
    and increment version numbers from backup file names. We only use
    it here, though: to check if a path should be backed up or ignored, we
-   use Rx instead. *)
+   use Rx instead.  (This is important because the Str regexp functions are
+   terribly slow.) *)
 
-(* regular expressions for backups, based on current preferences *)
-let version_rx = "\\([0-9]+\\)"
-
-let dir_rx = ref None
-let prefix_rx = ref ""
-let suffix_rx = ref ""
-    
 (* A tuple of string option * string * string, describing a regular
    expression that matches the filenames of unison backups according
    to the current preferences. The first regexp is an option to match
    the local directory, if any, in which backups are stored; the second
    one matches the prefix, the third the suffix.
 
-   BUG: Does this work on windows??  The literal slashes look wrong.
-   (There are some others below as well.)
+   Note that we always use forward slashes here (rather than using backslashes
+   when running on windows) because we are constructing rx's that are going to
+   be matched against Path.t's.  (Strictly speaking, we ought to ask the Path
+   module what the path separator character is, rather than assuming it is slash,
+   but this is never going to change.)
  *)
 let backup_rx () =
-  let sp = Prefs.read backupprefix in
+  let version_rx = "\\([0-9]+\\)" in
+  let prefix = Prefs.read backupprefix in
   let suffix = Str.quote (Prefs.read backupsuffix) in
   let (udir, uprefix) =
-    ((match Filename.dirname sp with "." -> "" | s -> (Fileutil.bs2fs s)^"/"), 
-     Filename.basename sp) in
+    ((match Filename.dirname prefix with
+      | "." -> ""
+      | s   -> (Fileutil.backslashes2forwardslashes s)^"/"), 
+     Filename.basename prefix) in
   let (dir, prefix) = 
     ((match udir with "" -> None | _ -> Some(Str.quote udir)), Str.quote uprefix) in
   if Str.string_match (Str.regexp ".*\\\\\\$VERSION.*") (prefix^suffix) 0 then 
@@ -175,17 +175,8 @@ let backup_rx () =
      Str.global_replace (Str.regexp "\\\\\\$VERSION") version_rx prefix,
      Str.global_replace (Str.regexp "\\\\\\$VERSION") version_rx suffix)
   else
-    (dir, prefix, version_rx^suffix)
+    raise (Util.Fatal "Either backupprefix or backupsuffix must contain '$VERSION'")
    
-(* This function updates the regular expressions for backups' filenames *)   
-let updateRE () = 
-  let (a,b,c) = backup_rx () in 
-  debug (fun () -> 
-      Util.msg "Regular Expressions for backups updated:\n ";
-      Util.msg "dir_rx: %s\n prefix_rx: %s\n suffix_rx: %s\n"
-        (match a with None -> "MISSING" | Some s -> s) b c);
-  (dir_rx := a; prefix_rx := b; suffix_rx := c)
-    
 (* We ignore files whose name ends in .unison.bak, since people may still have these lying around
    from using previous versions of Unison. *)
 let oldBackupPrefPathspec = "Name *.unison.bak"
@@ -193,20 +184,21 @@ let oldBackupPrefPathspec = "Name *.unison.bak"
 (* This function creates Rx regexps based on the preferences to ignore
    backups of old and current versions.  *)
 let addBackupFilesToIgnorePref () =
+  let (dir_rx, prefix_rx, suffix_rx) = backup_rx() in
   let regexp_to_rx s =
    Str.global_replace (Str.regexp "\\\\(") ""
      (Str.global_replace (Str.regexp "\\\\)") "" s) in
   let (full, dir) =
     let d = 
-      match !dir_rx with 
+      match dir_rx with 
 	None -> "/" 
       | Some s -> regexp_to_rx s in
-    let p = regexp_to_rx !prefix_rx in
-    let s = regexp_to_rx !suffix_rx in
+    let p = regexp_to_rx prefix_rx in
+    let s = regexp_to_rx suffix_rx in
     debug (fun() -> Util.msg "d = %s\n" d);
     ("(.*/)?"^p^".*"^s, "(.*/)?"^(String.sub d 0 (String.length d - 1))) in
   let theRegExp = 
-    match !dir_rx with 
+    match dir_rx with 
       None   -> "Regex " ^ full 
     | Some _ -> "Regex " ^ dir in
   debug (fun () -> 
@@ -215,50 +207,32 @@ let addBackupFilesToIgnorePref () =
   Globals.addRegexpToIgnore theRegExp
 
 (* We use references for functions that compute the prefixes and suffixes
-   in order to avoid using functions from the Str module each time.       *)
-let prefix_string = ref (fun i -> assert false)
-let suffix_string = ref (fun i -> assert false)
+   in order to avoid using functions from the Str module each time we need them. *)
+let make_prefix = ref (fun i -> assert false)
+let make_suffix = ref (fun i -> assert false)
     
 (* This function updates the function used to create prefixes and suffixes
    for naming backup files, according to the preferences. *)
-let updatePrefixAndSuffix () =
-  let sp = Prefs.read backupprefix in
-  let suffix = Prefs.read backupsuffix in
-  
-  let version i = assert (i<=999); Printf.sprintf "%03d" i in
-  
-  if sp="" && suffix="" then
-    raise (Util.Fatal "backupprefix and backupsuffix should not both be empty");
-
-  let version_appears_once s mandatory =
-    let regexp = Str.regexp "\\$VERSION" in
-    (* BCP: I don't understand the logic here.  If both backupprefix and backupsuffix 
-       were empty strings, wouldn't we fall into the first case twice and fail to report
-       this as an error?  For the moment, I have added an explicit test for this
-       condition above, but it feels like a hack. *)
-    match Str.full_split regexp s with
+let updateBackupNamingFunctions () =
+  let makeFun s =
+    match Str.full_split (Str.regexp "\\$VERSION") s with
       [] -> (fun _ -> "")
     | [Str.Text t] ->  
-	if mandatory then
-	  raise (Util.Fatal "Either backupprefix or backupsuffix must contain $VERSION")
-	else
-	  (fun _ -> t)
+	(fun _ -> t)
     | [Str.Delim _; Str.Text t] -> 
-	(fun i -> Printf.sprintf "%s%s" (version i) t)
+	(fun i -> Printf.sprintf "%d%s" i t)
     | [Str.Text t; Str.Delim _] ->
-	(fun i -> Printf.sprintf "%s%s" t (version i))
+	(fun i -> Printf.sprintf "%s%d" t i)
     | [Str.Text t; Str.Delim _; Str.Text t'] ->
-	(fun i -> Printf.sprintf "%s%s%s" t (version i) t')
-    | _ -> 
-	raise (Util.Fatal ("The tag $VERSION should only appear "
-			   ^"once in the backup(prefix|suffix) preferences."))
-    in
+	(fun i -> Printf.sprintf "%s%d%s" t i t')
+    | _ -> raise (Util.Fatal (
+        "The tag $VERSION should only appear "
+       ^"once in the backupprefix and backupsuffix preferences.")) in
   
-  let _ = version_appears_once (sp^suffix) true in
-  prefix_string := version_appears_once sp false;
-  suffix_string := version_appears_once suffix false;
+  make_prefix := makeFun (Prefs.read backupprefix);
+  make_suffix := makeFun (Prefs.read backupsuffix);
   debug (fun () -> Util.msg
-           "Prefix and Suffix for backup filenames have been updated.\n")
+    "Prefix and suffix regexps for backup filenames have been updated\n")
 	  
 (*------------------------------------------------------------------------------------*)
 
@@ -269,8 +243,8 @@ let makeBackupName path i =
     path
   else
     Path.addSuffixToFinalName 
-      (Path.addPrefixToFinalName path (!prefix_string i))
-      (!suffix_string i)
+      (Path.addPrefixToFinalName path (!make_prefix i))
+      (!make_suffix i)
 
 let stashDirectory fspath =
   match Prefs.read backuplocation with
@@ -409,8 +383,9 @@ let removeAndBackupAsAppropriate fspath path fakeFspath fakePath =
 	  
 (*------------------------------------------------------------------------------------*)
 
-(* XXXXXXXXXXXXX what is go_rec??  I'm going to comment it out for now, but later
-   it should really get deleted if it doesn't turn out to be useful! *)
+(* XXXXXXXXXXXXX what is go_rec for??  I'm going to comment it out for now, but 
+   it should be deleted soon if it doesn't turn out to be needed when this code
+   starts to be used seriously *)
 
 let rec stashCurrentVersion go_rec fspath path sourcePathOpt =
   if shouldBackupCurrent path then 
@@ -492,20 +467,10 @@ let getRecentVersion fspath path fingerprint =
    defined in the profile. It should be called whenever a profile is reloaded. *)
 let initBackupsLocal () =
   debug (fun () -> Util.msg "initBackupsLocal\n");
-
   translateOldPrefs ();
-  updateRE ();
   addBackupFilesToIgnorePref ();
-  updatePrefixAndSuffix ();
+  updateBackupNamingFunctions ()
   
-  (* If the preference for backuplocation is set to central
-     then we are likely to need to create this backup directory.
-     We deal for this here.             *)
-  if (Prefs.read backuplocation = "central") then
-    let backupDir = backupDirectory () in    
-    if not(Os.exists backupDir Path.empty) then
-      Os.createDir backupDir Path.empty Props.dirDefault
-	
 let initBackupsRoot: Common.root -> unit -> unit Lwt.t =
   Remote.registerRootCmd
     "initBackups"
