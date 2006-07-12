@@ -1,3 +1,11 @@
+CHANGES FROM VERSION 2.23.6
+
+* Small fix to recent changes (making sure preference files are parsed 
+  in the same order as they always have been)
+
+
+
+-------------------------------
 CHANGES FROM VERSION 2.23.5
 
 * Squashed a longstanding bug that would cause file transfer to fail

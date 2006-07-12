@@ -196,7 +196,7 @@ let test() =
     
   Lwt_unix.run (Globals.allRootsIter (fun r -> makeRootEmpty r ()));
 
-  let (r1,r2) = Globals.roots () in
+  let (r2,r1) = Globals.roots () in
   (* Util.msg "r1 = %s  r2 = %s...\n" (Common.root2string r1) (Common.root2string r2); *)
 
   let put c fs = 
