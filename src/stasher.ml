@@ -159,7 +159,8 @@ let suffix_rx = ref ""
    the local directory, if any, in which backups are stored; the second
    one matches the prefix, the third the suffix.
 
-BUG: Does this work on windows??
+   BUG: Does this work on windows??  The literal slashes look wrong.
+   (There are some others below as well.)
  *)
 let backup_rx () =
   let sp = Prefs.read backupprefix in
@@ -190,7 +191,7 @@ let updateRE () =
 let oldBackupPrefPathspec = "Name *.unison.bak"
 
 (* This function creates Rx regexps based on the preferences to ignore
-   backups of old and current versions.*)
+   backups of old and current versions.  *)
 let addBackupFilesToIgnorePref () =
   let regexp_to_rx s =
    Str.global_replace (Str.regexp "\\\\(") ""

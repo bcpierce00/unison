@@ -214,7 +214,7 @@ let scanCmdLine usage =
          Uarg.Bool _   -> Uarg.Bool   (fun b -> insert name (string_of_bool b))
        | Uarg.Int _    -> Uarg.Int    (fun i -> insert name (string_of_int i))
        | Uarg.String _ -> Uarg.String (fun s -> insert name s)
-       | _            -> assert false);
+       | _             -> assert false);
   !m
 
 (*****************************************************************************)
@@ -225,7 +225,7 @@ let string2bool name = function
    "true"  -> true 
  | "false" -> false
  | other   -> raise (Util.Fatal (name^" expects a boolean value, but \n"^other
-                                ^ " is not a boolean value : "))
+                                ^ " is not a boolean"))
 
 let string2int name string =
  try
@@ -234,7 +234,9 @@ let string2int name string =
    raise (Util.Fatal (name ^ " expects an integer value, but\n" 
                  ^ string ^ " is not an integer"))
 
-(* return_value ::= (filename, lineno, varname, value)* *)
+(* Takes a filename and returns a list of "parsed lines" containing
+      (filename, lineno, varname, value)
+   in the same order as in the file. *)
 let rec readAFile filename : (string * int * string * string) list =
   let chan =
     try open_in (profilePathname filename)
@@ -246,17 +248,19 @@ let rec readAFile filename : (string * int * string * string) list =
     | Some(theLine) -> loop (theLine::lines) in
   loop []
 
+(* Takes a list of strings in reverse order and yields a list of "parsed lines"
+   in correct order *)
 and parseLines filename lines = 
   let rec loop lines lineNum res =
     match lines with
-      [] -> Safelist.rev res
+      [] -> res
     | theLine :: rest ->
         if theLine = "" || theLine.[0]='#' then
           loop rest (lineNum+1) res
         else if Util.startswith theLine "include " then
           match Util.splitIntoWords theLine ' ' with
             [_;f] ->
-              let sublines = Safelist.rev (readAFile f) in
+              let sublines = readAFile f in
               loop rest (lineNum+1) (Safelist.append sublines res)
           | _ -> raise (Util.Fatal(Printf.sprintf
 				     "File \"%s\", line %d:\nGarbled 'include' directive: %s" 
