@@ -3,9 +3,7 @@
 let projectName = "unison"
 let majorVersion = 2
 let minorVersion = 23
-let pointVersionOrigin = 165 (* Revision that corresponds to point version 0 *)
-
-(* You shouldn't need to edit below. *)
+let pointVersionOrigin = 174 (* Revision that corresponds to point version 0 *)
 
 (* Documentation:
    This is a program to construct a version of the form Major.Minor.Point,
@@ -38,6 +36,9 @@ let pointVersionOrigin = 165 (* Revision that corresponds to point version 0 *)
    will be at 28 after the commit and this will be Unison version 3.0.0.
 *)
 
+(* ---------------------------------------------------------------------- *)
+(* You shouldn't need to edit below. *)
+
 let revisionString = "$Rev$";;
 let revision = Scanf.sscanf revisionString "$Rev: %d " (fun x -> x);;
 let pointVersion = revision - pointVersionOrigin;;
@@ -45,6 +46,7 @@ let pointVersion = revision - pointVersionOrigin;;
 Printf.printf "MAJORVERSION=%d.%d\n" majorVersion minorVersion;;
 Printf.printf "VERSION=%d.%d.%d\n" majorVersion minorVersion pointVersion;;
 Printf.printf "NAME=%s\n" projectName;;
+
 
 
 
