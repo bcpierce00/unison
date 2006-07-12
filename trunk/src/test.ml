@@ -232,7 +232,7 @@ let test() =
     put R1 (Dir ["x", File "FOO"; "d", Dir ["a", File "BAR"]]); sync();
     put R1 (Dir []); sync();
     check "2" BACKUP1 (Dir [("x", File "FOO"); ("d", Dir [("a", File "BAR")]);
-                            (".bak.001.x", File "foo"); (".bak.001.d", Dir [("a", File "bar")])])
+                            (".bak.1.x", File "foo"); (".bak.1.d", Dir [("a", File "bar")])])
   );
 
   runtest "backups 2" (fun() -> 
@@ -243,18 +243,18 @@ let test() =
     (* Delete them *)
     put R1 (Dir []); sync();
     (* Check that they have been backed up correctly on the other side *)
-    check "1" R2 (Dir [(".bak.000.x", File "foo"); (".bak.000.d", Dir [("a", File "bar")])]);
+    check "1" R2 (Dir [(".bak.0.x", File "foo"); (".bak.0.d", Dir [("a", File "bar")])]);
   );
 
   runtest "backups 3" (fun() -> 
     loadPrefs ["backup = Name *"; "backuplocation = local"; "backupcurrent = Name *"];
     put R1 (Dir []); put R2 (Dir []); sync();
     put R1 (Dir ["x", File "foo"]); sync();
-    check "1a" R1 (Dir [("x", File "foo"); (".bak.000.x", File "foo")]);
-    check "1b" R2 (Dir [("x", File "foo"); (".bak.000.x", File "foo")]);
-    put R2 (Dir ["x", File "bar"; (".bak.000.x", File "foo")]); sync();
-    check "2a" R1 (Dir [("x", File "bar"); (".bak.001.x", File "foo"); (".bak.000.x", File "bar")]);
-    check "2b" R2 (Dir [("x", File "bar"); (".bak.001.x", File "foo"); (".bak.000.x", File "bar")]);
+    check "1a" R1 (Dir [("x", File "foo"); (".bak.0.x", File "foo")]);
+    check "1b" R2 (Dir [("x", File "foo"); (".bak.0.x", File "foo")]);
+    put R2 (Dir ["x", File "bar"; (".bak.0.x", File "foo")]); sync();
+    check "2a" R1 (Dir [("x", File "bar"); (".bak.1.x", File "foo"); (".bak.0.x", File "bar")]);
+    check "2b" R2 (Dir [("x", File "bar"); (".bak.1.x", File "foo"); (".bak.0.x", File "bar")]);
   );
 
   runtest "backups 4" (fun() -> 
@@ -263,9 +263,9 @@ let test() =
     put R1 (Dir ["x", File "foo"]); sync();
     check "1a" BACKUP1 (Dir [("x", File "foo")]);
     put R1 (Dir ["x", File "bar"]); sync();
-    check "1b" BACKUP1 (Dir [("x", File "bar"); (".bak.001.x", File "foo")]);
+    check "1b" BACKUP1 (Dir [("x", File "bar"); (".bak.1.x", File "foo")]);
     put R2 (Dir ["x", File "baz"]); sync();
-    check "1c" BACKUP1 (Dir [("x", File "baz"); (".bak.002.x", File "foo"); (".bak.001.x", File "bar")]);
+    check "1c" BACKUP1 (Dir [("x", File "baz"); (".bak.2.x", File "foo"); (".bak.1.x", File "bar")]);
   );
 
   runtest "backups 5 (directories)" (fun() -> 
@@ -274,9 +274,9 @@ let test() =
     put R1 (Dir ["x", Dir ["a", File "foo"; "l", Link "./foo"]]); sync();
     check "1" BACKUP1 (Dir [("x", Dir [("l", Link "./foo"); ("a", File "foo")])]);
     put R2 (Dir ["x", Dir ["b", File "bar"; "l", Link "./bar"]]); sync();
-    check "2" BACKUP1 (Dir [("x", Dir [("l", Link "./bar"); ("b", File "bar"); ("a", File "foo"); (".bak.001.l", Link "./foo")])]);
+    check "2" BACKUP1 (Dir [("x", Dir [("l", Link "./bar"); ("b", File "bar"); ("a", File "foo"); (".bak.1.l", Link "./foo")])]);
     put R1 (Dir ["x", File "baz"]); sync();
-    check "3" BACKUP1 (Dir [("x", File "baz"); (".bak.002.x", Dir [("l", Link "./bar"); ("b", File "bar"); ("a", File "foo"); (".bak.001.l", Link "./foo")]); (".bak.001.x", Dir [("l", Link "./bar"); ("b", File "bar")])]);
+    check "3" BACKUP1 (Dir [("x", File "baz"); (".bak.2.x", Dir [("l", Link "./bar"); ("b", File "bar"); ("a", File "foo"); (".bak.1.l", Link "./foo")]); (".bak.1.x", Dir [("l", Link "./bar"); ("b", File "bar")])]);
   );
 
   (* Test that we correctly fail when we try to 'follow' a symlink that does not

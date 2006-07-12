@@ -191,7 +191,7 @@ let localString2fspath s =
   (* Windows network names                                                   *)
   let s =
     if Util.osType = `Win32
-    then winRootFix (Fileutil.bs2fs s)
+    then winRootFix (Fileutil.backslashes2forwardslashes s)
     else s in
   (* Note: s may still contain backslashes under Unix *)
   if isRootDir s then Fspath s
@@ -255,7 +255,7 @@ let canonizeFspath p0 =
 	  (* fails, we just quit.  This works nicely for most cases of (1),  *)
 	  (* it works for (2), and on (3) it may leave a mess for someone    *)
 	  (* else to pick up.                                                *)
-          let p = if Util.osType = `Win32 then Fileutil.bs2fs p else p in
+          let p = if Util.osType = `Win32 then Fileutil.backslashes2forwardslashes p else p in
           if isRootDir p then raise
             (Util.Fatal (Printf.sprintf
                "Cannot find canonical name of root directory %s\n(%s)" p why));

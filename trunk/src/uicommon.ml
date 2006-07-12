@@ -123,14 +123,20 @@ let confirmmerge =
      ^ " turns out that the result is not satisfactory.  In "
      ^ " batch-mode, this preference has no effect.")
     
+let runTestsPrefName = "selftest"
 let runtests =
-  Prefs.createBool "test" false "run internal tests and exit"
+  Prefs.createBool runTestsPrefName false "run internal tests and exit"
    ("Run internal tests and exit.  This option is mostly for developers and must be used "
   ^ "carefully: in particular, "
   ^ "it will delete the contents of both roots, so that it can install its own files "
-  ^ "for testing.  To prevent tragedy, the names of the roots must include the string "
-    ^ "\"test\" or else the tests will be aborted.  (If no roots are provided, dummy "
-    ^ "root names in the current directory will be chosen automatically.)")
+  ^ "for testing.  This flag only makes sense on the command line.  When it is "
+  ^ "provided, no preference file is read: all preferences must be specified on the"
+  ^ "command line.  Also, since the self-test procedure involves overwriting the roots "
+  ^ "and backup directory, the names of the roots and of the backupdir preference "
+  ^ "must include the string "
+  ^ "\"test\" or else the tests will be aborted.  (If these are not given "
+  ^ "on the command line, dummy "
+  ^ "subdirectories in the current directory will be created automatically.)")
 
 (**********************************************************************
                          Formatting functions
@@ -451,18 +457,30 @@ let initPrefs ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
   (* Tell the preferences module the name of the profile *)
   Prefs.profileName := Some(profileName);
   
-  (* If the profile does not exist, create an empty one (this should only
-     happen if the profile is 'default', since otherwise we will already
-     have checked that the named one exists). *)
-  if not(Sys.file_exists (Prefs.profilePathname profileName)) then
-    Prefs.addComment "Unison preferences file";
+  (* Check whether the -selftest flag is present on the command line *)
+  let testFlagPresent =
+    Util.StringMap.mem runTestsPrefName (Prefs.scanCmdLine usageMsg) in
+  
+  (* If the -selftest flag is present, then we skip loading the preference file.
+     (This is prevents possible confusions where settings from a preference
+     file could cause unit tests to fail.) *)
+  if not testFlagPresent then begin
+    (* If the profile does not exist, create an empty one (this should only
+       happen if the profile is 'default', since otherwise we will already
+       have checked that the named one exists). *)
+    if not(Sys.file_exists (Prefs.profilePathname profileName)) then
+      Prefs.addComment "Unison preferences file";
 
-  (* Load the profile *)
-  (debug (fun() -> Util.msg "about to load prefs");
-   Prefs.loadTheFile());
+    (* Load the profile *)
+    (debug (fun() -> Util.msg "about to load prefs");
+     Prefs.loadTheFile());
 
-  (* Parse the command line.  This will temporarily override
-     settings from the profile. *)
+    (* Now check again that the -selftest flag has not been set, and barf otherwise *)
+    if Prefs.read runtests then raise (Util.Fatal
+      "The 'test' flag should only be given on the command line")
+  end;
+
+  (* Parse the command line.  This will override settings from the profile. *)
   if !firstTime then begin
     debug (fun() -> Util.msg "about to parse command line");
     Prefs.parseCmdLine usageMsg;
