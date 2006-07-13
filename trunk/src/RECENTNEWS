@@ -1,3 +1,11 @@
+CHANGES FROM VERSION 2.24.1
+
+* More refinement of the self tests, and some fixes to make them work
+  under Windows and Linux (in addition to OSX).
+
+
+
+-------------------------------
 CHANGES FROM VERSION 2.24.0
 
 * Additional self-tests for the backup module

@@ -138,6 +138,10 @@ let runtests =
   ^ "on the command line, dummy "
   ^ "subdirectories in the current directory will be created automatically.)")
 
+(* This ref is set to Test.test during initialization, avoiding a circular
+   dependency *)
+let testFunction = ref (fun () -> assert false)
+
 (**********************************************************************
                          Formatting functions
  **********************************************************************)
@@ -150,10 +154,10 @@ let showprev =
   Prefs.createBool "showprev" false
     "*Show previous properties, if they differ from current"
     ""
-(* This produces nothing, unless the "showprev" preference is set.
-   This is because it tends to make the output too long and
-   annoying. *)
 
+(* The next function produces nothing unless the "showprev" 
+   preference is set.  This is because it tends to make the 
+   output trace too long and annoying. *)
 let prevProps newprops ui =
   if not (Prefs.read showprev) then ""
   else match ui with
@@ -677,7 +681,7 @@ let uiInit
 
   (* Run unit tests if requested *)
   if Prefs.read runtests then begin
-    Test.test();
+    (!testFunction)();
     exit 0
   end
 
