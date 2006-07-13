@@ -279,6 +279,18 @@ let test() =
     check "3" BACKUP1 (Dir [("x", File "baz"); (".bak.2.x", Dir [("l", Link "./bar"); ("b", File "bar"); ("a", File "foo"); (".bak.1.l", Link "./foo")]); (".bak.1.x", Dir [("l", Link "./bar"); ("b", File "bar")])]);
   );
 
+  runtest "backups 6 (backup prefix/suffix)" (fun() -> 
+    loadPrefs ["backup = Name *"; 
+               "backuplocation = local";
+               "backupprefix = back/$VERSION-";
+               "backupsuffix = .backup";
+               "backupcurrent = Name *"];
+    Stasher.initBackups();
+    put R1 (Dir []); put R2 (Dir []); sync();
+    put R1 (Dir ["x", File "foo"]); sync();
+    check "1" R1 (Dir [("x", File "foo"); ("back", Dir [("0-x.backup", File "foo")])]);
+  );
+
   (* Test that we correctly fail when we try to 'follow' a symlink that does not
      point to anything *)
   runtest "symlink to nowhere" (fun() -> 
