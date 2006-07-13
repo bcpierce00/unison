@@ -4,6 +4,9 @@
 
 let (>>=)  = Lwt.(>>=)
 
+(* ---------------------------------------------------------------------- *)
+(* Utility functions *)
+
 let rec remove_file_or_dir d =
   match try Some(Unix.lstat d) with Unix.Unix_error((Unix.ENOENT | Unix.ENOTDIR),_,_) -> None with
   | Some(s) ->
@@ -78,6 +81,19 @@ type fs =
   | File of string
   | Link of string
   | Dir of (string * fs) list
+
+let rec equal fs1 fs2 =
+  match fs1,fs2 with
+    | File s1, File s2 -> s1=s2
+    | Link s1, Link s2 -> s1=s2
+    | Dir d1, Dir d2 ->
+        let dom d = Safelist.sort String.compare (Safelist.map fst d) in
+           (dom d1 = dom d2)
+        && (Safelist.for_all
+              (fun x ->
+                equal (Safelist.assoc x d1) (Safelist.assoc x d2)))
+             (dom d1)
+    | _,_ -> false
 
 let rec fs2string = function
   | File s -> "File \"" ^ s ^ "\""
@@ -154,9 +170,19 @@ let loadPrefs l =
 
 (* ---------------------------------------------------------------------------- *)
 
-let sync() = 
+let displayRis ris =
+  Safelist.iter
+    (fun ri -> 
+      Util.msg "%s\n" (Uicommon.reconItem2string Path.empty ri ""))
+    ris
+
+let sync ?(verbose=false) () = 
   let (reconItemList, _, _) =
     Recon.reconcileAll (Update.findUpdates()) in
+  if verbose then begin
+    Util.msg "Sync result:\n";
+    displayRis reconItemList
+  end;
   Lwt_unix.run (
     Lwt_util.iter
       (fun ri ->
@@ -174,7 +200,9 @@ let runtest name f =
     let savedPrefs = Prefs.dump() in
     currentTest := name;
     f();
-    Prefs.load savedPrefs)
+    Prefs.load savedPrefs;
+    Stasher.initBackups()
+  )
 
 type checkable = R1 | R2 | BACKUP1 | BACKUP2
 
@@ -209,7 +237,7 @@ let test() =
       Lwt_unix.run 
         ((match c with
           R1 -> getfs r1 | R2 -> getfs r2 | BACKUP1 -> getbackup r1 | BACKUP2 -> getbackup r2) ()) in
-    if actual <> fs then
+    if not (equal actual fs) then
       raise (Util.Fatal (Printf.sprintf
         "Test %s / %s: \nExpected %s = \n  %s\nbut found\n  %s\n"
         (!currentTest) name (checkable2string c) (fs2string fs) (fs2string actual))) in
@@ -219,42 +247,50 @@ let test() =
   Prefs.set Trace.terse true;
   Trace.sendLogMsgsToStderr := false;
 
+  (* N.b.: When making up tests, it's important to choose file contents of different
+     lengths.  The reason for this is that, on Unix systems, it is possible for the
+     inode number of a just-deleted file to be reassigned to the very next file
+     created -- i.e., to the updated version of the file that the test script has
+     just written.  If the length of the contents is also the same and the test is
+     running fast enough that the whole thing happens within a second, then the
+     update will be missed! *)
+
   (* Various tests of the backup mechanism *)
   runtest "backups 1" (fun() -> 
     loadPrefs ["backup = Name *"];
     put R1 (Dir []); put R2 (Dir []); sync();
     (* Create a file and a directory *)
-    put R1 (Dir ["x", File "foo"; "d", Dir ["a", File "bar"]]); sync();
+    put R1 (Dir ["x", File "foo"; "d", Dir ["a", File "barr"]]); sync();
     (* Delete them *)
     put R1 (Dir []); sync();
-    check "1" BACKUP1 (Dir ["x", File "foo"; "d", Dir ["a", File "bar"]]);
+    check "1" BACKUP1 (Dir ["x", File "foo"; "d", Dir ["a", File "barr"]]);
     (* Put them back and delete them once more *)
-    put R1 (Dir ["x", File "FOO"; "d", Dir ["a", File "BAR"]]); sync();
+    put R1 (Dir ["x", File "FOO"; "d", Dir ["a", File "BARR"]]); sync();
     put R1 (Dir []); sync();
-    check "2" BACKUP1 (Dir [("x", File "FOO"); ("d", Dir [("a", File "BAR")]);
-                            (".bak.1.x", File "foo"); (".bak.1.d", Dir [("a", File "bar")])])
+    check "2" BACKUP1 (Dir [("x", File "FOO"); ("d", Dir [("a", File "BARR")]);
+                            (".bak.1.x", File "foo"); (".bak.1.d", Dir [("a", File "barr")])])
   );
 
   runtest "backups 2" (fun() -> 
     loadPrefs ["backup = Name *"; "backuplocation = local"];
     put R1 (Dir []); put R2 (Dir []); sync();
     (* Create a file and a directory *)
-    put R1 (Dir ["x", File "foo"; "d", Dir ["a", File "bar"]]); sync();
+    put R1 (Dir ["x", File "foo"; "d", Dir ["a", File "barr"]]); sync();
     (* Delete them *)
     put R1 (Dir []); sync();
     (* Check that they have been backed up correctly on the other side *)
-    check "1" R2 (Dir [(".bak.0.x", File "foo"); (".bak.0.d", Dir [("a", File "bar")])]);
+    check "1" R2 (Dir [(".bak.0.x", File "foo"); (".bak.0.d", Dir [("a", File "barr")])]);
   );
 
   runtest "backups 3" (fun() -> 
     loadPrefs ["backup = Name *"; "backuplocation = local"; "backupcurrent = Name *"];
     put R1 (Dir []); put R2 (Dir []); sync();
-    put R1 (Dir ["x", File "foo"]); sync();
+    put R1 (Dir ["x", File "foo"]); sync ();
     check "1a" R1 (Dir [("x", File "foo"); (".bak.0.x", File "foo")]);
     check "1b" R2 (Dir [("x", File "foo"); (".bak.0.x", File "foo")]);
-    put R2 (Dir ["x", File "bar"; (".bak.0.x", File "foo")]); sync();
-    check "2a" R1 (Dir [("x", File "bar"); (".bak.1.x", File "foo"); (".bak.0.x", File "bar")]);
-    check "2b" R2 (Dir [("x", File "bar"); (".bak.1.x", File "foo"); (".bak.0.x", File "bar")]);
+    put R2 (Dir ["x", File "barr"; (".bak.0.x", File "foo")]); sync ();
+    check "2a" R1 (Dir [("x", File "barr"); (".bak.1.x", File "foo"); (".bak.0.x", File "barr")]);
+    check "2b" R2 (Dir [("x", File "barr"); (".bak.1.x", File "foo"); (".bak.0.x", File "barr")]);
   );
 
   runtest "backups 4" (fun() -> 
@@ -262,21 +298,21 @@ let test() =
     put R1 (Dir []); put R2 (Dir []); sync();
     put R1 (Dir ["x", File "foo"]); sync();
     check "1a" BACKUP1 (Dir [("x", File "foo")]);
-    put R1 (Dir ["x", File "bar"]); sync();
-    check "1b" BACKUP1 (Dir [("x", File "bar"); (".bak.1.x", File "foo")]);
-    put R2 (Dir ["x", File "baz"]); sync();
-    check "1c" BACKUP1 (Dir [("x", File "baz"); (".bak.2.x", File "foo"); (".bak.1.x", File "bar")]);
+    put R1 (Dir ["x", File "barr"]); sync();
+    check "1b" BACKUP1 (Dir [("x", File "barr"); (".bak.1.x", File "foo")]);
+    put R2 (Dir ["x", File "bazzz"]); sync();
+    check "1c" BACKUP1 (Dir [("x", File "bazzz"); (".bak.2.x", File "foo"); (".bak.1.x", File "barr")]);
   );
 
   runtest "backups 5 (directories)" (fun() -> 
     loadPrefs ["backup = Name *"; "backupcurrent = Name *"; "maxbackups = 7"];
     put R1 (Dir []); put R2 (Dir []); sync();
-    put R1 (Dir ["x", Dir ["a", File "foo"; "l", Link "./foo"]]); sync();
-    check "1" BACKUP1 (Dir [("x", Dir [("l", Link "./foo"); ("a", File "foo")])]);
-    put R2 (Dir ["x", Dir ["b", File "bar"; "l", Link "./bar"]]); sync();
-    check "2" BACKUP1 (Dir [("x", Dir [("l", Link "./bar"); ("b", File "bar"); ("a", File "foo"); (".bak.1.l", Link "./foo")])]);
-    put R1 (Dir ["x", File "baz"]); sync();
-    check "3" BACKUP1 (Dir [("x", File "baz"); (".bak.2.x", Dir [("l", Link "./bar"); ("b", File "bar"); ("a", File "foo"); (".bak.1.l", Link "./foo")]); (".bak.1.x", Dir [("l", Link "./bar"); ("b", File "bar")])]);
+    put R1 (Dir ["x", Dir ["a", File "foo"; "l", File "./foo"]]); sync();
+    check "1" BACKUP1 (Dir [("x", Dir [("l", File "./foo"); ("a", File "foo")])]);
+    put R2 (Dir ["x", Dir ["b", File "barr"; "l", File "./barr"]]); sync();
+    check "2" BACKUP1 (Dir [("x", Dir [("l", File "./barr"); ("b", File "barr"); ("a", File "foo"); (".bak.1.l", File "./foo")])]);
+    put R1 (Dir ["x", File "bazzz"]); sync();
+    check "3" BACKUP1 (Dir [("x", File "bazzz"); (".bak.2.x", Dir [("l", File "./barr"); ("b", File "barr"); ("a", File "foo"); (".bak.1.l", File "./foo")]); (".bak.1.x", Dir [("l", File "./barr"); ("b", File "barr")])]);
   );
 
   runtest "backups 6 (backup prefix/suffix)" (fun() -> 
@@ -291,15 +327,31 @@ let test() =
     check "1" R1 (Dir [("x", File "foo"); ("back", Dir [("0-x.backup", File "foo")])]);
   );
 
-  (* Test that we correctly fail when we try to 'follow' a symlink that does not
-     point to anything *)
-  runtest "symlink to nowhere" (fun() -> 
-    loadPrefs ["follow = Name y"];
-    let orig = (Dir []) in
-    put R1 orig; put R2 orig; sync();
-    put R1 (Dir ["y", Link "x"]); sync();
-    check "1" R2 orig;
-  );
+  if Util.osType <> `Win32 then begin
+    runtest "links 1 (directories and links)" (fun() -> 
+      loadPrefs ["backup = Name *"; "backupcurrent = Name *"; "maxbackups = 7"];
+      put R1 (Dir []); put R2 (Dir []); sync();
+      put R1 (Dir ["x", Dir ["a", File "foo"; "l", Link "./foo"]]); sync();
+      check "1" BACKUP1 (Dir [("x", Dir [("l", Link "./foo"); ("a", File "foo")])]);
+      put R2 (Dir ["x", Dir ["b", File "barr"; "l", Link "./barr"]]); sync();
+      check "2" BACKUP1 (Dir [("x", Dir [("l", Link "./barr"); ("b", File "barr"); ("a", File "foo"); (".bak.1.l", Link "./foo")])]);
+      put R1 (Dir ["x", File "bazzz"]); sync();
+      check "3" BACKUP1 (Dir [("x", File "bazzz"); (".bak.2.x", Dir [("l", Link "./barr"); ("b", File "barr"); ("a", File "foo"); (".bak.1.l", Link "./foo")]); (".bak.1.x", Dir [("l", Link "./barr"); ("b", File "barr")])]);
+    );
 
-  Util.msg "\nSuccess :-)\n";
+    (* Test that we correctly fail when we try to 'follow' a symlink that does not
+       point to anything *)
+    runtest "links 2 (symlink to nowhere)" (fun() -> 
+      loadPrefs ["follow = Name y"];
+      let orig = (Dir []) in
+      put R1 orig; put R2 orig; sync();
+      put R1 (Dir ["y", Link "x"]); sync();
+      check "1" R2 orig;
+    );
+  end;
+
+  Util.msg "Success :-)\n";
   ()
+
+(* Initialization: tie the knot between this module and Uicommon *)
+let _ = (Uicommon.testFunction := test)

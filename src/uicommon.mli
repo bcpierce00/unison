@@ -107,3 +107,6 @@ val failedExit: int    (* when there's some non-fatal failure *)
 val fatalExit: int     (* when fatal failure occurred *)
 val exitCode: bool * bool -> int
 (* (anySkipped?, anyFailure?) -> exit code *)
+
+(* Initialization *)
+val testFunction : (unit->unit) ref
