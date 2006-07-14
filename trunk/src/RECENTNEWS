@@ -1,3 +1,20 @@
+CHANGES FROM VERSION 2.24.2
+
+* More debugging output, to help with getting self tests running on WinXP and Linux
+
+
+
+-------------------------------
+CHANGES FROM VERSION 2.24.2
+
+* More debugging output, to help with getting self tests running on WinXP and Linux
+
+* Replaced symlinks with copies of their targets in the Growl framework in src/uimac.
+  This should make the sources easier to check out from the svn repository on WinXP
+  systems.
+
+
+-------------------------------
 CHANGES FROM VERSION 2.24.1
 
 * More refinement of the self tests, and some fixes to make them work
