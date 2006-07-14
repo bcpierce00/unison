@@ -289,21 +289,31 @@ let backupPath fspath path =
   let sourceTyp = (Fileinfo.get true fspath path).Fileinfo.typ in
   let path0Typ = (Fileinfo.get true sFspath path0).Fileinfo.typ in
 
+  let showContent typ fspath path =
+    match typ with
+    | `FILE -> Fingerprint.toString (Fingerprint.file fspath path)
+    | `SYMLINK -> Os.readLink fspath path
+    | `DIRECTORY -> "DIR"
+    | `ABSENT -> "ABSENT" in
+
   if   (   sourceTyp = `FILE && path0Typ = `FILE
        && (Fingerprint.file fspath path) = (Fingerprint.file sFspath path0))
     || (   sourceTyp = `SYMLINK && path0Typ = `SYMLINK
        && (Os.readLink fspath path) = (Os.readLink sFspath path0))
   then begin
     debug (fun()-> Util.msg
-      "[%s / %s] = [%s / %s]: no need to back up\n"
+      "[%s / %s] = [%s / %s] = %s: no need to back up\n"
       (Fspath.toString sFspath) (Path.toString path0)
-      (Fspath.toString fspath) (Path.toString path));
+      (Fspath.toString fspath) (Path.toString path)
+      (showContent sourceTyp fspath path));
     None
   end else begin
     debug (fun()-> Util.msg
-      "[%s / %s] is not equal to [%s / %s] (or one is a dir): stash!\n"
+      "stashed [%s / %s] = %s is not equal to new [%s / %s] = %s (or one is a dir): stash!\n"
       (Fspath.toString sFspath) (Path.toString path0)
-      (Fspath.toString fspath) (Path.toString path));
+      (showContent path0Typ sFspath path0)
+      (Fspath.toString fspath) (Path.toString path)
+      (showContent sourceTyp fspath path));
     let sPath = f 0 in
     (* Make sure the parent directory exists *)
     begin match Path.deconstructRev sPath with

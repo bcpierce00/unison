@@ -7,6 +7,8 @@ let (>>=)  = Lwt.(>>=)
 (* ---------------------------------------------------------------------- *)
 (* Utility functions *)
 
+let debug = Trace.debug "test"
+
 let rec remove_file_or_dir d =
   match try Some(Unix.lstat d) with Unix.Unix_error((Unix.ENOENT | Unix.ENOTDIR),_,_) -> None with
   | Some(s) ->
@@ -155,7 +157,9 @@ let makeBackupEmpty : Common.root -> unit -> unit Lwt.t =
   Remote.registerRootCmd
     "makeBackupEmpty"
     (fun (fspath, ()) ->
-       Lwt.return (remove_file_or_dir (Fspath.toString (Stasher.backupDirectory ()))))
+       let b = Fspath.toString (Stasher.backupDirectory ()) in
+       debug (fun () -> Util.msg "Removing %s\n" b);
+       Lwt.return (remove_file_or_dir b))
 
 let putfs : Common.root -> fs -> unit Lwt.t =
   Remote.registerRootCmd
@@ -196,10 +200,13 @@ let currentTest = ref ""
 let runtest name f =
   Util.msg "%s...\n" name;
   Util.convertUnixErrorsToFatal "Test.test" (fun() -> 
+    debug (fun() -> Util.msg "Emptying backup directory\n");
     Lwt_unix.run (Globals.allRootsIter (fun r -> makeBackupEmpty r ()));
     let savedPrefs = Prefs.dump() in
     currentTest := name;
+    debug (fun() -> Util.msg "Running test\n");
     f();
+    debug (fun() -> Util.msg "Restoring saved prefs\n");
     Prefs.load savedPrefs;
     Stasher.initBackups()
   )
@@ -233,6 +240,7 @@ let test() =
         R1 -> putfs r1 fs | R2 -> putfs r2 fs | BACKUP1 | BACKUP2 -> assert false) in
 
   let check name c fs =
+    debug (fun() -> Util.msg "Checking %s / %s\n" (!currentTest) name);
     let actual =
       Lwt_unix.run 
         ((match c with
