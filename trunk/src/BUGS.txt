@@ -5,7 +5,7 @@ SHOWSTOPPERS
 ============
 
 Mac OSX, Windows XP: 
-  - Unison does not understand resource forks (OSX) or alternate data
+  - Unison does not understand extended attributes (OSX) or alternate data
     streams (XP) and will not synchronize them properly. 
 
 Linux, Solaris: 
@@ -15,10 +15,50 @@ Linux, Solaris:
 SERIOUS
 =======
 
-[Summer 2002] if you abort, it gets confused about the status of
-   ~/.unison/default.prf on the next run sometimes. 
-   ===> We can't figure out how this might have happened.  Would probably
-   indicate a serious bug, though, if true.
+[June 2006, Jim]
+  By the way, there is a bug if you are doing a merge and
+  are propagating times, the times of the merged file end
+  up different so you have to sync again.  I guess this
+  might be a feature, I don't know which way to propagate
+  the times...
+
+[May 2006, Schmitt]
+  In presence of path that cannot be propagated, Unison may have a fatal
+    error "archives not identical". 
+  Here is the setting:
+    replica A:
+      tmp/ubug/foo
+      tmp/toto/foo
+    replica B:
+      tmp/
+  profile:
+    root = /Users/schmitta/tmp
+    root = ssh://beauty/tmp
+    # common options
+    sshargs = -C
+    servercmd = bin/unison
+    path = ubug/foo
+    path = toto
+  The run: (* message that there are no archive *)
+    local          beauty.local
+             error            ubug/foo
+    path ubug/foo is not valid because ubug is not a directory in one of the replicas
+    dir      ---->            toto  [f]
+    Proceed with propagating updates? [] y
+    Propagating updates
+    UNISON 2.19.2 started propagating changes at 17:40:47 on 30 May 2006
+    [ERROR] Skipping ubug/foo
+      path ubug/foo is not valid because ubug is not a directory in one of the replicas
+    [BGN] Copying toto
+      from /Users/schmitta/tmp
+      to //beauty.local//Users/schmitta/tmp
+    [END] Copying toto
+    UNISON 2.19.2 finished propagating changes at 17:40:47 on 30 May 2006
+    Saving synchronizer state
+    Dumping archives to ~/unison.dump on both hosts
+    Finished dumping archives
+    Fatal error: Internal error: New archives are not identical.
+    Retaining original archives.  Please run Unison again to bring them up to date.
 
 [July 2002, Findler]
   I get this message from unison:
@@ -86,74 +126,8 @@ Unison does not currently recognize this.  A workaround is to set the
   http://www.codeproject.com/datetime/dstbugs.asp
   FIXED (a difference of exactly one hour is ignored)
 
-[Feb 2002] Individual files larger than about 1Gb are not handled
-  correctly.
-  - Only the beginning of the file is fingerprinted
-  ==> Fixed in the next release of OCaml
-  - We can't detect whether a file is large
-  FIXED
-
 starting Unison on two non-existent local directories leads to an
   assertion failure in path.ml
-
-[Feb 2002] a bad sequence of events involving permissions...
-   - create a file on server, *owned* by somebody else but readable by me
-   - sync with laptop (file gets copied; copy is owned by me)
-   - on laptop, change file's permissions  (e.g., add group-writable bit)
-   - sync again; during transport, the props modification fails (because
-     I don't own the file)
-   - sync again; note that the file does *not* get listed as updated!
-     (which is wrong: it should be marked 'props')
-  ==> Unison wrongly assumes that changing the permissions never fail.
-  FIXED
-
-[2001] There seems to be a memory leak in uigtk.ml (we originally guessed
-  it had something to do with calls to detectCmd and friends not being
-  tail-recursive, but this does not seem to be it).  We don't currently
-  understand what might be causing this.
-  ===> This is rather memory fragmentation
-       We should probably perform a full GC cycle after each
-       synchronization
-       DONE
-
-[Feb, 2002] The on-disk archives can get out of sync.  This
-    happened to Andre Bonhote, Terry Eubanks and Nicholas Petreley
-    (http://www.linuxworld.com/site-stories/2002/0111.unison.html).
-    According to the information sent by Andre Bonhote, this is not an
-    archive corruption.  One side really contain an archive which is older
-    than the other.
-  What I'm not sure is how this can happen.
-  Anyway, we should really check whether the archives are identical
-    when loading them...
-    ==> DONE
-
-[Aug 2001] When a merge fails, CURRENT2 is not deleted.  If one
-reattempts the merge, it then fails in pre-process when it tries to
-create a new CURRENT2.  Moreover, subsequent runs of Unison treat the
-leftover CURRENT2 as a new file to synchronize.
-
-[Spring 2001] Unison's rsync-based file transfer mechanism has trouble
-  with very large files.  For example, a 500Mb file will run the OCaml
-  system out of memory on some configurations.
-  ===> This needs to be fixed, but it's low priority at the moment
-  FIXED (one function was not tail recursive)
-
-[Jan 2002] I use unison between a Win2k and WinME computers (the WinME is
-  the server).  I have a 350 meg file that I can't sync reliably unless I
-  turn rsync off.  The last couple of times its failed, the client side
-  unison is sucking 100% cpu for over an hour and not responding. There's
-  no real disk activity on either box and the network (100baseT switched
-  network) is idle. I have to nuke it from the task manager to
-  recover. It doesn't seem to be using excessive amounts of RAM. There is
-  usually a temp file on the target machine that's about 15meg when it
-  goes crazy. Flipping off rsync solves the problem.
-  ===> Ocaml marshalling bug
-       (FIXED)
-
-we think a client/server mismatch might produce a hang, instead of an
-  error, because the version number has gotten shorter!  :-)
-  ==> fixed, right?
-      FIXED, yes
 
 ---------------------------------------------------------------------------
 MINOR

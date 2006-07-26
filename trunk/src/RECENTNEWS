@@ -1,3 +1,18 @@
+CHANGES FROM VERSION 2.24.3
+
+* More self tests for WinXP
+
+
+
+
+-------------------------------
+CHANGES FROM VERSION 2.24.3
+
+* Yet more debugging output, to help with getting self tests running on WinXP
+
+
+
+-------------------------------
 CHANGES FROM VERSION 2.24.2
 
 * More debugging output, to help with getting self tests running on WinXP and Linux

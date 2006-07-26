@@ -11,6 +11,11 @@ See the file BUGS.txt for a list of currently open bugs.
 SOON
 ====
 
+**** Document: root, fspath, path (local/not)
+
+**** Nice code cleanup trick: Add a phantom type param to Pref (and Pred?)
+     that prevents mutation from outside the module.
+
 **** The third assertion in Remote.fill_buffer failed for me (BCP) during a transfer!
 
 **** Remaining problem with merging code: 
@@ -880,15 +885,8 @@ It would be nice to be able to STOP the GUI in the middle of propagating
 TIDYING
 =======
 
-** remove ourlablgtk from the distribution
-
-* Tidying
-    - divide files into subdirs
-
 * Go through the sources and make all fatal and transient error messages
   as informative as possible 
-
-Make the sources available by anonymous CVS (maybe from SourceForge)
 
 More documentation (especially in the interface files) is always nice.
   In particular, there isn't enough documentation of the big picture.

@@ -19,9 +19,9 @@ val storeRootsName : unit -> unit
 val findOnRoot :
   Common.root -> Path.t list -> Common.updateItem list Lwt.t
 
+(* Structures describing dirty files/dirs (1 per path given in the -path preference) *)
 val findUpdates :
   unit -> Common.updateItem list Common.oneperpath
-          (* Structures describing dirty files/dirs (1 per given path) *)
 
 (* Take a tree of equal update contents and update the archive accordingly. *)
 val markEqual :

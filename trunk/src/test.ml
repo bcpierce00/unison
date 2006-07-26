@@ -8,6 +8,7 @@ let (>>=)  = Lwt.(>>=)
 (* Utility functions *)
 
 let debug = Trace.debug "test"
+let verbose = Trace.debug "test"
 
 let rec remove_file_or_dir d =
   match try Some(Unix.lstat d) with Unix.Unix_error((Unix.ENOENT | Unix.ENOTDIR),_,_) -> None with
@@ -114,8 +115,12 @@ let rec readfs p =
 let default_perm = 0o755
 
 let writefs p fs =
+  verbose (fun() -> Util.msg "Writing new test filesystem\n");
   let rec loop p = function
-    | File s -> write p s
+    | File s ->
+        verbose (fun() -> Util.msg "Writing %s with contents %s (fingerprint %s)\n"
+                   p s (Fingerprint.toString (Fingerprint.string s)));
+        write p s
     | Link s -> Unix.symlink s p
     | Dir files ->
         Unix.mkdir p default_perm;
@@ -208,6 +213,7 @@ let runtest name f =
     f();
     debug (fun() -> Util.msg "Restoring saved prefs\n");
     Prefs.load savedPrefs;
+    (* BUG? Do we need to tell the other host? *)
     Stasher.initBackups()
   )
 
@@ -227,7 +233,9 @@ let test() =
       "Self-tests can only be run if both roots include the string 'test'");
   if Util.findsubstring "test" (Fspath.toString (Stasher.backupDirectory())) = None then
     raise (Util.Fatal 
-      "Self-tests can only be run if the 'backupdir' preference includes the string 'test'");
+        ("Self-tests can only be run if the 'backupdir' preference (or wherever the backup "
+       ^ "directory name is coming from, e.g. the UNISONBACKUPDIR environment variable) "
+       ^ "includes the string 'test'"));
     
   Lwt_unix.run (Globals.allRootsIter (fun r -> makeRootEmpty r ()));
 
@@ -262,6 +270,29 @@ let test() =
      just written.  If the length of the contents is also the same and the test is
      running fast enough that the whole thing happens within a second, then the
      update will be missed! *)
+
+  (* Win32-specific tests *)
+  runtest "win32 1" (fun() -> 
+    put R1 (Dir []); put R2 (Dir []); sync();
+    put R1 (Dir ["x", File "foo"]); sync ();
+    check "1a" R1 (Dir [("x", File "foo")]);
+    check "1b" R2 (Dir [("x", File "foo")]);
+    put R2 (Dir ["x", File "barr"]); sync ();
+    check "2a" R1 (Dir [("x", File "barr")]);
+    check "2b" R2 (Dir [("x", File "barr")])
+  );
+
+  runtest "win32 2" (fun() -> 
+    put R1 (Dir []); put R2 (Dir []); sync();
+    put R1 (Dir ["x", File "foo"]); sync ();
+    check "1a" R1 (Dir [("x", File "foo")]);
+    check "1b" R2 (Dir [("x", File "foo")]);
+    let (_,p) = r1 in 
+    write (extend (Fspath.toString p) "xnew") "barr";
+    check "2" R1 (Dir [("x", File "foo"); ("xnew", File "barr")]);
+    Unix.rename (extend (Fspath.toString p) "xnew") (extend (Fspath.toString p) "x");
+    check "3" R1 (Dir [("x", File "barr")]);
+  );
 
   (* Various tests of the backup mechanism *)
   runtest "backups 1" (fun() -> 

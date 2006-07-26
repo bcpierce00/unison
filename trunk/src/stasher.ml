@@ -253,6 +253,13 @@ let stashDirectory fspath =
   |  _ -> raise (Util.Fatal ("backuplocation preference should be set"
 			     ^"to central or local."))
 	
+let showContent typ fspath path =
+  match typ with
+  | `FILE -> Fingerprint.toString (Fingerprint.file fspath path)
+  | `SYMLINK -> Os.readLink fspath path
+  | `DIRECTORY -> "DIR"
+  | `ABSENT -> "ABSENT" 
+
 (* Generates a file name for a backup file.  If backup file already exists,
    the old file will be renamed with the count incremented.  The newest
    backup file is always the one with version number 1, larger numbers mean
@@ -288,13 +295,6 @@ let backupPath fspath path =
   let path0 = makeBackupName path 0 in
   let sourceTyp = (Fileinfo.get true fspath path).Fileinfo.typ in
   let path0Typ = (Fileinfo.get true sFspath path0).Fileinfo.typ in
-
-  let showContent typ fspath path =
-    match typ with
-    | `FILE -> Fingerprint.toString (Fingerprint.file fspath path)
-    | `SYMLINK -> Os.readLink fspath path
-    | `DIRECTORY -> "DIR"
-    | `ABSENT -> "ABSENT" in
 
   if   (   sourceTyp = `FILE && path0Typ = `FILE
        && (Fingerprint.file fspath path) = (Fingerprint.file sFspath path0))
