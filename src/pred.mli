@@ -2,7 +2,9 @@
 (* $Id: $ *)
 (* Copyright 1999-2006 (see COPYING for details) *)
 
-(* General description:                                                  
+(* Predicates over paths.
+   
+   General description:                                                  
 
    A predicate is determined by a list of default patterns and a list of 
    current patterns.  These patterns can be modified by                  
