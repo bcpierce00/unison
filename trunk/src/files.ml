@@ -176,9 +176,9 @@ let renameLocal (root, (fspath, pathFrom, pathTo)) =
         | (_, `ABSENT)            -> false
         | ((`FILE | `SYMLINK),
            (`FILE | `SYMLINK))    -> Util.osType <> `Unix
-        | _                       -> true (* Safe default *)
-      in
+        | _                       -> true (* Safe default *) in
       if moveFirst then begin
+        debug (fun() -> Util.msg "rename: moveFirst=true\n");
         let tmpPath = Os.tempPath fspath pathTo in
         let temp = Fspath.concat fspath tmpPath in
         let temp' = Fspath.toString temp in
@@ -206,6 +206,12 @@ let renameLocal (root, (fspath, pathFrom, pathTo)) =
         debug (fun() -> Util.msg "rename: moveFirst=false\n");
         Stasher.removeAndBackupAsAppropriate root localTargetPath root localTargetPath;
         Os.rename "renameLocal(2)" source Path.empty target Path.empty;
+        debug (fun() -> 
+	  if filetypeFrom = `FILE then
+            Util.msg
+              "Contents of %s after renaming = %s\n" 
+              target'
+    	      (Fingerprint.toString (Fingerprint.file target Path.empty)));
       end;
       Lwt.return ())
     
