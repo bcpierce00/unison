@@ -247,16 +247,21 @@ let test() =
       (match c with
         R1 -> putfs r1 fs | R2 -> putfs r2 fs | BACKUP1 | BACKUP2 -> assert false) in
 
+  let failures = ref 0 in
+
   let check name c fs =
     debug (fun() -> Util.msg "Checking %s / %s\n" (!currentTest) name);
     let actual =
       Lwt_unix.run 
         ((match c with
           R1 -> getfs r1 | R2 -> getfs r2 | BACKUP1 -> getbackup r1 | BACKUP2 -> getbackup r2) ()) in
-    if not (equal actual fs) then
-      raise (Util.Fatal (Printf.sprintf
+    if not (equal actual fs) then begin
+      Util.msg
         "Test %s / %s: \nExpected %s = \n  %s\nbut found\n  %s\n"
-        (!currentTest) name (checkable2string c) (fs2string fs) (fs2string actual))) in
+        (!currentTest) name (checkable2string c) (fs2string fs) (fs2string actual);
+      raise (Util.Fatal (Printf.sprintf "Self-test %s / %s failed!" (!currentTest) name));
+      failures := !failures+1
+    end in
 
   Util.warnPrinter := None; 
   Prefs.set Trace.logging false;
@@ -389,8 +394,10 @@ let test() =
     );
   end;
 
-  Util.msg "Success :-)\n";
-  ()
+  if !failures = 0 then
+    Util.msg "Success :-)\n"
+  else
+    raise (Util.Fatal "Self-tests failed\n")
 
 (* Initialization: tie the knot between this module and Uicommon *)
 let _ = (Uicommon.testFunction := test)

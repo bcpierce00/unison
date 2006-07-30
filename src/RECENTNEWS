@@ -1,3 +1,8 @@
+CHANGES FROM VERSION 2.24.4
+
+* More debugging for self-tests on windows
+
+-------------------------------
 CHANGES FROM VERSION 2.24.3
 
 * More self tests for WinXP
