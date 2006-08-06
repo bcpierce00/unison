@@ -67,7 +67,7 @@ let profileLabel =
 
 let profileKey =
   Prefs.createString "key" ""
-    "define a keyboard shortcut for this profile"
+    "define a keyboard shortcut for this profile (in some UIs)"
     ("Used in a profile to define a numeric key (0-9) that can be used in "
      ^ "the graphical user interface to switch immediately to this profile.")
 (* This preference is not actually referred to in the code anywhere, since

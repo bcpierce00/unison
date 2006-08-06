@@ -11,6 +11,17 @@ See the file BUGS.txt for a list of currently open bugs.
 SOON
 ====
 
+**** checkForDangerousPath functionality is only included in text UI!
+     Should be included in the others as well.  Indeed, a better method is
+     suggested by Gabor Gombas:
+        Possible solution: unison should do a stat() on the replica roots
+        before delete operations and if the st_dev field changes (i.e. the
+        file system containing the replica is unmounted or is over-mounted)
+        it should abort the synchronization. This is not a complete solution
+        as it does not protect from e.g. bind mounts, but it would at least
+        cover the "removable device fails causing the mount to go away"
+        case.
+
 **** Document: root, fspath, path (local/not)
 
 **** Nice code cleanup trick: Add a phantom type param to Pref (and Pred?)
@@ -133,14 +144,9 @@ BUILDING AND INSTALLING
    ~/bin/, especially considering that ~/bin is the wrong place to do the 
    install under OSX (it should be ~/Apps or ~/Apps/bin)
 
-** document the dynamic linked version, as some user already reported
+** document the dynamically linked version, as some user already reported
   that it works fine.  Also, try to make the statistics window work with
   this version.  [This is "under windows," I think.]
-
-* if unison is dynamically linked, can we check from the -version
-  that all the libraries are present and working?  can we check the
-  status of threading?  mention in the manual what happens if one side
-  is threaded and the other is not.
 
 should strip symbols from binary files in 'make exportnative'
 
@@ -202,9 +208,12 @@ SMALL FUNCTIONALITY IMPROVEMENTS
 *** there's an HFS+ aware version of rsync called rsyncx. It should be
     relatively easy to import that functionality into unison.
 
-*** Put in a call to Gc.compact in the memory stats command.  Consider
-    putting it in the normal "do it again" command loop.
-    ===> Is this still an issue ?
+*** Consider altering the socket method, so the server accepts connections
+    only on a particular address? This would be very useful, because many people
+    tunnel unison over an OpenVPN Link, and this software works with virtual
+    devices and additional IP addresses on it. If unison would accept
+    connections only on the virtual device, the security would be enhanced,
+    because the OpenVPN key should be unavailable for the black hats.
 
 *** unison -help doesn't go to stdout so it's hard to pipe it into less
     ===> Probably *all* output should go to stdout, not stderr (but maybe

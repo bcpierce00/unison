@@ -284,14 +284,6 @@ Bob H. reported an abnormal failure during transport that apparently led to
    - the error was apparently not caught in the usual way, but instead
      terminated Unison, leaving a DANGER.README file
 
-We probably don't do enough locking/checking in the case where two
-  unisons are running concurrently in the same part of the replica.
-  We're pretty paranoid about checking that the user's files have not
-  changed out from under us, but we assume that the unison.tmp files are
-  ours exclusively.
-  ==> [Using random numbers for tmp files should be sufficient]
-      DONE
-
 "After I synchronized two directories I created a new profile, which
   defaulted to the same directories.  I synchronized again (no changes,
   which was fine) but the Unison program did not save the directory names

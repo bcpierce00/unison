@@ -1420,6 +1420,12 @@ let rec buildUpdate archive fspath fullpath here path =
 let findLocal fspath pathList: Common.updateItem list =
   debug (fun() -> Util.msg "findLocal %s\n" (Fspath.toString fspath));
   addHashToTempNames fspath;
+  (* Maybe we should remember the device number where the root lives at 
+     the beginning of update detection, so that we can check, below, that 
+     the device has not changed.  This check allows us to abort in case 
+     the root is on a removable device and this device gets removed during
+     update detection, causing all the files to appear to have been
+     deleted.  --BCP 2006 *)
   let (arcName,thisRoot) = archiveName fspath MainArch in
   let archive = getArchive thisRoot in
   let (archive, updates) =

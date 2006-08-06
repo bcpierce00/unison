@@ -58,16 +58,17 @@ let processCommitLogs() =
     
 (* ------------------------------------------------------------ *)
     
-let deleteLocal (fspath, ( workingDirOpt, path)) =
+let deleteLocal (fspath, (workingDirOpt, path)) =
   (* when the workingDirectory is set, we are dealing with a temporary file *)
   (* so we don't call the stasher in this case.                             *)
   begin match workingDirOpt with
     Some p -> 
-      debug (fun () -> Util.msg  "DeleteLocal [%s] (%s, %s)\n" (Fspath.toString fspath) (Fspath.toString p) (Path.toString path));
+      debug (fun () -> Util.msg  "deleteLocal [%s] (%s, %s)\n" (Fspath.toString fspath) (Fspath.toString p) (Path.toString path));
       Os.delete p path
   | None ->
-      debug (fun () -> Util.msg "DeleteLocal [%s] (None, %s)\n" (Fspath.toString fspath) (Path.toString path));
-      Stasher.removeAndBackupAsAppropriate fspath path fspath path
+      debug (fun () -> Util.msg "deleteLocal [%s] (None, %s)\n" (Fspath.toString fspath) (Path.toString path));
+      Stasher.backupIfNeeded fspath path;
+      Os.delete fspath path
   end;
   Lwt.return ()
     
@@ -171,7 +172,7 @@ let renameLocal (root, (fspath, pathFrom, pathTo)) =
           be raised.  We want to avoid doing the move first, if possible,
           because this opens a "window of danger" during which the contents of
           the path is nothing. *)
-      let moveFirst =
+      let moveFirst = 
         match (filetypeFrom, filetypeTo) with
         | (_, `ABSENT)            -> false
         | ((`FILE | `SYMLINK),
@@ -190,12 +191,14 @@ let renameLocal (root, (fspath, pathFrom, pathTo)) =
             (* If the renaming fails, we will be left with
                DANGER.README file which will make any other
                (similar) renaming fail in a cryptic way.  So, it
-               seems better to abort early. *)
+               seems better to abort early by converting Unix errors
+               to Fatal ones (rather than Transient). *)
             Util.convertUnixErrorsToFatal "renaming with commit log"
               (fun () ->
                 debug (fun() -> Util.msg "rename %s to %s\n" source' target');
+                Stasher.backupIfNeeded root localTargetPath;
                 Os.rename "renameLocal" source Path.empty target Path.empty;
-                Stasher.removeAndBackupAsAppropriate temp Path.empty root localTargetPath;
+                Os.delete temp Path.empty;
                 clearCommitLog())
         | Some e ->
             (* We are not able to move the file.  We clear the commit
@@ -204,7 +207,7 @@ let renameLocal (root, (fspath, pathFrom, pathTo)) =
             Util.convertUnixErrorsToTransient "renaming" (fun () -> raise e)
       end else begin
         debug (fun() -> Util.msg "rename: moveFirst=false\n");
-        Stasher.removeAndBackupAsAppropriate root localTargetPath root localTargetPath;
+        Stasher.backupIfNeeded root localTargetPath;
         Os.rename "renameLocal(2)" source Path.empty target Path.empty;
         debug (fun() -> 
 	  if filetypeFrom = `FILE then

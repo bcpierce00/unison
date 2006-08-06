@@ -5,13 +5,10 @@
 (* This module maintains backups for general purpose and *)
 (* as archives for mergeable files. *)
 
-(* Backups *)
-val initBackups: unit -> unit
-val removeAndBackupAsAppropriate: Fspath.t -> Path.local -> Fspath.t -> Path.local -> unit
+(* Make a backup copy of a file, if appropriate *)
+val backupIfNeeded: Fspath.t -> Path.local -> unit
 
-(* ------------------------ *)
 (* Stashes of current versions (so that we have archives when needed for merging) *)
-
 val stashCurrentVersion:
       bool                    (* Do it recursively? *)
    -> Fspath.t                (* fspath to stash *)
@@ -19,7 +16,6 @@ val stashCurrentVersion:
    -> Path.local option       (* path to actual bits to be stashed (used to stash an 
                                  additional archive version in addition to the current version) *)
    -> unit
-
 val getRecentVersion:
        Fspath.t
     -> Path.local
@@ -31,3 +27,8 @@ val backupDirectory : unit -> Fspath.t
 
 (* Low-level backupdir preference *)
 val backupdir : string Prefs.t  
+
+(* Initialize the module *)
+val initBackups: unit -> unit
+
+  

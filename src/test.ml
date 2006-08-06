@@ -276,29 +276,6 @@ let test() =
      running fast enough that the whole thing happens within a second, then the
      update will be missed! *)
 
-  (* Win32-specific tests *)
-  runtest "win32 1" (fun() -> 
-    put R1 (Dir []); put R2 (Dir []); sync();
-    put R1 (Dir ["x", File "foo"]); sync ();
-    check "1a" R1 (Dir [("x", File "foo")]);
-    check "1b" R2 (Dir [("x", File "foo")]);
-    put R2 (Dir ["x", File "barr"]); sync ();
-    check "2a" R1 (Dir [("x", File "barr")]);
-    check "2b" R2 (Dir [("x", File "barr")])
-  );
-
-  runtest "win32 2" (fun() -> 
-    put R1 (Dir []); put R2 (Dir []); sync();
-    put R1 (Dir ["x", File "foo"]); sync ();
-    check "1a" R1 (Dir [("x", File "foo")]);
-    check "1b" R2 (Dir [("x", File "foo")]);
-    let (_,p) = r1 in 
-    write (extend (Fspath.toString p) "xnew") "barr";
-    check "2" R1 (Dir [("x", File "foo"); ("xnew", File "barr")]);
-    Unix.rename (extend (Fspath.toString p) "xnew") (extend (Fspath.toString p) "x");
-    check "3" R1 (Dir [("x", File "barr")]);
-  );
-
   (* Various tests of the backup mechanism *)
   runtest "backups 1" (fun() -> 
     loadPrefs ["backup = Name *"];
@@ -356,7 +333,7 @@ let test() =
     put R2 (Dir ["x", Dir ["b", File "barr"; "l", File "./barr"]]); sync();
     check "2" BACKUP1 (Dir [("x", Dir [("l", File "./barr"); ("b", File "barr"); ("a", File "foo"); (".bak.1.l", File "./foo")])]);
     put R1 (Dir ["x", File "bazzz"]); sync();
-    check "3" BACKUP1 (Dir [("x", File "bazzz"); (".bak.2.x", Dir [("l", File "./barr"); ("b", File "barr"); ("a", File "foo"); (".bak.1.l", File "./foo")]); (".bak.1.x", Dir [("l", File "./barr"); ("b", File "barr")])]);
+    check "3" BACKUP1 (Dir [("x", File "bazzz"); (".bak.1.x", Dir [("l", File "./barr"); ("b", File "barr"); ("a", File "foo"); (".bak.1.l", File "./foo")])]);
   );
 
   runtest "backups 6 (backup prefix/suffix)" (fun() -> 
@@ -380,7 +357,7 @@ let test() =
       put R2 (Dir ["x", Dir ["b", File "barr"; "l", Link "./barr"]]); sync();
       check "2" BACKUP1 (Dir [("x", Dir [("l", Link "./barr"); ("b", File "barr"); ("a", File "foo"); (".bak.1.l", Link "./foo")])]);
       put R1 (Dir ["x", File "bazzz"]); sync();
-      check "3" BACKUP1 (Dir [("x", File "bazzz"); (".bak.2.x", Dir [("l", Link "./barr"); ("b", File "barr"); ("a", File "foo"); (".bak.1.l", Link "./foo")]); (".bak.1.x", Dir [("l", Link "./barr"); ("b", File "barr")])]);
+      check "3" BACKUP1 (Dir [("x", File "bazzz"); (".bak.1.x", Dir [("l", Link "./barr"); ("b", File "barr"); ("a", File "foo"); (".bak.1.l", Link "./foo")])]);
     );
 
     (* Test that we correctly fail when we try to 'follow' a symlink that does not
