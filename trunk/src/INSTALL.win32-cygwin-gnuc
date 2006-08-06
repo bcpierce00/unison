@@ -2,6 +2,34 @@ Installation notes to build Unison on Windows systems, with Cygwin GNU C
 (unison-help@cis.upenn.edu)
 
 [The following instructions were tested for Unison 2.9.1 on a Windows
+XP machine running OCaml 3.08.]
+
+Since OCaml is now included in Cygwin, things have gotten pretty
+simple (at least for the text user interface).
+
+   - Download and run the cygwin installer
+        - make sure to select make (from Devel) 
+          and ocaml (from Interpreters) packages; you may also
+          want the subversion package, if you intend to check out
+          the latest unison sources from the live subversion 
+          repository.
+
+   - Download the desired version of the Unison source tarball 
+     from the Unison home page and unpack it
+
+   - In the main directory, type "make"
+
+   - The result should be an executable file called "unison" (or, if
+     you grabbed the whole svn repository, perhaps "src/unison").  Put this
+     somewhere on your search path and you should be good to go.  (You'll
+     need to do something about setting up ssh, etc., but that's beyond the
+     scope of this document.)
+
+
+-------------------------------------------------------------------------
+AN OLDER VERSION:
+
+[The following instructions were tested for Unison 2.9.1 on a Windows
 2000 machine running OCaml 3.04.]
 
 Contents

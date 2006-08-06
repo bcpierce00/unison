@@ -326,33 +326,31 @@ let backupPath fspath path =
 (*------------------------------------------------------------------------------------*)
 	  
 (* Removes file at fspath/path and backs it up before if required.
-   To check if the file has to be backed up and to create the
-   name of the backup file, fakeFspath/fakePath is used instead.
-   This allows us to deal directly with temporary files. *)
-let removeAndBackupAsAppropriate fspath path fakeFspath fakePath =
+   To create the name of the backup file, fakeFspath/fakePath 
+   is used instead.  This allows us to deal directly with temporary
+   files. *)
+let backupIfNeeded fspath path =
   debug (fun () -> Util.msg
-      "removeAndBackupAsAppropriate: (%s,%s), for real path (%s,%s)\n"
+      "backupIfNeeded: %s / %s\n"
       (Fspath.toString fspath)
-      (Path.toString path)
-      (Fspath.toString fakeFspath)
-      (Path.toString fakePath));
-  Util.convertUnixErrorsToTransient "removeAndBackupAsAppropriate" (fun () ->
+      (Path.toString path));
+  Util.convertUnixErrorsToTransient "backupIfNeeded" (fun () ->
     if not (Os.exists fspath path) then 
       debug (fun () -> Util.msg
         "File %s in %s does not exist, so no need to back up\n"  
         (Path.toString path) (Fspath.toString fspath))
     else
-      if shouldBackup fakePath then begin
-	match backupPath fakeFspath fakePath with
+      if shouldBackup path then begin
+	match backupPath fspath path with
           None -> ()
         | Some (backRoot, backPath) ->
-            debug (fun () -> Util.msg "Backing up [%s] in [%s] to [%s] in [%s]\n" 
-                (Path.toString fakePath)
-                (Fspath.toString fakeFspath)
+            debug (fun () -> Util.msg "Backing up %s / %s to %s in %s\n" 
+                (Fspath.toString fspath)
+                (Path.toString path)
                 (Path.toString backPath)
                 (Fspath.toString backRoot));
             try 
-              Os.rename "removeAndBackupAsAppropriate" fspath path backRoot backPath
+              Os.rename "backupIfNeeded" fspath path backRoot backPath
             with
               _ -> 
                 debug (fun () -> Util.msg "Rename failed -- copying instead\n");
@@ -384,11 +382,9 @@ let removeAndBackupAsAppropriate fspath path fakeFspath fakePath =
                   (Fspath.toString fspath) (Path.toString path));
                 Os.delete fspath path
       end else begin
-	debug (fun () -> Util.msg
-	    "File %s in %s is not to be backed up -- just delete it.\n" 
-	    (Path.toString fakePath) 
-	    (Fspath.toString fakeFspath));
-	Os.delete fspath path
+	debug (fun () -> Util.msg "File %s / %s is not to be backed up\n"
+	    (Fspath.toString fspath)
+	    (Path.toString path));
       end)
 	  
 (*------------------------------------------------------------------------------------*)

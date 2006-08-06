@@ -1,3 +1,9 @@
+CHANGES FROM VERSION 2.24.5
+
+* More work on the backup module to correct the problem on Windows
+  that we uncovered a couple of weeks ago.  All the self tests now run.
+
+-------------------------------
 CHANGES FROM VERSION 2.24.4
 
 * More debugging for self-tests on windows
