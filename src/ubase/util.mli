@@ -51,7 +51,7 @@ val truncateString : string -> int -> string
 val startswith : string -> string -> bool
 val endswith : string -> string -> bool
 val findsubstring : string -> string -> int option
-val replacesubstring : string -> string -> string -> string
+val replacesubstring : string -> string -> string -> string (* IN,FROM,TO *)
 val replacesubstrings : string -> (string * string) list -> string
 val concatmap : string -> ('a -> string) -> 'a list -> string
 val trimWhitespace : string -> string

@@ -8,14 +8,15 @@ Since OCaml is now included in Cygwin, things have gotten pretty
 simple (at least for the text user interface).
 
    - Download and run the cygwin installer
-        - make sure to select make (from Devel) 
+        - make sure to select the make (from Devel) 
           and ocaml (from Interpreters) packages; you may also
           want the subversion package, if you intend to check out
           the latest unison sources from the live subversion 
           repository.
 
    - Download the desired version of the Unison source tarball 
-     from the Unison home page and unpack it
+     from the Unison home page and unpack it, or else grab the sources
+     using svn.
 
    - In the main directory, type "make"
 

@@ -82,6 +82,9 @@ let contactquietly =
      ^ "`Contacting server' window (which some users find annoying) "
      ^ "during startup.")
 
+let contactingServerMsg () =
+  Printf.sprintf "Contacting server..." 
+
 let repeat =
   Prefs.createString "repeat" ""
     "synchronize repeatedly (text interface only)"
@@ -454,7 +457,7 @@ let firstTime = ref(true)
 
 (* BCP: WARNING: Some of the code from here is duplicated in uimacbridge...! *)
 let initPrefs ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
-  ~termInteract =
+              ~termInteract =
   (* Restore prefs to their default values, if necessary *)
   if not !firstTime then Prefs.resetToDefaults();
 
@@ -509,7 +512,7 @@ let initPrefs ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
 
   (* The following step contacts the server, so warn the user it could take
      some time *)
-  if !firstTime && (not (Prefs.read contactquietly)) then 
+  if !firstTime && (not (Prefs.read contactquietly || Prefs.read Trace.terse)) then 
     displayWaitMessage();
 
   (* Canonize the names of the roots, sort them (with local roots first),
@@ -539,6 +542,8 @@ let initPrefs ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
   Globals.expandWildcardPaths();
 
   Update.storeRootsName ();
+
+  Util.msg "Connected [%s]\n" (Util.replacesubstring (Update.getRootsName()) ", " " -> ");
 
   debug (fun() ->
        Printf.eprintf "Roots: \n";

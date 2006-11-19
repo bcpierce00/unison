@@ -75,6 +75,8 @@ let archive2string = function
 let rootsName : string Prefs.t =
   Prefs.createString "rootsName" "" "*Canonical root names" ""
 
+let getRootsName () = Prefs.read rootsName
+
 let foundArchives = ref true
 
 (*****************************************************************************)

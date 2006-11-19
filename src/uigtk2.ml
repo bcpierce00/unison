@@ -1215,7 +1215,7 @@ let displayWaitMessage () =
     ignore (GMisc.image ~stock:`DIALOG_INFO ~icon_size:`DIALOG
               ~yalign:0. ~packing:h1#pack ());
     let m =
-      GMisc.label ~markup:(primaryText "Contacting server...")
+      GMisc.label ~markup:(primaryText (Uicommon.contactingServerMsg()))
         ~yalign:0. ~selectable:true ~packing:h1#add () in
     m#misc#set_can_focus false;
     let quit = GButton.button ~stock:`QUIT ~packing:bb#pack () in

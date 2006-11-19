@@ -16,6 +16,9 @@ type archive =
    roots, so the roots are re-sorted. *)
 val storeRootsName : unit -> unit
 
+(* Retrieve the actual names of the roots *)
+val getRootsName : unit -> string 
+
 val findOnRoot :
   Common.root -> Path.t list -> Common.updateItem list Lwt.t
 

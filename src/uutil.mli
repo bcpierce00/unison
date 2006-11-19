@@ -41,6 +41,7 @@ module File :
     type t
     val ofLine : int -> t
     val toLine : t -> int
+    val toString : t -> string
     val dummy : t
   end
 val setProgressPrinter :

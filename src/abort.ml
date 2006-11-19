@@ -14,7 +14,7 @@ let reset () = files := []; abortAll := false
 (****)
 
 let file id =
-  debug (fun() -> Util.msg "Aborting line %d\n" (Uutil.File.toLine id));
+  debug (fun() -> Util.msg "Aborting line %s\n" (Uutil.File.toString id));
   files := id :: !files
 
 let all () = abortAll := true
@@ -22,10 +22,10 @@ let all () = abortAll := true
 (****)
 
 let check id =
-  debug (fun() -> Util.msg "Checking line %d\n" (Uutil.File.toLine id));
+  debug (fun() -> Util.msg "Checking line %s\n" (Uutil.File.toString id));
   if !abortAll || Safelist.mem id !files then begin
     debug (fun() ->
-      Util.msg "Abort failure for line %d\n" (Uutil.File.toLine id));
+      Util.msg "Abort failure for line %s\n" (Uutil.File.toString id));
     raise (Util.Transient "Aborted")
   end
 
