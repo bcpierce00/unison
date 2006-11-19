@@ -201,6 +201,12 @@ let statusDetail s =
 
 let log s = displayMessage (Log, s)
 
+let logverbose s =
+  let temp = !sendLogMsgsToStderr in
+  sendLogMsgsToStderr := !sendLogMsgsToStderr && not (Prefs.read terse);
+  displayMessage (Log, s);
+  sendLogMsgsToStderr := temp 
+
 (* ---------------------------------------------------------------------- *)
 (* Timing *)
     

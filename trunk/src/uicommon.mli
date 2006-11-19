@@ -29,6 +29,9 @@ val expert : bool Prefs.t
 (* User preference: Whether to display 'contacting server' message *)
 val contactquietly : bool Prefs.t
 
+(* User preference: The 'contacting server' message itself *)
+val contactingServerMsg : unit -> string
+
 (* User preference: Descriptive label for this profile *)
 val profileLabel : string Prefs.t
 

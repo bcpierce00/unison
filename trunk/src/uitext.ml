@@ -186,7 +186,7 @@ type proceed = ConfirmBeforeProceeding | ProceedImmediately
 let interact rilist =
   let (r1,r2) = Globals.roots() in
   let (host1, host2) = root2hostname r1, root2hostname r2 in
-  display ("\n" ^ Uicommon.roots2string() ^ "\n");
+  if not (Prefs.read Globals.batch) then display ("\n" ^ Uicommon.roots2string() ^ "\n");
   let rec loop prev =
     function
       [] -> (ConfirmBeforeProceeding, Safelist.rev prev)
@@ -486,13 +486,13 @@ let rec interactAndPropagateChanges reconItemList
         else (howmany + 1, skipped))
       (0, 0) newReconItemList in
   let doit() =
-    newLine();
-    Trace.status "Propagating updates";
+    if not (Prefs.read Globals.batch || Prefs.read Trace.terse) then newLine();
+    if not (Prefs.read Trace.terse) then Trace.status "Propagating updates";
     let timer = Trace.startTimer "Transmitting all files" in
     let failedPaths = doTransport newReconItemList in
     let failures = Safelist.length failedPaths in
     Trace.showTimer timer;
-    Trace.status "Saving synchronizer state";
+    if not (Prefs.read Trace.terse) then Trace.status "Saving synchronizer state";
     Update.commitUpdates ();
     let trans = updatesToDo - failures in
     let summary =
@@ -619,7 +619,7 @@ let start _ =
       (fun s -> Util.msg "%s\n%s\n" Uicommon.shortUsageMsg s; exit 1)
       (fun s -> Util.msg "%s" Uicommon.shortUsageMsg; exit 1)
       (fun () -> if not (Prefs.read silent)
-                 then Util.msg "Contacting server...\n")
+                 then Util.msg "%s\n" (Uicommon.contactingServerMsg())) 
       (fun () -> Some "default")
       (fun () -> Util.msg "%s" Uicommon.shortUsageMsg; exit 1)
       (fun () -> Util.msg "%s" Uicommon.shortUsageMsg; exit 1)

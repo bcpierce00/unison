@@ -1,3 +1,15 @@
+CHANGES FROM VERSION 2.24.6
+
+* Compressed the output from the text user interface (particularly
+  when run with the -terse flag) to make it easier to interpret the
+  results when Unison is run several times in succession from a script.
+
+* Changed the temp file prefix from ".#" to ".unison."
+
+* Fixed an assertion failure when the diff command was used with
+  debugging enabled.
+
+-------------------------------
 CHANGES FROM VERSION 2.24.5
 
 * More work on the backup module to correct the problem on Windows

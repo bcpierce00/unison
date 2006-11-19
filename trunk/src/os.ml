@@ -11,7 +11,7 @@ let myCanonicalHostName =
   try Unix.getenv "UNISONLOCALHOSTNAME"
   with Not_found -> Unix.gethostname()
 
-let tempFilePrefix = ".#"
+let tempFilePrefix = ".unison."
 let tempFileSuffixFixed = ".unison.tmp"
 let tempFileSuffix = ref tempFileSuffixFixed
 let includeInTempNames s =

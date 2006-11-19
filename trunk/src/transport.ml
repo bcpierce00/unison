@@ -56,6 +56,7 @@ let rLogCounter = ref 0
 let logLwtNumbered (lwtDescription: string) (lwtShortDescription: string)
     (t: unit -> 'a Lwt.t): 'a Lwt.t =
   let _ = (rLogCounter := (!rLogCounter) + 1; !rLogCounter) in
+  let lwtDescription = Util.replacesubstring lwtDescription "\n " "" in 
   logLwt (Printf.sprintf "[BGN] %s\n" lwtDescription) t
     (fun _ ->
       Printf.sprintf "[END] %s\n" lwtShortDescription)
@@ -160,20 +161,22 @@ let logStart () =
   let tm = Util.localtime (Util.time()) in
   let m =
     Printf.sprintf
-      "\n\n%s started propagating changes at %02d:%02d:%02d on %02d %s %04d\n"
+      "%s%s started propagating changes at %02d:%02d:%02d on %02d %s %04d\n"
+      (if Prefs.read Trace.terse || Prefs.read Globals.batch then "" else "\n\n")
       (String.uppercase Uutil.myNameAndVersion)
       tm.Unix.tm_hour tm.Unix.tm_min tm.Unix.tm_sec
       tm.Unix.tm_mday (Safelist.nth months tm.Unix.tm_mon)
       (tm.Unix.tm_year+1900) in
-  Trace.log m
+  Trace.logverbose m
 
 let logFinish () =
   let tm = Util.localtime (Util.time()) in
   let m =
     Printf.sprintf
-      "%s finished propagating changes at %02d:%02d:%02d on %02d %s %04d\n\n\n"
+      "%s finished propagating changes at %02d:%02d:%02d on %02d %s %04d\n%s"
       (String.uppercase Uutil.myNameAndVersion)
       tm.Unix.tm_hour tm.Unix.tm_min tm.Unix.tm_sec
       tm.Unix.tm_mday (Safelist.nth months tm.Unix.tm_mon)
-      (tm.Unix.tm_year+1900) in
-  Trace.log m
+      (tm.Unix.tm_year+1900)
+      (if Prefs.read Trace.terse || Prefs.read Globals.batch then "" else "\n\n") in
+  Trace.logverbose m

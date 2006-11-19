@@ -269,8 +269,8 @@ let test() =
   Trace.sendLogMsgsToStderr := false;
 
   (* N.b.: When making up tests, it's important to choose file contents of different
-     lengths.  The reason for this is that, on Unix systems, it is possible for the
-     inode number of a just-deleted file to be reassigned to the very next file
+     lengths.  The reason for this is that, on some Unix systems, it is possible for 
+     the inode number of a just-deleted file to be reassigned to the very next file
      created -- i.e., to the updated version of the file that the test script has
      just written.  If the length of the contents is also the same and the test is
      running fast enough that the whole thing happens within a second, then the

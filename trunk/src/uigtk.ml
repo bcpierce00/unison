@@ -1011,7 +1011,7 @@ let getMyWindow () =
 let displayWaitMessage () =
   if not (Prefs.read Uicommon.contactquietly) then begin
     let w = getMyWindow() in
-    ignore (GMisc.label ~text: "Contacting server..." ~packing:(w#add) ());
+    ignore (GMisc.label ~text: (Uicommon.contactingServerMsg()) ~packing:(w#add) ());
     w#set_border_width 20;
     w#show();
     ignore (w#event#connect#delete ~callback:(fun _ -> exit 0))

@@ -22,10 +22,23 @@ SOON
         cover the "removable device fails causing the mount to go away"
         case.
 
+     ===> Better: Add an option to tell Unison that a certain list of paths
+     (e.g., the root of the replica) are expected always to exist.  These
+     paths would be checked at the end of update detection, and if any are
+     found to be missing, the run would abort.
+
+     (To make things safer for new users, the replica root could be included
+     in the list by default, perhaps with a flag to turn off this behavior.
+     I'm a little reluctant to add more flags, though, for obvious reasons!
+     An alternative, simpler, design would be to allow just a single path to
+     be specified; the default would be the root, and expert users could set
+     it to something else or to nothing at all.)
+
 **** Document: root, fspath, path (local/not)
 
 **** Nice code cleanup trick: Add a phantom type param to Pref (and Pred?)
-     that prevents mutation from outside the module.
+     that prevents mutation from outside the module where the preference is
+     defined (by exposing it with a weak type).
 
 **** The third assertion in Remote.fill_buffer failed for me (BCP) during a transfer!
 
@@ -131,6 +144,9 @@ SOON
   confirm that "ntsec" or "ntea" is in the CYGWIN envariable and issue a
   big warning that permissions may not be properly synchronized if
   neither value is there.
+
+** add '<meta http-equiv="expires" content="0">'
+   to the head section of all the unison web pages.
 
 
 BUILDING AND INSTALLING
@@ -467,8 +483,8 @@ It would be nice if Unison could have the "power" to copy write-protected
 Update checking over NFS might be *much* faster if we use only relative
   pathnames (absolute paths may require an RPC per level!?)
 
-On Saul, Unison seems to use HUGE amounts of memory (250Mb resident),
-  while on my laptop it's much less.  WTF?
+On one server (Saul), Unison seems to use HUGE amounts of memory (250Mb
+  resident), while on my laptop it's much less.  WTF?
 
 [Ben Wong, Aug 2002] Why not make unison fall back to addversionno if it
   would otherwise bomb out with an incorrect version number? That way I

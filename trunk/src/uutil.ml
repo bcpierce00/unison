@@ -72,6 +72,7 @@ module File =
     let dummy = -1
     let ofLine l = l
     let toLine l = assert (l <> dummy); l
+    let toString l = if l=dummy then "<dummy>" else string_of_int l
   end
 
 let progressPrinter = ref (fun _ _ _ -> ())
