@@ -555,14 +555,12 @@ let copy
 
 (* ------------------------------------------------------------ *)
 
-(*
 let readChannelTillEof c =
   let rec loop lines =
     try let l = input_line c in
         loop (l::lines)
     with End_of_file -> lines in
   String.concat "\n" (Safelist.rev (loop []))
-*)
 
 let readChannelTillEof_lwt c =
   let rec loop lines =
@@ -631,9 +629,11 @@ let rec diff root1 path1 ui1 root2 path2 ui2 showDiff id =
         Util.replacesubstrings (Prefs.read diffCmd)
           ["CURRENT1", quotes (Fspath.toString fspath1);
            "CURRENT2", quotes (Fspath.toString fspath2)] in
-    let c = Lwt_unix.run (Lwt_unix.open_process_in cmd) in
-    showDiff cmd (readChannelTillEof_lwt c);
-    ignore (Lwt_unix.run (Lwt_unix.close_process_in c)) in
+    (* Doesn't seem to work well on Windows! 
+       let c = Lwt_unix.run (Lwt_unix.open_process_in cmd) in *)
+    let c = Unix.open_process_in cmd in
+    showDiff cmd (readChannelTillEof c);
+    ignore (Unix.close_process_in c) in
   let (desc1, fp1, ress1, desc2, fp2, ress2) = Common.fileInfos ui1 ui2 in
   match root1,root2 with
     (Local,fspath1),(Local,fspath2) ->
