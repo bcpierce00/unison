@@ -1,3 +1,12 @@
+CHANGES FROM VERSION 2.24.7
+
+* Fixed (I hope) the diff functionality on Windows.  (Unfortunately,
+  an analogous fix does not immediately work for the merge
+  functionality, where we need to be able to grab a process's output
+  along two separate channels.)
+
+
+-------------------------------
 CHANGES FROM VERSION 2.24.6
 
 * Compressed the output from the text user interface (particularly
