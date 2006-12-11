@@ -84,7 +84,7 @@ let rec size_rec s t =
   match t with
     Node (l, v) ->
       let s' = if v = None then s else s + 1 in
-      Safelist.fold_left (fun s (_, t') -> size_rec s t') s l
+      Safelist.fold_left (fun s (_, t') -> size_rec s t') s' l
   | Leaf v ->
       s + 1
 
