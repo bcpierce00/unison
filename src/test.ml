@@ -104,14 +104,21 @@ let rec fs2string = function
   | Dir s -> "Dir [" ^ (String.concat "; "
                           (Safelist.map (fun (n,fs') -> "(\""^n^"\", "^(fs2string fs')^")") s)) ^ "]"
 
-let rec readfs p =
-  let s = Unix.lstat p in
-  match s.Unix.st_kind with
-    | Unix.S_REG -> File (read p)
-    | Unix.S_LNK -> Link (Unix.readlink p)
-    | Unix.S_DIR -> Dir (Safelist.map (fun x -> (x, readfs (extend p x))) (read_dir p))
-    | _ -> assert false
+let fsopt2string = function
+    None -> "MISSING"
+  | Some(f) -> fs2string f
 
+let readfs p =
+  let rec loop p = 
+    let s = Unix.lstat p in
+    match s.Unix.st_kind with
+      | Unix.S_REG -> File (read p)
+      | Unix.S_LNK -> Link (Unix.readlink p)
+      | Unix.S_DIR -> Dir (Safelist.map (fun x -> (x, loop (extend p x))) (read_dir p))
+      | _ -> assert false
+  in try Some(loop p) with
+    Unix.Unix_error (Unix.ENOENT,_,_) -> None
+          
 let default_perm = 0o755
 
 let writefs p fs =
@@ -146,13 +153,13 @@ let makeRootEmpty : Common.root -> unit -> unit Lwt.t =
        remove_file_or_dir (Fspath.toString fspath);
        Lwt.return ())
 
-let getfs : Common.root -> unit -> fs Lwt.t =
+let getfs : Common.root -> unit -> (fs option) Lwt.t =
   Remote.registerRootCmd
     "getfs"
     (fun (fspath, ()) ->
        Lwt.return (readfs (Fspath.toString fspath)))
 
-let getbackup : Common.root -> unit -> fs Lwt.t =
+let getbackup : Common.root -> unit -> (fs option) Lwt.t =
   Remote.registerRootCmd
     "getbackup"
     (fun (fspath, ()) ->
@@ -241,6 +248,10 @@ let test() =
 
   let (r2,r1) = Globals.roots () in
   (* Util.msg "r1 = %s  r2 = %s...\n" (Common.root2string r1) (Common.root2string r2); *)
+  let bothRootsLocal =
+    match (r1,r2) with
+      (Common.Local,_),(Common.Local,_) -> true
+    | _ -> false in
 
   let put c fs = 
     Lwt_unix.run 
@@ -252,13 +263,29 @@ let test() =
   let check name c fs =
     debug (fun() -> Util.msg "Checking %s / %s\n" (!currentTest) name);
     let actual =
+        Lwt_unix.run 
+          ((match c with
+            R1 -> getfs r1 | R2 -> getfs r2 | BACKUP1 -> getbackup r1 | BACKUP2 -> getbackup r2) ())  in
+    let fail () =
+      Util.msg
+        "Test %s / %s: \nExpected %s = \n  %s\nbut found\n  %s\n"
+        (!currentTest) name (checkable2string c) (fs2string fs) (fsopt2string actual);
+      failures := !failures+1;
+      raise (Util.Fatal (Printf.sprintf "Self-test %s / %s failed!" (!currentTest) name)) in
+    match actual with 
+        Some(a) -> if not (equal a fs) then fail()
+      | None -> fail() in
+
+  let checkmissing name c =
+    debug (fun() -> Util.msg "Checking nonexistence %s / %s\n" (!currentTest) name);
+    let actual =
       Lwt_unix.run 
         ((match c with
           R1 -> getfs r1 | R2 -> getfs r2 | BACKUP1 -> getbackup r1 | BACKUP2 -> getbackup r2) ()) in
-    if not (equal actual fs) then begin
+    if  actual <> None then begin
       Util.msg
-        "Test %s / %s: \nExpected %s = \n  %s\nbut found\n  %s\n"
-        (!currentTest) name (checkable2string c) (fs2string fs) (fs2string actual);
+        "Test %s / %s: \nExpected %s MISSING\nbut found\n  %s\n"
+        (!currentTest) name (checkable2string c) (fsopt2string actual);
       raise (Util.Fatal (Printf.sprintf "Self-test %s / %s failed!" (!currentTest) name));
       failures := !failures+1
     end in
@@ -277,20 +304,40 @@ let test() =
      update will be missed! *)
 
   (* Various tests of the backup mechanism *)
-  runtest "backups 1" (fun() -> 
-    loadPrefs ["backup = Name *"];
-    put R1 (Dir []); put R2 (Dir []); sync();
-    (* Create a file and a directory *)
-    put R1 (Dir ["x", File "foo"; "d", Dir ["a", File "barr"]]); sync();
-    (* Delete them *)
-    put R1 (Dir []); sync();
-    check "1" BACKUP1 (Dir ["x", File "foo"; "d", Dir ["a", File "barr"]]);
-    (* Put them back and delete them once more *)
-    put R1 (Dir ["x", File "FOO"; "d", Dir ["a", File "BARR"]]); sync();
-    put R1 (Dir []); sync();
-    check "2" BACKUP1 (Dir [("x", File "FOO"); ("d", Dir [("a", File "BARR")]);
-                            (".bak.1.x", File "foo"); (".bak.1.d", Dir [("a", File "barr")])])
-  );
+
+  (* Check for the bug reported by Ralf Lehmann *)
+  if not bothRootsLocal then 
+    runtest "backups remote" (fun() -> 
+      loadPrefs ["backup = Name *"];
+      put R1 (Dir []); put R2 (Dir []); sync();
+      debug (fun () -> Util.msg "First check\n");
+      checkmissing "1" BACKUP1;
+      checkmissing "2" BACKUP2;
+      (* Create a file *)
+      put R1 (Dir ["test.txt", File "1"]); sync();
+      checkmissing "3" BACKUP1;
+      checkmissing "4" BACKUP2;
+      (* Change it and check that the old version got backed up on the target host *)
+      put R1 (Dir ["test.txt", File "2"]); sync();
+      checkmissing "5" BACKUP1;
+      check "6" BACKUP2 (Dir [("test.txt", File "1")]);
+    );
+
+  if bothRootsLocal then 
+    runtest "backups 1" (fun() -> 
+      loadPrefs ["backup = Name *"];
+      put R1 (Dir []); put R2 (Dir []); sync();
+      (* Create a file and a directory *)
+      put R1 (Dir ["x", File "foo"; "d", Dir ["a", File "barr"]]); sync();
+      (* Delete them *)
+      put R1 (Dir []); sync();
+      check "1" BACKUP1 (Dir ["x", File "foo"; "d", Dir ["a", File "barr"]]);
+      (* Put them back and delete them once more *)
+      put R1 (Dir ["x", File "FOO"; "d", Dir ["a", File "BARR"]]); sync();
+      put R1 (Dir []); sync();
+      check "2" BACKUP1 (Dir [("x", File "FOO"); ("d", Dir [("a", File "BARR")]);
+                              (".bak.1.x", File "foo"); (".bak.1.d", Dir [("a", File "barr")])])
+    );
 
   runtest "backups 2" (fun() -> 
     loadPrefs ["backup = Name *"; "backuplocation = local"];

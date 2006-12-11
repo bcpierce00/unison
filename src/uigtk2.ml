@@ -1118,10 +1118,9 @@ let documentation sect =
 
 (* ------ *)
 
-let messageBox ~title ~parent ?(action = fun t -> t#destroy)
-    ?(modal = false) message =
+let messageBox ~title ?(action = fun t -> t#destroy) ?(modal = false) message =
   let utitle = transcode title in
-  let t = GWindow.dialog ~title:utitle ~parent ~modal ~position:`CENTER () in
+  let t = GWindow.dialog ~title:utitle ~modal ~position:`CENTER () in
   let t_dismiss = GButton.button ~stock:`CLOSE ~packing:t#action_area#add () in
   t_dismiss#grab_default ();
   ignore (t_dismiss#connect#clicked ~callback:(action t));
@@ -1156,7 +1155,7 @@ let twoBoxAdvanced ~title ~message ~longtext ~advLabel ~astock ~bstock =
             ~selectable:true ~yalign:0. ~packing:v1#add ());
   t#add_button_stock `CANCEL `NO;
   let cmd () =
-    messageBox ~title:"Details" ~parent:t ~modal:false longtext
+    messageBox ~title:"Details" ~modal:false longtext
   in
   t#add_button advLabel `HELP;
   t#add_button_stock `APPLY `YES;
@@ -1381,10 +1380,11 @@ let rec createToplevelWindow () =
       GBin.frame ~packing:(toplevelVBox#pack ~expand:false)
         ~shadow_type:`IN (*~hpolicy:`AUTOMATIC ~vpolicy:`NEVER*) () in
     let hb =GPack.hbox ~packing:sw#add () in
-    (GButton.button ~label:"View details..." ~packing:hb#add (),
+    (GButton.button ~label:"View details..." ~packing:(hb#pack ~expand:false) (),
      GText.view ~editable:false ~wrap_mode:`NONE ~packing:hb#add ())
 
   in
+  showDetailsButton#misc#set_sensitive false;
   detailsWindow#misc#modify_font (Lazy.force fontMonospaceMediumPango);
   detailsWindow#misc#set_size_chars ~height:3 ~width:104 ();
   detailsWindow#misc#set_can_focus false;
@@ -1396,7 +1396,7 @@ let rec createToplevelWindow () =
 	  (match !theState.(row).whatHappened with
 	    Some (Util.Failed _, Some det) -> det
 	  |  _ -> "[No details available]") in
-    messageBox ~title:"Merge execution details" ~parent:(getMyWindow ()) details
+    messageBox ~title:"Merge execution details" details
   in
   ignore (showDetailsButton#connect#clicked ~callback:showDetCommand);
   
@@ -2075,7 +2075,7 @@ lst_store#set ~row ~column:c_path path;
       Some i ->
         getLock (fun () ->
           Uicommon.showDiffs !theState.(i).ri
-            (fun title text -> messageBox ~title ~parent:(getMyWindow ()) (transcode text))
+            (fun title text -> messageBox ~title (transcode text))
             Trace.status (Uutil.File.ofLine i);
           displayGlobalProgress 0.)
     | None ->

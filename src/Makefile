@@ -225,7 +225,7 @@ runbare:
 
 runtesttext:
 	$(MAKE) all NATIVE=false DEBUG=true UISTYLE=text
-	./unison test -ui text -batch
+	./unison -selftest -ui text -batch -debug all
 
 runjunk: byte
 	./unison current -debug all
