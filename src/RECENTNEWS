@@ -1,3 +1,21 @@
+CHANGES FROM VERSION 2.24.8
+
+* Integrated several patches submitted by Karl M. -- Thanks!!
+    - in the GTK2 UI, initialize the "View Details..." button to insensitive 
+      (greyed out) and prevent the button from expanding when going to full screen 
+    - keep the main window from vanishing when a new window is opened 
+
+* Changed the order of arguments to the default diff command (so that
+  the + and - annotations in diff's output are reversed).
+
+* Turned off 'fastcheck' for Excel files on Unix platforms, not just Windows.
+
+* Changed names of temp files created by unison so that they start
+  with ".unison." rather than ".#"
+
+
+
+-------------------------------
 CHANGES FROM VERSION 2.24.7
 
 * Fixed (I hope) the diff functionality on Windows.  (Unfortunately,

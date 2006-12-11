@@ -1066,11 +1066,13 @@ let checkContentsChange
       &&
     Props.length info.Fileinfo.desc = Props.length archDesc
       &&
+    notExcelFile path
+      &&
     match archStamp with
       Fileinfo.InodeStamp inode ->
         info.Fileinfo.inode = inode
     | Fileinfo.CtimeStamp ctime ->
-        info.Fileinfo.ctime = ctime && notExcelFile path in
+        info.Fileinfo.ctime = ctime in
   let ressClearlyUnchanged =
     fastCheck
       &&

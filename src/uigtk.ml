@@ -756,7 +756,8 @@ let scanProfiles () =
              provideProfileKey filename k f info
            with Not_found -> ());
           (f, info))
-       (Safelist.filter (fun name -> not (Util.startswith name ".#"))
+       (Safelist.filter (fun name -> not (   Util.startswith name ".#"
+                                          || Util.startswith name Os.tempFilePrefix))
           (Files.ls (Fspath.toString Os.unisonDir)
              "*.prf")))
 

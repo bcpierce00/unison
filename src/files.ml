@@ -593,12 +593,12 @@ let readChannelsTillEof l =
     l
 
 let diffCmd =
-  Prefs.createString "diff" "diff -u"
+  Prefs.createString "diff" "diff -u CURRENT2 CURRENT1"
     "*command for showing differences between files"
     ("This preference can be used to control the name and command-line "
      ^ "arguments of the system "
      ^ "utility used to generate displays of file differences.  The default "
-     ^ "is `\\verb|diff -u|'.  If the value of this preference contains the substrings "
+     ^ "is `\\verb|diff -u CURRENT2 CURRENT1|'.  If the value of this preference contains the substrings "
      ^ "CURRENT1 and CURRENT2, these will be replaced by the names of the files to be "
      ^ "diffed.  If not, the two filenames will be appended to the command.  In both "
      ^ "cases, the filenames are suitably quoted.")
@@ -612,6 +612,8 @@ let quotes s =
     "\"" ^ s ^ "\""
   else
     "'" ^ Util.replacesubstring s "'" "'\''" ^ "'"
+
+let tempName s = Os.tempFilePrefix ^ s
 
 let rec diff root1 path1 ui1 root2 path2 ui2 showDiff id =
   debug (fun () ->
@@ -651,7 +653,7 @@ let rec diff root1 path1 ui1 root2 path2 ui2 showDiff id =
            let path1 = Update.translatePathLocal fspath1 path1 in
            let (workingDir, realPath) = Fspath.findWorkingDir fspath1 path1 in
            let tmppath =
-             Path.addSuffixToFinalName realPath "#unisondiff-" in
+             Path.addSuffixToFinalName realPath (tempName "diff-") in
            Os.delete workingDir tmppath;
            Lwt_unix.run
              (Update.translatePath root2 path2 >>= (fun path2 ->
@@ -766,9 +768,6 @@ let keeptempfilesaftermerge =
   Prefs.createBool
     "keeptempfilesaftermerge" false "*" ""
 
-let makeSureMergeTempfilesAreIgnored () =
-  Globals.addRegexpToIgnore "Name .unisonmerge*"
-
 let showStatus = function
   | Unix.WEXITED i -> Printf.sprintf "exited (%d)" i
   | Unix.WSIGNALED i -> Printf.sprintf "killed with signal %d" i
@@ -806,12 +805,12 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
      names that will be recognized as temp by ordinary Unix programs -- e.g.,
      beginning with dot.  Perhaps the update detection sweep should remove them
      automatically.  *)
-  let working1 = Path.addPrefixToFinalName basep ".unisonmerge1-" in
-  let working2 = Path.addPrefixToFinalName basep ".unisonmerge2-" in
-  let workingarch = Path.addPrefixToFinalName basep ".unisonmergearch-" in
-  let new1 = Path.addPrefixToFinalName basep ".unisonmergenew1-" in
-  let new2 = Path.addPrefixToFinalName basep ".unisonmergenew2-" in
-  let newarch = Path.addPrefixToFinalName basep ".unisonmergenewarch-" in
+  let working1 = Path.addPrefixToFinalName basep (tempName "merge1-") in
+  let working2 = Path.addPrefixToFinalName basep (tempName "merge2-") in
+  let workingarch = Path.addPrefixToFinalName basep (tempName "mergearch-") in
+  let new1 = Path.addPrefixToFinalName basep (tempName "mergenew1-") in
+  let new2 = Path.addPrefixToFinalName basep (tempName "mergenew2-") in
+  let newarch = Path.addPrefixToFinalName basep (tempName "mergenewarch-") in
   
   let (desc1, fp1, ress1, desc2, fp2, ress2) = Common.fileInfos ui1 ui2 in
   

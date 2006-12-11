@@ -5,6 +5,7 @@
 val myCanonicalHostName : string
 
 val tempPath : Fspath.t -> Path.local -> Path.local
+val tempFilePrefix : string
 val includeInTempNames : string -> unit
 
 val exists : Fspath.t -> Path.local -> bool

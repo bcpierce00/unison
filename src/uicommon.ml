@@ -561,8 +561,6 @@ let initPrefs ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
 
   Recon.checkThatPreferredRootIsValid();
   
-  Files.makeSureMergeTempfilesAreIgnored ();
-
   Lwt_unix.run
     (checkCaseSensitivity () >>=
      Globals.propagatePrefs);
