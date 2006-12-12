@@ -67,8 +67,7 @@ let deleteLocal (fspath, (workingDirOpt, path)) =
       Os.delete p path
   | None ->
       debug (fun () -> Util.msg "deleteLocal [%s] (None, %s)\n" (Fspath.toString fspath) (Path.toString path));
-      Stasher.backupIfNeeded fspath path;
-      Os.delete fspath path
+      Stasher.backup fspath path `AndRemove
   end;
   Lwt.return ()
     
@@ -162,8 +161,6 @@ let renameLocal (root, (fspath, pathFrom, pathTo)) =
 	   (Fspath.toString source) (Fspath.toString target)));
       let filetypeTo =
         (Fileinfo.get false target Path.empty).Fileinfo.typ in
-      let source' = Fspath.toString source in (* only for debugmsg, delete? *)
-      let target' = Fspath.toString target in (* only for debugmsg, delete? *)
       
        (* Windows and Unix operate differently if the target path of a
           rename already exists: in Windows an exception is raised, in
@@ -185,35 +182,32 @@ let renameLocal (root, (fspath, pathFrom, pathTo)) =
         let temp' = Fspath.toString temp in
         writeCommitLog source target temp';
 
-        debug (fun() -> Util.msg "moving %s to %s\n" target' temp');
-        match Os.renameIfAllowed target Path.empty temp Path.empty with
-          None ->  
-            (* If the renaming fails, we will be left with
+        debug (fun() -> Util.msg "moving %s to %s\n" (Fspath.toString target) temp');
+        Util.finalize (fun() ->
+          Util.convertUnixErrorsToTransient "renaming" (fun() ->
+            Stasher.backup root localTargetPath `ByCopying;
+            Os.rename "renameLocal(1)" target Path.empty temp Path.empty;
+            (* If the next renaming fails, we will be left with
                DANGER.README file which will make any other
-               (similar) renaming fail in a cryptic way.  So, it
+               (similar) renaming fail in a cryptic way.  So it
                seems better to abort early by converting Unix errors
                to Fatal ones (rather than Transient). *)
             Util.convertUnixErrorsToFatal "renaming with commit log"
               (fun () ->
-                debug (fun() -> Util.msg "rename %s to %s\n" source' target');
-                Stasher.backupIfNeeded root localTargetPath;
-                Os.rename "renameLocal" source Path.empty target Path.empty;
-                Os.delete temp Path.empty;
-                clearCommitLog())
-        | Some e ->
-            (* We are not able to move the file.  We clear the commit
-               log as nothing happened, then fail. *)
-            clearCommitLog();
-            Util.convertUnixErrorsToTransient "renaming" (fun () -> raise e)
+                debug (fun() -> Util.msg "rename %s to %s\n"
+                         (Fspath.toString source) (Fspath.toString target));
+                Os.rename "renameLocal(2)" source Path.empty target Path.empty;
+                Os.delete temp Path.empty)))
+          (fun _ -> clearCommitLog())
       end else begin
         debug (fun() -> Util.msg "rename: moveFirst=false\n");
-        Stasher.backupIfNeeded root localTargetPath;
-        Os.rename "renameLocal(2)" source Path.empty target Path.empty;
+        Stasher.backup root localTargetPath `ByCopying;
+        Os.rename "renameLocal(3)" source Path.empty target Path.empty;
         debug (fun() -> 
 	  if filetypeFrom = `FILE then
             Util.msg
               "Contents of %s after renaming = %s\n" 
-              target'
+              (Fspath.toString target)
     	      (Fingerprint.toString (Fingerprint.file target Path.empty)));
       end;
       Lwt.return ())
@@ -671,7 +665,7 @@ let rec diff root1 path1 ui1 root2 path2 ui2 showDiff id =
            let path2 = Update.translatePathLocal fspath2 path2 in
            let (workingDir, realPath) = Fspath.findWorkingDir fspath2 path2 in
            let tmppath =
-             Path.addSuffixToFinalName realPath (tempName "diff-") in
+             Path.addSuffixToFinalName realPath "#unisondiff-" in
            Lwt_unix.run
              (Update.translatePath root1 path1 >>= (fun path1 ->
               (* Note that we don't need the resource fork *)

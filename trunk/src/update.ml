@@ -1648,7 +1648,7 @@ let updateArchiveLocal fspath path ui id =
   let (localPath, subArch) = getPathInArchive archive Path.empty path in
   let newArch = updateArchiveRec ui (stripArchive path subArch) in
   let commit () =
-    let _ = Stasher.stashCurrentVersion true fspath localPath in
+    let _ = Stasher.stashCurrentVersion fspath localPath in
     let archive = getArchive root in
     let archive, () =
       updatePathInArchive archive fspath Path.empty path
@@ -1682,7 +1682,7 @@ let markEqualLocal fspath paths =
               let arch = updateArchiveRec (Updates (uc, New)) archive in
               arch, (arch, localPath))
        in
-       Stasher.stashCurrentVersion false fspath localPath None;
+       Stasher.stashCurrentVersion fspath localPath None;
        archive := arch);
   setArchiveLocal root !archive
 
@@ -1746,7 +1746,7 @@ let replaceArchiveLocal fspath pathTo location arch id paranoid =
   in
   let newArch = replaceArchiveRec workingDir tempPathTo arch paranoid in
   let commit () =
-    let _ = Stasher.stashCurrentVersion true fspath localPath in
+    let _ = Stasher.stashCurrentVersion fspath localPath in
     let archive = getArchive root in
     let archive, () =
       updatePathInArchive archive fspath Path.empty pathTo

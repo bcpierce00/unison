@@ -196,43 +196,17 @@ prefsdocs: all
 	mv -f prefsdocsjunk.tmp prefsdocs.tmp
 
 # For developers at Penn
-runsaul: all
-	-date > a.tmp/x
-	./$(NAME) -servercmd current/unison/src/unison \
-	          -debug all -debugtimes \
-                  a.tmp ssh://saul/$(HOME)/current/unison/src/b.tmp
-
-runlocal: all
-	-date > a.tmp/x
-	./$(NAME) -servercmd current/unison/src/unison \
-                  test1 a.tmp ssh://localhost/$(HOME)/current/unison/src/b.tmp \
-	          -debug gc
-
-rshsaul: all
-	-date > a.tmp/x
-	./$(NAME) a.tmp rsh://saul/$(HOME)/current/unison/src/b.tmp
-
-byte:
-	$(MAKE) all NATIVE=false
-
 runtest:
 	$(MAKE) all NATIVE=false DEBUG=true
 	./unison test
 
-runbare:
-	$(MAKE) all NATIVE=false DEBUG=true
-	./unison
-
-runtesttext:
+selftest:
 	$(MAKE) all NATIVE=false DEBUG=true UISTYLE=text
-	./unison -selftest -ui text -batch -debug all
+	./unison -selftest -ui text -batch 
 
-runjunk: byte
-	./unison current -debug all
-
-temp:
-	$(MAKE) UISTYLE=text
-	./unison -selftest 
+selftestremote:
+	$(MAKE) all NATIVE=false DEBUG=true UISTYLE=text
+	./unison -selftest -ui text -batch test.tmp ssh://eniac.seas.upenn.edu/test.tmp -debug all
 
 testmerge:
 	$(MAKE) all NATIVE=false UISTYLE=text

@@ -1,3 +1,14 @@
+CHANGES FROM VERSION 2.25.-1
+
+* Fixed a bug in the backup mechanism reported by Ralph Lehmann
+  [thanks very much for the detailed detective work, Ralph!], which
+  sometimes caused backups not to happen when they should have under
+  Windows.
+
+* Some miscellaneous internal tidying of things that I noticed as I
+  was fixing this.
+
+-------------------------------
 CHANGES FROM VERSION 2.24.9
 
 * Missed committing some of Karl's patches.

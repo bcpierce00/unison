@@ -167,33 +167,6 @@ let rename fname sourcefspath sourcepath targetfspath targetpath =
           Unix.unlink targetDouble
       end)
     
-let renameIfAllowed sourcefspath sourcepath targetfspath targetpath =
-  let source = Fspath.concat sourcefspath sourcepath in
-  let source' = Fspath.toString source in
-  let target = Fspath.concat targetfspath targetpath in
-  let target' = Fspath.toString target in
-  Util.convertUnixErrorsToTransient
-  "renaming"
-    (fun () ->
-       debug (fun() -> Util.msg "rename %s to %s (if allowed)\n" source' target');
-       let allowed =
-         try 
-	   (!xferRename) (sourcefspath, sourcepath) (targetfspath, targetpath);
-	   Unix.rename source' target'; 
-	   None 
-	 with
-           Unix.Unix_error (Unix.EPERM, _, _) as e -> Some e
-       in
-       if allowed = None && Prefs.read Osx.rsrc then begin
-         let sourceDouble = Osx.appleDoubleFile sourcefspath sourcepath in
-         let targetDouble = Osx.appleDoubleFile targetfspath targetpath in
-         if Sys.file_exists sourceDouble then
-           Unix.rename sourceDouble targetDouble
-         else if Sys.file_exists targetDouble then
-           Unix.unlink targetDouble
-       end;
-       allowed)
-
 let symlink =
   if Util.isCygwin || (Util.osType != `Win32) then
     fun fspath path l ->

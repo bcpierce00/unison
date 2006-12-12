@@ -61,15 +61,15 @@ let logLwtNumbered (lwtDescription: string) (lwtShortDescription: string)
     (fun _ ->
       Printf.sprintf "[END] %s\n" lwtShortDescription)
 
-let stashCurrentVersionOnRoot: Common.root -> (Path.t * bool) -> unit Lwt.t = 
+let stashCurrentVersionOnRoot: Common.root -> Path.t -> unit Lwt.t = 
   Remote.registerRootCmd 
     "stashCurrentVersion" 
-    (fun (fspath, (path,gorec)) -> 
-      Lwt.return (Stasher.stashCurrentVersion gorec fspath (Update.translatePathLocal fspath path) None))
+    (fun (fspath, path) -> 
+      Lwt.return (Stasher.stashCurrentVersion fspath (Update.translatePathLocal fspath path) None))
     
 let stashCurrentVersions fromRoot toRoot path =
-  stashCurrentVersionOnRoot fromRoot (path, false) >>= (fun()->
-  stashCurrentVersionOnRoot toRoot (path, false))
+  stashCurrentVersionOnRoot fromRoot path >>= (fun()->
+  stashCurrentVersionOnRoot toRoot path)
 
 let doAction (fromRoot,toRoot) path fromContents toContents id =
   Lwt_util.resize_region actionReg (Prefs.read maxthreads);

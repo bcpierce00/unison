@@ -19,8 +19,6 @@ val readLink : Fspath.t -> Path.local -> string
 val symlink : Fspath.t -> Path.local -> string -> unit
 
 val rename : string -> Fspath.t -> Path.local -> Fspath.t -> Path.local -> unit
-val renameIfAllowed :
-  Fspath.t -> Path.local -> Fspath.t -> Path.local -> exn option
 val createDir : Fspath.t -> Path.local -> Props.t -> unit
 val delete : Fspath.t -> Path.local -> unit
 
