@@ -153,9 +153,6 @@ let transportItem reconItem id showMergeFn =
 
 (* ---------------------------------------------------------------------- *)
 
-let months = ["Jan"; "Feb"; "Mar"; "Apr"; "May"; "Jun"; "Jul"; "Aug"; "Sep";
-              "Oct"; "Nov"; "Dec"]
-
 let logStart () =
   Abort.reset ();
   let tm = Util.localtime (Util.time()) in
@@ -165,7 +162,7 @@ let logStart () =
       (if Prefs.read Trace.terse || Prefs.read Globals.batch then "" else "\n\n")
       (String.uppercase Uutil.myNameAndVersion)
       tm.Unix.tm_hour tm.Unix.tm_min tm.Unix.tm_sec
-      tm.Unix.tm_mday (Safelist.nth months tm.Unix.tm_mon)
+      tm.Unix.tm_mday (Util.monthname tm.Unix.tm_mon)
       (tm.Unix.tm_year+1900) in
   Trace.logverbose m
 
@@ -176,7 +173,7 @@ let logFinish () =
       "%s finished propagating changes at %02d:%02d:%02d on %02d %s %04d\n%s"
       (String.uppercase Uutil.myNameAndVersion)
       tm.Unix.tm_hour tm.Unix.tm_min tm.Unix.tm_sec
-      tm.Unix.tm_mday (Safelist.nth months tm.Unix.tm_mon)
+      tm.Unix.tm_mday (Util.monthname tm.Unix.tm_mon)
       (tm.Unix.tm_year+1900)
       (if Prefs.read Trace.terse || Prefs.read Globals.batch then "" else "\n\n") in
   Trace.logverbose m

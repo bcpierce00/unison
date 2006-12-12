@@ -498,10 +498,10 @@ let reconcileList (pathUpdatesList: (Path.t * Common.updateItem list) list)
   overrideReconcilerChoices sorted;
   (sorted, not (Tree.is_empty equals), dangerous)
 
-(* This is the main function: it takes a list of updateItem lists and,       *)
-(* according to the roots and paths of synchronization, builds the           *)
-(* corresponding reconItem list.  A second component indicates whether there *)
-(* is any file updated in the same way on both sides                         *)
+(* This is the main function: it takes a list of updateItem lists and,       
+   according to the roots and paths of synchronization, builds the           
+   corresponding reconItem list.  A second component indicates whether there 
+   is any file updated in the same way on both sides. *)
 let reconcileAll (ONEPERPATH(updatesListList)) =
   Trace.status "Reconciling changes";
   debug (fun() -> Util.msg "reconcileAll\n");
