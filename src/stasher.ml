@@ -329,71 +329,72 @@ let backupPath fspath path =
    To create the name of the backup file, fakeFspath/fakePath 
    is used instead.  This allows us to deal directly with temporary
    files. *)
-let backupIfNeeded fspath path =
+let backup fspath path (finalDisposition : [`AndRemove | `ByCopying]) =
   debug (fun () -> Util.msg
-      "backupIfNeeded: %s / %s\n"
+      "backup: %s / %s\n"
       (Fspath.toString fspath)
       (Path.toString path));
-  Util.convertUnixErrorsToTransient "backupIfNeeded" (fun () ->
+  Util.convertUnixErrorsToTransient "backup" (fun () ->
+    let disposeIfNeeded() =
+      if finalDisposition = `AndRemove then
+        Os.delete fspath path in
     if not (Os.exists fspath path) then 
       debug (fun () -> Util.msg
         "File %s in %s does not exist, so no need to back up\n"  
         (Path.toString path) (Fspath.toString fspath))
-    else
-      if shouldBackup path then begin
-	match backupPath fspath path with
-          None -> ()
-        | Some (backRoot, backPath) ->
-            debug (fun () -> Util.msg "Backing up %s / %s to %s in %s\n" 
-                (Fspath.toString fspath)
-                (Path.toString path)
-                (Path.toString backPath)
-                (Fspath.toString backRoot));
-            try 
-              Os.rename "backupIfNeeded" fspath path backRoot backPath
-            with
-              _ -> 
-                debug (fun () -> Util.msg "Rename failed -- copying instead\n");
-                let rec copy p backp =
-                  let info = Fileinfo.get true fspath p in
-                  match info.Fileinfo.typ with
-                  | `SYMLINK ->
-                      debug (fun () -> Util.msg "  Copying link %s / %s to %s / %s\n"
-                        (Fspath.toString fspath) (Path.toString p)
-                        (Fspath.toString backRoot) (Path.toString backp));
-                      Os.symlink backRoot backp (Os.readLink fspath p)
-                  | `FILE ->
-                      debug (fun () -> Util.msg "  Copying file %s / %s to %s / %s\n"
-                        (Fspath.toString fspath) (Path.toString p)
-                        (Fspath.toString backRoot) (Path.toString backp));
-                      Copy.localFile  fspath p  backRoot backp backp 
-                        `Copy  info.Fileinfo.desc
-                        (Osx.ressLength info.Fileinfo.osX.Osx.ressInfo)  None
-                  | `DIRECTORY ->
-                      debug (fun () -> Util.msg "  Copying directory %s / %s to %s / %s\n"
-                        (Fspath.toString fspath) (Path.toString p)
-                        (Fspath.toString backRoot) (Path.toString backp));
-                      Os.createDir backRoot backp info.Fileinfo.desc;
-                      let ch = Os.childrenOf fspath p in
-                      Safelist.iter (fun n -> copy (Path.child p n) (Path.child backp n)) ch
-                  | `ABSENT -> assert false in
-                copy path backPath;
-                debug (fun () -> Util.msg "  Finished copying; deleting %s / %s\n"
-                  (Fspath.toString fspath) (Path.toString path));
-                Os.delete fspath path
+    else if shouldBackup path then begin
+      match backupPath fspath path with
+        None -> ()
+      | Some (backRoot, backPath) ->
+          debug (fun () -> Util.msg "Backing up %s / %s to %s in %s\n" 
+              (Fspath.toString fspath) (Path.toString path)
+              (Path.toString backPath) (Fspath.toString backRoot));
+          let byCopying() = 
+            let rec copy p backp =
+              let info = Fileinfo.get true fspath p in
+              match info.Fileinfo.typ with
+              | `SYMLINK ->
+                  debug (fun () -> Util.msg "  Copying link %s / %s to %s / %s\n"
+                    (Fspath.toString fspath) (Path.toString p)
+                    (Fspath.toString backRoot) (Path.toString backp));
+                  Os.symlink backRoot backp (Os.readLink fspath p)
+              | `FILE ->
+                  debug (fun () -> Util.msg "  Copying file %s / %s to %s / %s\n"
+                    (Fspath.toString fspath) (Path.toString p)
+                    (Fspath.toString backRoot) (Path.toString backp));
+                  Copy.localFile  fspath p  backRoot backp backp 
+                    `Copy  info.Fileinfo.desc
+                    (Osx.ressLength info.Fileinfo.osX.Osx.ressInfo)  None
+              | `DIRECTORY ->
+                  debug (fun () -> Util.msg "  Copying directory %s / %s to %s / %s\n"
+                    (Fspath.toString fspath) (Path.toString p)
+                    (Fspath.toString backRoot) (Path.toString backp));
+                  Os.createDir backRoot backp info.Fileinfo.desc;
+                  let ch = Os.childrenOf fspath p in
+                  Safelist.iter (fun n -> copy (Path.child p n) (Path.child backp n)) ch
+              | `ABSENT -> assert false in
+            copy path backPath;
+            debug (fun () -> Util.msg "  Finished copying; deleting %s / %s\n"
+              (Fspath.toString fspath) (Path.toString path));
+            disposeIfNeeded() in
+          try 
+            if finalDisposition = `AndRemove then
+              Os.rename "backup" fspath path backRoot backPath
+            else
+              byCopying()
+          with _ -> 
+            debug (fun () -> Util.msg "Rename failed -- copying instead\n");
+            byCopying()
       end else begin
-	debug (fun () -> Util.msg "File %s / %s is not to be backed up\n"
+	debug (fun () -> Util.msg "Path %s / %s does not need to be backed up\n"
 	    (Fspath.toString fspath)
 	    (Path.toString path));
+        disposeIfNeeded()
       end)
 	  
 (*------------------------------------------------------------------------------------*)
 
-(* XXXXXXXXXXXXX what is go_rec for??  I'm going to comment it out for now, but 
-   it should be deleted soon if it doesn't turn out to be needed when this code
-   starts to be used seriously *)
-
-let rec stashCurrentVersion go_rec fspath path sourcePathOpt =
+let rec stashCurrentVersion fspath path sourcePathOpt =
   if shouldBackupCurrent path then 
     Util.convertUnixErrorsToTransient "stashCurrentVersion" (fun () ->
       let sourcePath = match sourcePathOpt with None -> path | Some p -> p in
@@ -403,17 +404,14 @@ let rec stashCurrentVersion go_rec fspath path sourcePathOpt =
       match stat.Fileinfo.typ with
 	`ABSENT -> ()
       |	`DIRECTORY ->
-	  if (* go_rec *) true then begin
-            assert (sourcePathOpt = None);
-	    debug (fun () -> Util.msg "Stashing recursively because file is a directory\n");
-	    ignore (Safelist.iter
-		      (fun n ->
-			let pathChild = Path.child path n in 
-			if not (Globals.shouldIgnore pathChild) then 
-			  stashCurrentVersion true fspath (Path.child path n) None)
-		      (Os.childrenOf fspath path))
-	  end else
-	    debug (fun () -> Util.msg "The path is a directory but go_rec is false\n")
+           assert (sourcePathOpt = None);
+           debug (fun () -> Util.msg "Stashing recursively because file is a directory\n");
+           ignore (Safelist.iter
+                     (fun n ->
+                       let pathChild = Path.child path n in 
+                       if not (Globals.shouldIgnore pathChild) then 
+                         stashCurrentVersion fspath (Path.child path n) None)
+                     (Os.childrenOf fspath path))
       | `SYMLINK -> 
           begin match backupPath fspath path with
           | None -> ()

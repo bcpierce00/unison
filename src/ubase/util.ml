@@ -260,7 +260,7 @@ let osType =
   match Sys.os_type with
     "Win32" | "Cygwin" -> `Win32
   | "Unix"             -> `Unix
-  | other              -> raise (Fatal ("Unkown OS: " ^ other))
+  | other              -> raise (Fatal ("Unknown OS: " ^ other))
 
 let isCygwin = (Sys.os_type = "Cygwin")
 

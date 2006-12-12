@@ -286,8 +286,8 @@ let test() =
       Util.msg
         "Test %s / %s: \nExpected %s MISSING\nbut found\n  %s\n"
         (!currentTest) name (checkable2string c) (fsopt2string actual);
-      raise (Util.Fatal (Printf.sprintf "Self-test %s / %s failed!" (!currentTest) name));
-      failures := !failures+1
+      failures := !failures+1;
+      raise (Util.Fatal (Printf.sprintf "Self-test %s / %s failed!" (!currentTest) name))
     end in
 
   Util.warnPrinter := None; 
@@ -307,7 +307,7 @@ let test() =
 
   (* Check for the bug reported by Ralf Lehmann *)
   if not bothRootsLocal then 
-    runtest "backups remote" (fun() -> 
+    runtest "backups 1 (remote)" (fun() -> 
       loadPrefs ["backup = Name *"];
       put R1 (Dir []); put R2 (Dir []); sync();
       debug (fun () -> Util.msg "First check\n");
@@ -324,7 +324,7 @@ let test() =
     );
 
   if bothRootsLocal then 
-    runtest "backups 1" (fun() -> 
+    runtest "backups 1 (local)" (fun() -> 
       loadPrefs ["backup = Name *"];
       put R1 (Dir []); put R2 (Dir []); sync();
       (* Create a file and a directory *)
@@ -348,6 +348,18 @@ let test() =
     put R1 (Dir []); sync();
     (* Check that they have been backed up correctly on the other side *)
     check "1" R2 (Dir [(".bak.0.x", File "foo"); (".bak.0.d", Dir [("a", File "barr")])]);
+  );
+
+  runtest "backups 2a" (fun() -> 
+    loadPrefs ["backup = Name *"; "backuplocation = local"];
+    put R1 (Dir []); put R2 (Dir []); sync();
+    (* Create a file and a directory *)
+    put R1 (Dir ["foo", File "1"]); sync();
+    check "1" R1 (Dir [("foo", File "1")]);
+    check "2" R1 (Dir [("foo", File "1")]);
+    put R1 (Dir ["foo", File "2"]); sync();
+    check "3" R1 (Dir [("foo", File "2")]);
+    check "4" R2 (Dir [("foo", File "2"); (".bak.0.foo", File "1")]); 
   );
 
   runtest "backups 3" (fun() -> 
@@ -375,12 +387,20 @@ let test() =
   runtest "backups 5 (directories)" (fun() -> 
     loadPrefs ["backup = Name *"; "backupcurrent = Name *"; "maxbackups = 7"];
     put R1 (Dir []); put R2 (Dir []); sync();
+    (* Create a directory x containing files a and l; check that the current version gets backed up *)
     put R1 (Dir ["x", Dir ["a", File "foo"; "l", File "./foo"]]); sync();
     check "1" BACKUP1 (Dir [("x", Dir [("l", File "./foo"); ("a", File "foo")])]);
+    (* On replica 2, delete file a, create file b, and edit file l *)
     put R2 (Dir ["x", Dir ["b", File "barr"; "l", File "./barr"]]); sync();
     check "2" BACKUP1 (Dir [("x", Dir [("l", File "./barr"); ("b", File "barr"); ("a", File "foo"); (".bak.1.l", File "./foo")])]);
+    (* On replica 1, replace the whole directory by a file; when we check the result, we need to know
+       whether we're running the test locally or remotely; in the former case, we should see *both* the
+       old and the new version as backups *)
     put R1 (Dir ["x", File "bazzz"]); sync();
-    check "3" BACKUP1 (Dir [("x", File "bazzz"); (".bak.1.x", Dir [("l", File "./barr"); ("b", File "barr"); ("a", File "foo"); (".bak.1.l", File "./foo")])]);
+    if bothRootsLocal then                                   
+      check "3" BACKUP1 (Dir [("x", File "bazzz"); (".bak.2.x", Dir [("l", File "./barr"); ("b", File "barr"); ("a", File "foo"); (".bak.1.l", File "./foo")]); (".bak.1.x", Dir [("l", File "./barr"); ("b", File "barr")])])
+    else 
+      check "3" BACKUP1 (Dir [("x", File "bazzz"); (".bak.1.x", Dir [("l", File "./barr"); ("b", File "barr"); ("a", File "foo"); (".bak.1.l", File "./foo")])]);
   );
 
   runtest "backups 6 (backup prefix/suffix)" (fun() -> 
@@ -404,7 +424,10 @@ let test() =
       put R2 (Dir ["x", Dir ["b", File "barr"; "l", Link "./barr"]]); sync();
       check "2" BACKUP1 (Dir [("x", Dir [("l", Link "./barr"); ("b", File "barr"); ("a", File "foo"); (".bak.1.l", Link "./foo")])]);
       put R1 (Dir ["x", File "bazzz"]); sync();
-      check "3" BACKUP1 (Dir [("x", File "bazzz"); (".bak.1.x", Dir [("l", Link "./barr"); ("b", File "barr"); ("a", File "foo"); (".bak.1.l", Link "./foo")])]);
+      if bothRootsLocal then                                   
+        check "3" BACKUP1 (Dir [("x", File "bazzz"); (".bak.2.x", Dir [("l", Link "./barr"); ("b", File "barr"); ("a", File "foo"); (".bak.1.l", Link "./foo")]); (".bak.1.x", Dir [("l", Link "./barr"); ("b", File "barr")])])
+      else
+        check "3" BACKUP1 (Dir [("x", File "bazzz"); (".bak.1.x", Dir [("l", Link "./barr"); ("b", File "barr"); ("a", File "foo"); (".bak.1.l", Link "./foo")])]);
     );
 
     (* Test that we correctly fail when we try to 'follow' a symlink that does not
