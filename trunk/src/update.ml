@@ -821,6 +821,11 @@ let doArchiveCrashRecovery () =
    ^ "is getting its address from DHCP, which is causing its host name to change\n"
    ^ "between synchronizations.  See the documentation for the UNISONLOCALHOSTNAME\n"
    ^ "environment variable for advice on how to correct this.\n"
+   ^ "\n"
+   ^ "    ANNOUNCEMENT: Donations to the Unison project are gratefully accepted.  \n"
+   ^ "    Visit the Unison web site (http://www.cis.upenn.edu/~bcpierce/unison) for \n"
+   ^ "    a link to a simple PayPal donation form.\n"
+   ^ "\n"
      (* ^ "\nThe expected archive names were:\n" ^ expectedNames *) );
     Lwt.return ()
   end))
@@ -905,6 +910,30 @@ let isDir fspath path =
   try
     (Fspath.stat fullFspath).Unix.LargeFile.st_kind = Unix.S_DIR
   with Unix.Unix_error _ -> false
+
+(***********************************************************************
+                             MOUNT POINTS
+************************************************************************)
+
+let mountpoints = 
+  Prefs.createStringList "mountpoint"
+    "abort if this path does not exist"
+    ("Including the preference \\texttt{-mountpoint PATH} causes Unison to "
+     ^ "double-check, at the end of update detection, that \\texttt{PATH} exists "
+     ^ "and abort if it does not.  This is useful when Unison is used to synchronize "
+     ^ "removable media.  This preference can be given more than once.  "
+     ^ "See \\sectionref{mountpoints}{Mount Points}.")
+
+let abortIfAnyMountpointsAreMissing fspath =
+  Safelist.iter
+    (fun s ->
+       let path = Path.fromString s in
+       if not (Os.exists fspath path) then
+         raise (Util.Fatal
+           (Printf.sprintf "Path %s / %s is designated as a mountpoint, but points to nothing on host %s\n"
+             (Fspath.toString fspath) (Path.toString path) Os.myCanonicalHostName)))
+    (Prefs.read mountpoints)
+
 
 (***********************************************************************
                            UPDATE DETECTION
@@ -1022,14 +1051,12 @@ let checkPropChange info archive archDesc =
              oldInfoOf archive)
   end
 
-(* HACK: we disable fastcheck for Excel files on Windows, as Excel
+(* HACK: we disable fastcheck for Excel (and MPP) files on Windows, as Excel
    sometimes modifies a file without updating the time stamp. *)
 let notExcelFile path =
   let s = Path.toString path in
-  let l = String.length s in
-  l < 4 ||
-  not
-    (s.[l - 4] = '.' && s.[l - 3] = 'x' && s.[l - 2] = 'l' && s.[l - 1] = 's')
+     Util.endswith s ".xls"
+  || Util.endswith s ".mpp"
 
 (* Check whether a file has changed has changed, by comparing its digest and
    properties against [archDesc], [archDig], and [archStamp].
@@ -1445,6 +1472,7 @@ let findLocal fspath pathList: Common.updateItem list =
       pathList (archive, [])
   in
   setArchiveLocal thisRoot archive;
+  abortIfAnyMountpointsAreMissing fspath;
   updates
 
 let findOnRoot =
@@ -1454,10 +1482,6 @@ let findOnRoot =
        Lwt.return (findLocal fspath pathList))
 
 let findUpdatesOnPaths pathList : Common.updateItem list Common.oneperpath =
-(*
-let t1' = Unix.times () in
-let t1 = Unix.gettimeofday () in
-*)
   Lwt_unix.run
     (loadArchives true >>= (fun ok ->
      begin if ok then Lwt.return () else begin
@@ -1470,16 +1494,7 @@ let t1 = Unix.gettimeofday () in
             unlockArchives ()) >>= (fun _ ->
        unlockArchives ()))
      end end >>= (fun () ->
-(*
-let t2 = Unix.gettimeofday () in
-let t2' = Unix.times () in
-Format.eprintf "Archive loading: %f / %f / %f@." (t2 -. t1) (t2'.Unix.tms_utime -. t1'.Unix.tms_utime) (t2'.Unix.tms_stime -. t1'.Unix.tms_stime);
-*)
      let t = Trace.startTimer "Collecting changes" in
-(*
-let t3' = Unix.times () in
-let t3 = Unix.gettimeofday () in
-*)
      Globals.allRootsMapWithWaitingAction (fun r ->
        debug (fun() -> Util.msg "findOnRoot %s\n" (root2string r));
        findOnRoot r pathList)
@@ -1489,11 +1504,6 @@ let t3 = Unix.gettimeofday () in
          | _ -> ()
          end)
        >>= (fun updates ->
-(*
-let t2 = Unix.gettimeofday () in
-let t2' = Unix.times () in
-Format.eprintf "Update detection: %f / %f / %f@." (t2 -. t3) (t2'.Unix.tms_utime -. t3'.Unix.tms_utime) (t2'.Unix.tms_stime -. t3'.Unix.tms_stime);
-*)
      Trace.showTimer t;
      let result = Safelist.transpose updates in
      Trace.status "";
@@ -1829,7 +1839,7 @@ let updateProps root path propOpt ui id =
    updatePropsOnRoot root (path, propOpt, ui, id)
 
 (*************************************************************************)
-(*                       Make sure no change has happened                *)
+(*                  Make sure no change has happened                     *)
 (*************************************************************************)
 
 let checkNoUpdatesLocal fspath pathInArchive ui =

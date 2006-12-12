@@ -206,7 +206,7 @@ selftest:
 
 selftestremote:
 	$(MAKE) all NATIVE=false DEBUG=true UISTYLE=text
-	./unison -selftest -ui text -batch test.tmp ssh://eniac.seas.upenn.edu/test.tmp -debug all
+	./unison -selftest -ui text -batch test.tmp ssh://eniac.seas.upenn.edu/test.tmp 
 
 testmerge:
 	$(MAKE) all NATIVE=false UISTYLE=text

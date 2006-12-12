@@ -76,6 +76,7 @@ val percentageOfTotal :
   int ->     (* current value *)
   int ->     (* total value *)
   int        (* percentage of total *)
+val monthname : int -> string
 val percent2string : float -> string
 val fileInHomeDir : string -> string
 

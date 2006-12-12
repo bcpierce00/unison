@@ -209,7 +209,7 @@ let confirmBigDeletes =
      ^ "that the entire replica has been deleted, before propagating the change.  If the {\\tt batch} "
      ^ "flag is also set, synchronization will be aborted.  When the {\\tt path} preference is used, "
      ^ "the same confirmation will be requested for top-level paths.  (At the moment, this flag only "
-     ^ "affects the text user interface.)")
+     ^ "affects the text user interface.)  See also the {\\tt mountpoint} preference.")
 
 let ignore =
   Pred.create "ignore"

@@ -1,3 +1,16 @@
+CHANGES FROM VERSION 2.26.-1
+
+* Better documentation of \verb|ignore| and \verb|ignorenot| preferences.
+
+* Added \verb|.mpp| files to ``never fastcheck'' list (like \verb|.xls|).
+
+* Added a new \verb|mountpoint| preference, which can be used to
+  specify a path that must exist in both replicas at the end of update
+  detection (otherwise Unison aborts).
+
+* Fixed the -selftest module so that tests across a network also run correctly.
+
+-------------------------------
 CHANGES FROM VERSION 2.25.-1
 
 * Fixed a bug in the backup mechanism reported by Ralph Lehmann

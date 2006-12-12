@@ -182,7 +182,8 @@ let putfs : Common.root -> fs -> unit Lwt.t =
 
 let loadPrefs l =
   Prefs.loadStrings l;
-  Lwt_unix.run (Globals.propagatePrefs ())
+  Lwt_unix.run (Globals.propagatePrefs ());
+  Stasher.initBackups()
 
 (* ---------------------------------------------------------------------------- *)
 
@@ -209,19 +210,15 @@ let sync ?(verbose=false) () =
 
 let currentTest = ref ""
 
-let runtest name f =
+let runtest name prefs f =
   Util.msg "%s...\n" name;
   Util.convertUnixErrorsToFatal "Test.test" (fun() -> 
     debug (fun() -> Util.msg "Emptying backup directory\n");
     Lwt_unix.run (Globals.allRootsIter (fun r -> makeBackupEmpty r ()));
-    let savedPrefs = Prefs.dump() in
     currentTest := name;
+    loadPrefs prefs;
     debug (fun() -> Util.msg "Running test\n");
     f();
-    debug (fun() -> Util.msg "Restoring saved prefs\n");
-    Prefs.load savedPrefs;
-    (* BUG? Do we need to tell the other host? *)
-    Stasher.initBackups()
   )
 
 type checkable = R1 | R2 | BACKUP1 | BACKUP2
@@ -303,12 +300,9 @@ let test() =
      running fast enough that the whole thing happens within a second, then the
      update will be missed! *)
 
-  (* Various tests of the backup mechanism *)
-
   (* Check for the bug reported by Ralf Lehmann *)
   if not bothRootsLocal then 
-    runtest "backups 1 (remote)" (fun() -> 
-      loadPrefs ["backup = Name *"];
+    runtest "backups 1 (remote)" ["backup = Name *"] (fun() -> 
       put R1 (Dir []); put R2 (Dir []); sync();
       debug (fun () -> Util.msg "First check\n");
       checkmissing "1" BACKUP1;
@@ -324,8 +318,7 @@ let test() =
     );
 
   if bothRootsLocal then 
-    runtest "backups 1 (local)" (fun() -> 
-      loadPrefs ["backup = Name *"];
+    runtest "backups 1 (local)" ["backup = Name *"] (fun() -> 
       put R1 (Dir []); put R2 (Dir []); sync();
       (* Create a file and a directory *)
       put R1 (Dir ["x", File "foo"; "d", Dir ["a", File "barr"]]); sync();
@@ -339,8 +332,7 @@ let test() =
                               (".bak.1.x", File "foo"); (".bak.1.d", Dir [("a", File "barr")])])
     );
 
-  runtest "backups 2" (fun() -> 
-    loadPrefs ["backup = Name *"; "backuplocation = local"];
+  runtest "backups 2" ["backup = Name *"; "backuplocation = local"] (fun() -> 
     put R1 (Dir []); put R2 (Dir []); sync();
     (* Create a file and a directory *)
     put R1 (Dir ["x", File "foo"; "d", Dir ["a", File "barr"]]); sync();
@@ -350,8 +342,7 @@ let test() =
     check "1" R2 (Dir [(".bak.0.x", File "foo"); (".bak.0.d", Dir [("a", File "barr")])]);
   );
 
-  runtest "backups 2a" (fun() -> 
-    loadPrefs ["backup = Name *"; "backuplocation = local"];
+  runtest "backups 2a" ["backup = Name *"; "backuplocation = local"] (fun() -> 
     put R1 (Dir []); put R2 (Dir []); sync();
     (* Create a file and a directory *)
     put R1 (Dir ["foo", File "1"]); sync();
@@ -362,8 +353,7 @@ let test() =
     check "4" R2 (Dir [("foo", File "2"); (".bak.0.foo", File "1")]); 
   );
 
-  runtest "backups 3" (fun() -> 
-    loadPrefs ["backup = Name *"; "backuplocation = local"; "backupcurrent = Name *"];
+  runtest "backups 3" ["backup = Name *"; "backuplocation = local"; "backupcurrent = Name *"] (fun() -> 
     put R1 (Dir []); put R2 (Dir []); sync();
     put R1 (Dir ["x", File "foo"]); sync ();
     check "1a" R1 (Dir [("x", File "foo"); (".bak.0.x", File "foo")]);
@@ -373,8 +363,7 @@ let test() =
     check "2b" R2 (Dir [("x", File "barr"); (".bak.1.x", File "foo"); (".bak.0.x", File "barr")]);
   );
 
-  runtest "backups 4" (fun() -> 
-    loadPrefs ["backup = Name *"; "backupcurrent = Name *"; "maxbackups = 7"];
+  runtest "backups 4" ["backup = Name *"; "backupcurrent = Name *"; "maxbackups = 7"] (fun() -> 
     put R1 (Dir []); put R2 (Dir []); sync();
     put R1 (Dir ["x", File "foo"]); sync();
     check "1a" BACKUP1 (Dir [("x", File "foo")]);
@@ -384,8 +373,7 @@ let test() =
     check "1c" BACKUP1 (Dir [("x", File "bazzz"); (".bak.2.x", File "foo"); (".bak.1.x", File "barr")]);
   );
 
-  runtest "backups 5 (directories)" (fun() -> 
-    loadPrefs ["backup = Name *"; "backupcurrent = Name *"; "maxbackups = 7"];
+  runtest "backups 5 (directories)" ["backup = Name *"; "backupcurrent = Name *"; "maxbackups = 7"] (fun() -> 
     put R1 (Dir []); put R2 (Dir []); sync();
     (* Create a directory x containing files a and l; check that the current version gets backed up *)
     put R1 (Dir ["x", Dir ["a", File "foo"; "l", File "./foo"]]); sync();
@@ -403,21 +391,18 @@ let test() =
       check "3" BACKUP1 (Dir [("x", File "bazzz"); (".bak.1.x", Dir [("l", File "./barr"); ("b", File "barr"); ("a", File "foo"); (".bak.1.l", File "./foo")])]);
   );
 
-  runtest "backups 6 (backup prefix/suffix)" (fun() -> 
-    loadPrefs ["backup = Name *"; 
+  runtest "backups 6 (backup prefix/suffix)" ["backup = Name *"; 
                "backuplocation = local";
                "backupprefix = back/$VERSION-";
                "backupsuffix = .backup";
-               "backupcurrent = Name *"];
-    Stasher.initBackups();
+               "backupcurrent = Name *"] (fun() -> 
     put R1 (Dir []); put R2 (Dir []); sync();
     put R1 (Dir ["x", File "foo"]); sync();
     check "1" R1 (Dir [("x", File "foo"); ("back", Dir [("0-x.backup", File "foo")])]);
   );
 
-  if Util.osType <> `Win32 then begin
-    runtest "links 1 (directories and links)" (fun() -> 
-      loadPrefs ["backup = Name *"; "backupcurrent = Name *"; "maxbackups = 7"];
+  if not (Prefs.read Update.someHostIsRunningWindows) then begin
+    runtest "links 1 (directories and links)" ["backup = Name *"; "backupcurrent = Name *"; "maxbackups = 7"] (fun() -> 
       put R1 (Dir []); put R2 (Dir []); sync();
       put R1 (Dir ["x", Dir ["a", File "foo"; "l", Link "./foo"]]); sync();
       check "1" BACKUP1 (Dir [("x", Dir [("l", Link "./foo"); ("a", File "foo")])]);
@@ -425,15 +410,21 @@ let test() =
       check "2" BACKUP1 (Dir [("x", Dir [("l", Link "./barr"); ("b", File "barr"); ("a", File "foo"); (".bak.1.l", Link "./foo")])]);
       put R1 (Dir ["x", File "bazzz"]); sync();
       if bothRootsLocal then                                   
-        check "3" BACKUP1 (Dir [("x", File "bazzz"); (".bak.2.x", Dir [("l", Link "./barr"); ("b", File "barr"); ("a", File "foo"); (".bak.1.l", Link "./foo")]); (".bak.1.x", Dir [("l", Link "./barr"); ("b", File "barr")])])
+        check "3" BACKUP1
+          (Dir [("x", File "bazzz");
+                (".bak.2.x", Dir [("l", Link "./barr"); ("b", File "barr"); ("a", File "foo");
+                                  (".bak.1.l", Link "./foo")]);
+                (".bak.1.x", Dir [("l", Link "./barr"); ("b", File "barr")])])
       else
-        check "3" BACKUP1 (Dir [("x", File "bazzz"); (".bak.1.x", Dir [("l", Link "./barr"); ("b", File "barr"); ("a", File "foo"); (".bak.1.l", Link "./foo")])]);
+        check "3" BACKUP1
+          (Dir [("x", File "bazzz");
+                (".bak.1.x", Dir [("l", Link "./barr"); ("b", File "barr");
+                                  ("a", File "foo"); (".bak.1.l", Link "./foo")])]);
     );
 
     (* Test that we correctly fail when we try to 'follow' a symlink that does not
        point to anything *)
-    runtest "links 2 (symlink to nowhere)" (fun() -> 
-      loadPrefs ["follow = Name y"];
+    runtest "links 2 (symlink to nowhere)" ["follow = Name y"] (fun() -> 
       let orig = (Dir []) in
       put R1 orig; put R2 orig; sync();
       put R1 (Dir ["y", Link "x"]); sync();

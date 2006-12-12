@@ -1803,10 +1803,11 @@ patterns are {\em not} regular expressions.  Instead,
 standard ``globbing'' conventions can be used in \ARG{name} and
 \ARG{path}:  
 \begin{itemize}
-\item a \verb|?| matches any single character except \verb|/|
 \item a \verb|*| matches any sequence of characters not including \verb|/|
 (and not beginning with \verb|.|, when used at the beginning of a
 \ARG{name})
+\item a \verb|?| matches any single character except \verb|/| (and leading
+  \verb|.|) 
 \item \verb|[xyz]| matches any character from the set $\{{\tt x},
   {\tt y}, {\tt z} \}$
 \item \verb|{a,bb,ccc}| matches any one of \verb|a|, \verb|bb|, or
@@ -1884,6 +1885,25 @@ you like (this is probably not very useful), using an option like
 Because Unison understands the rename as a delete plus a create, any ignored
 files in the directory will be lost (since they are invisible to Unison and
 therefore they do not get recreated in the new version of the directory).
+
+\item There is also an \verb|ignorenot| preference, which specifies a set of
+  patterns for paths that should {\em not} be ignored, even if they match an
+  \verb|ignore| pattern.  However, the interaction of these two sets of
+  patterns can be a little tricky.  Here is exactly how it works:
+  \begin{itemize}
+  \item Unison starts detecting updates from the root of the
+  replicas---i.e., from the empty path.  If the empty path matches an
+  \verb|ignore| pattern and does not match an \verb|ignorenot| pattern, then
+  the whole replica will be ignored.  (For this reason, it is not a good
+  idea to include \verb|Name *| as an \verb|ignore| pattern.  If you want to
+  ignore everything except a certain set of files, use \verb|Name ?*|.)
+  \item If the root is a directory, Unison continues looking for updates in
+  all the immediate children of the root.  Again, if the name of some child matches an
+  \verb|ignore| pattern and does not match an \verb|ignorenot| pattern, then
+  this whole path {\em including everything below it} will be ignored.  
+  \item If any of the non-ignored children are directories, then the process
+  continues recursively.
+  \end{itemize}
 \end{itemize} 
 
 \SUBSECTION{Symbolic Links}{symlinks}
@@ -1931,6 +1951,7 @@ bits are not propagated.
 this mean, in general?)  All files are created with the owner and
 group of the server process.
 \end{itemize}
+
 
 \finishlater{
 \SUBSECTION{Backup Files}{backups}
@@ -2013,7 +2034,28 @@ switch most of the time and occasionally run Unison once with {\tt
   fastcheck} set to \verb|no|, if you are worried that Unison may have
 overlooked an update.
 
+Fastcheck is (always) automatically disabled for files with extension
+\verb|.xls| or \verb|.mpp|, to prevent Unison from being confused by the 
+habits of certain programs (Excel, in particular) of updating files without
+changing their modification times.
 
+\SUBSECTION{Mount Points and Removable Media}{mountpoints}
+
+Using Unison removable media such as USB drives can be dangerous unless you
+are careful.  If you synchronize a directory that is stored on removable
+media when the media is not present, it will look to Unison as though the
+whole directory has been deleted, and it will proceed to delete the
+directory from the other replica---probably not what you want!
+
+To prevent accidents, Unison provides a preference called
+\verb|mountpoint|.  Including a line like
+\begin{verbatim}
+             mountpoint = /mnt/foo
+\end{verbatim}
+in your preference file will cause Unison to check, after it finishes
+detecting updates, that something actually exists at the path
+\verb|/mnt/foo| on both replicas; if it does not, the Unison run will
+abort. 
 
 \SUBSECTION{Click-starting Unison}{click}
 
