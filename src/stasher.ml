@@ -325,10 +325,6 @@ let backupPath fspath path =
 
 (*------------------------------------------------------------------------------------*)
 	  
-(* Removes file at fspath/path and backs it up before if required.
-   To create the name of the backup file, fakeFspath/fakePath 
-   is used instead.  This allows us to deal directly with temporary
-   files. *)
 let backup fspath path (finalDisposition : [`AndRemove | `ByCopying]) =
   debug (fun () -> Util.msg
       "backup: %s / %s\n"
