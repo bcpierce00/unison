@@ -69,7 +69,7 @@ let localFile
     (fun () ->
       use_id (fun id -> Uutil.showProgress id Uutil.Filesize.zero "l");
       debug (fun () ->
-        Util.msg "copylocal (%s,%s) to (%s, %s)\n"
+        Util.msg "Copy.localFile %s / %s to %s / %s\n"
           (Fspath.toString fspathFrom) (Path.toString pathFrom)
           (Fspath.toString fspathTo) (Path.toString pathTo));
       let inFd = openFileIn fspathFrom pathFrom `DATA in
@@ -400,29 +400,36 @@ let tryCopyMovedFile fspathTo pathTo realPathTo update desc fp ress id =
             (Fspath.toString candidateFspath)
             (Path.toString candidatePath));
         try
-          localFile
-            candidateFspath candidatePath fspathTo pathTo realPathTo
-            update desc (Osx.ressLength ress) (Some id);
-          let info = Fileinfo.get false fspathTo pathTo in
-          let fp' = Os.fingerprint fspathTo pathTo info in
-          if fp' = fp then begin
-            debug (fun () -> Util.msg "tryCopyMoveFile: success.\n");
-            Xferhint.insertEntry (fspathTo, pathTo) fp;
-            true
+          if Os.exists candidateFspath candidatePath then begin
+            localFile
+              candidateFspath candidatePath fspathTo pathTo realPathTo
+              update desc (Osx.ressLength ress) (Some id);
+            let info = Fileinfo.get false fspathTo pathTo in
+            let fp' = Os.fingerprint fspathTo pathTo info in
+            if fp' = fp then begin
+              debug (fun () -> Util.msg "tryCopyMoveFile: success.\n");
+              Xferhint.insertEntry (fspathTo, pathTo) fp;
+              true
+            end else begin
+              debug (fun () ->
+                Util.msg "tryCopyMoveFile: candidate file modified!");
+              Xferhint.deleteEntry (candidateFspath, candidatePath);
+              Os.delete fspathTo pathTo;
+              Trace.log (Printf.sprintf
+                "Shortcut didn't work because %s was modified\n"
+                (Path.toString candidatePath));
+              false
+            end
           end else begin
-            debug (fun () ->
-              Util.msg "tryCopyMoveFile: candidate file modified!");
-            Xferhint.deleteEntry (candidateFspath, candidatePath);
-            Os.delete fspathTo pathTo;
             Trace.log (Printf.sprintf
-              "Shortcut failed because %s was modified\n"
+              "Shortcut didn't work because %s disappeared!\n"
               (Path.toString candidatePath));
             false
-          end
+          end 
         with
           Util.Transient s ->
             debug (fun () ->
-              Util.msg "tryCopyMovedFile: failed local copy [%s]" s);
+              Util.msg "tryCopyMovedFile: local copy didn't work [%s]" s);
             Xferhint.deleteEntry (candidateFspath, candidatePath);
             Os.delete fspathTo pathTo;
             Trace.log (Printf.sprintf

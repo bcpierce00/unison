@@ -183,7 +183,7 @@ let renameLocal (root, (fspath, pathFrom, pathTo)) =
         writeCommitLog source target temp';
 
         debug (fun() -> Util.msg "moving %s to %s\n" (Fspath.toString target) temp');
-        Util.finalize (fun() ->
+        Util.finalize (fun() -> 
           Util.convertUnixErrorsToTransient "renaming" (fun() ->
             Stasher.backup root localTargetPath `ByCopying;
             Os.rename "renameLocal(1)" target Path.empty temp Path.empty;
