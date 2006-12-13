@@ -1053,10 +1053,10 @@ let checkPropChange info archive archDesc =
 
 (* HACK: we disable fastcheck for Excel (and MPP) files on Windows, as Excel
    sometimes modifies a file without updating the time stamp. *)
-let notExcelFile path =
+let excelFile path =
   let s = Path.toString path in
      Util.endswith s ".xls"
-  || Util.endswith s ".mpp"
+  || Util.endswith s ".mpp")
 
 (* Check whether a file has changed has changed, by comparing its digest and
    properties against [archDesc], [archDig], and [archStamp].
@@ -1093,7 +1093,7 @@ let checkContentsChange
       &&
     Props.length info.Fileinfo.desc = Props.length archDesc
       &&
-    notExcelFile path
+    not (excelFile path)
       &&
     match archStamp with
       Fileinfo.InodeStamp inode ->

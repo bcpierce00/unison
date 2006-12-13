@@ -1,3 +1,12 @@
+CHANGES FROM VERSION 2.26.0
+
+* Fixed 'fastcheck' preference, which was broken by the last commit.
+
+
+
+
+
+-------------------------------
 CHANGES FROM VERSION 2.26.-1
 
 * Better documentation of \verb|ignore| and \verb|ignorenot| preferences.
