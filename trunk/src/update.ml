@@ -1056,7 +1056,7 @@ let checkPropChange info archive archDesc =
 let excelFile path =
   let s = Path.toString path in
      Util.endswith s ".xls"
-  || Util.endswith s ".mpp")
+  || Util.endswith s ".mpp"
 
 (* Check whether a file has changed has changed, by comparing its digest and
    properties against [archDesc], [archDig], and [archStamp].

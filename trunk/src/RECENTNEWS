@@ -1,3 +1,12 @@
+CHANGES FROM VERSION 2.26.1
+
+* Fix small syntax error
+
+
+
+
+
+-------------------------------
 CHANGES FROM VERSION 2.26.0
 
 * Fixed 'fastcheck' preference, which was broken by the last commit.
