@@ -204,6 +204,10 @@ selftest:
 	$(MAKE) all NATIVE=false DEBUG=true UISTYLE=text
 	./unison -selftest -ui text -batch 
 
+selftestdebug:
+	$(MAKE) all NATIVE=false DEBUG=true UISTYLE=text
+	./unison -selftest -ui text -batch -debug all
+
 selftestremote:
 	$(MAKE) all NATIVE=false DEBUG=true UISTYLE=text
 	./unison -selftest -ui text -batch test.tmp ssh://eniac.seas.upenn.edu/test.tmp 

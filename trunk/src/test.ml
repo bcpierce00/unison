@@ -210,23 +210,31 @@ let sync ?(verbose=false) () =
 
 let currentTest = ref ""
 
-let runtest name prefs f =
-  Util.msg "%s...\n" name;
-  Util.convertUnixErrorsToFatal "Test.test" (fun() -> 
-    debug (fun() -> Util.msg "Emptying backup directory\n");
-    Lwt_unix.run (Globals.allRootsIter (fun r -> makeBackupEmpty r ()));
-    currentTest := name;
-    loadPrefs prefs;
-    debug (fun() -> Util.msg "Running test\n");
-    f();
-  )
-
 type checkable = R1 | R2 | BACKUP1 | BACKUP2
 
 let checkable2string = function
   R1 -> "R1" | R2 -> "R2" | BACKUP1 -> "BACKUP1" | BACKUP2 -> "BACKUP2"
 
 let test() = 
+  Util.warnPrinter := None; 
+  Prefs.set Trace.logging false;
+  Prefs.set Trace.terse true;
+  Trace.sendLogMsgsToStderr := false;
+
+  let origPrefs = Prefs.dump() in
+
+  let runtest name prefs f =
+    Util.msg "%s...\n" name;
+    Util.convertUnixErrorsToFatal "Test.test" (fun() -> 
+      currentTest := name;
+      Prefs.load origPrefs;
+      loadPrefs prefs;
+      debug (fun() -> Util.msg "Emptying backup directory\n");
+      Lwt_unix.run (Globals.allRootsIter (fun r -> makeBackupEmpty r ()));
+      debug (fun() -> Util.msg "Running test\n");
+      f();
+    ) in
+
   Util.msg "Running internal tests...\n";
 
   (* Paranoid checks, to make sure we do not delete anybody's filesystem! *)
@@ -286,11 +294,6 @@ let test() =
       failures := !failures+1;
       raise (Util.Fatal (Printf.sprintf "Self-test %s / %s failed!" (!currentTest) name))
     end in
-
-  Util.warnPrinter := None; 
-  Prefs.set Trace.logging false;
-  Prefs.set Trace.terse true;
-  Trace.sendLogMsgsToStderr := false;
 
   (* N.b.: When making up tests, it's important to choose file contents of different
      lengths.  The reason for this is that, on some Unix systems, it is possible for 
