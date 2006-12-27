@@ -59,6 +59,7 @@ let insertEntry p fp =
       Util.msg "insertEntry: fspath=%s, path=%s, fp=%s\n"
         (Fspath.toString fspath)
         (Path.toString path) (Os.fullfingerprint_to_string fp));
+    (* Neither of these should be able to raise Not_found *)
     PathMap.replace path2fingerprintMap p fp;
     FPMap.replace fingerprint2pathMap fp p
   end
@@ -98,4 +99,3 @@ let renameEntry pOrig pNew =
 
 let _ =
   Os.initializeXferFunctions deleteEntry renameEntry
-    

@@ -1,5 +1,8 @@
 (* Program for printing project info into a Makefile.  Documentation below. *)
 
+(* FIX: When the time comes for the next alpha-release, remember to
+   increment the archive version number first. See update.ml. *)
+
 let projectName = "unison"
 let majorVersion = 2
 let minorVersion = 26
@@ -46,6 +49,7 @@ let pointVersion = revision - pointVersionOrigin;;
 Printf.printf "MAJORVERSION=%d.%d\n" majorVersion minorVersion;;
 Printf.printf "VERSION=%d.%d.%d\n" majorVersion minorVersion pointVersion;;
 Printf.printf "NAME=%s\n" projectName;;
+
 
 
 

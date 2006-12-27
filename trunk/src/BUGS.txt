@@ -15,12 +15,29 @@ Linux, Solaris:
 SERIOUS
 =======
 
+[June 2006, Schmitt and Newton]
+  Alan said: I realized yesterday that I had xferbycopying set to false, so I  
+  turned it back on. However some automatic unison synchronization  
+  failed last night, with the message:
+  > Shortcut: copying 1148507176.26619_0.top.inrialpes.fr:2,ST from  
+  > local file Maildir/.Caml/cur/1148507176.26619_0.top.inrialpes.fr:2,
+  > Uncaught exception Not_found
+  > Fatal error: Lost connection with the server  
+  Ryan Newton later sent BCP a debug trace showing this happening, but it
+  did not elucidate the problem.  For the moment, I've (BCP) just protected
+  the tryCopyMovedFile function with a call to convertUnixErrorsToTransient,
+  which should help if the Not_found is being raised from there.  (In the
+  debug trace, we see "success" printed by this function and then the
+  crash.  An obvious culprit is the call to Xferhint.insert, but my reading
+  of the code is that this should not fail.) 
+
 [June 2006, Jim]
   By the way, there is a bug if you are doing a merge and
   are propagating times, the times of the merged file end
   up different so you have to sync again.  I guess this
   might be a feature, I don't know which way to propagate
   the times...
+  ==> Best to make them both equal to the time of merging
 
 [May 2006, Schmitt]
   In presence of path that cannot be propagated, Unison may have a fatal
