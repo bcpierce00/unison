@@ -81,3 +81,6 @@ val addRegexpToIgnore : string -> unit
 (* Merging commands *)  
 val mergeCmdForPath : Path.t -> string
 
+(* Internal prefs, needed to know whether to do filenames checks *)
+val someHostIsRunningWindows : bool Prefs.t
+val allHostsAreRunningWindows : bool Prefs.t

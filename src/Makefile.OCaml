@@ -160,8 +160,8 @@ OCAMLOBJS += \
           abort.cmo osx.cmo \
           props.cmo fileinfo.cmo os.cmo lock.cmo clroot.cmo common.cmo \
           tree.cmo checksum.cmo terminal.cmo \
-          transfer.cmo xferhint.cmo remote.cmo copy.cmo \
-          globals.cmo stasher.cmo update.cmo \
+          transfer.cmo xferhint.cmo remote.cmo globals.cmo copy.cmo \
+          stasher.cmo update.cmo \
 	  files.cmo sortri.cmo recon.cmo transport.cmo \
           strings.cmo uicommon.cmo uitext.cmo test.cmo 
 

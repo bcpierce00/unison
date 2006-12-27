@@ -266,3 +266,8 @@ let shouldMerge p = Pred.test merge (Path.toString p)
 
 let mergeCmdForPath p = Pred.assoc merge (Path.toString p)
 
+let someHostIsRunningWindows =
+  Prefs.createBool "someHostIsRunningWindows" false "*" ""
+
+let allHostsAreRunningWindows =
+  Prefs.createBool "allHostsAreRunningWindows" false "*" ""

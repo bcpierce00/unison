@@ -41,12 +41,12 @@ common.cmx: uutil.cmx ubase/util.cmx ubase/safelist.cmx props.cmx path.cmx \
     osx.cmx os.cmx name.cmx fspath.cmx fileinfo.cmx common.cmi 
 copy.cmo: xferhint.cmi uutil.cmi ubase/util.cmi transfer.cmi ubase/trace.cmi \
     remote.cmi props.cmi ubase/prefs.cmi path.cmi osx.cmi os.cmi \
-    lwt/lwt_util.cmi lwt/lwt.cmi fspath.cmi fileinfo.cmi common.cmi abort.cmi \
-    copy.cmi 
+    lwt/lwt_util.cmi lwt/lwt.cmi globals.cmi fspath.cmi fileinfo.cmi \
+    common.cmi abort.cmi copy.cmi 
 copy.cmx: xferhint.cmx uutil.cmx ubase/util.cmx transfer.cmx ubase/trace.cmx \
     remote.cmx props.cmx ubase/prefs.cmx path.cmx osx.cmx os.cmx \
-    lwt/lwt_util.cmx lwt/lwt.cmx fspath.cmx fileinfo.cmx common.cmx abort.cmx \
-    copy.cmi 
+    lwt/lwt_util.cmx lwt/lwt.cmx globals.cmx fspath.cmx fileinfo.cmx \
+    common.cmx abort.cmx copy.cmi 
 fileinfo.cmo: ubase/util.cmi props.cmi ubase/prefs.cmi path.cmi osx.cmi \
     fspath.cmi fileinfo.cmi 
 fileinfo.cmx: ubase/util.cmx props.cmx ubase/prefs.cmx path.cmx osx.cmx \
@@ -154,13 +154,13 @@ transfer.cmo: uutil.cmi ubase/util.cmi ubase/trace.cmi ubase/safelist.cmi \
 transfer.cmx: uutil.cmx ubase/util.cmx ubase/trace.cmx ubase/safelist.cmx \
     lwt/lwt.cmx checksum.cmx transfer.cmi 
 transport.cmo: uutil.cmi ubase/util.cmi update.cmi ubase/trace.cmi \
-    stasher.cmi ubase/safelist.cmi remote.cmi props.cmi ubase/prefs.cmi \
-    path.cmi osx.cmi lwt/lwt_util.cmi lwt/lwt.cmi globals.cmi files.cmi \
-    common.cmi abort.cmi transport.cmi 
+    stasher.cmi remote.cmi props.cmi ubase/prefs.cmi path.cmi osx.cmi \
+    lwt/lwt_util.cmi lwt/lwt.cmi globals.cmi files.cmi common.cmi abort.cmi \
+    transport.cmi 
 transport.cmx: uutil.cmx ubase/util.cmx update.cmx ubase/trace.cmx \
-    stasher.cmx ubase/safelist.cmx remote.cmx props.cmx ubase/prefs.cmx \
-    path.cmx osx.cmx lwt/lwt_util.cmx lwt/lwt.cmx globals.cmx files.cmx \
-    common.cmx abort.cmx transport.cmi 
+    stasher.cmx remote.cmx props.cmx ubase/prefs.cmx path.cmx osx.cmx \
+    lwt/lwt_util.cmx lwt/lwt.cmx globals.cmx files.cmx common.cmx abort.cmx \
+    transport.cmi 
 tree.cmo: ubase/safelist.cmi tree.cmi 
 tree.cmx: ubase/safelist.cmx tree.cmi 
 uicommon.cmo: xferhint.cmi uutil.cmi ubase/util.cmi update.cmi \
