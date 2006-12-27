@@ -1,5 +1,4 @@
 (* Unison file synchronizer: src/ubase/prefs.ml *)
-(* $Id: $ *)
 (* $I3: Copyright 1999-2002 (see COPYING for details) $ *)
 
 let debug = Util.debug "prefs"

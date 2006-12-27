@@ -1,6 +1,6 @@
 (*
 This file is taken from the Objective Caml standard library.
-Some functions has been added to suite Unison needs.
+Some functions have been added to suite Unison needs.
 *)
 (***********************************************************************)
 (*                                                                     *)
@@ -14,8 +14,6 @@ Some functions has been added to suite Unison needs.
 (*  the special exception on linking described in file ../LICENSE.     *)
 (*                                                                     *)
 (***********************************************************************)
-
-(* $Id: myMap.ml 1.1 Wed, 26 May 2004 09:43:22 -0400 vouillon $ *)
 
 module type OrderedType =
   sig

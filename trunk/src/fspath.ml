@@ -1,6 +1,6 @@
 (* Unison file synchronizer: src/fspath.ml *)
 (* $Id$ *)
-(* Copyright 1999-2006 (see COPYING for details) *)
+(* Copyright 1999-2007 (see COPYING for details) *)
 
 (* Defines an abstract type of absolute filenames (fspaths).  Keeping the    *)
 (* type abstract lets us enforce some invariants which are important for     *)
@@ -216,7 +216,7 @@ let rec fullLocalPath roots fspath path =
     let parent = Path.parent path in
     if Path.isEmpty parent then
       let name = Name.fromString (Path.toString path) in
-      if (String.length fspaths - r - 1) <= 0 then raise (Util.Transient "Fspath.fullLocalPath: Can't create root (probably a bug)");
+      if (String.length fspaths - r - 1) <= 0 then raise (Util.Transient "Fspath.fullLocalPath: Can't create root (probably a bug -- as a workaround, try creating the root by hand)");
       Path.child (Path.fromString (String.sub fspaths (r+1) (String.length fspaths - r - 1))) name
     else
       let localParentPath = fullLocalPath roots fspath parent in

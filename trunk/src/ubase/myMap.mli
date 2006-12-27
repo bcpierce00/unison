@@ -15,8 +15,6 @@ Some functions has been added to suite Unison needs.
 (*                                                                     *)
 (***********************************************************************)
 
-(* $Id: myMap.mli 1.1 Wed, 26 May 2004 09:43:22 -0400 vouillon $ *)
-
 (** Association tables over ordered types.
 
    This module implements applicative association tables, also known as

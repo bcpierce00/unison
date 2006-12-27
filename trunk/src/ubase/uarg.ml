@@ -1,6 +1,5 @@
 (* Unison file synchronizer: src/ubase/uarg.ml *)
-(* $Id: $ *)
-(* Copyright 1999-2006 (see COPYING for details) *)
+(* Copyright 1999-2007 (see COPYING for details) *)
 
 (* by Xavier Leroy, projet Cristal, INRIA Rocquencourt *)
 (* Slightly modified by BCP, July 1999 *)

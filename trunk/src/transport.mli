@@ -1,6 +1,5 @@
 (* Unison file synchronizer: src/transport.mli *)
-(* $Id: $ *)
-(* Copyright 1999-2006 (see COPYING for details) *)
+(* Copyright 1999-2007 (see COPYING for details) *)
 
 (* Executes the actions implied by the reconItem list. *)
 val transportItem :

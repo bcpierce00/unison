@@ -1,6 +1,5 @@
 (* Unison file synchronizer: src/uutil.ml *)
-(* $Id: $ *)
-(* Copyright 1999-2006 (see COPYING for details) *)
+(* Copyright 1999-2007 (see COPYING for details) *)
 
 (*****************************************************************************)
 (*                      Unison name and version                              *)

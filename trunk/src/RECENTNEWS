@@ -1,3 +1,8 @@
+CHANGES FROM VERSION 2.26.6
+
+* Tidied SVN tags that we are not using anyway; updated copyrights to 2007.
+
+-------------------------------
 CHANGES FROM VERSION 2.26.5
 
 * Incorporated patch from Karl M. to invoke external merge utilities in a simpler

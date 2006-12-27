@@ -1,6 +1,5 @@
 (* Unison file synchronizer: src/update.ml *)
-(* $Id: $ *)
-(* Copyright 1999-2006 (see COPYING for details) *)
+(* Copyright 1999-2007 (see COPYING for details) *)
 
 open Common
 let (>>=)  = Lwt.(>>=)
@@ -798,34 +797,26 @@ let doArchiveCrashRecovery () =
              ["Please delete archive files as appropriate and try again."]))))
   else begin
     foundArchives := false;
-    (* This can be nuked if we don't end up needing it pretty soon:
-    let expectedNames =
-      String.concat ""
-        (Safelist.map
-           (fun (name,host,_) ->
-              Printf.sprintf "    %s    on host %s\n" name host)
-           (Globals.allRootsMap (fun r -> archiveNameOnRoot r MainArch))) in *)
     Util.warn
-    ("No archive files were found for these roots.  This can happen either\n"
-   ^ "because this is the first time you have synchronized these roots, \n"
-   ^ "or because you have upgraded Unison to a new version with a different\n"
-   ^ "archive format.  \n\n"
-   ^ "Update detection may take a while on this run if the replicas are \n"
-   ^ "large.\n\n"
-   ^ "Unison will assume that the 'last synchronized state' of both replicas\n"
-   ^ "was completely empty.  This means that any files that are different\n"
-   ^ "will be reported as conflicts, and any files that exist only on one\n"
-   ^ "replica will be judged as new and propagated to the other replica.\n"
-   ^ "If the two replicas are identical, then no changes will be reported.\n\n"
-   ^ "If you see this message repeatedly, it may be because one of your machines\n"
-   ^ "is getting its address from DHCP, which is causing its host name to change\n"
-   ^ "between synchronizations.  See the documentation for the UNISONLOCALHOSTNAME\n"
-   ^ "environment variable for advice on how to correct this.\n"
-   ^ "\n"
-   ^ "    ANNOUNCEMENT: Donations to the Unison project are gratefully accepted.  \n"
-   ^ "    Visit the Unison web site (http://www.cis.upenn.edu/~bcpierce/unison) for \n"
-   ^ "    a link to a simple PayPal donation form.\n"
-   ^ "\n"
+      ("No archive files were found for these roots.  This can happen either\n"
+     ^ "because this is the first time you have synchronized these roots, \n"
+     ^ "or because you have upgraded Unison to a new version with a different\n"
+     ^ "archive format.  \n\n"
+     ^ "Update detection may take a while on this run if the replicas are \n"
+     ^ "large.\n\n"
+     ^ "Unison will assume that the 'last synchronized state' of both replicas\n"
+     ^ "was completely empty.  This means that any files that are different\n"
+     ^ "will be reported as conflicts, and any files that exist only on one\n"
+     ^ "replica will be judged as new and propagated to the other replica.\n"
+     ^ "If the two replicas are identical, then no changes will be reported.\n\n"
+     ^ "If you see this message repeatedly, it may be because one of your machines\n"
+     ^ "is getting its address from DHCP, which is causing its host name to change\n"
+     ^ "between synchronizations.  See the documentation for the UNISONLOCALHOSTNAME\n"
+     ^ "environment variable for advice on how to correct this.\n"
+     ^ "\n"
+     ^ "Donations to the Unison project are gratefully accepted: \n"
+     ^ "http://www.cis.upenn.edu/~bcpierce/unison\n"
+     ^ "\n"
      (* ^ "\nThe expected archive names were:\n" ^ expectedNames *) );
     Lwt.return ()
   end))

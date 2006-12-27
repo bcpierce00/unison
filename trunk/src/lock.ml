@@ -1,6 +1,6 @@
 (* Unison file synchronizer: src/lock.ml *)
 (* $Id$ *)
-(* Copyright 1999-2006 (see COPYING for details) *)
+(* Copyright 1999-2007 (see COPYING for details) *)
 
 let rename oldFile newFile =
   begin try Unix.link oldFile newFile with Unix.Unix_error _ -> () end;
