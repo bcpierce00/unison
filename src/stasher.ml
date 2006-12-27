@@ -340,7 +340,7 @@ let backup fspath path (finalDisposition : [`AndRemove | `ByCopying]) =
         (Path.toString path) (Fspath.toString fspath))
     else if shouldBackup path then begin
       match backupPath fspath path with
-        None -> ()
+        None -> disposeIfNeeded()
       | Some (backRoot, backPath) ->
           debug (fun () -> Util.msg "Backing up %s / %s to %s in %s\n" 
               (Fspath.toString fspath) (Path.toString path)

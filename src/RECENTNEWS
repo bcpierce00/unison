@@ -1,3 +1,16 @@
+CHANGES FROM VERSION 2.26.4
+
+* Fixed bug in recent backup code which sometimes caused files not to
+  be deleted (resulting in the file being re-created on the next sync,
+  since Unison's archive would record it as deleted on both hosts and
+  would thus indicate that the not-deleted copy is a new creation!).
+  Specifically, the problem occurred when the deleted file was
+  designated as "to have a current version backed up" (with the 
+  backupcurrent preference).
+
+
+
+-------------------------------
 CHANGES FROM VERSION 2.26.3
 
 * Fix selftest module
