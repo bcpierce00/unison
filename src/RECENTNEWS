@@ -1,3 +1,10 @@
+CHANGES FROM VERSION 2.26.8
+
+* Attempt at a fix to occasional crashes of the native OSX GUI,
+  following a suggestion by Trevor Jim.  
+
+
+-------------------------------
 CHANGES FROM VERSION 2.26.7
 
 * Added a workaround (suggested by Karl M.) for the problem discussed
