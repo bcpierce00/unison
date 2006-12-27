@@ -885,7 +885,20 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
       Trace.log (Printf.sprintf "Merge command: %s\n" cmd);
       
       let returnValue, mergeResultLog = 
-        Lwt_unix.run (
+        if Util.osType = `Win32 then 
+          let c = Unix.open_process_in cmd in
+          let mergeLog = readChannelTillEof c in
+          let returnValue = Unix.close_process_in c in
+    
+          let mergeResultLog =
+            cmd ^
+            (if mergeLog <> "" then "\n\n" ^ mergeLog else "") ^
+            (if returnValue <> Unix.WEXITED 0 then
+               "\n\n" ^ Util.process_status_to_string returnValue
+             else
+               "") in
+          (returnValue,mergeResultLog) 
+        else Lwt_unix.run (
           Lwt_unix.open_process_full cmd (Unix.environment ()) 
           >>= (fun (out, ipt, err) ->
           readChannelsTillEof [out;err]

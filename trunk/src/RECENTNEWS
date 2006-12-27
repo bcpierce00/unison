@@ -1,3 +1,12 @@
+CHANGES FROM VERSION 2.26.5
+
+* Incorporated patch from Karl M. to invoke external merge utilities in a simpler
+  way when running on windows.  On Unix systems, the merge command may
+  send its output to either or both of its standard output and standard
+  error pipes.  On windows, it should write only to stdout (if it
+  writes anything to stderr, a hang may result).
+
+-------------------------------
 CHANGES FROM VERSION 2.26.4
 
 * Fixed bug in recent backup code which sometimes caused files not to
@@ -7,8 +16,6 @@ CHANGES FROM VERSION 2.26.4
   Specifically, the problem occurred when the deleted file was
   designated as "to have a current version backed up" (with the 
   backupcurrent preference).
-
-
 
 -------------------------------
 CHANGES FROM VERSION 2.26.3
@@ -20,38 +27,15 @@ CHANGES FROM VERSION 2.26.2
 
 * Experimental fix for bug reported by Karl M.
 
-
-
-
-
-
--------------------------------
-CHANGES FROM VERSION 2.26.2
-
-* Experimental fix for bug reported by Karl M.
-
-
-
-
-
-
 -------------------------------
 CHANGES FROM VERSION 2.26.1
 
 * Fix small syntax error
 
-
-
-
-
 -------------------------------
 CHANGES FROM VERSION 2.26.0
 
 * Fixed 'fastcheck' preference, which was broken by the last commit.
-
-
-
-
 
 -------------------------------
 CHANGES FROM VERSION 2.26.-1
