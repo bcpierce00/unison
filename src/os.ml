@@ -1,6 +1,5 @@
 (* Unison file synchronizer: src/os.ml *)
-(* $Id: $ *)
-(* Copyright 1999-2006 (see COPYING for details) *)
+(* Copyright 1999-2007 (see COPYING for details) *)
 
 (* This file attempts to isolate operating system specific details from the  *)
 (* rest of the program.                                                      *)

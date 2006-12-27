@@ -1,6 +1,5 @@
 (* Unison file synchronizer: src/recon.mli *)
-(* $Id: $ *)
-(* Copyright 1999-2006 (see COPYING for details) *)
+(* Copyright 1999-2007 (see COPYING for details) *)
 
 val reconcileAll :
      Common.updateItem list Common.oneperpath

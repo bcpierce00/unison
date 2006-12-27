@@ -1,6 +1,6 @@
 (* Unison file synchronizer: src/files.mli *)
 (* $Id$ *)
-(* Copyright 1999-2006 (see COPYING for details) *)
+(* Copyright 1999-2007 (see COPYING for details) *)
 
 (* As usual, these functions should only be called by the client (i.e., in   *)
 (* the same address space as the user interface).                            *)

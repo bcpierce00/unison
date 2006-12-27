@@ -1,5 +1,4 @@
 (* Unison file synchronizer: src/ubase/prefs.mli *)
-(* $Id: $ *)
 (* $I3: Copyright 1999-2002 (see COPYING for details) $ *)
 
 type 'a t

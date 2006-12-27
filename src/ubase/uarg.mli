@@ -10,8 +10,6 @@
 (***********************************************************************)
 (* Slightly modified version by BCP for Unixon, July 1999 *)
 
-(* $Id: uarg.mli 1.1 Sun, 24 Mar 2002 11:24:03 -0500 bcpierce $ *)
-
 (* Module [Uarg]: parsing of command line arguments *)
 
 (* This module provides a general mechanism for extracting options and
