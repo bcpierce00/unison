@@ -1133,10 +1133,6 @@ let checkContentsChange
 
    Note that case conflicts and illegal filenames can only occur under Unix,
    when syncing with a Windows file system. *)
-let someHostIsRunningWindows =
-  Prefs.createBool "someHostIsRunningWindows" false "*" ""
-let allHostsAreRunningWindows =
-  Prefs.createBool "allHostsAreRunningWindows" false "*" ""
 let badWindowsFilenameRx =
   (* FIX: This should catch all device names (like aux, con, ...).  I don't
      know what all the possible device names are. *)
@@ -1148,7 +1144,7 @@ let isBadWindowsFilename s =
   Rx.match_string badWindowsFilenameRx (Name.toString s)
 let badFilename s =
   (* Don't check unless we are syncing with Windows *)
-  Prefs.read someHostIsRunningWindows &&
+  Prefs.read Globals.someHostIsRunningWindows &&
   isBadWindowsFilename s
 
 let getChildren fspath path =

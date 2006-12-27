@@ -403,7 +403,7 @@ let test() =
     check "1" R1 (Dir [("x", File "foo"); ("back", Dir [("0-x.backup", File "foo")])]);
   );
 
-  if not (Prefs.read Update.someHostIsRunningWindows) then begin
+  if not (Prefs.read Globals.someHostIsRunningWindows) then begin
     runtest "links 1 (directories and links)" ["backup = Name *"; "backupcurrent = Name *"; "maxbackups = 7"] (fun() -> 
       put R1 (Dir []); put R2 (Dir []); sync();
       put R1 (Dir ["x", Dir ["a", File "foo"; "l", Link "./foo"]]); sync();

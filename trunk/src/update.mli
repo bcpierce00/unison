@@ -75,6 +75,3 @@ val fastcheck : string Prefs.t
 (* Print the archive to the current formatter (see Format) *)
 val showArchive: archive -> unit
 
-(* Internal prefs, needed to know whether to do filenames checks *)
-val someHostIsRunningWindows : bool Prefs.t
-val allHostsAreRunningWindows : bool Prefs.t

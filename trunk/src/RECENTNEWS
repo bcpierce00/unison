@@ -1,3 +1,17 @@
+CHANGES FROM VERSION 2.26.7
+
+* Added a workaround (suggested by Karl M.) for the problem discussed
+  on the unison users mailing list where, on the Windows platform, the
+  server would hang when transferring files.  I conjecture that
+  the problem has to do with the RPC mechanism, which was used to
+  make a call *back* from the server to the client (inside the Trace.log 
+  function) so that the log message would be appended to the log file on 
+  the client.  The workaround is to dump these messages (about when
+  xferbycopying shortcuts are applied and whether they succeed) just to the
+  standard output of the Unison process, not to the log file.
+
+
+-------------------------------
 CHANGES FROM VERSION 2.26.6
 
 * Tidied SVN tags that we are not using anyway; updated copyrights to 2007.

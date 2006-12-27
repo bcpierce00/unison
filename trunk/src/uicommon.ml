@@ -430,8 +430,8 @@ let checkCaseSensitivity () =
   Case.init someHostIsCaseInsensitive;
   Props.init someHostIsRunningWindows;
   Osx.init someHostRunningOsX;
-  Prefs.set Update.someHostIsRunningWindows someHostIsRunningWindows;
-  Prefs.set Update.allHostsAreRunningWindows allHostsAreRunningWindows;
+  Prefs.set Globals.someHostIsRunningWindows someHostIsRunningWindows;
+  Prefs.set Globals.allHostsAreRunningWindows allHostsAreRunningWindows;
   return ())
 
 (* ---- *)

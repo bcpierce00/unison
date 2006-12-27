@@ -1,5 +1,5 @@
 
-(* Either a thread ['a t] has terminated, either successfully [Return of 'a] or
+(* Either a thread ['a t] has terminated, eithera successfully [Return of 'a] or
  *  unsuccessfully [Fail of exn], or it is sleeping
  *)
 type 'a state =
