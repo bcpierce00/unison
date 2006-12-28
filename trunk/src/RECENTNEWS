@@ -1,3 +1,9 @@
+CHANGES FROM VERSION 2.26.9
+
+* Capitalize Unison in window headers in gtk2 UI.
+
+
+-------------------------------
 CHANGES FROM VERSION 2.26.8
 
 * Attempt at a fix to occasional crashes of the native OSX GUI,

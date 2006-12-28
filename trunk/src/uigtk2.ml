@@ -8,6 +8,8 @@ module Private = struct
 
 let debug = Trace.debug "ui"
 
+let myNameCapitalized = String.capitalize Uutil.myName
+
 (**********************************************************************
                            LOW-LEVEL STUFF
  **********************************************************************)
@@ -23,7 +25,7 @@ let tryAgainMessage =
 or with a remote directory.
 
 Please enter the first (local) directory that you want to synchronize."
-Uutil.myName
+myNameCapitalized
 
 (* ---- *)
 
@@ -55,7 +57,7 @@ specify here.  (Use \"%s -socket xxx\" on the remote machine to
 start the %s server.)  You must enter the host, port, and the directory
 on the remote machine (relative to the working directory of the
 %s server running on that machine)."
-Uutil.myName Uutil.myName Uutil.myName Uutil.myName Uutil.myName Uutil.myName Uutil.myName
+myNameCapitalized myNameCapitalized myNameCapitalized myNameCapitalized myNameCapitalized myNameCapitalized myNameCapitalized
 
 (**********************************************************************
  Font preferences
@@ -1193,7 +1195,7 @@ let getMyWindow () =
           | None ->
               (* Used to be ~position:`CENTER -- maybe that was better... *)
               GWindow.window ~kind:`TOPLEVEL ~position:`CENTER
-                ~title:Uutil.myName () in
+                ~title:myNameCapitalized () in
   myWindow := Some(w);
   w#set_allow_grow true;
   w
@@ -1275,8 +1277,8 @@ let rec createToplevelWindow () =
       else if label="" then p
       else p ^ " (" ^ label ^ ")" in
     toplevelWindow#set_title
-      (if s = "" then Uutil.myName else
-       Format.sprintf "%s [%s]" Uutil.myName s);
+      (if s = "" then myNameCapitalized else
+       Format.sprintf "%s [%s]" myNameCapitalized s);
     let s = if s="" then "" else "Profile: " ^ s in
     profileLabel#set_text (transcodeFilename s)
   in
