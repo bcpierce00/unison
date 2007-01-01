@@ -1,5 +1,4 @@
 (* Unison file synchronizer: src/checksum.mli *)
-(* $Id$ *)
 (* Copyright 1999-2007 (see COPYING for details) *)
 
 type t = int

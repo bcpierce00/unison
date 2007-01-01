@@ -1,5 +1,4 @@
 (* Unison file synchronizer: src/globals.ml *)
-(* $Id$ *)
 (* Copyright 1999-2007 (see COPYING for details) *)
 
 open Common

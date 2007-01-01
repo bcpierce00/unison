@@ -1,3 +1,117 @@
+\begin{changesfromversion}{2.17}
+\item The Unison project is now able to accept donations via PayPal.  If
+you'd like to donate, you can find a link to the donation page on the Unison
+home page, \verb|http://www.cis.upenn.edu/~bcpierce/unison|.  
+
+\item The native OS X user interface has been enormously improved by Ben
+Willmore and Trevor Jim.  
+
+(We have observed intermittent crashes of this UI when used for large
+synchronizations.  This problem has hopefully been fixed by a recent
+improvement in locking when communicating between Objective C and OCaml; if
+any further crashes are observed, we would appreciate hearing about them,
+{\em especially} if they are repeatable.)
+
+\item Several small fixes to the GTK2 UI to make it work better under
+Windows [thanks to Karl M for these].
+
+\item The backup functionality has been completely rewritten.  The external
+interface has not changed, but numerous bugs, irregular behaviors, and
+cross-platform inconsistencies have been corrected.
+
+\item Several important safety improvements:
+\begin{itemize}
+\item Added a new \verb|mountpoint| preference, which can be used to
+  specify a path that must exist in both replicas at the end of update
+  detection (otherwise Unison aborts).
+
+\item The confirmation of ``big deletes'' is now controlled by a boolean preference
+  \verb|confirmbigdeletes|.  Default is true, which gives the same behavior as
+  previously.  (This functionality is at least partly superceded by the
+  \verb|mountpoint| preference, but it has been left in place in case it is
+  useful to some people.)
+  
+  \item If Unison is asked to ``follow'' a symbolic link but there is
+  nothing at the other end of the link, it will now flag this path as an
+  error, rather than treating the symlink itself as missing or deleted.
+  This avoids a potentially dangerous situation where a followed symlink
+  points to an external filesystem that might be offline when Unison is run
+  (whereupon Unison would cheerfully delete the corresponding files in the
+  other replica!).
+  \end{itemize}
+
+\item Smaller changes:
+\begin{itemize}
+\item Added \verb|forcepartial| and \verb|preferpartial|
+preferences, which behave like \verb|force| and \verb|prefer| but can be
+specified on a per-path basis (see documentation for details). [Thanks to
+Alan Schmitt for this.]
+
+\item A bare-bones self test feature was added, which runs unison through
+  some of its paces and checks that the results are as expected.  The
+  coverage of the tests is still very limited, but the facility has already
+  been very useful in debugging the new backup functionality (especially in
+  exposing some subtle cross-platform issues).
+
+\item Refined debugging code so that the verbosity of individual modules
+  can be controlled separately.  Instead of just putting '-debug
+  verbose' on the command line, you can put '-debug update+', which
+  causes all the extra messages in the Update module, but not other
+  modules, to be printed.  Putting '-debug verbose' causes all modules
+  to print with maximum verbosity.
+
+\item Removed \verb|mergebatch| preference.  (It never seemed very useful, and
+  its semantics were confusing.)
+  
+\item Rewrote some of the merging functionality, for better cooperation
+  with external Harmony instances.
+
+\item Changed the temp file prefix from ".#" to ".unison."
+
+\item Compressed the output from the text user interface (particularly
+  when run with the \verb|-terse| flag) to make it easier to interpret the
+  results when Unison is run several times in succession from a script.
+
+\item Diff and merge functions now work under Windows.
+
+\item Changed the order of arguments to the default diff command (so that
+  the + and - annotations in diff's output are reversed).
+
+\item Added \verb|.mpp| files to the ``never fastcheck'' list (like
+\verb|.xls| files). 
+\end{itemize}
+
+\item Many small bugfixes, including:
+\begin{itemize}
+\item Set read-only file to R/W on OSX before attempting to change other attributes.
+\item Fixed bug resulting in spurious "Aborted" errors during transport
+(thanks to Jerome Vouillon) 
+\item Enable diff if file contents have changed in one replica, but
+only properties in the other.
+\item Removed misleading documentation for 'repeat' preference.
+\item Fixed a bug in merging code where Unison could sometimes deadlock
+  with the external merge program, if the latter produced large
+  amounts of output.
+\item Workaround for a bug compiling gtk2 user interface against current versions
+  of gtk2+ libraries.  
+\item Added a better error message for "ambiguous paths".
+\item Squashed a longstanding bug that would cause file transfer to fail
+  with the message ``Failed: Error in readWrite: Is a directory.''
+\item Replaced symlinks with copies of their targets in the Growl framework in src/uimac.
+  This should make the sources easier to check out from the svn repository on WinXP
+  systems.
+\item Added a workaround (suggested by Karl M.) for the problem discussed
+  on the unison users mailing list where, on the Windows platform, the
+  server would hang when transferring files.  I conjecture that
+  the problem has to do with the RPC mechanism, which was used to
+  make a call {\em back} from the server to the client (inside the Trace.log 
+  function) so that the log message would be appended to the log file on 
+  the client.  The workaround is to dump these messages (about when
+  xferbycopying shortcuts are applied and whether they succeed) just to the
+  standard output of the Unison process, not to the log file.
+\end{itemize}
+\end{changesfromversion}
+
 \begin{changesfromversion}{2.13.0}
 \item The features for performing backups and for invoking external merge
 programs have been completely rewritten by Stephane Lescuyer (thanks,

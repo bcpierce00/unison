@@ -23,7 +23,7 @@
 	<key>CFBundleShortVersionString</key>
 	<string>@@VERSION@@</string>
 	<key>CFBundleGetInfoString</key>
-	<string>@@VERSION@@. ©1999-2006, licensed under GNU GPL.</string>
+	<string>@@VERSION@@. ©1999-2007, licensed under GNU GPL.</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>©1999-2006, licensed under GNU GPL.</string>
 	<key>NSMainNibFile</key>

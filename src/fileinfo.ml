@@ -1,5 +1,4 @@
 (* Unison file synchronizer: src/fileinfo.ml *)
-(* $Id$ *)
 (* Copyright 1999-2007 (see COPYING for details) *)
 
 let debug = Util.debug "fileinfo"

@@ -1,5 +1,4 @@
 (* Unison file synchronizer: src/checksum.ml *)
-(* $Id$ *)
 (* Copyright 1999-2007 (see COPYING for details) *)
 
 (* The checksum (or fast fingerprinting) algorithm must be fast and has to   *)
