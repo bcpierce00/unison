@@ -1,5 +1,4 @@
 (* Unison file synchronizer: src/clroot.mli *)
-(* $Id$ *)
 (* Copyright 1999-2007 (see COPYING for details) *)
 
 (* Command-line roots *)

@@ -1,5 +1,4 @@
 (* Unison file synchronizer: src/fileutil.ml *)
-(* $Id$ *)
 (* Copyright 1999-2007 (see COPYING for details) *)
 
 (* Convert backslashes in a string to forward slashes.  Useful in Windows.   *)

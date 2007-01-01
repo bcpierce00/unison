@@ -29,6 +29,9 @@ checkin: logmsg remembernews
 	echo >> src/mkProjectInfo.ml # so the Rev keyword gets updated
 	svn commit --file logmsg
 	$(RM) logmsg
+ifeq ($(USER),bcpierce)
+	$(MAKE) nightly
+endif
 
 remembernews: logmsg
 	echo "CHANGES FROM VERSION" $(VERSION) > rc.tmp
