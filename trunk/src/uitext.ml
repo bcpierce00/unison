@@ -337,30 +337,26 @@ let interact rilist =
   in
     loop [] rilist
     
-let verifyMerge proceed title text =
+let verifyMerge title text =
   Printf.printf "%s\n" text;
-  if proceed then
-    if Prefs.read Globals.batch then
+  if Prefs.read Globals.batch then
+    true
+  else begin
+    if Prefs.read Uicommon.confirmmerge then begin
+      display "Commit results of merge? ";
+      selectAction
+        None   (* Maybe better: (Some "n") *)
+        [(["y";"g"],
+          "Yes: commit",
+          (fun() -> true));
+          (["n"],
+           "No: leave this file unchanged",
+           (fun () -> false));
+        ]
+        (fun () -> display "Commit results of merge? ")
+    end else
       true
-    else begin
-      if Prefs.read Uicommon.confirmmerge then begin
-	display "Commit results of merge? ";
-	selectAction
-	  None   (* Maybe better: (Some "n") *)
-	  [(["y";"g"],
-            "Yes: commit",
-            (fun() -> true));
-	    (["n"],
-             "No: leave this file unchanged",
-             (fun () -> false));
-	  ]
-	  (fun () -> display "Commit results of merge? ")
-      end
-      else
-	true
-    end
-  else
-    false
+  end
       
 let doTransport reconItemList =
   let totalBytesToTransfer =

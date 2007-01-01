@@ -177,7 +177,6 @@ let unisonInit1 profileName =
   Trace.debug "" (fun() -> Prefs.dumpPrefsToStderr() );
 
   (* FIX: if no roots, ask the user *)
-
   let localRoots,remoteRoots =
     Safelist.partition
       (function Clroot.ConnectLocal _ -> true | _ -> false)
@@ -435,7 +434,7 @@ let unisonSynchronize () =
                 catch (fun () ->
                   Transport.transportItem
                     theSI.ri (Uutil.File.ofLine i)
-                    (fun proceed title text -> 
+                    (fun title text -> 
 		       debug (fun () -> Util.msg "MERGE '%s': '%s'"
                             title text);
                        displayDiff title text; true)

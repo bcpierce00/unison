@@ -1898,28 +1898,19 @@ lst_store#set ~row ~column:c_path path;
                   catch (fun () ->
                            Transport.transportItem
                              theSI.ri (Uutil.File.ofLine i)
-                             (fun proceed title text -> 
-			    (*    Trace.status (Printf.sprintf "\n%s\n\n%s\n\n" title text); *)
+                             (fun title text -> 
 			       textDetailed := (Some text);
-			       if proceed then
-				 if Prefs.read Uicommon.confirmmerge then
-				   twoBoxAdvanced
-				     ~title:title
-				     ~message:("The merge exited successfully."
-					       ^ " Do you want to commit the changes to"
-					       ^ " the replicas ?")
-				     ~longtext:text 
-				     ~advLabel:"View details..."
-				     ~astock:`YES
-				     ~bstock:`NO
-				 else
-				   true
-			       else
-				 (okBox ~title:title ~typ:`INFO 
-				    ~message:("\nThe merge function was unsuccessful, "
-					      ^ "changes will not be commited to "
-					      ^ "the replicas.");
-				  false))
+                               if Prefs.read Uicommon.confirmmerge then
+				 twoBoxAdvanced
+				   ~title:title
+				   ~message:("Do you want to commit the changes to"
+					     ^ " the replicas ?")
+				   ~longtext:text
+				   ~advLabel:"View details..."
+				   ~astock:`YES
+				   ~bstock:`NO
+                               else 
+				 true)
                            >>= (fun () ->
                              return Util.Succeeded))
                          (fun e ->

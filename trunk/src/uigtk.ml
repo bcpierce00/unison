@@ -1608,8 +1608,8 @@ in
                   catch (fun () ->
                            Transport.transportItem
                              theSI.ri (Uutil.File.ofLine i)
-                             (fun proceed title text -> 
-			       Trace.status (Printf.sprintf "\n%s\n\n%s\n\n" title text); proceed)
+                             (fun title text -> 
+			       Trace.status (Printf.sprintf "\n%s\n\n%s\n\n" title text); true)
                            >>= (fun () ->
                            return Util.Succeeded))
                         (fun e ->

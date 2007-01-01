@@ -5,7 +5,7 @@
 val transportItem :
      Common.reconItem                 (* Updates that need to be performed *)
   -> Uutil.File.t                     (* id for progress reports *)
-  -> (bool->string->string->bool)     (* fn to display title / result of merge *)
+  -> (string->string->bool)           (* fn to display title / result of merge and confirm *)
   -> unit Lwt.t
 
 (* Should be called respectively when starting the synchronization and
