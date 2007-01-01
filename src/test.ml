@@ -203,7 +203,7 @@ let sync ?(verbose=false) () =
     Lwt_util.iter
       (fun ri ->
          Transport.transportItem ri
-           (Uutil.File.ofLine 0) (fun _ _ _ -> true))
+           (Uutil.File.ofLine 0) (fun _ _ -> true))
       reconItemList);
   Update.commitUpdates()
 

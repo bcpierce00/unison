@@ -626,7 +626,13 @@ let rec diff root1 path1 ui1 root2 path2 ui2 showDiff id =
            "CURRENT2", quotes (Fspath.toString fspath2)] in
     (* Doesn't seem to work well on Windows! 
        let c = Lwt_unix.run (Lwt_unix.open_process_in cmd) in *)
-    let c = Unix.open_process_in cmd in
+    let c = Unix.open_process_in
+      (if Util.osType = `Win32 && not Util.isCygwin then
+        (* BCP: Proposed by Karl M. to deal with the standard windows command processor's
+           weird treatment of spaces and quotes: *)
+        "\"" ^ cmd ^ "\""
+       else
+         cmd) in
     showDiff cmd (readChannelTillEof c);
     ignore (Unix.close_process_in c) in
   let (desc1, fp1, ress1, desc2, fp2, ress2) = Common.fileInfos ui1 ui2 in
@@ -873,19 +879,17 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
       let dig2 = Os.fingerprint workingDirForMerge working2 info2 in
       let cmd = formatMergeCmd
           path
-          (Fspath.concatToString workingDirForMerge working1)
-          (Fspath.concatToString workingDirForMerge working2)
-          (match arch with 
-	    None -> None 
-	  | Some f -> Some(Fspath.toString f))
-          (Fspath.concatToString workingDirForMerge new1)
-          (Fspath.concatToString workingDirForMerge new2)
-          (Fspath.concatToString workingDirForMerge newarch) in
+          (quotes (Fspath.concatToString workingDirForMerge working1))
+          (quotes (Fspath.concatToString workingDirForMerge working2))
+          (match arch with None -> None | Some f -> Some(quotes (Fspath.toString f)))
+          (quotes (Fspath.concatToString workingDirForMerge new1))
+          (quotes (Fspath.concatToString workingDirForMerge new2))
+          (quotes (Fspath.concatToString workingDirForMerge newarch)) in
       Trace.log (Printf.sprintf "Merge command: %s\n" cmd);
       
       let returnValue, mergeResultLog = 
-        if Util.osType = `Win32 then 
-          let c = Unix.open_process_in cmd in
+        if Util.osType = `Win32 && not Util.isCygwin then
+          let c = Unix.open_process_in ("\"" ^ cmd ^ "\"") in
           let mergeLog = readChannelTillEof c in
           let returnValue = Unix.close_process_in c in
     
@@ -922,12 +926,16 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
       debug (fun () -> Util.msg "Merge result = %s\n"
                    (showStatus returnValue));
 
+      (* This query to the user probably belongs below, after we've gone through all the
+         logic that might raise exceptions in various conditions.  But it has the side effect of
+         *displaying* the results of the merge (or putting them in a "details" area), so we don't
+         want to skip doing it if we raise one of these exceptions.  Better might be to split out
+         the displaying from the querying... *)
       if not
           (showMergeFn
-	     true 
              (Printf.sprintf "Results of merging %s" (Path.toString path))
              mergeResultLog) then
-        raise (Util.Transient ("Merge command failed or cancelled by the user"));
+        raise (Util.Transient ("Merge command canceled by the user"));
       
       (* Check which files got created by the merge command and do something appropriate
          with them *)
@@ -1000,6 +1008,11 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
 	    else begin
 	      debug (fun () -> (Util.msg "Merge program changed both of its inputs in";
 				Util.msg "different ways, but returned zero.\n"));
+              (* Note that we assume the merge program knew what it was doing when it
+                 returned 0 -- i.e., we assume a zero result means that the files are
+                 "morally equal" and either can be replaced by the other; we therefore
+                 choose one of them (#2) as the unique new result, so that we can update
+                 Unison's archive and call the file 'in sync' again. *)
               copy [(working2,working1);(working2,workingarch)];
 	    end
         end

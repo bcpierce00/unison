@@ -1,3 +1,10 @@
+CHANGES FROM VERSION 2.26.10
+
+* Incorporated yet another patch from Karl M (thanks!!) to improve the
+  quoting of filenames in external merge commands under windows.
+  (Also some small UI improvements to merging.)
+
+-------------------------------
 CHANGES FROM VERSION 2.26.9
 
 * Capitalize Unison in window headers in gtk2 UI.

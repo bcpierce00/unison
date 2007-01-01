@@ -12,7 +12,7 @@
 #include <caml/callback.h>
 
 // BCP, December 2006: Added this lock to try to solve the UI crashes that
-// several people have been seeing, following advice from Trevor Jim.
+// several people have been seeing, following advice from Trevor.
 #include <pthread.h>
 pthread_mutex_t global_callback_lock = PTHREAD_MUTEX_INITIALIZER;
 
