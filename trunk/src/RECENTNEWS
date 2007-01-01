@@ -1,12 +1,6 @@
-CHANGES FROM VERSION 2.26.11
+CHANGES FROM VERSION 2.26.12
 
-* Incorporated yet another patch from Karl M (thanks!!) to improve the
-  quoting of filenames in external merge commands under windows.
-  (Also some small UI improvements to merging.)
+* Tidied documentation in preparation for new release.
 
-* Updated some more copyright years and deleted some $Id: strings I'd missed
-
-* Moved stuff from src/RECENTNEWS to doc/changes.tex in preparation
-  for new release.
 
 -------------------------------
