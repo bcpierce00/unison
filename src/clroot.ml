@@ -79,9 +79,9 @@ let getProtocolSlashSlash s =
     let matched = Str.matched_string s in
     match matched with
       "file:" | "ssh:" | "rsh:" | "socket:" ->
-        raise(Invalid_argument
+        raise(Util.Fatal
                 (Printf.sprintf
-                   "ill-formed replica %s (%s must be followed by //)"
+                   "ill-formed root specification %s (%s must be followed by //)"
                    s matched))
     | _ -> None
   else None
@@ -142,8 +142,8 @@ let parseUri s =
           if len=1 then None
           else Some(String.sub s3 1 (len-1))
         else
-          raise(Invalid_argument
-                  (Printf.sprintf "ill-formed replica %s" s)) in
+          raise(Util.Fatal
+                  (Printf.sprintf "ill-formed root specification %s" s)) in
       (protocol,userOpt,hostOpt,portOpt,pathOpt)
 
 (* These should succeed *)
