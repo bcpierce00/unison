@@ -529,7 +529,10 @@ let rec interactAndPropagateChanges reconItemList
         doit);
        (["n"],
         "No: go through selections again",
-        (fun () -> newLine(); interactAndPropagateChanges reconItemList));
+        (fun () ->
+           Prefs.set Uicommon.auto false;
+           newLine();
+           interactAndPropagateChanges reconItemList));
        (["q"],
         ("exit " ^ Uutil.myName ^ " without propagating any changes"),
         fun () -> raise Sys.Break)

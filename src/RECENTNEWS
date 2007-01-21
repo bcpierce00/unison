@@ -1,3 +1,10 @@
+CHANGES FROM VERSION 2.26.14
+
+* Incorporated a patch from Kevin Ballard that turns off the "auto"
+  flag when the user says "No" to the "Proceed with updates" question in
+  the text UI.  (This makes 'auto' more useful.)
+
+-------------------------------
 CHANGES FROM VERSION 2.26.13
 
 * Fix crash reported by Chris Greene on incorrect root specification.
