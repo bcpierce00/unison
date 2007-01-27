@@ -1754,6 +1754,9 @@ lst_store#set ~row ~column:c_path path;
     grSet grGo false;
     grSet grRestart false;
 
+    mainWindow#clear();
+    detailsWindow#buffer#set_text "";
+
     progressBarPulse := true;
     sync_action := Some (fun () -> progressBar#pulse ());
     let (r1,r2) = Globals.roots () in

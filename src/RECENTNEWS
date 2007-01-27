@@ -1,3 +1,9 @@
+CHANGES FROM VERSION 2.26.15
+
+* Incorporated a patch from Karl M. that clears the main window in the
+  GTK2 UI when update detection is restarted.
+
+-------------------------------
 CHANGES FROM VERSION 2.26.14
 
 * Incorporated a patch from Kevin Ballard that turns off the "auto"
