@@ -12,11 +12,6 @@ val canonize : string option -> t
 val toString : t -> string
 val concatToString : t -> Path.local -> string
 
-(* If the string is the name of the local root, returns a localPath such     *)
-(* that, concatenated to the root, it points to the same file as             *)
-(* (fspath, path) in this replica.                                           *)
-val fullLocalPath : string -> t -> Path.local -> Path.local
-
 (* If fspath+path refers to a (followed) symlink, then return the directory  *)
 (* of the symlink's target; otherwise return the parent dir of path.  If     *)
 (* fspath+path is a root directory, raise Fatal.                             *)

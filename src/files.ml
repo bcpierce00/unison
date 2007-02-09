@@ -135,14 +135,12 @@ let mkdir onRoot workingDir path = mkdirRemote onRoot (workingDir,path)
     
 (* ------------------------------------------------------------ *)
     
-let renameLocal (root, (fspath, pathFrom, pathTo)) =
+let renameLocal (root, (localTargetPath, fspath, pathFrom, pathTo)) =
   debug (fun () -> Util.msg "Renaming %s to %s in %s; root is %s\n" 
       (Path.toString pathFrom) 
       (Path.toString pathTo) 
       (Fspath.toString fspath) 
       (Fspath.toString root));
-  let localTargetPath =
-    Fspath.fullLocalPath (Fspath.toString root) fspath pathTo in
   let source = Fspath.concat fspath pathFrom in
   let target = Fspath.concat fspath pathTo in
   Util.convertUnixErrorsToTransient
@@ -224,7 +222,7 @@ let renameOnHost = Remote.registerRootCmd "rename" renameLocal
    check that their assumptions had not been violated and then switch the
    temp file into place, but remain able to roll back if something fails
    either locally or on the other side. *)
-let rename root pathInArchive workingDir pathOld pathNew ui =
+let rename root pathInArchive localPath workingDir pathOld pathNew ui =
   debug (fun() ->
     Util.msg "rename(root=%s, pathOld=%s, pathNew=%s)\n"
       (root2string root)
@@ -232,7 +230,7 @@ let rename root pathInArchive workingDir pathOld pathNew ui =
   (* Make sure the target is unchanged, then do the rename.
      (Note that there is an unavoidable race condition here...) *)
   Update.checkNoUpdates root pathInArchive ui >>= (fun () ->
-    renameOnHost root (workingDir, pathOld, pathNew))
+    renameOnHost root (localPath, workingDir, pathOld, pathNew))
 
 (* ------------------------------------------------------------ *)
 
@@ -328,7 +326,7 @@ let copy
       (root2string rootTo) (Path.toString pathTo));
   (* Calculate target paths *)
   setupTargetPaths rootTo pathTo
-     >>= (fun (workingDir, realPathTo, tempPathTo, _) ->
+     >>= (fun (workingDir, realPathTo, tempPathTo, localPathTo) ->
   (* Inner loop for recursive copy... *)
   let rec copyRec pFrom      (* Path to copy from *)
                   pTo        (* (Temp) path to copy to *)
@@ -423,7 +421,7 @@ let copy
          Update.replaceArchive
            rootTo pathTo (Some (workingDir, tempPathTo))
            archFrom id true >>= (fun _ ->
-         rename rootTo pathTo workingDir tempPathTo realPathTo uiTo ))))))
+         rename rootTo pathTo localPathTo workingDir tempPathTo realPathTo uiTo ))))))
     (fun _ ->
        performDelete rootTo (Some workingDir, tempPathTo)))
 
@@ -760,7 +758,7 @@ let copyBack fspathFrom pathFrom rootTo pathTo propsTo uiTo id =
   Copy.file
     (Local, fspathFrom) pathFrom rootTo workingDirForCopy tempPathTo realPathTo
     `Copy newprops fp stamp id >>= (fun () ->
-      rename rootTo pathTo workingDirForCopy tempPathTo realPathTo
+      rename rootTo pathTo localPathTo workingDirForCopy tempPathTo realPathTo
         uiTo ))
     
 let keeptempfilesaftermerge =   
