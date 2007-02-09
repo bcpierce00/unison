@@ -1,3 +1,13 @@
+CHANGES FROM VERSION 2.26.16
+
+* Hopefully fixed problem with ressource forks on a FAT filesystem on
+  Mac OS X: we now check that the getattrlist system call actually
+  returned the requested information.
+
+  (Could someone check that this code at least compiles: I don't have
+   access to a Mac OS X machine at the moment.)
+
+-------------------------------
 CHANGES FROM VERSION 2.26.15
 
 * Incorporated a patch from Karl M. that clears the main window in the
