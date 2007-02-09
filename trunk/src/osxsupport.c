@@ -56,6 +56,14 @@ CAMLprim value getFileInfos (value path, value need_size) {
 
   if (retcode == -1) uerror("getattrlist", path);
 
+  if (Bool_val (need_size)) {
+    if (attrBuf.length != sizeof attrBuf)
+      unix_error (EOPNOTSUPP, "getattrlist", path);
+  } else {
+    if (attrBuf.length < sizeof (unsigned long) + 32)
+      unix_error (EOPNOTSUPP, "getattrlist", path);
+  }
+
   fInfo = alloc_string (32);
   memcpy (String_val (fInfo), attrBuf.finderInfo, 32);
   if (Bool_val (need_size))
