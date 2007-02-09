@@ -1,3 +1,9 @@
+CHANGES FROM VERSION 2.26.17
+
+* Removed Fspath.fullLocalPath, which does not work with symbolic
+  links.  Pass the local path along instead.
+
+-------------------------------
 CHANGES FROM VERSION 2.26.16
 
 * Hopefully fixed problem with ressource forks on a FAT filesystem on
