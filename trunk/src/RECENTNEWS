@@ -1,3 +1,8 @@
+CHANGES FROM VERSION 2.26.18
+
+* Improved error messages when a Unison server cannot bind to the given port.
+
+-------------------------------
 CHANGES FROM VERSION 2.26.17
 
 * Removed Fspath.fullLocalPath, which does not work with symbolic

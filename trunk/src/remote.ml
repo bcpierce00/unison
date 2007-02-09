@@ -1131,7 +1131,10 @@ let waitOnPort hostOpt port =
       | None -> "" in
       let rec loop = function
         [] -> raise (Util.Fatal
-		       (Printf.sprintf "Can't find host (%s:%s)" host port))
+		       (if host = "" then
+                        Printf.sprintf "Can't bind socket to port %s" port
+                        else
+                        Printf.sprintf "Can't bind socket to port %s on host %s" port host))
       | ai::r ->
         (* Open a socket to listen for queries *)
         let socket = Unix.socket ai.Unix.ai_family ai.Unix.ai_socktype
@@ -1147,10 +1150,13 @@ let waitOnPort hostOpt port =
 	with
 	  Unix.Unix_error (error, _, reason) ->
             (if error != Unix.EAFNOSUPPORT then
-               Util.warn
-                 (Printf.sprintf
-                    "Can't bind to host (%s:%s): %s" ai.Unix.ai_canonname port
-		    reason);
+               Util.msg
+                 "Can't bind socket to port %s at address [%s]: %s\n"
+                 port
+                 (match ai.Unix.ai_addr with
+                    Unix.ADDR_INET (addr, _) -> Unix.string_of_inet_addr addr
+                  | _                        -> assert false)
+                 (Unix.error_message error);
 	     loop r)
 	end in
       let listening = loop (Unix.getaddrinfo host port [ Unix.AI_SOCKTYPE
