@@ -180,7 +180,7 @@ let processCmdLine usage hook =
   let defaultanonfun _ =
     print_string "Anonymous arguments not allowed\n";
     Uarg.usage argspecs usage;
-    exit 1
+    exit 2
   in
   let anonfun =
     try
