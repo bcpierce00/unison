@@ -824,7 +824,8 @@ let getPassword rootName msg =
 
   t#vbox#set_spacing 12;
 
-  let header = primaryText (Format.sprintf "Connecting to '%s'..." rootName) in
+  let header =
+    primaryText (Format.sprintf "Connecting to '%s'..." (protect rootName)) in
 
   let h1 = GPack.hbox ~border_width:6 ~spacing:12 ~packing:t#vbox#pack () in
   (* FIX: DIALOG_AUTHENTICATION is way better but is not available
@@ -832,7 +833,7 @@ let getPassword rootName msg =
   ignore (GMisc.image ~stock:(*`DIALOG_AUTHENTICATION*)`DIALOG_QUESTION ~icon_size:`DIALOG
             ~yalign:0. ~packing:h1#pack ());
   let v1 = GPack.vbox ~spacing:12 ~packing:h1#pack () in
-  ignore(GMisc.label ~markup:(header ^ "\n\n" ^ escapeMarkup msg)
+  ignore(GMisc.label ~markup:(header ^ "\n\n" ^ escapeMarkup (protect msg))
            ~selectable:true ~yalign:0. ~packing:v1#pack ());
 
   let passwordE = GEdit.entry ~packing:v1#pack ~visibility:false () in
@@ -1047,7 +1048,7 @@ let getProfile () =
       let (profile, info) = lst#get_row_data i in
       result := Some profile;
       begin match info.roots with
-        [r1; r2] -> root1#set_text r1; root2#set_text r2;
+        [r1; r2] -> root1#set_text (protect r1); root2#set_text (protect r2);
                     tbl#misc#set_sensitive true
       | _        -> root1#set_text ""; root2#set_text "";
                     tbl#misc#set_sensitive false
@@ -1333,13 +1334,13 @@ let rec createToplevelWindow () =
       ~headers_clickable:false () in
   let s = Uicommon.roots2string () in
   ignore (lst#append_column
-    (GTree.view_column ~title:(" " ^ String.sub s  0 12 ^ " ")
+    (GTree.view_column ~title:(" " ^ protect (String.sub s  0 12) ^ " ")
        ~renderer:(GTree.cell_renderer_text [], ["text", c_replica1]) ()));
   ignore (lst#append_column
     (GTree.view_column ~title:"  Action  "
        ~renderer:(GTree.cell_renderer_pixbuf [], ["pixbuf", c_action]) ()));
   ignore (lst#append_column
-    (GTree.view_column ~title:(" " ^ String.sub s  15 12 ^ " ")
+    (GTree.view_column ~title:(" " ^ protect (String.sub s  15 12) ^ " ")
        ~renderer:(GTree.cell_renderer_text [], ["text", c_replica2]) ()));
   ignore (lst#append_column
     (GTree.view_column ~title:"  Status  " ()));
@@ -1367,8 +1368,8 @@ let rec createToplevelWindow () =
       (fun i data ->
          mainWindow#set_column
            ~title_active:false ~auto_resize:true ~title:data i)
-      [| " " ^ String.sub s  0 12 ^ " "; "  Action  ";
-         " " ^ String.sub s 15 12 ^ " "; "  Status  "; " Path" |]
+      [| " " ^ protect (String.sub s  0 12) ^ " "; "  Action  ";
+         " " ^ protect (String.sub s 15 12) ^ " "; "  Status  "; " Path" |]
   in
   setMainWindowColumnHeaders();
 
@@ -1434,8 +1435,7 @@ let rec createToplevelWindow () =
   let makeRowVisible row =
     if mainWindow#row_is_visible row <> `FULL then begin
       let adj = mainWindow#vadjustment in
-      let current = adj#value
-      and upper = adj#upper and lower = adj#lower in
+      let upper = adj#upper and lower = adj#lower in
       let v =
         float row /. float (mainWindow#rows + 1) *. (upper-.lower) +. lower
       in
@@ -1759,19 +1759,19 @@ lst_store#set ~row ~column:c_path path;
 
     progressBarPulse := true;
     sync_action := Some (fun () -> progressBar#pulse ());
-    let (r1,r2) = Globals.roots () in
-    let t = Trace.startTimer "Checking for updates" in
     let findUpdates () =
+      let t = Trace.startTimer "Checking for updates" in
       Trace.status "Looking for changes";
       let updates = Update.findUpdates () in
       Trace.showTimer t;
       updates in
     let reconcile updates =
       let t = Trace.startTimer "Reconciling" in
-      Recon.reconcileAll updates in
+      let reconRes = Recon.reconcileAll updates in
+      Trace.showTimer t;
+      reconRes in
     let (reconItemList, thereAreEqualUpdates, dangerousPaths) =
       reconcile (findUpdates ()) in
-    Trace.showTimer t;
     if reconItemList = [] then
       if thereAreEqualUpdates then
         Trace.status "Replicas have been changed only in identical ways since last sync"
@@ -2130,7 +2130,7 @@ lst_store#set ~row ~column:c_path path;
 
   let descl =
     if loc1 = loc2 then "right to left" else
-    Printf.sprintf "from %s to %s" loc2 loc1 in
+    Printf.sprintf "from %s to %s" (protect loc2) (protect loc1) in
   let right =
     actionsMenu#add_image_item ~key:GdkKeysyms._less ~callback:leftAction
       ~image:((GMisc.image ~stock:`GO_BACK ~icon_size:`MENU ())#coerce)

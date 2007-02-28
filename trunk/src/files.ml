@@ -177,25 +177,29 @@ let renameLocal (root, (localTargetPath, fspath, pathFrom, pathTo)) =
         let tmpPath = Os.tempPath fspath pathTo in
         let temp = Fspath.concat fspath tmpPath in
         let temp' = Fspath.toString temp in
-        writeCommitLog source target temp';
 
         debug (fun() -> Util.msg "moving %s to %s\n" (Fspath.toString target) temp');
-        Util.finalize (fun() -> 
-          Util.convertUnixErrorsToTransient "renaming" (fun() ->
-            Stasher.backup root localTargetPath `ByCopying;
-            Os.rename "renameLocal(1)" target Path.empty temp Path.empty;
-            (* If the next renaming fails, we will be left with
-               DANGER.README file which will make any other
-               (similar) renaming fail in a cryptic way.  So it
-               seems better to abort early by converting Unix errors
-               to Fatal ones (rather than Transient). *)
-            Util.convertUnixErrorsToFatal "renaming with commit log"
-              (fun () ->
-                debug (fun() -> Util.msg "rename %s to %s\n"
-                         (Fspath.toString source) (Fspath.toString target));
-                Os.rename "renameLocal(2)" source Path.empty target Path.empty;
-                Os.delete temp Path.empty)))
-          (fun _ -> clearCommitLog())
+        Stasher.backup root localTargetPath `ByCopying;
+        writeCommitLog source target temp';
+        Util.finalize (fun() ->
+          (* If the first rename fails, the log can be removed: the
+             filesystem is in a consistent state *)
+          Os.rename "renameLocal(1)" target Path.empty temp Path.empty;
+          (* If the next renaming fails, we will be left with
+             DANGER.README file which will make any other
+             (similar) renaming fail in a cryptic way.  So it
+             seems better to abort early by converting Unix errors
+             to Fatal ones (rather than Transient). *)
+          Util.convertUnixErrorsToFatal "renaming with commit log"
+            (fun () ->
+              debug (fun() -> Util.msg "rename %s to %s\n"
+                       (Fspath.toString source) (Fspath.toString target));
+              Os.rename "renameLocal(2)"
+                source Path.empty target Path.empty))
+          (fun _ -> clearCommitLog());
+        (* It is ok to leave a temporary file.  So, the log can be
+           cleared before deleting it. *)
+        Os.delete temp Path.empty
       end else begin
         debug (fun() -> Util.msg "rename: moveFirst=false\n");
         Stasher.backup root localTargetPath `ByCopying;
