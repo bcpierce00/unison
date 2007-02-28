@@ -387,7 +387,7 @@ let openRessIn fspath path =
         (Unix.openfile
            (Fspath.concatToString fspath (ressPath path))
            [Unix.O_RDONLY] 0o444)
-    with Unix.Unix_error (Unix.ENOTDIR, _, _) ->
+    with Unix.Unix_error ((Unix.ENOENT | Unix.ENOTDIR), _, _) ->
       let (doublePath, inch, entries) = openDouble fspath path in
       try
         let (rsrcOffset, rsrcLength) = Safelist.assoc `RSRC entries in
@@ -405,7 +405,7 @@ let openRessOut fspath path length =
         (Unix.openfile
            (Fspath.concatToString fspath (ressPath path))
            [Unix.O_WRONLY;Unix.O_TRUNC] 0o600)
-    with Unix.Unix_error (Unix.ENOTDIR, _, _) ->
+    with Unix.Unix_error ((Unix.ENOENT | Unix.ENOTDIR), _, _) ->
       let path = appleDoubleFile fspath path in
       let outch =
         open_out_gen

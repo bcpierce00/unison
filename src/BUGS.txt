@@ -205,26 +205,6 @@ Another report of the same (?) bug by Ruslan Ermolov:
   OTOH, Unison follows ~/.unison if it's symlinked, and I use this feature
   when using SSH as a transport.  
 
-Devin Bayer  [Aug 2002]
-  Stack overflow on huge directory...
-  ---
-  It turns out a dir I had was messing unison all up.  It was
-  not huge, only 137 MB.  But it is was up of mostly empty files:
-  396326 of them.  So theres your bug report.  I don't need these files,
-  but I wish that the error message was clearer.
-  ---
-  here is gdb's backtraces, but there is no debug symbols:
-  #0  0x080acd30 in re_compile_pattern ()
-  #1  0x080ace22 in re_compile_pattern ()
-  #2  0x080a871c in re_compile_pattern ()
-  #3  0x080717f7 in strcpy ()
-  Cannot access memory at address 0x26
-  ---
-  ===> The stack trace seems bogus.  This problem might be fixed now, 
-       but, I guess we still need to fix Os.childrenOf, which does not
-       seem tail-recursive.
-       DONE
-
 Jamey Leifer [July 2002]
  * [graphic ui, bug] If one of the files "has unknown type" (i.e. is a
    system file), then pressing "f" (i.e. "Retry on unsynchronised items")
@@ -322,17 +302,6 @@ The "Diff" window [under Windows] sometimes shows nothing.  Does this
   (e.g., defaultpath=/myshare/myfolder
   vs. defaultpath=myshare/myfolder) seems to cause an unhandled
   exception (Invalid_argument <"os.string2path">) to occur.
-
-** The "total size transferred" in the GTK UI should be stored in an
-   Int64; otherwise large transfers will overflow it.
-   ==> change Util.filesize to int64 (this seems like a "right thing",
-       but seems to cause an "out of memory" error on the first sync of
-       my full replica).  Should try this again.   -BCP
-   ==> even if we can't do this change, we should at least recognize when
-       filesizes are too big to represent and generate a sensible error
-       message! 
-   ==> But, at the moment, we're blocked by an OCaml bug
-   DONE 
 
 ---------------------------------------------------------------------------
 COSMETIC 

@@ -1,3 +1,15 @@
+CHANGES FROM VERSION 2.27.0
+
+* Fixed bug with synchronizing resource forks toward a Windows machine
+  (open fails with a an error ENOENT rather than ENOTDIR for non
+   existing directories under Windows)
+* Only protects the two Os.rename with the commit log, in order the
+  minimize the likelihood of the DANGER.README file to remain.
+  (The backups and the deletion of the moved destination file can be
+  safely performed without commit log.)
+* GTK2 UI: make sure root names are in Unicode format for displaying them.
+
+-------------------------------
 CHANGES FROM VERSION 2.27.-1
 
 Bump version number, following Jerome's protocol change.
