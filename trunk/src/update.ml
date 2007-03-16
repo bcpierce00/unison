@@ -319,7 +319,7 @@ let removeArchiveOnRoot: Common.root -> archiveVersion -> unit Lwt.t =
   Remote.registerRootCmd "removeArchive" removeArchiveLocal
 
 (* [commitArchive (fspath, ())] commits the archive for [fspath] by changing
-   the filenames from ScartchArch-ones to a NewArch-ones *)
+   the filenames from ScratchArch-ones to a NewArch-ones *)
 let commitArchiveLocal ((fspath: Fspath.t), ())
     : unit Lwt.t =
   Lwt.return
@@ -1061,22 +1061,22 @@ let checkContentsChange
    =
   debug (fun () ->
            Util.msg "checkContentsChange: ";
-           begin match archive with
-             ArchiveFile (_, _, Fileinfo.InodeStamp inode, _) ->
-               Util.msg "archive: stamp is inode (%d)" inode
-           | ArchiveFile (_, _, Fileinfo.CtimeStamp date, _) ->
-               Util.msg "archive : stamp is ctime (%f)" date
-           | _ -> Util.msg "archive: not a file\n"
-           end;
            begin
              match archStamp with
                Fileinfo.InodeStamp inode ->
-                 (Util.msg " / archStamp is inode (%d)" inode;
-                  Util.msg " / info.inode (%d)\n" info.Fileinfo.inode)
+                 (Util.msg "archStamp is inode (%d)" inode;
+                  Util.msg " / info.inode (%d)" info.Fileinfo.inode)
              | Fileinfo.CtimeStamp stamp ->
-                 (Util.msg " / archStamp is ctime (%f)" stamp;
-                  Util.msg " / info.ctime (%f)\n" info.Fileinfo.ctime)
-           end);
+                 (Util.msg "archStamp is ctime (%f)" stamp;
+                  Util.msg " / info.ctime (%f)" info.Fileinfo.ctime)
+           end;
+           Util.msg " / times: %f - %f - %b"
+             (Props.time archDesc) (Props.time info.Fileinfo.desc)
+             (Props.same_time info.Fileinfo.desc archDesc);
+           Util.msg " / lengths: %s - %s"
+             (Uutil.Filesize.toString (Props.length archDesc))
+             (Uutil.Filesize.toString  (Props.length info.Fileinfo.desc));
+           Util.msg "\n");
   let dataClearlyUnchanged =
     fastCheck
       &&
@@ -1377,15 +1377,27 @@ let rec buildUpdate archive fspath fullpath here path =
        ui)
   | Some(name, path') ->
       if not (isDir fspath here) then
-        (archive,
-         if Path.isEmpty here then
-           Error (Printf.sprintf
-                    "path %s is not valid because the root of one of the replicas is not a directory"
-                    (Path.toString fullpath))
-         else
-           Error (Printf.sprintf
-                    "path %s is not valid because %s is not a directory in one of the replicas"
-                    (Path.toString fullpath) (Path.toString here)))
+        let error =
+          if Path.isEmpty here then
+            Printf.sprintf
+              "path %s is not valid because the root of one of the replicas \
+               is not a directory"
+              (Path.toString fullpath)
+          else
+            Printf.sprintf
+              "path %s is not valid because %s is not a directory in one of \
+               the replicas"
+              (Path.toString fullpath) (Path.toString here)
+        in
+        (* FIX: We have to fail here (and in other error cases below)
+           rather than report an error for this path, which would be
+           more user friendly.  Indeed, the archive is otherwise
+           modified in inconsistent way when the failure occurs only
+           on one replica (see at the end of this function).
+           A better solution should be not to put the archives in a
+           different state, but this is a lot more work. *)
+        raise (Util.Transient error)
+(*      (archive, Error error) *)
       else
       let children = getChildren fspath here in
       let (name', status) =

@@ -1,3 +1,20 @@
+CHANGES FROM VERSION 2.27.1
+
+* Fixed bug regarding fastcheck and daylight saving time under Windows
+  when Unison is setup to synchronize modification times.
+  (Modification times cannot be updated in the archive in this case,
+  thus we have to ignore one hour differences.)
+* In Name.fromString, raise a transient error rather than an invalid
+  argument error when a filename contains a slash '/' (this can occur
+  under Windows when using some multibyte character encodings).
+* Fail when a path does not point to anywhere in the filesystem, rather
+  that reporting an error for this path.  Indeed, the archives can be left
+  in a non-identical state in this case.
+* Some clean-up in Files.checkContentsChangeLocal.  In particular, put
+  the suggestion to disable fastcheck in a case where it can
+  actually be reported to the user.
+
+-------------------------------
 CHANGES FROM VERSION 2.27.0
 
 * Fixed bug with synchronizing resource forks toward a Windows machine

@@ -1099,8 +1099,8 @@ let commandLoop in_ch out_ch =
        Trace.messageForwarder :=
          Some (fun str -> Lwt_unix.run (forwardMsgToClient conn str));
        receive conn >>=
-       Lwt.wait));
-    debug (fun () -> Util.msg "Should never happen\n")
+       Lwt.wait))
+(*    debug (fun () -> Util.msg "Should never happen\n") *)
   with Util.Fatal "Lost connection with the server" ->
     debug (fun () -> Util.msg "Connection closed by the client\n")
 

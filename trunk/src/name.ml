@@ -21,8 +21,7 @@ let fromString s =
   (* Make sure there are no slashes in the s *)
   begin try
     ignore(String.index s '/');
-    raise(Invalid_argument (Printf.sprintf
-      "Name.fromString('%s' contains a '/')" s))
+    raise (Util.Transient (Printf.sprintf "Filename '%s' contains a '/'" s))
   with Not_found -> () end;
   (* We ought to consider further checks, e.g., in Windows, no colons *)
   s

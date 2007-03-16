@@ -241,28 +241,34 @@ let rename root pathInArchive localPath workingDir pathOld pathNew ui =
 let checkContentsChangeLocal
       currfspath path archDesc archDig archStamp archRess =
   let info = Fileinfo.get true currfspath path in
+  if Props.length archDesc <> Props.length info.Fileinfo.desc then
+    raise (Util.Transient (Printf.sprintf
+      "The file %s\nhas been modified during synchronization.  \
+       Transfer aborted."
+      (Fspath.concatToString currfspath path)));
   match archStamp with
     Fileinfo.InodeStamp inode
     when info.Fileinfo.inode = inode
-        && Props.same_time info.Fileinfo.desc archDesc ->
-	  if Props.length archDesc <> Props.length info.Fileinfo.desc then
-	    raise (Util.Transient (Printf.sprintf
-              "The file %s\nhas been modified during synchronization: transfer aborted.%s"
-              (Fspath.concatToString currfspath path)
-              (if Util.osType = `Win32 && (Prefs.read Update.fastcheck)="yes" then
-                ("If this happens repeatedly, try running once with the "
-                 ^ "fastcheck option set to 'no'")
-              else "")))
+         && Props.same_time info.Fileinfo.desc archDesc ->
+      ()
   | _ ->
       (* Note that we fall back to the paranoid check (using a fingerprint)
          even if a CtimeStamp was provided, since we do not trust them
          completely. *)
-      let info = Fileinfo.get true currfspath path in
       let (info, newDig) = Os.safeFingerprint currfspath path info None in
       if archDig <> newDig then
         raise (Util.Transient (Printf.sprintf
-          "The file %s\nhas been modified during synchronization: transfer aborted"
-          (Fspath.concatToString currfspath path)))
+          "The file %s\nhas been modified during synchronization.  \
+           Transfer aborted.%s"
+          (Fspath.concatToString currfspath path)
+          (if
+             Util.osType = `Win32 && Update.useFastChecking () &&
+             Props.same_time info.Fileinfo.desc archDesc
+           then
+             "  If this happens repeatedly, try running once with the \
+              fastcheck option set to 'no'"
+           else
+             "")))
 
 let checkContentsChangeOnHost =
   Remote.registerRootCmd

@@ -1,7 +1,7 @@
 (* Unison file synchronizer: src/fileinfo.ml *)
 (* Copyright 1999-2007 (see COPYING for details) *)
 
-let debug = Util.debug "fileinfo"
+let debugV = Util.debug "fileinfo+"
 
 type typ = [ `ABSENT | `FILE | `DIRECTORY | `SYMLINK ]
 
@@ -36,6 +36,9 @@ let get fromRoot fspath path =
     (fun () ->
        try
          let stats = statFn fromRoot fspath path in
+debugV (fun () ->
+  Util.msg "%s: %b %f %f\n" (Fspath.concatToString fspath path)
+  fromRoot stats.Unix.LargeFile.st_ctime stats.Unix.LargeFile.st_mtime);
          let typ =
            match stats.Unix.LargeFile.st_kind with
              Unix.S_REG -> `FILE
