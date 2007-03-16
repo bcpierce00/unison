@@ -515,8 +515,10 @@ let check fspath path stats t =
             (syncedPartsToString t)
             (syncedPartsToString t')))
 
-
-let same p p' = extract p = extract p'
+let same p p' =
+  match p, p' with
+    Synced _, Synced _ -> similar p p'
+  | _                  -> extract p = extract p'
 
 let init _ = ()
 

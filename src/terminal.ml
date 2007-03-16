@@ -184,8 +184,7 @@ let create_session cmd args new_stdin new_stdout new_stderr =
             tio.Unix.c_echo <- false;
             Unix.tcsetattr slaveFd Unix.TCSANOW tio;
             perform_redirections new_stdin new_stdout new_stderr;
-            Unix.execvp cmd args; (* never returns *)
-            assert false          (* to satisfy type checker *)
+            Unix.execvp cmd args (* never returns *)
           with _ ->
             Printf.eprintf "Some error in create_session child\n";
             flush stderr;

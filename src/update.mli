@@ -70,7 +70,7 @@ val translatePath : Common.root -> Path.t -> Path.local Lwt.t
 val translatePathLocal : Fspath.t -> Path.t -> Path.local
 
 (* Are we checking fast, or carefully? *)
-val fastcheck : string Prefs.t
+val useFastChecking : unit -> bool
 
 (* Print the archive to the current formatter (see Format) *)
 val showArchive: archive -> unit
