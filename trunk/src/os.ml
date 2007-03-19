@@ -45,11 +45,8 @@ let rec isAppleDoubleFile file =
   String.length file > 2 && file.[0] = '.' && file.[1] = '_'
 
 (* Assumes that (fspath, path) is a directory, and returns the list of       *)
-(* children, except for '.' and '..'.  Note that childrenOf and delete are   *)
-(* mutually recursive: this is because one of the side-effects of childrenOf *)
-(* is to delete old files left around by Unison.                             *)
-(* And to get rid of too old or too many backup files.           <<>>        *)
-and childrenOf fspath path =
+(* children, except for '.' and '..'.                                        *)
+let allChildrenOf fspath path =
   Util.convertUnixErrorsToTransient
   "scanning directory"
     (fun () ->
@@ -57,26 +54,9 @@ and childrenOf fspath path =
         let newFile = try Unix.readdir directory with End_of_file -> "" in
         if newFile = "" then children else
         let newChildren =
-          if newFile = "." || newFile = ".." || isAppleDoubleFile newFile then
+          if newFile = "." || newFile = ".." then
             children
-(* does it belong to here ? *)
-(*          else if Util.endswith newFile backupFileSuffix then begin *)
-(*             let newPath = Path.child path (Name.fromString newFile) in *)
-(*             removeBackupIfUnwanted fspath newPath; *)
-(*             children *)
-(*           end  *)
-	  else if
-            Util.endswith newFile tempFileSuffixFixed &&
-            Util.startswith newFile tempFilePrefix
-          then begin
-            if Util.endswith newFile !tempFileSuffix then begin
-              let newPath = Path.child path (Name.fromString newFile) in
-              debug (fun()-> Util.msg "deleting old temp file %s\n"
-                               (Fspath.concatToString fspath newPath));
-              delete fspath newPath
-            end;
-            children
-          end else
+          else
             Name.fromString newFile :: children in
         loop newChildren directory
       in
@@ -106,6 +86,35 @@ and childrenOf fspath path =
       | None ->
           [])
 
+(* Assumes that (fspath, path) is a directory, and returns the list of       *)
+(* children, except for temporary files and AppleDouble files.               *)
+let rec childrenOf fspath path =
+  List.filter
+    (fun filename ->
+       let file = Name.toString filename in
+       if isAppleDoubleFile file then
+         false
+(* does it belong to here ? *)
+(*          else if Util.endswith file backupFileSuffix then begin *)
+(*             let newPath = Path.child path filename in *)
+(*             removeBackupIfUnwanted fspath newPath; *)
+(*             false *)
+(*           end  *)
+       else if
+         Util.endswith file tempFileSuffixFixed &&
+         Util.startswith file tempFilePrefix
+       then begin
+         if Util.endswith file !tempFileSuffix then begin
+           let newPath = Path.child path filename in
+           debug (fun()-> Util.msg "deleting old temp file %s\n"
+                            (Fspath.concatToString fspath newPath));
+           delete fspath newPath
+         end;
+         false
+       end else
+         true)
+    (allChildrenOf fspath path)
+
 (*****************************************************************************)
 (*                        ACTIONS ON FILESYSTEM                              *)
 (*****************************************************************************)
@@ -123,7 +132,7 @@ and delete fspath path =
           with Unix.Unix_error _ -> () end;
           Safelist.iter
             (fun child -> delete fspath (Path.child path child))
-            (childrenOf fspath path);
+            (allChildrenOf fspath path);
 	  (!xferDelete) (fspath, path);
           Unix.rmdir absolutePath
       | `FILE ->

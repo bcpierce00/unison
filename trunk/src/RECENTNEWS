@@ -1,3 +1,15 @@
+CHANGES FROM VERSION 2.27.2
+
+* Fix bug with case insensitive mode on case sensitive file systems
+* Uigtk2: hide the "View details" button rather than making it insensitive
+  (I find this button a bit confusing as is not clear what it is
+   supposed to do)
+* When deleting a directory, do not skip any file (neither temporary
+  files nor lone appledouble files).  We used to skip temporary files
+  corresponding to a different pair of roots, but this makes the
+  directory deletion fail.
+
+-------------------------------
 CHANGES FROM VERSION 2.27.1
 
 * Fixed bug regarding fastcheck and daylight saving time under Windows
