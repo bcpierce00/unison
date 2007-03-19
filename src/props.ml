@@ -515,6 +515,9 @@ let check fspath path stats t =
             (syncedPartsToString t)
             (syncedPartsToString t')))
 
+(* When modification time are synchronized, we cannot update the
+   archive when they are changed due to daylight saving time.  Thus,
+   we have to compare then using "similar". *)
 let same p p' =
   match p, p' with
     Synced _, Synced _ -> similar p p'

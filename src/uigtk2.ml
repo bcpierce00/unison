@@ -1382,11 +1382,11 @@ let rec createToplevelWindow () =
       GBin.frame ~packing:(toplevelVBox#pack ~expand:false)
         ~shadow_type:`IN (*~hpolicy:`AUTOMATIC ~vpolicy:`NEVER*) () in
     let hb =GPack.hbox ~packing:sw#add () in
-    (GButton.button ~label:"View details..." ~packing:(hb#pack ~expand:false) (),
+    (GButton.button ~label:"View details..."
+         ~show:false ~packing:(hb#pack ~expand:false) (),
      GText.view ~editable:false ~wrap_mode:`NONE ~packing:hb#add ())
 
   in
-  showDetailsButton#misc#set_sensitive false;
   detailsWindow#misc#modify_font (Lazy.force fontMonospaceMediumPango);
   detailsWindow#misc#set_size_chars ~height:3 ~width:104 ();
   detailsWindow#misc#set_can_focus false;
@@ -1407,7 +1407,7 @@ let rec createToplevelWindow () =
       None ->
         grSet grAction false;
         grSet grDiff false;
-	showDetailsButton#misc#set_sensitive false
+	showDetailsButton#misc#hide ()
     | Some row ->
         let (details, activate1, activate2) =
           match !theState.(row).whatHappened, !theState.(row).ri.replicas with
@@ -1429,7 +1429,10 @@ let rec createToplevelWindow () =
               (false, true, false) in
         grSet grAction activate1;
         grSet grDiff activate2;
-	showDetailsButton#misc#set_sensitive details
+        if details then
+          showDetailsButton#misc#show ()
+        else
+          showDetailsButton#misc#hide ()
   in
 
   let makeRowVisible row =

@@ -1257,9 +1257,10 @@ let rec buildUpdateChildren
           (nm, handleChild nm archive `Abs)
         else begin
           curChildren := rem;
-          if c = 0 then
+          if c = 0 then begin
+            if nm <> nm' then archUpdated := true;
             (nm', handleChild nm' archive st)
-          else begin
+          end else begin
             let arch = handleChild nm' NoArchive st in
             assert (arch = NoArchive);
             matchChild nm archive
@@ -1664,6 +1665,8 @@ let updateArchiveLocal fspath path ui id =
         (fun _ _ _ -> newArch, ()) in
     setArchiveLocal root archive in
   setCommitAction root id commit;
+  debug (fun() ->
+    Util.msg "updateArchiveLocal --> %s\n" (Path.toString localPath));
   (localPath, newArch)
 
 let updateArchiveOnRoot =
