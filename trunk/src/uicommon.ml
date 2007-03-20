@@ -78,7 +78,7 @@ let contactquietly =
   Prefs.createBool "contactquietly" false
     "Suppress the 'contacting server' message during startup"
     ("If this flag is set, Unison will skip displaying the "
-     ^ "`Contacting server' window (which some users find annoying) "
+     ^ "`Contacting server' message (which some users find annoying) "
      ^ "during startup.")
 
 let contactingServerMsg () =

@@ -1452,7 +1452,7 @@ The file {\tt common} contains the real preferences:
     # file 'common' rathen than in the top-level preference file
     addprefsto = common
 
-    # regexps specifying names and paths to ignore
+    # Names and paths to ignore:
     ignore = Name temp.*
     ignore = Name *~
     ignore = Name .*~
@@ -1537,8 +1537,8 @@ environment variable \verb|UNISONBACKUPDIR|.  (The environment variable is
 checked first.)  If neither of these are set, then the directory
 \verb|.unison/backup| in the user's home directory is used.
 
-The preference \verb|backupversions| controls how many previous versions of
-each file are kept.  The default is 2.
+The preference \verb|maxbackups| controls how many previous versions of
+each file are kept (including the current version).  
 
 By default, backup files are named \verb|.unison.FILENAME.VERSION.bak|,
 where \verb|FILENAME| is the original filename and \verb|version| is the

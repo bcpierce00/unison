@@ -76,6 +76,7 @@ SERIOUS
     Finished dumping archives
     Fatal error: Internal error: New archives are not identical.
     Retaining original archives.  Please run Unison again to bring them up to date.
+  ===> This one was recently [March 07] fixed by Jerome
 
 [July 2002, Findler]
   I get this message from unison:
