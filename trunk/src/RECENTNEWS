@@ -1,3 +1,9 @@
+CHANGES FROM VERSION 2.27.4
+
+* Don't crash when 'merge' is invoked on a new file.
+
+
+-------------------------------
 CHANGES FROM VERSION 2.27.3
 
 * Updates to Win32 installation instructions
