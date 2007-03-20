@@ -1,10 +1,9 @@
 Installation notes to build Unison on Windows systems, with Visual C++
-(unison-help@cis.upenn.edu)
 
 [The following instructions were tested for Unison 2.9.1 on a Windows
-2000 machine running OCaml 3.04.]
-
-
+2000 machine running OCaml 3.04 -- that was a long time ago, so there
+may be some discrepancies with current versions of things.  If you
+notice any, please send a correction to unison-users@yahoogroups.com.]
 
 Contents
 
@@ -109,6 +108,21 @@ names in the installation directory).
   something like "export CAMLLIB='C:\ocaml\lib'" (path between single 
   quotes).
 
+1.5  Microsoft Macro Assembler (MASM32)
+
+Download MASM32 from http://www.masm32.com/masmdl.htm, unzip and install
+it. Add the MASM32 bin directory (e.g. C:\masm32\bin) to your Path. Test
+the assembler with
+
+  ml
+
+Your shell should answer with
+
+  Microsoft (R) Macro Assembler Version 6.14.8444
+  Copyright (C) Microsoft Corp 1981-1997.  All rights reserved.
+
+  usage: ML [ options ] filelist [ /link linkoptions]
+  Run "ML /help" or "ML /?" for more info
 
 
 Section 2 - Compiling Unison

@@ -59,15 +59,17 @@ OCAMLLIBDIR=$(shell ocamlc -v | tail -n -1 | sed -e 's/.* //g' | sed -e 's/\\/\/
 # This should be set to an appropriate value automatically, depending
 # on whether the lablgtk library is available
 LABLGTK2LIB=$(OCAMLLIBDIR)/lablgtk2
-ifeq ($(OSARCH),osx)
-  UISTYLE=mac
-else
+##BCP [3/2007]: Removed temporarily, since OSX UI is not working well 
+## at the moment and we don't want to confuse people by building it by default
+##ifeq ($(OSARCH),osx)
+##  UISTYLE=mac
+##else
   ifeq ($(wildcard $(LABLGTK2LIB)),$(LABLGTK2LIB))
     UISTYLE=gtk2
   else
     UISTYLE=text
 endif
-endif
+##endif
 buildexecutable::
 	@echo UISTYLE = $(UISTYLE)
 

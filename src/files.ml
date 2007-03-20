@@ -636,8 +636,8 @@ let rec diff root1 path1 ui1 root2 path2 ui2 showDiff id =
        let c = Lwt_unix.run (Lwt_unix.open_process_in cmd) in *)
     let c = Unix.open_process_in
       (if Util.osType = `Win32 && not Util.isCygwin then
-        (* BCP: Proposed by Karl M. to deal with the standard windows command processor's
-           weird treatment of spaces and quotes: *)
+        (* BCP: Proposed by Karl M. to deal with the standard windows 
+           command processor's weird treatment of spaces and quotes: *)
         "\"" ^ cmd ^ "\""
        else
          cmd) in
@@ -744,8 +744,11 @@ let formatMergeCmd p f1 f2 backup out1 out2 outarch =
 	let cooked = Util.replacesubstring cooked "CURRENTARCHOPT" "" in
 	match Util.findsubstring "CURRENTARCH" cooked with
 	  None -> cooked
-	| Some _ -> raise (Util.Transient ("No archive found whereas the "^
-					   "'merge' command template expects one"))
+	| Some _ -> raise (Util.Transient
+                      ("No archive found, but the 'merge' command "
+                       ^ "template expects one.  (Consider enabling "
+                       ^ "'backupcurrent' for this file or using CURRENTARCHOPT "
+                       ^ "instead of CURRENTARCH.)"))
       end
     | Some(s) ->
 	let cooked = Util.replacesubstring cooked "CURRENTARCHOPT" s in
