@@ -143,7 +143,7 @@ let propagate root1 root2 reconItem id showMergeFn =
             (`FILE, _, _, ui1), (`FILE, _, _, ui2) ->
               Files.merge root1 root2 path id ui1 ui2 showMergeFn;
               return ()
-          | _ -> assert false
+          | _ -> raise (Util.Transient "Can only merge two existing files")
           end 
 
 let transportItem reconItem id showMergeFn =
