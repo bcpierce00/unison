@@ -234,7 +234,9 @@ let getFileInfos fspath path typ =
                 AppleDoubleRess
                   (begin match Util.osType with
                      `Win32 -> 0
-                   | `Unix  -> stats.Unix.LargeFile.st_ino
+                   | `Unix  -> (* The inode number is truncated so that
+                                  it fits in a 31 bit ocaml integer *)
+                               stats.Unix.LargeFile.st_ino land 0x3FFFFFFF
                    end,
                    stats.Unix.LargeFile.st_mtime,
                    begin match Util.osType with

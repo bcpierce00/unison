@@ -1,3 +1,12 @@
+CHANGES FROM VERSION 2.27.5
+
+* Truncate inode numbers to 31 bits, so that they can be transferred
+  between 32 and 64 bit versions of Unison.
+* Suggests to use the "perms" option (with a suitable value)
+  when synchronizing permissions fails (for instance on a FAT
+  filesystem under Unix)
+
+-------------------------------
 CHANGES FROM VERSION 2.27.4
 
 * Don't crash when 'merge' is invoked on a new file.
