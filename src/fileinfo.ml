@@ -52,7 +52,9 @@ debugV (fun () ->
          in
          let osxInfos = Osx.getFileInfos fspath path typ in
          { typ = typ;
-           inode    = stats.Unix.LargeFile.st_ino;
+           inode    = (* The inode number is truncated so that
+                         it fits in a 31 bit ocaml integer *)
+                      stats.Unix.LargeFile.st_ino land 0x3FFFFFFF;
            ctime    = stats.Unix.LargeFile.st_ctime;
            desc     = Props.get stats osxInfos;
            osX      = osxInfos }

@@ -178,15 +178,20 @@ let set fspath path kind (fp, mask) =
 let get stats _ = (stats.Unix.LargeFile.st_perm, Prefs.read permMask)
 
 let check fspath path stats (fp, mask) =
-  if fp land mask <> stats.Unix.LargeFile.st_perm land mask then
+  let fp' = stats.Unix.LargeFile.st_perm in
+  if fp land mask <> fp' land mask then
     raise
       (Util.Transient
          (Format.sprintf
             "Failed to set permissions of file %s to %s: \
-             the permissions was set to %s instead"
+             the permissions was set to %s instead. \
+             The filesystem probably does not support all permission bits. \
+             You should probably set the \"perms\" option to 0o%o \
+             (or to 0 if you don't need to synchronize permissions)."
             (Fspath.concatToString fspath path)
             (syncedPartsToString (fp, mask))
-            (syncedPartsToString (stats.Unix.LargeFile.st_perm, mask))))
+            (syncedPartsToString (fp', mask))
+            (mask land (lnot (fp lxor fp')))))
 
 let init someHostIsRunningWindows =
   let mask = if someHostIsRunningWindows then wind_mask else unix_mask in
