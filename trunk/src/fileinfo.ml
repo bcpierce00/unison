@@ -114,7 +114,7 @@ let stamp info =
   if Prefs.read pretendLocalOSIsWin32 then CtimeStamp info.ctime else
   match Util.osType with
     `Unix  -> InodeStamp info.inode
-  | `Win32 -> 0.0
+  | `Win32 -> CtimeStamp 0.0
        (* Was "CtimeStamp info.ctime", but this is bogus: Windows
           ctimes are not reliable. *)
 
