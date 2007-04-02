@@ -76,6 +76,9 @@ install: doinstall
 installtext: 
 	make -C .. installtext
 
+text: 
+	make -C .. text
+
 doinstall: $(NAME)$(EXEC_EXT)
 	-mv $(INSTALLDIR)/$(NAME)$(EXEC_EXT) /tmp/$(NAME)-$(shell echo $$$$)
 	cp $(NAME)$(EXEC_EXT) $(INSTALLDIR)
