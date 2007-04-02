@@ -85,6 +85,20 @@ per-path basis. [Thanks to Alan Schmitt for this.]
 
 \item Many small bugfixes, including:
 \begin{itemize}
+\item Fixed a longstanding bug regarding fastcheck and daylight saving time
+  under Windows when Unison is set up to synchronize modification times.
+  (Modification times cannot be updated in the archive in this case,
+  so we have to ignore one hour differences.)
+\item Fixed a bug that would occasionally cause the archives to be left in
+  non-identical states on the two hosts after synchronization.
+\item Fixed a bug that prevented Unison from communicating correctly between
+  32- and 64-bit architectures.
+\item On windows, file creation times are no longer used as a proxy for
+  inode numbers.  (This is unfortunate, as it makes fastcheck a little less
+  safe.  But it turns out that file creation times are not reliable 
+  under Windows: if a file is removed and a new file is created in its
+  place, the new one will sometimes be given the same creation date as the
+  old one!)
 \item Set read-only file to R/W on OSX before attempting to change other attributes.
 \item Fixed bug resulting in spurious "Aborted" errors during transport
 (thanks to Jerome Vouillon) 
