@@ -939,13 +939,13 @@ let fastcheck =
   Prefs.createString "fastcheck" "default"
     "do fast update detection (`true', `false', or `default')"
     ( "When this preference is set to \\verb|true|, \
-       Unison will use file creation times as `pseudo inode numbers' \
+       Unison will use the modification time and length of a file as a
+       `pseudo inode number' \ 
        when scanning replicas for updates, \
        instead of reading the full contents of every file.  Under \
        Windows, this may cause Unison to miss propagating an update \
-       if the create time, modification time, and length of the \
-       file are all unchanged by the update (this is not easy to \
-       achieve, but it can be done).  However, Unison will never \
+       if the modification time and length of the \
+       file are both unchanged by the update.  However, Unison will never \
        {\\em overwrite} such an update with a change from the other \
        replica, since it always does a safe check for updates just \
        before propagating a change.  Thus, it is reasonable to use \

@@ -2026,8 +2026,8 @@ to \verb|default| (which, naturally, is the default), Unison will use
 fast checks on Unix replicas and slow checks on Windows replicas.
 
 This strategy may cause Unison to miss propagating an update if the
-create time, modification time, and length of the file are all unchanged
-by the update (this is not easy to achieve, but it can be done).
+ modification time and length of the file are both unchanged
+by the update.
 However, Unison will never {\em overwrite} such an update with a change
 from the other replica, since it always does a safe check for updates
 just before propagating a change.  Thus, it is reasonable to use this
