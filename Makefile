@@ -262,6 +262,9 @@ install:
 installtext:
 	$(MAKE) -C src install UISTYLE=text
 
+text:
+	$(MAKE) -C src UISTYLE=text
+
 tools/ask: tools/ask.ml
 	$(MAKE) -C tools
 
