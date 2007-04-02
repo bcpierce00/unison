@@ -107,7 +107,7 @@ realcommit:
 	-chmod -R a+r $(EXPORTDIR)
 	-chmod -R g+wr $(EXPORTDIR)
 	-chmod -R o-w $(EXPORTDIR)
-	-$(RM) $(DOWNLOADPARENT)/latestbeta
+	-$(RM) $(DOWNLOADPARENT)/beta
 	-ln -s $(EXPORTNAME) $(DOWNLOADPARENT)/beta
 
 $(DOWNLOADDIR):

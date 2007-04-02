@@ -1,0 +1,103 @@
+INFORMAL SPEC
+=============
+
+HOMOGENEOUS CASE
+    
+  FS = F of File*FProps + D of Dir*DProps + Bot
+  Dir = Name -> FS
+
+    aok(o,a,b,a,b)
+    aok(s,s,s',s',s')
+    aok(s,s',s,s',s')
+
+       aok(o,a,b,a',b') 
+    => ok(o,a,b,a',b')
+
+       if aok(dprops(o),p,q,p',q')
+       and, for all n, ok(o(n), x(n), y(n), x'(n), y'(n)) 
+    => ok(o,D(x,p),D(y,q),D(x',p'),D(y',q')) 
+
+       if aok(fprops(o),p,q,p',q')
+       and aok(contents(o),c,d,c',d')
+    => ok(o,F(c,p),F(d,q),F(c',p'),F(d',q')) 
+
+
+
+
+HETEROGENEOUS CASE
+    
+  a TRANSLATION comprises
+      O,X,Y      sets
+      get      : X -> O
+      get      : Y -> O
+      set      : X*O -> X
+      set      : Y*O -> Y
+      such that
+        ...
+
+  FS(FP,DP) = F of File*FP + D of Dir(FP,DP)*DP + Bot
+  Dir(FP,DP) = Name -> FS(FP,DP)
+
+  a CONFIGURATION consists of three filesystems  
+    O : FS(FPO,DPO)
+    A : FS(FPA,DPA)
+    B : FS(FPB,DPB)
+  with translations on (FPO,FPA,FPB) and (DPO,DPA,DPB)
+
+  now, define a translation on, FS(FPO,DPO), FS(FPA,DPA), FS(FPB,DPB)
+  from the two given translations
+    ...  [STOPPED HERE: DEFINE THIS!]
+
+  the ATOMIC SYNCHRONIZATION relation (WRT some given translation) is
+
+    aok(o,a,b,a,b)
+
+    aok(get(a),a,b,set(a,get(b)),b)
+    (and symmetrically)
+
+  finally, define ok inductively as follows:
+
+       if aok(dprops(o),p,q,p',q')
+       and, for all n, ok(o(n), x(n), y(n), x'(n), y'(n)) 
+    => ok(o,D(x,p),D(y,q),D(x',p'),D(y',q')) 
+
+       if aok(fprops(o),p,q,p',q')
+       and aok(contents(o),c,d,c',d')
+    => ok(o,F(c,p),F(d,q),F(c',p'),F(d',q')) 
+
+       aok(o,a,b,a',b') 
+    => ok(o,a,b,a',b')
+
+
+CONJECTURE: Suppose P is a property of 5-tuples of filesystems.  
+  If, for all o,a,b,a',b', ok(o,a,b,a',b') => P(o,a,b,a',b') 
+  then ok(o,a,b,a',b') => for all r, P(o(r),a(r),b(r),a'(r),b'(r)) 
+
+By induction on r:
+  ok(o,a,b,a',b') => for all r, ok(o(r),a(r),b(r),a'(r),b'(r)) 
+
+
+CONJECTURES:
+   - User changes are never overwritten
+       ok(o,a,b,a',b') and o(r)<>get(a(r)) ==> a'(r)=a(r)
+     (and symmetrically)   [nb: only want this "locally" -- careful!]
+       1) ok(o,a,b,a',b') and o(r)<>get(a(r)) and o(r),a(r)not both directories
+          ==> 
+          a'(r) = a(r)
+       2) ok(o,a,b,a',b') and o(r)=D(x,q) and a(r)=D(x',p) and p<>q 
+          ==> 
+          a'(r) = D(y,p') and
+          p' = p
+   - Every change the synchronizer makes is the propagation of a user change
+       1) ok(o,a,b,a',b') and a'(r)<>a(r) and a(r),a'(r) not both directories
+          ==> 
+          a'(r) = set(a(r), get(b(r)))
+       2) ok(o,a,b,a',b') and a(r)=D(x,p) and a'(r)=D(x',p') and p<>p' 
+          ==> 
+          b(r) = D(y,q) and
+          p' = set(p, get(q))
+   - Below conflict paths, the synchronizer changes nothing
+     ok(o,a,b,a',b') and get(a(r)) <> o(r) and get(b(r)) <> o(r)
+     and one of a(r),b(r) is not a directory
+     ==>
+     a'(r)=a(r) and b'(r)=b(r)

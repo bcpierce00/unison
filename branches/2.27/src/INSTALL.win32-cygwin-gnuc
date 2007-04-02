@@ -1,0 +1,175 @@
+Installation notes to build Unison on Windows systems, with Cygwin GNU C
+(unison-help@cis.upenn.edu)
+
+[The following instructions were tested for Unison 2.9.1 on a Windows
+XP machine running OCaml 3.08.]
+
+Since OCaml is now included in Cygwin, things have gotten pretty
+simple (at least for the text user interface).
+
+   - Download and run the cygwin installer
+        - make sure to select the make (from Devel) 
+          and ocaml (from Interpreters) packages; you may also
+          want the subversion package, if you intend to check out
+          the latest unison sources from the live subversion 
+          repository.
+
+   - Download the desired version of the Unison source tarball 
+     from the Unison home page and unpack it, or else grab the sources
+     using svn.
+
+   - In the main directory, type "make"
+
+   - The result should be an executable file called "unison" (or, if
+     you grabbed the whole svn repository, perhaps "src/unison").  Put this
+     somewhere on your search path and you should be good to go.  (You'll
+     need to do something about setting up ssh, etc., but that's beyond the
+     scope of this document.)
+
+
+-------------------------------------------------------------------------
+AN OLDER VERSION:
+
+[The following instructions were tested for Unison 2.9.1 on a Windows
+2000 machine running OCaml 3.04.]
+
+Contents
+
+1.Setting up the Windows system
+  1.1 General requirements
+  1.2 A Unix-like layer: CygWin and GNU C compiler
+  1.3 The OCaml compiler
+2.Compiling Unison
+  2.1 Text user interface
+  2.2 Gtk user interface
+
+Section 1 - Setting up the Windows system
+
+
+1.1 General requirements
+
+  We will assume your are logged in as a regular user. We will mention cases 
+when you need to be granted administrator permissions.
+
+  We will work in your home directory.
+
+  For a complete installation from scratch, you will need about 300 Mb.
+
+  A Unix-like layer such as CygWin is needed to be able to use a few
+GNU tools like 'bash', 'make', 'sed', 'patch', etc, and in particular
+the GNU C compiler.
+
+  The CygWin port of OCaml distribution version 3.04 is required. 
+
+
+.2 A Unix-like layer: CygWin
+
+  Download CygWin from 'http://www.cygwin.com/': 
+* click "install cygwin now" and follow the instruction to set up cygwin.
+  install the essential packages such as "gcc", "make", "fileutil",
+  "openssh", etc.
+  set the root directory (e.g. 'd:\cygwin')
+
+
+  Setup 'bash':
+* click on 'bash'.
+* enter 'export HOME=/home/<username>', make the directory, then 'cd'.
+* create a '.bashrc' in CygWin's root directory to suit your
+  needs (see Appendix B of file "INSTALL.win32-msvc" for an example).
+* add 'export OSCOMP=cygwingnuc' to the '.bashrc' file.  This variable
+  helps the unison Makefile (project file) to understand that we are
+  compiling under Windows platform using Cygwin GNU C.
+
+  Remember you can access the whole Windows filesystem with a Unix
+path through '/cygdrive/<drive letter>/<path>' (e.g. '/cygdrive/c/winnt' 
+stands for 'C:\WinNT')
+
+
+1.3 The OCaml compiler (CygWin port)
+
+  NB: Unison doesn't use Tcl/Tk support.  If you wish to use Tcl/Tk
+  for your other Ocaml applications, download it separately before
+  proceeding.
+
+  Download the OCaml 3.04 source tarball from
+'http://caml.inria.fr/ocaml/distrib.html'.  Unpack it into a
+directory (using, e.g., winzip, or "tar xzvf ocaml-3.04.tar.gz"
+
+  Enter the ocaml directory, and type:
+  $ ./configure
+                        # or "./configure -prefix <install-prefix>".  
+                        # For other options, see INSTALL
+  $ make world
+  $ make opt
+  $ make install
+
+  To check your installation, use 'bash' and enter 'ocamlc -v'
+  If something goes wrong :
+* your path must contain the OCaml 'bin' directory;  you may have to enter 
+  something like 'export PATH=$PATH:/usr/local/ocaml/bin'.
+* 'ocamlc -v' must report the OCaml 'lib' directory; you may have to enter
+  something like 'export CAMLLIB=/usr/local/ocaml/lib/ocaml/' 
+
+
+Section 2 - Compiling Unison
+ 
+
+2.1 Text user interface
+
+  Unpack the Unison sources.
+
+  Using 'bash', enter 'make clean', then 'make UISTYLE=text' to compile.
+
+  If something goes wrong :
+* if 'make' reports 'missing separator', be sure the makefiles are in
+  Unix text format (see Appendix A).
+* if .depend is not provided, create one using 
+  'ocamldep *.mli *.ml > .depend'; you will have to convert this file
+  to Unix text format (see Appendix A).
+* the minor 'etags' error is reported when 'emacs' is missing; you may
+  want to install it.
+
+
+2.2 Gtk user interface
+
+2.2.1 Install LablGtk 1.2.3 (cygwin port)
+
+  Download the patched LablGtk 1.2.3 (bundled with the Gtk libraries):
+  get the 'lablgtk-1.2.3-cygwin.tar.gz' tar ball from the 'resources'
+directory of the Unison web site and unpack it.  This will create a
+'lablgtk-1.2.3-cygwin' directory.  Enter the directory
+'lablgtk-1.2.3-cygwin/lablgtk', and type:
+
+  $ make
+  $ make opt
+  $ make install
+  
+  Finally, add the result of running 
+      echo `ocamlc -where`/lablgtk/dlls
+  to the environment variable PATH.*
+
+* Under Windows menu: Start -> Settings -> Control Panel -> System -> 
+                      Advanced -> Environment Variables.
+
+  OPTIONAL: At this stage, you can test the installation of lablgtk by 
+
+            $ cd lablgtk-1.2.3-cygwin/lablgtk-1.2.3/examples
+            $ lablgtk <a program>.ml
+
+2.2.2 Compiling Unison
+
+  To compile the gtk version of Unison, enter the Unison sources
+directory, enter "make clean" and then "make UISTYLE=gtk".
+
+  The resulting executable is dynamically linked against the CygWin
+runtime and the Gtk DLLs.  If you would like to distribute this
+executable, you should provide the following DLLs (found in /bin under
+the cygwin root directory and the lablgtk/dlls directory obtained at
+the end of the lablgtk installation (Section 2.2.1), and ask the users
+to include them in the PATH.
+
+      cygwin1.dll, gdk-1.3.dll, glib-1.3.dll, gtk-1.3.dll
+
+* The way to find out which DLL are used under windows:
+  objdump -p <executable name> | grep "DLL Name"
+

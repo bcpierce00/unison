@@ -1,0 +1,2544 @@
+\documentclass[11pt]{report}
+\usepackage{graphics}
+\newcommand{\isdirtr}{\ensuremath{\mathord{isdir}}}
+\newcommand{\failed}{\ensuremath{\mathord{failed}}}
+\newcommand{\agreeAt}[1]{\sim_{#1}}
+\newcommand{\agreeBefore}[1]{\downarrow_{#1}}
+\newcommand{\agreeAfter}[1]{\downarrow^{#1}}
+\newcommand{\convergesTo}[2]{\stackrel{#1}{\Longrightarrow}_{#2}}
+\newtheorem{lemme}{Lemme}
+\newtheorem{theor}{Th\'eor\`eme}
+\newtheorem{propri}{Propri\'et\'e}
+\newtheorem{defi}{D\'efinition}
+\newcommand{\adv}{Benjamin PIERCE}
+\newcommand{\Conflit}{\ensuremath{\mathit{Conflit}}}
+\newcommand{\fs}{\ensuremath{\mathcal{FS}}}
+\newcommand{\bool}{\ensuremath{\mathcal{BOOL}}}
+\newcommand{\state}{\ensuremath{\mathcal{STATE}}}
+\newcommand{\pred}{\ensuremath{\mathcal{PRED}}}
+\newcommand{\error}{\ensuremath{\mathcal{ERROR}}}
+\newcommand{\plan}{\ensuremath{\mathcal{PLAN}}}
+\newcommand{\ddef}{\ensuremath{\mathcal{DEF}}}
+\newcommand{\disjoint}{\ensuremath{\mathcal{DISJOINT}}}
+\newcommand{\mem}{\ensuremath{\mathcal{MEM}}}
+\newcommand{\path}{\ensuremath{\mathcal{P}}}
+\newcommand{\amne}{\ensuremath{\mathcal{F} 
+\cup \{ dir, \perp \} \rightarrow amnesie}}
+\newcommand{\ensem}{\ensuremath{\mathcal{F} \cup 
+\{ dir, \perp \} \rightarrow \bool\ }}
+\newcommand{\dep}{\ensuremath{\mathcal{F} \cup 
+\{ dir, \perp \}}}
+\newcommand{\amnes}{\ensuremath{\mathit{oubli}}}
+\newcommand{\ensemb}{\ensuremath{\mathcal{INFO}}}
+\newcommand{\infl}[2]{\ensuremath{\mathcal{I}_{#1,#2}}}
+\newcommand{\sus}[1]{\ensuremath{\mathit{suspect}_{#1}}}
+\newcommand{\isdire}{\ensuremath{\fs\ * \fs\ \rightharpoonup \bool\ }}
+\newcommand{\isdir}[2]{\ensuremath{\mathcal{ISDIR}_{#1,#2}}}
+\newcommand{\isdira}[2]{\ensuremath{\mathit{isdir}_{#1#2}}}
+\newcommand{\comp}[3]{\ensuremath{\mathit{compatible}_{#1}(#2, #3)}}
+\newcommand{\compa}[2]{\ensuremath{\mathit{compatible}(#1, #2)}}
+\newcommand{\data}[1]{\emph{#1}}
+\newcommand{\func}[1]{\textbf{#1}}
+\newcommand{\modu}[1]{\textbf{#1}}
+\newcommand{\trevor}{Trevor JIM}
+\newcommand{\unison}{unison}
+\newcommand{\preuve}[2]{\textbf{Preuve #1} \\
+#2\\
+$\heartsuit$\\}
+\newcommand{\clause}[2]{\textbf{Clause~:} $#1$\\
+#2\\
+$\heartsuit$\\}
+\newcommand{\prop}[3]{
+\begin{propri}
+#1
+\end{propri}
+\begin{equation} \label{#2}
+#3
+\end{equation}\\}
+\begin{document}
+\ \\
+ECOLE POLYTECHNIQUE, PROMOTION X-~96\\\\
+RAPPORT DE STAGE D'OPTION SCIENTIFIQUE\\\\
+Matthieu GOULAY\\\\
+TITRE~: Le synchroniseur de fichiers \emph{Unison}\\\\
+\begin{tabbing}
+Option : \= Informatique                           \\
+         \> Departement de Mathematiques Appliquees\\\\
+\end{tabbing}
+Directeurs de l'option~: MM. Jean-Marc STEYAERT et Jean-Jacques LEVY\\\\
+\begin{tabbing}
+Organisme d'accueil : \=\\
+                      \> University of Pennsylvania\\
+                      \> Dept. of Computer and Information Science\\
+                      \> 200 South 33rd Street\\
+                      \> Philadelphia, PA  19104-6389\\\\
+\end{tabbing}
+Directeur de stage : \adv\ \\\\
+Dates du stage : 10 avril -- 3 juillet 1999
+\newpage
+\tableofcontents{}
+\newpage
+\section*{Resum\'e}
+\subsection*{francais}
+D\'esirant am\'eliorer ma pratique de l' anglais et d\'ecouvrir un pays nouveau,
+j'ai effectu\'e mon stage d'option a l'universit\'e de 
+Pennsylvanie\footnote
+{Philadelphie -- \'etat de Pennsylvanie -- USA}. Mon travail a consist\'e 
+\`a implementer un synchroniseur de fichier (\unison\ ) et \`a participer 
+\`a la r\'edaction de sa
+sp\'ecification. Le langage de programmation retenu a cet effet est le langage 
+OCaml\footnote{langage fonctionnel d\'evelopp\'e par l'INRIA (France)}. Ceci m'a permis pour la
+premi\`ere fois de me confronter \`a un probleme \`a la fois th\'eorique et pratique
+:
+``Que doit on impl\'ementer et comment?'' Ce stage aura \'et\'e l'
+occasion d'apprendre que
+la r\'ealisation d'un logiciel ``propre'' et r\'esistant demande beaucoup de
+rigueur et implique de nombreuses r\'e\'ecritures de code.\\
+Par ailleurs, le fait de vivre a la maison internationnale et surtout de
+cotoyer peu de francais m'a permis de m'investir pleinement dans mon nouveau
+ cadre de vie. Mes quelques week ends libres ont \'et\'e entre autres 
+employ\'es \`a visiter les \'Etats~Unis (New York, Washington D.C., etc...)\\
+Ce stage aura donc \'et\'e extr\^emement enrichissant, tant au niveau 
+professionnel qu'humain, et je le conseille vivement aux
+informaticiens des prochaines promotions.
+
+\subsection*{english} 
+As I wanted to improve my english and discover a foreign country, I did my training course in the computer science department of UPenn. 
+The main part of my job was to implement a file synchronizer (\unison ) and to
+take part in the writing of its specification. 
+For this purpose, we chose the OCaml functional programming language
+developped by INRIA (France). 
+This was the first time I had to face both theorical and practical sides of a problem. This training course gave me also the opportunity to understand what ``software ingeniering'' meant~: a clean, resistant and modular program.\\
+Living in the International House of Philadelphia without any french people 
+helped me to really integrate my new frame of life.
+I used my few free week~ends to travel through the United States and Canada (New York, Washington D.C., Toronto, etc...)\\
+As a conclusion, this training course was rich in both life experience and work improvement, and I recommend it to the computer scientist of the future promotions.
+\newpage
+\chapter{Conditions de vie et description du travail}
+\section{Conditions de vie}
+\paragraph{La Maison Internationnale\\}
+Mon logement se trouve donc \`a la maison internationnale de Philadelphie, 
+situ\'ee \`a quelques minutes \`a peine du campus de UPenn. Je partage un 
+\'etage avec une dizaine d'autres \'etudiants et chercheurs venus du monde 
+entier~: Cor\'ee, Italie, Belgique, Allemagne, Etats~Unis etc...\\
+Il est particuli\`erement appr\'eciable, lorsque l'on arrive dans un pays
+inconnu d'\^etre accueilli par d'autres \'etrangers ; ceci instaure 
+conduit d'embl\'ee \`a des \'echanges d'exp\'eriences enrichissants et 
+permet surtout de pratiquer un anglais imparfait sans la moindre honte.\\
+C'est ainsi que j'ai rencontr\'e Bavesh, un Sud~Africain en compagnie duquel 
+j'ai visit\'e New~York ou encore Stephan, un Allemand avec qui je suis aller
+admirer les chutes du Niagara pour le week end du ``Memorial day''. 
+Je pense que cette formule de logement est la
+meilleure pour trois mois, p\'eriode trop courte pour louer un appartement.
+Elle me semble \^etre en elle-m\^eme un \'el\'ement essentiel de la formation
+humaine tant pr\^on\'ee par l'\'Ecole Polytechnique. 
+\paragraph{Philadelphie et le campus de UPenn\\}
+Les villes am\'ericaines sont au premier abord tr\`es surprenantes pour un
+europ\'een et particuli\`erement un fran\c{c}ais. Elles n'ont pas 
+d'\'equivalent de par leur taille et leur organisation en ``blocks''~:
+elles sont \'enormes, carr\'ees et paraissent impersonnelles. Leur population
+cosmopolite (blancs, noirs, asiatiques) leur conf\`ere par ailleurs un 
+contraste surprenant~: changer de quartier \'equivaut \`a passer d'Italie en
+Chine.\\
+Le campus de UPenn est un quartier de ``west Philadelphia'' \`a part enti\`ere.
+L\`a encore, j'ai \'et\'e surpris par la taille, le nombre de biblioth\`eques 
+(11) et la vari\'et\'e des enseignements qui y sont dispens\'es.
+\section{description du travail}
+\paragraph{\'Etat de la recherche sur les synchroniseurs \`{a} mon arriv\'ee\\}
+J'avais d\'ej\`a pu me confronter avec les synchroniseurs de fichiers avant 
+mon arriv\'ee \`a Philadelphie. En effet, j'avais eu l'occasion de lire 
+l'article \'ecrit par \adv\ , mon directeur de stage, \`a ce sujet.
+Puis, une fois \`a Philadelphie, j'ai fait connaissance avec la premi\`ere 
+version \'ecrite en Java deux ann\'ees auparavant, mais dont 
+l'efficacit\'e et la compatibilit\'e laissaient \`a d\'esirer. C'est pour ces
+raisons que mon directeur de stage d\'esirait une nouvelle version \'ecrite 
+en OCaml. L'objectif est double~: r\'ealiser un synchroniseur simple mais 
+performant et en distribuer gratuitement le code source afin de toucher un
+large public, cr\'eer une d\'ependance \`a la synchronisation de fichiers
+et promouvoir le langage OCaml. C'est je pense \`a cet effet que nous avons 
+essay\'e d'utiliser une grande partie des modules et librairies de OCaml.
+\paragraph{organisation du travail\\}
+Mon bureau se trouve dans le b\^atiment des ``graduate students'' du 
+d\'epartement d'informatique. J'ai essentiellement travaill\'e seul \`a 
+l'impl\'ementation de \unison\ , avec des entretiens r\'eguliers avec mon 
+directeur de stage. J'ai ensuite \'et\'e assist\'e par un post-doctorant 
+\trevor\ qui a r\'ealis\'e une grande partie de l'interface graphique \`a 
+l'aide de CamlTK. PRCS, apr\`es quelques tat\^onnements, nous a \'t\'e d'une
+grande utilit\'e pour coordonner nos efforts.
+\paragraph{premier mois et premi\`eres versions\\}
+Le premier mois a \'et\'e tr\`es stimulant. C'est ainsi que sont apparues
+respectivement apr\`es trois et quatre semaines une premi\`ere 
+version locale puis une seconde distribu\'ee du synchroniseur.\\
+Cette derni\`ere m'a donn\'e l'occasion de me familiariser avec les modules
+OCamlYacc et OCamlLex, n\'ecessaires \`a l'utilisation d'un format XML
+pour la communication entre processeurs.
+\paragraph{deuxi\`eme mois et tergiversations\\}
+A part l'impl\'ementation de quelques nouvelles fonctionnalit\'es et la mise
+en place d'une strat\'egie de d\'etection optimis\'ee, je me suis senti un 
+peu frust\'e par le travail du deuxi\`eme mois qui
+a consist\'e essentiellement en une r\'e\'ecriture du code, afin d'am\'eliorer
+sa clart\'e, sa robustesse et surtout la simplicit\'e de ses interfaces.
+Cependant, je pense que, loin d'\^etre inutile, ce travail est indispensable
+\`a la gen\`ese de nouvelles id\'ees, et au raffinement des structures de 
+donn\'ees employ\'ees.
+\paragraph{Unix et Windows\\}
+Un des objectifs de ce stage consistait en la synchronisation de syst\`emes de fichiers
+dont l'un stock\'e sur un ordinateur administr\'e par le syst\`eme
+Windows et un l'autre sous un environnement Unix\footnote{Macintosh est envisageable dans un avenir proche}.
+C'est ainsi que nous avons mis \`a jour des erreurs dans la librairie Unix de
+OCaml en ce qui concerne les fonctions ``open~socket'' et ``create~socket'' et
+plus g\'en\'eralement toutes les  fonctions permettant d'interchanger ``file~descriptors'' et 
+``channels'' sous Windows. Ceci nous a forc\'e \`a \'ecrire un petit protocole de 
+communication, essentiellement \`a l'aide du module \emph{Marshal}.
+\paragraph{\'Etat actuel et extensions possibles\\}
+Le dernier mois a \'et\'e enfin essentiellement consacr\'e \`a la finition du
+logiciel, l'ajout de fonctionnalit\'es concernant la s\'ecurit\'e des
+op\'erations effectu\'ees et enfin la r\'edaction d'une nouvelle 
+sp\'ecification que j'ai l'honneur de pr\'esenter dans ce rapport.
+Nous poss\'edons maintenant un prototype robuste, propre et de rapidit\'e
+acceptable, fonctionnant sur les syst\`emes d'exploitation Windows
+\footnote{moyennant l'installation d'un ou deux logiciels pour l'instant} et 
+Unix. Nous poss\`edons une sp\'ecification \`a laquelle nous consacrerons un chapitre, mais
+que nous consid\'erons imparfaite, par la complexit\'e de son \'enonc\'e.
+Par ailleurs, nous souhaiterions obtenir des gains substantiels de 
+performance, notamment en ce qui concerne le fonctionnement des expressions 
+r\'eguli\`eres. Mais il faut dire que l'efficacit\'e 
+a \'et\'e jusqu'\`a pr\'esent d\'elib\'er\'ement n\'eglig\'ee au profit de 
+la clart\'e du code et au vu de consid\'erations de modularit\'e.
+\newpage
+        \chapter{Les synchroniseurs de fichiers}
+\paragraph{Introduction\\}
+Avec le nombre croissant d'organiseurs, la d\'emocratisation de l'ordinateur
+portable et de toute sortes de mini-ordinateurs, il devient 
+indispensable de poss\'eder des outils de synchronisation de 
+donn\'ees distribu\'ees. Supposons par exemple que, pour la mise au point 
+d'un logiciel, vous emportiez et modifiez chez vous une partie du code 
+source sur votre ordinateur portable tandis qu'un de vos coll\`egues 
+y travaille sur l'ordinateur principal. Vous souhaitez alors pouvoir
+synchroniser ces deux versions~: d\'etecter les fichiers en conflit et 
+mettre \`a jour les autres.
+On apelle synchroniseurs de fichiers les outils permettant de r\'ealiser ces
+t\^aches.
+Le probl\`eme des synchroniseurs de fichier vient de ce que leur 
+sp\'ecification est par trop intuitive; grande est alors la tentation
+d'impl\'ementer un prototype sans trop penser se soucier d'\'ecrire une 
+sp\'ecification rigoureuse. Ce manque de rigueur peut conduire \`a des 
+r\'esultats d\'esastreux (pertes ou corruption de fichiers importants).
+Pour r\'esumer, je dirais que toute personne travaillant sur le sujet 
+devrait se poser les questions suivantes~:
+\begin{quote}
+Qu'attend d'un synchroniseur de fichiers un utilisateur ``naif''~?\\
+Quelles sont les actions qu'un synchroniseur de fichiers ne doit jamais 
+ex\'ecuter~?\\
+Quelles sont les types d'erreurs pouvant survenir \`a l'\'ex\'ecution ?
+\end{quote}
+Nous tenterons, en r\'epondant une \`a une \`a ces questions, de construire
+pr\'ecautionneusement ensemble les propri\'et\'es implicitement sous-tendues
+d'un tel outil. Pr\'ecisons pr\'ealablement qu'un grand nombre d'exemples et 
+de d\'efinitions sont emprunt\'es \`a \adv\ \footnote{Indiana University--CSCI Technical Report \#507}
+        \section{Syst\`emes de fichier}
+Puisque la fonction d'un synchroniseur est de r\'econcilier dans la mesure du
+poosible des syst\`emes de fichiers, il convient de donner en premier lieu
+une formalisation math\'ematique de ces derniers.
+\paragraph{Quelques notations\\}
+\begin{description}
+\item [$\mathcal{N}$] Ensemble des noms de fichiers valides. Sous Unix, par 
+exemple, il est constitu\'e de tous les mots ne contenant pas `/'.
+\item [$\mathcal{F}$] Ensemble des fichiers.
+\item [chemin] Liste ordonn\'ee fini de noms. On notera
+  $p = \mathit{nom}_1.\mathit{nom}_2.\mathit{nom}_3\ldots.\mathit{nom}_n$
+  un tel \'el\'ement.
+\item [sous-chemin] $q$ est un sous-chemin de $p$ ssi $q = p.r$ ou $r$ est un
+  chemin.
+On notera $q \geq p$.
+\item [longueur] Nombre de noms composant un chemin.
+On la notera $|p|$.
+\item [\path\ ] Ensemble des chemins.
+\item [\fs\ ] Ensemble des syst\`eme de fichiers.
+\item [profondeur] Longueur du plus long chemin d'un syst\`eme de fichiers.\\
+$\mathit{profondeur}$(O) = $max_{O}$ $\{|p|$ tel que $O$ est non vide en $p$ $\}$  
+\end{description}
+Nous pouvons maintenant donner une premi\`ere d\'efinition de l'ensemble \fs\ .
+Un syst\`eme de fichier est une arborescence de fichiers de profondeur finie dont la d\'efinition la plus intuitive est la suivante~:
+\[
+\begin{array}{l}
+\fs\ = \mathcal{F} \uplus (\mathcal{N} \rightharpoonup \fs\ )\\
+\forall O \in \fs\ \mathit{profondeur}(O) < \infty
+\end{array}
+\] 
+Ceci signifie qu'un syst\`eme de fichiers est soit un fichier, soit une fonction 
+partielle de l'ensemble des noms vers l'ensemble des syst\`emes de fichiers.
+Nous utiliserons d\'esormais la notation \fs\ pour d\'esigner les syst\`emes de fichiers.
+Il existe par ailleurs une autre d\'efinition de l'ensemble \fs\ ~: 
+\[
+\begin{array}{l}
+\fs\ = \path\ \rightharpoonup (\mathcal{F} \uplus \{dir\})\\
+\forall O \in \fs\ \mathit{profondeur}(O) < \infty
+\end{array}
+\]\\
+Ici, un syst\`eme de fichiers est une fonction partielle de l'ensemble des
+chemins dans l'ensemble constitu\'e des fichiers et du symbol ``dir''.
+Bien sur nous devons ajouter le symbol $\perp$ (absent), afin de permettre la 
+d\'el\'etion de fichiers. Ceci nous donne la nouvelle d\'efinition suivante~:
+\begin{equation}
+\fs\ = \path\ \rightarrow ( \mathcal{F} \uplus \{dir, \perp \})\\
+\end{equation}
+\begin{equation} \label{eq:parent}
+(A \not\sim_{p.x} \perp) \Rightarrow A \sim_{p} dir
+\end{equation}
+\begin{equation}
+\forall O \in \fs\ \mathit{profondeur}(O) < \infty
+\end{equation}
+Nous remarquons que nous avons maintenant une fonction totale de $\mathcal{P}$
+dans l'ensemble d'arriv\'ee.
+C'est ici que nous devons insister pour la premi\`ere fois sur la diff\'erence 
+essentielle entre ces deux d\'efinitions~: 
+\begin{itemize}
+\item La premi\`ere implique une vue en ``sous~arbres''. 
+C.A.D. que l'on consid\`ere uniquement les fichiers et les sous-syst\`emes de 
+fichiers. La notation associ\'ee est $A(p)$ et la relation d'\'equivalence
+ $A =_{p} B$.
+\item La seconde sous-tend plut\^ot une vue en ``chemins''; chaque
+chemin d\'esigne un noeud de l'arborescence, soit un fichier ou une balise 
+``dir''. 
+La notation associ\'ee est $A.p$ et la relation d'\'equivalence $A \sim_{p} B$.
+\end{itemize}
+Nous aurons \`a maintes reprises l'occasion de revenir sur cette distinction.
+        \section{architecture globale}
+L'op\'eration de synchronisation comporte deux phases th\'eoriquement distinctes~: 
+\begin{itemize}
+\item La d\'etection de changements r\'ev\`ele les modifications survenues 
+sur chacune des r\'epliques depuis la derni\`ere op\'eration de 
+synchronisation.
+\item La r\'econciliation \`a pour r\^ole de propager les changements 
+non-conflictuels entre les deux r\'epliques. Cette notion est dangereuse car 
+trop intuitive~: nous y reviendrons donc en d\'etail. Nous pouvons encore 
+distinguer deux sous-phases~:
+\begin{description}
+\item [choix] de la direction de propagation des changements en chaque 
+chemin modifi\'e.\\
+Le but de cette \'etape est de construire une fonction partielle de 
+$\mathcal{P}$ dans $\{A \Rightarrow B, B \Rightarrow A, \Conflit \}$, 
+ensemble des directions possibles.
+\item [ex\'ecution] des actions d\'etermin\'ees par le choix fait 
+ant\'erieurement.
+\end{description}
+\item Le proc\'ed\'e \'etant it\'eratif, nous y ajouterons une troisi\`eme phase~: \emph{la mise \`a jour de la m\'emoire}.
+\end{itemize}
+D\'eroulons chronologiquement les diff\'erentes phases de la synchronisation
+(voir figure~\ref{fig:archglob}).
+\begin{figure}
+{\large
+\begin{description}
+\item [donn\'ees] $O$, $A$, $B$~: \fs\
+\item [produit] $O'$, $A'$, $B'$~: \fs\
+\end{description}
+}
+\begin{picture}(200, 290)(-100, 0)
+\put(10, 280){\makebox(0, 0)[b]{\Large $\mathit{A}$}}
+\put(190, 280){\makebox(0, 0)[b]{\Large $\mathit{B}$}}
+\put(100, 280){\makebox(0, 0)[b]{\Large ($O$, $\mathit{Memoire}$)}}
+\put(100, 70){\makebox(0, 0)[b]{\Large ($O$, $\mathit{Memoire}$)}}
+\put(100, 70){\vector(0, -1){18}}
+\put(100, 0){\makebox(0, 0)[b]{\Large ($O'$, $\mathit{Memoire'}$)}}
+\put(10, 280){\vector(0, -1){18}}
+\put(100, 280){\vector(0, -1){18}}
+\put(190, 280){\vector(0, -1){18}}
+\put(0, 240){\framebox(200, 20){\Large DETECTION}}
+\put(50, 240){\vector(0, -1){18}}
+\put(150, 240){\vector(0, -1){18}}
+\put(100, 240){\vector(0, -1){18}}
+\put(50, 210){\makebox(0, 0)[b]{\large \sus{A}}}
+\put(150, 210){\makebox(0, 0)[b]{\large \sus{B}}}
+\put(100, 210){\makebox(0, 0)[b]{\large $\mathit{isdir}_{AB}$}}
+\put(50, 210){\vector(0, -1){18}}
+\put(100, 210){\vector(0, -1){18}}
+\put(150, 210){\vector(0, -1){18}}
+\put(10, 240){\vector(0, -1){48}}
+\put(190, 240){\vector(0, -1){48}}
+\put(0, 170){\framebox(200, 20){\Large CHOIX DE LA DIRECTION}}
+\put(10, 170){\vector(0, -1){48}}
+\put(190, 170){\vector(0, -1){48}}
+\put(100, 170){\vector(0, -1){18}}
+\put(100, 140){\makebox(0, 0)[b]{\large $\mathit{direction}_{AB}$}}
+\put(100, 140){\vector(0, -1){18}}
+\put(0, 100){\framebox(200, 20){\Large EXECUTION DES CHOIX}}
+\put(10, 100){\vector(0, -1){18}}
+\put(190, 100){\vector(0, -1){18}}
+\put(10, 70){\makebox(0, 0)[b]{\Large $\mathit{A'}$}}
+\put(190, 70){\makebox(0, 0)[b]{\Large $\mathit{B'}$}}
+\put(10, 70){\vector(0, -1){18}}
+\put(190, 70){\vector(0, -1){18}}
+\put(0, 30){\framebox(200, 20){\Large MISE A JOUR MEMOIRE}}
+\put(100, 30){\vector(0, -1){18}}
+\end{picture}
+\caption{phases principales de la synchronisation} \label{fig:archglob}
+\end{figure}
+\subsection{D\'etection de changements}
+En premier lieu, le d\'etecteur de changements produit les trois pr\'edicats
+ \sus{A}, \sus{B} et \isdira{A}{B} \`a partir de la m\'emoire qu'il a
+ de la pr\'ec\'edente synchronisation, et de l'\'etat actuel des deux 
+syst\`emes de fichiers. Nous avons ici mis en lumi\`ere le couple 
+($O$, $\mathit{Memoire}$)
+o\`u $O$ repr\'esente l'image qu'\`a l'utilisateur du r\'esultat de la 
+derni\`ere synchronisation. Le synchroniseur, quant \`a lui, ne poss\`ede
+d'autre information que sa m\'emoire. Il nous faudra donc ult\'erieurement
+pr\'eciser la relation existante entre m\'emoire et syst\`emes de fichiers.\\
+Les pr\'edicats \sus{A} et \sus{B} sont d\'efinis par les propri\'et\'es suivantes~:
+\begin{equation}\label{eq:adiffo}
+(A \not\sim_{p} O) \Rightarrow \sus{A}(p).
+\end{equation}
+\begin{equation}\label{eq:upclosed2}
+A \sim_{p} dir \wedge ( \exists q \geq \mbox{$p$ / } \sus{A}(q)) 
+\Rightarrow \sus{A}(p).\label{eq:upclosed}
+\end{equation}
+Autrement dit, la propri\'et\'e~\ref{eq:upclosed} traduit le fait que ces pr\'edicats sont \`a fermeture par les pr\'efixes.\\
+Nous allons maintenant \'enum\'erer diff\'erentes strat\'egies de d\'etection.
+\paragraph{D\'etecteur trivial\\}
+La strat\'egie la plus simple \`a impl\'ementer est celle qui consiste \`a
+d\'eclarer
+ tous les chemins suspects. En effet, cela conduit \`a comparer ensuite tous les fichiers
+pendant la phase de choix, afin de d\'eterminer s'il y a eu ou non mise \`a 
+jour.\\
+Bien s\^ur, ce d\'etecteur v\'erifie les propri\'et\'es annonc\'ees mais il est
+d'utilit\'e restreinte~: il se r\'eduit \`a donner la structure du syst\`eme de
+fichiers (absent, r\'epertoire ou fichier) sans aucune indication sur le 
+contenu de chaque noeud.\\
+Cependant, il reste parfois une solution acceptable dans les cas suivants~:
+\begin{enumerate}
+\item Lorsque la m\'emoire est co\^uteuse ou pr\'ecieuse\footnote{ce qui n'est pas le cas des 
+ordinateurs actuels} et ne permet pas le stockage d'importantes archives.
+\item Lorsque les syst\`emes de fichiers sont de petite taille et donc que le 
+volume \`a comparer est faible. 
+\item Lorsque la communication entre les deux syst\`emes de fichiers est efficace
+(fonctionnement en local, par exemple).
+\end{enumerate}
+\paragraph{D\'etecteur exact\\}
+Le d\'etecteur exact qui permettrait de construire un pr\'edicat refl\'etant 
+exactement les changements effectu\'es est une abstraction. On peut n\'eammoins 
+s'en approcher tr\`es
+fortement en gardant par exemple une copie compl\`ete (un mirroir) de $O$ en 
+m\'emoire. La t\^ache de d\'etection consiste alors \`a faire une sorte de ``diff'' 
+r\'ecursif entre $A$ et $O$ puis entre $B$ et $O$.
+Malheureusement, des erreurs peuvent survenir (voir sous-section~\ref{sec:erreur}) qui obligent \`a introduire un param\`etre d'incertitude.\\
+Cette strat\'egie, n\'eglig\'ee dans la premi\`ere impl\'ementation en Java,
+se r\'ev\`ele finalement assez efficace, malgr\'e le temps n\'ecessaire \`a la
+construction du pr\'edicat de changement; elle facilite sensiblement
+le travail du r\'econciliateur (choix des actions)~:\\
+Supposons en effet que nous tentions de synchroniser deux ordinateurs reli\'es
+par un r\'eseau lent (\'ethernet, r\'eseau t\'el\'ephonique, \ldots), dont
+seulement quelques fichiers ont \'et\'e modifi\'e pour un volume global de 30M.
+En comparaison du co\^ut de communication, celui d'un ``diff'' local est 
+n\'egligeable~: avoir deux pr\'edicats exacts permet, lors de la phase de
+construction de la fonction de choix, d'\'economiser le 
+co\^ut inutile de la comparaison distribu\'ee entre fichiers inchang\'es 
+depuis la derni\`ere synchronisation.
+\paragraph{Temps de derni\`ere modification, num\'ero de fichier\\}
+La tentation est grande d'impl\'ementer un synchroniseur qui garderait 
+uniquement en m\'emoire la date de derni\`ere synchronisation pour chaque 
+fichier. Ainsi, le d\'etecteur se bornerait \`a comparer cette date avec celle
+de la derni\`ere modification pour chaque fichier. Mais cette strat\'egie comporte une faille~: sous Unix, le fait de renommer un fichier ne change pas sa 
+date de derni\`ere modification. Supposons donc que lors de la pr\'ec\'edente
+synchronisation, $A$ et $B$ contiennent le fichier \emph{projet} et le fichier
+\emph{vieuxprojet}. Puis l'on renomme \emph{projet} en \emph{vieuxprojet} dans
+le syst\`eme de fichiers $A$.
+(instruction ``mv'' sous Unix). Le d\'etecteur consid\`erera donc \emph{vieuxprojet} inchang\'e, contredisant ainsi la propri\'et\'e~\ref{eq:adiffo}.
+La solution sous Unix est d'utiliser les num\'eros d'``inode'' qui eux, 
+identifient un fichier ind\'ependamment de son nom. Ainsi, un fichier est
+consid\'er\'e comme inchang\'e si sa date de derni\`ere modification est
+ant\'erieure \`a celle de derni\`ere synchronisation et si les num\'eros d'
+``inode'' sont les m\^emes.
+Malheureusement, cette strat\'egie \`a la fois pr\'ecise est efficace
+(\'economie de m\'emoire et de temps) n'a pas r\'eellement d'\'equivalent
+ sous Windows qui ne poss\`ede pas cette notion d'``inode''. Nous envisageons
+de le simuler gr\^ace aux num\'eros de fragments, mais cette strat\'egie semble
+soulever quelques difficult\'es.
+\paragraph{D\'etecteur par ``Digest''\\}
+Le dernier type de d\'etecteur que nous d\'ecrirons est le d\'etecteur 
+par ``digest''~: celui-ci conserve en m\'emoire pour chaque fichier 
+une cha\^{\i}ne de carac\`eres codant son contenu. 
+Une bonne r\'esistance aux collisions est souhait\'ee
+afin que deux fichiers faiblement divergents aient deux ``digest''
+diff\'erents.
+Cette strat\'egie est malheureusement sujette \`a transgresser la 
+propri\'et\'e~\ref{eq:adiffo}, \`a cause du caract\`ere non bijectif de la 
+fonction de codage. Elle est de plus tr\`es co\^uteuse en temps car
+elle implique de calculer \`a chaque synchronisation un nombre de
+``digest'' proportionnel au nombre de fichiers du syst\`eme. \\
+Cependant, cette solution est acceptable si l'\'economie de m\'emoire devient
+un enjeu prioritaire. Dans le cas contraire, on pr\'ef\`erera la strat\'egie
+de ``mirroir'' sous Windows et d'``inode'' sous Unix.
+\subsection{Choix des actions}
+L'op\'eration de ``choix des actions'' prend en entr\'ee $A$, $B$ et les trois 
+pr\'edicats \sus{A}, \sus{B} et \isdira{AB}\ pour construire la 
+fonction de choix qui, rappelons le, est une fonction partielle de 
+\path\ dans $\{A \Rightarrow B, B \Rightarrow A, \Conflit \}$.\\
+Nous voulons garantir la propri\'et\'e suivante~:
+\begin{equation} \label{eq:unparchemin}
+direction_{AB}(p) \mbox{\ d\'efinie} \Rightarrow 
+ \forall q \geq p \mbox{\ } \mathit{direction}_{AB}(q) 
+\mbox{\ non d\'efinie}.
+\end{equation}
+C'est ici qu'il nous faut donner de nouvelles d\'efinitions~:
+Nous dirons qu'un chemin $p$ est ambigue relativement \`a deux syst\`emes de
+fichiers $A$ et $B$ ssi
+$(A \not\sim_{p} B)$. Bien que cette nouvelle d\'efinition soit redondante,
+il me semble pratique de donner un nom au pr\'edicat de non-\'equivalence.\\
+Nous poserons par convention que le chemin vide n'est jamais ambigue.
+\begin{defi}
+Nous apellerons \textbf{point d'inflexion} d'un chemin p relativement \`a deux
+syst\`emes de fichiers A et B tels que $A \not\sim_{p} B$ le chemin 
+$q = s.n$ ($n \in \mathcal{N}$ ) tel que
+\begin{equation} \label{eq:infl}
+ \left\{ 
+  \begin{array}{l}
+   A \not\sim_{q} B\\
+   A \sim_{s} B\\
+   p \geq q
+  \end{array}
+\right.
+\end{equation}\\
+Nous le noterons \emph{$\mathit{infl}_{AB}(p)$}
+\end{defi}
+Autrement dit, le point d'inflexion d'un chemin $p$ relativement \`a deux
+syst\`emes de fichiers qui diff\`erent en ce chemin (au sens des chemins)
+est le premier anc\^etre de $p$ qui est ambigue pour le couple $(A, B)$.
+Ce point d'inflexion est encore le premier anc\^etre qui est un
+``relevant path'' (\adv\ ).
+Montrons qu'un tel chemin est bien d\'efini (l'existence est \'evidente)~:
+\begin{lemme}
+Si $p$ est ambigue relativement \`a $A$ et $B$ alors tous ses sous-chemins sont
+ambigues (relativement \`a $A$ et $B$) ou absents dans $A$ et $B$.
+\end{lemme}
+\preuve{du lemme}{
+$A \not\sim_{p} B \Rightarrow (A \not\sim_{p} dir) \vee
+(B \not\sim_{p} dir)$\\
+Si par exemple $( A \not\sim_{p} dir)$ alors $\forall q > p$ \ $A \sim_{q} 
+\perp$ ( propri\'et\'e~\ref{eq:parent} )\\
+donc $\forall q \geq p$ \ $\Rightarrow A \not\sim_{p} B \vee 
+(A \sim_{p} B \sim_{p} \perp)$}
+\preuve{de l'unicit\'e}{
+Raisonnement par l'absurde~:\\
+Supposons que $q1$ et $q2$ ($q1 \neq q2$) v\'erifient les propri\'et\'es \'enonc\'ees ci-dessus.\\
+$p \geq q1 \wedge p \geq q2 \Rightarrow q1 > q2$ (ou $q2 > q1)$\\
+Supposons par la suite que $q1 > q2$\\
+D'o\`u $\exists r \in \path\ $ et $n \in \mathcal{N}$ / $q1 = q2.r.n$\\
+Donc $A \sim_{q2.r} B \not\sim_{q2.r} \perp$ $\wedge A \not\sim_{q2} B$\\
+Ce qui contredit le lemme1.
+}
+Nous exigerons donc de $\mathit{direction}_{AB}$ qu'elle ne soit d\'efinie que pour
+l'ensemble des points d'inflexions de $(A, B)$ not\'e \infl{A}{B}.
+\begin{equation}
+\infl{A}{B} = \{ \mbox{ $p$ / } \exists q \in \path\ A \not\sim_{q} B 
+\wedge p = \infl{A}{B}(q) \}
+\end{equation}
+Notons une fois de plus l'analogie avec la notion de ``relevant path''~:\\
+\begin{equation}
+\infl{A}{B} = \{ p \mbox{\ /  $p$ est un ``relevant path'' } \wedge A
+\not\sim_{p} B\}
+\end{equation}
+\subsection{Ex\'ecution des actions choisies}
+Cette phase a pour but de traduire, \`a partir de $\mathit{direction}_{AB}$ 
+et des deux syst\`emes de fichiers $A$ et $B$, les choix en terme d'actions 
+qui, ex\'ecut\'ees, produisent $A'$ et $B'$.
+On souhaitera tant que possible que les changements se fassent de mani\`ere
+atomique (nous pr\'eciserons dans la section suivante dans quelle mesure).
+On interdira de mani\`ere g\'en\'erale que le syst\`eme soit laiss\'e dans un
+\'etat incoh\'erent. Nous veillerons donc au respect imp\'eratif de la 
+propri\'et\'e suivante, dite de s\'ecurit\'e~:
+\begin{quote}
+Quel que soit le succ\`es de l'ex\'ecution des choix~:
+\prop{
+La valeur de $A'$ (resp.\ $B'$) en un chemin $p$ est soit la valeur de $A$ en 
+$p$ soit celle de $B$.
+}
+{prop:cohe}
+{\forall p \in \path\ A' \sim_{p} A \vee A' \sim_{p} B}
+\\
+\end{quote}
+\subsection{Mise \`a jour de la m\'emoire}
+Une fois les syst\`emes de fichiers r\'econcili\'es, il convient de mettre
+\`a jour l'archive de synchronisation, afin de pouvoir r\'eit\'erer le 
+processus. Le composant \emph{Mise \`a jour de la m\'emoire} a pour entr\'ees 
+$A'$, $B'$, et $O$  et pour sortie
+$O'$. Rapellons que $O'$ et $O$ sont des abstractions, soit l'id\'ee qu'\`a l'utilisateur
+de l'\'etat de synchronisation. Nous restons pour l'instant \`a un niveau de 
+g\'en\'eralit\'e qui nous permet de confondre syst\'eme de fichiers et
+m\'emoire de synchronisation. Nous ne devons pas cependant perdre de vue que
+fondamentalement, ces deux notions sont diff\'erentes, que le synchroniseur 
+ne connait en fait que les m\'emoires et qu'en cons\'equence nous associons 
+ici ces deux notions par souci de simplicit\'e.\\
+Intuitivement, nous voudrions pouvoir garantir la propri\'et\'e suivante~:\\
+\begin{displaymath}
+A' \sim_{p} B' \Rightarrow O' \sim_{p} A' \sim_{p} B'
+\end{displaymath} 
+\begin{displaymath}
+( A' \not\sim_{p} B' ) \Rightarrow O' \sim_{p} O
+\end{displaymath}
+Cette deuxi\`eme propri\'et\'e a \'et\'e longtemps controvers\'ee~: \\
+Ne faudrait-il pas plut\^ot exiger que $O' \sim_{p} \perp$~?\\
+Il nous a finalement fallu l'exemple de la figure~\ref{contrex1} pour nous 
+convaincre de la justesse de cette propri\'et\'e.\\
+Comme nous le ferons dor\'enavant, les boites en pointill\'ees repr\'esenteront
+les chemins que le synchroniseur estime modifi\'es depuis la derni\`ere
+synchronisation. Si nous effacons la m\'emoire de synchronisation \`a 
+l'endroit du conflit d\^u \`a l'absence de fichiers en $A$ et au remplacement
+d'un fichier par un r\'epertoire en $B$, la synchronisation suivante 
+consid\`erera $A$
+inchang\'e et y cr\`eera un r\'epertoire (propagation des changements
+non-conflictuels). Ceci, bien que non-dangereux (aucune d\'el\'etion de
+fichier), est une erreur de d\'etection.\\
+\begin{figure}
+\begin{picture}(300, 300)
+\put(95, 280){\makebox(0, 0)[b]{\Large $A$}}
+\put(235, 280){\makebox(0, 0)[b]{\Large $B$}}
+\put(80, 260){\framebox(30, 15){dir}}
+\put(220, 260){\framebox(30, 15){dir}}
+\put(50, 220){\framebox(30, 15){fichier}}
+\put(190, 220){\framebox(30, 15){fichier}}
+\put(90, 258){\vector(-1, -1){20}}
+\put(230, 258){\vector(-1, -1){20}}
+\put(150, 200){\makebox(0, 0)[b]{\Large $\Downarrow$}}
+\put(95, 180){\makebox(0, 0)[b]{\Large $A$}}
+\put(235, 180){\makebox(0, 0)[b]{\Large $B$}}
+\put(80, 160){\framebox(30, 15){dir}}
+\put(220, 160){\framebox(30, 15){dir}}
+\put(50, 120){\dashbox{1}(30, 15){}}
+\put(190, 120){\dashbox{1}(30, 15){dir}}
+\put(90, 158){\vector(-1, -1){20}}
+\put(230, 158){\vector(-1, -1){20}}
+\put(150, 100){\makebox(0, 0)[b]{\Large $\Downarrow$}}
+\put(95, 80){\makebox(0, 0)[b]{\Large $A$}}
+\put(235, 80){\makebox(0, 0)[b]{\Large $B$}}
+\put(80, 60){\framebox(30, 15){dir}}
+\put(220, 60){\framebox(30, 15){dir}}
+\put(50, 20){\framebox(30, 15){}}
+\put(190, 20){\dashbox{1}(30, 15){dir}}
+\put(90, 58){\vector(-1, -1){20}}
+\put(230, 58){\vector(-1, -1){20}}
+\end{picture}
+\caption{Un conflit doit laisser la m\'emoire inchang\'ee.} \label{contrex1}
+\end{figure}
+Ainsi \'enonc\'ees, ces propri\'et\'es ne remettent-elles pas en question le 
+fait d'avoir $O$ pour entr\'ee~?\\
+La r\'eponse \`a cette question vient d'une autre question~:\\
+ Qu'advient-il de la m\'emoire de synchronisation si une erreur fatale 
+intervient avant l'\'etape de mise \`a jour~?\\
+C'est pour cette raison de s\'ecurit\'e qu'il nous faut
+affaiblir le comportement du composant \emph{Mise \`a jour} en l'autorisant
+\`a retourner $O$ en pr\'esence d'erreurs fatales. Ceci l\'egitime donc 
+son statut d'entr\'ee (voir section Erreurs \`a l'ex\'ecution et cons\'equences).
+        \section{Construction par l'exemple}
+Nous allons ici nous attarder sur le comportement que nous attendons d'un
+synchroniseur sur certains exemples simples, afin ensuite de mieux b\^atir
+notre sp\'ecification. Nous nous concentrerons donc uniquement sur
+l\'etape de \emph{choix des actions}, en supposant l'absence d'erreurs de
+toutes natures.\\
+Nous analyserons dans un premier temps les actions de base sur les fichiers
+puis nous \'etendrons notre \'etude aux modifications de sous-arbres.
+\subsection{Actions de base sur les fichiers}
+La premi\`ere action de base est l'ajout dissym\'etrique de fichiers.
+(figure~\ref{fig:ajout}). Nous attendons du synchroniseur le comportement suivant~:
+ ajout de ce m\^eme fichier en $A$. Ceci nous conduit \`a d\'egager une premi\`ere 
+id\'ee fondamentale~:
+\begin{quote}
+Un synchroniseur se doit de propager les changements non-conflictuels.
+\end{quote}
+Nous ne saurions que trop insister sur le caract\`ere ambigue de cette r\`egle.
+Celle-ci d\'ecrit un comportement g\'en\'eral mais ne se substitue pas \`a une
+sp\'ecification rigoureuse.\\
+\begin{figure}
+\begin{picture}(300, 100)
+\put(95, 80){\makebox(0, 0)[b]{\Large $A$}}
+\put(235, 80){\makebox(0, 0)[b]{\Large $B$}}
+\put(80, 60){\framebox(30, 15){dir}}
+\put(220, 60){\framebox(30, 15){dir}}
+\put(50, 20){\framebox(30, 15){hello}}
+\put(190, 20){\framebox(30, 15){hello}}
+\put(250, 20){\dashbox{1}(30, 15){world}}
+\put(90, 58){\vector(-1, -1){20}}
+\put(230, 58){\vector(-1, -1){20}}
+\put(240, 58){\vector(1, -1){20}}
+\end{picture}
+\caption{ajout d'un fichier dans \large $B$} \label{fig:ajout}
+\end{figure}
+Penchons nous maintenant sur la d\'el\'etion asym\'etrique de fichiers 
+(figure~\ref{fig:efface}). 
+\begin{figure}
+\begin{picture}(300, 100)
+\put(95, 80){\makebox(0, 0)[b]{\Large $A$}}
+\put(235, 80){\makebox(0, 0)[b]{\Large $B$}}
+\put(80, 60){\framebox(30, 15){dir}}
+\put(220, 60){\framebox(30, 15){dir}}
+\put(50, 20){\framebox(30, 15){hello}}
+\put(110, 20){\framebox(30, 15){world}}
+\put(190, 20){\framebox(30, 15){hello}}
+\put(250, 20){\dashbox{1}(30, 15){}}
+\put(90, 58){\vector(-1, -1){20}}
+\put(100, 58){\vector(1, -1){20}}
+\put(230, 58){\vector(-1, -1){20}}
+\put(240, 58){\vector(1, -1){20}}
+\end{picture}
+\caption{d\'el\'etion d'un fichier dans \large $B$} \label{fig:efface}
+\end{figure}
+Nous attendons dans ce cas du 
+synchroniseur qu'il efface ce fichier, d'apr\`es la r\`egle que nous avons mise
+en \'evidence. Bien entendu, la d\'el\'etion de fichiers est un acte pour le 
+moins dangereux, qui nous conduit \`a en exiger la propri\'et\'e suivante~:
+\begin{quote}
+Un synchroniseur n'est autoris\'e \`a effacer un fichier d'un syst\'eme 
+de fichiers qu'en \'echo \`a une action \'equivalente de l'utilisateur sur 
+le syst\`eme cosynchronis\'e.
+\end{quote}
+Cette propri\'et\'e est une garantie que le synchroniseur ne d\'etruit pas
+de fichiers arbitrairement. Nous la v\'erifierons dans le cadre de notre
+sp\'ecification.\\
+La troisi\`eme action de base que l'utilisateur peut effectuer sur un fichier 
+est le renommage. Nous l'avons mentionn\'e ant\'erieurement au sujet des 
+strat\'egies de d\'etection. En fait, du point de vue du synchroniseur, cette 
+action  est \'equivalente au couple (d\'el\'etion, cr\'eation) 
+(figure~\ref{fig:renommage}).
+\begin{figure}
+\begin{picture}(300, 100)
+\put(95, 80){\makebox(0, 0)[b]{\Large $A$}}
+\put(235, 80){\makebox(0, 0)[b]{\Large $B$}}
+\put(80, 60){\framebox(30, 15){dir}}
+\put(220, 60){\framebox(30, 15){dir}}
+\put(50, 20){\framebox(30, 15){hello}}
+\put(190, 20){\dashbox{1}(30, 15){}}
+\put(250, 20){\dashbox{1}(30, 15){word}}
+\put(90, 58){\vector(-1, -1){20}}
+\put(230, 58){\vector(-1, -1){20}}
+\put(240, 58){\vector(1, -1){20}}
+\end{picture}
+\caption{renommage de ``hello'' en ``world'' dans \large $B$} \label{fig:renommage}
+\end{figure}
+Bien s\^ur, il serait moins co\^uteux que le synchroniseur se contente de faire
+un renommage mais c'est impossible~: en effet, le synchroniseur tel que nous 
+le d\'ecrivons n'a aucune information lui permettant de savoir que ``world''
+\'etait auparavant ``hello''.\\
+Le dernier cas de figure (peu fr\'equent pour une utilisation ad\'equate du
+synchroniseur) est celui de \emph{conflit}. Une situation de conflit se 
+rencontre par exemple lorsque l'utilisateur modifie diff\'eremment des
+fichiers \'equivalents sur chaque syst\`eme. Dans ce cas, l'action choisie par
+le synchroniseur est le conflit~: pas d'intervention sur A ni sur B et
+prise en compte de cette information en reportant l'ancienne valeur de la 
+m\'emoire de synchronisation dans la nouvelle au chemin correspondant.
+Nous pouvons maintenant nous int\'eresser au cas plus subtil de la modification
+de sous~arbres.
+\subsection{modification de sous~arbres}
+Il est possible d'\'etendre l'analyse faite ci-dessus aux sous~arbres. 
+C'est ici que resurgit la notion de point d'inflexion d'un chemin ambigue 
+relativement \`a $A$ et $B$. Nous n'avons besoin en effet de d\'efinir le 
+comportement du synchroniseur uniquement en $\mathcal{I}_{AB}$.\\
+Tout chemin ambigue ayant au moins un anc\^etre dans $\mathcal{I}_{AB}$
+(\'evident d'apr\`es la d\'efinition), la nouvelle valeur de $A$ et $B$ en chaque 
+chemin ambigue $p$ se d\'eduit de la fonction $decision_{AB}$ au chemin
+$infl_{AB}(p)$\\
+Ajoutons une nouvelle d\'efinition~:
+\begin{defi}
+Un changement en $A$ (resp.\ $B$) est non-conflictuel au sens des sous~arbres ssi 
+$B =_{p} O$ (resp.\ $A =_{p} O$). 
+\end{defi}
+La fonction de d\'ecision se construit maintenant comme pour les actions de base~:
+\begin{quote}
+Pour chaque \'el\'ement de $\mathcal{I}_{AB}$, un synchroniseur se doit de 
+propager les changements non-conflictuels au sens des sous~arbres.
+\end{quote}
+Finalement, d\'efinir un synchroniseur n'est pas une t\^ache si ardue! Ainsi
+\'enonc\'ee, notre description semble compl\`ete. Oui, mais c'est sans compter
+avec les \ldots
+\section{Erreurs \`a l'ex\'ecution et cons\'equences}
+\label{sec:erreur}
+Nous avons jusqu'ici volontairement pass\'ee sous silence toute possibilit\'e
+de d\'efection du parfait d\'eroulement de la synchronisation. Loin d'\^etre
+secondaire, le traitement des erreurs est un point central de la th\'eorie des
+synchroniseurs. En effet, un logiciel de simulation de boxe peut 
+se permettre d'\'echouer~: le d\'eroulement du programme est interrompu 
+sans aucune garantie sur l'\'etat des donn\'ees internes. Il existe au moins 
+deux bonnes raisons pour lesquelles nous ne pouvons tol\'erer un tel 
+comportement de la part d'un synchroniseur de fichiers~: 
+\begin{itemize}
+\item La synchronisation est un proc\'ed\'e it\'eratif.
+\item Elle manipule les ``pr\'ecieux'' fichiers de l'utilisateur.
+\end{itemize}
+C'est pourquoi il nous faut introduire la notion
+d' \emph{ensemble de r\'esultats possibles}, ce que nous ne manqueront pas de
+faire dans la sp\'ecification. Distinguons d\`es maintenant deux classes d'erreurs~:
+\begin{description}
+\item [type1]~: nous apellerons erreur de type1 toute d\'efaillance non-fatale
+ de la synchronisation~: fichier illisible, rupture de communication r\'eseau,
+archive prot\'eg\'ee en \'ecriture, etc \ldots.\\
+Ce sont typiquement les erreurs dont l'occurence n'interrompent pas la 
+synchronisation, mais la rende partielle.
+\item [type2]~: les erreurs de type2 sont les erreurs fatales~: s\'equence
+de touches \emph{Ctr\_C}, coupure de courant, d\'epassement de la m\'emoire, etc...
+\end{description} 
+\paragraph{conclusion\\}
+Il apparait donc que derri\`ere le caract\`ere intuitif du comportement des
+synchroniseurs se cachent des subtilit\'es th\'eoriques (et techniques) que
+nous n'avons fait qu'\'enum\'erer. C'est pourquoi il nous faut maintenant,
+arm\'es des outils math\'ematiques de ce chapitre et d'une vue globale des
+diff\'erentes \'etapes de la synchronisation, construire une sp\'ecification
+rigoureuse et ceci \`a diff\'erents niveaux.
+\chapter{Specification}
+ Afin de cibler parfaitement le cadre de la sp\'ecification, nous avons eu
+\`a r\'esoudre les probl\`emes suivants~:
+ \begin{itemize}
+  \item Le monde n'est pas parfait~: des erreurs peuvent etre rencontr\'ees a
+        l'ex\'ecution du synchroniseur.
+  \item Devons nous \'ecrire la sp\'ecification en terme de ``chemins'' ou en
+        termes de ``sous~arbres''\footnote{voir chapitre pr\'ec\'edent}?
+  \item Quelles sont les propri\'et\'ees que nous voulons garantir?\\
+\end{itemize}
+
+Tout ceci nous a conduit \`a r\'ealiser plusieures sp\'ecifications.
+\section{Un monde parfait...}
+La premiere sp\'ecification que nous avons concue pour le synchroniseur est pour
+le moins un peu naive, en ce sens qu'elle n'est pas impl\'ementable. En effet,
+elle suppose un monde ou l'utilisateur n'interrompt jamais le programme, ne
+d\'etruit aucun fichier d'archivage, ni ne change les droits d'acc\`es des
+fichiers qu'il tente de synchroniser\footnote{cette liste est loin d'\^etre exhaustive}.
+
+Il nous semble intuitif de pr\'esenter cette sp\'ecification en terme de
+``sous~arbres''~:
+
+Un synchroniseur de fichiers parfait se compose de
+\begin{quote}
+ \begin{description}
+  \item [snc]~: Une fonction de synchronisation 
+ \mbox{(\fs\ * \fs\ * \fs\ ) $\rightarrow$ (\fs\ * \fs\ * \fs\ )}
+ \end{description}
+\end{quote}
+
+Un synchroniseur parfait est \emph{correct} ssi~:
+\[
+\begin{array}{l}
+\forall A, B, O~: \fs\ \\
+\mbox{Si ($A'$, $B'$, $O'$) = $\mathit{snc}$ ($A$, $B$, $O$) alors}\\
+\forall p \in \path\ \\
+\begin{array}{ll}
+ A \sim_{p} B \wedge \mathit{relevant}_{AB}(p) 
+\Rightarrow A' \sim_{p} B' \sim_{p} O' \sim_{p} A\\
+ A \not\sim_{p} B \Rightarrow 
+  \left\{
+   \begin{array}{lll} 
+    A' =_{p} B' =_{p} O' =_{p} B & si & A =_{p} O \\
+    B' =_{p} A' =_{p} O' =_{p} A & si & B =_{p} O \\
+    A' =_{p} A \wedge B' =_{p} B \wedge O' =_{p} O & sinon &
+   \end{array} 
+  \right.
+ \end{array}
+\end{array}
+\]
+Nous ne voyons pas ici appara\^{\i}tre la m\'emoire dont nous avons parl\'e
+jusqu'\`a pr\'esent. En effet, puisque nous nous situons dans un monde
+``parfait'', le processus de synchronisation devient d\'eterministe, ce
+qui rend inutile le concept de m\'emoire.
+        \section{Une sp\'ecification r\'ealiste}
+\label{specglob}
+Malheureusement, tout n'est pas si simple! Nous sommes d'ailleurs \`a peu pr\`es
+certains de n'avoir pas compris parfaitement le processus de synchronisation.
+Je vous propose donc l'\'etat actuel de nos investigations, avec les
+interrogations que cela peut soulever.
+Il s'agit donc principalement d'autoriser les erreurs \`a l'ex\'ecution.
+Tout au long de la lecture de la sp\'ecification, nous garderons \`a
+l'esprit les deux types de d\'efections que nous avons d\'ecrit pr\'ec\'edemment~:\\
+les d\'efaillances fatales (type 1) et les d\'efaillances partielles (type 2).\\
+Nous avons longtemps h\'esit\'e entre deux formes de sp\'ecifications~:
+\begin{itemize}
+\item L'une qui sp\'ecifie les actions au niveau des sous~arbres.
+\item L'autre qui se pr\'eoccupe uniquement des chemins.
+\end{itemize}
+\subsection{Sp\'ecification forte (sous~arbres)}
+J'ai cherch\'e \`a concilier dans la mesure du possible les propri\'et\'es 
+de l'article pr\'ec\'edent (qui traitait de la synchronisation comme un 
+proc\'ed\'e non-it\'eratif) et \`a y int\'egrer les changements auxquels 
+m'a oblig\'e l'impl\'ementation.\\
+Nous devrons ainsi introduire une nouvelle notion~: celle de
+m\'emoire partielle. \\
+Nous noterons \mem\ l'ensemble des m\'emoires partielles, \ensemb\ l'ensemble
+des pr\'edicats de \ensem\ , \error\  l'ensemble \{0, 1, 2\} et \amnes\ la 
+fonction constante \amne\ .\\
+Une \textbf{m\'emoire partielle} est un ensemble de fonctions de 
+$(\ensemb\ \cup \amnes\ )$, index\'ees par les chemins et v\'erifiant les 
+propri\'et\'es suivantes~:
+\prop{Pour chaque fonction de m\'emoire partielle $M$, il existe un 
+syst\`eme de fichier $O$ tel qu'en tout chemin $p$ la r\'eponse de $M$ \`a 
+$O.p$ n'est pas n\'egative. Nous dirons que $O$ est un \textbf{souvenir} de $M$.}
+{propsouv}
+{
+\begin{array}{l}
+\forall M \in \mem\ , \exists O \in \fs\ \\
+\forall p \in \path\ M_{p}(O.p) \neq \mathit{faux}
+\end{array}
+}
+\prop{Si la m\'emoire est amn\'esique pour un chemin $p$, il en est de m\^eme
+pour tous ses descendants.}
+{propdesc}
+{
+\begin{array}{l}
+\forall M \in \mem\ , \forall p \in \path\,\\
+ M_{p} = \amnes\ \Rightarrow (\forall q \geq p, M_{q} = \amnes\ )
+\end{array}
+}
+\prop{Une fonction de m\'emoire partielle ne peut r\'epondre vrai que pour une seule valeur de \dep\ .}
+{propfiable}
+{\forall (f, g) \in \dep\ \mbox{, f} \neq g \wedge M_{p}(f) \mbox{\ = vrai \ } 
+\Rightarrow M_{p}(g) \mbox{\ = faux}}
+Un synchroniseur de fichiers r\'eel se compose de
+\begin{quote}
+ \begin{description}
+  \item [sncReal]~: Une relation de synchronisation\\
+ \mbox{(\fs\ * \fs\ * \mem\ ) * (\fs\ * \fs\ * \mem\ ) * \error\ }
+ \end{description}
+\end{quote}
+Un synchroniseur r\'eel est \emph{correct} si et seulement si~:
+\[
+\begin{array}{l}
+\forall \mbox{\ $M$, $M'$~: \ } \mem\ \\
+\forall \mbox{\ $A$, $B$, $A'$, $B'$~: \ } \fs\ \\
+\forall \mbox{\ $\mathit{erreur}$~: \ } \error\ \\
+\mbox{Si sncReal ($A$, $B$, $M$, $A'$, $B'$, $M'$, $\mathit{erreur}$) alors}\\
+  \begin{array}{l} 
+   \exists \mathit{Mbis} \in \mem\ \\
+   \forall p \in \path\ \\
+\begin{array}{l} 
+ A \sim_{p} B \wedge \mathit{relevant}_{AB}(p) \Rightarrow\\ 
+ \wedge 
+ \left\{
+  \begin{array}{l}
+   A' \sim_{p} B' \sim_{p} A\\
+   \vee 
+    \left\{ 
+     \begin{array}{l}
+      \mathit{Mbis}_{p} = \amnes\ \wedge \mathit{erreur} \geq 1 \\
+      \mathit{Mbis}_{p} \in \ensemb\ 
+       \wedge (\mathit{Mbis}_{p}(f) \Rightarrow f = A.p)
+     \end{array}
+    \right.
+   \end{array} 
+  \right.\\
+ \begin{array}{l}
+  A \not\sim_{p} B\\
+  (q = \mathit{infl}_{AB}(p))
+  \end{array} \Rightarrow 
+   \left\{ 
+    \begin{array}{l} 
+     \forall r \geq q \mbox{\ } M_{r}(A.r) = vraie \Rightarrow \\
+\vee
+       \begin{array}{l} 
+        \left\{ \begin{array}{l}
+         A' =_{q} B' =_{q} B\\
+        \vee 
+         \left\{ 
+          \begin{array}{l} 
+           \mathit{Mbis}_{p} \in \ensemb\ \wedge (\mathit{Mbis}_{p}(f) \Rightarrow f = B.p)\\
+           \mathit{Mbis}_{p} = \amnes\ \wedge \mathit{erreur} \geq 1
+          \end{array}
+         \right. \end{array} \right. \\\\
+        \left\{ 
+         \begin{array}{ll} 
+          \mathit{erreur} \geq 1 \\
+          A' =_{q} A\\
+          B' =_{q} B\\
+          \forall r \geq q \mbox{\ } \mathit{Mbis}_{r} = M_{r} 
+         \end{array} 
+        \right.
+       \end{array} \\
+      \mbox{R\'eciproquement pour $B$.}\\
+      \mbox{Autrement \ } A' =_{q} A \wedge B' =_{q} B \wedge \mathit{Mbis}_{r} = M_{r}.
+     \end{array}
+    \right.
+   \end{array}\\
+  \vee 
+  \left\{ 
+   \begin{array}{ll}
+    M' = M \wedge \mathit{erreur} = 2 \\
+    M' = \mathit{Mbis}
+   \end{array}
+  \right. 
+ \end{array}
+\end{array}
+\]
+Cette sp\'ecification appelle de nombreuses remarques.\\
+Une diff\'erence majeure entre cette sp\'ecification et la pr\'ec\'edente 
+est l'introduction de la m\'emoire. A celle-ci peut correspondre un nombre 
+infini de syst\`emes de fichiers. Nous remarquons par ailleurs,
+que comme indiqu\'e pr\'ec\'edemment, nous autorisons le synchroniseur \`a 
+retourner $M$ comme nouvelle m\'emoire, en cas d'erreurs de type 2. 
+Notons cependant que la pr\'esence d'erreurs n'implique pas n\'ecessairement
+l'\'echec de la synchronisation.\\
+La seconde remarque porte sur les clauses du style $\mathit{Mbis}_{p}(f) 
+\Rightarrow f = B.p$. Pourquoi ici ne pas utiliser une \'equivalence~?
+En fait, nous avons fait un l\'eger abus de notation. La m\'emoire prend en 
+compte d'autres informations que le simple contenu d'un fichier~: date
+de derni\`ere modification, etc\ldots C'est ainsi que nous pouvons obtenir un
+r\'esultat diff\'erent pour deux fichiers de contenu identique. Par ailleurs,
+la propri\'et\'e ~\ref{propsouv} nous garantit que la m\'emoire r\'epond 
+par la positive pour au moins un fichier.\\
+Enfin, nous remarquerons qu'en l'absence d'erreur, un synchroniseur correct 
+devient d\'eterministe, \`a condition de confondre syst\`eme de fichiers 
+et m\'emoire, cette derni\`ere ne pouvant \^etre amn\'esique 
+(r\'ecurrence \'evidente). On la dira alors \emph{totale}.\\
+On peut alors identifier $O$ (synchroniseur parfait) et $M$~: $O$ est l'unique 
+syst\`eme de fichiers pour lequel la m\'emoire totale $M$ est toujours en accord. 
+\subsection{Sp\'ecification faible (chemins)}
+Cette sp\'ecification, due \`a \trevor\ , se compose d'une s\'erie de
+propri\'et\'es.\\
+Un synchroniseur r\'eel est dit \emph{acceptable} ssi~:
+\[
+\begin{array}{ll}
+\forall \mbox{\ $M$, $M'$~: \ } \mem\ \\
+\forall \mbox{\ $A$, $B$, $A'$, $B'$~: \ } \fs\ \\
+\forall \mathit{erreur} \mbox{\~: \ } \error\ \\
+\mbox{Si sncReal ($A$, $B$, $M$, $A'$, $B'$, $M'$, $\mathit{erreur}$) alors}\\
+  \begin{array}{l} 
+   \exists M' \in \mem\ \\
+   \forall p \in \mathcal{P}
+  \end{array}
+\end{array} \\
+\]
+\prop{
+Si le synchroniseur change $A$ (resp.\ $B$) en $p$, c'est pour le faire
+coincider avec un changement fait en $B$ (resp.\ $A$).
+}
+{prop1}
+{\forall p \in \path\ A' \not\sim_{p} A \Rightarrow (A' \sim_{p} B' \sim_{p} B) \wedge 
+(M_{p}(B.p) \neq vrai)}
+\prop{
+Un intervention de l'utilisateur sur le syst\`eme de fichiers $A$ (resp.\ $B$)
+n'est jamais remis en question par le synchroniseur.}
+{prop2}
+{\forall p \in \path\ M_{p}(A.p) \neq vrai \Rightarrow A' \sim_{p} A}
+\prop{
+Un changement non conflictuel doit \^etre propag\'e en l'absence d'erreurs.}
+{prop3}
+{\forall p \in \path\ (\forall q \leq p \wedge \forall q \geq p \mbox{\ } M_{q}(A.q) = vrai)
+  \Rightarrow (A' \sim_{p} B' \sim_{p} B \vee \mathit{erreur} \geq 1)}
+\prop{
+Si $A'$ et $B'$ coincident en un chemin relevant $p$, alors il y a 
+synchronisation en $p$ ou erreur de type 2.}
+{prop4}
+{\forall p \in \path\ A' \sim_{p} B' \wedge \mathit{relevant}_{A'B'}(p) \Rightarrow (M'_{p}(A'.p) \neq faux \vee \mathit{erreur} = 2)}
+\prop{
+Si les m\'emoires $M$ et $M'$ diff\'erent en un chemin $p$, alors $A'$ et $B'$
+sont synchronis\'es en ce chemin et $M'$ est en accord avec eux.
+}
+{prop5}
+{\forall p \in \path\ M'_{p} \neq M_{p} \Rightarrow (A' \sim_{p} B' \wedge M_{p}(A'.p) \neq faux)}
+Cette sp\'ecification est due \`a \trevor\ . Elle a l'avantage d'\^etre plus intuitive,
+moins math\'ematique et repose sur une m\'ethode de conception originale~: g\'en\'eration
+d'un nombre important de propri\'et\'es (voir par la suite) puis s\'election de quelques
+fondamentales. Nous allons voir que la sp\'ecification forte implique la sp\'ecification
+faible qui elle-m\^eme, en l'absence d'erreurs, produit le m\^eme r\'esultat que le
+synchroniseur parfait correct.\\
+Remarquons d\`es maintenant que~:
+\begin{itemize}
+\item Les propri\'et\'es 2 et 3 correspondent \`a la r\`egle g\'en\'erale que nous avons
+\'enonc\'ee au chapitre pr\'ec\'edent.
+\item La propri\'et\'e 1 garantit la propri\'et\'e de s\'ecurit\'e \'enonc\'ee pr\'ec\'edemment
+\ Les propri\'et\'es 4 et 5 sp\'ecifient la mani\`ere dont doit \^etre trait\'ee la
+m\'emoire.
+\end{itemize}
+Nous poserons dans toutes nos d\'emonstrations $q = infl_{AB}(p)$ et nous nous baserons
+sur la sp\'ecification forte.\\
+\preuve{de ~\ref{prop1}}
+{
+\[ 
+(A' \not\sim_{p} A) \mbox{\ n'est possible que dans un cas~:} \left| 
+ \begin{array}{ll}
+   A \not\sim_{p} B\\
+   \forall r \geq q \mbox{\ } M_{r}(A.r) = vrai\\
+   A' =_{q} B' =_{q} B
+ \end{array} \right. 
+\]
+D'o\`u~:
+\[
+\left.
+\begin{array}{l}
+M_{p}(A.p) = vrai\\
+A' \sim_{p} B' \sim_{p} B \not\sim_{p} A\\
+\end{array}
+\right| \Rightarrow (M_{p}(B.p) \neq vrai) 
+\]
+}
+\preuve{de ~\ref{prop2}}
+{\[
+M_{p}(A.p) \neq vrai \Rightarrow
+\vee \left\{ 
+ \begin{array}{l}
+  A \sim_{p} B\\
+  A \not\sim_{p} B \wedge A' =_{q} A\\
+ \end{array} \right|
+\Rightarrow A' \sim_{p} A.
+\]
+}
+\preuve{de ~\ref{prop3}}
+{\[
+\forall q \leq p \wedge \forall q \geq p \mbox{\ } M_{q}(A.q) = vrai \Rightarrow
+\vee \left\{
+\begin{array}{ll}
+\exists r \leq p \mbox{\ } M_{r}(B.r) \neq vrai\\
+A \sim_{p} B\\
+\end{array} \right.\\
+\]
+On conclut ais\'ement dans le deuxi\`eme cas que $A' \sim_{p} B' \sim_{p} B$.\\
+Dans le premier cas, on conclut de m\^eme gr\^ace \`a la sp\'ecification forte,
+puisque le sous arbre entier est conforme \`a la m\'emoire.
+}
+Les deux derni\`eres propri\'et\'es (~\ref{prop4} et ~\ref{prop5}) se d\'eduisent de mani\`ere \'evidente de
+la sp\'ecification forte.
+Nous sommes maintenat \`a m\^eme de prouver le th\'eor\`eme suivant~:
+\begin{theor}
+En l'absence d'erreurs et en supposant la m\'emoire \emph{totale} 
+(isomorphique donc \`a un syst\`eme de fichiers), un synchroniseur de 
+fichiers \emph{acceptable} est un synchroniseur de fichier \emph{parfait
+  correct}.\\
+\preuve{du th\'eor\`eme}{
+D'apr\`es ~\ref{prop1},\\
+$A \sim_{p} B \wedge \mathit{relevant}_{A'B'}(p)
+\Rightarrow O' \sim_{p} A'$.\\
+En effet, si $A' \not\sim_{p} A$, on aurait $A' \sim_{p} B \sim_{p} A$ ce qui
+est absurde.\\
+De m\^eme pour B\\
+Donc on conclut avec ~\ref{prop4}.\\\\  
+D'apr\`es ~\ref{prop3},\\
+$A \not\sim_{p} B \wedge A =_{p} O \Rightarrow A' \sim_{p} B' \sim_{p} B$\\\\
+R\'eciproquement pour B.\\\\
+Dernier cas~:\\
+D'apr\`es ~\ref{prop2}\\
+$A' \not\sim_{p} O \Rightarrow A' \sim_{p} A$\\
+De m\^eme pour B.\\
+Maintenant, la contrapos\'ee du lemme 1 et celle de~\ref{prop5} nous permettent
+de conclure~:\\
+$O' =_{p} O$}
+\end{theor}
+Remarquons que la d\'emonstration du th\'eor\`eme nous a fait utiliser toutes
+les propri\'et\'es que nous avions \'enonc\'ees!
+        \section{Une description plus fine}
+Nous nous attacherons ici \`a construire les composants d'un synchroniseur
+de fichiers tels qu'ils apparaissent sur la figure~\ref{fig:archglob}.
+Nous prouverons ensuite que la mise bout \`a bout de ces composants forme
+un synchroniseur de fichiers \emph{correct}.
+\subsection{D\'etecteur de changements global}
+Nous voulons donner une d\'efinition g\'en\'erale du d\'etecteur de changements,
+et ceci quelle que soit la strat\'egie adopt\'ee. Le probl\`eme r\'eside
+dans le fait que la m\'emoire n'est pas centrale mais distribu\'ee dans la 
+r\'ealit\'e. Nous analyserons plus finement ce ph\'enom\`ene
+dans la section~\ref{sec:plusfin}.\\
+Nous noterons \pred\ l'ensemble des pr\'edicats de \path\ $\rightarrow$ \bool\ .
+Nous noterons \isdir{sA}{sB} pour $(sA, sB) \in$ (\pred\ * \pred\ ) l'ensemble
+des chemins pour lesquels la disjonction de ces deux pr\'edicats est vraie.\\
+Enfin nous noterons \error\ l'ensemble $\{ 0, 1, 2 \}$.
+Ceci \'etant pos\'e, un d\'etecteur de changements global se compose de
+\begin{description} 
+ \item [$\mathit{detectChanges}$]~: Une fonction de d\'etection\\
+ \mbox{\fs\ * \fs\ * \mem\ $\rightarrow$ \pred\ * \pred\ * \isdire\ }
+\end{description}
+Un d\'etecteur de changements global est \emph{correct} si et seulement si~:
+\[
+\begin{array}{l}
+\forall \mbox{\ $M$~: \ } \mem\ \\
+\forall \mbox{\ $A$, $B$~: \ } \fs\ \\
+\forall \sus{A}, \sus{B}, \isdira{A}{B}~: \pred\ \\
+\mbox{Si (\sus{A}, \sus{B}, \isdira{A}{B}) = $\mathit{detectChanges} (A, B, M)$ alors}\\
+\forall p = s.n \in \path\ \\
+ \begin{array}{l} 
+  \mbox{Si \ } (A \sim_{p} \perp \mbox{), \ } \sus{A}(p) \Leftrightarrow
+  A \sim_{s} dir \wedge M_{p}(\perp) \neq vraie\\
+  \mbox{Si \ } (A \not\sim_{p} \perp \mbox{), \ } \sus{A}(p) \Leftrightarrow 
+\vee \left\{ 
+   \begin{array}{l}
+    M_{p}(A.p) \neq vraie.\\
+    \exists q > p \mbox{\ / \sus{A}(q)}
+   \end{array} \right.\\
+\mbox{Sym\'etriquement pour B.}\\
+p \in \isdir{\sus{A}}{\sus{B}} \Rightarrow \left\{
+ \begin{array}{ll}
+  \isdira{A}{B}(p) & si A \sim_{p} B \sim_{p} dir\\
+  \neg \isdira{A}{B}(p) & sinon 
+ \end{array} \right.\\
+p \notin \isdir{\sus{A}}{\sus{B}} \Rightarrow \isdira{A}{B} \mbox{\ n'est pas
+  d\'efinie en $p$.}
+\end{array}
+\end{array}
+\] \\
+Nous sommes \`a m\^eme de faire quelques remarques~:
+\begin{itemize}
+\item Nous avons ici une d\'efinition r\'ecursive. C'est en effet le seul
+moyen de traduire la propri\'et\'e de fermeture par les pr\'efixes.
+\item Nous respectons les propri\'et\'es~\ref{eq:adiffo} et~\ref{eq:upclosed2}
+  \'enonc\'ees au chapitre pr\'ec\'edent.
+\end{itemize}
+Par ailleurs, nous avons les propri\'et\'es suivantes~:\\
+\begin{prop}{
+Si $A$ et $B$ coincident en $p$ au sens des sous~arbres, alors leurs 
+fonctions de suspicion coincident en $p$.}
+{propcoherence}
+{(A =_{p} B) \Rightarrow \sus{A}(p) = \sus{B}(p) }
+\end{prop}
+\begin{prop}{
+Si $p$ est ambigue relativement \`a $A$ et $B$, alors l'une au moins des deux 
+fonctions de suspicion est vraie en $p$.}
+{propdetectchanges}
+{ambigue_{AB}(p) \Rightarrow (\sus{A}(p) \vee \sus{B}(p)) }
+\end{prop}
+\preuve{de ~\ref{propcoherence}}{
+$(A =_{p} B) \Leftrightarrow \forall q \geq p, A \sim_{q} B$\\
+On conclut par une r\'ecurrence \'evidente en remarquant que 
+les pr\'edicats \sus{A} et \sus{B} sont d\'efinis en $p$ uniquement par~:\\
+- La valeur de $M$. \\
+- Les valeurs en $q$ de $A$ et $B$ pour les chemins $q \geq p$. 
+} 
+\preuve{de ~\ref{propdetectchanges}}{
+$A \not\sim_{p} B \wedge \neg \sus{A}(p) \Rightarrow$\\
+$M_{p}(A.p) = vrai \Rightarrow $ (formule~\ref{propfiable}) $M_{p}(B.p) =$ faux \\
+Sym\'etriquement pour $B$\\
+Donc nous avons~: \sus{A}(p) $\vee$ \sus{B}(p).
+}
+\subsection{Compilateur de choix}
+Nous savons que le compilateur de choix doit produire une fonction partielle d\'efinie sur
+\infl{A}{B}. Malheureusement, cette notion est ind\'efinie au niveau de ce composant car
+li\'ee au comportement du d\'etecteur de changements. Nous v\'erifierons donc cette propri\'et\'e
+lorsque nous d\'emontrerons que l'ensemble de composants corrects d\'efini un synchroniseur r\'eel
+correct.\\
+Nous dirons que deux chemins $p$ et $q$ sont \textbf{discordants} relativement \`a $A$, $B$, 
+$sA$, $sB$, $\mathit{isdir}$ ($\mathit{isdir}$ \'etant d\'efini sur \isdir{sA}{sB})
+(et nous noterons $\mathit{discordant}_{AB,sA,sB,isdir}$) ssi~:\\
+\begin{displaymath}
+\vee 
+ \left\{ 
+  \begin{array}{lllll}
+   \sus{A}(p) & \wedge & \neg \sus{B}(p) & \wedge & \neg \mathit{isdir}(p) \\
+   \sus{B}(p) & \wedge & \neg \sus{A}(p) & \wedge & \neg \mathit{isdir}(p) \\
+   \sus{A}(p) & \wedge & \sus{B}(p) & \wedge & (A \not\sim_{p} B)
+  \end{array} 
+ \right. 
+\end{displaymath}\\
+Nous qualifierons un chemin $p$ = $s.n$ ($n \in \mathcal{N}$) de 
+\textbf{point de d\'ecision} relativement \`a deux syst\`emes de fichiers 
+$A$ et $B$ et de trois pr\'edicats $sA$, $sB$ et $\mathit{isdir} \in$ \pred\ 
+(\emph{$\mathit{dec}_{AB,sA,sB,isdir}(p)$}) si~:
+\begin{displaymath}\label{eq:dec}
+\wedge \left\{ \begin{array}{ll}
+ \mathit{discordant}_{AB,sA,sB,isdir}(p)\\ 
+ \neg \mathit{discordant}_{AB,sA,sB,isdir}(s)
+\end{array}
+\right.
+\end{displaymath}\\
+Nous posons par convention que, \`a l'instar de la fonction d'ambiguet\'e,
+ le chemin vide n'est pas discordant.\\
+Par analogie avec \infl{A}{B}, d\'efinissons $\mathcal{D}_{AB,sA,sB,isdir}$~:
+\begin{equation}
+\mathcal{D}_{AB,sA,sB,isdir} = \{ \mbox{\ $p \in$ \path\ / 
+$\mathit{dec}_{AB,sA,sB,isdir}(p)$} \}
+\end{equation} 
+Donnons maintenant la sp\'ecification d'un compilateur de choix.
+Un compilateur de choix se compose de~: 
+ \begin{description}
+  \item [advisor]~: Une fonction de compilation de choix\\
+ \mbox{\fs\ * \fs\ * \pred\ * \pred\ * \pred\ 
+ $\rightarrow (\path\ \rightharpoonup \{ A \Rightarrow B, B \Rightarrow A, \Conflit \} ) $}
+ \end{description}
+Un compilateur de choix est \emph{correct} si et seulement si~:
+\[
+\begin{array}{l}
+\forall \mbox{\ $A$, $B$,~: \ } \fs\ \\
+\forall \mbox{($sA$, $sB$, \isdira{A}{B}) \ } \in \pred\ \\
+\mbox{Si $\mathit{decision}_{AB,sA,sB,\isdira{A}{B}}$ = 
+advisor ($A$, $B$, $sA$, $sB$, \isdira{A}{B}) alors}\\ 
+ \begin{array}{ll}
+   p \notin \mathcal{D}_{AB,sA,sB,\isdira{A}{B}} \Rightarrow \mathit{decision}_{AB,sA,sB,\isdira{A}{B}}(p) \mbox{\ n'est pas d\'efinie}\\
+   p \in \mathcal{D}_{AB,sA,sB,\isdira{A}{B}}  \Rightarrow \wedge \left\{ 
+   \begin{array}{ll} 
+    \mathit{decision}_{AB,sA,sB,\isdira{A}{B}}(p) \mbox{\ est d\'efinie}\\
+    \mathit{decision}_{AB,sA,sB,\isdira{A}{B}}(p) = \left\{ 
+      \begin{array}{ll}
+        A \Rightarrow B & \mbox{si \ } \neg sB(p)\\
+        B \Rightarrow A & \mbox{si \ } \neg sA(p)\\
+        \Conflit        & \mbox{si \ } sA(p) \wedge sB(p)
+      \end{array} \right.
+   \end{array} \right.
+ \end{array}
+\end{array}
+\]\\
+On peut se repr\'esenter pr\'ecis\'ement le r\^ole du compilateur de choix~:\\
+Il r\'ecolte des informations de chaque part et tente de proposer des 
+solutions pour chaque d\'esaccord si tant est que celui-ci est 
+pr\'ec\'ed\'e d'un accord.\\
+On se rend ais\'ement compte qu'une telle t\^ache est impossible si les 
+informations sont contradictoires. Ainsi, de m\^eme ici, le comportement 
+du compilateur de choix se r\'ev\`ele incoh\'erent en pr\'esence de 
+pr\'edicats quelconques. 
+Le d\'etecteur de changements et le cpmpilateur de choix sont donc 
+profond\'ement imbriqu\'es, le premier produisant une information 
+coh\'erente mais illisible, et le second capable de la
+d\'echiffrer mais impuissant face aux contradictions.\\
+C'est pourquoi nous avons h\'esit\'e \`a pr\'esenter ces deux composants s\'epar\'ement.
+Le choix s'est fait en regard de l'impl\'ementation que nous proposons, 
+mais le d\'ebat ne semble pas clos pour autant.
+\subsection{Agent d'ex\'ecution}
+Nous avons pour l'instant dans cette section oubli\'e les erreurs. En effet,
+le d\'etecteur de changements comme le compilateur de choix ne modifient 
+pas les donn\'ees internes au synchroniseur. Nous consid\`ererons donc 
+qu'il n'y a pas eu synchronisation si le programme \'echoue avant l'\'etape 
+pr\'esente~: l'ex\'ecution.\\
+Le r\^ole de l'agent d'ex\'ecution est simple~: effectuer des op\'erations conform\'ement
+\`a un plan pr\'ealablement \'etablit.\\
+\begin{defi}
+On dira de deux chemins $p$ et $q$ qu'ils sont \textbf{disjoints} et on 
+notera \disjoint\ $(p, q)$ si et seulement si $p$ n'est ni un descendant ni 
+un anc\^etre de $q$.
+\end{defi}
+\begin{equation}
+\disjoint\ (p, q) \Leftrightarrow \neg(p \geq q \vee q \geq p)
+\end{equation}
+\begin{defi}
+On apellera ensemble de chemins disjoint et on notera \disjoint\ 
+($p1$, $p2$, \ldots, $pn$)
+un ensemble de chemins $p1$, $p2$, \ldots, $pn$ deux \`a deux disjoints.
+\end{defi}
+On notera encore \disjoint\ l'ensemble des ensembles de chemins disjoints.\\
+Nous pouvons maintenant donner la sp\'ecification d'un agent d'ex\'ecution.
+Un agent d'ex\'ecution se compose de~: 
+\begin{quote}
+ \begin{description}
+  \item [\plan\ ]~: Type des fonctions~: \path\ $\rightharpoonup \{ A \Rightarrow B, B \Rightarrow A, 
+  \Conflit \}$
+  \item [transport]~: Une relation d'ex\'ecution\\
+ \mbox{(\fs\ * \fs\ * \plan\ ) * (\fs\ * \fs\ * \error\ ) }
+ \end{description}
+\end{quote}
+Un agent d'ex\'ecution est \emph{correct} si et seulement si~:
+\[
+\begin{array}{l}
+\forall \mbox{\ $A$, $B$, $A'$, $B'$~: \fs\ }\\
+\forall \mbox{\ $\mathit{erreurTA}$~: \error\ }\\
+\forall \mbox{\ $\mathit{plan}$ } \in \plan\ \mbox{\ / $D$ = \ } \ddef\ (\mathit{plan}) \in
+\disjoint\ \\
+\mbox{Si transport($A$, $B$, $\mathit{plan}$, $A'$, $B'$, 
+$\mathit{erreurTA}$) alors}\\ 
+\forall $p$, \neg (\exists \mbox{\ $q \in D$ / \ } p \geq q) \Rightarrow
+\left\{
+\begin{array}{l}
+ A' \sim_{p} A\\
+ B' \sim_{p} B  
+\end{array} \right.\\
+\forall p \in D \left\{
+ \begin{array}{ll}
+  \mathit{plan}(p) = \Conflit \Rightarrow (A' =_{p} A \wedge B' =_{p} B)\\
+  \mathit{plan}(p) = (A \Rightarrow B) \Rightarrow \vee \left\{
+   \begin{array}{ll}
+    A' =_{p} B' =_{p} A\\
+    A' =_{p} A, B' =_{p} B \wedge \mathit{erreurTA} \geq 1 
+   \end{array} \right.\\
+  \mbox{Sym\'etriquement pour (B $\Rightarrow$ A)}
+ \end{array} \right.
+\end{array}
+\]\\
+Un agent d'ex\'ecution requiert donc un plan sur un ensemble de chemins ind\'ependants.
+Cela garantit en effet la possibilit\'e d'effectuer les actions d\'ecrites~: elles
+n'interf\`erent pas les unes avec les autres. \\
+Notons que les actions sont r\'ealis\'ees aux niveaux des sous~arbres; c'est ce que nous
+appellerons la propri\'et\'e d'atomicit\'e de l'agent d'ex\'ecution~: l'action n'est jamais 
+r\'ealis\'ee partiellement. Malheureusement, ceci met notre impl\'ementation en \'echec
+dans certaines situations interm\'ediaires de dur\'ees n\'eammoins assez
+courtes pour rendre la probabilit\'e d'une telle erreur n\'egligeable.\\
+Il nous apparait ici que nous respectons la propri\'et\'e de s\'ecurit\'e
+(\'equation~\ref{prop:cohe}), ce dont nous nous servirons par la suite.
+\subsection{M\'emoriseur de synchronisation}
+Nous allons d\'ecrire maintenant le dernier composant du synchroniseur.
+Sa sp\'ecification se trouve \^etre nettement ind\'ependante, m\^eme dans 
+notre sp\'ecification de la section~\ref{specglob}.
+Ainsi, un m\'emoriseur de synchronisation se compose de
+\begin{description}
+\item [\error\ ] = \{ 0, 1, 2 \}~: Type des erreurs.
+\item [markUpdated]~: Une relation de m\'emorisation de synchronisation\\
+ \mbox{\fs\ * \fs\ * \mem\ * \mem\ }
+\end{description}
+Un m\'emoriseur de synchronisation est \emph{correct} si et seulement si~:
+\[
+\begin{array}{l}
+\forall \mbox{\ $\mathit{erreurIN}$, $\mathit{erreurMU}$~: \error\ }\\
+\forall \mbox{\ $A'$, $B'$~: \fs\ }\\
+\forall \mbox{\ $M$, $M'$~: \mem\ }\\
+\mbox{Si markUpdated($A'$, $B'$, $\mathit{erreurIN}$, $M$, $M'$, $\mathit{erreurMU}$) alors}\\
+\mathit{erreurMU} \geq \mathit{erreurIN}\\
+ \exists \mathit{Mbis} \in (\ensemb\ ) \cup \amnes\ \\
+ \forall p \in \path\ \\
+  \begin{array}{lll}
+   A' \sim_{p} B' \wedge \mathit{relevant}_{A'B'}(p) &
+   \Rightarrow & \vee 
+    \left\{ 
+     \begin{array}{l}
+      \mathit{Mbis}_{p} \in \ensemb\ \wedge (\mathit{Mbis}_{p}(f) \Rightarrow f = A'.p)\\
+      (\forall q \geq p \mathit{Mbis}_{q} = \amnes\ ) \wedge \mathit{erreurMU} \geq 1
+     \end{array}
+    \right. \\
+    A' \not\sim_{p} B' & \Rightarrow & \forall q \geq p \mbox{\ } \mathit{Mbis}_{q} = M_{q} 
+  \end{array}\\\\
+\vee
+ \left\{ 
+  \begin{array}{ll}
+   M' = M \wedge \mathit{erreurMU} = 2 \\
+   M' = \mathit{Mbis}
+  \end{array}
+ \right.\\
+\end{array}
+\]\\
+Il est important de bien comprendre ici le r\^ole de $\mathit{Mbis}$~: il est la repr\'esentation
+que l'utilisateur se fait de l'\'etat de synchronisation. Comme nous l'avions justement
+fait remarquer au chapitre pr\'ec\'edent dans le paragraphe traitant de la mise \`a jour
+de la m\'emoire, le synchroniseur peut retourner $M$ en cas d'erreur
+fatale. C'est cette propi\'et\'e anodine en l'apparence qui permet
+l'it\'eration du processus de synchronisation~: il n'\'echoue jamais.\\
+\section{Allons au fond des choses}
+\label{sec:plusfin}
+C'est par le caract\`ere non-d\'eterministe de la production des \'el\'ements de
+\mem\ que ce trouve englob\'ee la gestion de certaines erreurs de types 1 et 2.\\
+Nous r\'ealisons ici toute l'importance du concept de m\'emoire qui pr\'esente le 
+double avantage d'\^etre intuitif et souple.\\
+Mais le lecteur attentif soul\`evera une difficult\'e que nous avons effectivement occult\'ee~:
+Comment peut on parler d'une m\'emoire unique, alors que nous avons affaire \`a un processus 
+distribu\'e?\\ 
+Nous ne centralisons pas en effet la d\'etection de changements ni la 
+m\'emorisation de synchronisation,
+ce qui implique donc un d\'edoublement de la m\'emoire. Qu'arriverait-il 
+donc si, \`a l'occasion d'un probl\`eme de communication ou autre,
+les deux m\'emoires se trouvaient ne plus coincider~? Nous sortirions alors 
+de nos sp\'ecifications de d\'etecteur de changements et de m\'emoriseur de
+ synchronisation, ce qui pourrait accasionner de graves disfonctionnements 
+du synchroniseur comme les d\'el\'etions tant redout\'ees de l'utilisateur.
+Nous voici donc obliger de cr\'eer une nouvelle d\'efinition et deux 
+nouveaux composants.\\
+\begin{defi}
+Nous dirons que deux m\'emoires $M$ et $M'$ sont \textbf{compatibles} en un 
+chemin $p$ (et nous noterons \comp{p}{M1}{M2}) si elles ont un souvenir 
+commun $O$ ou, de mani\`ere \'equivalente, les deux fonctions de m\'emoires 
+$M1_{p}$ et $M2_{p}$ appliqu\'ees \`a un m\^eme \'el\'ement de 
+$\mathcal{F} \uplus \{dir, \perp \}$ ne peuvent \`a la fois
+r\'epondre $\mathit{vrai}$ et $\mathit{faux}$. Nous \'etendons 
+cette d\'efinition en d\'eclarant deux m\'emoires compatibles si elles le sont en tout chemin.
+\end{defi}
+Ainsi muni de cette nouvelle notion, nous pouvons d\'efinir et d\'ecrire un unificateur 
+et un duplicateur de m\'emoire.
+Ainsi, un duplicateur de m\'emoire se compose de
+\begin{description}
+\item [duplicateMemory]~: Une relation de duplication de m\'emoire\\
+ \mbox{\mem\ * (\mem\ * \mem\ )}
+\end{description}
+Un duplicateur de m\'emoire est \emph{correct} si et seulement si~:
+\[
+\begin{array}{ll}
+\forall \mbox{\ $M$, $M1$, $M2$ \ } \in \mem\ \\
+\mbox{Si duplicateMemory ($M$, $M1$, $M2$) alors} \\
+\begin{array}{l}
+\compa{M1}{M2} \\
+\forall p \in \path\ \\
+\forall N \in \mem\ \\
+\comp{p}{M}{N} \Rightarrow (\comp{p}{M1}{N} \vee \comp{p}{M2}{N})
+\end{array} 
+\end{array}
+\]
+Nous ne demandons en fait au duplicateur de m\'emoire que de cr\'eer deux 
+m\'emoires compatibles et qu'en chaque chemin, l'une d'elle au moins soit 
+compatible avec la m\'emoire originale. Ce composant en bien s\^ur 
+utilis\'e en sortie du m\'emoriseur de synchronisation. Nous pouvons 
+remarquer que ceci nous conduit \`a un nombre restreint de possibilit\'es~:\\
+\[
+\begin{array}{ll}
+M_{p} \mbox{\ amn\'esique} \Rightarrow M1_{p} \mbox{\ amn\'esique} \vee
+M2_{p} \mbox{\ amn\'esique}\\
+\forall f \in  \mathcal{F} \uplus \{dir, \perp \} \mbox{,\ } M_{p}(f)
+\mbox{\ } vrai \Rightarrow M1_{p}(f) \neq faux \wedge M2_{p}(f) \neq faux\\
+\forall f \in  \mathcal{F} \uplus \{dir, \perp \} \mbox{,\ } M_{p}(f)
+\mbox{\ } faux \Rightarrow M1_{p}(f) \neq vrai \wedge M2_{p}(f) \neq vrai\\
+\end{array}
+\]
+Ceci nous suffit pour nous assurer de l'utilit\'e de l'op\'eration 
+d'unification.\\
+Un unificateur de m\'emoire se compose de
+\begin{description}
+\item [reconcileMemory]~: Une relation d'unification de m\'emoire\\
+ \mbox{(\mem\ * \mem\ ) * \mem\ }
+\end{description}
+Un unificateur de m\'emoire est \emph{correct} si et seulement si~:
+\[
+\begin{array}{ll}
+\forall \mbox{\ $M1$, $M2$, $M'$ \ } \in \mem\ \\
+\mbox{Si reconcileMemory ($M1$, $M2$, $M'$) alors}\\
+\begin{array}{l}
+\forall p \in \path\ \\
+\forall N \in \mem\ \\
+\comp{p}{M1}{N} \vee \comp{p}{M2}{N} \Rightarrow \comp{p}{M'}{N}
+\end{array}
+\end{array}
+\]
+Le r\^ole donc de l'unificateur de m\'emoire est de retourner une m\'emoire 
+tol\'erant ce que tol\`ere exactement l'union des deux m\'emoires. Celui ci 
+sera donc invoqu\'e avant la d\'etection de changements. Pr\'ecisons 
+cependant que le but n'est pas d'\'eliminer une m\'emoire, mais au contraire
+d'appliquer ce composant sur chaque ordinateur local, afin d'obtenir
+deux m\'emoires parfaitement identiques.\\
+Nous ne d\'emontrerons pas ici en d\'etail, mais ceci est ais\'e, que si 
+nous mettons bout \`a bout un duplicateur et un unificateur de m\'emoire, 
+nous obtenons la propri\'et\'e suivante~:\\
+$\forall N \in \mem\ , \compa{M}{N} \Rightarrow \compa{M'}{N}$\\
+Nous ne nous int\'eresserons plus par la suite \`a ce probl\`eme et nous
+supposerons que la 
+m\'emoire n'est pas distribu\'ee, identification que nous permet la
+propri\'et\'e \'enonc\'ee, m\^eme si nous ne le justifions pas.
+\section{De l'atome \`a la mol\'ecule.}
+\label{sec:coh}
+Apr\'es donc avoir d\'etaill\'e les diff\'erents modules composant un synchroniseur, il convient
+de v\'erifier que, si nous assemblons des modules corrects dans l'ordre qui est celui de la section 
+pr\'ec\'edente, nous optenons un synchroniseur r\'eel correct.\\
+Nous r\'ealiserons cette d\'emonstration (dont nous avons d\'ej\`a un certain
+nombre d'\'el\'ements) en deux \'etapes~:\\
+\begin{description}
+\item Nous v\'erifierons dans un premier temps que les sorties des 
+composants v\'erifient les propri\'et\'es attendues par les \'el\'ements 
+suivant (compatibilit\'e) ce qui nous permettra
+d\'ej\`a de d\'egager quelques propri\'et\'es.
+\item Nous reprendrons ensuite une \`a une les clauses de la sp\'ecification d'un synchroniseur
+r\'eel et nous montrerons qu'elles sont respect\'ees (coh\'erence).
+\end{description} 
+\subsection{Compatibilit\'e}
+Nous allons successivement ajouter \`a un d\'etecteur de changements correct un compilateur de
+choix correct, un agent d'ex\'ecution correct puis un m\'emorisateur de synchronisation correct,
+en nous interrogeant sur la l\'egalit\'e de chacune de ces op\'erations.
+\begin{theor}
+ Il est l\'egal d'assembler dans l'ordre un d\'etecteur de changements
+ global correct, un compilateur de choix correct, un agent d'ex\'ecution
+ correct et enfin un m\'emoriseur de synchronisation correct.
+\end{theor}
+\paragraph{D\'etecteur de changements global / compilateur de choix\\}
+Nous identifions les syst\`emes de fichiers $A$ et $B$ des deux 
+sp\'ecifications, ainsi que \sus{A} et $sA$, et \sus{B} et $sB$ ce qui est 
+parfaitement l\'egal.
+\prop{Le domaine de d\'efinition de la fonction de d\'ecision produite par l'adjonction 
+d'un compilateur de choix correct \`a un d\'etecteur de changements global correct en pr\'esence de 
+deux syst\`emes de fichiers $A$ et $B$ est exactement~\infl{A}{B}}
+{propconnect}
+{\begin{array}{l}
+(\sus{A}, \sus{B}, \isdira{A}{B}) \mbox{\ = detect($A$, $B$, $M$) pour $M$} \in \mem\ \\
+\Rightarrow D_{AB, \sus{A}, \sus{B}} = \infl{A}{B}
+\end{array}}
+Afin de donner la preuve de cette propri\'et\'e, nous d\'emontrons un nouveau lemme.
+\begin{lemme}
+Sous les conditions de~\ref{propconnect}, les propri\'et\'es de discordance et d'ambiguet\'e sont
+\'equivalentes~:\\
+\[
+\begin{array}{l}
+ (\sus{A}, \sus{B}) \mbox{\ = detect($A$, $B$, $M$) pour $M$ } \in \mem\ \Rightarrow\\
+ \forall p \in \mathcal{P} \mbox{, \ } \mathit{discordant}_{A, B, \sus{A},
+ \sus{B}}(p) \Leftrightarrow A \not\sim_{p} B
+\end{array} 
+\]
+\end{lemme}
+\preuve{du lemme}{
+\mbox{\large $\Rightarrow$}\\
+D'apr\`es la formule~\ref{propdetectchanges},\\
+\[
+A \not\sim_{p} B \Rightarrow \vee \left\{ 
+\begin{array}{lllll}
+ \sus{A}(p) & \wedge & \sus{B}(p) & \wedge & A \not\sim_{p} B\\
+ \sus{A}(p) & \wedge & \neg \sus{B}(p) & \wedge & \neg \isdira{A}{B}(p) \\
+ \neg \sus{A} & \wedge & \sus{B}(p) & \wedge & \neg \isdira{A}{B}(p)
+\end{array} \right.
+\] \\
+Donc, dans tous les cas, nous avons $\mathit{discordant}_{A, B, \sus{A}, \sus{B}}(p)$ \\\\
+\mbox{\large $\Leftarrow$}\\
+\[
+\begin{array}{l}
+\mathit{discordant}_{AB, \sus{A}, \sus{B}}(p) \Rightarrow \vee \left\{
+\begin{array}{lllll}
+ \sus{A}(p) & \wedge & \sus{B}(p) & \wedge & A \not\sim_{p} B\\
+ \mbox{(formule~\ref{propcoherence})} & & (A \neq_{p} B) & \wedge & \neg \isdira{A}{B}(p)
+\end{array} \right.
+\end{array}
+\]\\
+Nous avons donc dans les deux cas $A \not\sim_{p} B$
+}
+\preuve{de ~\ref{propconnect}}{
+Le lemme nous apprend que~:\\
+$A \not\sim_{p} B \Leftrightarrow \mathit{discordant}_{A, B, \sus{A}, \sus{B}}(p)$
+Or l'ensemble des points d'inflexion et de points de d\'ecision est construit
+exactement de la m\^eme mani\'ere \`a partir respectivement des pr\'edicats
+d'ambiguet\'e et de discordance(voir \'equations~\ref{eq:infl} et
+~\ref{eq:dec}).\\
+Ce qui nous permet de conclure.}
+\paragraph{Ajout de l'agent d'ex\'ecution\\}
+Nous identifierons ici $\mathit{decision}_{A, B, M}$(p) et $\mathit{plan}$ 
+gr\^ace \`a la propri\'et\'e suivante~:
+\begin{propri}
+l'ensemble de d\'efinition de la fonction $\mathit{decision}_{A, B, M}$ 
+produite par l'association d'un d\'etecteur de changements global correct et
+ d'un compilateur de choix correct en pr\'esence de deux syst\`emes de 
+fichiers $A$ et $B$ et de $M \in$ \mem\ est \emph{disjoint}
+\end{propri}
+\preuve{de la propri\'et\'e}{
+Nous venons en effet de d\'emontrer que \ddef\ 
+$\mathit{decision}_{A, B, M}$ = \infl{A}{B}. Or nous avons construit cet 
+ensemble de mani\`ere \`a ce qu'il soit disjoint. D'o\`u la propri\'et\'e.}
+Nous pouvons donc ajouter \`a l'\'edifice le dernier composant~: le
+m\'emoriseur de synchronisation, en prenant en entr\'ee $M$, $A'$, $B'$ et
+$\mathit{erreurTA}$, ce qui ne pose aucun probl\`eme de compatibilit\'e.\\
+Il ne nous reste plus maintenant \`a v\'erifier que nous avons effectivement
+construit un synchroniseur...
+\subsection{Coh\'erence}
+Nous allons donc, dans cette section v\'erifier une \`a une que les clauses de la 
+sp\'ecification d'un synchroniseur r\'eel correct se d\'eduisent de l'assemblage
+des diff\'erentes composantes.\\
+\begin{theor}
+La juxtaposition, dans l'ordre, d'un d\'etecteur de changements correct,
+d'un compilateur de choix correct, d'un agent d'ex\'ecution correct et
+d'un m\'emoriseur de synchronisation correct a pour r\'esultat un 
+synchroniseur de fichiers correct.
+\end{theor}
+\clause{A \sim_{p} B \wedge \mathit{relevant}_{AB}(p)}{
+La propri\'et\'e de s\'ecurit\'e (\'equation~\ref{prop:cohe}) nous permet de dire~:
+\[
+A \sim_{p} B \Rightarrow A' \sim_{p} B' 
+\] \\
+Et nous concluons gr\^ace \`a la sp\'ecification du m\'emoriseur de
+synchronisation qui reprend exactement la sp\'ecification globale.
+}
+\clause{A \not\sim_{p} B \wedge q = \mathit{infl}_{AB}(p) \wedge 
+\forall r \geq q \mbox{\ } M_{r}(A.r) = vrai}{
+La sp\'ecification du compilateur de choix implique~:\\
+\[
+  \left.
+  \begin{array}{l}
+   \neg \sus{A}(q)\\
+   \mbox{q est point de d\'ecision}
+  \end{array} \right\} \Rightarrow  (\mathit{plan}(q) = B \Rightarrow A) 
+\] \\
+On en d\'eduit, gr\^ace \`a la sp\'ecification de l'agent d'ex\'ecution~:\\
+\[ \vee \left\{
+  \begin{array}{ll}
+   (1) & A' =_{q} B' =_{q} = B_{q} \wedge \mathit{relevant}_{A'B'}(q) \\
+   (2) & \wedge \left\{ 
+  \begin{array}{l}
+   A' =_{q} A\\ 
+   B' =_{q} B\\
+   A' \not\sim_{p} B'\\
+   \mathit{erreur1} \geq 1
+  \end{array} \right. 
+  \end{array} \right. 
+\] \\
+Dans les cas (1) et (2), on conclut ais\'ement par la sp\'ecification du
+m\'emoriseur de synchronisation.}
+\clause{A \not\sim_{p} B \wedge q = \mathit{infl}_{AB}(p) \wedge \forall r 
+\geq q \mbox{\ } M_{r}(B.r) = vrai}
+{La d\'emonstration est exactement la m\^eme en changeant les r\^oles de A et
+  B}
+\clause{A \not\sim_{p} B \wedge q = \mathit{infl}_{AB}(p) \wedge \exists 
+(r1, r2) \geq q M_{r1}(A.r1) \neq vrai \wedge M_{r2}(B.r2) \neq vrai}
+{D'apr\`es la sp\'ecification du d\'etecteur de changements global~:\\
+\[
+\left.
+\begin{array}{l}
+\sus{A}(q) \wedge \sus{B}(q)\\
+\mbox{ q est point de d\'ecision}\\
+\end{array}
+\right\} \Rightarrow \mathit{plan}(q) = \mathit{Conflit}\]\\
+L'agent d'ex\'ecution nous apprend alors que~:
+\[
+\left\{
+\begin{array}{l}
+A' =_{q} A\\
+B' =_{q} B
+\end{array} 
+\right. \Rightarrow A' \not\sim_{q} B'
+\]\\
+Le m\'emoriseur de synchronisation nous dit enfin~:
+$\forall q \geq p, \mathit{Mbis}_{q} = M_{q}$ 
+}
+La derni\`ere clause concernant la m\'emoire \'etant  rigoureusement 
+identique dans la sp\'ecification du m\'emoriseur de synchronisation,
+nous avons ainsi v\'erifi\'e toutes les clauses.\\
+Nous avons donc, sur le papier, construit un synchroniseur de fichier 
+avec ses diff\'erents composants.\\
+Il est temps maintenant de changer d'horizon, et de passer de la th\'eorie \`a la 
+pratique.
+\chapter{Let us talk OCaml now!}
+\paragraph{Pourquoi OCaml ?\\}
+Je dois en grande partie au langage Java ma pr\'esence sur le continent 
+am\'ericain. La synchronisation est un processus par essence distribu\'e,
+ce qui exige une certaine compatibilit\'e. En effet, nous retrouverons dans une
+grande majorit\'e des cas un utilisateur poss\'edant un terminal Unix 
+\`a son lieu de travail et un ordinateur portable fonctionnant sous 
+Windows \`a son domicile. Ainsi donc il nous faut synchroniser des
+architectures de fichiers diff\'erentes.
+Heureusement, celles ci sont assez proches pour que l'on puisse \'ecrire
+un programme fonctionnant en th\'eorie sur ces deux syst`emes d'exploitation.
+Oui, mais c'est sans compter sur le langage JAVA qui fournit une librairie
+tr\`es haut niveau pour les communications entre ordinateurs, mais qui 
+contient des ``bogues'' diff\'erents selon les versions.\\
+C'est ainsi que le pr\'ec\'edent synchroniseur, par ailleurs tr\`es
+bien concu, se r\'ev\`ele fragile en fonctionnement distribu\'e.
+C'est pourquoi \adv\ d\'esirait une version du synchroniseur de fichiers
+dans un langage diff\'erent; son choix s'est port\'e sur le langage 
+fonctionnel OCaml, langage dont je connaissais les bases \`a mon arriv\'ee,
+ce qui nous a largement facilit\'e la t\^ache.
+\section{Pr\'esentation du projet}
+\paragraph{Fonctionnement g\'en\'eral\\}
+Principalement, le synchroniseur fonctionne comme d\'ecrit dans le formalisme
+du chapitre pr\'ec\'edent, \`a cela pr\`es qu'il autorise \`a modifier la 
+fonction de d\'ecision, mais non son domaine de d\'efinition(voir figure~\ref{fonctionnement}).
+En effet, le prgoramme principal s'informe des changements effectu\'es,
+pr\'esente \`a l'utilisateur la fonction de d\'ecision standarde, puis effectue
+les changements et affiche le r\'esultat des op\'erations.\\
+Notons ici que l'impl\'ementation donnne plus de pr\'ecision sur les erreurs 
+de type 1 que la sp\'ecification~: elle informe l'utilisateur pr\'ecisemment 
+des actions qui \'echouent. Une erreur de type 2 se traduit par l'arr\^et 
+imm\'ediat du programme.\\
+Ajoutons encore que nous procurons une fonctionnalit\'e suppl\'ementaire, \`a
+savoir la possibilit\'e d'ignorer certains chemins, \`a l'aide d'expressions
+r\'eguli\`eres. En effet, il semble plausible que l'on ne souhaite pas prendre
+en compte les fichiers temporaires, par exemple.\\
+Passons maintenant au mode d'emploi...
+\paragraph{Options et ligne de commande\\}
+Si vous essayez de lancer \unison\ en tapant par exemple~:
+\begin{verbatim}
+\unison\ -p systeme1 systeme2 -path chemin1 -path chemin2
+\end{verbatim}
+Vous verrez immanquablement apparaitre le message suivant~:\\
+\begin{verbatim}
+Usage: unison [options] file_sys1 file_sys2 [-path path1 path2 .. pathn ]
+
+Options: 
+  -all          display all files (not just changed ones)
+  -archive      type of archive
+  -auto         batch mode with no questions
+  -backups      keep backup copies when propagating changes
+  -com          type of protocol for network communications
+  -f            create automatically new archives
+  -ignore       list of regular expression to ignore
+  -log          save network communications in a log
+  -mode         run mode of synchronizer
+  -parano       High security protocol for remote copies
+  -path         paths to synchronize
+  -rest         filesystems to synchronize
+  -servercmd    name to use to invoke remote server
+  -timers       print timing information
+  -trace        print tracing information
+  -ui           type of user interface
+  -v            print version and exit
+\end{verbatim}
+Deux arguments sont obligatoires, \`a savoir les deux syst\`emes de fichiers.
+Nous pouvons aussi pr\'eciser des chemins que nous voulons synchroniser \`a
+l'aide de l'option ``-path''. En l'absence de tels chemins, le synchroniseur
+prendra par d\'efaut la racine.\\
+Pr\'esentons quelques unes de ces options~:
+\begin{description}
+\item [all] Affiche tous les fichiers contenus dans les deux syst\`emes, de 
+la racine aux points d'inflexions. Bien entendu, ceci est juste \`a titre
+d'information et ne change pas le fonctionnement du synchroniseur.
+\item [archive] Pr\'ecise la strat\'egie de d\'etection qu'il conviendra
+d'utiliser si le programme est ammen\'e \`a construire une nouvelle archive.
+\item [auto] Si cette option est activ\'ee, le synchroniseur se comporte en
+tout point comme d\'ecrit dans la sp\'ecification~: il n'y a pas possibilit\'e
+pour l'utilisateur de modifier les choix effectu\'es. Ce mode conviendra
+parfaitement \`a un utilisateur novice.
+\item [backups] Remplace la d\'el\'etion de fichiers par le renommage de ceux-ci.
+\item [com] Cette option permet de choisir le mode de communication pour un
+fonctionnement distribu\'e. Les deux modes propos\'es \`a pr\'esents sont
+``ssh'' et ``socket''. \func{ssh} est un protocole de communication 
+s\'ecuris\'e. 
+Malheureusement, les probl\`emes que nous avons rencontr\'es avec
+la librairie Unix de OCaml nous en ont interdit l'utilisation sous Windows.
+C'est pourquoi nous avons dans l'imm\'ediat propos\'e un m\'echanisme de
+communication \`a l'aide de socket, pour sa part totalement ins\'ecuris\'e.
+\item [ignore] Permet de sp\'ecifier des expressions r\'eguli\`eres 
+correspondant \`a des chemins \`a ignorer.
+\item [ui] Pr\'ecise le type d'interface utilisateur, ``graphic'' ou ``text''.
+\end{description}
+Il existe aussi un fichier de pr\'ef\'erences que l'utilisateur peut modifier
+selon son d\'esir.
+\paragraph{Interface graphique\\}
+%\includegraphics[0mm, 150mm][0mm, 200mm]{synchroimage.ps}
+%\resizebox[0mm,0mm][200mm,100mm]{\includegraphics{synchroimage.ps}}
+\resizebox{\textwidth}{\textheight}{\includegraphics{synchroimage.ps}}
+Vous pouvez apercevoir sur la capture d'\'ecran l'interface utilisateur
+graphique. Au bas de la fen\^etre se trouvent deux boutons~:
+\emph{Rescan filesystems for changes} et \emph{Proceed with selected actions}.
+Le premier commande aux deux premi\`res \'etapes du processus de
+synchronisation~: d\'etection des changements puis compilation des choix.\\
+Le second d\'eclenche les deux \'etapes restantes.
+Entre temps, il est possible de changer certaines d\'ecisions~: cr\'eer un
+conflit, le r\'esoudre, changer la direction des actions. A ce propos vous 
+voyez appara\^{\i}tre une action inconnue annot\'ee d'une double fl\`eche; 
+ce choix est non contradictible~: il indique que les deux syst\`emes de 
+fichiers sont synchronis\'es, mais que la m\'emoire de synchronisation 
+n'en a pas pris acte.\\
+Le menu \emph{Help} explique comment changer la fonction de d\'ecision.\\
+Le menu \emph{Edit} contient un bouton \emph{exit}, un bouton 
+\emph{Edit ignore} et un bouton \emph{Trace}. Ce dernier correspond \`a l'option du
+m\^eme nom~: cela permet de suivre le d\'eroulement des action intrernes au
+synchroniseur et de les chronom\'etrer, ce qui est tr\'es appr\'eciable pour 
+le ``d\'eboguage''.
+\paragraph{Interface textuelle\\}
+Celle-ci est tr\`es simple et reprend les notations de l'interface graphique.
+Il me semble donc inutile de la d\'etailler.
+\begin{figure}
+\begin{picture}(250, 340)(-100, 0)
+\put(0, 30){\framebox(40, 40){\Large UD}}
+\put(100, 50){\vector(-1, 0){58}}
+\put(100, 80){\line(0, -1){60}}
+\put(100, 80){\line(1, 0){20}}
+\put(100, 20){\line(1, 0){20}}
+\put(120, 0){\framebox(40, 40){\Large M}}
+\put(120, 60){\framebox(40, 40){\Large FS}}
+\put(0, 120){\framebox(220, 40){\Large RESEAU}}
+\put(0, 180){\framebox(40, 40){\Large BUD}}
+\put(-30, 188){\makebox(20, 20){\Huge $\Rightarrow$}}
+\put(230, 188){\makebox(20, 20){\Huge $\Rightarrow$}}
+\put(20, 270){\vector(0, -1){48}}
+\put(20, 160){\vector(0, 1){18}}
+\put(20, 70){\vector(0, 1){48}}
+\put(40, 200){\vector(1, 0){18}}
+\put(60, 180){\framebox(40, 40){\Large R}}
+\put(100, 200){\vector(1, 0){18}}
+\put(120, 180){\framebox(40, 40){\Large TA}}
+\put(160, 200){\vector(1, 0){18}}
+\put(140, 220){\vector(0, 1){18}}
+\put(140, 180){\vector(0, -1){18}}
+\put(140, 120){\vector(0, -1){18}}
+\put(180, 180){\framebox(40, 40){\Large MU}}
+\put(200, 220){\line(0, 1){100}}
+\put(200, 320){\vector(-1, 0){38}}
+\put(200, 180){\vector(0, -1){18}}
+\put(200, 120){\line(0, -1){100}}
+\put(200, 20){\vector(-1, 0){38}}
+\put(0, 270){\framebox(40, 40){\Large UD}}
+\put(100, 290){\vector(-1, 0){58}}
+\put(100, 320){\line(0, -1){60}}
+\put(100, 320){\line(1, 0){20}}
+\put(100, 260){\line(1, 0){20}}
+\put(120, 300){\framebox(40, 40){\Large M}}
+\put(120, 240){\framebox(40, 40){\Large FS}}
+\end{picture}
+\begin{description}
+\item [BUD] D\'etecteur de changements global.
+\item [UD] D\'etecteur de changements local.
+\item [M] M\'emoire.
+\item [R] Compilateur de choix.
+\item [TA] Agent d'ex\'ecution.
+\item [MU] M\'emoriseur de synchronisation.
+\item [FS] Syst\`eme de fichiers. 
+\end{description}
+\caption{Principe de fonctionnement d'\unison\ } \label{fonctionnement}
+\end{figure}
+\section{Architecture des modules}
+Le synchroniseur de fichiers \unison\ se compose d'un makefile et de 15
+modules que nous avons repr\'esent\'es sur la figure~\ref{archmodule}, avec
+leurs d\'ependances.\\
+Principalement, le projet se r\'epartit en trois sous-ensembles distincts~:
+\begin{figure}
+\begin{picture}(300, 420)(-100, 0)
+\put(100, 440){\framebox(90, 15){\Large MAIN}}
+\put(145, 430){\vector(0, 1){8}}
+\put(95, 430){\line(1, 0){100}}
+\put(195, 420){\line(0, 1){10}}
+\put(95, 420){\line(0, 1){10}}
+\put(50, 400){\framebox(90, 15){\Large SERVER}}
+\put(150, 400){\framebox(90, 15){\Large UI}}
+\put(0, 400){\oval(20, 20)[bl]}
+\put(-10, 400){\line(0, 1){60}}
+\put(300, 400){\line(0, 1){60}}
+\put(0, 390){\line(1, 0){290}}
+\put(0, 470){\line(1, 0){290}}
+\put(0, 460){\oval(20, 20)[tl]}
+\put(290, 400){\oval(20, 20)[br]}
+\put(290, 460){\oval(20, 20)[tr]}
+\put(200, 320){\framebox(90, 15){\Large TRANSPORT}}
+\put(245, 300){\vector(0, 1){18}}
+\put(200, 280){\framebox(90, 15){\Large FILES}}
+\put(100, 320){\framebox(90, 15){\Large RECON}}
+\put(0, 320){\framebox(90, 15){\Large UPDATE}}
+\put(145, 300){\vector(0, 1){18}}
+\put(100, 280){\framebox(90, 15){\Large COMPARE}}
+\put(0, 280){\oval(20, 20)[bl]}
+\put(-10, 280){\line(0, 1){60}}
+\put(300, 280){\line(0, 1){60}}
+\put(0, 270){\line(1, 0){290}}
+\put(0, 350){\line(1, 0){290}}
+\put(0, 340){\oval(20, 20)[tl]}
+\put(290, 280){\oval(20, 20)[br]}
+\put(290, 340){\oval(20, 20)[tr]}
+\put(200, 120){\framebox(90, 15){\Large TRACE}}
+\put(100, 200){\framebox(90, 15){\Large GLOBALS}}
+\put(145, 180){\vector(0, 1){18}}
+\put(100, 160){\framebox(90, 15){\Large REMOTE}}
+\put(145, 140){\vector(0, 1){18}}
+\put(100, 120){\framebox(90, 15){\Large COMMON}}
+\put(0, 120){\framebox(90, 15){\Large IGNORE}}
+\put(45, 110){\vector(0, 1){8}}
+\put(245, 110){\vector(0, 1){8}}
+\put(45, 110){\line(1, 0){200}}
+\put(145, 100){\vector(0, 1){18}}
+\put(100, 80){\framebox(90, 15){\Large PREFS}}
+\put(145, 60){\vector(0, 1){18}}
+\put(100, 40){\framebox(90, 15){\Large OS}}
+\put(145, 20){\vector(0, 1){18}}
+\put(100, 0){\framebox(90, 15){\Large UTIL}}
+\put(0, 0){\oval(20, 20)[bl]}
+\put(-10, 0){\line(0, 1){220}}
+\put(300, 0){\line(0, 1){220}}
+\put(0, -10){\line(1, 0){290}}
+\put(0, 230){\line(1, 0){290}}
+\put(0, 220){\oval(20, 20)[tl]}
+\put(290, 0){\oval(20, 20)[br]}
+\put(290, 220){\oval(20, 20)[tr]}
+\end{picture}
+\caption{Graphe de d\'ependances des modules de \unison\ } \label{archmodule}
+\end{figure}
+\paragraph{Modules de bases\\}
+Ce sont eux qui procurent les fonctionnalit\'es de bas niveau. Tous les 
+modules des deux sous-ensembles restants en sont d\'ependant.\\
+\begin{description}
+\item [Util] Ce module est le module de plus bas niveau du synchroniseur.
+Il d\'efinit des structures g\'en\'eriques et des fonctions utilis\'ees \`a 
+plusieures reprises dans le projet. C'est aussi ici que sont d\'eclar\'ees 
+les exceptions de \unison\ .
+\item [Os] C'est le module dont l'interface est la plus importante~:
+il a en effet le r\^ole de g\'erer toute action impliquant le syst\`eme 
+d'exploitation et les syst\`emes de fichiers~: \'ecriture, lecture, actions,
+demandes d'informations, etc... C'est \`a ce niveau que sont cach\'ees les 
+diff\'erences existant entre Unix et Windows.
+\item [Prefs] Ce module se charge de traiter les options pass\'ees au
+programme~: arguments pass\'es en ligne de commande et fichiers 
+de pr\'ef\'erences.
+\item [Common] C'est ici que sont d\'eclar\'ees les structures de donn\'ees
+propre \`a la synchronisation et partag\'ees entre diff\'erents modules
+(\modu{Update} et \modu{Recon}, \modu{Recon} et \modu{Transport}, etc...) 
+Ce module propose aussi un type abstrait d'identification des syst\`emes de 
+fichiers.
+\item [Ignore] Ce module fournit les fonctionnalit\'es n\'ecessaires au
+  filtrage des fichiers \`a ignorer. Il utilise la librairie \modu{Str}
+de OCaml pour les expressions r\'eguli\`eres.
+\item [Trace] Propose des fonctions utiles \`a l'interface utilisateur.
+\item [Remote] Ce module traite de tout ce qui a rapport au caract\`ere
+  distribu\'e du synchroniseur. Nous le d\'crirons plus longuement dans la
+section ~\ref{server}.
+\item [Globals] D\'efinit quelques variables globales et une fonction
+permettant de propager les pr\'ef\'erences du client au serveur.
+\end{description}
+\paragraph{Corps du synchroniseur\\}
+Tous les modules \'enonc\'es ci-dessus sont utilis\'es dans les modules que
+nous allons maintenant mentionner. Ces derniers sont ceux d\'ecrits dans la
+sp\'ecification plus quelques autres. Ce sont donc les modules propres au
+processus particulier de synchronisation.
+\begin{description}
+\item [Update] Ce module comprend le d\'etecteur de changement et le
+  m\'emoriseur de synchronisation. Nous reviendrons sur les strat\'egies 
+de d\'etection impl\'ement\'ees dans la section~\ref{update}.
+\item [Recon] C'est le compilateur de choix. Il doit son nom (reconciler) 
+\`a la pr\'ec\'edente sp\'ecification des synchroniseurs de fichiers. Nous
+y reviendrons dans la section~\ref{reconciler}.
+\item [Compare] Il fournit au compilateur de choix des fonctions lui
+permetant de comparer deux fichiers identifi\'es par leur syst\`eme de
+fichiers et leur chemin. Il utilise \`a cette fin la signature ``md5''
+des fichiers, courte cha\^{\i}ne de qualit\'e cryptographique codant
+leur contenu.
+\item [Transport] Agent d'ex\'ecution d\'ecrit dans notre formalisme.
+Il repose en grande partie sur le module ``Action'' de \modu{Filesystem}.
+\end{description}
+\paragraph{Modules principaux\\}
+Passons maintenant aux modules principaux, c'est \`a dire ceux qui 
+orchestrent le programme. Ils sont au nombre de trois~:
+\begin{description}
+\item [Server] Ce module se charge de g\'erer les requ\^etes lorsque le
+  synchroniseur fonctionne en mode serveur.
+Son r\^ole au sein du m\'echanisme de synchronisation sera expliqu\'e plus
+en d\'etail dans la section~\ref{server}.
+\item [Ui] C'est lui qui, une fois le programme lanc\'e avec les
+  options voulues, est responsable du dialogue entre le programme et 
+l'utilisateur.
+Il d\'eroule les diff\'erentes \'etapes de la 
+synchronisation, traite les \'ev\`enements clavier ou souris et affiche les
+r\'esultats. Nous avons pour l'instant deux impl\'ementations d'interfaces~:
+l'une textuelle et l'autre graphique. C'est ici que l'exp\'erience
+qu'a \trevor\ de la librairie CamlTK nous a fait gagner un temps 
+pr\'ecieux.
+\item [Main] Il est au sommet du projet. Son r\^ole se borne \`a lancer le
+programme avec les options souhait\'ees puis \`a passer la main soit au 
+serveur, soit \`a l'interface utilisateur. 
+\end{description}
+Nous avons donc pass\'e en revue les diff\'erents composants du programme 
+et leurs d\'ependances. Nous pouvons donc \`a pr\'esent examiner de plus 
+pr\`es certains m\'ecanismes et algorithmes. Nous essayerons dans la mesure 
+du possible de ne pas submerger le lecteur de d\'etails. Il pourra 
+n\'eammoins s'il le d\'esire se r\'ef\'erer au code complet donn\'e en 
+annexe.
+\section{Donn\'ees}
+Le synchroniseur \unison\ d\'efinit de nombreuses structures de donn\'ees
+et son fonctionnement exige l'archivage de quelques unes. Nous expliquerons
+donc d'abord comment est organis\'ee la m\'emoire interne d' \unison\ puis 
+nous d\'etaillerons les structures de donn\'ee qu'il utilise.
+\subsection{Organisation des donn\'ees internes}
+Toutes les donn\'ees internes sont archiv\'ees dans un m\^eme r\'epertoire
+\emph{.\unison .}\\
+Nous trouvons d'abord les fichiers de pr\'ef\'erences. Ceux-ci sont modifiables
+par l'utilisateur. L'un contient les options valides par d\'efaut, et l'autre
+les expressions r\'eguli\`eres \`a ignorer.\\
+Puis ensuite viennent les r\'epertoires de synchronisation. Il en existe 
+un par paire de syst\`emes de fichiers synchronis\'ee. Le num\'ero qui les 
+identifie est calcul\'e en fonction des deux syst\`emes de fichiers dont ils 
+ont en charge la m\'emoire. Ainsi, le simple nom de ces syst\`emes permet de 
+retrouver leur archive de synchronisation.\\
+Notons que dans le cas d'un fonctionnement distribu\'e, nous aurons un de
+ces r\'epertoires sur chaque machine, contrairement au fonctionnement local.
+Chacun de ces r\'epertoires contient trois fichiers~:\\
+\begin{description}
+\item [archive] Ce fichier contient la m\'emoire totale locale de la
+  synchronisation. La structure de donn\'ees qu'il contient d\'epend de la
+strat\'egie employ\'ee.
+\item [danger] Contient une part des chemins pour lesquels la m\'emoire 
+globale est amn\'esique.
+\item [info] Contient le nom complet des deux syst\`emes de fichiers et le 
+type de l'archive.
+\end{description}
+\subsection{Structures de donn\'ees}
+Nous nous attacherons \`a d\'ecrire ces structures par paquet, selon 
+leur appartenance aux diff\'erents modules.
+\paragraph{Util}
+\begin{verbatim}
+exception Can'tHappen of string * string
+exception SynchroError of string * string
+exception OsError of string
+module StringSet : Set.S with type elt = string
+module StringMap : Map.S with type key = string
+...
+\end{verbatim}
+\begin{description}
+\item [Cant'thappen] Cette exception n'est pas r\'eellement utile \`a la
+  synchronisation elle-m\^eme~: nous la levons lors de ``pattern matching''
+non exhaustifs afin d'\'eviter les avertissements \`a la compilation. Nous
+l'utilisons aussi pour le ``d\'ebogage'' du programme. La premi\`ere cha\^{\i}ne
+de caract\`eres d\'ecrit le module et la seconde la fonction dans lesquels 
+elle se trouve.
+\item [SynchroError] C'est l'exception g\'en\'erique lev\'ee par le
+  synchroniseur. Le premier argument d\'ecrit le type de l'erreur et le 
+second l'erreur elle-m\^eme.
+\item [OsError] Ce sont les erreurs li\'ees aux appels syst\`emes (fichier
+  illisible, type de fichier inconnu, etc...)
+\end{description}
+\paragraph{Os}
+\begin{verbatim}
+type name
+type path = name list
+type fspath
+type desc
+\end{verbatim}
+\data{name} est le type des noms de fichiers. En fait, ce n'est pour 
+l'instant qu'une cha\^{\i}ne de caract\`eres, mais il est pr\'evisible que cela se
+complique avec la gestion des caract\`eres sp\'eciaux (ceux qui sont valides
+pour un syst\`eme d'exploitation et non pour d'autres).\\
+\data{path} est le type des chemins relatifs. C'est explicitement une liste de noms,
+d\'efinition que nous avons \'enonc\'ee et utilis\'ee aux chapitres 
+pr\'ec\'edents.\\
+\data{fspath} est le type des chemins absolus. Ils sont utilis\'es pour
+identifier les syst\`emes de fichiers.\\
+Enfin, \data{desc} est le type des informations propres \`a un
+fichier (temps de derni\`ere modification, taille, etc..)
+\paragraph{Common}
+\begin{verbatim}
+type root = Local of fspath  
+          | Remote of string
+                    * fspath 
+type confirmation =
+    Succeeded
+  | Failed of string
+
+(***************************************************************************)
+(*            COMMON TYPES USED BY UPDATE MODULE AND OTHER ONES            *)
+(***************************************************************************)
+type prevState = 
+ Previous of Info.filetype * Info.desc
+type updateItem = 
+    NoUpdates 
+      of updateContent option         (* Path not changed in this replica *)
+  | Updates                           (* Path changed in this replica *)
+      of updateContent * prevState    (*   - summary of precedent state *)
+  | Error                             (* Error while detecting updates *)
+      of string                       (*   - description of error *)
+and updateContent =
+    Absent                            (* Path refers to nothing *)
+  | File                              (* Path refers to an ordinary file *)
+      of Info.desc                    (*   - summary of current state *)
+  | Dir                               (* Path refers to a directory *)
+      of Info.desc                    (*   - summary of current state *)
+       * (name * updateItem) list     (*   - children *)
+
+(***************************************************************************)
+(*            COMMON TYPES SHARED BY RECONCILER AND TRANSPORT AGENT        *)
+(***************************************************************************)
+type reconAction =
+    Display
+  | NoDoubt
+  | Advice of direction
+and direction =
+    Conflict
+  | Replica1ToReplica2
+  | Replica2ToReplica1
+type status = 
+   Deleted 
+ | Modified of Info.desc
+ | Created of Info.desc
+ | Unchanged of Info.desc
+type replicaContent = Info.filetype * status
+type replicas =
+   Problem of string
+ | Equal of replicaContent
+ | Different of replicaContent * replicaContent
+type reconItem =
+    {path~: path;
+     replicas~: replicas;
+     mutable whatToDo~: reconAction}
+\end{verbatim}
+\modu{Common} est le plus riche module en d\'eclarations de type~: 
+c'est lui qui d\'efinit les types partag\'es entre les modules du 
+\emph{corps de la synchronisation}.\\
+\data{root} est le type des syst\`emes de fichiers (nom de la machine, chemin
+absolu) et \data{confirmation} est un type g\'en\'erique pour le r\'esultat
+d'une action.
+\section{Serveur et gestion des communications}
+\label{server}
+Un des m\'echanismes centraux de ce projet est le syst\`eme de
+communication dans le cas du fonctionnement distribu\'e.
+\subsection{Module Remote}
+Contenu de \modu{Remote.mli}~:
+\begin{verbatim}
+...
+type marshalResult
+
+type 'a marshalFunction = 'a -> marshalResult
+type 'a unmarshalFunction = string -> Unix.file_descr -> 'a
+type 'a marshalingFunctions = 'a marshalFunction * 'a unmarshalFunction
+type 'a marshalingToFileFunctions = ('a -> fspath -> unit) * (fspath -> 'a -> 'a)
+
+(* Can raise MarshalError *)
+val giveMarshalToFileFunctions :
+    string
+ -> path
+ -> 'a marshalingToFileFunctions
+
+(* Returns a pair of secured and efficient marshaling functions
+   associated with a datatype. *)
+val giveMarshalFunctions : 
+    string                     (* identifier of the data type *)
+ -> 'a marshalingFunctions
+...
+\end{verbatim}
+Nous proposons ici des fonctions de ``Marshaling'', c'est \`a dire 
+permettant de stocker une structure de donn\'ees dans un fichier ou dans une 
+cha\^{\i}ne de caract\`eres. Ceci a \'et\'e r\'ealis\'e \`a l'aide du module
+\modu{Marshal} de OCaml. Vous ne voyez appara\^{\i}tre dans l'interface de ce
+module que des fonctionnalit\'es de haut niveau. En fait, afin de garantir
+l'int\'egrit\'e des donn\'ees manipul\'ees, chaque type de donn\'ees est d\'efini par un
+\data{tag}; ce tag est cod\'e et envoy\'e avec les donn\'ees. On v\'erifie, 
+avant de restaurer celles-ci, que le tag est bien celui du type attendu.\\
+Toujours en interne, les fonctions \func{safeMarshal} et 
+\func{safeUnmarshal} sont des
+fonctions s\'ecuris\'ees et optimis\'ees permettant la sauvegarde et la 
+restauration des fichiers. En quoi sont elles optimis\'ees~?\\
+Nous avons allou\'e statiquement un ``buffer'' dans lequel nous essayons
+d'inscrire les donn\'ees. Si celles-ci d\'epassent une taille critique,
+alors nous choisissons de les \'ecrire dans un fichier, ce qui nous prot\'ege
+d'une saturation de m\'emoire.
+Ainsi, les fonctions de marshaling renvoient un \data{marshalResult}
+qui indique quelle est la strat\'egie employ\'ee. La fonction 
+\func{safeUnmarshal}, pour sa part, requiert un \data{file-descriptor} sur lequel
+lire ses arguments, au cas o\'u la seconde m\'ethode serait utilis\'ee.\\
+Les fonctions \func{giveMarshalFunctions} et \func{giveMarshalToFileFunctions}
+ sont des fonctions de tr\`es haut niveau g\'erant tous ces m\'echanismes en 
+interne.
+\begin{verbatim}
+(* The result type of invoke.  It is similar to the usual notion of "future",
+   but with two important restrictions:
+     - each suspension must be invoked exactly once
+     - suspensions must be invoked in the order that they were created *)
+type 'a suspension = unit -> 'a
+
+val invoke :
+     'a marshalFunction          (* functions to code request *)
+  -> 'b unmarshalFunction        (* and uncode result *)
+  -> string                      (* host name *)
+  -> string                      (* the module name *)
+  -> string                      (* the command *)
+  -> 'a                          (* the request *)
+  -> (out_channel -> 'b -> unit) (* the result printer *)
+  -> 'b suspension               (*   -> the (suspended) result *)
+\end{verbatim}
+Une des pi\`eces ma\^{\i}trese de ce m\'echanisme de communication est la 
+fonction invoke.
+Cette fonction prend en entr\'ee une requ\^ete sous forme structur\'ee, une paire de 
+fonction de ``marshaling'' et une fonction d'impression de r\'esultat et
+retourne une fonction \`a invoquer pour obtenir le r\'esultat d\'esir\'e.\\
+En fait, elle passe commande au serveur concern\'e et renvoie une \data{suspension}, 
+c'est \`a dire une fonction permettant de lire et de d\'ecoder le 
+\data{file-descriptor} de la connection.
+Ceci fait qu'\func{invoke} retourne imm\'ediatement et que l'on obtient 
+un fonctionnement parall\`ele~: on d\'emarre en premier lieu les fonctions pour
+les h\^otes distants, puis on effectue les t\^aches locales
+et c'est ensuite seulement que l'on ``d\'eg\`ele'' les \data{suspensions}.
+Ainsi sur certaines parties du programme, les gains de temps r\'ealis\'es ont
+atteint les 50\%.
+\subsection{Le module Server}
+Son r\^ole est, lors du fonctionnement du synchroniseur en mode serveur, de
+traiter les requ\^etes qui lui sont soumises sous formes de cha\^{\i}nes de
+caract\`eres. Il d\'ecode les commandes, les transmet aux fonctions \func{server}
+des modules concern\'es puis retransmet les r\'eponses recues au client.\\
+Voici ci-apr\`es la fonction principale de ce module~:
+\begin{verbatim}
+let waitForCommand inFd outFd =
+ try while true do
+  let next() = IO.receivePacket inFd in
+  let moduleName = next() in
+  let command = next() in
+  if moduleName = "server" then 
+   begin
+    server command outFd
+   end
+  else 
+  begin
+   let marshalType =
+    match moduleName with
+      "compare" -> Compare.server command (next()) inFd
+    | "update" -> Update.server command (next()) inFd
+    | "files" -> Files.server command (next()) inFd outFd
+    | "globals" -> Globals.server command (next()) inFd
+    | _ -> raise (Can'tHappen ("Server", "waitForCommand")) in
+   Remote.sendMarshal outFd marshalType
+  end
+ done
+ with Exit -> ()
+\end{verbatim}
+On peut remarquer en particulier qu'elle envoie \`a la fonction \func{server}
+concern\'ee un \data{file-descriptor}~: c'est sur celui-ci qu'elle pourra lire
+le fichier contenant les arguments marshalis\'es, si tant est que cette
+solution ait \'et\'e retenu.
+\subsection{Exemple du module Compare}
+Mais que tout ceci est bien th\'eorique! Nous prendrons ici 
+l'exemple du module \modu{Compare} pour donner corps \`a ce que nous venons 
+d'exposer.
+\begin{verbatim}
+open Util
+open Filesystem
+open Common
+
+val compare :
+     root list          (* the  replicas *)
+  -> path list          (* list of files we want to compare *)
+  -> bool list          (*   -> results of the comparaison *)
+
+(**************************************************************************)
+(*                             SERVER FUNCTION                            *)
+(**************************************************************************)
+
+val server :
+    string                   (* command *)
+ -> string                   (* marshal of arguments *)
+ -> Unix.file_descr          (* file descriptor where to load arguments if necessary *)
+ -> Remote.marshalResult     (* marshal of result *)
+\end{verbatim} 
+La fonction \func{compare} retourne la liste des r\'esultats de la comparaison
+de fichiers identifi\'es par leur chemin sur plusieurs syst\`emes de fichiers 
+diff\'erents. Pour l'instant, nous ne comparons que deux de ces tels syst\`emes,
+mais nous pr\'evoyons \`a l'avenir d'augmenter arbitrairement ce nombre. 
+Le fonctionnement est simple; chaque h\^ote est somm\'e de retourner la liste
+de signatures correspondant aux fichiers demand\'es. Celles-ci sont ensuite
+compar\'ees par le client.
+Penchons plus attentivement sur l'impl\'ementation\ldots
+\begin{verbatim}
+...
+(**************************************************************************)
+(*                       LOCAL MD5SIGNATURE BUILDER                       *)
+(**************************************************************************)
+
+let computeLocal fspath pathList =
+  List.map (Info.md5Digest fspath) pathList
+
+(**************************************************************************)
+(*                        PROXY MD5SIGNATURE BUILDER                      *)
+(**************************************************************************)
+(* Proxy functions for driving a md5 list builder running on a remote host*)
+(**************************************************************************)
+
+let computeRequestMarshal,
+    computeRequestUnmarshal =
+  (Remote.giveMarshalFunctions "computeRequest"
+     : (fspath * path list) marshalingFunctions)
+
+let computeResultMarshal,
+    computeResultUnmarshal =
+  (Remote.giveMarshalFunctions "computeResult"
+     : (string list) marshalingFunctions)
+
+let computeProxy host fspath pathList =
+  Remote.print printMd5Request (fspath, pathList);
+  Remote.invoke
+    computeRequestMarshal computeResultUnmarshal
+    host "md5Builder" (fspath, pathList) printMd5List
+
+(***************************************************************************)
+(*                       MAIN MD5SIGNATURE BUILDER                         *)
+(***************************************************************************)
+(*            Switch between the local and proxy implementations           *)
+(***************************************************************************)
+
+let compute rootList pathList =
+  let freezes = List.map
+      (function
+          Local fspath -> (fun () -> computeLocal fspath pathList)
+        | Remote (host, fspath) -> computeProxy host fspath pathList)
+      rootList in
+  let result = List.map (fun freeze -> freeze()) freezes in
+  splitN result (List.length pathList)
+
+(***************************************************************************)
+(*                               SERVER FUNCTION                           *)
+(***************************************************************************)
+
+let server command arguments inFd =
+  let fspath, pathList = computeRequestUnmarshal arguments inFd in
+  let answer = computeLocal fspath pathList in
+  computeResultMarshal answer
+\end{verbatim} 
+Nous remarquons la facilit\'e avec laquelle nous \'etablissons la
+communication distribu\'ee~:\\
+La fonction \func{giveMarshalFunctions} cr\'ee les fonctions de marshaling 
+appropri\'ees, la fonction invoke les utilise et transmet la requ\^ete.
+Sur l'h\^ote concern\'e, la fonction server traite cette m\^eme requ\^ete.\\
+Enfin, remarquons que la proc\'edure principale cr\'ee des \data{suspensions}
+(lancement des processus sur les diff\'erents h\^otes), effectue le travail
+local puis r\'ecup\`ere les r\'esultats distribu\'es, ainsi que nous l'avions
+expos\'e pr\'ec\'edemment.
+\subsection{Quelques pr\'ecisions}
+Les proc\'edures de communication du module 
+\modu{Os} (op\'erations sur les \data{file-escriptor}) sont en grande 
+partie l'oeuvre de \trevor\ qui souhaitait utiliser le synchroniseur sous 
+Windows. En effet, nous avons \'et\'e oblig\'e d'abandonner \func{scp} (le pendant de 
+\func{ssh} pour la copie de fichiers) pour des raisons d'efficacit\'e 
+(une nouvelle socket \`a chaque copie) et de compatibilit\'e avec Windows.\\
+Notre premier proc\'ed\'e de communication de donn\'ees utilisait un format
+XML, auquel \'etaient associ\'es des modules de ``parsing'', ``lexing'' et ``printing''
+qui m'ont demand\'e beaucoup de travail, chaque changement de structures de
+donn\'ees exigeant d'y apporter les modifications appropri\'ees. C'est  
+pourquoi j'ai insist\'e pour concevoir un m\'echanisme utilisant les
+fonctionnalit\'es de la librairie \modu{Marshal}.
+\section{Module Update}
+\label{update}
+Ce module impl\'emente \`a la fois les d\'etecteurs de changements globaux 
+et locaux et le m\'emoriseur de synchronisation. Il poss\`ede deux fonctions 
+externes \func{safeFind} et \func{markUpdated} qui elles-m\^emes utilisent en 
+interne des modules diff\'erents suivant la strat\'egie de m\'emorisation 
+adopt\'ee. La signature commune \`a ces modules est la suivante~:
+\begin{verbatim}
+module type UPDATES = sig
+
+  val find :
+      fspath
+   -> root list
+   -> Danger.PathSet.t       (* list of paths to mark dangerous *)
+   -> path list              (* Subtrees we intend to reconcile *)
+   -> bool * updateItem list (* Structures describing dirty files and
+                               directories (1 for each given path) *)
+  val mark :
+      fspath list
+   -> root list
+   -> (path * bool) list
+   -> confirmation list
+
+end (* module type UPDATES *)
+\end{verbatim}
+\subsection{Impl\'ementation de la m\'emoire}
+Nous avons d\'ej\`a remarqu\'e que, pour des raisons d'efficacit\'e, nous \'etions
+forc\'e de stocker la m\'emoire de mani\`ere distribu\'ee, et que ceci \'etait 
+r\'ealisable \`a l'aide d'un unificateur et d'un duplicateur de m\'emoire.\\
+Comment donc les avons nous impl\'ement\'es~?\\
+En fait, c'est assez simple. Chaque m\'emoire locale se compose d'une m\'emoire totale
+(sans amn\'esie) et d'un ensemble de chemins amn\'esiques. En r\'ealit\'e, cette information
+est la seule a \^etre distribu\'ee. Pour reconstruire (unifier) la m\'emoire globale, il
+suffit de rendre amn\'esiques dans l'une et l'autre m\'emoire locale la r\'eunion des chemins
+amn\'esiques de ces deux m\'emoires. L'unificateur de m\'emoire fonctionne donc en deux \'etapes~:
+\begin{enumerate}
+\item On recquiert de chaque h\^ote sa liste de chemins amn\'esiques.
+\item R\'eunion de ces chemins.
+\item Envoi de cet ensemble \`a chaque h\^ote qui peut ainsi reconstruire la m\'emoire globale.
+\end{enumerate}
+Le duplicateur de m\'emoire fonctionne de mani\`ere analogue. Tous les chemins sont marqu\'es 
+amn\'esiques sur un des h\^otes (en local si possible). Puis \`a chaque synchronisation 
+effectu\'ee avec succ\'es sur tous les h\^otes, on retire le chemin correspondant de la liste 
+des amn\'esiques. On se convaincra ais\'ement que la sp\'ecification est respect\'ee.
+\subsection{D\'etecteur de changements}
+Ainsi, le d\'etecteur de changements n'a pour autre fonctionnalit\'e que de reconstruire la 
+m\'emoire globale de la mani\`ere dont nous venons de l'exposer, puis de 
+recqu\'erir de chaque syst\`eme de fichiers la liste des changements. 
+La structure de donn\'ees correspondantes est \data{updateItem} que nous avons
+lors de la pr\'esentation du module \modu{Common}.\\
+Nous avons impl\'ement\'e trois strat\'egies de d\'etection~:
+\begin{description}
+\item [mirror] C'est la strat\'egie de copie exacte du syst\`eme de fichiers. Ainsi le fichier
+``archive'' du r\'epertoire de synchronisation correspondant est elle l'arborescence de fichiers
+elle-m\^eme.
+\item [inoModTime] Strat\'egie de temps de derni\`ere synchronisation et num\'ero d'``inode''.
+\item [digest] Repr\'esentation compacte des fichiers \`a l'aide de ``digest''.
+\end{description}
+Nous avons \`a cet effet d\'efini de nouveaux types~:
+\begin{verbatim}
+type partialMemory =
+   InoModTime
+ | Digest
+
+type archiveType =
+   Mirror
+ | Partial of partialMemory
+
+type content =
+   Ino of float * (string * int) list
+ | Dig of string 
+\end{verbatim}
+C'est ainsi nous avons pu impl\'ementer les deux derni\`eres strat\'egies sans dupliquer le code.
+\subsection{M\'emoriseur de synchronisation}
+Le m\'emoriseur de synchronisation ne fonctionne pas exactement comme la sp\'ecification le laisserait croire.
+En effet, pour des raisons d'efficacit\'e, il est inconcevable de parcourir $A'$ et $B'$ pour ne d\'etecter
+que quelques changements dont nous savons par ailleurs o\`u ils se trouvent. Ainsi, une fois les actions effectu\'ees
+par l'agent d'ex\'ecution, nous envoyons au m\'emoriseur la liste des chemins ayant subit une modification
+en plus de $A'$, $B'$ et  $M$. Nous lui indiquons par ailleurs au moyen d'un bool\'een si cette modification porte
+sur le sous-arbre ou sur le chemin uniquement. Le m\'emoriseur se borne donc \`a r\'econcilier le syst\`eme de
+fichiers et la m\'emoire, en esssayant de rendre celle-ci la plus ``totale''
+possible(voir la sp\'ecification forte).
+\section{Compilateur de choix}
+\label{reconciler}
+Le compilateur de choix est implement\'e par le module \modu{Recon} dont
+voici la signature~:
+\begin{verbatim}
+open Util
+open Os
+open Common  
+
+val reconcileAll : 
+     updateItem list  (* one updateItem per replica *)
+     list             (* one list of updateItem per path *)
+  -> reconItem list   (* Updates that need to be propagated *)
+
+(* selectPath gives all the path that must been mark updated according to
+the result of the actions given by the confirmation list *)
+
+val selectPath : 
+     (reconItem * confirmation) list  (* result of the reconciliation *)
+  -> (path * bool) list                (* true -> mark updated subtree *)
+\end{verbatim} 
+la fonction \func{reconcileAll} parcourt r\'ecursivement les deux \data{updateItems}
+produites par le d\'etecteur de changements. Elle s'arr\^ete aux points
+d'inflexions o\`u elle d\'ecide de propager ou non les changements.
+Nous remarquerons que les \data{updateItems} codent les trois pr\'edicats 
+\sus{A}, \sus{b} et \isdira{AB}.\\
+La fonction \func{selectPath} permet de s\'electionner les chemins que
+le m\'emoriseur de synchronisation aura \`a traiter. Ceci ne d\'epend que des
+choix de propagation et des r\'esultats des actions correspondantes.
+\section{Agent d'ex\'ecution}
+L'agent d'ex\'ecution a un r\^ole tr\`es simple~: c'est lui qui est charg\'e 
+d'ex\'ecuter les actions dict\'ees par le compilateur de choix. Le module
+transport est paradoxalement un de ceux qui ont le plus accapar\'e nos 
+efforts. En effet, l'ex\'ecution d'action est la partie la plus sensible de la
+synchronisation car elle est l'unique \'etape o\`u l'on agit sur le syst\`eme
+de fichiers. Il nous faut donc la rendre parfaitement saine, soit lisible et
+s\'ecuris\'ee.\\
+L'agent d'ex\'ecution a pour cela \`a sa disposition le module \modu{Files}
+qui propose les fonctions suivantes~:
+\begin{verbatim}
+...
+(* Delete the given subtree of the given replica *)
+val delete : bool -> root -> path -> confirmation
+
+(* Make a new directory at the given path in the given replica *)
+val mkdir : root -> path -> confirmation
+
+(* Copy a path in one replica to another path in a second replica.
+   The copy is performed atomically (or as close to atomically as the
+   os will support) using temporary files. *)
+val copy :
+     bool                
+  -> (root * root)              (* between which roots *)
+  -> path                       (* what path *)
+  -> confirmation               (*  -> confirmation of success *)
+...
+\end{verbatim}
+Il en r\'esulte que le code du module \modu{transport} se r\'eduit
+essentiellement aux deux fonctions suivantes~:
+\begin{verbatim}
+let doAction roots path contents = 
+  let showResult confirmation =
+    (match confirmation with
+      Succeeded -> Trace.message "\n"
+    | Failed err -> Trace.message ("Failed!\n" ^ err ^ "\n"));
+    confirmation
+  in
+    match contents with
+      Info.NOTHING ->
+        Trace.message ("Deleting " ^ path2string path
+                       ^ " from " ^ hostname (snd roots));
+        showResult (Files.delete !backups (snd roots) path)
+    | _ ->
+        Trace.message ("Copying " ^ path2string path
+                       ^ " from " ^ hostname (fst roots)
+                       ^ " to " ^ hostname (snd roots));
+        showResult (Files.copy !backups roots path)
+
+let propagate root1 root2 reconItem =
+  let path = reconItem.path in
+  let reconAction = reconItem.whatToDo in
+  match (reconAction, reconItem.replicas) with
+      (Advice Conflict, _) -> Succeeded
+    | (Advice Replica1ToReplica2, Different (rep1, rep2)) ->
+        doAction (root1, root2) path (fst rep1)
+    | (Advice Replica2ToReplica1, Different (rep1, rep2)) ->
+        doAction (root2, root1) path (fst rep2)
+    | (NoDoubt, _) -> Succeeded
+    | (Display, _) -> Succeeded
+    | _ -> raise (Can'tHappen ("Transport", "propagate"))
+\end{verbatim}
+Les bool\'eens pr\'esents dans la signature des fonctions du module 
+\modu{Files} indiquent si
+l'on doit remplacer la d\'el\'etion de fichiers par l'archivage de ceux-ci. 
+Nous avons plusieurs options autorisant l'utilisateur a faire son propre
+compromis entre s\'ecurit\'e et efficacit\'e.
+\begin{description}
+\item [backups] Remplace la d\'el\'etion par le renommage vers des fichiers 
+\ .backup.
+\item [parano] V\'erifie par deux fois le r\'esultat d'une copie de fichier 
+en fonctionnement distribu\'e; on envoie donc pour cela non seulement 
+le fichier \`a copier mais encore son ``digest''.
+\end{description}
+Malheureusement, malgr\'e toutes ces pr\'ecautions, il est des endroits du
+code o\`u l'atomicit\'e des actions ne peut \^etre garantie~: en effet,
+la fonction Unix \func{mv} ne permet pas de renommer un fichier vers un
+chemin contenant un r\'epertoire. Il nous faut donc effacer d'abord le
+r\'epertoire ce qui, pendant un tr\`es court laps de temps, met en d\'efaut
+la propri\'et\'e ~\ref{prop:cohe}, produit de la sp\'ecification forte.
+\section*{Conclusion}
+Je retire principalement de ce stage la satisfaction d'avoir accompli deux
+t\^aches~:
+affinement du cadre th\'eorique de la synchronisation de fichiers
+(principalement l'introduction du concept de m\'emoire) et impl\'ementation
+d'un nouveau prototype \`a partir de rien.\\
+Nous synchronisons quotidiennement 200 M de fichiers en fonctionnement
+distribu\'e. Bien que la d\'etection de changement (partie critique en temps)
+prenne encore 20 secondes et que la premi\`ere synchronisation s'\'etende sur 
+5 minutes, nous avons bon espoir de pr\'esenter bient\^ot une version libre
+disponible sur Internet.\\
+C'est pourquoi je suis particuli\`erement satisfait et je remercie vivement 
+\adv\ pour m'avoir associ\'e \`a ce projet et pour la disponibilit\'e et
+la patience dont il a fait preuve \`a mon \'egard. J'esp\`ere donc que mon
+s\'ejour lui aura donn\'e envie de renouveler l'exp\'erience l'ann\'ee
+prochaine, avec un ``OCaml hacker'' de la promotion 97.\\
+\end{document}
+
+
+
