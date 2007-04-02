@@ -1540,9 +1540,9 @@ checked first.)  If neither of these are set, then the directory
 The preference \verb|maxbackups| controls how many previous versions of
 each file are kept (including the current version).  
 
-By default, backup files are named \verb|.unison.FILENAME.VERSION.bak|,
-where \verb|FILENAME| is the original filename and \verb|version| is the
-backup number (001 for the most recent, 002 for the next most recent,
+By default, backup files are named \verb|.bak.VERSION.FILENAME|,
+where \verb|FILENAME| is the original filename and \verb|VERSION| is the
+backup number (1 for the most recent, 2 for the next most recent,
 etc.).  This can be changed by setting the preferences \verb|backupprefix|
 and/or \verb|backupsuffix|.  If desired, \verb|backupprefix| may include a
 directory prefix; this can be used with \verb|backuplocation = local| to put all
@@ -1692,6 +1692,13 @@ Alternatively, users of \verb|emacs| may find the following settings convenient:
 (These commands are displayed here on two lines to avoid running off the
 edge of the page.  In your preference file, each command should be written on a
 single line.) 
+
+Users running emacs under windows may find something like this useful:
+\begin{verbatim}
+   merge = Name * -> C:\Progra~1\Emacs\emacs\bin\emacs.exe -q --eval
+                            "(ediff-files """CURRENT1""" """CURRENT2""")"
+\end{verbatim}
+
 Users running Mac OS X (you may need the Developer Tools installed to get
 the {\tt opendiff} utility) may prefer
 \begin{verbatim}

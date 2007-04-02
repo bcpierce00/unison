@@ -19,6 +19,8 @@ let debugignore = Trace.debug "ignore"
    representation does not change between unison versions.) *)
 (*FIX: change the approximate function in props.ml next time the
   format is modified (see file props.ml for the new function) *)
+(*FIX: also change Fileinfo.stamp to drop the info.ctime component, next time the
+  format is modified *)
 let archiveFormat = 22
 
 module NameMap = MyMap.Make (Name)

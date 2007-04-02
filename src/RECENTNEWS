@@ -1,3 +1,8 @@
+CHANGES FROM VERSION 2.27.6
+
+* Set Fileinfo.CtimeStamp to 0, always, following suggestion by Jerome.
+
+-------------------------------
 CHANGES FROM VERSION 2.27.5
 
 * Truncate inode numbers to 31 bits, so that they can be transferred
