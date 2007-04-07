@@ -4,7 +4,7 @@
 let docs =
     ("about", ("About Unison", 
      "Unison File Synchronizer\n\
-      Version 2.26.12\n\
+      Version 2.27.10\n\
       \n\
       \032  Unison is a file-synchronization tool for Unix and Windows. It allows\n\
       \032  two replicas of a collection of files and directories to be stored on\n\
@@ -1269,7 +1269,7 @@ let docs =
       \032         effect.\n\
       \032  contactquietly \n\
       \032         If this flag is set, Unison will skip displaying the\n\
-      \032         `Contacting server' window (which some users find annoying)\n\
+      \032         `Contacting server' message (which some users find annoying)\n\
       \032         during startup.\n\
       \032  debug xxx\n\
       \032         This preference is used to make Unison print various sorts of\n\
@@ -1316,24 +1316,24 @@ let docs =
       \032         unison.dump on each host, containing a text summary of the\n\
       \032         archive, immediately after loading it.\n\
       \032  fastcheck xxx\n\
-      \032         When this preference is set to true, Unison will use file\n\
-      \032         creation times as `pseudo inode numbers' when scanning replicas\n\
-      \032         for updates, instead of reading the full contents of every\n\
-      \032         file. Under Windows, this may cause Unison to miss propagating\n\
-      \032         an update if the create time, modification time, and length of\n\
-      \032         the file are all unchanged by the update (this is not easy to\n\
-      \032         achieve, but it can be done). However, Unison will never\n\
-      \032         overwrite such an update with a change from the other replica,\n\
-      \032         since it always does a safe check for updates just before\n\
-      \032         propagating a change. Thus, it is reasonable to use this switch\n\
-      \032         under Windows most of the time and occasionally run Unison once\n\
-      \032         with fastcheck set to false, if you are worried that Unison may\n\
-      \032         have overlooked an update. The default value of the preference\n\
-      \032         is auto, which causes Unison to use fast checking on Unix\n\
-      \032         replicas (where it is safe) and slow checking on Windows\n\
-      \032         replicas. For backward compatibility, yes, no, and default can\n\
-      \032         be used in place of true, false, and auto. See the section\n\
-      \032         \"Fast Checking\" for more information.\n\
+      \032         When this preference is set to true, Unison will use the\n\
+      \032         modification time and length of a file as a `pseudo inode\n\
+      \032         number' when scanning replicas for updates, instead of reading\n\
+      \032         the full contents of every file. Under Windows, this may cause\n\
+      \032         Unison to miss propagating an update if the modification time\n\
+      \032         and length of the file are both unchanged by the update.\n\
+      \032         However, Unison will never overwrite such an update with a\n\
+      \032         change from the other replica, since it always does a safe\n\
+      \032         check for updates just before propagating a change. Thus, it is\n\
+      \032         reasonable to use this switch under Windows most of the time\n\
+      \032         and occasionally run Unison once with fastcheck set to false,\n\
+      \032         if you are worried that Unison may have overlooked an update.\n\
+      \032         The default value of the preference is auto, which causes\n\
+      \032         Unison to use fast checking on Unix replicas (where it is safe)\n\
+      \032         and slow checking on Windows replicas. For backward\n\
+      \032         compatibility, yes, no, and default can be used in place of\n\
+      \032         true, false, and auto. See the section \"Fast Checking\" for more\n\
+      \032         information.\n\
       \032  follow xxx\n\
       \032         Including the preference -follow pathspec causes Unison to\n\
       \032         treat symbolic links matching pathspec as `invisible' and\n\
@@ -1810,7 +1810,7 @@ let docs =
       \032   # file 'common' rathen than in the top-level preference file\n\
       \032   addprefsto = common\n\
       \n\
-      \032   # regexps specifying names and paths to ignore\n\
+      \032   # Names and paths to ignore:\n\
       \032   ignore = Name temp.*\n\
       \032   ignore = Name *~\n\
       \032   ignore = Name .*~\n\
@@ -1889,16 +1889,16 @@ let docs =
       \032  neither of these are set, then the directory .unison/backup in the\n\
       \032  user's home directory is used.\n\
       \n\
-      \032  The preference backupversions controls how many previous versions of\n\
-      \032  each file are kept. The default is 2.\n\
+      \032  The preference maxbackups controls how many previous versions of each\n\
+      \032  file are kept (including the current version).\n\
       \n\
-      \032  By default, backup files are named .unison.FILENAME.VERSION.bak, where\n\
-      \032  FILENAME is the original filename and version is the backup number\n\
-      \032  (001 for the most recent, 002 for the next most recent, etc.). This\n\
-      \032  can be changed by setting the preferences backupprefix and/or\n\
-      \032  backupsuffix. If desired, backupprefix may include a directory prefix;\n\
-      \032  this can be used with backuplocation = local to put all backup files\n\
-      \032  for each directory into a single subdirectory. For example, setting\n\
+      \032  By default, backup files are named .bak.VERSION.FILENAME, where\n\
+      \032  FILENAME is the original filename and VERSION is the backup number (1\n\
+      \032  for the most recent, 2 for the next most recent, etc.). This can be\n\
+      \032  changed by setting the preferences backupprefix and/or backupsuffix.\n\
+      \032  If desired, backupprefix may include a directory prefix; this can be\n\
+      \032  used with backuplocation = local to put all backup files for each\n\
+      \032  directory into a single subdirectory. For example, setting\n\
       \032   backuplocation = local\n\
       \032   backupprefix = .unison/$VERSION.\n\
       \032   backupsuffix =\n\
@@ -2029,8 +2029,14 @@ let docs =
       \n\
       \032  (These commands are displayed here on two lines to avoid running off\n\
       \032  the edge of the page. In your preference file, each command should be\n\
-      \032  written on a single line.) Users running Mac OS X (you may need the\n\
-      \032  Developer Tools installed to get the opendiff utility) may prefer\n\
+      \032  written on a single line.)\n\
+      \n\
+      \032  Users running emacs under windows may find something like this useful:\n\
+      \032  merge = Name * -> C:\\Progra~1\\Emacs\\emacs\\bin\\emacs.exe -q --eval\n\
+      \032                           \"(ediff-files \"\"\"CURRENT1\"\"\" \"\"\"CURRENT2\"\"\")\"\n\
+      \n\
+      \032  Users running Mac OS X (you may need the Developer Tools installed to\n\
+      \032  get the opendiff utility) may prefer\n\
       \032   merge = Name *.txt -> opendiff CURRENT1 CURRENT2 -ancestor CURRENTARCH -mer\n\
       ge NEW\n\
       \n\
@@ -2302,9 +2308,8 @@ let docs =
       \032  Unix replicas and slow checks on Windows replicas.\n\
       \n\
       \032  This strategy may cause Unison to miss propagating an update if the\n\
-      \032  create time, modification time, and length of the file are all\n\
-      \032  unchanged by the update (this is not easy to achieve, but it can be\n\
-      \032  done). However, Unison will never overwrite such an update with a\n\
+      \032  modification time and length of the file are both unchanged by the\n\
+      \032  update. However, Unison will never overwrite such an update with a\n\
       \032  change from the other replica, since it always does a safe check for\n\
       \032  updates just before propagating a change. Thus, it is reasonable to\n\
       \032  use this switch most of the time and occasionally run Unison once with\n\
@@ -2455,8 +2460,8 @@ let docs =
       \n\
       "))
 ::
-    ("news", ("Changes in Version 2.26.12", 
-     "Changes in Version 2.26.12\n\
+    ("news", ("Changes in Version 2.27.10", 
+     "Changes in Version 2.27.10\n\
       \n\
       \032  Changes since 2.17:\n\
       \032    * The Unison project now accepts donations via PayPal. If you'd like\n\
@@ -2527,6 +2532,23 @@ let docs =
       \032         + Added .mpp files to the \"never fastcheck\" list (like .xls\n\
       \032           files).\n\
       \032    * Many small bugfixes, including:\n\
+      \032         + Fixed a longstanding bug regarding fastcheck and daylight\n\
+      \032           saving time under Windows when Unison is set up to\n\
+      \032           synchronize modification times. (Modification times cannot be\n\
+      \032           updated in the archive in this case, so we have to ignore one\n\
+      \032           hour differences.)\n\
+      \032         + Fixed a bug that would occasionally cause the archives to be\n\
+      \032           left in non-identical states on the two hosts after\n\
+      \032           synchronization.\n\
+      \032         + Fixed a bug that prevented Unison from communicating\n\
+      \032           correctly between 32- and 64-bit architectures.\n\
+      \032         + On windows, file creation times are no longer used as a proxy\n\
+      \032           for inode numbers. (This is unfortunate, as it makes\n\
+      \032           fastcheck a little less safe. But it turns out that file\n\
+      \032           creation times are not reliable under Windows: if a file is\n\
+      \032           removed and a new file is created in its place, the new one\n\
+      \032           will sometimes be given the same creation date as the old\n\
+      \032           one!)\n\
       \032         + Set read-only file to R/W on OSX before attempting to change\n\
       \032           other attributes.\n\
       \032         + Fixed bug resulting in spurious \"Aborted\" errors during\n\
@@ -3780,11 +3802,11 @@ let docs =
      "Junk\n\
       \032    _________________________________________________________________\n\
       \n\
-      \032    This document was translated from LAT[E]X by [2]HEVEA.\n\
+      \032    This document was translated from L^AT[E]X by [2]H^EV^EA.\n\
       \n\
       References\n\
       \n\
-      \032  1. file://localhost/Users/bcpierce/current/unison/trunk/doc/temp.html#ssh-win\n\
+      \032  1. file://localhost/Users/bcpierce/current/unison/branches/2.27/doc/temp.html#ssh-win\n\
       \032  2. http://pauillac.inria.fr/~maranget/hevea/index.html\n\
       "))
 ::
