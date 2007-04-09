@@ -1,3 +1,10 @@
+CHANGES FROM VERSION 2.27.9
+
+* Make the GTK(1) user interface compile again.  (Thanks to Zvezdan
+  Petkovic.)
+
+
+-------------------------------
 CHANGES FROM VERSION 2.27.8
 
 * Small fix.
