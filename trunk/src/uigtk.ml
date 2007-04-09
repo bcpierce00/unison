@@ -1587,7 +1587,7 @@ in
       grSet grRestart false;
 
       Trace.status "Propagating changes";
-      Transport.start ();
+      Transport.logStart ();
       let totalLength =
         Array.fold_left
           (fun l si -> Uutil.Filesize.add l (Common.riLength si.ri))
@@ -1637,7 +1637,7 @@ in
       Lwt_unix.run
         (loop 0 [] Common.isDeletion >>= (fun actions ->
           Lwt_util.join actions));
-      Transport.finish ();
+      Transport.logFinish ();
       Trace.showTimer t;
       Trace.status "Updating synchronizer state";
       let t = Trace.startTimer "Updating synchronizer state" in
