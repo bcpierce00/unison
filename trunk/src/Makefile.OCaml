@@ -55,13 +55,14 @@ OCAMLLIBDIR=$(shell ocamlc -v | tail -n -1 | sed -e 's/.* //g' | sed -e 's/\\/\/
 #     UISTYLE=text
 #     UISTYLE=gtk
 #     UISTYLE=gtk2
-#     UISTYLE=mac
+#     UISTYLE=mac     (old and limited, but working)
+#     UISTYLE=macnew  (spiffy, but not yet working)
 #
 # This should be set to an appropriate value automatically, depending
 # on whether the lablgtk library is available
 LABLGTKLIB=$(OCAMLLIBDIR)/lablgtk
 LABLGTK2LIB=$(OCAMLLIBDIR)/lablgtk2
-##BCP [3/2007]: Removed temporarily, since OSX UI is not working well 
+##BCP [3/2007]: Removed temporarily, since the OSX UI is not working well 
 ## at the moment and we don't want to confuse people by building it by default
 ##ifeq ($(OSARCH),osx)
 ##  UISTYLE=mac
@@ -133,20 +134,26 @@ clean::
 
 ifeq ($(UISTYLE),mac)
   buildexecutable:: macexecutable
+  UIMACDIR=uimac
+else
+ifeq ($(UISTYLE),macnew)
+  buildexecutable:: macexecutable
+  UIMACDIR=uimacnew
 else
   buildexecutable:: $(NAME)$(EXEC_EXT)
+endif
 endif
 
 # NOTE: the OCAMLLIBDIR is not getting passed correctly?
 # The two cases for cltool are needed because Xcode 2.1+
 # builds in build/Default/, and earlier versions use build/
 macexecutable: $(NAME)-blob.o
-	sed -e's/@@VERSION@@/$(VERSION)/' uimac/Info.plist.template > uimac/Info.plist
-	(cd uimac; xcodebuild OCAMLLIBDIR="$(OCAMLLIBDIR)")
-	if [ -e uimac/build/Default ]; then \
-	  gcc uimac/cltool.c -o uimac/build/Default/Unison.app/Contents/MacOS/cltool -framework Carbon; \
+	sed -e's/@@VERSION@@/$(VERSION)/' $(UIMACDIR)/Info.plist.template > $(UIMACDIR)/Info.plist
+	(cd $(UIMACDIR); xcodebuild OCAMLLIBDIR="$(OCAMLLIBDIR)")
+	if [ -e $(UIMACDIR)/build/Default ]; then \
+	  gcc $(UIMACDIR)/cltool.c -o $(UIMACDIR)/build/Default/Unison.app/Contents/MacOS/cltool -framework Carbon; \
 	else \
-	  gcc uimac/cltool.c -o uimac/build/Unison.app/Contents/MacOS/cltool -framework Carbon; \
+	  gcc $(UIMACDIR)/cltool.c -o $(UIMACDIR)/build/Unison.app/Contents/MacOS/cltool -framework Carbon; \
 	fi
 
 # OCaml objects for the bytecode version
@@ -185,9 +192,14 @@ ifeq ($(UISTYLE), text)
   OCAMLOBJS+=linktext.cmo
 endif
 
-## Mac UI
+## Old Mac UI
 ifeq ($(UISTYLE),mac)
   OCAMLOBJS+=uimacbridge.cmo
+endif
+
+## New Mac UI
+ifeq ($(UISTYLE),macnew)
+  OCAMLOBJS+=uimacbridgenew.cmo
 endif
 
 ## Graphic UI

@@ -582,6 +582,47 @@ let synchronizeOnce() =
     (exitStatus, failedPaths)
   end
 
+let watchinterval = 10
+
+let charsRead = ref []
+let linesRead = ref []
+let whatcherchan = ref None
+
+(*
+let suckOnFile () =
+  let ch = match !watcherchan with None -> assert false | Some(x) -> x in
+  let rec loop() =
+    match try Some(System.input_char ch) with End_of_file -> None with
+      None -> ...
+    | Some(c) ->
+        if c = '\n' then begin
+          linesRead := <turn (Safelist.rev !charsRead) into a string> :: !linesRead;
+          charsRead := []
+        end else begin
+          charsRead := c :: !charsRead;
+          loop()
+        end in
+  loop()
+*)
+
+let synchronizePathsFromFilesystemWatcher () =
+assert false
+(*
+  let watcherfilename = Prefs.read Uicommon.repeat in
+  ... open this file on both client and server and store a channel in
+      a global variable in each...
+  let rec loop failedPaths = 
+    ... read (on both hosts) from this channel till it is empty, keep 
+        any partial line in a buffer for next time, add all full lines
+        (from both hosts) to the Globals.paths preference, together
+        with failedPaths...
+    Prefs.set Globals.paths (failedPaths @ ...);
+    let (exitStatus,newFailedPaths) = synchronizeOnce() in
+    Trace.status (Printf.sprintf "\nSleeping for %d seconds...\n" watchinterval);
+    Unix.sleep watchinterval;
+    loop newFailedPaths
+*)
+
 let synchronizeUntilNoFailures () =
   let initValueOfPathsPreference = Prefs.read Globals.paths in
   let rec loop triesLeft =
@@ -595,17 +636,20 @@ let synchronizeUntilNoFailures () =
   loop (Prefs.read Uicommon.retry)
 
 let rec synchronizeUntilDone () =
+  let repeatinterval =
+    if Prefs.read Uicommon.repeat = "" then -1 else
+    try int_of_string (Prefs.read Uicommon.repeat)
+    with Invalid_argument "int_of_string" ->
+      (* If the 'repeat' pref is not a number, switch modes... *)
+      synchronizePathsFromFilesystemWatcher() in
+
   let exitStatus = synchronizeUntilNoFailures() in
-  if Prefs.read Uicommon.repeat = "" then
-    (* Done *)
+  if repeatinterval < 0 then
     exitStatus
   else begin
     (* Do it again *)
-    let n = try int_of_string (Prefs.read Uicommon.repeat)
-            with Invalid_argument "int_of_string" ->
-              assert false (* file watching not yet implemented *) in
-    Trace.status (Printf.sprintf "\nSleeping for %d seconds...\n" n);
-    Unix.sleep n;
+    Trace.status (Printf.sprintf "\nSleeping for %d seconds...\n" repeatinterval);
+    Unix.sleep repeatinterval;
     synchronizeUntilDone ()
   end
 

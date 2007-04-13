@@ -21,7 +21,29 @@ let theState = ref [| |];;
 let unisonDirectory() = Fspath.toString Os.unisonDir
 ;;
 Callback.register "unisonDirectory" unisonDirectory;;
- 
+
+(* Global progress indicator, similar to uigtk2.m; *) 
+external displayGlobalProgress : float -> unit = "displayGlobalProgress";;
+
+let totalBytesToTransfer = ref Uutil.Filesize.zero;;
+let totalBytesTransferred = ref Uutil.Filesize.zero;;
+
+let showGlobalProgress b =
+  (* Concatenate the new message *)
+  totalBytesTransferred := Uutil.Filesize.add !totalBytesTransferred b;
+  let v = 
+    if !totalBytesToTransfer  = Uutil.Filesize.dummy then 0.
+    else if !totalBytesToTransfer  = Uutil.Filesize.zero then 100.
+    else (Uutil.Filesize.percentageOfTotalSize
+       !totalBytesTransferred !totalBytesToTransfer)
+  in
+  displayGlobalProgress v;;
+
+let initGlobalProgress b =
+  totalBytesToTransfer := b;
+  totalBytesTransferred := Uutil.Filesize.zero;
+  showGlobalProgress Uutil.Filesize.zero;;
+
 (* Defined in MyController.m, used to redisplay the table
    when the status for a row changes *)
 external displayStatus : string -> unit = "displayStatus";;
@@ -44,6 +66,7 @@ let showProgress i bytes dbg =
       Printf.sprintf "%5s " (Uutil.Filesize.toString b)
     else Util.percent2string (Uutil.Filesize.percentageOfTotalSize b len) in
   item.statusMessage <- Some newstatus;
+  showGlobalProgress bytes;
 (* FIX: No status window in Mac version, see GTK version for how to do it *)
   reloadTable i;;
 
@@ -69,6 +92,8 @@ let unisonInit0() =
   Trace.sendLogMsgsToStderr := false;
   (* Display progress in GUI *)
   Uutil.setProgressPrinter showProgress;
+  (* Initialise global progress so progress bar is not updated *)
+  initGlobalProgress Uutil.Filesize.dummy;
   (* Make sure we have a directory for archives and profiles *)
   Os.createUnisonDir();
   (* Extract any command line profile or roots *)
@@ -333,12 +358,68 @@ let unisonRiToProgress ri =
   | (_,Some (Util.Failed s),_) -> "FAILED";;
 Callback.register "unisonRiToProgress" unisonRiToProgress;;
 
+(* --------------------------------------------------- *)
+
+(* Defined in MyController.m, used to show diffs *)
+external displayDiff : string -> string -> unit = "displayDiff";;
+external displayDiffErr : string -> unit = "displayDiffErr";;
+
+(* If only properties have changed, we can't diff or merge.
+   'Can't diff' is produced (uicommon.ml) if diff is attemped
+   when either side has PropsChanged *)
+let filesAreDifferent status1 status2 = 
+  match status1, status2 with
+   `PropsChanged, `Unchanged -> false
+  | `Unchanged, `PropsChanged -> false
+  | `PropsChanged, `PropsChanged -> false
+  | _, _ -> true;;
+
+(* check precondition for diff; used to disable diff button *)
+let canDiff ri = 
+  match ri.ri.replicas with
+    Problem _ -> false
+  | Different((`FILE, status1, _, _),(`FILE, status2, _, _), _, _) ->
+      filesAreDifferent status1 status2
+  | Different _ -> false;;
+Callback.register "canDiff" canDiff;;
+
+(* from Uicommon *)
+(* precondition: uc = File (Updates(_, ..) on both sides *)
+let showDiffs ri printer errprinter id =
+  let p = ri.path in
+  match ri.replicas with
+    Problem _ ->
+      errprinter
+        "Can't diff files: there was a problem during update detection"
+  | Different((`FILE, status1, _, ui1), (`FILE, status2, _, ui2), _, _) ->
+      if filesAreDifferent status1 status2 then
+        (let (root1,root2) = Globals.roots() in
+         begin
+           try Files.diff root1 p ui1 root2 p ui2 printer id
+           with Util.Transient e -> errprinter e
+         end)
+  | Different _ ->
+      errprinter "Can't diff: path doesn't refer to a file in both replicas"
+
+let runShowDiffs ri i =
+  let file = Uutil.File.ofLine i in
+    showDiffs ri.ri displayDiff displayDiffErr file;;
+Callback.register "runShowDiffs" runShowDiffs;;
+
+(* --------------------------------------------------- *)
+
 let unisonSynchronize () =
   if Array.length !theState = 0 then
     Trace.status "Nothing to synchronize"
   else begin
     Trace.status "Propagating changes";
     Transport.logStart ();
+    let totalLength =
+      Array.fold_left
+        (fun l si -> Uutil.Filesize.add l (Common.riLength si.ri))
+        Uutil.Filesize.zero !theState in
+    displayGlobalProgress 0.;
+    initGlobalProgress totalLength;
     let t = Trace.startTimer "Propagating changes" in
     let im = Array.length !theState in
     let rec loop i actions pRiThisRound =
@@ -351,10 +432,12 @@ let unisonSynchronize () =
                 return ()
               else
                 catch (fun () ->
-                         Transport.transportItem
-                           theSI.ri (Uutil.File.ofLine i)
-                           (fun title text -> 
-			     Trace.status (Printf.sprintf "MERGE %s: %s" title text); true)
+                  Transport.transportItem
+                    theSI.ri (Uutil.File.ofLine i)
+                    (fun title text -> 
+		       debug (fun () -> Util.msg "MERGE '%s': '%s'"
+                            title text);
+                       displayDiff title text; true)
                          >>= (fun () ->
                          return Util.Succeeded))
                       (fun e ->
@@ -405,6 +488,7 @@ let unisonSynchronize () =
     Trace.status
       (Printf.sprintf "Synchronization complete         %s%s%s"
          failures (if failures=""||skipped="" then "" else ", ") skipped);
+    initGlobalProgress Uutil.Filesize.zero;
   end;;
 Callback.register "unisonSynchronize" unisonSynchronize;;
 
@@ -471,6 +555,16 @@ let unisonRiIsConflict ri =
   | Different(_,_,_,Conflict) -> true
   | _ -> false;;
 Callback.register "unisonRiIsConflict" unisonRiIsConflict;;
+
+(* Test whether reconItem's current state is different from 
+   Unison's recommendation.  Used to colour arrows in 
+   the reconItems table *)
+let changedFromDefault ri = 
+  match ri.ri.replicas with
+    Different(_,_,{contents=curr},default) -> curr<>default
+   | _ -> false;;
+Callback.register "changedFromDefault" changedFromDefault;;
+
 let unisonRiRevert ri =
   match ri.ri.replicas with
   | Different(_,_,d,d0) -> d := d0
@@ -486,6 +580,7 @@ let unisonProfileInit (profileName:string) (r1:string) (r2:string) =
 Callback.register "unisonProfileInit" unisonProfileInit;;
 
 Callback.register "unisonPasswordMsg" Terminal.password;;
+Callback.register "unisonPassphraseMsg" Terminal.passphrase;;
 Callback.register "unisonAuthenticityMsg" Terminal.authenticity;;
 
 let unisonExnInfo e =
@@ -496,3 +591,4 @@ let unisonExnInfo e =
       Printf.sprintf "Unix error(%s,%s,%s)" (Unix.error_message ue) s1 s2
   | _ -> Printexc.to_string e;;
 Callback.register "unisonExnInfo" unisonExnInfo;;
+
