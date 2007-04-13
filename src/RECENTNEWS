@@ -1,3 +1,8 @@
+CHANGES FROM VERSION 2.27.15
+
+* Make Unison compile out of the box on FreeBSD.  (Thanks to Kurt Bond.)
+
+-------------------------------
 CHANGES FROM VERSION 2.27.12
 
 * Make the GTK(1) user interface compile again.  (Thanks to Zvezdan
