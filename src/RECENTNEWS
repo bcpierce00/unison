@@ -1,60 +1,38 @@
-CHANGES FROM VERSION 2.27.19
+CHANGES FROM VERSION 2.28.-2
 
-* Copy small fix
--------------------------------
-CHANGES FROM VERSION 2.27.14
+* Very preliminary support for triggering Unison from an external 
+  filesystem-watching utility.  The current implementation is very
+  simple, not efficient, and almost completely untested.  Not ready 
+  for real users.  But if someone wants to help me improve it (e.g.,
+  by writing a filesystem watcher for your favorite OS), please let
+  me know.
 
-* Copying over changes from 2.27 branch to developer sources (checkpoint)
+  On the Unison side, the new behavior is incredibly simple:
+    - use the text UI 
+    - start Unison with the command-line flag "-repeat FOO", 
+      where FOO is name of a file where Unison should look 
+      for notifications of changes
+    - when it starts up, Unison will read the whole contents 
+      of this file (on both hosts), which should be a 
+      newline-separated list of paths (relative to the root 
+      of the synchronization) and synchronize just these paths, 
+      as if it had been started with the "-path=xxx" option for 
+      each one of them
+    - when it finishes, it will sleep for a few seconds and then
+      examine the watchfile again; if anything has been added, it
+      will read the new paths, synchronize them, and go back to 
+      sleep
+    - that's it!
 
--------------------------------
-CHANGES FROM VERSION 2.27.14
+  To use this to drive Unison "incrementally," just start it in 
+  this mode and start up a tool (on each host) to watch for
+  new changes to the filesystem and append the appropriate paths
+  to the watchfile.  Hopefully such tools should not be too hard
+  to write.
 
-* Copying over changes from 2.27 branch to developer sources (checkpoint)
-
--------------------------------
-CHANGES FROM VERSION 2.27.17
-
-* Restored old OSX GUI from version 2.17.  This UI is not nearly as
-  pretty or featureful as the new one that's been under construction
-  for a while, but at least it works!  (The new one does not handle 
-  multiple UI threads correctly when it is calling back and forth 
-  between OCaml and Objective C, leading to UI freezes and random 
-  crashes.)
-
-  Building Unison with 'make UISTYLE=mac' will build you the old,
-  working UI.  Building with 'make UISTYLE=macnew' will build you the 
-  new UI, in case you'd like to help fix it. :-)
-
--------------------------------
-CHANGES FROM VERSION 2.27.16
-
-* Rename OSX GUI from "mac" to "macnew" (in preparation for restoring old
-  GUI and calling it "mac")
-
-
--------------------------------
-CHANGES FROM VERSION 2.27.15
-
-* Correction to earlier patch
-
--------------------------------
-CHANGES FROM VERSION 2.27.9
-
-* Make the GTK(1) user interface compile again.  (Thanks to Zvezdan
-  Petkovic.)
-
-
--------------------------------
-CHANGES FROM VERSION 2.27.8
-
-* Small fix.
-
-
-
--------------------------------
-CHANGES FROM VERSION 2.27.7
-
-* Tidied documentation in preparation for new release.
-
+  Since I'm an OSX user, I'm particularly interested in writing a 
+  watcher tool for this platform.  If anybody knows about 
+  programming against the Spotlight API and can give me a hand, 
+  that would be much appreciated.
 
 -------------------------------

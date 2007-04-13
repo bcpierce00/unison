@@ -198,10 +198,14 @@ prefsdocs: all
 	./$(NAME) -prefsdocs 2> prefsdocsjunk.tmp
 	mv -f prefsdocsjunk.tmp prefsdocs.tmp
 
-# For developers at Penn
+# For developers 
 runtest:
 	$(MAKE) all NATIVE=false DEBUG=true
 	./unison test
+
+repeattest:
+	$(MAKE) all NATIVE=false DEBUG=true UISTYLE=text
+	./unison noprofile a.tmp b.tmp -repeat foo.tmp -debug ui
 
 selftest:
 	$(MAKE) all NATIVE=false DEBUG=true UISTYLE=text

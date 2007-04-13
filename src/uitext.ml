@@ -584,44 +584,76 @@ let synchronizeOnce() =
 
 let watchinterval = 10
 
-let charsRead = ref []
+(* FIX; Using string concatenation to accumulate characters is
+   pretty inefficient! *)
+let charsRead = ref ""
 let linesRead = ref []
-let whatcherchan = ref None
+let watcherchan = ref None
 
-(*
-let suckOnFile () =
-  let ch = match !watcherchan with None -> assert false | Some(x) -> x in
-  let rec loop() =
-    match try Some(System.input_char ch) with End_of_file -> None with
-      None -> ...
-    | Some(c) ->
-        if c = '\n' then begin
-          linesRead := <turn (Safelist.rev !charsRead) into a string> :: !linesRead;
-          charsRead := []
-        end else begin
-          charsRead := c :: !charsRead;
-          loop()
-        end in
-  loop()
-*)
+let suckOnWatcherFileLocal n =
+  Util.convertUnixErrorsToFatal
+    ("Reading changes from watcher process in file " ^ n)
+    (fun () ->
+       (* The main loop, invoked from two places below *)
+       let rec loop ch =
+         match try Some(input_char ch) with End_of_file -> None with
+           None ->
+             let res = !linesRead in
+             linesRead := [];
+             res
+         | Some(c) ->
+             if c = '\n' then begin
+               linesRead := !charsRead
+                            :: !linesRead;
+               charsRead := "";
+               loop ch
+             end else begin
+               charsRead := (!charsRead) ^ (String.make 1 c);
+               loop ch
+             end in
+       (* Make sure there's a file to watch, then read from it *)
+       match !watcherchan with
+         None -> 
+           if Sys.file_exists n then begin
+             let ch = open_in n in
+             watcherchan := Some(ch);
+             loop ch
+           end else []
+       | Some(ch) -> loop ch
+      )
+
+let suckOnWatcherFileRoot: Common.root -> string -> (string list) Lwt.t =
+  Remote.registerRootCmd
+    "suckOnWatcherFile"
+    (fun (fspath, n) ->
+      Lwt.return (suckOnWatcherFileLocal n))
+
+let suckOnWatcherFiles n =
+  Safelist.concat
+    (Lwt_unix.run (
+      Globals.allRootsMap (fun r -> suckOnWatcherFileRoot r n)))
 
 let synchronizePathsFromFilesystemWatcher () =
-assert false
-(*
   let watcherfilename = Prefs.read Uicommon.repeat in
-  ... open this file on both client and server and store a channel in
-      a global variable in each...
   let rec loop failedPaths = 
-    ... read (on both hosts) from this channel till it is empty, keep 
-        any partial line in a buffer for next time, add all full lines
-        (from both hosts) to the Globals.paths preference, together
-        with failedPaths...
-    Prefs.set Globals.paths (failedPaths @ ...);
-    let (exitStatus,newFailedPaths) = synchronizeOnce() in
-    Trace.status (Printf.sprintf "\nSleeping for %d seconds...\n" watchinterval);
-    Unix.sleep watchinterval;
-    loop newFailedPaths
-*)
+    let newpaths = suckOnWatcherFiles watcherfilename in
+    if newpaths <> [] then
+      display (Printf.sprintf "Changed paths:\n  %s\n"
+                 (String.concat "\n  " newpaths));
+    let p = failedPaths @ (Safelist.map Path.fromString newpaths) in
+    if p <> [] then begin
+      Prefs.set Globals.paths p;
+      let (exitStatus,newFailedPaths) = synchronizeOnce() in 
+      debug (fun() -> Util.msg "Sleeping for %d seconds...\n" watchinterval);
+      Unix.sleep watchinterval;
+      loop newFailedPaths 
+    end else begin
+      debug (fun() -> Util.msg "Nothing changed: sleeping for %d seconds...\n"
+               watchinterval);
+      Unix.sleep watchinterval;
+      loop []
+    end in
+  loop []
 
 let synchronizeUntilNoFailures () =
   let initValueOfPathsPreference = Prefs.read Globals.paths in
@@ -639,7 +671,7 @@ let rec synchronizeUntilDone () =
   let repeatinterval =
     if Prefs.read Uicommon.repeat = "" then -1 else
     try int_of_string (Prefs.read Uicommon.repeat)
-    with Invalid_argument "int_of_string" ->
+    with Failure "int_of_string" ->
       (* If the 'repeat' pref is not a number, switch modes... *)
       synchronizePathsFromFilesystemWatcher() in
 
