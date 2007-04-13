@@ -95,6 +95,7 @@ export:
 	$(MAKE) $(DOWNLOADDIR)
 	$(MAKE) exportdocs
 	$(MAKE) exportsources
+	(cd $(DOWNLOADDIR); genindexhtml)
 	@echo
 	@echo -n "OK to commit?  Press RETURN if yes (Crtl-C and tidy web dir if no)... "
 	@read JUNK
@@ -112,12 +113,13 @@ realcommit:
 	-chmod -R o-w $(EXPORTDIR)
 	-$(RM) $(DOWNLOADPARENT)/beta
 	-ln -s $(EXPORTNAME) $(DOWNLOADPARENT)/beta
+	(cd $(DOWNLOADPARENT); genindexhtml)
 
 $(DOWNLOADDIR):
 	@echo Creating DOWNLOADDIR = $(DOWNLOADDIR)
 	@echo
 	-mkdir -p $(DOWNLOADDIR)
-	-touch $(DOWNLOADDIR)/THIS-IS-UNISON-$(VERSION)
+	#touch $(DOWNLOADDIR)/THIS-IS-UNISON-$(VERSION)
 
 exportsources:
 	$(RM) -r $(TMP)/$(EXPORTNAME)
