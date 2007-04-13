@@ -21,6 +21,7 @@ extern void uerror (char * cmdname, value arg) Noreturn;
 #endif
 
 #ifdef __FreeBSD__
+#include <sys/types.h>
 #include <libutil.h>
 #define HAS_OPENPTY 1
 #endif
