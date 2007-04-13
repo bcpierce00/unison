@@ -1,3 +1,10 @@
+CHANGES FROM VERSION 2.27.16
+
+* Rename OSX GUI from "mac" to "macnew" (in preparation for restoring old
+  GUI and calling it "mac")
+
+
+-------------------------------
 CHANGES FROM VERSION 2.27.15
 
 * Make Unison compile out of the box on FreeBSD.  (Thanks to Kurt Bond.)
