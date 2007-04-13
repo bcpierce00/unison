@@ -55,8 +55,8 @@ OCAMLLIBDIR=$(shell ocamlc -v | tail -n -1 | sed -e 's/.* //g' | sed -e 's/\\/\/
 #     UISTYLE=text
 #     UISTYLE=gtk
 #     UISTYLE=gtk2
-#     UISTYLE=mac
-#     UISTYLE=macnew  (not yet working!)
+#     UISTYLE=mac     (old and limited, but working)
+#     UISTYLE=macnew  (spiffy, but not yet working)
 #
 # This should be set to an appropriate value automatically, depending
 # on whether the lablgtk library is available
