@@ -1092,7 +1092,10 @@ let checkContentsChange
       Fileinfo.InodeStamp inode ->
         info.Fileinfo.inode = inode
     | Fileinfo.CtimeStamp ctime ->
-        info.Fileinfo.ctime = ctime in
+        (* BCP [Apr 07]: This doesn't work -- ctimes are unreliable
+                         under windows.  :-(  
+           info.Fileinfo.ctime = ctime *)
+        true in
   let ressClearlyUnchanged =
     fastCheck
       &&

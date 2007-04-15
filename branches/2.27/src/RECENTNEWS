@@ -1,3 +1,10 @@
+CHANGES FROM VERSION 2.27.22
+
+* Small fix to ctime (non-)handling in update detection under windows
+  with fastcheck.  This *might* fix the bug that Karl M. has reported.
+
+
+-------------------------------
 CHANGES FROM VERSION 2.27.21
 
 * Small makefile fixes to export procedure
