@@ -1,3 +1,11 @@
+CHANGES FROM VERSION 2.28.1
+
+* Small fix to ctime (non-)handling in update detection under windows
+  with fastcheck.  This *might* fix the bug that Karl M. has reported.  
+  (Copying fix into trunk.)
+
+
+-------------------------------
 CHANGES FROM VERSION 2.28.-2
 
 * Very preliminary support for triggering Unison from an external 
