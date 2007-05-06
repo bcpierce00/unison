@@ -1,8 +1,8 @@
 /* ReconItem */
 
 #import <Cocoa/Cocoa.h>
-#define CAML_NAME_SPACE
-#include <caml/mlvalues.h>
+
+@class OCamlValue;
 
 @interface ReconItem : NSObject
 {
@@ -13,14 +13,14 @@
     NSString *directionSortString;
     NSString *progress;
     NSString *details;
-    value ri; // an ocaml Common.reconItem
+    OCamlValue *ri; // an ocaml Common.reconItem
     int index; // index in Ri list
     BOOL resolved;
     BOOL selected;
 }
+- initWithRiAndIndex:(OCamlValue *)v index:(int)i;
 - (BOOL)selected;
 - (void)setSelected:(BOOL)x;
-+ (id)initWithRiAndIndex:(value)v index:(int)i;
 - (NSString *) path;
 - (NSString *) left;
 - (NSString *) right;

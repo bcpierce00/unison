@@ -1,20 +1,13 @@
 /* Copyright (c) 2003, see file COPYING for details. */
 
 #import "ProfileController.h"
-#define CAML_NAME_SPACE
-#include <caml/mlvalues.h>
-#include <caml/callback.h>
-
-extern value Callback_checkexn(value,value);
+#import "Bridge.h"
 
 @implementation ProfileController
 
 NSString *unisonDirectory()
 {
-    static value *f = NULL;
-    if (f == NULL)
-      f = caml_named_value("unisonDirectory");
-    return [NSString stringWithCString:String_val(Callback_checkexn(*f, Val_unit))];
+    return (NSString *)ocamlCall("S", "unisonDirectory");
 }
 
 - (void)initProfiles

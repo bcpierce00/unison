@@ -7,14 +7,13 @@
 #import "ReconItem.h"
 #import "ReconTableView.h"
 #import "UnisonToolbar.h"
+#import "Bridge.h"
 
+#define CAML_NAME_SPACE
 #include <caml/callback.h>
 #include <caml/alloc.h>
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
-
-extern value Callback_checkexn(value,value);
-extern value Callback2_checkexn(value,value,value);
 
 @implementation MyController
 
@@ -31,44 +30,7 @@ static int doAsk = 2;
         /* Initialize locals */
         me = self;
         doneFirstDiff = NO;
-        newStatusText = [[NSMutableString alloc] initWithCapacity:1024];
-        newPasswordPrompt = [[NSMutableString alloc] initWithCapacity:1024];
-        newProgress = 0.;
-        shouldResetSelection = NO;
 	
-        /* Ocaml initialization */
-        caml_reconItems = preconn = Val_int(0);
-        caml_register_global_root(&caml_reconItems);
-        caml_register_global_root(&preconn);
-
-        /* Cross-thread notification support to ensure GUI updates 
-           only happen in main thread */
-        [self setupThreadingSupport];
-
-        [[NSNotificationCenter defaultCenter] addObserver:self
-            selector:@selector(processNotification:)
-            name:@"statusTextNeedsUpdate" object:nil];
-
-        [[NSNotificationCenter defaultCenter] addObserver:self
-            selector:@selector(processNotification:)
-            name:@"tableViewNeedsUpdate" object:nil];	
-
-        [[NSNotificationCenter defaultCenter] addObserver:self
-            selector:@selector(processNotification:)
-            name:@"toolbarNeedsUpdate" object:nil];
-	
-        [[NSNotificationCenter defaultCenter] addObserver:self
-            selector:@selector(processNotification:)
-            name:@"progressBarNeedsUpdate" object:nil];
-
-        [[NSNotificationCenter defaultCenter] addObserver:self
-            selector:@selector(processNotification:)
-            name:@"tableViewSelectionDidChange" object:nil];
-
-        [[NSNotificationCenter defaultCenter] addObserver:self
-            selector:@selector(processNotification:)
-            name:@"raisePasswordWindow" object:nil];
-
         /* By default, invite user to install cltool */
         int pref = [[NSUserDefaults standardUserDefaults]
             integerForKey:@"CheckCltool"]; 
@@ -76,77 +38,8 @@ static int doAsk = 2;
             [[NSUserDefaults standardUserDefaults] 
                 setInteger:doAsk forKey:@"CheckCltool"];
     }
+
     return self;
-}
-
-- (void) setupThreadingSupport
-{
-    if ( notifications ) return;
-
-    notifications      = [[NSMutableArray alloc] init];
-    notificationLock   = [[NSLock alloc] init];
-    notificationThread = [[NSThread currentThread] retain];
-
-    notificationPort = [[NSMachPort alloc] init];
-    [notificationPort setDelegate:self];
-    [[NSRunLoop currentRunLoop] addPort:notificationPort
-            forMode:(NSString *) kCFRunLoopCommonModes];
-}
-
-- (void) handleMachMessage:(void *) msg {
-    [notificationLock lock];
-
-    while ( [notifications count] ) {
-        NSNotification *notification = [[notifications objectAtIndex:0] retain];
-        [notifications removeObjectAtIndex:0];
-        [notificationLock unlock];
-        [self processNotification:notification];
-        [notification release];
-        [notificationLock lock];
-    };
-
-    [notificationLock unlock];
-}
- 
-- (void) processNotification:(NSNotification *) notification
-{
-    /* Handle GUI update requests from subsidiary threads. 
-       If we're not the main thread, forward the notification
-       to it and exit */
-    if( [NSThread currentThread] != notificationThread ) {
-        // Forward the notification to the correct thread
-        [notificationLock lock];
-        [notifications addObject:notification];
-        [notificationLock unlock];
-        [notificationPort sendBeforeDate:[NSDate date]
-            components:nil from:nil reserved:0];
-    }
-    else {
-        if ([[notification name] isEqual:@"statusTextNeedsUpdate"]) {
-            [statusText setStringValue:newStatusText];
-        }
-        else if ([[notification name] isEqual:@"tableViewNeedsUpdate"]) {
-            [tableView reloadData]; 
-            if (shouldResetSelection) {
-                [tableView selectRow:0 byExtendingSelection:NO];
-                shouldResetSelection = NO;
-            }
-            [updatesView setNeedsDisplay:YES];	    
-        }
-        else if ([[notification name] isEqual:@"toolbarNeedsUpdate"]) {
-           [toolbar validateVisibleItems];
-           [updatesView setNeedsDisplay:YES];
-        }
-        else if ([[notification name] isEqual:@"progressBarNeedsUpdate"]) {
-            [progressBar incrementBy:(newProgress - [progressBar doubleValue])];
-        }
-        else if ([[notification name] isEqual:@"tableViewSelectionDidChange"]) {
-            [self tableViewSelectionDidChange:notification];
-        }
-        else if ([[notification name] isEqual:@"raisePasswordWindow"]) {
-            [self raisePasswordWindow:notification];
-        }
-    }
 }
 
 - (void)awakeFromNib
@@ -167,15 +60,10 @@ static int doAsk = 2;
        about box just because PRCS doesn't seem capable of getting the
        version into the InfoPlist.strings file; otherwise we'd use the
        standard about box. */
-    value *f = NULL;
-    f = caml_named_value("unisonGetVersion");
-    [versionText setStringValue:
-        [NSString stringWithCString:
-        String_val(Callback_checkexn(*f, Val_unit))]];
+    [versionText setStringValue:ocamlCall("S", "unisonGetVersion")];
     
     /* Command-line processing */
-    f = caml_named_value("unisonInit0");
-    value clprofile = Callback_checkexn(*f, Val_unit);
+    OCamlValue *clprofile = (id)ocamlCall("@", "unisonInit0");
     
     /* Add toolbar */
     toolbar = [[[UnisonToolbar alloc] 
@@ -183,17 +71,16 @@ static int doAsk = 2;
     [mainWindow setToolbar: toolbar];
 
     /* Set up the first window the user will see */
-    if (Is_block(clprofile)) {
+    if (clprofile) {
         /* A profile name was given on the command line */
-        value caml_profile = Field(clprofile,0);
-        [self profileSelected:[NSString 
-            stringWithCString:String_val(caml_profile)]];
+		NSString *profileName = [clprofile getField:0 withType:'S'];
+        [self profileSelected:profileName];
 
         /* If invoked from terminal we need to bring the app to the front */
         [NSApp activateIgnoringOtherApps:YES];
 
         /* Start the connection */
-        [self connect:caml_profile];
+        [self connect:profileName];
     }
     else {
         /* If invoked from terminal we need to bring the app to the front */
@@ -289,16 +176,48 @@ static int doAsk = 2;
 {
     NSString *profile = [profileController selected];
     [self profileSelected:profile];
-    const char *s = [profile cString];
-    value caml_s = caml_copy_string(s);
-    [self connect:caml_s];
+    [self connect:profile];
     return;
 }
 
-- (void)connect:(value)profileName
+- (void)updateToolbar
+{
+    [toolbar validateVisibleItems];
+    [updatesView setNeedsDisplay:YES];
+}
+
+- (void)updateTableViewWithReset:(BOOL)shouldResetSelection
+{
+	[tableView reloadData]; 
+	if (shouldResetSelection) {
+		[tableView selectRow:0 byExtendingSelection:NO];
+		shouldResetSelection = NO;
+	}
+	[updatesView setNeedsDisplay:YES];	    
+}
+
+- (void)updateProgressBar:(NSNumber *)newProgress
+{
+	// NSLog(@"Updating progress bar: %i - %i", (int)[newProgress doubleValue], (int)[progressBar doubleValue]);
+	[progressBar incrementBy:([newProgress doubleValue] - [progressBar doubleValue])];
+}
+
+- (void)updateTableViewSelection
+{
+    int n = [tableView numberOfSelectedRows];
+    if (n == 1) [self displayDetails:[tableView selectedRow]];
+    else [self clearDetails];
+}
+
+- (void)tableViewSelectionDidChange:(NSNotification *)note
+{
+	[self updateTableViewSelection];
+}
+
+- (void)connect:(NSString *)profileName
 {
     // contact server, propagate prefs
-    NSLog(@"Connecting...");
+    NSLog(@"Connecting to %@...", profileName);
 
     // Switch to ConnectingView
     [mainWindow setContentView:blankView];
@@ -311,68 +230,52 @@ static int doAsk = 2;
     // Update (almost) immediately
     [ConnectingView display];
 
-    thisProfileName = profileName;
-
     syncable = NO;
     afterSync = NO;    
     
-    [[NSNotificationCenter defaultCenter]
-        postNotificationName:@"toolbarNeedsUpdate"
-        object:self];
+	[self updateToolbar];
     
-    [[NSNotificationCenter defaultCenter] addObserver:self
-        selector:@selector(afterOpen:)
-        name:NSThreadWillExitNotification object:nil];
-    [NSThread detachNewThreadSelector:@selector(doOpenThread:)
-        toTarget:self withObject:nil];
-
+	// will spawn thread on OCaml side and callback when complete
+	(void)ocamlCall("xS", "unisonInit1", profileName);
 }
 
-- (void)doOpenThread:(id)whatever
+CAMLprim value unisonInit1Complete(value v)
 {
-    NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
-
-    value *f = NULL;
-    f = caml_named_value("unisonInit1");
-    preconn = Callback_checkexn(*f, thisProfileName);
-    if (preconn == Val_unit) {
+    if (v == Val_unit) {
         NSLog(@"Connected.");
-        [pool release];
-        return;
-    }
-    // prompting required
-    preconn = Field(preconn,0); // value of Some
-    f = caml_named_value("openConnectionPrompt");
-    value prompt = Callback_checkexn(*f, preconn);
-    if (prompt == Val_unit) {
+		me->preconn = NULL;
+	    [me performSelectorOnMainThread:@selector(afterOpen:) withObject:NULL waitUntilDone:FALSE]; 
+    } else {
+	    // prompting required
+		me->preconn = [[OCamlValue alloc] initWithValue:Field(v,0)]; // value of Some
+		[me performSelectorOnMainThread:@selector(unisonInit1Complete:) withObject:NULL waitUntilDone:FALSE]; 
+	}
+
+    return Val_unit;
+}
+
+- (void)unisonInit1Complete:(id)ignore
+{
+    OCamlValue *prompt = ocamlCall("@@", "openConnectionPrompt", preconn);
+    if (!prompt) {
         // turns out, no prompt needed, but must finish opening connection
-        f = caml_named_value("openConnectionEnd");
-        Callback_checkexn(*f, preconn);
+		ocamlCall("x@", "openConnectionEnd", preconn);
         NSLog(@"Connected.");
         waitingForPassword = NO;
-        [pool release];
+		[self afterOpen];
         return;
     }
     waitingForPassword = YES;
 
-    [newPasswordPrompt 
-        setString:[NSString stringWithCString:String_val(Field(prompt,0))]];
-    [[NSNotificationCenter defaultCenter]
-        postNotificationName:@"raisePasswordWindow"
-        object:self];        
-    
+	[self raisePasswordWindow:[prompt getField:0 withType:'S']]; 
     NSLog(@"Connected.");
-    [pool release];
 }
 
-- (void)raisePasswordWindow:(NSNotification *)notification
+- (void)raisePasswordWindow:(NSString *)prompt
 {
     // FIX: some prompts don't ask for password, need to look at it
-    NSString * prompt = newPasswordPrompt;
     NSLog(@"Got the prompt: '%@'",prompt);
-    value *f = caml_named_value("unisonPasswordMsg");
-    value v = Callback_checkexn(*f, caml_copy_string([prompt cString]));
-    if (v == Val_true) {
+    if ((int)ocamlCall("iS", "unisonPasswordMsg", prompt)) {
         [passwordPrompt setStringValue:@"Please enter your password"];
         [NSApp beginSheet:passwordWindow
             modalForWindow:mainWindow
@@ -381,9 +284,7 @@ static int doAsk = 2;
             contextInfo:nil];
         return;
     }
-    f = caml_named_value("unisonPassphraseMsg");
-    v = Callback_checkexn(*f, caml_copy_string([prompt cString]));
-    if (v == Val_true) {
+    if ((int)ocamlCall("iS", "unisonPassphraseMsg", prompt)) {
         [passwordPrompt setStringValue:@"Please enter your passphrase"];
         [NSApp beginSheet:passwordWindow
             modalForWindow:mainWindow
@@ -392,48 +293,36 @@ static int doAsk = 2;
             contextInfo:nil];
         return;
     }
-    f = caml_named_value("unisonAuthenticityMsg");
-    v = Callback_checkexn(*f, caml_copy_string([prompt cString]));
-    if (v == Val_true) {
+    if ((int)ocamlCall("iS", "unisonAuthenticityMsg", prompt)) {
         int i = NSRunAlertPanel(@"New host",prompt,@"Yes",@"No",nil);
         if (i == NSAlertDefaultReturn) {
-            f = caml_named_value("openConnectionReply");
-            Callback2_checkexn(*f, preconn, caml_copy_string("yes"));
-            f = caml_named_value("openConnectionPrompt");
-            value prompt = Callback_checkexn(*f, preconn);
-            if (prompt == Val_unit) {
+			ocamlCall("x@s", "openConnectionReply", preconn, "yes");
+			prompt = ocamlCall("S@", "openConnectionPrompt", preconn);
+            if (!prompt) {
                 // all done with prompts, finish opening connection
-                f = caml_named_value("openConnectionEnd");
-                Callback_checkexn(*f, preconn);
+				ocamlCall("x@", "openConnectionEnd", preconn);
                 waitingForPassword = NO;
                 [self afterOpen];
                 return;
             }
             else {
-                [newPasswordPrompt 
-                    setString:[NSString 
+				[self raisePasswordWindow:[NSString 
                     stringWithCString:String_val(Field(prompt,0))]];
-                [[NSNotificationCenter defaultCenter]
-                    postNotificationName:@"raisePasswordWindow"
-                    object:self];        
                 return;
             }
         }
         if (i == NSAlertAlternateReturn) {
-            f = caml_named_value("openConnectionCancel");
-            Callback_checkexn(*f, preconn);
+			ocamlCall("x@", "openConnectionCancel", preconn);
             return;
         }
         else {
             NSLog(@"Unrecognized response '%d' from NSRunAlertPanel",i);
-            f = caml_named_value("openConnectionCancel");
-            Callback_checkexn(*f, preconn);
+			ocamlCall("x@", "openConnectionCancel", preconn);
             return;
         }
     }
     NSLog(@"Unrecognized message from ssh: %@",prompt);
-    f = caml_named_value("openConnectionCancel");
-    Callback_checkexn(*f, preconn);
+	ocamlCall("x@", "openConnectionCancel", preconn);
 }
 
 // The password window will invoke this when Enter occurs, b/c we
@@ -451,42 +340,28 @@ static int doAsk = 2;
     [passwordWindow orderOut:self];
     [NSApp endSheet:passwordWindow];
     if ([sender isEqualTo:passwordCancelButton]) {
-        value *f = caml_named_value("openConnectionCancel");
-        Callback_checkexn(*f, preconn);
+		ocamlCall("x@", "openConnectionCancel", preconn);
         [self chooseProfiles];
         return;
     }
     NSString *password = [passwordText stringValue];
-    value *f = NULL;
-    const char *s = [password cString];
-    value caml_s = caml_copy_string(s);
-    f = caml_named_value("openConnectionReply");
-    Callback2_checkexn(*f, preconn, caml_s);
-    f = caml_named_value("openConnectionPrompt");
-    value prompt = Callback_checkexn(*f, preconn);
-    if (prompt == Val_unit) {
+	ocamlCall("x@S", "openConnectionReply", preconn, password);
+
+    OCamlValue *prompt = ocamlCall("@@", "openConnectionPrompt", preconn);
+    if (!prompt) {
         // all done with prompts, finish opening connection
-        f = caml_named_value("openConnectionEnd");
-        Callback_checkexn(*f, preconn);
+		ocamlCall("x@", "openConnectionEnd", preconn);
         waitingForPassword = NO;
         [self afterOpen];
     }
     else {
-        [newPasswordPrompt 
-            setString:[NSString stringWithCString:String_val(Field(prompt,0))]];
-        [[NSNotificationCenter defaultCenter]
-            postNotificationName:@"raisePasswordWindow"
-            object:self];
+		[self raisePasswordWindow:[prompt getField:0 withType:'S']]; 
     }
 }
 
-- (void)afterOpen:(NSNotification *)notification
+- (void)afterOpen:(id)ignore
 {
-    [[NSNotificationCenter defaultCenter] removeObserver:self
-        name:NSThreadWillExitNotification
-        object:nil];
-
-    [self afterOpen];
+	[self afterOpen];
 }
 
 - (void)afterOpen
@@ -508,14 +383,8 @@ static int doAsk = 2;
     afterSync = NO;
 
     [tableView deselectAll:self];
-    [[NSNotificationCenter defaultCenter]
-        postNotificationName:@"toolbarNeedsUpdate"
-        object:self];
-
-    newProgress = 0.;
-    [[NSNotificationCenter defaultCenter]
-        postNotificationName:@"progressBarNeedsUpdate"
-        object:self];
+	[self updateToolbar];
+	[self updateProgressBar:[NSNumber numberWithDouble:0.0]];
     
     // this should depend on the number of reconitems, and is now done
     // in updateReconItems:
@@ -523,57 +392,42 @@ static int doAsk = 2;
     //[mainWindow makeFirstResponder:tableView];
     [tableView scrollRowToVisible:0];
 
-    [[NSNotificationCenter defaultCenter] addObserver:self
-        selector:@selector(afterUpdate:)
-        name:NSThreadWillExitNotification object:nil];
-    [NSThread detachNewThreadSelector:@selector(doUpdateThread:)
-        toTarget:self withObject:nil];
+	[preconn release];
+    preconn = NULL; // so old preconn can be garbage collected
+	// This will run in another thread spawned in OCaml and will return immediately
+	// We'll get a call back to unisonInit2Complete() when it is complete
+	ocamlCall("x", "unisonInit2");
 }
 
-- (void)doUpdateThread:(id)whatever
-{
-    NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
-    preconn = Val_unit; // so old preconn can be garbage collected
-    value *f = caml_named_value("unisonInit2");
-    caml_reconItems = Callback_checkexn(*f, Val_unit);
-    [pool release];
-}
 
-- (void)afterUpdate:(NSNotification *)notification
+- (void)afterUpdate:(id)ignore
 {
-    [[NSNotificationCenter defaultCenter] removeObserver:self
-        name:NSThreadWillExitNotification
-        object:nil];
-        [notificationController updateFinishedFor:[self profile]];
+	NSLog(@"In afterUpdate:...");
+    [notificationController updateFinishedFor:[self profile]];
     [self updateReconItems];
 
     // label the left and right columns with the roots
     NSTableHeaderCell *left = 
         [[[tableView tableColumns] objectAtIndex:0] headerCell];
-    value *f = caml_named_value("unisonFirstRootString");
-    [left setObjectValue:[NSString stringWithCString:
-        String_val(Callback_checkexn(*f, Val_unit))]];
+    [left setObjectValue:(NSString *)ocamlCall("S", "unisonFirstRootString")];
 
     NSTableHeaderCell *right = 
         [[[tableView tableColumns] objectAtIndex:2] headerCell];
-    f = caml_named_value("unisonSecondRootString");
-    [right setObjectValue:[NSString stringWithCString:
-        String_val(Callback_checkexn(*f, Val_unit))]];
+    [right setObjectValue:(NSString *)ocamlCall("S", "unisonSecondRootString")];
     
     [tableView sortReconItemsByColumn:
         [tableView tableColumnWithIdentifier:@"direction"]];
 
-    [[NSNotificationCenter defaultCenter]
-        postNotificationName:@"tableViewNeedsUpdate"
-        object:self];
+	[self updateTableViewWithReset:([reconItems count] > 0)];
+	[self updateToolbar];
+}
 
-    if ([reconItems count] > 0)
-        shouldResetSelection = YES;
-
-    [[NSNotificationCenter defaultCenter]
-        postNotificationName:@"toolbarNeedsUpdate"
-        object:self];
-
+CAMLprim value unisonInit2Complete(value v)
+{
+	[me->caml_reconItems autorelease];
+	me->caml_reconItems = [[OCamlValue alloc] initWithValue:v];
+    [me performSelectorOnMainThread:@selector(afterUpdate:) withObject:NULL waitUntilDone:FALSE]; 
+    return Val_unit;
 }
 
 - (IBAction)syncButton:(id)sender
@@ -582,66 +436,50 @@ static int doAsk = 2;
     syncable = NO;
     duringSync = YES;
  
-    [[NSNotificationCenter defaultCenter]
-        postNotificationName:@"toolbarNeedsUpdate"
-        object:self];
+	[self updateToolbar];
     
-    [[NSNotificationCenter defaultCenter] addObserver:self
-        selector:@selector(afterSync:)
-        name:NSThreadWillExitNotification object:nil];
-    [NSThread detachNewThreadSelector:@selector(doSyncThread:)
-        toTarget:self withObject:nil];
+	// This will run in another thread spawned in OCaml and will return immediately
+	// We'll get a call back to syncComplete() when it is complete
+	ocamlCall("x", "unisonSynchronize");
 }
 
-- (void)doSyncThread:(id)whatever
+- (void)afterSync:(id)ignore
 {
-    NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
-    value *f = caml_named_value("unisonSynchronize");
-    Callback_checkexn(*f, Val_unit);
-    [pool release];
-}
-
-- (void)afterSync:(NSNotification *)notification
-{
-    [[NSNotificationCenter defaultCenter] removeObserver:self
-        name:NSThreadWillExitNotification
-        object:nil];
     [notificationController syncFinishedFor:[self profile]];
     duringSync = NO;
     afterSync = YES;
-    
-    [[NSNotificationCenter defaultCenter]
-        postNotificationName:@"toolbarNeedsUpdate"
-        object:self];
+    [self updateToolbar];
     
     int i;
     for (i = 0; i < [reconItems count]; i++) {
         [[reconItems objectAtIndex:i] resetProgress];
     }
 
-    [[NSNotificationCenter defaultCenter]
-        postNotificationName:@"tableViewSelectionDidChange"
-        object:self];
-
-    [[NSNotificationCenter defaultCenter]
-        postNotificationName:@"tableViewNeedsUpdate"
-        object:self];
+	[self updateTableViewSelection];
+		
+	[self updateTableViewWithReset:FALSE];
 }
 
-// A function called from ocaml
-CAMLprim value reloadTable(value row)
+CAMLprim value syncComplete()
 {
-    int i = Int_val(row);
-    [me updateTableView:i]; // we need 'me' to access its instance variables
+    [me performSelectorOnMainThread:@selector(afterSync:) withObject:NULL waitUntilDone:FALSE]; 
     return Val_unit;
 }
 
-- (void)updateTableView:(int)i
+// A function called from ocaml
+- (void)reloadTable:(NSNumber *)i
 {
-    [[reconItems objectAtIndex:i] resetProgress];
-    [[NSNotificationCenter defaultCenter]
-        postNotificationName:@"tableViewNeedsUpdate"
-        object:self];
+    [[reconItems objectAtIndex:[i intValue]] resetProgress];
+	[self updateTableViewWithReset:FALSE];
+}
+
+CAMLprim value reloadTable(value row)
+{
+	// NSLog("ReloadTable: %i", Int_val(row));
+	NSNumber *num = [[NSNumber alloc] initWithInt:Int_val(row)];
+    [me performSelectorOnMainThread:@selector(reloadTable:) withObject:num waitUntilDone:FALSE]; 
+	[num release];
+    return Val_unit;
 }
 
 - (int)numberOfRowsInTableView:(NSTableView *)aTableView
@@ -666,13 +504,6 @@ CAMLprim value reloadTable(value row)
     else return @"[internal error!]";
 }
 
-- (void)tableViewSelectionDidChange:(NSNotification *)note
-{
-    int n = [tableView numberOfSelectedRows];
-    if (n == 1) [self displayDetails:[tableView selectedRow]];
-    else [self clearDetails];
-}
-
 - (void)tableView:(NSTableView *)aTableView 
     didClickTableColumn:(NSTableColumn *)tableColumn
 {
@@ -694,10 +525,10 @@ CAMLprim value reloadTable(value row)
     [reconItems release];
     reconItems = [[NSMutableArray alloc] init];
     int j = 0;
-    int n = Wosize_val(caml_reconItems);
+    int n =[caml_reconItems count];
     for (; j<n; j++) {
         [reconItems insertObject:
-            [ReconItem initWithRiAndIndex:Field(caml_reconItems,j) index:j]
+            [[[ReconItem alloc] initWithRiAndIndex:(id)[caml_reconItems getField:j withType:'@'] index:j] autorelease]
             atIndex:j];
     }
       
@@ -709,9 +540,7 @@ CAMLprim value reloadTable(value row)
         [mainWindow makeFirstResponder:tableView];
 
         // Make sure details get updated
-        [[NSNotificationCenter defaultCenter]
-            postNotificationName:@"tableViewSelectionDidChange"
-            object:self];
+		[self updateTableViewSelection];
 
         syncable = YES;
     }
@@ -722,17 +551,13 @@ CAMLprim value reloadTable(value row)
         // reconItems table no longer gets keyboard input
         [mainWindow makeFirstResponder:nil];
     }
-    [[NSNotificationCenter defaultCenter]
-        postNotificationName:@"toolbarNeedsUpdate"
-        object:self];
+	[self updateToolbar];
 }
 
 - (int)updateForIgnore:(int)i
 {
-    value *f = caml_named_value("unisonUpdateForIgnore");
-    int j = Int_val(Callback_checkexn(*f,Val_int(i)));
-    f = caml_named_value("unisonState");
-    caml_reconItems = Callback_checkexn(*f, Val_unit);
+    int j = (int)ocamlCall("ii", "unisonUpdateForIgnore", i);
+    caml_reconItems = (id)ocamlCall("@", "unisonState");
     [self updateReconItems];
     return j;
 }
@@ -740,8 +565,10 @@ CAMLprim value reloadTable(value row)
 // A function called from ocaml
 CAMLprim value displayStatus(value s)
 {
-    [me statusTextSet:[NSString stringWithCString:String_val(s)]];
-//    NSLog(@"dS: %s",String_val(s));
+	NSString *str = [[NSString alloc] initWithCString:String_val(s)];
+    // NSLog(@"displayStatus: %@", str);
+    [me performSelectorOnMainThread:@selector(statusTextSet:) withObject:str waitUntilDone:FALSE];
+	[str release];
     return Val_unit;
 }
 
@@ -749,35 +576,26 @@ CAMLprim value displayStatus(value s)
     /* filter out strings with # reconitems, and empty strings */
     if (!NSEqualRanges([s rangeOfString:@"reconitems"], 
          NSMakeRange(NSNotFound,0))) return;
-    /* store the new value and call the main thread 
-       to actually do the display */
-    [newStatusText setString:s];
-    [[NSNotificationCenter defaultCenter]
-        postNotificationName:@"statusTextNeedsUpdate"
-        object:self];
+    [statusText setStringValue:s];
 }
 
 // Called from ocaml to dislpay progress bar
 CAMLprim value displayGlobalProgress(value p)
 {
-    [me setGlobalProgressToValue:Double_val(p)];
+	NSNumber *num = [[NSNumber alloc] initWithDouble:Double_val(p)];
+    [me performSelectorOnMainThread:@selector(updateProgressBar:) 
+		withObject:num waitUntilDone:FALSE]; 
+	[num release];
     return Val_unit;
-}
-
-- (void)setGlobalProgressToValue:(double) progress
-{
-    newProgress = progress;
-    [[NSNotificationCenter defaultCenter]
-        postNotificationName:@"progressBarNeedsUpdate"
-        object:self];
 }
 
 // Called from ocaml to display diff
 CAMLprim value displayDiff(value s, value s2)
 {
-    [me diffViewTextSet:
-        [NSString stringWithCString:String_val(s)]
-        bodyText:[NSString stringWithCString:String_val(s2)]];
+    [me performSelectorOnMainThread:@selector(diffViewTextSet:) 
+						withObject:[NSArray arrayWithObjects:[NSString stringWithCString:String_val(s)],
+											[NSString stringWithCString:String_val(s2)], nil]
+						waitUntilDone:FALSE]; 
     return Val_unit;
 }
 
@@ -787,8 +605,14 @@ CAMLprim value displayDiffErr(value s)
     NSString * str = [NSString stringWithCString:String_val(s)];
     str = [[str componentsSeparatedByString:@"\n"] 
         componentsJoinedByString:@" "];
-    [me statusTextSet:str];
+	[me->statusText performSelectorOnMainThread:@selector(setStringValue:) 
+				withObject:str waitUntilDone:FALSE]; 
     return Val_unit;
+}
+
+- (void)diffViewTextSet:(NSArray *)args
+{
+	[self diffViewTextSet:[args objectAtIndex:0] bodyText:[args objectAtIndex:1]];
 }
 
 - (void)diffViewTextSet:(NSString *)title bodyText:(NSString *)body {
