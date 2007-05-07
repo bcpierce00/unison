@@ -1,3 +1,9 @@
+CHANGES FROM VERSION 2.28.5
+
+* Add couple of missing files.
+
+
+-------------------------------
 CHANGES FROM VERSION 2.28.4
 
 * Apply experimental patch from Craig Federighi, which seems to fix
