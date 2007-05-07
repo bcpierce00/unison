@@ -7,52 +7,7 @@
 //
 
 #import <Cocoa/Cocoa.h>
-
-#define CAML_NAME_SPACE
-#include <caml/callback.h>
-
-// BCP, December 2006: Added this lock to try to solve the UI crashes that
-// several people have been seeing, following advice from Trevor.
-#include <pthread.h>
-pthread_mutex_t global_callback_lock = PTHREAD_MUTEX_INITIALIZER;
-
-void reportExn(value e) {
-    value *f = caml_named_value("unisonExnInfo");
-    pthread_mutex_lock(&global_callback_lock);
-    char *m = String_val(caml_callback(*f,Extract_exception(e)));
-    pthread_mutex_unlock(&global_callback_lock);
-    NSString *s = [NSString stringWithFormat:@"Uncaught exception: %s", m];
-    s = [[s componentsSeparatedByString:@"\n"] componentsJoinedByString:@" "];
-    NSLog(@"%@",s);
-    NSRunAlertPanel(@"Fatal error",s,@"Exit",nil,nil);
-}
-
-value Callback_checkexn(value c,value v) {
-    pthread_mutex_lock(&global_callback_lock);
-    value e = caml_callback_exn(c,v);
-    pthread_mutex_unlock(&global_callback_lock);
-    if (!Is_exception_result(e)) return e;
-    reportExn(e);
-    exit(1);
-}
-
-value Callback2_checkexn(value c,value v1,value v2) {
-    pthread_mutex_lock(&global_callback_lock);
-    value e = caml_callback2_exn(c,v1,v2);
-    pthread_mutex_unlock(&global_callback_lock);
-    if (!Is_exception_result(e)) return e;
-    reportExn(e);
-    exit(1);
-}
-
-value Callback3_checkexn(value c,value v1,value v2,value v3) {
-    pthread_mutex_lock(&global_callback_lock);
-    value e = caml_callback3_exn(c,v1,v2,v3);
-    pthread_mutex_unlock(&global_callback_lock);
-    if (!Is_exception_result(e)) return e;
-    reportExn(e);
-    exit(1);
-}
+#import "Bridge.h"
 
 int main(int argc, const char *argv[])
 {
@@ -68,11 +23,9 @@ int main(int argc, const char *argv[])
         argc--;
         argv[1] = NULL;
     }
-    
-    /* Initialize ocaml gc, etc. */
-    caml_startup((char **)argv); // cast to avoid warning, caml_startup assumes non-const,
-                                 // NSApplicationMain assumes const
-
+	
+	[Bridge startup:argv];
+	
     /* Check for invocations that don't start up the gui */
     for (i=1; i<argc; i++) {
         if (!strcmp(argv[i],"-doc") ||
@@ -83,25 +36,20 @@ int main(int argc, const char *argv[])
             !strcmp(argv[i],"-ui")) {
             /* We install an autorelease pool here because there might be callbacks
                from ocaml to objc code */
+			NSLog(@"Calling nonGuiStartup");
             NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
-            value *f = caml_named_value("unisonNonGuiStartup");
-            pthread_mutex_lock(&global_callback_lock);
-            value e = caml_callback_exn(*f,Val_unit);
-            pthread_mutex_unlock(&global_callback_lock);
-            if (Is_exception_result(e)) {
-                value *f = caml_named_value("unisonExnInfo");
-                pthread_mutex_lock(&global_callback_lock);
-                char *m = String_val(caml_callback(*f,Extract_exception(e)));
-                pthread_mutex_unlock(&global_callback_lock);
-                NSLog(@"Uncaught exception: %s", m);
-                exit(1);
-            }
+			@try {
+				ocamlCall("x", "unisonNonGuiStartup");
+			} @catch (NSException *ex) {
+				NSLog(@"Uncaught exception: %@", [ex reason]);
+				exit(1);
+			}
             [pool release];
             /* If we get here without exiting first, the non GUI startup detected a
                -ui graphic or command-line profile, and we should in fact start the GUI. */
         }
     }
-    
-    /* go! */
+	
+	/* go! */
     return NSApplicationMain(argc, argv);
 }

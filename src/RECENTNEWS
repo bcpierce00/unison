@@ -1,4 +1,24 @@
+CHANGES FROM VERSION 2.27.24
+
+* Another fix to ctime (non-)handling
+
+* Propagate experimental fix for OSX GUI from trunk
+
+-------------------------------
+CHANGES FROM VERSION 2.27.24
+
+* Another fix to ctime (non-)handling
+
+* Propagate experimental fix for OSX GUI from trunk
+
+-------------------------------
 CHANGES FROM VERSION 2.27.22
+
+* Apply experimental patch from Craig Federighi, which seems to fix
+  the deadlocks and crashes in new OSX UI.  (Actually, this is a major
+  rewrite and cleanup of the whole Cocoa UI.)  Thanks, Craig!!!
+
+  It would be great if some Mac users could help stress-test this fix.
 
 * Small fix to ctime (non-)handling in update detection under windows
   with fastcheck.  This *might* fix the bug that Karl M. has reported.

@@ -523,7 +523,9 @@ let loadArchives (optimistic: bool) : bool Lwt.t =
     raise (Util.Fatal(
 	"Internal error: On-disk archives are not identical.\n"
       ^ "\n"
-      ^ "If you get this message repeatedly, please:\n"
+      ^ "This can happen when both machines have the same hostname.\n"
+      ^ "\n"
+      ^ "If this is not the case and you get this message repeatedly, please:\n"
       ^ "  a) Send a bug report to unison-users@yahoogroups.com (you may need"
       ^ "     to join the group before you will be allowed to post).\n"
       ^ "  b) Move the archive files on each machine to some other directory\n"

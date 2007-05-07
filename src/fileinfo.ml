@@ -111,12 +111,12 @@ let pretendLocalOSIsWin32 =
   ^ "systems.  The {\\tt fastcheck} option should also be set to true.")
 
 let stamp info =
-  if Prefs.read pretendLocalOSIsWin32 then CtimeStamp info.ctime else
+       (* Was "CtimeStamp info.ctime", but this is bogus: Windows
+          ctimes are not reliable. *)
+  if Prefs.read pretendLocalOSIsWin32 then CtimeStamp 0.0 else
   match Util.osType with
     `Unix  -> InodeStamp info.inode
   | `Win32 -> CtimeStamp 0.0
-       (* Was "CtimeStamp info.ctime", but this is bogus: Windows
-          ctimes are not reliable. *)
 
 let ressStamp info = Osx.stamp info.osX
 
