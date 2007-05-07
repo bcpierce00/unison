@@ -46,7 +46,29 @@ let initGlobalProgress b =
 
 (* Defined in MyController.m, used to redisplay the table
    when the status for a row changes *)
+external bridgeThreadWait : int -> unit = "bridgeThreadWait";;
+
+(* Defined in MyController.m, used to redisplay the table
+   when the status for a row changes *)
 external displayStatus : string -> unit = "displayStatus";;
+
+(*
+	Called to create callback threads which wait on the C side for callbacks.
+	(We create three just for good measure...)
+	
+	FIXME: the thread created by Thread.create doesn't run even if we yield --
+	we have to join.  At that point we actually do get a different pthread, but
+	we've caused the calling thread to block (forever).  As a result, this call
+	never returns.
+*)
+let callbackThreadCreate() = 
+	let tCode () = 
+		bridgeThreadWait 1;
+	in Thread.create tCode (); Thread.create tCode ();
+	let tid = Thread.create tCode ()
+	in Thread.join tid;
+;;
+Callback.register "callbackThreadCreate" callbackThreadCreate;;
 
 (* Defined in MyController.m, used to redisplay the table
    when the status for a row changes *)
@@ -146,7 +168,7 @@ Callback.register "unisonInit0" unisonInit0;;
 let firstTime = ref(true)
 
 (* After figuring out the profile name *)
-let unisonInit1 profileName =
+let do_unisonInit1 profileName =
   (* Load the profile and command-line arguments *)
   (* Restore prefs to their default values, if necessary *)
   if not !firstTime then Prefs.resetToDefaults();
@@ -191,13 +213,23 @@ let unisonInit1 profileName =
     raise(Util.Fatal "cannot synchronize more than one remote root");
   | _ -> None
 ;;
+external unisonInit1Complete : Remote.preconnection option -> unit = "unisonInit1Complete";;
+
+(* Do this in another thread and return immedidately to free up main thread in cocoa *)
+let unisonInit1 profileName =
+	let doIt () =
+		let r =  do_unisonInit1 profileName in 
+		unisonInit1Complete r;
+	in
+	Thread.create doIt();
+;;
 Callback.register "unisonInit1" unisonInit1;;
 Callback.register "openConnectionPrompt" Remote.openConnectionPrompt;;
 Callback.register "openConnectionReply" Remote.openConnectionReply;;
 Callback.register "openConnectionEnd" Remote.openConnectionEnd;;
 Callback.register "openConnectionCancel" Remote.openConnectionCancel;;
 
-let unisonInit2 () =
+let do_unisonInit2 () =
   (* Canonize the names of the roots and install them in Globals. *)
   Globals.installRoots2();
 
@@ -280,6 +312,17 @@ let unisonInit2 () =
     Util.warn (Uicommon.dangerousPathMsg dangerousPaths)
   end;
   !theState
+;;
+
+external unisonInit2Complete : stateItem array -> unit = "unisonInit2Complete";;
+
+(* Do this in another thread and return immedidately to free up main thread in cocoa *)
+let unisonInit2 () =
+	let doIt () =
+		let r =  do_unisonInit2 () in 
+		unisonInit2Complete r;
+	in
+	Thread.create doIt();
 ;;
 Callback.register "unisonInit2" unisonInit2;;
 
@@ -408,7 +451,7 @@ Callback.register "runShowDiffs" runShowDiffs;;
 
 (* --------------------------------------------------- *)
 
-let unisonSynchronize () =
+let do_unisonSynchronize () =
   if Array.length !theState = 0 then
     Trace.status "Nothing to synchronize"
   else begin
@@ -490,6 +533,16 @@ let unisonSynchronize () =
          failures (if failures=""||skipped="" then "" else ", ") skipped);
     initGlobalProgress Uutil.Filesize.zero;
   end;;
+external syncComplete : unit -> unit = "syncComplete";;
+
+(* Do this in another thread and return immedidately to free up main thread in cocoa *)
+let unisonSynchronize () =
+	let doIt () =
+		do_unisonSynchronize ();
+		syncComplete ();
+	in 
+	Thread.create doIt();
+;;
 Callback.register "unisonSynchronize" unisonSynchronize;;
 
 let unisonIgnorePath si =

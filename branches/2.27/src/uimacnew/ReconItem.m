@@ -1,30 +1,24 @@
 #import "ReconItem.h"
-#include <caml/callback.h>
-#include <caml/memory.h>
-
-extern value Callback_checkexn(value,value);
-extern value Callback2_checkexn(value,value,value);
+#import "Bridge.h"
 
 @implementation ReconItem
 
+- initWithRiAndIndex:(OCamlValue *)v index:(int)i
+{
+    [super init];
+    ri = [v retain];
+	index = i;
+    resolved = NO;
+	selected = NO; // NB only used/updated during sorts. Not a 
+				   // reliable indicator of whether item is selected
+    directionSortString = @"";
+    return self;
+}
+
 -(void)dealloc
 {
-    ri = Val_unit;
-    caml_remove_global_root(&ri);
+    [ri autorelease];
     [super dealloc];
-}
-
-- (void)setRi:(value)v
-{
-    caml_register_global_root(&ri); // needed in case of ocaml garbage collection
-    ri = v;
-    resolved = NO;
-    directionSortString = @"";
-}
-
-- (void)setIndex:(int)i
-{
-    index = i;
 }
 
 - (BOOL)selected
@@ -37,67 +31,28 @@ extern value Callback2_checkexn(value,value,value);
     selected = x;
 }
 
-- init
-{
-    if ((self = [super init])) {
-        resolved = NO;
-        selected = NO; // NB only used/updated during sorts. Not a 
-                       // reliable indicator of whether item is selected
-    }
-
-    return self;
-}
-
-+ (id)initWithRiAndIndex:(value)v index:(int)i
-{
-    ReconItem *r = [[ReconItem alloc] init];
-    [r setRi:v];
-    [r setIndex:i];
-    return r;
-}
-
 - (NSString *)path
 {
-    if (path) return path;
-    
-    value *f = caml_named_value("unisonRiToPath");
-    [path release];
-    path = [NSString stringWithCString:String_val(Callback_checkexn(*f, ri))];
-    [path retain];
+    if (!path) path = [(NSString *)ocamlCall("S@", "unisonRiToPath", ri) retain];
     return path;
 }
 
 - (NSString *)left
 {
-    if (left) return left;
-    
-    value *f = caml_named_value("unisonRiToLeft");
-    [left release];
-    left = [NSString stringWithCString:String_val(Callback_checkexn(*f, ri))];
-    [left retain];
-    return left;
+    if (!left) left = [(NSString *)ocamlCall("S@", "unisonRiToLeft", ri) retain];
+	return left;
 }
 
 - (NSString *)right
 {
-    if (right) return right;
-    
-    value *f = caml_named_value("unisonRiToRight");
-    [right release];
-    right = [NSString stringWithCString:String_val(Callback_checkexn(*f, ri))];
-    [right retain];
+    if (right) right = [(NSString *)ocamlCall("S@", "unisonRiToRight", ri) retain];    
     return right;
 }
 
 - (NSImage *)direction
 {
-    if (direction) return direction;
-    
-    value *f = caml_named_value("unisonRiToDirection");
-    value v = Callback_checkexn(*f, ri);
-    char *s = String_val(v);
-    [direction release];
-    NSString * dirString = [NSString stringWithCString:s];
+    if (direction) return direction;    
+    NSString * dirString = (NSString *)ocamlCall("S@", "unisonRiToDirection", ri);
 
     BOOL changedFromDefault = [self changedFromDefault];
     
@@ -152,8 +107,7 @@ extern value Callback2_checkexn(value,value,value);
 {
     [direction release];
     direction = nil;
-    value *f = caml_named_value(d);
-    Callback_checkexn(*f, ri);
+	ocamlCall("x@", d, ri);
 }
 
 - (void)doAction:(unichar)action
@@ -189,19 +143,15 @@ extern value Callback2_checkexn(value,value,value);
 
 - (void)doIgnore:(unichar)action
 {
-    value *f;
     switch (action) {
     case 'I':
-        f = caml_named_value("unisonIgnorePath");
-        Callback_checkexn(*f, ri);
+		ocamlCall("x@", "unisonIgnorePath");
         break;
     case 'E':
-        f = caml_named_value("unisonIgnoreExt");
-        Callback_checkexn(*f, ri);
+		ocamlCall("x@", "unisonIgnoreExt");
         break;
     case 'N':
-        f = caml_named_value("unisonIgnoreName");
-        Callback_checkexn(*f, ri);
+		ocamlCall("x@", "unisonIgnoreName");
         break;
     default:
         NSLog(@"ReconItem.doIgnore : unknown ignore");
@@ -211,13 +161,11 @@ extern value Callback2_checkexn(value,value,value);
 
 - (NSString *)progress
 {
-    if (progress) return progress;
-    
-    value *f = caml_named_value("unisonRiToProgress");
-    progress = [NSString stringWithCString:String_val(Callback_checkexn(*f, ri))];
-    [progress retain];
-    if ([progress isEqual:@"FAILED"]) [self updateDetails];
-    return progress;
+    if (!progress) {
+		progress = 	[(NSString *)ocamlCall("S@", "unisonRiToProgress", ri) retain];
+		if ([progress isEqual:@"FAILED"]) [self updateDetails];
+    }
+	return progress;
 }
 
 - (void)resetProgress
@@ -235,30 +183,24 @@ extern value Callback2_checkexn(value,value,value);
 
 - (NSString *)updateDetails
 {
-    value *f = caml_named_value("unisonRiToDetails");
-    details = [NSString stringWithCString:String_val(Callback_checkexn(*f, ri))];
-    [details retain];
+	[details autorelease];
+	details = [(NSString *)ocamlCall("S@", "unisonRiToDetails", ri) retain];
     return details;
 }
 
 - (BOOL)isConflict
 {
-    value *f = caml_named_value("unisonRiIsConflict");
-    if (Callback_checkexn(*f, ri) == Val_true) return YES;
-    else return NO;
+	return ((int)ocamlCall("i@", "unisonRiIsConflict", ri) ? YES : NO);
 }
 
 - (BOOL)changedFromDefault
 {
-    value *f = caml_named_value("changedFromDefault");
-    if (Callback_checkexn(*f, ri) == Val_true) return YES;
-    else return NO;
+	return ((int)ocamlCall("i@", "changedFromDefault", ri) ? YES : NO);
 }
 
 - (void)revertDirection
 {
-    value *f = caml_named_value("unisonRiRevert");
-    Callback_checkexn(*f, ri);
+	ocamlCall("x@", "unisonRiRevert", ri);
     [direction release];
     direction = nil;
     resolved = NO;
@@ -266,15 +208,12 @@ extern value Callback2_checkexn(value,value,value);
 
 - (BOOL)canDiff
 {
-    value *f = caml_named_value("canDiff");
-    if (Callback_checkexn(*f, ri) == Val_true) return YES;
-    else return NO;
+	return ((int)ocamlCall("i@", "canDiff", ri) ? YES : NO);
 }
 
 - (void)showDiffs
 {
-    value *f = caml_named_value("runShowDiffs");
-    Callback2_checkexn(*f, ri, Val_int(index));
+	ocamlCall("x@i", "runShowDiffs", ri, index);
 }
 
 /* Sorting functions. These have names equal to

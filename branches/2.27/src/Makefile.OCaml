@@ -42,7 +42,7 @@ endif
 # to Unix '/' separators, and extraneous control-M's are deleted.
 # Unfortunately there is a literal control-M buried in this, I'd rather
 # get rid of it...
-# OCAMLLIBDIR=$(shell ocamlc -v | tail -n -1 | sed -e 's/.* //g' | sed -e 's/\\/\//g' | sed -e 's///g')
+# OCAMLLIBDIR=$(shell ocamlc -v | tail -n -1 | sed -e 's/.* //g' | sed -e 's/\\/\//g' | sed -e 's///g')
 # Better(?) version, June 2005:
 OCAMLLIBDIR=$(shell ocamlc -v | tail -n -1 | sed -e 's/.* //g' | sed -e 's/\\/\//g' | tr -d '\r')
 
@@ -56,7 +56,7 @@ OCAMLLIBDIR=$(shell ocamlc -v | tail -n -1 | sed -e 's/.* //g' | sed -e 's/\\/\/
 #     UISTYLE=gtk
 #     UISTYLE=gtk2
 #     UISTYLE=mac     (old and limited, but working)
-#     UISTYLE=macnew  (spiffy, but not yet working)
+#     UISTYLE=macnew  (spiffy, but not yet extensively tested)
 #
 # This should be set to an appropriate value automatically, depending
 # on whether the lablgtk library is available
@@ -64,15 +64,15 @@ LABLGTKLIB=$(OCAMLLIBDIR)/lablgtk
 LABLGTK2LIB=$(OCAMLLIBDIR)/lablgtk2
 ##BCP [3/2007]: Removed temporarily, since the OSX UI is not working well 
 ## at the moment and we don't want to confuse people by building it by default
-##ifeq ($(OSARCH),osx)
-##  UISTYLE=mac
-##else
+ifeq ($(OSARCH),osx)
+  UISTYLE=macnew
+else
   ifeq ($(wildcard $(LABLGTK2LIB)),$(LABLGTK2LIB))
     UISTYLE=gtk2
   else
     UISTYLE=text
 endif
-##endif
+endif
 buildexecutable::
 	@echo UISTYLE = $(UISTYLE)
 
@@ -200,6 +200,9 @@ endif
 ## New Mac UI
 ifeq ($(UISTYLE),macnew)
   OCAMLOBJS+=uimacbridgenew.cmo
+  THREADS=true
+  OCAMLLIBS+=threads.cma
+  INCLFLAGS+=-thread 
 endif
 
 ## Graphic UI

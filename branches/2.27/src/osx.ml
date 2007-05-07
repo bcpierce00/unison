@@ -240,7 +240,10 @@ let getFileInfos fspath path typ =
                    end,
                    stats.Unix.LargeFile.st_mtime,
                    begin match Util.osType with
-                     `Win32 -> stats.Unix.LargeFile.st_ctime
+                     `Win32 -> (* Was "stats.Unix.LargeFile.st_ctime", but 
+                                  this was bogus: Windows ctimes are
+                                  not reliable.  [BCP, Apr 07] *)
+                       0.
                    | `Unix  -> 0.
                    end,
                    Uutil.Filesize.ofInt64 rsrcLength,

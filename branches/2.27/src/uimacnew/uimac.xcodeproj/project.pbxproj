@@ -11,6 +11,9 @@
 		2A3C3F7C09922D4900E404E9 /* NotificationController.h in Headers */ = {isa = PBXBuildFile; fileRef = 2A3C3F7A09922D4900E404E9 /* NotificationController.h */; };
 		2A3C3F7D09922D4900E404E9 /* NotificationController.m in Sources */ = {isa = PBXBuildFile; fileRef = 2A3C3F7B09922D4900E404E9 /* NotificationController.m */; };
 		2A3C3FAE0992323F00E404E9 /* Growl.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2A3C3F3209922A8000E404E9 /* Growl.framework */; };
+		449F03E00BE00DE9003F15C8 /* Bridge.h in Headers */ = {isa = PBXBuildFile; fileRef = 449F03DE0BE00DE9003F15C8 /* Bridge.h */; };
+		449F03E10BE00DE9003F15C8 /* Bridge.m in Sources */ = {isa = PBXBuildFile; fileRef = 449F03DF0BE00DE9003F15C8 /* Bridge.m */; };
+		44A794A10BE16C380069680C /* ExceptionHandling.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 44A794A00BE16C380069680C /* ExceptionHandling.framework */; };
 		69C625DF0664EC3300B3C46A /* MyController.h in Headers */ = {isa = PBXBuildFile; fileRef = 69660DC604F08CC100CF23A4 /* MyController.h */; };
 		69C625E00664EC3300B3C46A /* ProfileController.h in Headers */ = {isa = PBXBuildFile; fileRef = 690F564404F11EC300CF23A4 /* ProfileController.h */; };
 		69C625E10664EC3300B3C46A /* ReconItem.h in Headers */ = {isa = PBXBuildFile; fileRef = 69D3C6FA04F1CC3700CF23A4 /* ReconItem.h */; };
@@ -52,33 +55,6 @@
 		B5E03B3909E38B9E0058C7B9 /* rescan.tif in Resources */ = {isa = PBXBuildFile; fileRef = B5E03B3809E38B9E0058C7B9 /* rescan.tif */; };
 /* End PBXBuildFile section */
 
-/* Begin PBXBuildStyle section */
-		4A9504CCFFE6A4B311CA0CBA /* Development */ = {
-			isa = PBXBuildStyle;
-			buildSettings = {
-				COPY_PHASE_STRIP = NO;
-				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_ENABLE_FIX_AND_CONTINUE = YES;
-				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
-				GCC_OPTIMIZATION_LEVEL = 0;
-				NSZombieEnabled = YES;
-				OPTIMIZATION_CFLAGS = "-O0";
-				ZERO_LINK = YES;
-			};
-			name = Development;
-		};
-		4A9504CDFFE6A4B311CA0CBA /* Deployment */ = {
-			isa = PBXBuildStyle;
-			buildSettings = {
-				COPY_PHASE_STRIP = YES;
-				GCC_ENABLE_FIX_AND_CONTINUE = NO;
-				GCC_WARN_FOUR_CHARACTER_CONSTANTS = YES;
-				ZERO_LINK = NO;
-			};
-			name = Deployment;
-		};
-/* End PBXBuildStyle section */
-
 /* Begin PBXCopyFilesBuildPhase section */
 		2A3C3F3709922AA600E404E9 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
@@ -102,6 +78,9 @@
 		2A3C3F3209922A8000E404E9 /* Growl.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = Growl.framework; sourceTree = "<group>"; };
 		2A3C3F7A09922D4900E404E9 /* NotificationController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NotificationController.h; sourceTree = "<group>"; };
 		2A3C3F7B09922D4900E404E9 /* NotificationController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = NotificationController.m; sourceTree = "<group>"; };
+		449F03DE0BE00DE9003F15C8 /* Bridge.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Bridge.h; sourceTree = "<group>"; };
+		449F03DF0BE00DE9003F15C8 /* Bridge.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Bridge.m; sourceTree = "<group>"; };
+		44A794A00BE16C380069680C /* ExceptionHandling.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ExceptionHandling.framework; path = /System/Library/Frameworks/ExceptionHandling.framework; sourceTree = "<absolute>"; };
 		690F564404F11EC300CF23A4 /* ProfileController.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ProfileController.h; sourceTree = "<group>"; };
 		690F564504F11EC300CF23A4 /* ProfileController.m */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.objc; path = ProfileController.m; sourceTree = "<group>"; };
 		691CE180051BB44A00CF23A4 /* ProfileTableView.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ProfileTableView.h; sourceTree = "<group>"; };
@@ -114,7 +93,7 @@
 		69BA7DA904FD695200CF23A4 /* ReconTableView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ReconTableView.m; sourceTree = "<group>"; };
 		69C625CA0664E94E00B3C46A /* Unison.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = Unison.icns; sourceTree = "<group>"; };
 		69C625F40664EC3300B3C46A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Info.plist; sourceTree = "<group>"; };
-		69C625F50664EC3300B3C46A /* Unison.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Unison.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		69C625F50664EC3300B3C46A /* Unison.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Unison.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		69D3C6F904F1CC3700CF23A4 /* ReconItem.m */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.objc; path = ReconItem.m; sourceTree = "<group>"; };
 		69D3C6FA04F1CC3700CF23A4 /* ReconItem.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ReconItem.h; sourceTree = "<group>"; };
 		69E407B907EB95AA00D37AA1 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = /System/Library/Frameworks/Security.framework; sourceTree = "<absolute>"; };
@@ -149,6 +128,7 @@
 				69C625F20664EC3300B3C46A /* Cocoa.framework in Frameworks */,
 				69E407BA07EB95AA00D37AA1 /* Security.framework in Frameworks */,
 				2A3C3FAE0992323F00E404E9 /* Growl.framework in Frameworks */,
+				44A794A10BE16C380069680C /* ExceptionHandling.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -165,6 +145,7 @@
 		1058C7A0FEA54F0111CA2CBB /* Linked Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				44A794A00BE16C380069680C /* ExceptionHandling.framework */,
 				1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */,
 			);
 			name = "Linked Frameworks";
@@ -225,6 +206,8 @@
 				691CE181051BB44A00CF23A4 /* ProfileTableView.m */,
 				B554003E09C4E5A00089E1C3 /* UnisonToolbar.h */,
 				B554004009C4E5AA0089E1C3 /* UnisonToolbar.m */,
+				449F03DE0BE00DE9003F15C8 /* Bridge.h */,
+				449F03DF0BE00DE9003F15C8 /* Bridge.m */,
 			);
 			name = "Other Sources";
 			sourceTree = "<group>";
@@ -295,6 +278,7 @@
 				69C625E40664EC3300B3C46A /* ProfileTableView.h in Headers */,
 				2A3C3F7C09922D4900E404E9 /* NotificationController.h in Headers */,
 				B554003F09C4E5A00089E1C3 /* UnisonToolbar.h in Headers */,
+				449F03E00BE00DE9003F15C8 /* Bridge.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -313,32 +297,6 @@
 			);
 			buildRules = (
 			);
-			buildSettings = {
-				FRAMEWORK_SEARCH_PATHS = "";
-				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				HEADER_SEARCH_PATHS = "$(OCAMLLIBDIR)";
-				INFOPLIST_FILE = Info.plist;
-				INSTALL_PATH = "$(HOME)/Applications";
-				LIBRARY_SEARCH_PATHS = "";
-				OCAMLLIBDIR = /usr/local/lib/ocaml;
-				OTHER_CFLAGS = "";
-				OTHER_LDFLAGS = (
-					"$(SRCROOT)/../unison-blob.o",
-					"-L$(OCAMLLIBDIR)",
-					"-lunix",
-					"-lstr",
-					"-lasmrun",
-				);
-				PREBINDING = NO;
-				PRODUCT_NAME = Unison;
-				SECTORDER_FLAGS = "";
-				WARNING_CFLAGS = (
-					"-Wmost",
-					"-Wno-four-char-constants",
-					"-Wno-unknown-pragmas",
-				);
-				WRAPPER_EXTENSION = app;
-			};
 			dependencies = (
 			);
 			name = uimac;
@@ -353,12 +311,6 @@
 		29B97313FDCFA39411CA2CEA /* Project object */ = {
 			isa = PBXProject;
 			buildConfigurationList = 2A3C3F2C0992245300E404E9 /* Build configuration list for PBXProject "uimac" */;
-			buildSettings = {
-			};
-			buildStyles = (
-				4A9504CCFFE6A4B311CA0CBA /* Development */,
-				4A9504CDFFE6A4B311CA0CBA /* Deployment */,
-			);
 			hasScannedForEncodings = 1;
 			mainGroup = 29B97314FDCFA39411CA2CEA /* uimac */;
 			projectDirPath = "";
@@ -414,6 +366,7 @@
 				69C625F00664EC3300B3C46A /* ProfileTableView.m in Sources */,
 				2A3C3F7D09922D4900E404E9 /* NotificationController.m in Sources */,
 				B554004109C4E5AA0089E1C3 /* UnisonToolbar.m in Sources */,
+				449F03E10BE00DE9003F15C8 /* Bridge.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -449,6 +402,7 @@
 				);
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_ENABLE_FIX_AND_CONTINUE = YES;
+				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
@@ -464,6 +418,7 @@
 					"$(SRCROOT)/../unison-blob.o",
 					"-L$(OCAMLLIBDIR)",
 					"-lunix",
+					"-lthreadsnat",
 					"-lstr",
 					"-lasmrun",
 				);
@@ -489,6 +444,7 @@
 					"$(SRCROOT)",
 				);
 				GCC_ENABLE_FIX_AND_CONTINUE = NO;
+				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_WARN_FOUR_CHARACTER_CONSTANTS = YES;
 				HEADER_SEARCH_PATHS = "$(OCAMLLIBDIR)";
@@ -501,6 +457,7 @@
 					"$(SRCROOT)/../unison-blob.o",
 					"-L$(OCAMLLIBDIR)",
 					"-lunix",
+					"-lthreadsnat",
 					"-lstr",
 					"-lasmrun",
 				);
@@ -524,6 +481,7 @@
 					"$(FRAMEWORK_SEARCH_PATHS)",
 					"$(SRCROOT)",
 				);
+				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				HEADER_SEARCH_PATHS = "$(OCAMLLIBDIR)";
 				INFOPLIST_FILE = Info.plist;
@@ -535,6 +493,7 @@
 					"$(SRCROOT)/../unison-blob.o",
 					"-L$(OCAMLLIBDIR)",
 					"-lunix",
+					"-lthreadsnat",
 					"-lstr",
 					"-lasmrun",
 				);
