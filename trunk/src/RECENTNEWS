@@ -1,3 +1,14 @@
+CHANGES FROM VERSION 2.28.6
+
+* More improvements to the OSX GUI from Craig Federighi, including a very 
+  nice new "nested directory" display style and per-file progress bars.  Any
+  unison hackers using Macs are invited to check out the new UI and post
+  any bugs or suggestions for improvement to the unison-hackers list.
+
+  (There is one known issue that sometimes causes the list of changes to be 
+  redisplayed incorrectly after an Ignore command.)
+
+-------------------------------
 CHANGES FROM VERSION 2.28.5
 
 * Add couple of missing files.

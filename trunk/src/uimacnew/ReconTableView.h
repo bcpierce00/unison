@@ -10,7 +10,7 @@
 
 #import <AppKit/AppKit.h>
 
-@interface ReconTableView : NSTableView {
+@interface ReconTableView : NSOutlineView {
     BOOL editable;
 }
 - (BOOL)editable;
@@ -31,6 +31,10 @@
 - (IBAction)merge:(id)sender;
 - (IBAction)showDiff:(id)sender;
 - (BOOL)canDiffSelection;
-- (void)sortReconItemsByColumn:(NSTableColumn *)tableColumn;
+@end
 
+@interface NSOutlineView (_Selection)
+- (NSArray *)selectedObjects;
+- (NSEnumerator *)selectedObjectEnumerator;
+- (void)setSelectedObjects:(NSArray *)selection;
 @end

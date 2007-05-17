@@ -7,6 +7,8 @@
 #import "ReconItem.h"
 #import "ReconTableView.h"
 #import "UnisonToolbar.h"
+#import "ImageAndTextCell.h"
+#import "ProgressCell.h"
 #import "Bridge.h"
 
 #define CAML_NAME_SPACE
@@ -56,6 +58,9 @@ static int doAsk = 2;
     [[profileController tableView] setTarget:self];
     [[profileController tableView] setDoubleAction:@selector(openButton:)];
 
+	// use combo-cell for path
+    [[tableView tableColumnWithIdentifier:@"path"] setDataCell:[[[ImageAndTextCell alloc] init] autorelease]];
+
     /* Set up the version string in the about box.  We use a custom
        about box just because PRCS doesn't seem capable of getting the
        version into the InfoPlist.strings file; otherwise we'd use the
@@ -69,6 +74,9 @@ static int doAsk = 2;
     toolbar = [[[UnisonToolbar alloc] 
         initWithIdentifier: @"unisonToolbar" :self :tableView] autorelease];
     [mainWindow setToolbar: toolbar];
+	[toolbar takeTableModeView:tableModeSelector];
+	[self initTableMode];
+	
 
     /* Set up the first window the user will see */
     if (clprofile) {
@@ -182,7 +190,10 @@ static int doAsk = 2;
 
 - (void)updateToolbar
 {
-    [toolbar validateVisibleItems];
+    [toolbar validateVisibleItems];	
+	[tableModeSelector setEnabled:((syncable && !duringSync) || afterSync)];
+
+	// Why?
     [updatesView setNeedsDisplay:YES];
 }
 
@@ -205,7 +216,7 @@ static int doAsk = 2;
 - (void)updateTableViewSelection
 {
     int n = [tableView numberOfSelectedRows];
-    if (n == 1) [self displayDetails:[tableView selectedRow]];
+    if (n == 1) [self displayDetails:[tableView itemAtRow:[tableView selectedRow]]];
     else [self clearDetails];
 }
 
@@ -244,11 +255,11 @@ CAMLprim value unisonInit1Complete(value v)
     if (v == Val_unit) {
         NSLog(@"Connected.");
 		me->preconn = NULL;
-	    [me performSelectorOnMainThread:@selector(afterOpen:) withObject:NULL waitUntilDone:FALSE]; 
+	    [me performSelectorOnMainThread:@selector(afterOpen:) withObject:nil waitUntilDone:FALSE]; 
     } else {
 	    // prompting required
 		me->preconn = [[OCamlValue alloc] initWithValue:Field(v,0)]; // value of Some
-		[me performSelectorOnMainThread:@selector(unisonInit1Complete:) withObject:NULL waitUntilDone:FALSE]; 
+		[me performSelectorOnMainThread:@selector(unisonInit1Complete:) withObject:nil waitUntilDone:FALSE]; 
 	}
 
     return Val_unit;
@@ -400,23 +411,30 @@ CAMLprim value unisonInit1Complete(value v)
 }
 
 
-- (void)afterUpdate:(id)ignore
+- (void)afterUpdate:(id)retainedReconItems;
 {
-	NSLog(@"In afterUpdate:...");
+	// NSLog(@"In afterUpdate:...");
+    [self updateReconItems:retainedReconItems];
+	[retainedReconItems release];
+
     [notificationController updateFinishedFor:[self profile]];
-    [self updateReconItems];
 
     // label the left and right columns with the roots
-    NSTableHeaderCell *left = 
-        [[[tableView tableColumns] objectAtIndex:0] headerCell];
+    NSTableHeaderCell *left =  [[tableView tableColumnWithIdentifier:@"left"] headerCell];
     [left setObjectValue:(NSString *)ocamlCall("S", "unisonFirstRootString")];
 
-    NSTableHeaderCell *right = 
-        [[[tableView tableColumns] objectAtIndex:2] headerCell];
+    NSTableHeaderCell *right = [[tableView tableColumnWithIdentifier:@"right"] headerCell];
     [right setObjectValue:(NSString *)ocamlCall("S", "unisonSecondRootString")];
     
-    [tableView sortReconItemsByColumn:
-        [tableView tableColumnWithIdentifier:@"direction"]];
+	// Custom progress cell
+	ProgressCell *progressCell = [[ProgressCell alloc] init];
+	[[tableView tableColumnWithIdentifier:@"percentTransferred"] setDataCell:progressCell];
+	
+	// initial sort
+	[tableView setSortDescriptors:[NSArray arrayWithObjects: 
+		[[tableView tableColumnWithIdentifier:@"fileSizeString"] sortDescriptorPrototype],
+		[[tableView tableColumnWithIdentifier:@"path"] sortDescriptorPrototype],
+		nil]];
 
 	[self updateTableViewWithReset:([reconItems count] > 0)];
 	[self updateToolbar];
@@ -424,9 +442,7 @@ CAMLprim value unisonInit1Complete(value v)
 
 CAMLprim value unisonInit2Complete(value v)
 {
-	[me->caml_reconItems autorelease];
-	me->caml_reconItems = [[OCamlValue alloc] initWithValue:v];
-    [me performSelectorOnMainThread:@selector(afterUpdate:) withObject:NULL waitUntilDone:FALSE]; 
+    [me performSelectorOnMainThread:@selector(afterUpdate:) withObject:[[OCamlValue alloc] initWithValue:v] waitUntilDone:FALSE]; 
     return Val_unit;
 }
 
@@ -462,57 +478,98 @@ CAMLprim value unisonInit2Complete(value v)
 
 CAMLprim value syncComplete()
 {
-    [me performSelectorOnMainThread:@selector(afterSync:) withObject:NULL waitUntilDone:FALSE]; 
+    [me performSelectorOnMainThread:@selector(afterSync:) withObject:nil waitUntilDone:FALSE]; 
     return Val_unit;
 }
 
 // A function called from ocaml
 - (void)reloadTable:(NSNumber *)i
 {
+	// NSLog(@"*** ReloadTable: %i", [i intValue]);
+
     [[reconItems objectAtIndex:[i intValue]] resetProgress];
 	[self updateTableViewWithReset:FALSE];
 }
 
 CAMLprim value reloadTable(value row)
 {
-	// NSLog("ReloadTable: %i", Int_val(row));
+	// NSLog(@"OCaml says... ReloadTable: %i", Int_val(row));
 	NSNumber *num = [[NSNumber alloc] initWithInt:Int_val(row)];
     [me performSelectorOnMainThread:@selector(reloadTable:) withObject:num waitUntilDone:FALSE]; 
 	[num release];
     return Val_unit;
 }
 
-- (int)numberOfRowsInTableView:(NSTableView *)aTableView
-{
-    if (!reconItems) return 0;
-    else return [reconItems count];
+- (int)outlineView:(NSOutlineView *)outlineView numberOfChildrenOfItem:(id)item {
+	if (item == nil) item = rootItem;
+	return [[item children] count];
 }
 
-- (id)tableView:(NSTableView *)aTableView
-    objectValueForTableColumn:(NSTableColumn *)aTableColumn
-    row:(int)rowIndex
-{
-    if (!reconItems) {
-        return @"[internal error]";
-    }
-    if (rowIndex >= 0 && rowIndex < [reconItems count]) {
-        NSString *identifier = [aTableColumn identifier];
-        ReconItem *ri = [reconItems objectAtIndex:rowIndex];
-        NSObject *s = [ri valueForKey:identifier];
-        return s;
-    }
-    else return @"[internal error!]";
+- (BOOL)outlineView:(NSOutlineView *)outlineView isItemExpandable:(id)item {
+    return [item isKindOfClass:[ParentReconItem class]];
 }
 
-- (void)tableView:(NSTableView *)aTableView 
-    didClickTableColumn:(NSTableColumn *)tableColumn
-{
-    if ([aTableView isEqual:tableView]) {
-        [tableView sortReconItemsByColumn:tableColumn];
-        [[NSNotificationCenter defaultCenter]
-            postNotificationName:@"tableViewNeedsUpdate"
-            object:self];
+- (id)outlineView:(NSOutlineView *)outlineView child:(int)index ofItem:(id)item {
+	if (item == nil) item = rootItem;
+	return [[item children] objectAtIndex:index];
+}
+
+- (id)outlineView:(NSOutlineView *)outlineView objectValueForTableColumn:(NSTableColumn *)tableColumn byItem:(id)item {
+    NSString *identifier = [tableColumn identifier];
+	if (item == nil) item = rootItem;
+
+	if ([identifier isEqualToString:@"percentTransferred"] && (!duringSync && !afterSync)) return nil;
+
+	return [item valueForKey:identifier];
+}
+
+static NSDictionary *_SmallGreyAttributes = nil;
+
+- (void)outlineView:(NSOutlineView *)outlineView willDisplayCell:(NSCell *)cell forTableColumn:(NSTableColumn *)tableColumn item:(id)item {    
+	NSString *identifier = [tableColumn identifier];
+    if ([identifier isEqualToString:@"path"]) {
+		// The file icon
+		[(ImageAndTextCell*)cell setImage:[item fileIcon]];
+		
+		// For parents, format the file count into the text
+		int fileCount = [item fileCount];
+		if (fileCount > 1) {
+			NSString *countString = [NSString stringWithFormat:@"  (%i files)", fileCount];
+			NSString *fullString = [(NSString *)[cell objectValue] stringByAppendingString:countString];
+			NSMutableAttributedString *as = [[NSMutableAttributedString alloc] initWithString:fullString];
+
+			if (!_SmallGreyAttributes) {		
+				NSColor *txtColor = [NSColor grayColor];
+				NSFont *txtFont = [NSFont systemFontOfSize:9.0];
+				_SmallGreyAttributes = [[NSDictionary dictionaryWithObjectsAndKeys:txtFont,
+					NSFontAttributeName, txtColor, NSForegroundColorAttributeName,  nil] retain];
+			}
+			[as setAttributes:_SmallGreyAttributes range:NSMakeRange([fullString length] - [countString length], [countString length])];
+			[cell setAttributedStringValue:as];
+			[as release];
+		}
+    } else if ([identifier isEqualToString:@"percentTransferred"]) {
+		[(ProgressCell*)cell setIcon:[item direction]];		
+		[(ProgressCell*)cell setStatusString:[item progressString]];
+		[(ProgressCell*)cell setIsActive:[item isKindOfClass:[LeafReconItem class]]];		
     }
+}
+
+- (void)outlineView:(NSOutlineView *)outlineView 
+      sortDescriptorsDidChange:(NSArray *)oldDescriptors {
+	NSArray *originalSelection = [outlineView selectedObjects];
+	
+	// do we want to catch case of object changes to allow resort in same direction for progress / direction?
+	// Could check if our objects change and if the first item at the head of new and old were the same
+	[rootItem sortUsingDescriptors:[outlineView sortDescriptors]];
+	[outlineView reloadData];
+	[outlineView setSelectedObjects:originalSelection];
+}
+
+// Delegate methods
+
+- (BOOL)outlineView:(NSOutlineView *)outlineView shouldEditTableColumn:(NSTableColumn *)tableColumn item:(id)item {
+    return NO;
 }
 
 - (NSMutableArray *)reconItems // used in ReconTableView only
@@ -520,18 +577,85 @@ CAMLprim value reloadTable(value row)
     return reconItems;
 }
 
-- (void)updateReconItems
+- (int)tableMode
+{
+	return [tableModeSelector selectedSegment];
+}
+
+- (IBAction)tableModeChanged:(id)sender
+{
+	[[NSUserDefaults standardUserDefaults] setInteger:[self tableMode] forKey:@"TableLayout"];
+	[self updateForChangedItems];
+}
+
+- (void)initTableMode
+{
+	[tableModeSelector setSelectedSegment:[[NSUserDefaults standardUserDefaults] integerForKey:@"TableLayout"]];
+}
+
+- (void)updateReconItems:(OCamlValue *)caml_reconItems
 {
     [reconItems release];
     reconItems = [[NSMutableArray alloc] init];
-    int j = 0;
-    int n =[caml_reconItems count];
-    for (; j<n; j++) {
-        [reconItems insertObject:
-            [[[ReconItem alloc] initWithRiAndIndex:(id)[caml_reconItems getField:j withType:'@'] index:j] autorelease]
-            atIndex:j];
+	int i, n =[caml_reconItems count];
+    for (i=0; i<n; i++) {
+		LeafReconItem *item = [[LeafReconItem alloc] initWithRiAndIndex:(id)[caml_reconItems getField:i withType:'@'] index:i];
+        [reconItems addObject:item];
+		[item release];
     }
-      
+	[self updateForChangedItems];
+}
+
+- (void)expandConflictedParent:(ParentReconItem *)parent
+{
+	if ([parent hasConflictedChildren]) {
+		// NSLog(@"Expanding conflictedParent: %@", [parent fullPath]);
+		[tableView expandItem:parent expandChildren:NO];
+		NSArray *children = [parent children];
+		int i = 0, count = [children count];
+		for (;i < count; i++) {
+			id child = [children objectAtIndex:i];
+			if ([child isKindOfClass:[ParentReconItem class]]) [self expandConflictedParent:child];
+		}
+	}
+}
+
+- (void)updateForChangedItems
+{
+	int tableMode = [self tableMode];
+	
+	[rootItem release];
+	ParentReconItem *root = rootItem = [[ParentReconItem alloc] init];
+	
+	if (tableMode != 0) {
+		// Special roll-up root item for outline displays
+		root = [[ParentReconItem alloc] init];
+		[rootItem addChild:root nested:NO];
+		[root setPath:@"All Changes..."];
+		[root setFullPath:@""];
+		[root release];
+	}
+	
+    int j = 0, n =[reconItems count];
+    for (; j<n; j++) {
+		[root addChild:[reconItems objectAtIndex:j] nested:(tableMode != 0)];
+    }
+	
+	if (tableMode == 1) [root collapseParentsWithSingleChildren:YES];
+
+	[tableView reloadData];
+	
+	if (tableMode == 2) {
+		// Pre-expand entire tree
+		int i = [[rootItem children] count];
+		while (i--) {
+			[tableView expandItem:[[rootItem children] objectAtIndex:i] expandChildren:YES];
+		}
+	} else if (tableMode == 1) {
+		// smart expand to reveal conflicts / changes in direction
+		[self expandConflictedParent:root];
+	}
+	
     // Only enable sync if there are reconitems
     if ([reconItems count]>0) {
         [tableView setEditable:YES];
@@ -554,12 +678,12 @@ CAMLprim value reloadTable(value row)
 	[self updateToolbar];
 }
 
-- (int)updateForIgnore:(int)i
+- (id)updateForIgnore:(id)item
 {
-    int j = (int)ocamlCall("ii", "unisonUpdateForIgnore", i);
-    caml_reconItems = (id)ocamlCall("@", "unisonState");
-    [self updateReconItems];
-    return j;
+    int j = (int)ocamlCall("ii", "unisonUpdateForIgnore", [reconItems indexOfObjectIdenticalTo:item]);
+	NSLog(@"Updating for ignore...");
+    [self updateReconItems:(OCamlValue *)ocamlCall("@", "unisonState")];
+    return [reconItems objectAtIndex:j];
 }
 
 // A function called from ocaml
@@ -644,14 +768,14 @@ CAMLprim value displayDiffErr(value s)
    [diffWindow orderFront:nil];
 }
 
-- (void)displayDetails:(int)i
+- (void)displayDetails:(ReconItem *)item
 {
-    if (i >= 0 && i < [reconItems count])
-        {
-        [detailsTextView setFont:[NSFont fontWithName:@"Monaco" size:10]];
-        [detailsTextView setString:[[reconItems objectAtIndex:i] details]];
-    }
+	[detailsTextView setFont:[NSFont fontWithName:@"Monaco" size:10]];
+	NSString *text = [item details];
+	if (!text) text = @"";
+	[detailsTextView setString:text];
 }
+
 - (void)clearDetails
 {
     [detailsTextView setString:@""];
@@ -790,10 +914,8 @@ CAMLprim value displayDiffErr(value s)
 {
     if (action == @selector(syncButton:)) return syncable;
     // FIXME Restarting during sync is disabled because it causes UI corruption
-    else if (action == @selector(restartButton:))
-	return !duringSync;
-    else if (action == @selector(rescan:))
-	return ((syncable && !duringSync) || afterSync);
+    else if (action == @selector(restartButton:)) return !duringSync;
+    else if (action == @selector(rescan:)) return ((syncable && !duringSync) || afterSync);
     else return YES;
 }
 

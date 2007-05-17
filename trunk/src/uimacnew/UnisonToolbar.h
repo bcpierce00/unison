@@ -16,6 +16,7 @@
 	ReconTableView*  tableView;
 	MyController*    myController;
 	NSString*        currentView;
+	NSView*          tableModeView;
 }
 
 - initWithIdentifier:(NSString *) identifier :(MyController *) aController :(ReconTableView *) aTableView;
@@ -24,5 +25,6 @@
 - (NSArray *) toolbarDefaultItemIdentifiers: (NSToolbar *) toolbar;
 - (NSArray *) toolbarAllowedItemIdentifiers: (NSToolbar *) toolbar;
 - (void) setView: (NSString *) whichView;
+- (void)takeTableModeView:(NSView *)view;
 
 @end
