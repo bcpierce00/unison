@@ -4,7 +4,7 @@
 #import <Cocoa/Cocoa.h>
 
 @class ProfileController, PreferencesController, NotificationController, 
-    ReconTableView, UnisonToolbar, OCamlValue;
+    ReconItem, ParentReconItem, ReconTableView, UnisonToolbar, OCamlValue;
 
 @interface MyController : NSObject
 {
@@ -48,13 +48,14 @@
     BOOL duringSync;	
     BOOL afterSync;
 
-    OCamlValue *caml_reconItems;
     NSMutableArray *reconItems;
+	ParentReconItem *rootItem;
     OCamlValue *preconn;
 
     BOOL doneFirstDiff;
     IBOutlet NSWindow *diffWindow;
     IBOutlet NSTextView *diffView;
+    IBOutlet NSSegmentedControl *tableModeSelector;
 }
 
 - (id)init;
@@ -78,22 +79,19 @@
 - (void)afterOpen;
 
 - (IBAction)syncButton:(id)sender;
+- (IBAction)tableModeChanged:(id)sender;
+- (void)initTableMode;
 
-- (int)numberOfRowsInTableView:(NSTableView *)aTableView;
-- (id)tableView:(NSTableView *)aTableView
-    objectValueForTableColumn:(NSTableColumn *)aTableColumn
-    row:(int)rowIndex;
 - (void)tableViewSelectionDidChange:(NSNotification *)note;
-- (void)tableView:(NSTableView *)aTableView 
-    didClickTableColumn:(NSTableColumn *)tableColumn;
 
 - (NSMutableArray *)reconItems;
-- (void)updateReconItems;
-- (int)updateForIgnore:(int)i;
+- (void)updateForChangedItems;
+- (void)updateReconItems:(OCamlValue *)items;
+- (id)updateForIgnore:(id)i;
 
 - (void)statusTextSet:(NSString *)s;
 - (void)diffViewTextSet:(NSString *)title bodyText:(NSString *)body;
-- (void)displayDetails:(int)i;
+- (void)displayDetails:(ReconItem *)item;
 - (void)clearDetails;
 
 - (IBAction)raiseCltoolWindow:(id)sender;

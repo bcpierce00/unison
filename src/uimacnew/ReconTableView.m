@@ -10,6 +10,33 @@
 #import "ReconItem.h"
 #import "MyController.h"
 
+@implementation NSOutlineView (_Selection)
+- (NSArray *)selectedObjects
+{
+	NSMutableArray *result = [NSMutableArray array];
+	NSEnumerator *e = [self selectedRowEnumerator];
+    NSNumber *n;
+    while (n = [e nextObject]) [result addObject:[self itemAtRow:[n intValue]]]; 
+	return result;
+}
+
+- (void)setSelectedObjects:(NSArray *)selectedObjects
+{
+	NSMutableIndexSet *set = [NSMutableIndexSet indexSet];
+	int i = [selectedObjects count];
+	while (i--) {
+		int index = [self rowForItem:[selectedObjects objectAtIndex:i]];
+		if (index >= 0)	[set addIndex:index];
+	}
+	[self selectRowIndexes:set byExtendingSelection:NO];
+}
+
+- (NSEnumerator *)selectedObjectEnumerator
+{
+	return [[self selectedObjects] objectEnumerator];
+}
+@end
+
 @implementation ReconTableView
 
 - (id)initWithCoder:(NSCoder *)decoder
@@ -75,17 +102,15 @@
 
 - (void)doIgnore:(unichar)c
 {
-    NSMutableArray *reconItems = [[self dataSource] reconItems];
-    NSEnumerator *e = [self selectedRowEnumerator];
-    NSNumber *n = [e nextObject];
-    int i = -1;
-    for (; n != nil; n = [e nextObject]) {
-        i = [n intValue];
-        [[reconItems objectAtIndex:i] doIgnore:c];
+    NSEnumerator *e = [self selectedObjectEnumerator];
+	ReconItem *item, *last = nil;
+    while (item = [e nextObject]) {
+        [item doIgnore:c];
+		last = item;
     }
-    if (i>=0) { // something was selected
-        i = [[self dataSource] updateForIgnore:i];
-        [self selectRow:i byExtendingSelection:NO];
+    if (last) { // something was selected
+        last = [[self dataSource] updateForIgnore:last];
+        [self selectRow:[self rowForItem:last] byExtendingSelection:NO];
         [self reloadData];
     }
 }
@@ -107,23 +132,22 @@
 
 - (void)doAction:(unichar)c
 {
-    NSEnumerator *e = [self selectedRowEnumerator];
-    NSNumber *n = [e nextObject];
     int numSelected = 0;
-    int i = -1;
-    for (; n != nil; n = [e nextObject]) {
+    NSEnumerator *e = [self selectedObjectEnumerator];
+	ReconItem *item, *last = nil;
+    while (item = [e nextObject]) {
         numSelected++;
-        i = [n intValue];
-        NSMutableArray *reconItems = [[self dataSource] reconItems];
-        [[reconItems objectAtIndex:i] doAction:c];
+        [item doAction:c];
+		last = item;
     }
     if (numSelected>0) {
-      if (numSelected == 1 && [self numberOfRows] > i+1 && c!='d') {
+		int nextRow = [self rowForItem:last] + 1;
+        if (numSelected == 1 && [self numberOfRows] > nextRow && c!='d') {
             // Move to next row, unless already at last row, or if more than one row selected
-            [self selectRow:i+1 byExtendingSelection:NO];
-            [self scrollRowToVisible:i+1];
-      }
-      else [self reloadData];
+            [self selectRow:nextRow byExtendingSelection:NO];
+            [self scrollRowToVisible:nextRow];
+        }
+        [self reloadData];
     }
 }
 
@@ -158,22 +182,15 @@
     NSMutableArray *reconItems = [[self dataSource] reconItems];
     int i = 0;
     for (; i < [reconItems count]; i++) {
-        if ([[reconItems objectAtIndex:i] isConflict])
-            [self selectRow:i byExtendingSelection:YES];
+		ReconItem *item = [reconItems objectAtIndex:i]; 
+        if ([item isConflict])
+            [self selectRow:[self rowForItem:item] byExtendingSelection:YES];
     }
 }
 
 - (IBAction)revert:(id)sender
 {
-    NSMutableArray *reconItems = [[self dataSource] reconItems];
-    NSEnumerator *e = [self selectedRowEnumerator];
-    NSNumber *n = [e nextObject];
-    int i;
-    for (; n != nil; n = [e nextObject]) {
-        i = [n intValue];
-        [[reconItems objectAtIndex:i] revertDirection];
-    }
-    [self reloadData];
+    [self doAction:'R'];
 }
 
 - (IBAction)merge:(id)sender
@@ -224,85 +241,13 @@
 
 - (BOOL)canDiffSelection
 {
-    NSMutableArray *reconItems = [[self dataSource] reconItems];
-    NSEnumerator *e = [self selectedRowEnumerator];
-    NSNumber *n = [e nextObject];
-    int i;
     BOOL canDiff = YES;
-    for (; n != nil; n = [e nextObject]) {
-        i = [n intValue];
-        if (![[reconItems objectAtIndex:i] canDiff]) canDiff= NO;
+    NSEnumerator *e = [self selectedObjectEnumerator];
+	ReconItem *item;
+    while (item = [e nextObject]) {
+        if (![item canDiff]) canDiff= NO;
     }    
     return canDiff;
-}
-
-- (void)sortReconItemsByColumn:(NSTableColumn *)tableColumn
-{
-   /* Sort the table (e.g. when a column header is clicked) */
-
-    NSMutableArray *reconItems = [[self dataSource] reconItems];
-    BOOL ascending;
-
-    /* Most columns can be sorted ascending or descending, and
-       flip when you click the column header, using the state of the
-       column indicator image to do the flipping.  However,
-       we're forcing direction and progress to always sort ascending
-       because this means you can click multiple times to update the
-       sort order when the items change */
-
-    NSImage *indicatorImage = [self indicatorImageInTableColumn:tableColumn];
-    if (([indicatorImage isEqual:[NSImage imageNamed:@"NSAscendingSortIndicator"]]) &&
-            (![[tableColumn identifier] isEqual:@"direction"]) &&
-            (![[tableColumn identifier] isEqual:@"progress"])) {
-        ascending = NO;
-        indicatorImage = [NSImage imageNamed:@"NSDescendingSortIndicator"];
-    }
-    else { 
-        ascending = YES;
-        indicatorImage = [NSImage imageNamed:@"NSAscendingSortIndicator"];
-    }
-
-    /* Get rid of any indicators in other columns */
-    NSArray * tableColumns = [self tableColumns];
-    int i;
-    for (i=0; i<[tableColumns count]; i++) {
-        if (![[tableColumns objectAtIndex:i] isEqual:tableColumn])
-            [self setIndicatorImage:NULL 
-	        inTableColumn:[tableColumns objectAtIndex:i]];
-    }
-    
-    /* Sort by the selected column, followed by ascending pathname order. 
-       The keys correspond to methods of ReconItem */
-    NSSortDescriptor *colDescriptor=[[[NSSortDescriptor alloc]
-        initWithKey:[NSString stringWithFormat:@"%@SortKey", [tableColumn identifier]]
-        ascending:ascending] autorelease];
-    NSSortDescriptor *pathDescriptor=[[[NSSortDescriptor alloc]
-        initWithKey:@"pathSortKey"
-        ascending:YES] autorelease];		    
-    NSArray *sortDescriptors=[NSArray 
-	arrayWithObjects:colDescriptor, pathDescriptor,  nil];
-
-    /* Remember which rows are selected */
-    NSIndexSet * selectedRows = [self selectedRowIndexes];
-    for (i=0; i<[reconItems count]; i++) {
-        if ([selectedRows containsIndex:i])
-            [[reconItems objectAtIndex:i] setSelected:YES];
-        else
-            [[reconItems objectAtIndex:i] setSelected:NO];
-    }
-
-    /* Sort */
-    [reconItems setArray:[reconItems sortedArrayUsingDescriptors:sortDescriptors]];
-
-    /* Reselect the rows */
-    [self deselectAll:self];
-    for (i=0; i<[reconItems count]; i++) {
-        if ([[reconItems objectAtIndex:i] selected])
-            [self selectRow:i byExtendingSelection:YES];
-    }
-
-    /* Update the column header indicator and redisplay the table */
-    [self setIndicatorImage:indicatorImage inTableColumn:tableColumn];
 }
 
 /* Override default highlight colour because it's hard to see the 

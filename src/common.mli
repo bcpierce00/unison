@@ -115,6 +115,7 @@ type reconItem =
 val ucLength : updateContent -> Uutil.Filesize.t
 val uiLength : updateItem -> Uutil.Filesize.t
 val riLength : reconItem -> Uutil.Filesize.t
+val riFileType : reconItem -> string
 val fileInfos :
   updateItem -> updateItem ->
   Props.t * Os.fullfingerprint * Osx.ressStamp *

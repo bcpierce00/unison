@@ -23,6 +23,7 @@ static NSString*        MergeItemIdentifier     = @"Merge";
 static NSString*        LToRItemIdentifier      = @"LToR";
 static NSString*        SkipItemIdentifier      = @"Skip";
 static NSString*        DiffItemIdentifier      = @"Diff";
+static NSString*        TableModeIdentifier     = @"TableMode";
 
 @implementation UnisonToolbar
 
@@ -38,6 +39,12 @@ static NSString*        DiffItemIdentifier      = @"Diff";
     }
 
     return self;
+}
+
+- (void)takeTableModeView:(NSView *)view
+{
+	tableModeView = [view retain];
+	[view setHidden:YES];	
 }
 
 - (NSToolbarItem *) toolbar: (NSToolbar *)toolbar itemForItemIdentifier: (NSString *) itemIdent willBeInsertedIntoToolbar:(BOOL) willBeInserted {
@@ -114,14 +121,21 @@ static NSString*        DiffItemIdentifier      = @"Diff";
         [toolbarItem setImage: [NSImage imageNamed: @"skip.tif"]];
         [toolbarItem setTarget:tableView];
         [toolbarItem setAction:@selector(leaveAlone:)];
-        }
+	}
 	else if ([itemIdent isEqual: DiffItemIdentifier]) {
         [toolbarItem setLabel: @"Diff"];
         [toolbarItem setImage: [NSImage imageNamed: @"diff.tif"]];
         [toolbarItem setTarget:tableView];
         [toolbarItem setAction:@selector(showDiff:)];
-
-    }
+	}
+	else if ([itemIdent isEqual: TableModeIdentifier]) {
+		[toolbarItem setLabel:@"Layout"];
+		[toolbarItem setToolTip:@"Switch table nesting"];
+		[tableModeView setHidden:NO];	
+		[toolbarItem setView:tableModeView];
+		[toolbarItem setMinSize:NSMakeSize(NSWidth([tableModeView frame]),NSHeight([tableModeView frame])+10)];
+		[toolbarItem setMaxSize:NSMakeSize(NSWidth([tableModeView frame]),NSHeight([tableModeView frame])+10)];
+	}
 
 	return toolbarItem;
 }
@@ -145,7 +159,8 @@ static NSString*        DiffItemIdentifier      = @"Diff";
 			NSToolbarSeparatorItemIdentifier,
 			RToLItemIdentifier, MergeItemIdentifier, LToRItemIdentifier, 
 			SkipItemIdentifier, NSToolbarSeparatorItemIdentifier,
-			DiffItemIdentifier, nil];
+			DiffItemIdentifier, 
+			TableModeIdentifier, nil];
 	}
 	else {
 		return [NSArray arrayWithObjects: QuitItemIdentifier, Nil];

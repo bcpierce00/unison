@@ -3,22 +3,22 @@
 <plist version="1.0">
 <dict>
 	<key>IBDocumentLocation</key>
-	<string>8 357 538 389 0 0 1024 746 </string>
+	<string>48 53 538 389 0 0 1920 1178 </string>
 	<key>IBEditorPositions</key>
 	<dict>
 		<key>197</key>
-		<string>768 625 383 323 0 0 1920 1178 </string>
+		<string>745 623 383 323 0 0 1920 1178 </string>
 		<key>198</key>
-		<string>529 227 890 618 0 0 1920 1178 </string>
+		<string>491 476 890 618 0 0 1920 1178 </string>
 		<key>29</key>
 		<string>256 460 294 44 0 0 1920 1178 </string>
 		<key>307</key>
-		<string>584 456 554 292 0 0 1920 1178 </string>
+		<string>659 639 554 292 0 0 1920 1178 </string>
 		<key>423</key>
-		<string>530 225 891 619 0 0 1920 1178 </string>
+		<string>491 475 891 619 0 0 1920 1178 </string>
 	</dict>
 	<key>IBFramework Version</key>
-	<string>439.0</string>
+	<string>446.1</string>
 	<key>IBLockedObjects</key>
 	<array>
 		<integer>234</integer>
@@ -28,16 +28,14 @@
 	<key>IBOpenObjects</key>
 	<array>
 		<integer>197</integer>
-		<integer>29</integer>
-		<integer>475</integer>
+		<integer>307</integer>
 		<integer>198</integer>
-		<integer>423</integer>
 		<integer>402</integer>
 		<integer>21</integer>
-		<integer>307</integer>
-		<integer>234</integer>
+		<integer>29</integer>
+		<integer>423</integer>
 	</array>
 	<key>IBSystem Version</key>
-	<string>8I127</string>
+	<string>8P2137</string>
 </dict>
 </plist>

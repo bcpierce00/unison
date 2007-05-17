@@ -2015,7 +2015,7 @@ system, you may find that Unison's default method for detecting changes
 (which involves scanning the full contents of every file on every
 sync---the only completely safe way to do it under Windows) is too slow.
 Unison provides a preference {\tt fastcheck} that, when set to
-\verb|yes|, causes it to use file creation times as 'pseudo inode
+\verb|true|, causes it to use file creation times as 'pseudo inode
 numbers' when scanning replicas for updates, instead of reading the full
 contents of every file.  
 

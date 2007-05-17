@@ -189,3 +189,15 @@ let isDeletion ri =
       | (Replica2ToReplica1, _, (`ABSENT, _, _, _)) -> true
       | _ -> false)
   | _ -> false
+
+let rcType ((fi, _, _, _) as rc) =
+  Fileinfo.type2string fi
+
+let riFileType ri =
+  match ri.replicas with
+    Different(rc1, rc2, dir, _) ->
+      begin match !dir with
+        Replica2ToReplica1 -> rcType rc2
+      | _		           -> rcType rc1
+      end
+  | _ -> "nonexistent"
