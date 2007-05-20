@@ -1,3 +1,8 @@
+CHANGES FROM VERSION 2.28.8
+
+* Some more files needed for Craig's updated Mac GUI.
+
+-------------------------------
 CHANGES FROM VERSION 2.28.6
 
 * More improvements to the OSX GUI from Craig Federighi, including a very 
