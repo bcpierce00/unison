@@ -4,7 +4,7 @@
 let docs =
     ("about", ("About Unison", 
      "Unison File Synchronizer\n\
-      Version 2.27.24\n\
+      Version 2.27.29\n\
       \n\
       \032  Unison is a file-synchronization tool for Unix and Windows. It allows\n\
       \032  two replicas of a collection of files and directories to be stored on\n\
@@ -2297,7 +2297,7 @@ let docs =
       \032  changes (which involves scanning the full contents of every file on\n\
       \032  every sync--the only completely safe way to do it under Windows) is\n\
       \032  too slow. Unison provides a preference fastcheck that, when set to\n\
-      \032  yes, causes it to use file creation times as 'pseudo inode numbers'\n\
+      \032  true, causes it to use file creation times as 'pseudo inode numbers'\n\
       \032  when scanning replicas for updates, instead of reading the full\n\
       \032  contents of every file.\n\
       \n\
@@ -2460,8 +2460,8 @@ let docs =
       \n\
       "))
 ::
-    ("news", ("Changes in Version 2.27.24", 
-     "Changes in Version 2.27.24\n\
+    ("news", ("Changes in Version 2.27.29", 
+     "Changes in Version 2.27.29\n\
       \n\
       \032  Changes since 2.17:\n\
       \032    * The Unison project now accepts donations via PayPal. If you'd like\n\

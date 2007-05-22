@@ -1,3 +1,9 @@
+CHANGES FROM VERSION 2.27.29
+
+* Suppress "Connected" message when -silent, -terse, or -contactquietly preferences 
+  are set.
+
+-------------------------------
 CHANGES FROM VERSION 2.27.24
 
 * Another fix to ctime (non-)handling
