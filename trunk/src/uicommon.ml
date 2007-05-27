@@ -542,7 +542,9 @@ let initPrefs ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
 
   Update.storeRootsName ();
 
-  Util.msg "Connected [%s]\n" (Util.replacesubstring (Update.getRootsName()) ", " " -> ");
+  if not (Prefs.read contactquietly || Prefs.read Trace.terse) then
+    Util.msg "Connected [%s]\n"
+      (Util.replacesubstring (Update.getRootsName()) ", " " -> ");
 
   debug (fun() ->
        Printf.eprintf "Roots: \n";

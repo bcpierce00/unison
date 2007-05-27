@@ -10,7 +10,7 @@
 #import "ReconItem.h"
 #import "MyController.h"
 
-@implementation NSOutlineView (_Selection)
+@implementation NSOutlineView (_UnisonExtras)
 - (NSArray *)selectedObjects
 {
 	NSMutableArray *result = [NSMutableArray array];
@@ -35,24 +35,51 @@
 {
 	return [[self selectedObjects] objectEnumerator];
 }
+
+- (int)rowCapacityWithoutScrolling 
+{
+	float bodyHeight = [self visibleRect].size.height;
+	bodyHeight -=  [[self headerView] visibleRect].size.height;
+	return bodyHeight / ([self rowHeight] + 2.0);
+}
+
+- (BOOL)_canAcceptRowCountWithoutScrolling:(int)rows
+{
+	return ([self numberOfRows] + rows) <= [self rowCapacityWithoutScrolling];
+}
+
+- (BOOL)_expandChildrenIfSpace:(id)parent level:(int)level
+{
+	BOOL didExpand = NO;
+	id dataSource = [self dataSource];
+	int count = [dataSource outlineView:self numberOfChildrenOfItem:parent];
+	if (level == 0) {
+		if (count && ([self isItemExpanded:parent] || [self _canAcceptRowCountWithoutScrolling:count])) {
+			[self expandItem:parent expandChildren:NO];
+			didExpand = YES;
+		}
+	} else {
+		// try expanding each of our children.  If all expand, then return YES,
+		// indicating that it may be worth trying the next level
+		int i;
+		for (i=0; i < count; i++) {
+			id child = [dataSource outlineView:self child:i ofItem:parent];
+			didExpand = [self _expandChildrenIfSpace:child level:level-1] || didExpand;
+		}
+	}
+
+	return didExpand;
+}
+
+- (void)expandChildrenIfSpace
+{
+	int level = 1;
+	while ([self _expandChildrenIfSpace:nil level:level]) level++;
+}
+
 @end
 
 @implementation ReconTableView
-
-- (id)initWithCoder:(NSCoder *)decoder
-{
-    if (([super initWithCoder:decoder])) {
-        editable = NO;
-	
-        /* enable images in the direction column */
-        NSImageCell * tPrototypeCell = [[NSImageCell alloc] init];
-        NSTableColumn * tColumn = 
-	    [self tableColumnWithIdentifier:@"direction"];
-        [tPrototypeCell setImageScaling:NSScaleNone];
-        [tColumn setDataCell:[tPrototypeCell autorelease]];	
-    }
-    return self;
-}
 
 - (BOOL)editable
 {

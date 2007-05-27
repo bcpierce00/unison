@@ -20,6 +20,11 @@
             SUPERCLASS = NSObject; 
         }, 
         {
+            CLASS = MessageProgressIndicator; 
+            LANGUAGE = ObjC; 
+            SUPERCLASS = NSProgressIndicator; 
+        }, 
+        {
             ACTIONS = {
                 cancelProfileButton = id; 
                 cltoolNoButton = id; 
@@ -58,7 +63,7 @@
                 preferencesController = PreferencesController; 
                 preferencesView = NSView; 
                 profileController = ProfileController; 
-                progressBar = NSProgressIndicator; 
+                progressBar = MessageProgressIndicator; 
                 statusText = NSTextField; 
                 tableModeSelector = NSSegmentedControl; 
                 tableView = ReconTableView; 

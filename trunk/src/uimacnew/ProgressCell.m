@@ -165,23 +165,25 @@ static NSSize ZeroSize;
     NSPoint pen = cellFrame.origin;
     const float PADDING = 3.0;
         
-	//progress bar
-	// pen.x = cellFrame.origin.x + iconSize.width + 2.0 * PADDING;
+	// progress bar
 	pen.y += PADDING + BAR_HEIGHT;
 	float mainWidth = cellFrame.size.width;
 	float barWidth = mainWidth;
 	[self drawBar: barWidth point: pen];
     
 	//icon
-	NSImage * icon = _isError ? _ErrorImage : _icon;
-	if (icon) {
-		NSSize iconSize = icon ? [icon size] : ZeroSize;
-		pen = cellFrame.origin;
-		pen.x += (cellFrame.size.width - iconSize.width) * 0.5;
-		pen.y += (cellFrame.size.height - iconSize.height) * 0.5;
-		
-		[icon drawAtPoint: pen fromRect: NSZeroRect // NSMakeRect(0, 0, iconSize.width, iconSize.height)
-				operation: NSCompositeSourceOver fraction: 1.0];
+	NSImage * image = _isError ? _ErrorImage : _icon;
+	if (image) {
+        NSSize imageSize = [image size];
+        NSRect imageFrame;
+        // NSDivideRect(cellFrame, &imageFrame, &cellFrame, imageSize.width, NSMinXEdge);
+		imageFrame.origin = cellFrame.origin;
+        imageFrame.size = imageSize;
+        imageFrame.origin.x += ceil((cellFrame.size.width - imageSize.width) / 2);
+        imageFrame.origin.y += [view isFlipped] ?
+				  ceil((cellFrame.size.height + imageSize.height) / 2)
+				: ceil((cellFrame.size.height - imageSize.height) / 2);
+        [image compositeToPoint:imageFrame.origin operation:NSCompositeSourceOver];
 	}
 
 	// status string

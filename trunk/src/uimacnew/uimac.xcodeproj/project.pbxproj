@@ -24,6 +24,10 @@
 		44042D230BE52AEE00A6BBB2 /* ProgressBarGreen.png in Resources */ = {isa = PBXBuildFile; fileRef = 44042D180BE52AED00A6BBB2 /* ProgressBarGreen.png */; };
 		44042D240BE52AEE00A6BBB2 /* ProgressBarLightGreen.png in Resources */ = {isa = PBXBuildFile; fileRef = 44042D190BE52AED00A6BBB2 /* ProgressBarLightGreen.png */; };
 		44042D250BE52AEE00A6BBB2 /* ProgressBarWhite.png in Resources */ = {isa = PBXBuildFile; fileRef = 44042D1A0BE52AED00A6BBB2 /* ProgressBarWhite.png */; };
+		440EEAF30C03EC3D00ACAAB0 /* Change_Created.png in Resources */ = {isa = PBXBuildFile; fileRef = 440EEAF20C03EC3D00ACAAB0 /* Change_Created.png */; };
+		440EEAF90C03F0B800ACAAB0 /* Change_Deleted.png in Resources */ = {isa = PBXBuildFile; fileRef = 440EEAF60C03F0B800ACAAB0 /* Change_Deleted.png */; };
+		440EEAFA0C03F0B800ACAAB0 /* Change_Modified.png in Resources */ = {isa = PBXBuildFile; fileRef = 440EEAF70C03F0B800ACAAB0 /* Change_Modified.png */; };
+		440EEAFB0C03F0B800ACAAB0 /* Change_PropsChanged.png in Resources */ = {isa = PBXBuildFile; fileRef = 440EEAF80C03F0B800ACAAB0 /* Change_PropsChanged.png */; };
 		445A291B0BFA5B3300E4E641 /* Outline-Deep.png in Resources */ = {isa = PBXBuildFile; fileRef = 445A291A0BFA5B3300E4E641 /* Outline-Deep.png */; };
 		445A29270BFA5C1200E4E641 /* Outline-Flat.png in Resources */ = {isa = PBXBuildFile; fileRef = 445A29260BFA5C1200E4E641 /* Outline-Flat.png */; };
 		445A29290BFA5C1B00E4E641 /* Outline-Flattened.png in Resources */ = {isa = PBXBuildFile; fileRef = 445A29280BFA5C1B00E4E641 /* Outline-Flattened.png */; };
@@ -110,6 +114,10 @@
 		44042D180BE52AED00A6BBB2 /* ProgressBarGreen.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = ProgressBarGreen.png; path = progressicons/ProgressBarGreen.png; sourceTree = "<group>"; };
 		44042D190BE52AED00A6BBB2 /* ProgressBarLightGreen.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = ProgressBarLightGreen.png; path = progressicons/ProgressBarLightGreen.png; sourceTree = "<group>"; };
 		44042D1A0BE52AED00A6BBB2 /* ProgressBarWhite.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = ProgressBarWhite.png; path = progressicons/ProgressBarWhite.png; sourceTree = "<group>"; };
+		440EEAF20C03EC3D00ACAAB0 /* Change_Created.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Change_Created.png; sourceTree = "<group>"; };
+		440EEAF60C03F0B800ACAAB0 /* Change_Deleted.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Change_Deleted.png; sourceTree = "<group>"; };
+		440EEAF70C03F0B800ACAAB0 /* Change_Modified.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Change_Modified.png; sourceTree = "<group>"; };
+		440EEAF80C03F0B800ACAAB0 /* Change_PropsChanged.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Change_PropsChanged.png; sourceTree = "<group>"; };
 		445A291A0BFA5B3300E4E641 /* Outline-Deep.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Outline-Deep.png"; sourceTree = "<group>"; };
 		445A29260BFA5C1200E4E641 /* Outline-Flat.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Outline-Flat.png"; sourceTree = "<group>"; };
 		445A29280BFA5C1B00E4E641 /* Outline-Flattened.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Outline-Flattened.png"; sourceTree = "<group>"; };
@@ -312,6 +320,10 @@
 		B5B44C1009DF61A4000DC7AF /* tableicons */ = {
 			isa = PBXGroup;
 			children = (
+				440EEAF60C03F0B800ACAAB0 /* Change_Deleted.png */,
+				440EEAF70C03F0B800ACAAB0 /* Change_Modified.png */,
+				440EEAF80C03F0B800ACAAB0 /* Change_PropsChanged.png */,
+				440EEAF20C03EC3D00ACAAB0 /* Change_Created.png */,
 				44A797F10BE3F9B70069680C /* table-mixed.tif */,
 				B5B44C1109DF61A4000DC7AF /* table-conflict.tif */,
 				B5B44C1209DF61A4000DC7AF /* table-error.tif */,
@@ -429,6 +441,10 @@
 				445A291B0BFA5B3300E4E641 /* Outline-Deep.png in Resources */,
 				445A29270BFA5C1200E4E641 /* Outline-Flat.png in Resources */,
 				445A29290BFA5C1B00E4E641 /* Outline-Flattened.png in Resources */,
+				440EEAF30C03EC3D00ACAAB0 /* Change_Created.png in Resources */,
+				440EEAF90C03F0B800ACAAB0 /* Change_Deleted.png in Resources */,
+				440EEAFA0C03F0B800ACAAB0 /* Change_Modified.png in Resources */,
+				440EEAFB0C03F0B800ACAAB0 /* Change_PropsChanged.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
