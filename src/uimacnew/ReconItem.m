@@ -19,7 +19,7 @@
     [path release];
     [fullPath release];
     // [direction release];  // assuming retained by cache, so not retained
-    [directionSortString release];
+    // [directionSortString release];  // no retain/release necessary because is constant
 	[super dealloc];
 }
 
@@ -94,6 +94,33 @@
 {
     return nil;
 }
+
+static NSMutableDictionary *_ChangeIconsByType = nil;
+
+- (NSImage *)changeIconFor:(NSString *)type
+{
+	if (![type length]) return nil;
+	
+	NSImage *result = [_ChangeIconsByType objectForKey:type];
+	if (!result) {
+		NSString *imageName = [NSString stringWithFormat:@"Change_%@.png", type];
+		result = [NSImage imageNamed:imageName];
+		if (!_ChangeIconsByType) _ChangeIconsByType = [[NSMutableDictionary alloc] init];
+		[_ChangeIconsByType setObject:result forKey:type];
+	}
+	return result;
+}
+
+- (NSImage *)leftIcon
+{
+	return [self changeIconFor:[self left]];
+}
+
+- (NSImage *)rightIcon
+{
+	return [self changeIconFor:[self right]];
+}
+
 
 - (int)computeFileSize
 {
@@ -444,8 +471,8 @@ static NSMutableDictionary *_iconsByExtension = nil;
 
 - (NSString *)right
 {
-    if (right) right = [(NSString *)ocamlCall("S@", "unisonRiToRight", ri) retain];    
-    return right;
+    if (!right)	right = [(NSString *)ocamlCall("S@", "unisonRiToRight", ri) retain];    
+	return right;
 }
 
 - (int)computeFileSize
@@ -455,7 +482,11 @@ static NSMutableDictionary *_iconsByExtension = nil;
 
 - (int)bytesTransferred
 {
-	if (bytesTransferred == -1) bytesTransferred = (int)ocamlCall("i@", "unisonRiToBytesTransferred", ri);
+	if (bytesTransferred == -1) {
+		// need to force to fileSize if done, otherwise may not match up to 100%
+		bytesTransferred = ([[self progress] isEqual:@"done"]) ? [self fileSize]
+			: (int)ocamlCall("i@", "unisonRiToBytesTransferred", ri);
+	}
 	return bytesTransferred;
 }
 
@@ -616,6 +647,7 @@ static NSMutableDictionary *_iconsByExtension = nil;
 		last = [[ParentReconItem alloc] initWithPath:element];
 		[last setParent:self];
 		[_children addObject:last];
+		[last release];
 	}
 	
 	[(ParentReconItem *)last addChild:item pathArray:pathArray level:level+1];
@@ -780,16 +812,19 @@ static NSMutableDictionary *_iconsByExtension = nil;
 }
 
 static NSMutableDictionary *_parentImages = nil;
-
+static NSColor *_veryLightGreyColor = nil;
 - (NSImage *)direction
 {
-	if (!_parentImages) _parentImages = [[NSMutableDictionary alloc] init];
-	
+	if (!_parentImages) {
+		_parentImages = [[NSMutableDictionary alloc] init];
+		_veryLightGreyColor = [[NSColor colorWithCalibratedRed:0.9 green:0.9 blue:0.9 alpha:1.0] retain];
+		// [NSColor lightGrayColor]
+	}
 	NSImage *baseImage = [super direction];
 	NSImage *parentImage = [_parentImages objectForKey:baseImage];
 	if (!parentImage) {
 		// make parent images a grey version of the leaf images
-		parentImage = [baseImage tintedImageWithColor:[NSColor lightGrayColor] operation:NSCompositeSourceIn];
+		parentImage = [baseImage tintedImageWithColor:_veryLightGreyColor operation:NSCompositeSourceIn];
 		[_parentImages setObject:parentImage forKey:baseImage];
 	}
 	return parentImage;

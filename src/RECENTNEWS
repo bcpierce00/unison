@@ -1,3 +1,36 @@
+CHANGES FROM VERSION 2.28.9
+
+* More Mac GUI goodness from Craig.
+
+Enhancements:
+    - Default table layout is now outline view (middle choice in outline control)
+    - Outline layout initial does "smart expand" to open one screen full
+    - Action icons - Lighter parent icons
+    - Icons for Left / Right work (Added, Modified, Deleted)
+
+Bug Fixes:
+    - Fix problem with file Details not showing
+    - Sort by Action not working
+    - Missing status for some items (on right)
+    - Reset view contents (clear recon items) when re-syncing
+    - Action icons -- Fix upside-down question mark
+    - Fix centering of "Connecting..." message when panel is resized
+    - Force to progress to 100% when done
+
+Known Issues:
+
+1) The most controversial "enhancement" here is the replacement of the
+   text for Left / Right (e.g. "Modified", "Deleted") with more
+   compact / colorful icons.  These icons are perhaps was too "loud",
+   but Craig thinks that if he can tone them down a bit that this will
+   be an improvement.  [Actually, I like them pretty well as-is.]
+
+   Any icon artists out there?
+
+2) The rendering of the status message in the main ProgressIndicator
+   is currently leading to flicker.
+
+-------------------------------
 CHANGES FROM VERSION 2.28.8
 
 * Some more files needed for Craig's updated Mac GUI.

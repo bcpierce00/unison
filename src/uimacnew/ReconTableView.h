@@ -33,8 +33,11 @@
 - (BOOL)canDiffSelection;
 @end
 
-@interface NSOutlineView (_Selection)
+@interface NSOutlineView (_UnisonExtras)
 - (NSArray *)selectedObjects;
 - (NSEnumerator *)selectedObjectEnumerator;
 - (void)setSelectedObjects:(NSArray *)selection;
+
+- (void)expandChildrenIfSpace;
+
 @end

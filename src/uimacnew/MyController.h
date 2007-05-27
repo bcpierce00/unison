@@ -3,7 +3,7 @@
 
 #import <Cocoa/Cocoa.h>
 
-@class ProfileController, PreferencesController, NotificationController, 
+@class ProfileController, PreferencesController, NotificationController, MessageProgressIndicator,
     ReconItem, ParentReconItem, ReconTableView, UnisonToolbar, OCamlValue;
 
 @interface MyController : NSObject
@@ -40,7 +40,7 @@
     IBOutlet NSWindow *aboutWindow;
     IBOutlet NSTextField *versionText;
 
-    IBOutlet NSProgressIndicator *progressBar;
+    IBOutlet MessageProgressIndicator *progressBar;
 
     IBOutlet NotificationController *notificationController;
 
@@ -82,8 +82,6 @@
 - (IBAction)tableModeChanged:(id)sender;
 - (void)initTableMode;
 
-- (void)tableViewSelectionDidChange:(NSNotification *)note;
-
 - (NSMutableArray *)reconItems;
 - (void)updateForChangedItems;
 - (void)updateReconItems:(OCamlValue *)items;
@@ -110,4 +108,13 @@
 - (void)resizeWindowToSize:(NSSize)newSize;
 - (float)toolbarHeightForWindow:(NSWindow *)window;
 
+@end
+
+@interface MessageProgressIndicator : NSProgressIndicator
+{
+	NSString *_statusString;
+	BOOL _didDraw;
+}
+- (void)setStatusString:(NSString *)str;
+- (NSString *)statusString;
 @end

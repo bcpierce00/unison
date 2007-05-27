@@ -17,6 +17,10 @@
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
 
+@interface NSString (_UnisonUtil)
+- (NSString *)trim;
+@end
+
 @implementation MyController
 
 static MyController *me; // needed by reloadTable and displayStatus, below
@@ -53,14 +57,20 @@ static int doAsk = 2;
         screenFrame.origin.y+screenFrame.size.height)];
     
     blankView = [[NSView alloc] init];
-
+	
     /* Double clicking in the profile list will open the profile */
     [[profileController tableView] setTarget:self];
     [[profileController tableView] setDoubleAction:@selector(openButton:)];
 
+	[tableView setAutoresizesOutlineColumn:NO];
+
 	// use combo-cell for path
     [[tableView tableColumnWithIdentifier:@"path"] setDataCell:[[[ImageAndTextCell alloc] init] autorelease]];
 
+	// Custom progress cell
+	ProgressCell *progressCell = [[ProgressCell alloc] init];
+	[[tableView tableColumnWithIdentifier:@"percentTransferred"] setDataCell:progressCell];
+	
     /* Set up the version string in the about box.  We use a custom
        about box just because PRCS doesn't seem capable of getting the
        version into the InfoPlist.strings file; otherwise we'd use the
@@ -117,6 +127,8 @@ static int doAsk = 2;
     [mainWindow setContentMaxSize:NSMakeSize(FLT_MAX, FLT_MAX)];
     [mainWindow setContentView:chooseProfileView];
     [toolbar setView:@"chooseProfileView"];
+	[mainWindow setTitle:@"Unison"];
+	
     // profiles get keyboard input
     [mainWindow makeFirstResponder:[profileController tableView]];
     [chooseProfileView display];
@@ -160,8 +172,8 @@ static int doAsk = 2;
     [aProfile retain];
     [myProfile release];
     myProfile = aProfile;
-    [updatesText setStringValue:
-        [NSString stringWithFormat:@"Synchronizing profile '%@'", myProfile]];
+    [mainWindow setTitle:
+        [NSString stringWithFormat:@"Unison: %@", myProfile]];
 }
 
 - (IBAction)restartButton:(id)sender
@@ -220,7 +232,7 @@ static int doAsk = 2;
     else [self clearDetails];
 }
 
-- (void)tableViewSelectionDidChange:(NSNotification *)note
+- (void)outlineViewSelectionDidChange:(NSNotification *)note
 {
 	[self updateTableViewSelection];
 }
@@ -254,6 +266,7 @@ CAMLprim value unisonInit1Complete(value v)
 {
     if (v == Val_unit) {
         NSLog(@"Connected.");
+		[me->preconn release];
 		me->preconn = NULL;
 	    [me performSelectorOnMainThread:@selector(afterOpen:) withObject:nil waitUntilDone:FALSE]; 
     } else {
@@ -379,9 +392,8 @@ CAMLprim value unisonInit1Complete(value v)
 {
     if (waitingForPassword) return;
     // move to updates window after clearing it
-    [self clearDetails];
-    [reconItems release];
-    reconItems = nil;
+	[self updateReconItems:nil];
+    // [self clearDetails];
     [mainWindow setContentView:blankView];
     [self resizeWindowToSize:[updatesView frame].size];
     [mainWindow setContentMinSize:
@@ -404,14 +416,14 @@ CAMLprim value unisonInit1Complete(value v)
     [tableView scrollRowToVisible:0];
 
 	[preconn release];
-    preconn = NULL; // so old preconn can be garbage collected
+    preconn = nil; // so old preconn can be garbage collected
 	// This will run in another thread spawned in OCaml and will return immediately
 	// We'll get a call back to unisonInit2Complete() when it is complete
 	ocamlCall("x", "unisonInit2");
 }
 
 
-- (void)afterUpdate:(id)retainedReconItems;
+- (void)afterUpdate:(id)retainedReconItems
 {
 	// NSLog(@"In afterUpdate:...");
     [self updateReconItems:retainedReconItems];
@@ -420,15 +432,14 @@ CAMLprim value unisonInit1Complete(value v)
     [notificationController updateFinishedFor:[self profile]];
 
     // label the left and right columns with the roots
-    NSTableHeaderCell *left =  [[tableView tableColumnWithIdentifier:@"left"] headerCell];
-    [left setObjectValue:(NSString *)ocamlCall("S", "unisonFirstRootString")];
-
-    NSTableHeaderCell *right = [[tableView tableColumnWithIdentifier:@"right"] headerCell];
-    [right setObjectValue:(NSString *)ocamlCall("S", "unisonSecondRootString")];
-    
-	// Custom progress cell
-	ProgressCell *progressCell = [[ProgressCell alloc] init];
-	[[tableView tableColumnWithIdentifier:@"percentTransferred"] setDataCell:progressCell];
+	NSString *leftHost = [(NSString *)ocamlCall("S", "unisonFirstRootString") trim];
+	NSString *rightHost = [(NSString *)ocamlCall("S", "unisonSecondRootString") trim];
+	/*
+    [[[tableView tableColumnWithIdentifier:@"left"] headerCell] setObjectValue:lefthost];
+    [[[tableView tableColumnWithIdentifier:@"right"] headerCell] setObjectValue:rightHost];
+    */
+    [mainWindow setTitle: [NSString stringWithFormat:@"Unison: %@ (%@ <-> %@)", 
+			[self profile], leftHost, rightHost]];
 	
 	// initial sort
 	[tableView setSortDescriptors:[NSArray arrayWithObjects: 
@@ -584,13 +595,15 @@ static NSDictionary *_SmallGreyAttributes = nil;
 
 - (IBAction)tableModeChanged:(id)sender
 {
-	[[NSUserDefaults standardUserDefaults] setInteger:[self tableMode] forKey:@"TableLayout"];
+	[[NSUserDefaults standardUserDefaults] setInteger:[self tableMode]+1 forKey:@"TableLayout"];
 	[self updateForChangedItems];
 }
 
 - (void)initTableMode
 {
-	[tableModeSelector setSelectedSegment:[[NSUserDefaults standardUserDefaults] integerForKey:@"TableLayout"]];
+	int mode = [[NSUserDefaults standardUserDefaults] integerForKey:@"TableLayout"] - 1;
+	if (mode == -1) mode = 1;
+	[tableModeSelector setSelectedSegment:mode];
 }
 
 - (void)updateReconItems:(OCamlValue *)caml_reconItems
@@ -627,7 +640,7 @@ static NSDictionary *_SmallGreyAttributes = nil;
 	[rootItem release];
 	ParentReconItem *root = rootItem = [[ParentReconItem alloc] init];
 	
-	if (tableMode != 0) {
+	if (tableMode != 0 && [reconItems count]) {
 		// Special roll-up root item for outline displays
 		root = [[ParentReconItem alloc] init];
 		[rootItem addChild:root nested:NO];
@@ -645,26 +658,32 @@ static NSDictionary *_SmallGreyAttributes = nil;
 
 	[tableView reloadData];
 	
-	if (tableMode == 2) {
+	if (NO) {
 		// Pre-expand entire tree
 		int i = [[rootItem children] count];
 		while (i--) {
 			[tableView expandItem:[[rootItem children] objectAtIndex:i] expandChildren:YES];
 		}
-	} else if (tableMode == 1) {
-		// smart expand to reveal conflicts / changes in direction
+	} else if (tableMode != 0) {
+		// Always open root node
+		[tableView expandItem:rootItem expandChildren:NO];
+
+		// then smart expand to reveal conflicts / changes in direction
 		[self expandConflictedParent:root];
+		
+		// then open more levels if we can do so without causing scrolling
+		[tableView expandChildrenIfSpace];
 	}
 	
+    // Make sure details get updated (or cleared)
+	[self updateTableViewSelection];
+
     // Only enable sync if there are reconitems
     if ([reconItems count]>0) {
         [tableView setEditable:YES];
 
         // reconItems table gets keyboard input
         [mainWindow makeFirstResponder:tableView];
-
-        // Make sure details get updated
-		[self updateTableViewSelection];
 
         syncable = YES;
     }
@@ -700,7 +719,8 @@ CAMLprim value displayStatus(value s)
     /* filter out strings with # reconitems, and empty strings */
     if (!NSEqualRanges([s rangeOfString:@"reconitems"], 
          NSMakeRange(NSNotFound,0))) return;
-    [statusText setStringValue:s];
+    // [statusText setStringValue:s];
+	[progressBar setStatusString:s];
 }
 
 // Called from ocaml to dislpay progress bar
@@ -967,4 +987,101 @@ CAMLprim value displayDiffErr(value s)
     return toolbarHeight;
 }
 
+@end
+
+@implementation MessageProgressIndicator
+
+- (void)setStatusString:(NSString *)str
+{
+	[_statusString autorelease];
+	_statusString = [str retain];
+	[self setUsesThreadedAnimation:NO];
+	[self setNeedsDisplay:YES];
+}
+
+- (NSString *)statusString
+{
+	return _statusString;
+}
+
+static NSDictionary *_SmallTextAttributes = nil;
+
+- (void)_drawStatusString
+{
+	_didDraw = YES;
+/*
+	NSRect r = [self bounds];
+	NSLog(@"_drawStatusString --  bounds:(%f, %f, %f, %f)",
+		r.origin.x, r.origin.y, r.size.width, r.size.height);
+	r = [self frame];
+	NSLog(@"      frame:(%f, %f, %f, %f)",
+		r.origin.x, r.origin.y, r.size.width, r.size.height);
+*/
+	//NSLog(@"OverlappedProgressIndicator -- drew self, now drawing message: %@", _statusString);
+	if (!_SmallTextAttributes) {		
+		NSFont *txtFont = [NSFont systemFontOfSize:9.0];
+		_SmallTextAttributes = [[NSDictionary dictionaryWithObjectsAndKeys:txtFont,
+			NSFontAttributeName,  nil] retain];
+	}
+	NSRect bounds = [self bounds];
+	int indentation = 2;
+	[_statusString drawInRect: NSMakeRect(5, indentation, bounds.size.width, bounds.size.height)
+					withAttributes:_SmallTextAttributes];
+}
+
+/*
+- (void)_drawProgressArea
+{
+	[super _drawProgressArea];
+	NSLog(@"_drawProgressArea --  drawing message: %@", _statusString);
+	[self _drawStatusString];
+}
+
+- (void)heartBeat:(void *)fp8
+{
+	NSLog(@"heartBeat!");
+	[super heartBeat:fp8];
+}
+*/
+
+static BOOL _InDrawRect = NO;
+static int _Counter = 0;
+
+void cf_breakFunc() {
+	_Counter++;
+}
+
+- (void)_drawThemeProgressArea:(BOOL)yn
+{
+	if (!_InDrawRect) cf_breakFunc();
+	[super _drawThemeProgressArea:yn];
+	// NSLog(@"_drawThemeProgressArea ...");
+	[self translateOriginToPoint:NSMakePoint(0.0, 0.0)];
+	[self _drawStatusString];
+}
+
+- (void)dealloc
+{
+	[_statusString release];
+	[super dealloc];
+}
+
+- (void)drawRect:(NSRect)aRect
+{
+_InDrawRect=YES;
+	_didDraw = NO;
+	[super drawRect:aRect];
+	if (!_didDraw) [self _drawStatusString];
+_InDrawRect=NO;
+}
+@end
+
+@implementation NSString (_UnisonUtil)
+- (NSString *)trim
+{
+	NSCharacterSet *ws = [NSCharacterSet whitespaceCharacterSet];
+	int len = [self length], i = len;
+	while (i && [ws characterIsMember:[self characterAtIndex:i-1]]) i--;
+	return (i == len) ? self : [self substringToIndex:i];
+}
 @end
