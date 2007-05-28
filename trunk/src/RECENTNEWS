@@ -1,3 +1,10 @@
+CHANGES FROM VERSION 2.28.11
+
+* Added some files left out of the previous commit.
+
+* Fix for GTK2 UI, suggested by Karl M
+
+-------------------------------
 CHANGES FROM VERSION 2.28.9
 
 * More Mac GUI goodness from Craig.
