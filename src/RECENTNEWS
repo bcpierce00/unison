@@ -1,3 +1,7 @@
+CHANGES FROM VERSION 2.27.34
+
+* Back out partially working fix from previous commit
+-------------------------------
 CHANGES FROM VERSION 2.27.32
 
 * Fix for GTK2 UI, suggested by Karl M
