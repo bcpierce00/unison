@@ -1,3 +1,8 @@
+CHANGES FROM VERSION 2.28.13
+
+* Roll back non-fix for GTK2 UI
+
+-------------------------------
 CHANGES FROM VERSION 2.28.11
 
 * Added some files left out of the previous commit.

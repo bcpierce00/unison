@@ -2011,7 +2011,7 @@ lst_store#set ~row ~column:c_path path;
     (actionBar#insert_button ~text:detectCmdName
        ~icon:((GMisc.image ~stock:`REFRESH ())#coerce)
        ~tooltip:"Check for updates"
-       ~callback:(fun () -> reloadProfile(); detectCmd())
+       ~callback: detectCmd (* (fun () -> reloadProfile(); detectCmd()) *)
        ());
 
   (*********************************************************************
