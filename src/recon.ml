@@ -458,9 +458,9 @@ let rec leavePath p t =
 let dangerousPath u1 u2 =
   let emptied u =
     match u with
-      Updates (Absent, _)                 -> true
-    | Updates (Dir (_, _, _, emptied), _) -> emptied
-    | _                                   -> false
+      Updates (Absent, _)               -> true
+    | Updates (Dir (_, _, _, empty), _) -> empty
+    | _                                 -> false
   in
   emptied u1 <> emptied u2
 
