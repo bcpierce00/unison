@@ -27,7 +27,6 @@
 #import "ProgressCell.h"
 
 #define BAR_HEIGHT 12.0
-#define BUTTONS_TOTAL_WIDTH 0.0
 
 static NSImage *_ProgressWhite, *_ProgressBlue, *_ProgressGray, *_ProgressGreen,
 		*_ProgressAdvanced, *_ProgressEndWhite, *_ProgressEndBlue,
@@ -176,7 +175,6 @@ static NSSize ZeroSize;
 	if (image) {
         NSSize imageSize = [image size];
         NSRect imageFrame;
-        // NSDivideRect(cellFrame, &imageFrame, &cellFrame, imageSize.width, NSMinXEdge);
 		imageFrame.origin = cellFrame.origin;
         imageFrame.size = imageSize;
         imageFrame.origin.x += ceil((cellFrame.size.width - imageSize.width) / 2);

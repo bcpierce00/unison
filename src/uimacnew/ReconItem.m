@@ -97,10 +97,17 @@
 
 static NSMutableDictionary *_ChangeIconsByType = nil;
 
-- (NSImage *)changeIconFor:(NSString *)type
+- (NSImage *)changeIconFor:(NSString *)type other:(NSString *)other
 {
-	if (![type length]) return nil;
-	
+	if (![type length]) {
+		if ([other isEqual:@"Created"]) {
+			type = @"Absent";
+		} else if ([other length]) {
+			type = @"Unmodified";		
+		} else
+			return nil;
+	}
+
 	NSImage *result = [_ChangeIconsByType objectForKey:type];
 	if (!result) {
 		NSString *imageName = [NSString stringWithFormat:@"Change_%@.png", type];
@@ -113,12 +120,12 @@ static NSMutableDictionary *_ChangeIconsByType = nil;
 
 - (NSImage *)leftIcon
 {
-	return [self changeIconFor:[self left]];
+	return [self changeIconFor:[self left] other:[self right]];
 }
 
 - (NSImage *)rightIcon
 {
-	return [self changeIconFor:[self right]];
+	return [self changeIconFor:[self right] other:[self left]];
 }
 
 

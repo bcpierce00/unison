@@ -1,3 +1,13 @@
+CHANGES FROM VERSION 2.28.16
+
+More Mac UI improvements
+* Revert the combo ProgressIndicator / status message (couldn't get the flicker to go away...)
+* Improved file change icons
+    - Lighter color / slight gradient wash
+    - Icons for Absent (opposite side of an add) and Unmodified (opposite side of a one sided change) -- these give the line balance
+* Display panel for errors occuring during Connecting... phase
+
+-------------------------------
 CHANGES FROM VERSION 2.28.15
 
 Test commit.
