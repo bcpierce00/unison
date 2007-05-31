@@ -280,18 +280,25 @@ CAMLprim value unisonInit1Complete(value v)
 
 - (void)unisonInit1Complete:(id)ignore
 {
-    OCamlValue *prompt = ocamlCall("@@", "openConnectionPrompt", preconn);
-    if (!prompt) {
-        // turns out, no prompt needed, but must finish opening connection
-		ocamlCall("x@", "openConnectionEnd", preconn);
-        NSLog(@"Connected.");
-        waitingForPassword = NO;
-		[self afterOpen];
-        return;
-    }
-    waitingForPassword = YES;
+	@try {
+		OCamlValue *prompt = ocamlCall("@@", "openConnectionPrompt", preconn);
+		if (!prompt) {
+			// turns out, no prompt needed, but must finish opening connection
+			ocamlCall("x@", "openConnectionEnd", preconn);
+			NSLog(@"Connected.");
+			waitingForPassword = NO;
+			[self afterOpen];
+			return;
+		}
+		waitingForPassword = YES;
 
-	[self raisePasswordWindow:[prompt getField:0 withType:'S']]; 
+		[self raisePasswordWindow:[prompt getField:0 withType:'S']]; 
+	} @catch (NSException *ex) {
+	    NSRunAlertPanel(@"Connection Error", [ex description], @"OK", nil, nil);
+		[self chooseProfiles];
+		return;
+	}
+
     NSLog(@"Connected.");
 }
 
@@ -393,6 +400,8 @@ CAMLprim value unisonInit1Complete(value v)
     if (waitingForPassword) return;
     // move to updates window after clearing it
 	[self updateReconItems:nil];
+	[progressBar setDoubleValue:0.0];
+	[progressBar stopAnimation:self];
     // [self clearDetails];
     [mainWindow setContentView:blankView];
     [self resizeWindowToSize:[updatesView frame].size];
@@ -719,8 +728,7 @@ CAMLprim value displayStatus(value s)
     /* filter out strings with # reconitems, and empty strings */
     if (!NSEqualRanges([s rangeOfString:@"reconitems"], 
          NSMakeRange(NSNotFound,0))) return;
-    // [statusText setStringValue:s];
-	[progressBar setStatusString:s];
+    [statusText setStringValue:s];
 }
 
 // Called from ocaml to dislpay progress bar
@@ -987,93 +995,6 @@ CAMLprim value displayDiffErr(value s)
     return toolbarHeight;
 }
 
-@end
-
-@implementation MessageProgressIndicator
-
-- (void)setStatusString:(NSString *)str
-{
-	[_statusString autorelease];
-	_statusString = [str retain];
-	[self setUsesThreadedAnimation:NO];
-	[self setNeedsDisplay:YES];
-}
-
-- (NSString *)statusString
-{
-	return _statusString;
-}
-
-static NSDictionary *_SmallTextAttributes = nil;
-
-- (void)_drawStatusString
-{
-	_didDraw = YES;
-/*
-	NSRect r = [self bounds];
-	NSLog(@"_drawStatusString --  bounds:(%f, %f, %f, %f)",
-		r.origin.x, r.origin.y, r.size.width, r.size.height);
-	r = [self frame];
-	NSLog(@"      frame:(%f, %f, %f, %f)",
-		r.origin.x, r.origin.y, r.size.width, r.size.height);
-*/
-	//NSLog(@"OverlappedProgressIndicator -- drew self, now drawing message: %@", _statusString);
-	if (!_SmallTextAttributes) {		
-		NSFont *txtFont = [NSFont systemFontOfSize:9.0];
-		_SmallTextAttributes = [[NSDictionary dictionaryWithObjectsAndKeys:txtFont,
-			NSFontAttributeName,  nil] retain];
-	}
-	NSRect bounds = [self bounds];
-	int indentation = 2;
-	[_statusString drawInRect: NSMakeRect(5, indentation, bounds.size.width, bounds.size.height)
-					withAttributes:_SmallTextAttributes];
-}
-
-/*
-- (void)_drawProgressArea
-{
-	[super _drawProgressArea];
-	NSLog(@"_drawProgressArea --  drawing message: %@", _statusString);
-	[self _drawStatusString];
-}
-
-- (void)heartBeat:(void *)fp8
-{
-	NSLog(@"heartBeat!");
-	[super heartBeat:fp8];
-}
-*/
-
-static BOOL _InDrawRect = NO;
-static int _Counter = 0;
-
-void cf_breakFunc() {
-	_Counter++;
-}
-
-- (void)_drawThemeProgressArea:(BOOL)yn
-{
-	if (!_InDrawRect) cf_breakFunc();
-	[super _drawThemeProgressArea:yn];
-	// NSLog(@"_drawThemeProgressArea ...");
-	[self translateOriginToPoint:NSMakePoint(0.0, 0.0)];
-	[self _drawStatusString];
-}
-
-- (void)dealloc
-{
-	[_statusString release];
-	[super dealloc];
-}
-
-- (void)drawRect:(NSRect)aRect
-{
-_InDrawRect=YES;
-	_didDraw = NO;
-	[super drawRect:aRect];
-	if (!_didDraw) [self _drawStatusString];
-_InDrawRect=NO;
-}
 @end
 
 @implementation NSString (_UnisonUtil)

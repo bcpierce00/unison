@@ -63,7 +63,7 @@
                 preferencesController = PreferencesController; 
                 preferencesView = NSView; 
                 profileController = ProfileController; 
-                progressBar = MessageProgressIndicator; 
+                progressBar = NSProgressIndicator; 
                 statusText = NSTextField; 
                 tableModeSelector = NSSegmentedControl; 
                 tableView = ReconTableView; 

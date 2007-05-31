@@ -3,7 +3,7 @@
 
 #import <Cocoa/Cocoa.h>
 
-@class ProfileController, PreferencesController, NotificationController, MessageProgressIndicator,
+@class ProfileController, PreferencesController, NotificationController,
     ReconItem, ParentReconItem, ReconTableView, UnisonToolbar, OCamlValue;
 
 @interface MyController : NSObject
@@ -40,7 +40,7 @@
     IBOutlet NSWindow *aboutWindow;
     IBOutlet NSTextField *versionText;
 
-    IBOutlet MessageProgressIndicator *progressBar;
+    IBOutlet NSProgressIndicator *progressBar;
 
     IBOutlet NotificationController *notificationController;
 
@@ -110,11 +110,3 @@
 
 @end
 
-@interface MessageProgressIndicator : NSProgressIndicator
-{
-	NSString *_statusString;
-	BOOL _didDraw;
-}
-- (void)setStatusString:(NSString *)str;
-- (NSString *)statusString;
-@end

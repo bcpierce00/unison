@@ -96,7 +96,7 @@ const char **the_argv;
 
 - (BOOL)exceptionHandler:(NSExceptionHandler *)sender shouldLogException:(NSException *)exception mask:(unsigned int)aMask
 {
-	if (![[exception name] isEqual:@"OCamlException"]) return YES;
+	// if (![[exception name] isEqual:@"OCamlException"]) return YES;
 	
     NSString *msg = [NSString stringWithFormat:@"Uncaught exception: %@", [exception reason]];
     msg = [[msg componentsSeparatedByString:@"\n"] componentsJoinedByString:@" "];

@@ -37,6 +37,8 @@
 		449F03E10BE00DE9003F15C8 /* Bridge.m in Sources */ = {isa = PBXBuildFile; fileRef = 449F03DF0BE00DE9003F15C8 /* Bridge.m */; };
 		44A794A10BE16C380069680C /* ExceptionHandling.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 44A794A00BE16C380069680C /* ExceptionHandling.framework */; };
 		44A797F40BE3F9B70069680C /* table-mixed.tif in Resources */ = {isa = PBXBuildFile; fileRef = 44A797F10BE3F9B70069680C /* table-mixed.tif */; };
+		44F472B10C0DB735006428EF /* Change_Absent.png in Resources */ = {isa = PBXBuildFile; fileRef = 44F472AF0C0DB735006428EF /* Change_Absent.png */; };
+		44F472B20C0DB735006428EF /* Change_Unmodified.png in Resources */ = {isa = PBXBuildFile; fileRef = 44F472B00C0DB735006428EF /* Change_Unmodified.png */; };
 		69C625DF0664EC3300B3C46A /* MyController.h in Headers */ = {isa = PBXBuildFile; fileRef = 69660DC604F08CC100CF23A4 /* MyController.h */; };
 		69C625E00664EC3300B3C46A /* ProfileController.h in Headers */ = {isa = PBXBuildFile; fileRef = 690F564404F11EC300CF23A4 /* ProfileController.h */; };
 		69C625E10664EC3300B3C46A /* ReconItem.h in Headers */ = {isa = PBXBuildFile; fileRef = 69D3C6FA04F1CC3700CF23A4 /* ReconItem.h */; };
@@ -127,6 +129,8 @@
 		449F03DF0BE00DE9003F15C8 /* Bridge.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Bridge.m; sourceTree = "<group>"; };
 		44A794A00BE16C380069680C /* ExceptionHandling.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ExceptionHandling.framework; path = /System/Library/Frameworks/ExceptionHandling.framework; sourceTree = "<absolute>"; };
 		44A797F10BE3F9B70069680C /* table-mixed.tif */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; path = "table-mixed.tif"; sourceTree = "<group>"; };
+		44F472AF0C0DB735006428EF /* Change_Absent.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Change_Absent.png; sourceTree = "<group>"; };
+		44F472B00C0DB735006428EF /* Change_Unmodified.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Change_Unmodified.png; sourceTree = "<group>"; };
 		690F564404F11EC300CF23A4 /* ProfileController.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ProfileController.h; sourceTree = "<group>"; };
 		690F564504F11EC300CF23A4 /* ProfileController.m */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.objc; path = ProfileController.m; sourceTree = "<group>"; };
 		691CE180051BB44A00CF23A4 /* ProfileTableView.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ProfileTableView.h; sourceTree = "<group>"; };
@@ -320,6 +324,8 @@
 		B5B44C1009DF61A4000DC7AF /* tableicons */ = {
 			isa = PBXGroup;
 			children = (
+				44F472AF0C0DB735006428EF /* Change_Absent.png */,
+				44F472B00C0DB735006428EF /* Change_Unmodified.png */,
 				440EEAF60C03F0B800ACAAB0 /* Change_Deleted.png */,
 				440EEAF70C03F0B800ACAAB0 /* Change_Modified.png */,
 				440EEAF80C03F0B800ACAAB0 /* Change_PropsChanged.png */,
@@ -445,6 +451,8 @@
 				440EEAF90C03F0B800ACAAB0 /* Change_Deleted.png in Resources */,
 				440EEAFA0C03F0B800ACAAB0 /* Change_Modified.png in Resources */,
 				440EEAFB0C03F0B800ACAAB0 /* Change_PropsChanged.png in Resources */,
+				44F472B10C0DB735006428EF /* Change_Absent.png in Resources */,
+				44F472B20C0DB735006428EF /* Change_Unmodified.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
