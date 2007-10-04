@@ -1,95 +1,15 @@
-CHANGES FROM VERSION 2.27.42
+CHANGES FROM VERSION 2.27.43
 
-* Applying a patch from Karl M to make the Restart button reload the
-  profile in the uigtk2 UI.
-
--------------------------------
-CHANGES FROM VERSION 2.27.41
-
-* Finished propagating new UI code.
+* Tidying for new export of 2.27 (still as beta release for the moment).
 
 
 -------------------------------
-CHANGES FROM VERSION 2.27.40
-
-* (Partial commit again -- removing uimacnew directory to make room for a
-  new version)
-
--------------------------------
-CHANGES FROM VERSION 2.27.36
-
 * Ignore all-whitespace lines in preference files
-
-* (Partial commit -- removing uimacnew directory to make room for a
-  new version)
-
--------------------------------
-CHANGES FROM VERSION 2.27.36
-
-* Ignore all-whitespace lines in preference files
-
-* (Partial commit -- removing uimacnew directory to make room for a
-  new version)
-
--------------------------------
-CHANGES FROM VERSION 2.27.36
-
-* Ignore all-whitespace lines in preference files
-
-* (Partial commit -- removing uimacnew directory to make room for a
-  new version)
-
--------------------------------
-CHANGES FROM VERSION 2.27.34
-
-* Back out partially working fix from previous commit
--------------------------------
-CHANGES FROM VERSION 2.27.32
-
-* Fix for GTK2 UI, suggested by Karl M
-
--------------------------------
-CHANGES FROM VERSION 2.27.29
-
-* Suppress "Connected" message when -silent, -terse, or -contactquietly preferences 
-  are set.
-
--------------------------------
-CHANGES FROM VERSION 2.27.24
-
-* Another fix to ctime (non-)handling
-
-* Propagate experimental fix for OSX GUI from trunk
-
--------------------------------
-CHANGES FROM VERSION 2.27.24
-
-* Another fix to ctime (non-)handling
-
-* Propagate experimental fix for OSX GUI from trunk
-
--------------------------------
-CHANGES FROM VERSION 2.27.22
 
 * Apply experimental patch from Craig Federighi, which seems to fix
   the deadlocks and crashes in new OSX UI.  (Actually, this is a major
   rewrite and cleanup of the whole Cocoa UI.)  Thanks, Craig!!!
 
-  It would be great if some Mac users could help stress-test this fix.
-
 * Small fix to ctime (non-)handling in update detection under windows
   with fastcheck.  This *might* fix the bug that Karl M. has reported.
 
-
--------------------------------
-CHANGES FROM VERSION 2.27.21
-
-* Small makefile fixes to export procedure
-
--------------------------------
-CHANGES FROM VERSION 2.27.18
-
-* Small fix to last checkin.
-* Tidy documentation of recent changes.
-
--------------------------------
