@@ -337,9 +337,10 @@ this interface.
 \item Added an {\tt ignorelocks} preference, which forces Unison to override left-over
   archive locks.  (Setting this preference is dangerous!  Use it only if you
   are positive you know what you are doing.) 
-\item Running with the {\tt -timers} flag set to true will now show the total time taken
-  to check for updates on each directory.  (This can be helpful for tidying directories to improve
-  update detection times.)
+% Removed later:
+% \item Running with the {\tt -timers} flag set to true will now show the total time taken
+%   to check for updates on each directory.  (This can be helpful for tidying directories to improve
+%   update detection times.)
 \item Added a new preference {\tt assumeContentsAreImmutable}.  If a directory
   matches one of the patterns set in this preference, then update detection
   is skipped for files in this directory.  (The 

@@ -353,6 +353,14 @@ let unisonRiToRight ri =
   | Different(_,rc,_,_) -> rcToString rc;;
 Callback.register "unisonRiToRight" unisonRiToRight;;
 
+let unisonRiToFileSize ri =
+  Uutil.Filesize.toInt (riLength ri.ri);;
+Callback.register "unisonRiToFileSize" unisonRiToFileSize;;
+
+let unisonRiToFileType ri =
+  riFileType ri.ri;;
+Callback.register "unisonRiToFileType" unisonRiToFileType;;
+
 let direction2niceString = function (* from Uicommon where it's not exported *)
     Conflict           -> "<-?->"
   | Replica1ToReplica2 -> "---->"
@@ -400,6 +408,10 @@ let unisonRiToProgress ri =
   | (_,Some Util.Succeeded,_) -> "done"
   | (_,Some (Util.Failed s),_) -> "FAILED";;
 Callback.register "unisonRiToProgress" unisonRiToProgress;;
+
+let unisonRiToBytesTransferred ri =
+  Uutil.Filesize.toInt ri.bytesTransferred;;
+Callback.register "unisonRiToBytesTransferred" unisonRiToBytesTransferred;;
 
 (* --------------------------------------------------- *)
 
@@ -545,12 +557,12 @@ let unisonSynchronize () =
 ;;
 Callback.register "unisonSynchronize" unisonSynchronize;;
 
-let unisonIgnorePath si =
-  Uicommon.addIgnorePattern (Uicommon.ignorePath si.ri.path);;
-let unisonIgnoreExt si =
-  Uicommon.addIgnorePattern (Uicommon.ignoreExt si.ri.path);;
-let unisonIgnoreName si =
-  Uicommon.addIgnorePattern (Uicommon.ignoreName si.ri.path);;
+let unisonIgnorePath pathString =
+  Uicommon.addIgnorePattern (Uicommon.ignorePath (Path.fromString pathString));;
+let unisonIgnoreExt pathString =
+  Uicommon.addIgnorePattern (Uicommon.ignoreExt (Path.fromString pathString));;
+let unisonIgnoreName pathString =
+  Uicommon.addIgnorePattern (Uicommon.ignoreName (Path.fromString pathString));;
 Callback.register "unisonIgnorePath" unisonIgnorePath;;
 Callback.register "unisonIgnoreExt"  unisonIgnoreExt;;
 Callback.register "unisonIgnoreName" unisonIgnoreName;;

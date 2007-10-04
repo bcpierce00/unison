@@ -1009,7 +1009,7 @@ let showStatus path =
       fileLength := 0;
       let t = Unix.gettimeofday () in
       if t -. !t0 > 0.05 then begin
-        Trace.statusDetail (Path.toString path);
+        Trace.statusDetail ("scanning " ^ Path.toString path);
         t0 := t
       end
     end

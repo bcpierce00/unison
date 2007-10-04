@@ -254,7 +254,8 @@ and parseLines filename lines =
     match lines with
       [] -> res
     | theLine :: rest ->
-        if theLine = "" || theLine.[0]='#' then
+        let l = Util.trimWhitespace theLine in
+        if l = "" || l.[0]='#' then
           loop rest (lineNum+1) res
         else if Util.startswith theLine "include " then
           match Util.splitIntoWords theLine ' ' with
