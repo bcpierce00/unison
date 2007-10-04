@@ -1,3 +1,9 @@
+CHANGES FROM VERSION 2.27.42
+
+* Applying a patch from Karl M to make the Restart button reload the
+  profile in the uigtk2 UI.
+
+-------------------------------
 CHANGES FROM VERSION 2.27.41
 
 * Finished propagating new UI code.
