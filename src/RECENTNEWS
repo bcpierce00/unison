@@ -1,3 +1,9 @@
+CHANGES FROM VERSION 2.27.40
+
+* (Partial commit again -- removing uimacnew directory to make room for a
+  new version)
+
+-------------------------------
 CHANGES FROM VERSION 2.27.36
 
 * Ignore all-whitespace lines in preference files
