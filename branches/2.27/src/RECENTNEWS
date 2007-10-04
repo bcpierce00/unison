@@ -1,3 +1,9 @@
+CHANGES FROM VERSION 2.27.41
+
+* Finished propagating new UI code.
+
+
+-------------------------------
 CHANGES FROM VERSION 2.27.40
 
 * (Partial commit again -- removing uimacnew directory to make room for a
