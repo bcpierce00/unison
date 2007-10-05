@@ -1,3 +1,12 @@
+CHANGES FROM VERSION 2.27.44
+
+* Fixed a bug in the merge code (new archive was not being backed up).
+  Minor improvements to the merge code to make it say more about what
+  it's doing and why.
+
+
+
+-------------------------------
 CHANGES FROM VERSION 2.27.43
 
 * Tidying for new export of 2.27 (still as beta release for the moment).

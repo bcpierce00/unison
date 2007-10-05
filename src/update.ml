@@ -1765,7 +1765,8 @@ let replaceArchiveLocal fspath pathTo location arch id paranoid =
   in
   let newArch = replaceArchiveRec workingDir tempPathTo arch paranoid in
   let commit () =
-    let _ = Stasher.stashCurrentVersion fspath localPath in
+    debug (fun() -> Util.msg "replaceArchiveLocal: committing\n");
+    let _ = Stasher.stashCurrentVersion fspath localPath (Some tempPathTo) in
     let archive = getArchive root in
     let archive, () =
       updatePathInArchive archive fspath Path.empty pathTo
