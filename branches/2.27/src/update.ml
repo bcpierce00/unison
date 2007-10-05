@@ -942,7 +942,7 @@ let fastcheck =
     "do fast update detection (`true', `false', or `default')"
     ( "When this preference is set to \\verb|true|, \
        Unison will use the modification time and length of a file as a
-       `pseudo inode number' \ 
+       `pseudo inode number' \
        when scanning replicas for updates, \
        instead of reading the full contents of every file.  Under \
        Windows, this may cause Unison to miss propagating an update \
