@@ -4,7 +4,7 @@
 let docs =
     ("about", ("About Unison", 
      "Unison File Synchronizer\n\
-      Version 2.27.44\n\
+      Version 2.27.46\n\
       \n\
       \032  Unison is a file-synchronization tool for Unix and Windows. It allows\n\
       \032  two replicas of a collection of files and directories to be stored on\n\
@@ -2460,8 +2460,8 @@ let docs =
       \n\
       "))
 ::
-    ("news", ("Changes in Version 2.27.44", 
-     "Changes in Version 2.27.44\n\
+    ("news", ("Changes in Version 2.27.46", 
+     "Changes in Version 2.27.46\n\
       \n\
       \032  Changes since 2.17:\n\
       \032    * The Unison project now accepts donations via PayPal. If you'd like\n\

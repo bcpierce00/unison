@@ -1,3 +1,8 @@
+CHANGES FROM VERSION 2.27.46
+
+* Removed a dangling space in the middle of a multi-line string.
+
+-------------------------------
 CHANGES FROM VERSION 2.27.44
 
 * Fixed a bug in the merge code (new archive was not being backed up).
