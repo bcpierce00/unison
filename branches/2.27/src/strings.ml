@@ -4,7 +4,7 @@
 let docs =
     ("about", ("About Unison", 
      "Unison File Synchronizer\n\
-      Version 2.27.29\n\
+      Version 2.27.44\n\
       \n\
       \032  Unison is a file-synchronization tool for Unix and Windows. It allows\n\
       \032  two replicas of a collection of files and directories to be stored on\n\
@@ -2460,13 +2460,15 @@ let docs =
       \n\
       "))
 ::
-    ("news", ("Changes in Version 2.27.29", 
-     "Changes in Version 2.27.29\n\
+    ("news", ("Changes in Version 2.27.44", 
+     "Changes in Version 2.27.44\n\
       \n\
       \032  Changes since 2.17:\n\
       \032    * The Unison project now accepts donations via PayPal. If you'd like\n\
       \032      to donate, you can find a link to the donation page on the Unison\n\
       \032      home page (http://www.cis.upenn.edu/ bcpierce/unison/lists.html).\n\
+      \032    * Major rewrite and cleanup of the whole Mac OS X graphical user\n\
+      \032      interface by Craig Federighi. Thanks, Craig!!!\n\
       \032    * Several small fixes to the GTK2 UI to make it work better under\n\
       \032      Windows [thanks to Karl M for these].\n\
       \032    * The backup functionality has been completely rewritten. The\n\
@@ -2524,6 +2526,9 @@ let docs =
       \032           reversed).\n\
       \032         + Added .mpp files to the \"never fastcheck\" list (like .xls\n\
       \032           files).\n\
+      \032         + Ignore all-whitespace lines in preference files\n\
+      \032         + Small fix to ctime (non-)handling in update detection under\n\
+      \032           windows with fastcheck.\n\
       \032    * Many small bugfixes, including:\n\
       \032         + Fixed a longstanding bug regarding fastcheck and daylight\n\
       \032           saving time under Windows when Unison is set up to\n\
@@ -2758,10 +2763,6 @@ let docs =
       \032           override left-over archive locks. (Setting this preference is\n\
       \032           dangerous! Use it only if you are positive you know what you\n\
       \032           are doing.)\n\
-      \032         + Running with the -timers flag set to true will now show the\n\
-      \032           total time taken to check for updates on each directory.\n\
-      \032           (This can be helpful for tidying directories to improve\n\
-      \032           update detection times.)\n\
       \032         + Added a new preference assumeContentsAreImmutable. If a\n\
       \032           directory matches one of the patterns set in this preference,\n\
       \032           then update detection is skipped for files in this directory.\n\
