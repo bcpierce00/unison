@@ -1975,6 +1975,19 @@ lst_store#set ~row ~column:c_path path;
       grSet grRestart true
     end in
 
+    let loadProfile p =
+      debug (fun()-> Util.msg "Loading profile %s..." p);
+      Uicommon.initPrefs p displayWaitMessage getFirstRoot getSecondRoot
+        termInteract;
+      displayNewProfileLabel p;
+      setMainWindowColumnHeaders()
+    in
+
+    let reloadProfile () =
+      match !Prefs.profileName with
+        None -> ()
+      | Some(n) -> loadProfile n in
+
   (*********************************************************************
     Quit button
    *********************************************************************)
@@ -2011,7 +2024,7 @@ lst_store#set ~row ~column:c_path path;
     (actionBar#insert_button ~text:detectCmdName
        ~icon:((GMisc.image ~stock:`REFRESH ())#coerce)
        ~tooltip:"Check for updates"
-       ~callback: detectCmd (* (fun () -> reloadProfile(); detectCmd()) *)
+       ~callback: (fun () -> reloadProfile(); detectCmd())
        ());
 
   (*********************************************************************
@@ -2254,19 +2267,6 @@ lst_store#set ~row ~column:c_path path;
   (*********************************************************************
     Synchronization menu
    *********************************************************************)
-
-  let loadProfile p =
-    debug (fun()-> Util.msg "Loading profile %s..." p);
-    Uicommon.initPrefs p displayWaitMessage getFirstRoot getSecondRoot
-      termInteract;
-    displayNewProfileLabel p;
-    setMainWindowColumnHeaders()
-  in
-
-  let reloadProfile () =
-    match !Prefs.profileName with
-      None -> ()
-    | Some(n) -> loadProfile n in
 
   grAdd grGo
     (fileMenu#add_image_item ~key:GdkKeysyms._g

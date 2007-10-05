@@ -194,6 +194,24 @@ SMALL FUNCTIONALITY IMPROVEMENTS
      to avoid problems with huge files
      DONE
 
+*** [Adrian Stephens, 2007] I would like the scope of rootalias to be
+    expanded so that any command that expects a root will perform aliasing
+    on the command.  In my application, I need to change the root statement
+    as I move my machine from desk to the road.  I also have a "force"
+    statement, and I also have to remember to edit this to match.  It would
+    be more convenient to have to edit in a single place and, more
+    importantly, avoids introducing any inconsistency.
+    --- [BCP:] I like this idea.  However, since I'm struggling at the
+    moment to find time to finish polishing 2.27 to become the new stable
+    release, I am not going to undertake to implement it.  If you (or
+    someone else) would like to give it a shot, here is what I think needs
+    to happen:
+      - Move the rootalias preference and the rootalias-expanding code from
+        Update.root2stringOrAlias into the Common module (creating a new
+        function there for rootalias expansion).
+      - Find places like Recon.lookupPreferredRoot that deal with names of
+        roots and add a call to the rootalias-expanding function.
+
 *** Delete old backups mechanism and, instead, extend new one to cover its
     functionality 
        - put backups in same dir as files by default

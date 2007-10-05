@@ -1,3 +1,13 @@
+\begin{changesfromversion}{2.27.1}
+\item Ignore all-whitespace lines in preference files
+
+\item Major rewrite and cleanup of the whole Mac OS X graphical user
+interface by Craig Federighi.  Thanks, Craig!!!
+
+\item Small fix to ctime (non-)handling in update detection under windows
+  with fastcheck.  
+\end{changesfromversion}
+
 \begin{changesfromversion}{2.17}
 \item The Unison project now accepts donations via PayPal.  If you'd like to
 donate, you can find a link to the donation page on the
@@ -337,9 +347,10 @@ this interface.
 \item Added an {\tt ignorelocks} preference, which forces Unison to override left-over
   archive locks.  (Setting this preference is dangerous!  Use it only if you
   are positive you know what you are doing.) 
-\item Running with the {\tt -timers} flag set to true will now show the total time taken
-  to check for updates on each directory.  (This can be helpful for tidying directories to improve
-  update detection times.)
+% BCP: removed later
+% \item Running with the {\tt -timers} flag set to true will now show the total time taken
+%   to check for updates on each directory.  (This can be helpful for tidying directories to improve
+%   update detection times.)  
 \item Added a new preference {\tt assumeContentsAreImmutable}.  If a directory
   matches one of the patterns set in this preference, then update detection
   is skipped for files in this directory.  (The 

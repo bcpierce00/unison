@@ -27,6 +27,9 @@ val getRecentVersion:
 (* Return the location of the backup directory *)
 val backupDirectory : unit -> Fspath.t
 
+(* Check whether current version of a path is being stashed *)
+val shouldBackupCurrent : Path.t -> bool
+
 (* Low-level backupdir preference *)
 val backupdir : string Prefs.t  
 
