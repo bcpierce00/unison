@@ -1,3 +1,14 @@
+CHANGES FROM VERSION 2.28.17
+
+* Applying a patch from Karl M to make the Restart button reload the
+  profile in the uigtk2 UI.
+
+* Fixed a bug in the merge code (new archive was not being backed up).
+  Minor improvements to the merge code to make it say more about what
+  it's doing and why.
+
+
+-------------------------------
 CHANGES FROM VERSION 2.28.16
 
 More Mac UI improvements
