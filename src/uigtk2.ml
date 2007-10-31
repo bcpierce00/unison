@@ -770,6 +770,7 @@ let getSecondRoot () =
     let file = fileE#text in
     let user = userE#text in
     let host = hostE#text in
+    let port = portE#text in
     match !varLocalRemote with
       `Local ->
         Clroot.clroot2string(Clroot.ConnectLocal(Some file))
@@ -778,7 +779,7 @@ let getSecondRoot () =
         Clroot.ConnectByShell((if !varLocalRemote=`SSH then "ssh" else "rsh"),
                               host,
                               (if user="" then None else Some user),
-                              Some portE#text,
+                              (if port="" then None else Some port),
                               Some file))
     | `SOCKET ->
         Clroot.clroot2string(

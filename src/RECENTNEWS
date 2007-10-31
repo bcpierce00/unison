@@ -1,3 +1,9 @@
+CHANGES FROM VERSION 2.27.47
+
+* Small fix to the GTK2 user interface to avoid creating a bad initial
+  profile in some cases.  (Thanks to Stefan Seyfried.)
+
+-------------------------------
 CHANGES FROM VERSION 2.27.46
 
 * Removed a dangling space in the middle of a multi-line string.
