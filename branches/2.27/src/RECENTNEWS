@@ -1,3 +1,9 @@
+CHANGES FROM VERSION 2.27.52
+
+* Added a few more asserts to remote.ml to help track down an
+  intermittent assertion failure.
+
+-------------------------------
 CHANGES FROM VERSION 2.27.48
 
 * Small improvement to error message when no archive files are
