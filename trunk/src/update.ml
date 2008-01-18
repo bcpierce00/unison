@@ -801,8 +801,11 @@ let doArchiveCrashRecovery () =
              ["Please delete archive files as appropriate and try again."]))))
   else begin
     foundArchives := false;
-    Util.warn
-      ("No archive files were found for these roots.  This can happen either\n"
+    let expectedRoots =
+      String.concat "\n\t" (Safelist.map root2string (Globals.rootsList ())) in
+     Util.warn
+     ("No archive files were found for these roots, whose canonical names are:\n\t"
+     ^ expectedRoots ^ "\nThis can happen either\n"
      ^ "because this is the first time you have synchronized these roots, \n"
      ^ "or because you have upgraded Unison to a new version with a different\n"
      ^ "archive format.  \n\n"
@@ -942,7 +945,7 @@ let fastcheck =
     "do fast update detection (`true', `false', or `default')"
     ( "When this preference is set to \\verb|true|, \
        Unison will use the modification time and length of a file as a
-       `pseudo inode number' \ 
+       `pseudo inode number' \
        when scanning replicas for updates, \
        instead of reading the full contents of every file.  Under \
        Windows, this may cause Unison to miss propagating an update \
