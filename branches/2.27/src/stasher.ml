@@ -135,7 +135,7 @@ let backupcurrentnot =
    "Exceptions to \\verb|backupcurrent|, like the \\verb|ignorenot| preference."
 
 let shouldBackupCurrent p =
-     (* BCP: removed [Apr 2007]: causes ALL mergeable files to be backed
+     (* BCP: removed next line [Apr 2007]: causes ALL mergeable files to be backed
         up, which is probably not what users want -- the backupcurrent
         switch should be used instead.
      Globals.shouldMerge p || *)

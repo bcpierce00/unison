@@ -1,7 +1,7 @@
 (* Unison file synchronizer: src/test.ml *)
 (* Copyright 1999-2007 (see COPYING for details) *)
 
-let (>>=)  = Lwt.(>>=)
+let (>>=) = Lwt.(>>=)
 
 (* ---------------------------------------------------------------------- *)
 (* Utility functions *)
