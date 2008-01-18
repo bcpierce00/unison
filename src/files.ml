@@ -787,14 +787,18 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
   debug (fun () -> Util.msg "merge path %s between roots %s and %s\n"
       (Path.toString path) (root2string root1) (root2string root2));
 
+  (* The following assumes root1 is always local: switch them if needed to make this so *)
+  let (root1,root2) = 
+    match root1 with
+      (Local,fspath1) -> (root1,root2)
+    | _ -> (root2,root1) in
+
   let (localPath1, (workingDirForMerge, basep), fspath1) =
     match root1 with
       (Local,fspath1) ->
         let localPath1 = Update.translatePathLocal fspath1 path in
         (localPath1, Fspath.findWorkingDir fspath1 localPath1, fspath1)
-    | _ -> assert false (* roots are sorted: first root is always local *)
-           (* FIX: I (JV) believe this assumption is wrong: roots are not sorted... *)
-           (* Sigh.  Fixing this will require some restructuring of the following... *) in
+    | _ -> assert false in
   
   (* We're going to be doing a lot of copying, so let's define a shorthand
      that fixes most of the arguments to Copy.localfile *)
@@ -811,10 +815,6 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
           (Osx.ressLength info.Fileinfo.osX.Osx.ressInfo) (Some id))
       l in
   
-  (* These names should be automatically ignored!  And probably we should use
-     names that will be recognized as temp by ordinary Unix programs -- e.g.,
-     beginning with dot.  Perhaps the update detection sweep should remove them
-     automatically.  *)
   let working1 = Path.addPrefixToFinalName basep (tempName "merge1-") in
   let working2 = Path.addPrefixToFinalName basep (tempName "merge2-") in
   let workingarch = Path.addPrefixToFinalName basep (tempName "mergearch-") in
@@ -825,7 +825,7 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
   let (desc1, fp1, ress1, desc2, fp2, ress2) = Common.fileInfos ui1 ui2 in
   
   Util.convertUnixErrorsToTransient "merging files" (fun () ->
-    (* Install finalizer (see below) in case we unwind the stack *)
+    (* Install finalizer (below) in case we unwind the stack *)
     Util.finalize (fun () ->
       
     (* Make local copies of the two replicas *)
@@ -858,9 +858,7 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
 	| NoUpdates, Updates (_, New) ->
 	    debug (fun () -> Util.msg "File is new, no current version will be searched");
 	    None
-	| _ -> assert false
-
-      in
+	| _ -> assert false    in
       
       (* Make a local copy of the archive file (in case the merge program  
          overwrites it and the program crashes before the call to the Stasher). *)
@@ -948,8 +946,8 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
              mergeResultLog) then
         raise (Util.Transient ("Merge command canceled by the user"));
       
-      (* I think it's useful to be a bit verbose about what we're doing, but let's keep it easy to
-         switch this to debug-only later. *)
+      (* It's useful for now to be a bit verbose about what we're doing, but let's 
+         keep it easy to switch this to debug-only in some later release... *)
       let say f = f() in
 
       (* Check which files got created by the merge command and do something appropriate
@@ -1066,7 +1064,8 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
          copyBack workingDirForMerge working2 root2 path desc2 ui2 id >>= (fun () ->
          let arch_fspath = Fspath.concat workingDirForMerge workingarch in
          if (Sys.file_exists (Fspath.toString arch_fspath)) then begin
-           debug (fun () -> Util.msg "Updating unison archives to reflect results of merge\n");
+           debug (fun () -> Util.msg "Updating unison archives for %s to reflect results of merge\n"
+                   (Path.toString path));
            if not (Stasher.shouldBackupCurrent path) then
              Util.msg "Warning: 'backupcurrent' is not set for path %s\n" (Path.toString path);
            let infoarch = Fileinfo.get false workingDirForMerge workingarch in
