@@ -1,3 +1,18 @@
+CHANGES FROM VERSION 2.28.23
+
+* Small improvement to error message when no archive files are
+  found (thanks to Norman Ramsey).
+
+* Patch from Karl M for GTK2 UI:
+     1) reverts the problematic (when no profile is used)
+        reloadProfile on the restart button.
+     2) it adds a reloadProfile call after the detectCmd for
+        rescanning unsynchronized items.
+     3) it turns off confirmBigDeletes on a rescan and checks it
+        before issuing a warning popup.
+     4) it adjusts the status results width so that everything fits.
+
+-------------------------------
 CHANGES FROM VERSION 2.28.17
 
 * Applying a patch from Karl M to make the Restart button reload the

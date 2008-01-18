@@ -770,6 +770,7 @@ let getSecondRoot () =
     let file = fileE#text in
     let user = userE#text in
     let host = hostE#text in
+    let port = portE#text in
     match !varLocalRemote with
       `Local ->
         Clroot.clroot2string(Clroot.ConnectLocal(Some file))
@@ -778,7 +779,7 @@ let getSecondRoot () =
         Clroot.ConnectByShell((if !varLocalRemote=`SSH then "ssh" else "rsh"),
                               host,
                               (if user="" then None else Some user),
-                              Some portE#text,
+                              (if port="" then None else Some port),
                               Some file))
     | `SOCKET ->
         Clroot.clroot2string(
@@ -1388,7 +1389,7 @@ let rec createToplevelWindow () =
 
   in
   detailsWindow#misc#modify_font (Lazy.force fontMonospaceMediumPango);
-  detailsWindow#misc#set_size_chars ~height:3 ~width:104 ();
+  detailsWindow#misc#set_size_chars ~height:3 ~width:112 ();
   detailsWindow#misc#set_can_focus false;
   let showDetCommand () = 
     let details =
@@ -1793,9 +1794,11 @@ lst_store#set ~row ~column:c_path path;
     progressBarPulse := false; sync_action := None; displayGlobalProgress 0.;
     grSet grGo (Array.length !theState > 0);
     grSet grRestart true;
-    if dangerousPaths <> [] then begin
-      Prefs.set Globals.batch false;
-      Util.warn (Uicommon.dangerousPathMsg dangerousPaths)
+    if Prefs.read Globals.confirmBigDeletes then begin
+      if dangerousPaths <> [] then begin
+        Prefs.set Globals.batch false;
+        Util.warn (Uicommon.dangerousPathMsg dangerousPaths)
+      end;
     end;
   in
 
@@ -1975,19 +1978,6 @@ lst_store#set ~row ~column:c_path path;
       grSet grRestart true
     end in
 
-    let loadProfile p =
-      debug (fun()-> Util.msg "Loading profile %s..." p);
-      Uicommon.initPrefs p displayWaitMessage getFirstRoot getSecondRoot
-        termInteract;
-      displayNewProfileLabel p;
-      setMainWindowColumnHeaders()
-    in
-
-    let reloadProfile () =
-      match !Prefs.profileName with
-        None -> ()
-      | Some(n) -> loadProfile n in
-
   (*********************************************************************
     Quit button
    *********************************************************************)
@@ -2024,8 +2014,7 @@ lst_store#set ~row ~column:c_path path;
     (actionBar#insert_button ~text:detectCmdName
        ~icon:((GMisc.image ~stock:`REFRESH ())#coerce)
        ~tooltip:"Check for updates"
-       ~callback: (fun () -> reloadProfile(); detectCmd())
-       ());
+       ~callback: detectCmd ());
 
   (*********************************************************************
     Buttons for <--, M, -->, Skip
@@ -2268,6 +2257,19 @@ lst_store#set ~row ~column:c_path path;
     Synchronization menu
    *********************************************************************)
 
+  let loadProfile p =
+    debug (fun()-> Util.msg "Loading profile %s..." p);
+    Uicommon.initPrefs p displayWaitMessage getFirstRoot getSecondRoot
+      termInteract;
+    displayNewProfileLabel p;
+    setMainWindowColumnHeaders()
+  in
+
+  let reloadProfile () =
+    match !Prefs.profileName with
+      None -> ()
+    | Some(n) -> loadProfile n in
+
   grAdd grGo
     (fileMenu#add_image_item ~key:GdkKeysyms._g
        ~image:(GMisc.image ~stock:`EXECUTE ~icon_size:`MENU () :> GObj.widget)
@@ -2311,7 +2313,10 @@ lst_store#set ~row ~column:c_path path;
                     (String.concat ", " (Safelist.map
                                            (fun p -> "'"^(Path.toString p)^"'")
                                            failedpaths)));
-           Prefs.set Globals.paths failedpaths; detectCmd())
+           Prefs.set Globals.paths failedpaths;
+           Prefs.set Globals.confirmBigDeletes false;
+           detectCmd();
+           reloadProfile())
        "Recheck unsynchronized items");
 
   ignore (fileMenu#add_separator ());
