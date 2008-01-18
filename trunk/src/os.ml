@@ -14,6 +14,9 @@ let tempFilePrefix = ".unison."
 let tempFileSuffixFixed = ".unison.tmp"
 let tempFileSuffix = ref tempFileSuffixFixed
 let includeInTempNames s =
+  (* BCP: Added this in Jan 08.  If (as I believe) it never fails, then this tricky
+     stuff can be deleted. *)
+  assert (s<>"");  
   tempFileSuffix :=
     if s = "" then tempFileSuffixFixed
     else "." ^ s ^ tempFileSuffixFixed
