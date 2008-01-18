@@ -787,14 +787,18 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
   debug (fun () -> Util.msg "merge path %s between roots %s and %s\n"
       (Path.toString path) (root2string root1) (root2string root2));
 
+  (* The following assumes root1 is always local: switch them if needed to make this so *)
+  let (root1,root2) = 
+    match root1 with
+      (Local,fspath1) -> (root1,root2)
+    | _ -> (root2,root1) in
+
   let (localPath1, (workingDirForMerge, basep), fspath1) =
     match root1 with
       (Local,fspath1) ->
         let localPath1 = Update.translatePathLocal fspath1 path in
         (localPath1, Fspath.findWorkingDir fspath1 localPath1, fspath1)
-    | _ -> assert false (* roots are sorted: first root is always local *)
-           (* FIX: I (JV) believe this assumption is wrong: roots are not sorted... *)
-           (* Sigh.  Fixing this will require some restructuring of the following... *) in
+    | _ -> assert false in
   
   (* We're going to be doing a lot of copying, so let's define a shorthand
      that fixes most of the arguments to Copy.localfile *)
