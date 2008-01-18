@@ -1,3 +1,9 @@
+CHANGES FROM VERSION 2.27.53
+
+* Merge command no longer fails if remote root appears first in
+  preferences.
+
+-------------------------------
 CHANGES FROM VERSION 2.27.52
 
 * Added a few more asserts to remote.ml to help track down an
