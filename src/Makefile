@@ -200,8 +200,8 @@ prefsdocs: all
 
 # For developers at Penn
 runtest:
-	$(MAKE) all NATIVE=false DEBUG=true
-	./unison test
+	$(MAKE) all NATIVE=false DEBUG=true 
+	./unison test 
 
 selftest:
 	$(MAKE) all NATIVE=false DEBUG=true UISTYLE=text

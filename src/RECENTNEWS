@@ -1,3 +1,14 @@
+CHANGES FROM VERSION 2.27.54
+
+* Merge command no longer fails if remote root appears first in
+  preferences.
+
+* The confirmmerge preference now defaults to false.
+
+
+
+
+-------------------------------
 CHANGES FROM VERSION 2.27.53
 
 * Merge command no longer fails if remote root appears first in
