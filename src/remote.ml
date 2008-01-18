@@ -346,6 +346,8 @@ let rec first_chars len msg =
 let safeMarshal marshalPayload tag data rem =
   let (rem', length) = marshalPayload data rem in
   let l = String.length tag in
+  assert (length > 0);   (* tracking down an assert failure in receivePacket... *)
+  assert (l > 0);   
   debugE (fun() ->
             let start = first_chars (min length 10) rem' in
             let start = if length > 10 then start ^ "..." else start in
@@ -680,6 +682,7 @@ let registerSpecialServerCmd
   (* Create a client function and return it *)
   let client conn serverArgs =
     let id = newMsgId () in (* Message ID *)
+    assert (id >= 0); (* tracking down an assert failure in receivePacket... *)
     let request =
       (encodeInt id, 0, 4) ::
       marshalHeader (Request cmdName) (marshalArgs serverArgs [])
