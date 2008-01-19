@@ -1,73 +1,11 @@
-CHANGES FROM VERSION 2.27.54
+CHANGES FROM VERSION 2.27.55
 
-* Merge command no longer fails if remote root appears first in
-  preferences.
-
-* The confirmmerge preference now defaults to false.
+* Re-applying Karl M's patch (incorrectly propagated between trunk and release branch earlier).
 
 
 
-
--------------------------------
-CHANGES FROM VERSION 2.27.53
-
-* Merge command no longer fails if remote root appears first in
-  preferences.
-
--------------------------------
-CHANGES FROM VERSION 2.27.52
-
-* Added a few more asserts to remote.ml to help track down an
-  intermittent assertion failure.
-
--------------------------------
-CHANGES FROM VERSION 2.27.48
-
-* Small improvement to error message when no archive files are
-  found (thanks to Norman Ramsey).
-
-* Patch from Karl M for GTK2 UI:
-     1) reverts the problematic (when no profile is used)
-        reloadProfile on the restart button.
-     2) it adds a reloadProfile call after the detectCmd for
-        rescanning unsynchronized items.
-     3) it turns off confirmBigDeletes on a rescan and checks it
-        before issuing a warning popup.
-     4) it adjusts the status results width so that everything fits.
-
--------------------------------
-CHANGES FROM VERSION 2.27.47
-
-* Small fix to the GTK2 user interface to avoid creating a bad initial
-  profile in some cases.  (Thanks to Stefan Seyfried.)
-
--------------------------------
-CHANGES FROM VERSION 2.27.46
-
-* Removed a dangling space in the middle of a multi-line string.
-
--------------------------------
-CHANGES FROM VERSION 2.27.44
-
-* Fixed a bug in the merge code (new archive was not being backed up).
-  Minor improvements to the merge code to make it say more about what
-  it's doing and why.
 
 
 
 -------------------------------
-CHANGES FROM VERSION 2.27.43
-
-* Tidying for new export of 2.27 (still as beta release for the moment).
-
-
--------------------------------
-* Ignore all-whitespace lines in preference files
-
-* Apply experimental patch from Craig Federighi, which seems to fix
-  the deadlocks and crashes in new OSX UI.  (Actually, this is a major
-  rewrite and cleanup of the whole Cocoa UI.)  Thanks, Craig!!!
-
-* Small fix to ctime (non-)handling in update detection under windows
-  with fastcheck.  This *might* fix the bug that Karl M. has reported.
 
