@@ -322,12 +322,14 @@ exception Synch_props of Common.reconItem
 let dangerousPathMsg dangerousPaths =
   if dangerousPaths = [Path.empty] then
     "The root of one of the replicas has been completely emptied.\n\
-     Unison may delete everything in the other replica."
+     Unison may delete everything in the other replica.  (Set the \n\
+     'confirmbigdelete' preference to false to disable this check.)"
   else
     Printf.sprintf
       "The following paths have been completely emptied in one replica:\n  \
        %s\n\
-       Unison may delete everything below these paths in the other replica."
+       Unison may delete everything below these paths in the other replica.\n
+       (Set the 'confirmbigdelete' preference to false to disable this check.)"
       (String.concat "\n  "
          (Safelist.map (fun p -> "'" ^ (Path.toString p) ^ "'")
             dangerousPaths))
