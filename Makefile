@@ -201,7 +201,7 @@ DEVELDIR=$(EXPORTDIR)/download/resources/developers-only
 nightly:
 	($(RM) -r $(HOME)/tmp/unison; \
          cd $(HOME)/tmp; \
-	 svn co https://svn.cis.upenn.edu/svnroot/unison/trunk unison; \
+	 svn co https://webdav.seas.upenn.edu/svn/unison/trunk unison; \
          cd $(HOME)/tmp/unison; \
          $(MAKE) exportdevel)
 
@@ -272,10 +272,4 @@ tools/ask: tools/ask.ml
 
 src/$(NAME):
 	$(MAKE) -C src
-
-bcpgrab:
-	-unison eniac -path current/unison/trunk -batch
-	ssh central-l.cis.upenn.edu "(cd current/unison/trunk; svn update)"
-	-unison eniac -path current/unison/trunk -batch
-	make
 
