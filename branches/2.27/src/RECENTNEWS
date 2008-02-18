@@ -1,0 +1,6 @@
+CHANGES FROM VERSION 2.27.57
+
+* Add a note to the 'some path has been completely deleted' warning
+  telling users to use 'confirmbigdeletes' to turn it off.
+
+-------------------------------
