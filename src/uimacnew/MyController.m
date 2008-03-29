@@ -920,7 +920,7 @@ CAMLprim value displayDiffErr(value s)
     // [bundle pathForResource:@"cltool" ofType:nil];
 
     if (exec_path == nil) return;
-    char *args[] = { "-f", (char *)[exec_path cString], 
+    char *args[] = { "-f", (char *)[exec_path fileSystemRepresentation], 
 		     "/usr/bin/unison", NULL };
 
     myFlags = kAuthorizationFlagDefaults;

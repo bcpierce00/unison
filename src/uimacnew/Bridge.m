@@ -12,6 +12,7 @@
 #include <caml/alloc.h>
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
+#include <caml/signals.h>
 #import <ExceptionHandling/NSExceptionHandler.h>
 
 #include <pthread.h>
@@ -181,7 +182,7 @@ CAMLprim value bridgeThreadWait(int ignore)
 						args[argCount] = caml_copy_string(str);
 						break;
 					case 'S':
-						str = [va_arg(cs->args, NSString *) cString];
+						str = [va_arg(cs->args, NSString *) fileSystemRepresentation];
 						args[argCount] = caml_copy_string(str);
 						break;
 					case 'n':
