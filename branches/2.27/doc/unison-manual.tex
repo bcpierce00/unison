@@ -1678,7 +1678,8 @@ actually committing the results of the merge to the replicas.
 A large number of external merging programs are available.  
 For example, on Unix systems setting the \verb|merge| preference to
 \begin{verbatim}
-    merge = Name *.txt -> diff3 CURRENT1 CURRENTARCH CURRENT2 -m > NEW
+    merge = Name *.txt -> diff3 -m CURRENT1 CURRENTARCH CURRENT2
+                            > NEW || echo "differences detected"
 \end{verbatim}
 \noindent
 will tell Unison to use the external \verb|diff3| program for merging.  
