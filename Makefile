@@ -42,6 +42,19 @@ remembernews: logmsg
 	-cat src/RECENTNEWS >> rc.tmp
 	mv -f rc.tmp src/RECENTNEWS
 
+DUPCMD = svn merge -r prev:committed ../branches/2.27
+
+dup:
+	@echo "Make sure changes have been committed in the 2.27 branch!"
+	$(DUPCMD) --dry-run 
+	@echo "Note that there may be conflicts on some silly files "
+	@echo "  (not sure how to avoid merging those changes!) "
+	@echo -n "Press RETURN to really do it... "
+	@read JUNK
+	$(DUPCMD)
+	echo >> logmsg
+	echo "* Transfer changes from 2.27 branch" >> logmsg
+
 ######################################################################
 # Export
 
@@ -201,7 +214,7 @@ DEVELDIR=$(EXPORTDIR)/download/resources/developers-only
 nightly:
 	($(RM) -r $(HOME)/tmp/unison; \
          cd $(HOME)/tmp; \
-	 svn co https://svn.cis.upenn.edu/svnroot/unison/trunk unison; \
+	 svn co https://webdav.seas.upenn.edu/svn/unison/trunk unison; \
          cd $(HOME)/tmp/unison; \
          $(MAKE) exportdevel)
 
@@ -272,10 +285,4 @@ tools/ask: tools/ask.ml
 
 src/$(NAME):
 	$(MAKE) -C src
-
-bcpgrab:
-	-unison eniac -path current/unison/trunk -batch
-	ssh central-l.cis.upenn.edu "(cd current/unison/trunk; svn update)"
-	-unison eniac -path current/unison/trunk -batch
-	make
 

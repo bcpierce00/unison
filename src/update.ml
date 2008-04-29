@@ -973,7 +973,7 @@ let useFastChecking () =
 
 let immutable = Pred.create "immutable"
    ("This preference specifies paths for directories whose \
-     children are all immutable files --- i.e., once a file has been \
+     immediate children are all immutable files --- i.e., once a file has been \
      created, its contents never changes.  When scanning for updates, \
      Unison does not check whether these files have been modified; \
      this can speed update detection significantly (in particular, for mail \
