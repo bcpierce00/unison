@@ -182,7 +182,7 @@ CAMLprim value bridgeThreadWait(int ignore)
 						args[argCount] = caml_copy_string(str);
 						break;
 					case 'S':
-						str = [va_arg(cs->args, NSString *) fileSystemRepresentation];
+						str = [va_arg(cs->args, NSString *) UTF8String];
 						args[argCount] = caml_copy_string(str);
 						break;
 					case 'n':
@@ -227,7 +227,7 @@ CAMLprim value bridgeThreadWait(int ignore)
 					*((char **)&cs->retV) = (e == Val_unit) ? NULL : String_val(e);
 					break;
 				case 'S':
-					*((NSString **)&cs->retV) = (e == Val_unit) ? NULL : [[NSString alloc] initWithCString:String_val(e)];
+					*((NSString **)&cs->retV) = (e == Val_unit) ? NULL : [[NSString alloc] initWithUTF8String:String_val(e)];
 					cs->_autorelease = TRUE;
 					break;
 				case '@':
@@ -283,7 +283,7 @@ void *_passCall(CallState *cs)
 	// NSLog(@"*** doCallback -- back with result");
 	if (cs->exception) {
 		@throw [NSException exceptionWithName:@"OCamlException"
-				reason:[NSString stringWithCString:cs->exception]
+				reason:[NSString stringWithUTF8String:cs->exception]
 				userInfo:nil];
 	}
 	if (cs->_autorelease) [((id)cs->retV) autorelease];

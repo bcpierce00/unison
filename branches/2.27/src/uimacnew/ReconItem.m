@@ -638,10 +638,10 @@ static NSMutableDictionary *_iconsByExtension = nil;
 
 - (void)addChild:(ReconItem *)item pathArray:(NSArray *)pathArray level:(int)level
 {
-	NSString *element = [pathArray objectAtIndex:level];
+	NSString *element = [pathArray count] ? [pathArray objectAtIndex:level] : @"";
 
 	// if we're at the leaf of the path, then add the item
-	if (level == [pathArray count]-1) {
+	if (((0 == [pathArray count]) && (0 == level)) || (level == [pathArray count]-1)) {
 		[item setParent:self];
 		[item setPath:element];
 		[_children addObject:item];
