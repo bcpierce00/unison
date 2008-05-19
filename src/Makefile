@@ -352,8 +352,8 @@ clean::
 
 ifeq (${OSARCH},osx)
 clean::
-	-(cd uimac; xcodebuild clean)
-	-(cd uimac; $(RM) -r build *.plist)
+	-(cd $(UIMACDIR); xcodebuild clean)
+#	-(cd $(UIMACDIR); $(RM) -r build *.plist)
 endif
 
 checkin:
