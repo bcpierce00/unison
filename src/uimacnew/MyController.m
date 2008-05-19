@@ -338,7 +338,7 @@ CAMLprim value unisonInit1Complete(value v)
             }
             else {
 				[self raisePasswordWindow:[NSString 
-                    stringWithCString:String_val(Field(prompt,0))]];
+                    stringWithUTF8String:String_val(Field(prompt,0))]];
                 return;
             }
         }
@@ -717,7 +717,7 @@ static NSDictionary *_SmallGreyAttributes = nil;
 // A function called from ocaml
 CAMLprim value displayStatus(value s)
 {
-	NSString *str = [[NSString alloc] initWithCString:String_val(s)];
+	NSString *str = [[NSString alloc] initWithUTF8String:String_val(s)];
     // NSLog(@"displayStatus: %@", str);
     [me performSelectorOnMainThread:@selector(statusTextSet:) withObject:str waitUntilDone:FALSE];
 	[str release];
@@ -745,8 +745,8 @@ CAMLprim value displayGlobalProgress(value p)
 CAMLprim value displayDiff(value s, value s2)
 {
     [me performSelectorOnMainThread:@selector(diffViewTextSet:) 
-						withObject:[NSArray arrayWithObjects:[NSString stringWithCString:String_val(s)],
-											[NSString stringWithCString:String_val(s2)], nil]
+						withObject:[NSArray arrayWithObjects:[NSString stringWithUTF8String:String_val(s)],
+											[NSString stringWithUTF8String:String_val(s2)], nil]
 						waitUntilDone:FALSE]; 
     return Val_unit;
 }
@@ -754,7 +754,7 @@ CAMLprim value displayDiff(value s, value s2)
 // Called from ocaml to display diff error messages
 CAMLprim value displayDiffErr(value s)
 {
-    NSString * str = [NSString stringWithCString:String_val(s)];
+    NSString * str = [NSString stringWithUTF8String:String_val(s)];
     str = [[str componentsSeparatedByString:@"\n"] 
         componentsJoinedByString:@" "];
 	[me->statusText performSelectorOnMainThread:@selector(setStringValue:) 
@@ -920,7 +920,7 @@ CAMLprim value displayDiffErr(value s)
     // [bundle pathForResource:@"cltool" ofType:nil];
 
     if (exec_path == nil) return;
-    char *args[] = { "-f", (char *)[exec_path cString], 
+    char *args[] = { "-f", (char *)[exec_path UTF8String], 
 		     "/usr/bin/unison", NULL };
 
     myFlags = kAuthorizationFlagDefaults;
