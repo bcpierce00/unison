@@ -353,7 +353,7 @@ clean::
 ifeq (${OSARCH},osx)
 clean::
 	-(cd $(UIMACDIR); xcodebuild clean)
-#	-(cd $(UIMACDIR); $(RM) -r build *.plist)
+	-(cd $(UIMACDIR); $(RM) -r build ExternalSettings.xcconfig)
 endif
 
 checkin:

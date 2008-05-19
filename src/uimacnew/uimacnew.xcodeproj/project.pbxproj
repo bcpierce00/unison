@@ -6,6 +6,20 @@
 	objectVersion = 42;
 	objects = {
 
+/* Begin PBXAggregateTarget section */
+		2A124E9C0DE1C66300524237 /* Create ExternalSettings */ = {
+			isa = PBXAggregateTarget;
+			buildConfigurationList = 2A124EA90DE1C69B00524237 /* Build configuration list for PBXAggregateTarget "Create ExternalSettings" */;
+			buildPhases = (
+				2A124EA10DE1C67100524237 /* Run Script (version, ocaml lib dir) */,
+			);
+			dependencies = (
+			);
+			name = "Create ExternalSettings";
+			productName = "Create ExternalSettings";
+		};
+/* End PBXAggregateTarget section */
+
 /* Begin PBXBuildFile section */
 		2A3C3F3309922A8000E404E9 /* Growl.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = 2A3C3F3209922A8000E404E9 /* Growl.framework */; };
 		2A3C3F7D09922D4900E404E9 /* NotificationController.m in Sources */ = {isa = PBXBuildFile; fileRef = 2A3C3F7B09922D4900E404E9 /* NotificationController.m */; };
@@ -69,6 +83,16 @@
 		B5B44C2009DF61A4000DC7AF /* table-skip.tif in Resources */ = {isa = PBXBuildFile; fileRef = B5B44C1809DF61A4000DC7AF /* table-skip.tif */; };
 		B5E03B3909E38B9E0058C7B9 /* rescan.tif in Resources */ = {isa = PBXBuildFile; fileRef = B5E03B3809E38B9E0058C7B9 /* rescan.tif */; };
 /* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		2A124EA20DE1C69800524237 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 29B97313FDCFA39411CA2CEA /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 2A124E9C0DE1C66300524237 /* Create ExternalSettings */;
+			remoteInfo = "Create ExternalSettings";
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
 		2A3C3F3709922AA600E404E9 /* CopyFiles */ = {
@@ -336,7 +360,6 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 2A3C3F280992245300E404E9 /* Build configuration list for PBXNativeTarget "uimac" */;
 			buildPhases = (
-				2A8C3B3C0DB78B0A002EADE2 /* Run Script (version, ocaml lib dir) */,
 				2E282CBA0D9AE17300439D01 /* Run Script (make unison-blob.o) */,
 				69C625E50664EC3300B3C46A /* Resources */,
 				69C625E90664EC3300B3C46A /* Sources */,
@@ -346,6 +369,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				2A124EA30DE1C69800524237 /* PBXTargetDependency */,
 			);
 			name = uimac;
 			productInstallPath = "$(HOME)/Applications";
@@ -366,6 +390,7 @@
 			projectRoot = "";
 			targets = (
 				69C625DD0664EC3300B3C46A /* uimac */,
+				2A124E9C0DE1C66300524237 /* Create ExternalSettings */,
 			);
 		};
 /* End PBXProject section */
@@ -424,7 +449,7 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		2A8C3B3C0DB78B0A002EADE2 /* Run Script (version, ocaml lib dir) */ = {
+		2A124EA10DE1C67100524237 /* Run Script (version, ocaml lib dir) */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -436,7 +461,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "if [ -x /usr/libexec/path_helper ]; then\n  eval `/usr/libexec/path_helper -s`\nfi\nOCAMLLIBDIR=`ocamlc -v | tail -n -1 | sed -e 's/.* //g' | sed -e 's/\\\\\\/\\\\//g' | tr -d '\\r'`\nsource ${PROJECT_DIR}/../Makefile.ProjectInfo\necho MARKETING_VERSION = $VERSION > ${PROJECT_DIR}/ExternalSettings.xcconfig\necho OCAMLLIBDIR = $OCAMLLIBDIR >> ${PROJECT_DIR}/ExternalSettings.xcconfig";
+			shellScript = "if [ -x /usr/libexec/path_helper ]; then\n  eval `/usr/libexec/path_helper -s`\nfi\nif [ ! -x ${PROJECT_DIR}/../Makefile.ProjectInfo ]; then\n  if [ ! -x ${PROJECT_DIR}/../mkProjectInfo ]; then\n    cd ${PROJECT_DIR}/..; ocamlc -o mkProjectInfo mkProjectInfo.ml\n  fi\n  cd ${PROJECT_DIR}/..; ./mkProjectInfo > Makefile.ProjectInfo\nfi\nOCAMLLIBDIR=`ocamlc -v | tail -n -1 | sed -e 's/.* //g' | sed -e 's/\\\\\\/\\\\//g' | tr -d '\\r'`\nsource ${PROJECT_DIR}/../Makefile.ProjectInfo\necho MARKETING_VERSION = $VERSION > ${PROJECT_DIR}/ExternalSettings.xcconfig\necho OCAMLLIBDIR = $OCAMLLIBDIR >> ${PROJECT_DIR}/ExternalSettings.xcconfig";
 		};
 		2E282CBA0D9AE17300439D01 /* Run Script (make unison-blob.o) */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -476,6 +501,14 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		2A124EA30DE1C69800524237 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 2A124E9C0DE1C66300524237 /* Create ExternalSettings */;
+			targetProxy = 2A124EA20DE1C69800524237 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin PBXVariantGroup section */
 		089C165CFE840E0CC02AAC07 /* InfoPlist.strings */ = {
 			isa = PBXVariantGroup;
@@ -496,6 +529,34 @@
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
+		2A124E9D0DE1C66300524237 /* Development */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = NO;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				PRODUCT_NAME = "Create ExternalSettings";
+			};
+			name = Development;
+		};
+		2A124E9E0DE1C66300524237 /* Deployment */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_ENABLE_FIX_AND_CONTINUE = NO;
+				PRODUCT_NAME = "Create ExternalSettings";
+				ZERO_LINK = NO;
+			};
+			name = Deployment;
+		};
+		2A124E9F0DE1C66300524237 /* Default */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = "Create ExternalSettings";
+			};
+			name = Default;
+		};
 		2A3C3F290992245300E404E9 /* Development */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -637,6 +698,16 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		2A124EA90DE1C69B00524237 /* Build configuration list for PBXAggregateTarget "Create ExternalSettings" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2A124E9D0DE1C66300524237 /* Development */,
+				2A124E9E0DE1C66300524237 /* Deployment */,
+				2A124E9F0DE1C66300524237 /* Default */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Default;
+		};
 		2A3C3F280992245300E404E9 /* Build configuration list for PBXNativeTarget "uimac" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
