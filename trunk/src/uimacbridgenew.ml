@@ -44,7 +44,7 @@ let initGlobalProgress b =
   totalBytesTransferred := Uutil.Filesize.zero;
   showGlobalProgress Uutil.Filesize.zero;;
 
-(* Defined in MyController.m, used to redisplay the table
+(* Defined in Bridge.m, used to redisplay the table
    when the status for a row changes *)
 external bridgeThreadWait : int -> unit = "bridgeThreadWait";;
 
