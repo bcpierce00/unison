@@ -89,7 +89,7 @@
 			isa = PBXContainerItemProxy;
 			containerPortal = 29B97313FDCFA39411CA2CEA /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = 2A124E780DE1C48400524237 /* Create ExternalSettings */;
+			remoteGlobalIDString = 2A124E780DE1C48400524237;
 			remoteInfo = "Create ExternalSettings";
 		};
 /* End PBXContainerItemProxy section */
@@ -670,7 +670,7 @@
 			baseConfigurationReference = 2E282CCC0D9AE2E800439D01 /* ExternalSettings.xcconfig */;
 			buildSettings = {
 				LIBRARY_SEARCH_PATHS = "";
-				SDKROOT = /Developer/SDKs/MacOSX10.5.sdk;
+				SDKROOT = /Developer/SDKs/MacOSX10.4u.sdk;
 				USER_HEADER_SEARCH_PATHS = $OCAMLLIBDIR;
 			};
 			name = Development;
@@ -680,7 +680,7 @@
 			baseConfigurationReference = 2E282CCC0D9AE2E800439D01 /* ExternalSettings.xcconfig */;
 			buildSettings = {
 				LIBRARY_SEARCH_PATHS = "";
-				SDKROOT = /Developer/SDKs/MacOSX10.5.sdk;
+				SDKROOT = /Developer/SDKs/MacOSX10.4u.sdk;
 				USER_HEADER_SEARCH_PATHS = $OCAMLLIBDIR;
 			};
 			name = Deployment;
@@ -690,7 +690,7 @@
 			baseConfigurationReference = 2E282CCC0D9AE2E800439D01 /* ExternalSettings.xcconfig */;
 			buildSettings = {
 				LIBRARY_SEARCH_PATHS = "";
-				SDKROOT = /Developer/SDKs/MacOSX10.5.sdk;
+				SDKROOT = /Developer/SDKs/MacOSX10.4u.sdk;
 				USER_HEADER_SEARCH_PATHS = $OCAMLLIBDIR;
 			};
 			name = Default;
