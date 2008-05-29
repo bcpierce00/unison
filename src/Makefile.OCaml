@@ -151,9 +151,9 @@ macexecutable: $(NAME)-blob.o
 #	sed -e's/@@VERSION@@/$(VERSION)/' $(UIMACDIR)/Info.plist.template > $(UIMACDIR)/Info.plist
 	(cd $(UIMACDIR); xcodebuild OCAMLLIBDIR="$(OCAMLLIBDIR)" SYMROOT=build)
 	if [ -e $(UIMACDIR)/build/Default ]; then \
-	  gcc $(UIMACDIR)/cltool.c -o $(UIMACDIR)/build/Default/Unison.app/Contents/MacOS/cltool -framework Carbon; \
+	  gcc -mmacosx-version-min=10.4 $(UIMACDIR)/cltool.c -o $(UIMACDIR)/build/Default/Unison.app/Contents/MacOS/cltool -framework Carbon; \
 	else \
-	  gcc $(UIMACDIR)/cltool.c -o $(UIMACDIR)/build/Unison.app/Contents/MacOS/cltool -framework Carbon; \
+	  gcc -mmacosx-version-min=10.4 $(UIMACDIR)/cltool.c -o $(UIMACDIR)/build/Unison.app/Contents/MacOS/cltool -framework Carbon; \
 	fi
 
 # OCaml objects for the bytecode version
