@@ -1,3 +1,16 @@
+CHANGES FROM VERSION 2.28.45
+
+* Unison can sometimes fail to transfer a file, giving the unhelpful
+  message "Destination updated during synchronization" even though the
+  file has not been changed.  This can be caused by programs that
+  change either the file's contents *or* the file's extended
+  attributes without changing its modification time.  I'm not sure
+  what is the best fix for this -- it is not Unison's fault, but it
+  makes Unison's behavior puzzling -- but at least Unison can be more
+  helpful about suggesting a workaround (running once with 'fastcheck'
+  set to false).  The failure message has been changed to give this
+  advice.
+-------------------------------
 CHANGES FROM VERSION 2.28.36
 
 * Transfer changes from 2.27 branch
