@@ -13,7 +13,7 @@ let caseInsensitiveMode =
      ^ "replicas whose names differ in (upper- and lower-case) `spelling' "
      ^ "are treated as the same file.  When the flag is set to {\\tt false}, Unison "
      ^ "will treat all filenames as case sensitive.  Ordinarily, when the flag is "
-     ^ "set to {\tt default}, "
+     ^ "set to {\\tt default}, "
      ^ "filenames are automatically taken to be case-insensitive if "
      ^ "either host is running Windows or OSX.  In rare circumstances it is  "
      ^ "useful to set the flag manually (e.g. when running Unison on a  "

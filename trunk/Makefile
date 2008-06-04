@@ -18,6 +18,10 @@ src/Makefile.ProjectInfo: src/mkProjectInfo
 src/mkProjectInfo: src/mkProjectInfo.ml
 	ocamlc -o $@ $^
 
+docs:
+	$(MAKE) -C src UISTYLE=text
+	$(MAKE) -C doc 
+
 include src/Makefile.OCaml
 
 ######################################################################
@@ -44,6 +48,8 @@ remembernews: logmsg
 
 DUPCMD = svn merge -r prev:committed ../branches/2.27
 
+# This doesn't seem to work, actually: svn doesn't detect all of the files with changes that
+# need merging.  :-(  
 dup:
 	@echo "Make sure changes have been committed in the 2.27 branch!"
 	$(DUPCMD) --dry-run 
