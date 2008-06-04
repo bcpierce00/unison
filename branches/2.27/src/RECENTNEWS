@@ -1,3 +1,7 @@
+CHANGES FROM VERSION 2.27.75
+
+* Tiny typo fix to docs
+-------------------------------
 CHANGES FROM VERSION 2.27.74
 
 * Added 'make docs' to top-level Makefile
