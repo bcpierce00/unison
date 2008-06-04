@@ -3,7 +3,7 @@
 //  uimac
 //
 //  Created by Craig Federighi on 4/25/07.
-//  Copyright 2007 __MyCompanyName__. All rights reserved.
+//  Copyright 1999-2008 (see COPYING for details)
 //
 
 #import "Bridge.h"
