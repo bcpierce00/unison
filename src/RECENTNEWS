@@ -1,3 +1,8 @@
+CHANGES FROM VERSION 2.27.74
+
+* Added 'make docs' to top-level Makefile
+
+-------------------------------
 CHANGES FROM VERSION 2.27.68
 
 * Unison can sometimes fail to transfer a file, giving the unhelpful

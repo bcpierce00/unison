@@ -4,7 +4,7 @@
 let docs =
     ("about", ("About Unison", 
      "Unison File Synchronizer\n\
-      Version 2.27.68\n\
+      Version 2.27.74\n\
       \n\
       "))
 ::
@@ -139,9 +139,21 @@ let docs =
     ("copying", ("Copying", 
      "Copying\n\
       \n\
-      \032  Unison is free software. You are free to change and redistribute it\n\
-      \032  under the terms of the GNU General Public License. Please see the file\n\
-      \032  COPYING in the Unison distribution for more information.\n\
+      \032  This file is part of Unison.\n\
+      \n\
+      \032  Unison is free software: you can redistribute it and/or modify it\n\
+      \032  under the terms of the GNU General Public License as published by the\n\
+      \032  Free Software Foundation, either version 3 of the License, or (at your\n\
+      \032  option) any later version.\n\
+      \n\
+      \032  Unison is distributed in the hope that it will be useful, but WITHOUT\n\
+      \032  ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or\n\
+      \032  FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License\n\
+      \032  for more details.\n\
+      \n\
+      \032  The GNU Public License can be found at http://www.gnu.org/licenses. A\n\
+      \032  copy is also included in the Unison source distribution in the file\n\
+      \032  COPYING.\n\
       \n\
       "))
 ::
@@ -2471,8 +2483,8 @@ let docs =
       \n\
       "))
 ::
-    ("news", ("Changes in Version 2.27.68", 
-     "Changes in Version 2.27.68\n\
+    ("news", ("Changes in Version 2.27.74", 
+     "Changes in Version 2.27.74\n\
       \n\
       \032  Changes since 2.17:\n\
       \032    * Major rewrite and cleanup of the whole Mac OS X graphical user\n\
