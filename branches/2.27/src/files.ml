@@ -261,9 +261,8 @@ let checkContentsChangeLocal
           "The file %s\nhas been modified during synchronization.  \
            Transfer aborted.%s"
           (Fspath.concatToString currfspath path)
-          (if
-             Util.osType = `Win32 && Update.useFastChecking () &&
-             Props.same_time info.Fileinfo.desc archDesc
+          (if    Update.useFastChecking () 
+              && Props.same_time info.Fileinfo.desc archDesc
            then
              "  If this happens repeatedly, try running once with the \
               fastcheck option set to 'no'"

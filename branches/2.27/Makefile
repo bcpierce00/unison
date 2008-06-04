@@ -119,7 +119,7 @@ $(DOWNLOADDIR):
 	@echo Creating DOWNLOADDIR = $(DOWNLOADDIR)
 	@echo
 	-mkdir -p $(DOWNLOADDIR)
-	#touch $(DOWNLOADDIR)/THIS-IS-UNISON-$(VERSION)
+#	touch $(DOWNLOADDIR)/THIS-IS-UNISON-$(VERSION)
 
 exportsources:
 	$(RM) -r $(TMP)/$(EXPORTNAME)

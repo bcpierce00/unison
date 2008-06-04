@@ -973,7 +973,7 @@ let useFastChecking () =
 
 let immutable = Pred.create "immutable"
    ("This preference specifies paths for directories whose \
-     children are all immutable files --- i.e., once a file has been \
+     immediate children are all immutable files --- i.e., once a file has been \
      created, its contents never changes.  When scanning for updates, \
      Unison does not check whether these files have been modified; \
      this can speed update detection significantly (in particular, for mail \
@@ -1868,7 +1868,12 @@ let checkNoUpdatesLocal fspath pathInArchive ui =
   (* ...and check that this is a good description of what's out in the world *)
   let (_, uiNew) = buildUpdateRec archive fspath localPath false in
   if uiNew <> NoUpdates then
-    raise (Util.Transient "Destination updated during synchronization")
+    raise (Util.Transient (
+             "Destination updated during synchronization\n"
+           ^ (if useFastChecking() then
+                "  (if this happens repeatedly on a file that has not been changed, \n"
+              ^ "  try running once with 'fastcheck' set to false)"
+              else "")))
 
 let checkNoUpdatesOnRoot =
   Remote.registerRootCmd
