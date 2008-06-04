@@ -18,6 +18,10 @@ src/Makefile.ProjectInfo: src/mkProjectInfo
 src/mkProjectInfo: src/mkProjectInfo.ml
 	ocamlc -o $@ $^
 
+docs:
+	$(MAKE) -C src UISTYLE=text
+	$(MAKE) -C doc 
+
 include src/Makefile.OCaml
 
 ######################################################################
