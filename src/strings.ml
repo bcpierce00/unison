@@ -4,7 +4,12 @@
 let docs =
     ("about", ("About Unison", 
      "Unison File Synchronizer\n\
-      Version 2.27.57\n\
+      Version 2.27.68\n\
+      \n\
+      "))
+::
+    ("", ("Overview", 
+     "Overview\n\
       \n\
       \032  Unison is a file-synchronization tool for Unix and Windows. It allows\n\
       \032  two replicas of a collection of files and directories to be stored on\n\
@@ -1421,12 +1426,12 @@ let docs =
       \032         should use the path preference to choose particular paths to\n\
       \032         synchronize.\n\
       \032  immutable xxx\n\
-      \032         This preference specifies paths for directories whose children\n\
-      \032         are all immutable files -- i.e., once a file has been created,\n\
-      \032         its contents never changes. When scanning for updates, Unison\n\
-      \032         does not check whether these files have been modified; this can\n\
-      \032         speed update detection significantly (in particular, for mail\n\
-      \032         directories).\n\
+      \032         This preference specifies paths for directories whose immediate\n\
+      \032         children are all immutable files -- i.e., once a file has been\n\
+      \032         created, its contents never changes. When scanning for updates,\n\
+      \032         Unison does not check whether these files have been modified;\n\
+      \032         this can speed update detection significantly (in particular,\n\
+      \032         for mail directories).\n\
       \032  immutablenot xxx\n\
       \032         This preference overrides immutable.\n\
       \032  key xxx\n\
@@ -2019,7 +2024,8 @@ let docs =
       \n\
       \032  A large number of external merging programs are available. For\n\
       \032  example, on Unix systems setting the merge preference to\n\
-      \032   merge = Name *.txt -> diff3 CURRENT1 CURRENTARCH CURRENT2 -m > NEW\n\
+      \032   merge = Name *.txt -> diff3 -m CURRENT1 CURRENTARCH CURRENT2\n\
+      \032                           > NEW || echo \"differences detected\"\n\
       \n\
       \032  will tell Unison to use the external diff3 program for merging.\n\
       \032  Alternatively, users of emacs may find the following settings\n\
@@ -2465,8 +2471,8 @@ let docs =
       \n\
       "))
 ::
-    ("news", ("Changes in Version 2.27.57", 
-     "Changes in Version 2.27.57\n\
+    ("news", ("Changes in Version 2.27.68", 
+     "Changes in Version 2.27.68\n\
       \n\
       \032  Changes since 2.17:\n\
       \032    * Major rewrite and cleanup of the whole Mac OS X graphical user\n\
