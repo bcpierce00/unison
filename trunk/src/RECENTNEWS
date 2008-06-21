@@ -1,3 +1,7 @@
+CHANGES FROM VERSION 2.29.1
+
+Follow maxthreads preference when transferring directories.
+-------------------------------
 CHANGES FROM VERSION 2.29.0
 
 This version introduces some pretty big changes, by BCP in

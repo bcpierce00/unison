@@ -72,6 +72,7 @@ let stashCurrentVersions fromRoot toRoot path =
 
 let doAction (fromRoot,toRoot) path fromContents toContents id =
   Lwt_util.resize_region actionReg (Prefs.read maxthreads);
+  Lwt_util.resize_region Files.copyReg (Prefs.read maxthreads);
   Lwt_util.run_in_region actionReg 1 (fun () ->
     if not !Trace.sendLogMsgsToStderr then
       Trace.statusDetail (Path.toString path);

@@ -96,7 +96,7 @@ val decodeInt : string -> int
 val registerRootCmdWithConnection :
     string                          (* command name *)
  -> (connection -> 'a -> 'b Lwt.t)  (* local command *)
- ->    Common.root                  (* root on with the command is executed *)
+ ->    Common.root                  (* root on which the command is executed *)
     -> Common.root                  (* other root *)
     -> 'a                           (* additional arguments *)
     -> 'b Lwt.t                     (* result *)
