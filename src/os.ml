@@ -30,6 +30,20 @@ let initializeXferFunctions del ren =
       
 
 (*****************************************************************************)
+(*                      ESCAPING SHELL PARAMETERS                            *)
+(*****************************************************************************)
+
+(* Using single quotes is simpler under Unix but they are not accepted
+   by the Windows shell.  Double quotes without further quoting is
+   sufficient with Windows as filenames are not allowed to contain
+   double quotes. *)
+let quotes s =
+  if Util.osType = `Win32 && not Util.isCygwin then
+    "\"" ^ s ^ "\""
+  else
+    "'" ^ Util.replacesubstring s "'" "'\''" ^ "'"
+
+(*****************************************************************************)
 (*                      QUERYING THE FILESYSTEM                              *)
 (*****************************************************************************)
 
@@ -108,10 +122,18 @@ let rec childrenOf fspath path =
          Util.startswith file tempFilePrefix
        then begin
          if Util.endswith file !tempFileSuffix then begin
-           let newPath = Path.child path filename in
-           debug (fun()-> Util.msg "deleting old temp file %s\n"
-                            (Fspath.concatToString fspath newPath));
-           delete fspath newPath
+           let p = Path.child path filename in
+           let i = Fileinfo.get false fspath p in
+           let secondsinaweek = 604800.0 in
+           if Props.time i.Fileinfo.desc +. secondsinaweek < Util.time()
+           then begin
+             debug (fun()-> Util.msg "deleting old temp file %s\n"
+                      (Fspath.concatToString fspath p));
+             delete fspath p
+           end else
+             debug (fun()-> Util.msg
+                      "keeping temp file %s since it is less than a week old\n"
+                      (Fspath.concatToString fspath p));
          end;
          false
        end else
@@ -289,7 +311,7 @@ let createUnisonDir() =
 (*****************************************************************************)
 
 (* Generates an unused fspath for a temporary file.                          *)
-let freshPath fspath path prefix suffix =
+let genTempPath fresh fspath path prefix suffix =
   let rec f i =
     let s =
       if i=0 then suffix
@@ -299,11 +321,11 @@ let freshPath fspath path prefix suffix =
         (Path.addSuffixToFinalName path s)
         prefix
     in
-    if exists fspath tempPath then f (i + 1) else tempPath
+    if fresh && exists fspath tempPath then f (i + 1) else tempPath
   in f 0
 
-let tempPath fspath path =
-  freshPath fspath path tempFilePrefix !tempFileSuffix
+let tempPath ?(fresh=true) fspath path =
+  genTempPath fresh fspath path tempFilePrefix !tempFileSuffix
 
 (*****************************************************************************)
 (*                     INTERRUPTED SYSTEM CALLS                              *)
@@ -318,3 +340,81 @@ let accept fd =
      try Unix.accept fd
      with Unix.Unix_error(Unix.EINTR,_,_) -> loop() in
    loop()
+
+
+(*****************************************************************************)
+(*                     RUNNING EXTERNAL PROGRAMS                             *)
+(*****************************************************************************)
+
+let (>>=) = Lwt.bind
+open Lwt
+
+let readChannelTillEof c =
+  let rec loop lines =
+    try let l = input_line c in
+        loop (l::lines)
+    with End_of_file -> lines in
+  String.concat "\n" (Safelist.rev (loop []))
+
+let readChannelTillEof_lwt c =
+  let rec loop lines =
+    let lo =
+      try
+        Some(Lwt_unix.run (Lwt_unix.input_line c))
+      with End_of_file -> None
+    in
+    match lo with
+      Some l -> loop (l :: lines)
+    | None   -> lines
+  in
+  String.concat "\n" (Safelist.rev (loop []))
+
+let readChannelsTillEof l =
+  let rec suckitdry lines c =
+    Lwt.catch
+      (fun() -> Lwt_unix.input_line c >>= (fun l -> return (Some l)))
+      (fun e -> match e with End_of_file -> return None | _ -> raise e)
+    >>= (fun lo ->
+           match lo with
+             None -> return lines
+           | Some l -> suckitdry (l :: lines) c) in
+  Lwt_util.map
+    (fun c ->
+       suckitdry [] c
+       >>= (fun res -> return (String.concat "\n" (Safelist.rev res))))
+    l
+
+let runExternalProgram cmd =
+  if Util.osType = `Win32 && not Util.isCygwin then begin
+    debug (fun()-> Util.msg "Executing external program windows-style\n");
+    let c = Unix.open_process_in ("\"" ^ cmd ^ "\"") in
+    let mergeLog = readChannelTillEof c in
+    let returnValue = Unix.close_process_in c in
+    let mergeResultLog =
+      cmd ^
+      (if mergeLog <> "" then "\n\n" ^ mergeLog else "") ^
+      (if returnValue <> Unix.WEXITED 0 then
+         "\n\n" ^ Util.process_status_to_string returnValue
+       else
+         "") in
+    (returnValue,mergeResultLog) 
+  end else Lwt_unix.run (
+    debug (fun()-> Util.msg "Executing external program unix-style\n");
+    Lwt_unix.open_process_full cmd (Unix.environment ()) 
+    >>= (fun (out, ipt, err) ->
+    readChannelsTillEof [out;err]
+    >>= (function [mergeLogOut;mergeLogErr] ->
+    Lwt_unix.close_process_full (out, ipt, err)
+    >>= (fun returnValue ->
+    return (returnValue, (
+        cmd
+      ^ "\n\n" ^
+        (if mergeLogOut = "" || mergeLogErr = ""
+           then mergeLogOut ^ mergeLogErr
+         else mergeLogOut ^ "\n\n" ^ ("Error Output:"^mergeLogErr))
+      ^"\n\n" 
+      ^ (if returnValue = Unix.WEXITED 0
+         then ""
+         else Util.process_status_to_string returnValue))))
+      (* Stop typechechecker from complaining about non-exhaustive pattern above *)
+      | _ -> assert false))) 

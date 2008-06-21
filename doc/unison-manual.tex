@@ -2065,11 +2065,11 @@ directory from the other replica---probably not what you want!
 To prevent accidents, Unison provides a preference called
 \verb|mountpoint|.  Including a line like
 \begin{verbatim}
-             mountpoint = /mnt/foo
+             mountpoint = foo
 \end{verbatim}
 in your preference file will cause Unison to check, after it finishes
 detecting updates, that something actually exists at the path
-\verb|/mnt/foo| on both replicas; if it does not, the Unison run will
+\verb|foo| on both replicas; if it does not, the Unison run will
 abort. 
 
 \SUBSECTION{Click-starting Unison}{click}

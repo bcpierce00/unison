@@ -36,7 +36,8 @@ let openFileOut fspath path kind =
           in
           Unix.out_channel_of_descr fd
       end
-  | `RESS len -> Osx.openRessOut fspath path len
+  | `RESS len ->
+      Osx.openRessOut fspath path len
 
 let protect f g =
   try
@@ -60,9 +61,7 @@ let lwt_protect f g =
 
 let localFile
      fspathFrom pathFrom fspathTo pathTo realPathTo update desc ressLength ido =
-
   let use_id f = match ido with Some id -> f id | None -> () in
-  
   Util.convertUnixErrorsToTransient
     "copying locally"
     (fun () ->
@@ -136,8 +135,6 @@ let decompressor = ref Remote.MsgIdMap.empty
 
 let startReceivingFile
       fspath path realPath fileKind update srcFileSize id file_id =
-  debug (fun() ->
-    Util.msg "startReceivingFile: %s\n" (Fspath.concatToString fspath path));
   (* We delay the opening of the file so that there are not too many
      temporary files remaining after a crash *)
   let outfd = ref None in
@@ -153,15 +150,14 @@ let startReceivingFile
       !decompressor;
   if Prefs.read rsyncActivated then begin
     match update with
-      `Update (destFileDataSize, destFileRessSize) when
-          let destFileSize =
-            match fileKind with
-              `DATA   -> destFileDataSize
-            | `RESS _ -> destFileRessSize
-          in
-          Transfer.Rsync.aboveRsyncThreshold destFileSize
-            &&
-          Transfer.Rsync.aboveRsyncThreshold srcFileSize ->
+      `Update (destFileDataSize, destFileRessSize) 
+          when let destFileSize =
+                 match fileKind with
+                   `DATA   -> destFileDataSize
+                 | `RESS _ -> destFileRessSize
+               in
+                  Transfer.Rsync.aboveRsyncThreshold destFileSize
+               && Transfer.Rsync.aboveRsyncThreshold srcFileSize ->
         Util.convertUnixErrorsToTransient
           "preprocessing file"
           (fun () ->
@@ -247,7 +243,6 @@ let compress conn
 
 let compressRemotely = Remote.registerServerCmd "compress" compress
 
-
 let receiveRemBiLocally _ (file_id, bi) =
   let bil =
     try
@@ -281,7 +276,7 @@ let fileSizeOnHost =
 
 (* We limit the size of the output buffers to about 512 KB
    (we cannot go above the limit below plus 64) *)
-let transmitFileReg = Lwt_util.make_region 440
+let transferFileReg = Lwt_util.make_region 440
 
 let bufferSize sz =
   min 64 ((truncate (Uutil.Filesize.toFloat sz) + 1023) / 1024)
@@ -314,68 +309,76 @@ let close_all_no_error infd outfd =
   | None    -> ()
   end
 
-let reallyTransmitFile
+(* The ressOnly flag tells reallyTransferFile to skip transferring
+   the data fork (which has already been taken care of by some external
+   utility) and just transfer the resource fork (which external utilities
+   are not necessarily good at). *)
+let reallyTransferFile
     connFrom fspathFrom pathFrom fspathTo pathTo realPathTo
-    update desc ressLength id =
-  debug (fun() -> Util.msg "getFile(%s,%s) -> (%s,%s,%s,%s)\n"
+    update desc ressLength ressOnly id =
+  debug (fun() -> Util.msg "reallyTransferFile(%s,%s) -> (%s,%s,%s,%s)\n"
       (Fspath.toString fspathFrom) (Path.toString pathFrom)
       (Fspath.toString fspathTo) (Path.toString pathTo)
       (Path.toString realPathTo) (Props.toString desc));
-
   let srcFileSize = Props.length desc in
-  debug (fun () ->
-    Util.msg "src file size = %s bytes\n"
-      (Uutil.Filesize.toString srcFileSize));
   let file_id = Remote.newMsgId () in
-  (* Data fork *)
-  startReceivingFile
-    fspathTo pathTo realPathTo `DATA update srcFileSize id file_id
-    >>= (fun (outfd, infd, firstBi, remBi) ->
-  Lwt.catch (fun () ->
-    Uutil.showProgress id Uutil.Filesize.zero "f";
-    sendRemBi connFrom file_id remBi >>= (fun () ->
-    compressRemotely connFrom
-      (firstBi,
-       fspathFrom, pathFrom, `DATA, srcFileSize, id, file_id)
-            >>= (fun () ->
-    decompressor :=
-      Remote.MsgIdMap.remove file_id !decompressor; (* For GC *)
-    close_all infd outfd;
-    Lwt.return ())))
-    (fun e ->
-       decompressor :=
-         Remote.MsgIdMap.remove file_id !decompressor; (* For GC *)
-       close_all_no_error infd outfd;
-       Lwt.fail e) >>= (fun () ->
-  (* Ressource fork *)
-  if ressLength > Uutil.Filesize.zero then begin
+
+  (if ressOnly then 
+    (* Skip data fork *)
+    Lwt.return ()
+  else 
+    (* Data fork *)
     startReceivingFile
-      fspathTo pathTo realPathTo
-      (`RESS ressLength) update ressLength id file_id
-        >>= (fun (outfd, infd, firstBi, remBi) ->
+      fspathTo pathTo realPathTo `DATA update srcFileSize id file_id
+      >>= (fun (outfd, infd, firstBi, remBi) ->
     Lwt.catch (fun () ->
       Uutil.showProgress id Uutil.Filesize.zero "f";
       sendRemBi connFrom file_id remBi >>= (fun () ->
       compressRemotely connFrom
-        (firstBi, fspathFrom, pathFrom,
-         `RESS ressLength, ressLength, id, file_id)
-            >>= (fun () ->
+        (firstBi,
+         fspathFrom, pathFrom, `DATA, srcFileSize, id, file_id)
+              >>= (fun () ->
       decompressor :=
         Remote.MsgIdMap.remove file_id !decompressor; (* For GC *)
       close_all infd outfd;
       Lwt.return ())))
-    (fun e ->
-       decompressor :=
-         Remote.MsgIdMap.remove file_id !decompressor; (* For GC *)
-       close_all_no_error infd outfd;
-       Lwt.fail e))
-  end else
-    Lwt.return ()) >>= (fun () ->
-  begin match update with
-    `Update _ -> Fileinfo.set fspathTo pathTo (`Copy realPathTo) desc
-  | `Copy     -> Fileinfo.set fspathTo pathTo (`Set Props.fileDefault) desc
-  end;
-  Lwt.return ()))
+    (* catch handler *)
+      (fun e -> 
+         decompressor :=
+           Remote.MsgIdMap.remove file_id !decompressor; (* For GC *)
+         close_all_no_error infd outfd;
+         Lwt.fail e) 
+    )) >>= (fun () ->
+
+    (* Resource fork *)
+    (if ressLength > Uutil.Filesize.zero then begin
+      startReceivingFile
+        fspathTo pathTo realPathTo
+        (`RESS ressLength) update ressLength id file_id
+          >>= (fun (outfd, infd, firstBi, remBi) ->
+      Lwt.catch (fun () ->
+        Uutil.showProgress id Uutil.Filesize.zero "f";
+        sendRemBi connFrom file_id remBi >>= (fun () ->
+        compressRemotely connFrom
+          (firstBi, fspathFrom, pathFrom,
+           `RESS ressLength, ressLength, id, file_id)
+              >>= (fun () ->
+        decompressor :=
+          Remote.MsgIdMap.remove file_id !decompressor; (* For GC *)
+        close_all infd outfd;
+        Lwt.return ())))
+      (fun e ->
+         decompressor :=
+           Remote.MsgIdMap.remove file_id !decompressor; (* For GC *)
+         close_all_no_error infd outfd;
+         Lwt.fail e))
+    end else
+      Lwt.return ()) >>= (fun () ->
+    begin match update with
+      `Update _ -> Fileinfo.set fspathTo pathTo (`Copy realPathTo) desc
+    | `Copy     -> Fileinfo.set fspathTo pathTo (`Set Props.fileDefault) desc
+    end;
+    Lwt.return ()))
 
 (****)
 
@@ -391,7 +394,8 @@ let tryCopyMovedFile fspathTo pathTo realPathTo update desc fp ress id =
          the problem has to do with the RPC mechanism, which was used here to
          make a call *back* from the server to the client inside Trace.log so that
          the log message would be appended to the log file on the client. *)
-      let loggit = if Prefs.read Globals.someHostIsRunningWindows then Util.msg "%s" else Trace.log in
+      let loggit = if Prefs.read Globals.someHostIsRunningWindows
+                   then Util.msg "%s" else Trace.log in
       match Xferhint.lookup fp with
         None ->
           false
@@ -432,7 +436,7 @@ let tryCopyMovedFile fspathTo pathTo realPathTo update desc fp ress id =
                 (Path.toString candidatePath));
               Xferhint.deleteEntry (candidateFspath, candidatePath);
               false
-            end 
+            end
           with
             Util.Transient s ->
               debug (fun () ->
@@ -445,40 +449,110 @@ let tryCopyMovedFile fspathTo pathTo realPathTo update desc fp ress id =
               false)
   end
 
-let transmitFileLocal
-  connFrom
-  (fspathFrom, pathFrom, fspathTo, pathTo, realPathTo,
-   update, desc, fp, ress, id) =
-  if
-    tryCopyMovedFile
-      fspathTo pathTo realPathTo update desc fp ress id
-  then
-    Lwt.return ()
-  else
-    reallyTransmitFile
-      connFrom fspathFrom pathFrom fspathTo pathTo realPathTo
-      update desc (Osx.ressLength ress) id
+let transferFileLocal connFrom
+                      (fspathFrom, pathFrom, fspathTo, pathTo, realPathTo,
+                       update, desc, fp, ress, ressOnly, id) =
+  if (not ressOnly)
+     && tryCopyMovedFile fspathTo pathTo realPathTo update desc fp ress id
+  then Lwt.return ()
+  else reallyTransferFile
+         connFrom fspathFrom pathFrom fspathTo pathTo realPathTo
+         update desc (Osx.ressLength ress) ressOnly id
 
-let transmitFileOnRoot =
-  Remote.registerRootCmdWithConnection "transmitFile" transmitFileLocal
+let transferFileOnRoot =
+  Remote.registerRootCmdWithConnection "transferFile" transferFileLocal
 
-let transmitFile
+let transferFile
     rootFrom pathFrom rootTo fspathTo pathTo realPathTo
-    update desc fp ress id =
+    update desc fp ress ressOnly id =
   let bufSz = bufferSize (max (Props.length desc) (Osx.ressLength ress)) in
   (* This must be on the client: any lock on the server side may result
      in a deadlock under windows *)
-  Lwt_util.run_in_region transmitFileReg bufSz (fun () ->
+  Lwt_util.run_in_region transferFileReg bufSz (fun () ->
     Abort.check id;
-    transmitFileOnRoot rootTo rootFrom
+    transferFileOnRoot rootTo rootFrom
       (snd rootFrom, pathFrom, fspathTo, pathTo, realPathTo,
-       update, desc, fp, ress, id))
+       update, desc, fp, ress, ressOnly, id))
 
 (****)
 
-let file
-      rootFrom pathFrom rootTo fspathTo pathTo realPathTo
-      update desc fp ress id =
+let copyprog =
+  Prefs.createString "copyprog" "rsync --partial --inplace"
+    "External program for copying large files"
+    ("A string giving the name (and command-line switches, if needed) of an "
+     ^ "external program that can be used to copy large files efficiently.")
+
+let copythreshold =
+  Prefs.createInt "copythreshold" (-1)
+    "If nonnegative, use copyprog to transfer files larger than this"
+    ("A number indicating above what filesize (in megabytes) Unison should "
+     ^ "use the external "
+     ^ "copying utility specified by {\\tt copyprog}. Specifying 0 will cause "
+     ^ "{\\em all} copies to use the external program; "
+     ^ "a negative number will prevent any files from using it.  (Default is -1.)")
+
+let tryCopyMovedFileLocal connFrom
+            (fspathTo, pathTo, realPathTo, update, desc, fp, ress, id) =
+  Lwt.return (tryCopyMovedFile fspathTo pathTo realPathTo update desc fp ress id)
+
+let tryCopyMovedFileOnRoot =
+  Remote.registerRootCmdWithConnection "tryCopyMovedFile" tryCopyMovedFileLocal
+
+let setFileinfoLocal connFrom (fspathTo, pathTo, desc) =
+  Lwt.return (Fileinfo.set fspathTo pathTo (`Set Props.fileDefault) desc)
+
+let setFileinfoOnRoot =
+  Remote.registerRootCmdWithConnection "setFileinfo" setFileinfoLocal
+
+let targetExistsWithCorrectSize fspathTo pathTo desc =
+     Os.exists fspathTo pathTo
+  && Props.length (Fileinfo.get false fspathTo pathTo).Fileinfo.desc = Props.length desc
+
+let targetExistsWithCorrectSizeLocal connFrom (fspathTo, pathTo, desc) =
+  Lwt.return (targetExistsWithCorrectSize fspathTo pathTo desc)
+
+let targetExistsWithCorrectSizeOnRoot =
+  Remote.registerRootCmdWithConnection
+    "targetExistsWithCorrectSize" targetExistsWithCorrectSizeLocal
+
+let transferFileUsingExternalCopyprog
+             rootFrom pathFrom rootTo fspathTo pathTo realPathTo
+             update desc fp ress id =
+  tryCopyMovedFileOnRoot rootTo rootFrom
+       (fspathTo, pathTo, realPathTo, update, desc, fp, ress, id)
+    >>= (fun b ->
+  if b then Lwt.return ()
+  else begin
+    Trace.log (Printf.sprintf "Using external program to copy %s\n"
+                 (Path.toString pathTo));
+    Uutil.showProgress id Uutil.Filesize.zero "ext";
+    let fromSpec =
+        (match fst rootFrom with Common.Local -> "" | Common.Remote h -> h ^ ":")
+      ^ (Fspath.concatToString (snd rootFrom) pathFrom) in
+    let toSpec =
+        (match fst rootTo with Common.Local -> "" | Common.Remote h -> h ^ ":")
+      ^ (Fspath.concatToString fspathTo pathTo) in
+    let cmd = (Prefs.read copyprog) ^ " "
+               ^ (Os.quotes fromSpec) ^ " "
+               ^ (Os.quotes toSpec) in
+    Trace.log (Printf.sprintf "%s\n" cmd);
+    (* FIX: When possible, we should run this in a Lwt, not sequentially. *)
+    let _,log = Os.runExternalProgram cmd in
+    debug (fun() -> Util.msg
+             "transferFileUsingExternalCopyprog: returned\n------\n%s\n-----\n"
+               (Util.trimWhitespace log));
+    targetExistsWithCorrectSizeOnRoot rootTo rootFrom (fspathTo, pathTo, desc)
+        >>= (fun b ->
+    if not b then
+      raise (Util.Transient (Printf.sprintf
+        "External copy program did not create target file (or bad length): %s"
+            (Path.toString pathTo)));
+    Uutil.showProgress id (Props.length desc) "ext";
+    Lwt.return ())
+  end)
+
+let file rootFrom pathFrom rootTo fspathTo pathTo realPathTo
+         update desc fp ress id =
   debug (fun() -> Util.msg "copyRegFile(%s,%s) -> (%s,%s,%s,%s,%s)\n"
       (Common.root2string rootFrom) (Path.toString pathFrom)
       (Common.root2string rootTo) (Path.toString realPathTo)
@@ -492,10 +566,46 @@ let file
         update desc (Osx.ressLength ress) (Some id);
       Lwt.return ()
   | _ ->
-      transmitFile
-        rootFrom pathFrom rootTo fspathTo pathTo realPathTo
-        update desc fp ress id
-  end >>= (fun () ->
+      (* Check whether we actually need to copy the file (or whether it
+         already exists from some interrupted previous transfer) *)
+      targetExistsWithCorrectSizeOnRoot
+        rootTo rootFrom (fspathTo, pathTo, desc) >>= (fun b ->
+      if b then begin
+        debug (fun () ->
+          Util.msg "Skipping transfer of %s/%s because it's already there\n"
+          (Fspath.toString fspathTo) (Path.toString pathTo));
+        Lwt.return ()
+      (* Check whether we should use an external program to copy the
+         file *)
+      end else if
+           Prefs.read copyprog <> ""
+        && Prefs.read copythreshold >= 0
+        && Props.length desc >= Uutil.Filesize.ofInt64 (Int64.mul
+                                   (Int64.of_int 1000000)
+                                   (Int64.of_int (Prefs.read copythreshold)))
+        && update = `Copy
+      then begin
+        (* First use the external program to copy the data fork *)
+        transferFileUsingExternalCopyprog
+          rootFrom pathFrom rootTo fspathTo pathTo realPathTo
+          update desc fp ress id >>= (fun () ->
+        (* Now use the regular transport mechanism to copy the resource
+           fork *)
+        begin if (Osx.ressLength ress) > Uutil.Filesize.zero then
+          transferFile
+            rootFrom pathFrom rootTo fspathTo pathTo realPathTo
+            update desc fp ress true id
+        else Lwt.return ()
+        end >>= (fun() ->
+        (* Finally, initialize the file info *)
+        setFileinfoOnRoot rootTo rootFrom (fspathTo, pathTo, desc)))
+      end else
+        (* Just transfer the file in the usual way with Unison's
+           built-in facilities *)
+        transferFile
+          rootFrom pathFrom rootTo fspathTo pathTo realPathTo
+          update desc fp ress false id
+      ) end >>= (fun () ->
   Trace.showTimer timer;
   Lwt.return ())
 

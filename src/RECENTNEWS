@@ -1,3 +1,45 @@
+CHANGES FROM VERSION 2.29.0
+
+This version introduces some pretty big changes, by BCP in
+collaboration with Alan Schmitt.  We've tested them minimally, but
+this version should be considered "only for the adventurous" for the
+moment.
+
+* Added some more debugging code to remote.ml to give more informative
+  error messages when we encounter the (dreaded and longstanding)
+  "assert failed during file transfer" bug
+
+* Experimental support for invoking an external file transfer tool for
+  whole-file copies instead of Unison's built-in transfer protocol.  
+
+  Two new preferences have been added:
+
+    - copyprog is a string giving the name (and command-line switches,
+      if needed) of an external program that can be used to copy large
+      files efficiently.  By default, rsync is invoked, but other
+      tools such as scp can be used instead by changing the value of
+      this preference.  (Although this is not its primary purpose,
+      rsync is actually a pretty fast way of copying files that don't
+      already exist on the receiving host.)  For files that do already
+      exist on (but that have been changed in one replica), Unison
+      will always use its built-in implementation of the rsync
+      algorithm.
+
+    - copythreshold is an integer (-1 by default), indicating above
+      what filesize (in megabytes) Unison should use the external
+      copying utility specified by copyprog.  Specifying 0 will cause
+      ALL copies to use the external program; a negative number will
+      prevent any files from using it.  (Default is -1.)
+
+* If Unison is interrupted during a directory transfer, it will now
+  leave the partially transferred directory intact in a temporary
+  location. (This maintains the invariant that new files/directories
+  are transferred either completely or not at all.)  The next time
+  Unison is run, it will continue filling in this temporary directory,
+  skipping transferring files that it finds are already there.  
+
+
+-------------------------------
 CHANGES FROM VERSION 2.28.51
 
 * Propagating changes from 2.27 branch

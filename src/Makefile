@@ -363,6 +363,11 @@ endif
 checkin:
 	$(MAKE) -C .. checkin
 
+installremote: 
+	$(MAKE) UISTYLE=text
+	-unison eniac -path current/unison/trunk/src -batch
+	ssh eniac.seas.upenn.edu make -C current/unison/trunk/src installtext
+
 ####################################################################
 # Documentation strings
 
