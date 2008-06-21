@@ -343,11 +343,22 @@ let rec first_chars len msg =
       else
         String.sub s p len
 
+(* An integer just a little smaller than the maximum representable in 30 bits *)
+let hugeint = 1000000000
+
 let safeMarshal marshalPayload tag data rem =
   let (rem', length) = marshalPayload data rem in
+  if length > hugeint then  begin
+    let start = first_chars (min length 10) rem' in
+    let start = if length > 10 then start ^ "..." else start in
+    let start = String.escaped start in
+    Util.msg "Fatal error in safeMarshal: sending too many (%d) bytes with tag %s and contents [%s]\n" length tag start; 
+    raise (Util.Fatal ((Printf.sprintf
+             "Message payload too large (%d, %s, [%s]).  \n" length tag start)
+             ^ "This is a bug in Unison; if it happens to you in a repeatable way, \n"
+             ^ "please post a report on the unison-users mailing list."))
+  end;
   let l = String.length tag in
-  assert (length > 0);   (* tracking down an assert failure in receivePacket... *)
-  assert (l > 0);   
   debugE (fun() ->
             let start = first_chars (min length 10) rem' in
             let start = if length > 10 then start ^ "..." else start in
@@ -585,7 +596,7 @@ let processRequest conn id cmdName buf =
 type msgId = int
 module MsgIdMap = Map.Make (struct type t = msgId let compare = compare end)
 let ids = ref 1
-let newMsgId () = incr ids; if !ids = 1000000000 then ids := 2; !ids
+let newMsgId () = incr ids; if !ids = hugeint then ids := 2; !ids
 
 (* Threads waiting for a response from the other side *)
 let receivers = ref MsgIdMap.empty

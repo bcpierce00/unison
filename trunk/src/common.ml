@@ -190,7 +190,7 @@ let isDeletion ri =
       | _ -> false)
   | _ -> false
 
-let rcType ((fi, _, _, _) as rc) =
+let rcType (fi, _, _, _) =
   Fileinfo.type2string fi
 
 let riFileType ri =
