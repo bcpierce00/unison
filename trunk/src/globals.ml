@@ -42,7 +42,7 @@ let installRoots termInteract =
   let roots = rawRoots () in
   if Safelist.length roots <> 2 then
     raise (Util.Fatal (Printf.sprintf
-      "Wrong number of roots: 2 expected, but %d provided (%s)\n(Maybe you gave roots both on the command line and in the profile?)"
+      "Wrong number of roots: 2 expected, but %d provided (%s)\n(Maybe you specified roots both on the command line and in the profile?)"
       (Safelist.length roots)
       (String.concat ", " roots) ));
   Safelist.fold_right

@@ -12,6 +12,7 @@ val setRawRoots : string list -> unit
 (* Parse and canonize roots from their raw names                             *)
 val installRoots : (string -> string -> string) option -> unit Lwt.t
 
+(* An alternate method (under development?) *)
 val installRoots2 : unit -> unit
 
 (* The roots of the synchronization (with names canonized, but in the same   *)
