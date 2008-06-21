@@ -479,8 +479,13 @@ let transferFile
 let copyprog =
   Prefs.createString "copyprog" "rsync --partial --inplace"
     "External program for copying large files"
-    ("A string giving the name (and command-line switches, if needed) of an "
-     ^ "external program that can be used to copy large files efficiently.")
+    ("A string giving the name of an "
+     ^ "external program that can be used to copy large files efficiently  "
+     ^ "(plus command-line switches "
+     ^ "telling it to copy files in-place and to resume"
+     ^ "interrupted transfers).  "
+     ^ "The default setting invokes {\\tt rsync} with appropriate "
+     ^ "options---most users should not need to change it.")
 
 let copythreshold =
   Prefs.createInt "copythreshold" (-1)
@@ -515,6 +520,25 @@ let targetExistsWithCorrectSizeOnRoot =
   Remote.registerRootCmdWithConnection
     "targetExistsWithCorrectSize" targetExistsWithCorrectSizeLocal
 
+let formatConnectionInfo root =
+  match root with
+    Common.Local, _ -> ""
+  | Common.Remote h, _ ->
+      (* Find the (unique) nonlocal root *)
+      match
+         Safelist.find (function Clroot.ConnectLocal _ -> false | _ -> true)
+           (Safelist.map Clroot.parseRoot (Globals.rawRoots()))
+      with
+        Clroot.ConnectByShell (_,h',uo,_,_) ->
+            (match uo with None -> "" | Some u -> u ^ "@")
+          ^ h ^ ":"
+          (* Note that we don't do anything with the port -- hopefully
+             this will not affect many people.  If we did want to include it,
+             we'd have to fiddle with the rsync parameters in a deeper way. *)
+      | Clroot.ConnectBySocket (h',_,_) ->
+          h ^ ":"
+      | Clroot.ConnectLocal _ -> assert false
+
 let transferFileUsingExternalCopyprog
              rootFrom pathFrom rootTo fspathTo pathTo realPathTo
              update desc fp ress id =
@@ -527,10 +551,10 @@ let transferFileUsingExternalCopyprog
                  (Path.toString pathTo));
     Uutil.showProgress id Uutil.Filesize.zero "ext";
     let fromSpec =
-        (match fst rootFrom with Common.Local -> "" | Common.Remote h -> h ^ ":")
+        (formatConnectionInfo rootFrom)
       ^ (Fspath.concatToString (snd rootFrom) pathFrom) in
     let toSpec =
-        (match fst rootTo with Common.Local -> "" | Common.Remote h -> h ^ ":")
+        (formatConnectionInfo rootTo)
       ^ (Fspath.concatToString fspathTo pathTo) in
     let cmd = (Prefs.read copyprog) ^ " "
                ^ (Os.quotes fromSpec) ^ " "
