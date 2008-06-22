@@ -477,7 +477,7 @@ let transferFile
 (****)
 
 let copyprog =
-  Prefs.createString "copyprog" "rsync --partial --inplace"
+  Prefs.createString "copyprog" "rsync --partial --inplace --compress"
     "External program for copying large files"
     ("A string giving the name of an "
      ^ "external program that can be used to copy large files efficiently  "
@@ -490,11 +490,13 @@ let copyprog =
 let copythreshold =
   Prefs.createInt "copythreshold" (-1)
     "If nonnegative, use copyprog to transfer files larger than this"
-    ("A number indicating above what filesize (in megabytes) Unison should "
+    ("A number indicating above what filesize (in kilobytes) Unison should "
      ^ "use the external "
      ^ "copying utility specified by {\\tt copyprog}. Specifying 0 will cause "
      ^ "{\\em all} copies to use the external program; "
-     ^ "a negative number will prevent any files from using it.  (Default is -1.)")
+     ^ "a negative number will prevent any files from using it.  "
+     ^ "The default is -1.  "
+     ^ "\\sectionref{speeding}{Making Unison Faster on Large Files}")
 
 let tryCopyMovedFileLocal connFrom
             (fspathTo, pathTo, realPathTo, update, desc, fp, ress, id) =
@@ -605,7 +607,7 @@ let file rootFrom pathFrom rootTo fspathTo pathTo realPathTo
            Prefs.read copyprog <> ""
         && Prefs.read copythreshold >= 0
         && Props.length desc >= Uutil.Filesize.ofInt64 (Int64.mul
-                                   (Int64.of_int 1000000)
+                                   (Int64.of_int 1000)
                                    (Int64.of_int (Prefs.read copythreshold)))
         && update = `Copy
       then begin
