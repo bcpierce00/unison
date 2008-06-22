@@ -49,7 +49,7 @@
   \huge {\ifhevea\black\else\bf \fi User Manual and Reference Guide}%
   \ifhevea \\ \else \\[6ex] \fi%
   \LARGE%
-  Version \unisonversion \\ %
+  Version \unisonversion \\[4ex] %
   % \today %
   \large Copyright 1998-2008, Benjamin C. Pierce
   \end{center}%
@@ -2020,6 +2020,39 @@ If you are using Unison with {\tt ssh}, you may get some speed
 improvement by enabling {\tt ssh}'s compression feature.  Do this by
 adding the option ``{\tt -rshargs -C}'' to the command line or ``{\tt
   rshargs = -C}'' to your profile.  
+
+
+\SUBSECTION{Making Unison Faster on Large Files}{speeding}
+
+Unison's built-in implementation of the rsync algorithm makes transferring
+updates to existing files pretty fast.  However, for whole-file copies, the
+built-in transfer method is not highly optimized.  Also, if Unison is
+interrupted in the middle of transferring a large file, it will attempt to
+retransfer the whole thing on the next run.
+
+These shortcomings can be addressed by telling Unison to use an external
+file copying utility for whole-file transfers.  The recommended one is the
+standalone {\tt rsync} tool, which is available by default on most Unix
+systems and can easily be installed on Windows systems using Cygwin.
+
+If you have {\tt rsync} installed on both hosts, you can make Unison use it
+simply by setting the {\tt copythreshold} flag to something non-negative.
+If you set it to 0, Unison will use the external copy utility for {\em all}
+whole-file transfers.  (This is probably slower than letting Unison copy
+small files by itself, but can be useful for testing.)  If you set it to a
+larger value, Unison will use the external utility for all files larger than
+this size (which is given in kilobytes, so setting it to 1000 will cause the
+external tool to be used for all transfers larger than a megabyte).  
+
+If you want to use a different external copy utility, set the {\tt copyprog}
+preference. 
+
+If a {\em directory} transfer is interrupted, the next run of Unison will
+skip any files that were completely transferred before the interruption.
+Note, though, that the new directory will not appear in the destination
+filesystem until everything has been transferred---partially transferred
+directories are kept in a temporary location (with names like {\tt
+  .unison.DIRNAME....}) until the transfer is complete.  
 
 
 \SUBSECTION{Fast Update Detection}{fastcheck}

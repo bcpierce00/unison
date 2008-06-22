@@ -1,3 +1,11 @@
+CHANGES FROM VERSION 2.29.3
+
+* Updated documentation to describe new features
+
+* Changed units of copythreshold to kilobytes
+
+* Added -z to flags for external rsync program
+-------------------------------
 CHANGES FROM VERSION 2.29.2
 
 * Automatically supply "user@" in argument to external copy program.
