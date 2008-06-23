@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/ubase/safelist.ml *)
-(* Copyright 1999-2007 (see COPYING for details) *)
+(* Copyright 1999-2008 (see COPYING for details) *)
 
 let filterBoth f l =
   let rec loop r1 r2 = function

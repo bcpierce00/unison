@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/copy.ml *)
-(* Copyright 1999-2007 (see COPYING for details) *)
+(* Copyright 1999-2008 (see COPYING for details) *)
 
 let (>>=) = Lwt.bind
 
@@ -326,8 +326,13 @@ let reallyTransferFile
   (if ressOnly then 
     (* Skip data fork *)
     Lwt.return ()
-  else 
+  else begin
     (* Data fork *)
+    if Os.exists fspathTo pathTo then begin
+      debug (fun() -> Util.msg "Removing old temp file %s / %s\n"
+               (Fspath.toString fspathTo) (Path.toString pathTo));
+      Os.delete fspathTo pathTo
+    end;
     startReceivingFile
       fspathTo pathTo realPathTo `DATA update srcFileSize id file_id
       >>= (fun (outfd, infd, firstBi, remBi) ->
@@ -348,7 +353,7 @@ let reallyTransferFile
            Remote.MsgIdMap.remove file_id !decompressor; (* For GC *)
          close_all_no_error infd outfd;
          Lwt.fail e) 
-    )) >>= (fun () ->
+    )end) >>= (fun () ->
 
     (* Resource fork *)
     (if ressLength > Uutil.Filesize.zero then begin

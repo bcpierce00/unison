@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/name.mli *)
-(* Copyright 1999-2007 (see COPYING for details) *)
+(* Copyright 1999-2008 (see COPYING for details) *)
 
 type t
 

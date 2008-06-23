@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/remote.mli *)
-(* Copyright 1999-2007 (see COPYING for details) *)
+(* Copyright 1999-2008 (see COPYING for details) *)
 
 module Thread : sig
   val unwindProtect : (unit -> 'a Lwt.t) -> (exn -> unit Lwt.t) -> 'a Lwt.t

@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/tree.ml *)
-(* Copyright 1999-2007 (see COPYING for details) *)
+(* Copyright 1999-2008 (see COPYING for details) *)
 
 type ('a, 'b) t =
     Node of ('a * ('a, 'b) t) list * 'b option

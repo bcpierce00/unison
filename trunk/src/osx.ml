@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/osx.ml *)
-(* Copyright 1999-2007 (see COPYING for details) *)
+(* Copyright 1999-2008 (see COPYING for details) *)
 
 external isMacOSXPred : unit -> bool = "isMacOSX"
 

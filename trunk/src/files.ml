@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/files.ml *)
-(* Copyright 1999-2007 (see COPYING for details) *)
+(* Copyright 1999-2008 (see COPYING for details) *)
 
 open Common
 open Lwt
@@ -884,6 +884,7 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
                    (Path.toString path));
            if not (Stasher.shouldBackupCurrent path) then
              Util.msg "Warning: 'backupcurrent' is not set for path %s\n" (Path.toString path);
+           Stasher.stashCurrentVersion workingDirForMerge localPath1 (Some workingarch);
            let infoarch = Fileinfo.get false workingDirForMerge workingarch in
            let dig = Os.fingerprint arch_fspath Path.empty infoarch in
            debug (fun () -> Util.msg "New digest is %s\n" (Os.fullfingerprint_to_string dig));

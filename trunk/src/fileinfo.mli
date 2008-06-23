@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/fileinfo.mli *)
-(* Copyright 1999-2007 (see COPYING for details) *)
+(* Copyright 1999-2008 (see COPYING for details) *)
 
 type typ = [`ABSENT | `FILE | `DIRECTORY | `SYMLINK]
 val type2string : typ -> string

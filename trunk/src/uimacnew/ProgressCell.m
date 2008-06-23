@@ -1,5 +1,5 @@
 /******************************************************************************
- * Copyright 2007 (see file COPYING for more information)
+ * Copyright 2008 (see file COPYING for more information)
  *
  * Loosely based on TorrentCell from Transmission (.png files are from 
  * the original).  
