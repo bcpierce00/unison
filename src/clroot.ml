@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/clroot.ml *)
-(* Copyright 1999-2007 (see COPYING for details) *)
+(* Copyright 1999-2008 (see COPYING for details) *)
 
 (*
   This file parses the unison command-line arguments that

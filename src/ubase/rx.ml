@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/ubase/rx.ml *)
-(* Copyright 1999-2007 (see COPYING for details) *)
+(* Copyright 1999-2008 (see COPYING for details) *)
 (*
   Inspired by some code and algorithms from Mark William Hopkins
   (regexp.tar.gz, available in the comp.compilers file archive)

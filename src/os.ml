@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/os.ml *)
-(* Copyright 1999-2007 (see COPYING for details) *)
+(* Copyright 1999-2008 (see COPYING for details) *)
 
 (* This file attempts to isolate operating system specific details from the  *)
 (* rest of the program.                                                      *)
@@ -388,11 +388,11 @@ let runExternalProgram cmd =
   if Util.osType = `Win32 && not Util.isCygwin then begin
     debug (fun()-> Util.msg "Executing external program windows-style\n");
     let c = Unix.open_process_in ("\"" ^ cmd ^ "\"") in
-    let mergeLog = readChannelTillEof c in
+    let log = readChannelTillEof c in
     let returnValue = Unix.close_process_in c in
     let mergeResultLog =
       cmd ^
-      (if mergeLog <> "" then "\n\n" ^ mergeLog else "") ^
+      (if log <> "" then "\n\n" ^ log else "") ^
       (if returnValue <> Unix.WEXITED 0 then
          "\n\n" ^ Util.process_status_to_string returnValue
        else
@@ -403,18 +403,19 @@ let runExternalProgram cmd =
     Lwt_unix.open_process_full cmd (Unix.environment ()) 
     >>= (fun (out, ipt, err) ->
     readChannelsTillEof [out;err]
-    >>= (function [mergeLogOut;mergeLogErr] ->
+    >>= (function [logOut;logErr] ->
     Lwt_unix.close_process_full (out, ipt, err)
     >>= (fun returnValue ->
+    let logOut = Util.trimWhitespace logOut in
+    let logErr = Util.trimWhitespace logErr in
     return (returnValue, (
-        cmd
-      ^ "\n\n" ^
-        (if mergeLogOut = "" || mergeLogErr = ""
-           then mergeLogOut ^ mergeLogErr
-         else mergeLogOut ^ "\n\n" ^ ("Error Output:"^mergeLogErr))
-      ^"\n\n" 
+      (*  cmd
+      ^ "\n\n" ^ *)
+        (if logOut = "" || logErr = ""
+           then logOut ^ logErr
+         else logOut ^ "\n\n" ^ ("Error Output:" ^ logErr))
       ^ (if returnValue = Unix.WEXITED 0
          then ""
-         else Util.process_status_to_string returnValue))))
+         else "\n\n" ^ Util.process_status_to_string returnValue))))
       (* Stop typechechecker from complaining about non-exhaustive pattern above *)
       | _ -> assert false))) 

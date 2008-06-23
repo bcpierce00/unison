@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/update.ml *)
-(* Copyright 1999-2007 (see COPYING for details) *)
+(* Copyright 1999-2008 (see COPYING for details) *)
 
 open Common
 let (>>=)  = Lwt.(>>=)
@@ -1668,7 +1668,7 @@ let updateArchiveLocal fspath path ui id =
   let (localPath, subArch) = getPathInArchive archive Path.empty path in
   let newArch = updateArchiveRec ui (stripArchive path subArch) in
   let commit () =
-    let _ = Stasher.stashCurrentVersion fspath localPath in
+    let _ = Stasher.stashCurrentVersion fspath localPath None in
     let archive = getArchive root in
     let archive, () =
       updatePathInArchive archive fspath Path.empty path

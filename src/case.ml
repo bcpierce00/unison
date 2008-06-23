@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/case.ml *)
-(* Copyright 1999-2007 (see COPYING for details) *)
+(* Copyright 1999-2008 (see COPYING for details) *)
 
 (* The update detector, reconciler, and transporter behave differently       *)
 (* depending on whether the local and/or remote file system is case          *)

@@ -1,3 +1,16 @@
+CHANGES FROM VERSION 2.29.4
+
+* When using the internal transfer method, remove any temp file on the
+  destination (which may be left over from a previous interrupted run
+  of Unison) before starting the transfer.
+
+* Fixed (hopefully!) the bug causing Unison to backup the new archive
+  version after a (partially or fully) successful merge.
+
+* Updated copyright notices to 2008.  :-)
+
+
+-------------------------------
 CHANGES FROM VERSION 2.29.3
 
 * Updated documentation to describe new features

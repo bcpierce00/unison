@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/globals.mli *)
-(* Copyright 1999-2007 (see COPYING for details) *)
+(* Copyright 1999-2008 (see COPYING for details) *)
 
 (* Global variables and functions needed by top-level modules and user       *)
 (* interfaces                                                                *)

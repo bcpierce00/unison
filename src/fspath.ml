@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/fspath.ml *)
-(* Copyright 1999-2007 (see COPYING for details) *)
+(* Copyright 1999-2008 (see COPYING for details) *)
 
 (* Defines an abstract type of absolute filenames (fspaths).  Keeping the    *)
 (* type abstract lets us enforce some invariants which are important for     *)
