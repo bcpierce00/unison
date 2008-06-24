@@ -212,8 +212,8 @@ end
 (* ------------------------------------------------------------------------- *)
 
 let numericIds =
-  Prefs.createBool "numericids"
-    false "don't map uid/gid values by user/group names"
+  Prefs.createBool "numericids" false
+    "!don't map uid/gid values by user/group names"
     "When this flag is set to \\verb|true|, groups and users are \
      synchronized numerically, rather than by name. \n\
      \n\
@@ -343,7 +343,7 @@ module Gid = Id (struct
 
 let sync =
   Prefs.createBool "group"
-    false "synchronize group"
+    false "synchronize group attributes"
     ("When this flag is set to \\verb|true|, the group attributes "
      ^ "of the files are synchronized.  "
      ^ "Whether the group names or the group identifiers are synchronized"

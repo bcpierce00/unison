@@ -81,6 +81,7 @@ let load d =
       d
   end
 
+(* For debugging *)
 let dumpPrefsToStderr() =
   Printf.eprintf "Preferences:\n";
   Safelist.iter
@@ -130,6 +131,7 @@ let create name default doc fulldoc intern printer =
     (fun cell -> Uarg.String (fun s -> set cell (intern (fst !cell) s)))
 
 let createBool name default doc fulldoc =
+  let doc = if default then doc ^ " (default true)" else doc in
   createPrefInternal name default doc fulldoc
     (fun v -> [if v then "true" else "false"])
     (fun cell -> Uarg.Bool (fun b -> set cell b))
@@ -154,32 +156,52 @@ let createStringList name doc fulldoc =
 (*****************************************************************************)
 
 let prefArg = function
-    Uarg.Bool(_)   -> "   "
-  | Uarg.Int(_)    -> "n  "
+    Uarg.Bool(_)   -> ""
+  | Uarg.Int(_)    -> "n"
   | Uarg.String(_) -> "xxx"
   | _             -> assert false
 
 let argspecs hook =
   Util.StringMap.fold
     (fun name (doc, pspec, _) l ->
-       let desc =
-         if String.length doc > 0 && doc.[0] = '*' then doc else
-         let arg = prefArg pspec in
-         let spaces =
-           String.make (max 2 (18 - String.length (name ^ arg))) ' ' in
-         arg ^ spaces ^ doc
-       in
-       ("-" ^ name, hook name pspec, desc)::l)
+       ("-" ^ name, hook name pspec, "")::l)
     !prefs []
 
-let printUsage usage = Uarg.usage (argspecs (fun _ s -> s)) usage
+let oneLineDocs u =
+  let formatOne name pspec doc p =
+    if not p then "" else
+    let doc = if doc.[0] = '!'
+                then String.sub doc 1 ((String.length doc) - 1)
+                else doc in
+    let arg = prefArg pspec in
+    let arg = if arg = "" then "" else " " ^ arg in
+    let spaces =
+      String.make (max 1 (18 - String.length (name ^ arg))) ' ' in
+    " -" ^ name ^ arg ^ spaces ^ doc ^ "\n" in
+  let formatAll p =
+    String.concat ""
+      (Safelist.rev
+         (Util.StringMap.fold 
+            (fun name (doc, pspec, _) l ->
+               (formatOne name pspec doc
+                  (String.length doc > 0 && doc.[0] <> '*' && p doc)) :: l)
+            !prefs []))
+  in
+    u ^ "\n" 
+  ^ "Basic options: \n"
+  ^ formatAll (fun doc -> doc.[0] <> '!')
+  ^ "\nAdvanced options: \n"
+  ^ formatAll (fun doc -> doc.[0] = '!')
+
+let printUsage usage = Uarg.usage (argspecs (fun _ s -> s))
+                         (oneLineDocs usage)
 
 let processCmdLine usage hook =
   Uarg.current := 0;
   let argspecs = argspecs hook in
   let defaultanonfun _ =
     print_string "Anonymous arguments not allowed\n";
-    Uarg.usage argspecs usage;
+    Uarg.usage argspecs (oneLineDocs usage);
     exit 2
   in
   let anonfun =
@@ -192,9 +214,9 @@ let processCmdLine usage hook =
       Not_found -> defaultanonfun
   in 
   try
-    Uarg.parse argspecs anonfun usage
+    Uarg.parse argspecs anonfun (oneLineDocs usage)
   with IllegalValue str -> 
-    raise(Util.Fatal(Printf.sprintf "%s \n%s\n" usage str))
+    raise(Util.Fatal(Printf.sprintf "%s \n%s\n" (oneLineDocs usage) str))
 
 let parseCmdLine usage =
   processCmdLine usage (fun _ sp -> sp)
@@ -335,7 +357,7 @@ let printFullDocs () =
 (*****************************************************************************)
 
 let addprefsto = createString "addprefsto" ""
-  "file to add new prefs to"
+  "!file to add new prefs to"
   "By default, new preferences added by Unison (e.g., new \\verb|ignore| \
    clauses) will be appended to whatever preference file Unison was told \
    to load at the beginning of the run.  Setting the preference \

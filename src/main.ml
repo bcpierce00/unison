@@ -70,7 +70,8 @@ let server =
 
 let socketPrefName = "socket"
 let socket =
-  Prefs.create socketPrefName None "act as a server on a socket" ""
+  Prefs.create socketPrefName None
+    "!act as a server on a socket" ""
     (fun _ -> fun i ->
       (try
          Some(int_of_string i)
@@ -81,13 +82,13 @@ let socket =
 let serverHostName = "host"
 let serverHost =
   Prefs.createString serverHostName ""
-    "bind the socket to this host name in server socket mode" ""
+    "!bind the socket to this host name in server socket mode" ""
 
 (* User preference for which UI to use if there is a choice *)
 let uiPrefName = "ui"
 let interface =
   Prefs.create uiPrefName Uicommon.Graphic
-    "select user interface ('text' or 'graphic'); command-line only"
+    "!select UI ('text' or 'graphic'); command-line only"
     ("This preference selects either the graphical or the textual user "
      ^ "interface.  Legal values are \\verb|graphic| or \\verb|text|.  "
      ^ "\n\nBecause this option is processed specially during Unison's "

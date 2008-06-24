@@ -5,7 +5,7 @@ let debug = Trace.debug "xferhint"
 
 let xferbycopying =
   Prefs.createBool "xferbycopying" true
-    "optimize transfers using local copies, if possible"
+    "!optimize transfers using local copies"
     ("When this preference is set, Unison will try to avoid transferring "
    ^ "file contents across the network by recognizing when a file with the "
    ^ "required contents already exists in the target replica.  This usually "

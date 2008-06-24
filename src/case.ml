@@ -7,7 +7,7 @@
 (* the hosts is case insensitive.                                            *)
 let caseInsensitiveMode =
   Prefs.createString "ignorecase" "default"
-    "ignore upper/lowercase in filenames (`true', `false', or `default')"
+    "!identify upper/lowercase filenames (true/false/default)"
     ("When set to {\\tt true}, this flag causes Unison to treat "
      ^ "filenames as case insensitive---i.e., files in the two "
      ^ "replicas whose names differ in (upper- and lower-case) `spelling' "

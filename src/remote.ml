@@ -412,7 +412,7 @@ let makeMarshalingFunctions payloadMarshalingFunctions string =
    these be part of it too? *)
 let sshCmd =
   Prefs.createString "sshcmd" "ssh"
-    ("path to the ssh executable")
+    ("!path to the ssh executable")
     ("This preference can be used to explicitly set the name of the "
      ^ "ssh executable (e.g., giving a full path name), if necessary.")
 
@@ -433,7 +433,7 @@ let rshargs =
 
 let sshargs =
   Prefs.createString "sshargs" ""
-    "other arguments (if any) for remote shell command"
+    "!other arguments (if any) for remote shell command"
     ("The string value of this preference will be passed as additional "
      ^ "arguments (besides the host name and the name of the Unison "
      ^ "executable on the remote system) to the \\verb|ssh| "
@@ -442,14 +442,14 @@ let sshargs =
 
 let serverCmd =
   Prefs.createString "servercmd" ""
-    ("name of " ^ Uutil.myName ^ " executable on remote server")
+    ("!name of " ^ Uutil.myName ^ " executable on remote server")
     ("This preference can be used to explicitly set the name of the "
      ^ "Unison executable on the remote server (e.g., giving a full "
      ^ "path name), if necessary.")
 
 let addversionno =
   Prefs.createBool "addversionno" false
-    ("add version number to name of " ^ Uutil.myName ^ " executable on server")
+    ("!add version number to name of " ^ Uutil.myName ^ " on server")
     ("When this flag is set to {\\tt true}, Unison "
      ^ "will use \\texttt{unison-\\ARG{currentversionnumber}} instead of "
      ^ "just \\verb|unison| as the remote server command.  This allows "
@@ -1120,7 +1120,7 @@ let commandLoop in_ch out_ch =
 
 let killServer =
   Prefs.createBool "killserver" false
-    "kill server when done (even when using sockets)"
+    "!kill server when done (even when using sockets)"
     ("When set to \\verb|true|, this flag causes Unison to kill the remote "
      ^ "server process when the synchronization is finished.  This behavior "
      ^ "is the default for \\verb|ssh| connections, so this preference is not "

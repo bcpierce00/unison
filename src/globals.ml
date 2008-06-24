@@ -11,7 +11,7 @@ let debug = Trace.debug "globals"
 
 let rawroots =
   Prefs.createStringList "root"
-    "root of a replica"
+    "root of a replica (should be used exactly twice)"
     ("Each use of this preference names the root of one of the replicas "
      ^ "for Unison to synchronize.  Exactly two roots are needed, so normal "
      ^ "modes of usage are either to give two values for \\verb|root| in the "
@@ -203,12 +203,15 @@ let batch =
      ^ "will be propagated; conflicts will be skipped.")
 
 let confirmBigDeletes =
-  Prefs.createBool "confirmbigdeletes" true "request confirmation for whole-replica deletes"
-    ("When this is set to {\\tt true}, Unison will request an extra confirmation if it appears "
+  Prefs.createBool "confirmbigdel" true
+    "!ask about whole-replica (or path) deletes"
+    ("!When this is set to {\\tt true}, Unison will request an extra confirmation if it appears "
      ^ "that the entire replica has been deleted, before propagating the change.  If the {\\tt batch} "
      ^ "flag is also set, synchronization will be aborted.  When the {\\tt path} preference is used, "
      ^ "the same confirmation will be requested for top-level paths.  (At the moment, this flag only "
      ^ "affects the text user interface.)  See also the {\\tt mountpoint} preference.")
+
+let () = Prefs.alias confirmBigDeletes "confirmbigdeletes"
 
 let ignore =
   Pred.create "ignore"
@@ -250,7 +253,7 @@ let addRegexpToIgnore re =
   Pred.intern ignore newRE
 
 let merge = 
-  Pred.create "merge"
+  Pred.create "merge" ~advanced:true
     ("This preference can be used to run a merge program which will create "
      ^ "a new version for each of the files and the backup, "
      ^ "with the last backup and the both replicas.  Setting the {\\tt merge} "

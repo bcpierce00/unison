@@ -9,7 +9,7 @@ let dbgsort = Util.debug "sort"
 
 let bysize =
   Prefs.createBool "sortbysize" false
-    "list changed files by size, not name"
+    "!list changed files by size, not name"
     ("When this flag is set, the user interface will list changed files "
      ^ "by size (smallest first) rather than by name.  This is useful, for "
      ^ "example, for synchronizing over slow links, since it puts very "
@@ -22,13 +22,13 @@ let bysize =
 
 let newfirst =
   Prefs.createBool "sortnewfirst" false
-    "list new before changed files"
+    "!list new before changed files"
     ("When this flag is set, the user interface will list newly created "
      ^ "files before all others.  This is useful, for example, for checking "
      ^ "that newly created files are not `junk', i.e., ones that should be "
      ^ "ignored or deleted rather than synchronized.")
 
-let sortfirst = Pred.create "sortfirst"
+let sortfirst = Pred.create "sortfirst" ~advanced:true
     ("Each argument to \\texttt{sortfirst} is a pattern \\ARG{pathspec}, "
      ^ "which describes a set of paths.  "
      ^ "Files matching any of these patterns will be listed first in the "
@@ -36,7 +36,7 @@ let sortfirst = Pred.create "sortfirst"
      ^ "The syntax of \\ARG{pathspec} is "
      ^ "described in \\sectionref{pathspec}{Path Specification}.")
 
-let sortlast = Pred.create "sortlast"
+let sortlast = Pred.create "sortlast" ~advanced:true
     ("Similar to \\verb|sortfirst|, except that files matching one of these "
      ^ "patterns will be listed at the very end.")
 

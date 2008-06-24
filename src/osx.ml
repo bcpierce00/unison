@@ -9,8 +9,7 @@ let isMacOSX = isMacOSXPred ()
 
 let rsrcSync =
   Prefs.createString "rsrc" "default"
-    "synchronize resource forks and HFS meta-data \
-     (`true', `false', or `default')"
+    "!synchronize resource forks (true/false/default)"
     "When set to {\\tt true}, this flag causes Unison to synchronize \
      resource forks and HFS meta-data.  On filesystems that do not \
      natively support resource forks, this data is stored in \

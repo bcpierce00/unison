@@ -86,7 +86,7 @@ let foundArchives = ref true
 
 let rootAliases : string list Prefs.t =
   Prefs.createStringList "rootalias"
-   "Register alias for canonical root names"
+   "!register alias for canonical root names"
    ("When calculating the name of the archive files for a given pair of roots,"
    ^ " Unison replaces any roots matching the left-hand side of any rootalias"
    ^ " rule by the corresponding right-hand side.")
@@ -144,7 +144,7 @@ type archiveVersion = MainArch | NewArch | ScratchArch | Lock
 
 let showArchiveName =
   Prefs.createBool "showarchive" false
-    "show name of archive and 'true names' (for rootalias) of roots"
+    "!show 'true names' (for rootalias) of roots and archive"
     ("When this preference is set, Unison will print out the 'true names'"
      ^ "of the roots, in the same form as is expected by the {\\tt rootalias}"
      ^ "preference.")
@@ -643,7 +643,7 @@ let unlockArchiveOnRoot: Common.root -> unit -> unit Lwt.t =
 
 let ignorelocks =
   Prefs.createBool "ignorelocks" false
-    "ignore locks left over from previous run (dangerous!)"
+    "!ignore locks left over from previous run (dangerous!)"
     ("When this preference is set, Unison will ignore any lock files "
      ^ "that may have been left over from a previous run of Unison that "
      ^ "was interrupted while reading or writing archive files; by default, "
@@ -915,7 +915,7 @@ let isDir fspath path =
 
 let mountpoints = 
   Prefs.createStringList "mountpoint"
-    "abort if this path does not exist"
+    "!abort if this path does not exist"
     ("Including the preference \\texttt{-mountpoint PATH} causes Unison to "
      ^ "double-check, at the end of update detection, that \\texttt{PATH} exists "
      ^ "and abort if it does not.  This is useful when Unison is used to synchronize "
@@ -942,7 +942,7 @@ let abortIfAnyMountpointsAreMissing fspath =
 
 let fastcheck =
   Prefs.createString "fastcheck" "default"
-    "do fast update detection (`true', `false', or `default')"
+    "!do fast update detection (true/false/default)"
     ( "When this preference is set to \\verb|true|, \
        Unison will use the modification time and length of a file as a
        `pseudo inode number' \
@@ -971,7 +971,7 @@ let useFastChecking () =
    || (Prefs.read fastcheck = "default" && Util.osType = `Unix)
    || (Prefs.read fastcheck = "auto" && Util.osType = `Unix)
 
-let immutable = Pred.create "immutable"
+let immutable = Pred.create "immutable" ~advanced:true
    ("This preference specifies paths for directories whose \
      immediate children are all immutable files --- i.e., once a file has been \
      created, its contents never changes.  When scanning for updates, \
@@ -979,7 +979,7 @@ let immutable = Pred.create "immutable"
      this can speed update detection significantly (in particular, for mail \
      directories).")
 
-let immutablenot = Pred.create "immutablenot"
+let immutablenot = Pred.create "immutablenot" ~advanced:true
    ("This preference overrides {\\tt immutable}.")
 
 let bigFileLength = 10 * 1024

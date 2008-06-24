@@ -71,9 +71,12 @@ let compile_pattern clause =
     end in
   (compiled, v)
 
-let create name fulldoc =
+let create name ?(advanced=false) fulldoc =
   let pref = 
-    Prefs.create name [] ("add a pattern to the " ^ name ^ " list") fulldoc
+    Prefs.create name []
+      ((if advanced then "!" else "")
+       ^ "add a pattern to the " ^ name ^ " list")
+      fulldoc
       (fun oldList string ->
          ignore (compile_pattern string); (* Check well-formedness *)
         string :: oldList)

@@ -453,7 +453,7 @@ let (>>=) = Lwt.bind
 
 let diffCmd =
   Prefs.createString "diff" "diff -u CURRENT2 CURRENT1"
-    "*command for showing differences between files"
+    "!command for showing differences between files"
     ("This preference can be used to control the name and command-line "
      ^ "arguments of the system "
      ^ "utility used to generate displays of file differences.  The default "

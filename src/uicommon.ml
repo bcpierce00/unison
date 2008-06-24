@@ -24,7 +24,7 @@ end
  **********************************************************************)
 
 let auto =
-  Prefs.createBool "auto" false "automatically accept default actions"
+  Prefs.createBool "auto" false "automatically accept default (nonconflicting) actions"
     ("When set to {\\tt true}, this flag causes the user "
      ^ "interface to skip asking for confirmations on "
      ^ "non-conflicting changes.  (More precisely, when the user interface "
@@ -36,7 +36,7 @@ let auto =
    gets sent to the server at startup *)
 let mainWindowHeight =
   Prefs.createInt "height" 20
-    "height (in lines) of main window in graphical interface"
+    "!height (in lines) of main window in graphical interface"
     ("Used to set the height (in lines) of the main window in the graphical "
      ^ "user interface.")
 
@@ -58,7 +58,7 @@ let expert =
 
 let profileLabel =
   Prefs.createString "label" ""
-    "provide a descriptive string label for this profile"
+    "!provide a descriptive string label for this profile"
     ("Used in a profile to provide a descriptive string documenting its "
      ^ "settings.  (This is useful for users that switch between several "
      ^ "profiles, especially using the `fast switch' feature of the "
@@ -66,7 +66,7 @@ let profileLabel =
 
 let profileKey =
   Prefs.createString "key" ""
-    "define a keyboard shortcut for this profile (in some UIs)"
+    "!define a keyboard shortcut for this profile (in some UIs)"
     ("Used in a profile to define a numeric key (0-9) that can be used in "
      ^ "the graphical user interface to switch immediately to this profile.")
 (* This preference is not actually referred to in the code anywhere, since
@@ -76,7 +76,7 @@ let profileKey =
 
 let contactquietly =
   Prefs.createBool "contactquietly" false
-    "Suppress the 'contacting server' message during startup"
+    "!suppress the 'contacting server' message during startup"
     ("If this flag is set, Unison will skip displaying the "
      ^ "`Contacting server' message (which some users find annoying) "
      ^ "during startup.")
@@ -86,7 +86,7 @@ let contactingServerMsg () =
 
 let repeat =
   Prefs.createString "repeat" ""
-    "synchronize repeatedly (text interface only)"
+    "!synchronize repeatedly (text interface only)"
     ("Setting this preference causes the text-mode interface to synchronize "
      ^ "repeatedly, rather than doing it just once and stopping.  If the "
      ^ "argument is a number, Unison will pause for that many seconds before "
@@ -108,7 +108,7 @@ let repeat =
 
 let retry =
   Prefs.createInt "retry" 0
-    "re-try failed synchronizations N times (text interface only)"
+    "!re-try failed synchronizations N times (text ui only)"
     ("Setting this preference causes the text-mode interface to try again "
      ^ "to synchronize "
      ^ "updated paths where synchronization fails.  Each such path will be "
@@ -117,17 +117,18 @@ let retry =
 
 let confirmmerge =
   Prefs.createBool "confirmmerge" false
-    "ask for confirmation before commiting results of a merge"
+    "!ask for confirmation before commiting results of a merge"
     ("Setting this preference causes both the text and graphical interfaces"
      ^ " to ask the user if the results of a merge command may be commited "
      ^ " to the replica or not. Since the merge command works on temporary files,"
      ^ " the user can then cancel all the effects of applying the merge if it"
      ^ " turns out that the result is not satisfactory.  In "
-     ^ " batch-mode, this preference has no effect.")
+     ^ " batch-mode, this preference has no effect.  Default is false.")
     
 let runTestsPrefName = "selftest"
 let runtests =
-  Prefs.createBool runTestsPrefName false "run internal tests and exit"
+  Prefs.createBool runTestsPrefName false
+    "!run internal tests and exit"
    ("Run internal tests and exit.  This option is mostly for developers and must be used "
   ^ "carefully: in particular, "
   ^ "it will delete the contents of both roots, so that it can install its own files "
@@ -323,13 +324,13 @@ let dangerousPathMsg dangerousPaths =
   if dangerousPaths = [Path.empty] then
     "The root of one of the replicas has been completely emptied.\n\
      Unison may delete everything in the other replica.  (Set the \n\
-     'confirmbigdelete' preference to false to disable this check.)"
+     'confirmbigdel' preference to false to disable this check.)"
   else
     Printf.sprintf
       "The following paths have been completely emptied in one replica:\n  \
        %s\n\
        Unison may delete everything below these paths in the other replica.\n
-       (Set the 'confirmbigdelete' preference to false to disable this check.)"
+       (Set the 'confirmbigdel' preference to false to disable this check.)"
       (String.concat "\n  "
          (Safelist.map (fun p -> "'" ^ (Path.toString p) ^ "'")
             dangerousPaths))
@@ -401,7 +402,7 @@ let shortUsageMsg =
    ^ " -doc tutorial\".\n"
    ^ "For other documentation, type \"" ^ Uutil.myName ^ " -doc topics\".\n"
 
-let usageMsg = coreUsageMsg ^ "\nOptions: "
+let usageMsg = coreUsageMsg 
 
 let debug = Trace.debug "startup"
 
