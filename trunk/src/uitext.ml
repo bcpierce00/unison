@@ -16,7 +16,7 @@ let dumbtty =
            Not_found -> false)
       | _ ->
           true)
-    "do not try to change terminal settings in text UI"
+    "!do not change terminal settings in text UI"
     ("When set to \\verb|true|, this flag makes the text mode user "
      ^ "interface avoid trying to change any of the terminal settings.  "
      ^ "(Normally, Unison puts the terminal in `raw mode', so that it can "
@@ -31,7 +31,7 @@ let dumbtty =
      ^ "interface.")
     
 let silent =
-  Prefs.createBool "silent" false "print nothing (except error messages)"
+  Prefs.createBool "silent" false "print nothing except error messages"
     ("When this preference is set to {\\tt true}, the textual user "
      ^ "interface will print nothing at all, except in the case of errors.  "
      ^ "Setting \\texttt{silent} to true automatically sets the "

@@ -1,5 +1,139 @@
 
-Changes in Version 2.14.0
+Changes in Version 2.29.5
+
+   Changes since 2.17:
+     * Major rewrite and cleanup of the whole Mac OS X graphical user
+       interface by Craig Federighi. Thanks, Craig!!!
+     * Small fix to ctime (non-)handling in update detection under
+       windows with fastcheck.
+
+   Changes since 2.17:
+     * Several small fixes to the GTK2 UI to make it work better under
+       Windows [thanks to Karl M for these].
+     * The backup functionality has been completely rewritten. The
+       external interface has not changed, but numerous bugs, irregular
+       behaviors, and cross-platform inconsistencies have been corrected.
+     * The Unison project now accepts donations via PayPal. If you'd like
+       to donate, you can find a link to the donation page on the Unison
+       home page (http://www.cis.upenn.edu/ bcpierce/unison/lists.html).
+     * Some important safety improvements:
+          + Added a new mountpoint preference, which can be used to
+            specify a path that must exist in both replicas at the end of
+            update detection (otherwise Unison aborts). This can be used
+            to avoid potentially dangerous situations when Unison is used
+            with removable media such as external hard drives and compact
+            flash cards.
+          + The confirmation of "big deletes" is now controlled by a
+            boolean preference confirmbigdeletes. Default is true, which
+            gives the same behavior as previously. (This functionality is
+            at least partly superceded by the mountpoint preference, but
+            it has been left in place in case it is useful to some
+            people.)
+          + If Unison is asked to "follow" a symbolic link but there is
+            nothing at the other end of the link, it will now flag this
+            path as an error, rather than treating the symlink itself as
+            missing or deleted. This avoids a potentially dangerous
+            situation where a followed symlink points to an external
+            filesystem that might be offline when Unison is run
+            (whereupon Unison would cheerfully delete the corresponding
+            files in the other replica!).
+     * Smaller changes:
+          + Added forcepartial and preferpartial preferences, which
+            behave like force and prefer but can be specified on a
+            per-path basis. [Thanks to Alan Schmitt for this.]
+          + A bare-bones self test feature was added, which runs unison
+            through some of its paces and checks that the results are as
+            expected. The coverage of the tests is still very limited,
+            but the facility has already been very useful in debugging
+            the new backup functionality (especially in exposing some
+            subtle cross-platform issues).
+          + Refined debugging code so that the verbosity of individual
+            modules can be controlled separately. Instead of just putting
+            '-debug verbose' on the command line, you can put '-debug
+            update+', which causes all the extra messages in the Update
+            module, but not other modules, to be printed. Putting '-debug
+            verbose' causes all modules to print with maximum verbosity.
+          + Removed mergebatch preference. (It never seemed very useful,
+            and its semantics were confusing.)
+          + Rewrote some of the merging functionality, for better
+            cooperation with external Harmony instances.
+          + Changed the temp file prefix from .# to .unison.
+          + Compressed the output from the text user interface
+            (particularly when run with the -terse flag) to make it
+            easier to interpret the results when Unison is run several
+            times in succession from a script.
+          + Diff and merge functions now work under Windows.
+          + Changed the order of arguments to the default diff command
+            (so that the + and - annotations in diff's output are
+            reversed).
+          + Added .mpp files to the "never fastcheck" list (like .xls
+            files).
+     * Many small bugfixes, including:
+          + Fixed a longstanding bug regarding fastcheck and daylight
+            saving time under Windows when Unison is set up to
+            synchronize modification times. (Modification times cannot be
+            updated in the archive in this case, so we have to ignore one
+            hour differences.)
+          + Fixed a bug that would occasionally cause the archives to be
+            left in non-identical states on the two hosts after
+            synchronization.
+          + Fixed a bug that prevented Unison from communicating
+            correctly between 32- and 64-bit architectures.
+          + On windows, file creation times are no longer used as a proxy
+            for inode numbers. (This is unfortunate, as it makes
+            fastcheck a little less safe. But it turns out that file
+            creation times are not reliable under Windows: if a file is
+            removed and a new file is created in its place, the new one
+            will sometimes be given the same creation date as the old
+            one!)
+          + Set read-only file to R/W on OSX before attempting to change
+            other attributes.
+          + Fixed bug resulting in spurious "Aborted" errors during
+            transport (thanks to Jerome Vouillon)
+          + Enable diff if file contents have changed in one replica, but
+            only properties in the other.
+          + Removed misleading documentation for 'repeat' preference.
+          + Fixed a bug in merging code where Unison could sometimes
+            deadlock with the external merge program, if the latter
+            produced large amounts of output.
+          + Workaround for a bug compiling gtk2 user interface against
+            current versions of gtk2+ libraries.
+          + Added a better error message for "ambiguous paths".
+          + Squashed a longstanding bug that would cause file transfer to
+            fail with the message "Failed: Error in readWrite: Is a
+            directory."
+          + Replaced symlinks with copies of their targets in the Growl
+            framework in src/uimac. This should make the sources easier
+            to check out from the svn repository on WinXP systems.
+          + Added a workaround (suggested by Karl M.) for the problem
+            discussed on the unison users mailing list where, on the
+            Windows platform, the server would hang when transferring
+            files. I conjecture that the problem has to do with the RPC
+            mechanism, which was used to make a call back from the server
+            to the client (inside the Trace.log function) so that the log
+            message would be appended to the log file on the client. The
+            workaround is to dump these messages (about when
+            xferbycopying shortcuts are applied and whether they succeed)
+            just to the standard output of the Unison process, not to the
+            log file.
+
+   Changes since 2.13.0:
+     * The features for performing backups and for invoking external
+       merge programs have been completely rewritten by Stephane Lescuyer
+       (thanks, Stephane!). The user-visible functionality should not
+       change, but the internals have been rationalized and there are a
+       number of new features. See the manual (in particular, the
+       description of the backupXXX preferences) for details.
+     * Incorporated patches for ipv6 support, contributed by Samuel
+       Thibault. (Note that, due to a bug in the released OCaml 3.08.3
+       compiler, this code will not actually work with ipv6 unless
+       compiled with the CVS version of the OCaml compiler, where the bug
+       has been fixed; however, ipv4 should continue to work normally.)
+     * OSX interface:
+          + Incorporated Ben Willmore's cool new icon for the Mac UI.
+     * Small fixes:
+          + Fixed off by one error in month numbers (in printed dates)
+            reported by Bob Burger
 
    Changes since 2.12.0:
      * New convention for release numbering: Releases will continue to be
@@ -7,10 +141,10 @@ Changes in Version 2.14.0
        version number (X.Y) will be considered significant when checking
        compatibility between client and server versions. The third
        component of the version number will be used only to identify
-       ``patch levels'' of releases.
+       "patch levels" of releases.
        This change goes hand in hand with a change to the procedure for
        making new releases. Candidate releases will initially be given
-       ``beta release'' status when they are announced for public
+       "beta release" status when they are announced for public
        consumption. Any bugs that are discovered will be fixed in a
        separate branch of the source repository (without changing the
        major version number) and new tarballs re-released as needed. When
@@ -88,7 +222,7 @@ Changes in Version 2.14.0
        Subversion. One nice side-effect is that anonymous checkout is now
        possible, like this:
         svn co https://cvs.cis.upenn.edu:3690/svnroot/unison/
-       We will also continue to export a ``developer tarball'' of the
+       We will also continue to export a "developer tarball" of the
        current (modulo one day) sources in the web export directory. To
        receive commit logs for changes to the sources, subscribe to the
        unison-hackers list
@@ -168,10 +302,6 @@ Changes in Version 2.14.0
             override left-over archive locks. (Setting this preference is
             dangerous! Use it only if you are positive you know what you
             are doing.)
-          + Running with the -timers flag set to true will now show the
-            total time taken to check for updates on each directory.
-            (This can be helpful for tidying directories to improve
-            update detection times.)
           + Added a new preference assumeContentsAreImmutable. If a
             directory matches one of the patterns set in this preference,
             then update detection is skipped for files in this directory.
@@ -228,7 +358,7 @@ Changes in Version 2.14.0
           + Restarting update detection from the graphical UI will reload
             the current profile (which in particular will reset the -path
             preference, in case it has been narrowed by using the
-            ``Recheck unsynchronized items'' command).
+            "Recheck unsynchronized items" command).
           + Several small improvements to the text user interface,
             including a progress display.
      * Bug fixes (too numerous to count, actually, but here are some):
@@ -289,13 +419,13 @@ Changes in Version 2.14.0
           + Makefile.OCaml now sets UISTYLE=text or UISTYLE=gtk
             automatically, depending on whether it finds lablgtk
             installed
-          + Unison should now compile ``out of the box'' under OSX
+          + Unison should now compile "out of the box" under OSX
 
    Changes since 2.8.1:
      * Changing profile works again under Windows
      * File movement optimization: Unison now tries to use local copy
        instead of transfer for moved or copied files. It is controled by
-       a boolean option ``xferbycopying''.
+       a boolean option "xferbycopying".
      * Network statistics window (transfer rate, amount of data
        transferred). [NB: not available in Windows-Cygwin version.]
      * symlinks work under the cygwin version (which is dynamically
@@ -318,7 +448,7 @@ Changes in Version 2.14.0
             the basic utility modules so that the non-unison-specific
             stuff can be made available for other projects.)
           + several Makefile and docs changes (for release);
-          + further comments in ``update.ml'';
+          + further comments in "update.ml";
           + connection information is not stored in global variables
             anymore.
 
@@ -332,9 +462,9 @@ Changes in Version 2.14.0
        are now both accessible).
      * User manual revised.
      * Added some new preferences:
-          + ``sshcmd'' and ``rshcmd'' for specifying paths to ssh and rsh
+          + "sshcmd" and "rshcmd" for specifying paths to ssh and rsh
             programs.
-          + ``contactquietly'' for suppressing the ``contacting server''
+          + "contactquietly" for suppressing the "contacting server"
             message during Unison startup (under the graphical UI).
      * Bug fixes:
           + Fixed small bug in UI that neglected to change the displayed
@@ -344,8 +474,8 @@ Changes in Version 2.14.0
             if it encountered a conflict when run in batch mode.
           + Added some code to try to fix the display of non-Ascii
             characters in filenames on Windows systems in the GTK UI.
-            (This code is currently untested---if you're one of the
-            people that had reported problems with display of non-ascii
+            (This code is currently untested--if you're one of the people
+            that had reported problems with display of non-ascii
             filenames, we'd appreciate knowing if this actually fixes
             things.)
           + `-prefer/-force newer' works properly now. (The bug was
@@ -380,7 +510,8 @@ Changes in Version 2.14.0
             nicely under multi-threading. The temp file names are made
             less likely to coincide with the name of a file created by
             the user. They take the form
-            .#<filename>.<serial>.unison.tmp.
+            .#<filename>.<serial>.unison.tmp. [N.b. This was later
+            changed to .unison.<filename>.<serial>.unison.tmp.]
      * Added a new command to the GTK user interface: pressing 'f' causes
        Unison to start a new update detection phase, using as paths just
        those paths that have been detected as changed and not yet marked
@@ -402,8 +533,8 @@ Changes in Version 2.14.0
           + Error reporting for preference files now provides file name
             and line number.
           + More intelligible message in the case of identical change to
-            the same files: ``Nothing to do: replicas have been changed
-            only in identical ways since last sync.''
+            the same files: "Nothing to do: replicas have been changed
+            only in identical ways since last sync."
           + Files with prefix '.#' excluded when scanning for preference
             files.
           + Rsync instructions are send directly instead of first
@@ -431,7 +562,7 @@ Changes in Version 2.14.0
        added to.
      * Bug fix: read the initial connection header one byte at a time, so
        that we don't block if the header is shorter than expected. (This
-       bug did not affect normal operation --- it just made it hard to
+       bug did not affect normal operation -- it just made it hard to
        tell when you were trying to use Unison incorrectly with an old
        version of the server, since it would hang instead of giving an
        error message.)
@@ -439,7 +570,7 @@ Changes in Version 2.14.0
    Changes since 2.6.59:
      * Changed fastcheck from a boolean to a string preference. Its legal
        values are yes (for a fast check), no (for a safe check), or
-       default (for a fast check---which also happens to be safe---when
+       default (for a fast check--which also happens to be safe--when
        running on Unix and a safe check when on Windows). The default is
        default.
      * Several preferences have been renamed for consistency. All
@@ -494,7 +625,7 @@ Changes in Version 2.14.0
                o Unison now maintains full backups of the
                  last-synchronized versions of (some of) the files in
                  each replica; these function both as backups in the
-                 usual sense and as the ``common version'' when invoking
+                 usual sense and as the "common version" when invoking
                  external merge programs.
                o The backed up files are stored in a directory
                  /.unison/backup on each host. (The name of this
@@ -575,7 +706,7 @@ Changes in Version 2.14.0
                  conflicts. The value of the editor preference controls
                  what editor is invoked by Unison. The default is emacs.
                o Please send us suggestions for other useful values of
-                 the merge2 and merge preferences -- we'd like to give
+                 the merge2 and merge preferences - we'd like to give
                  several examples in the manual.
      * Smaller changes:
           + When one preference file includes another, unison no longer
@@ -636,10 +767,10 @@ Changes in Version 2.14.0
        also set.
        The graphical user interface provides access to these facilities
        on a one-off basis via the Actions menu.
-     * Names of roots can now be ``aliased'' to allow replicas to be
+     * Names of roots can now be "aliased" to allow replicas to be
        relocated without changing the name of the archive file where
        Unison stores information between runs. (This feature is for
-       experts only. See the ``Archive Files'' section of the manual for
+       experts only. See the "Archive Files" section of the manual for
        more information.)
      * Graphical user-interface:
           + A new command is provided in the Synchronization menu for
@@ -773,9 +904,9 @@ Changes in Version 2.14.0
             instead. This makes it easier to use Unison in situations
             where a machine's name changes frequently (e.g., because it
             is a laptop and gets moved around a lot).
-          + File owner and group are now displayed in the ``detail
-            window'' at the bottom of the screen, when unison is
-            configured to synchronize them.
+          + File owner and group are now displayed in the "detail window"
+            at the bottom of the screen, when unison is configured to
+            synchronize them.
      * For hackers:
           + Updated to Jacques Garrigue's new version of lablgtk, which
             means we can throw away our local patched version.
@@ -966,8 +1097,8 @@ Changes in Version 2.14.0
        from being interpreted by your shell.
        If both roots are local, the contents of the first one will be
        used for expanding wildcard paths. (Nb: this is the first one
-       after the canonization step -- i.e., the one that is listed first
-       in the user interface -- not the one listed first on the command
+       after the canonization step - i.e., the one that is listed first
+       in the user interface - not the one listed first on the command
        line or in the preferences file.)
 
    Changes since 2.1:
@@ -975,16 +1106,16 @@ Changes in Version 2.14.0
        Gommier and Norman Ramsey of Tridgell and Mackerras's rsync
        protocol. This protocol achieves much faster transfers when only a
        small part of a large file has been changed by sending just diffs.
-       This feature is mainly helpful for transfers over slow links---on
-       fast local area networks it can actually degrade performance---so
+       This feature is mainly helpful for transfers over slow links--on
+       fast local area networks it can actually degrade performance--so
        we have left it off by default. Start unison with the -rsync
        option (or put rsync=true in your preferences file) to turn it on.
-     * ``Progress bars'' are now diplayed during remote file transfers,
+     * "Progress bars" are now diplayed during remote file transfers,
        showing what percentage of each file has been transferred so far.
      * The version numbering scheme has changed. New releases will now be
        have numbers like 2.2.30, where the second component is
        incremented on every significant public release and the third
-       component is the ``patch level.''
+       component is the "patch level."
      * Miscellaneous improvements to the GTK-based user interface.
      * The manual is now available in PDF format.
      * We are experimenting with using a multi-threaded transport
@@ -1074,7 +1205,7 @@ Changes in Version 2.14.0
        better.
      * Some minor improvements to the text UI (e.g. a command for going
        back to previous items)
-     * The organization of the export directory has changed --- should be
+     * The organization of the export directory has changed -- should be
        easier to find / download things now.
 
    Changes since 1.200:
@@ -1131,8 +1262,7 @@ Changes in Version 2.14.0
        matches any path in which one component matches <name>, while
                  ignore = Path <path>
        matches exactly the path <path>.
-       Standard ``globbing'' conventions can be used in <name> and
-       <path>:
+       Standard "globbing" conventions can be used in <name> and <path>:
           + a ? matches any single character except /
           + a * matches any sequence of characters not including /
           + [xyz] matches any character from the set {x, y, z }
@@ -1149,7 +1279,7 @@ Changes in Version 2.14.0
    Changes since 1.142:
      * Major internal tidying and many small bugfixes.
      * Major additions to the user manual.
-     * Unison can now be started with no arguments -- it will prompt
+     * Unison can now be started with no arguments - it will prompt
        automatically for the name of a profile file containing the roots
        to be synchronized. This makes it possible to start the graphical
        UI from a desktop icon.
@@ -1171,8 +1301,8 @@ Changes in Version 2.14.0
    Changes since 1.111:
      * INCOMPATIBLE CHANGE: The names and formats of the preference files
        in the .unison directory have changed. In particular:
-          + the file ``prefs'' should be renamed to default.prf
-          + the contents of the file ``ignore'' should be merged into
+          + the file "prefs" should be renamed to default.prf
+          + the contents of the file "ignore" should be merged into
             default.prf. Each line of the form REGEXP in ignore should
             become a line of the form ignore = REGEXP in default.prf.
      * Unison now handles permission bits and symbolic links. See the
@@ -1180,7 +1310,7 @@ Changes in Version 2.14.0
      * You can now have different preference files in your .unison
        directory. If you start unison like this
              unison profilename
-       (i.e. with just one ``anonymous'' command-line argument), then the
+       (i.e. with just one "anonymous" command-line argument), then the
        file ~/.unison/profilename.prf will be loaded instead of
        default.prf.
      * Some improvements to terminal handling in the text user interface

@@ -34,10 +34,11 @@ let rec assoc3 x l =
 
 let usage speclist errmsg =
   printf "%s\n" errmsg;
-  Safelist.iter (function (key, _, doc) ->
-               if String.length doc > 0 && doc.[0] <> '*'
-                 then printf "  %s %s\n" key doc)
-                (Safelist.rev speclist)
+  Safelist.iter
+    (function (key, _, doc) ->
+       if String.length doc > 0 && doc.[0] <> '*'
+       then printf "  %s %s\n" key doc)
+    (Safelist.rev speclist)
 ;;
 
 let current = ref 0;;

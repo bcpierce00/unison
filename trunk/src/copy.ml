@@ -113,7 +113,7 @@ let localFile
 
 let rsyncActivated =
   Prefs.createBool "rsync" true
-    "activate the rsync transfer mode"
+    "!activate the rsync transfer mode"
     ("Unison uses the 'rsync algorithm' for 'diffs-only' transfer "
      ^ "of updates to large files.  Setting this flag to false makes Unison "
      ^ "use whole-file transfers instead.  Under normal circumstances, "
@@ -483,7 +483,7 @@ let transferFile
 
 let copyprog =
   Prefs.createString "copyprog" "rsync --partial --inplace --compress"
-    "External program for copying large files"
+    "!external program for copying large files"
     ("A string giving the name of an "
      ^ "external program that can be used to copy large files efficiently  "
      ^ "(plus command-line switches "
@@ -494,14 +494,15 @@ let copyprog =
 
 let copythreshold =
   Prefs.createInt "copythreshold" (-1)
-    "If nonnegative, use copyprog to transfer files larger than this"
+    "!use external copyprog on files this big (if >=0, in Kb)"
     ("A number indicating above what filesize (in kilobytes) Unison should "
      ^ "use the external "
      ^ "copying utility specified by {\\tt copyprog}. Specifying 0 will cause "
      ^ "{\\em all} copies to use the external program; "
      ^ "a negative number will prevent any files from using it.  "
      ^ "The default is -1.  "
-     ^ "\\sectionref{speeding}{Making Unison Faster on Large Files}")
+     ^ "See \\sectionref{speeding}{Making Unison Faster on Large Files} "
+     ^ "for more information.")
 
 let tryCopyMovedFileLocal connFrom
             (fspathTo, pathTo, realPathTo, update, desc, fp, ress, id) =

@@ -101,7 +101,7 @@ type stamp =
 
 let pretendLocalOSIsWin32 =
   Prefs.createBool "pretendwin" false
-    "Use creation times for detecting updates"
+    "!Use creation times for detecting updates"
     ("When set to true, this preference makes Unison use Windows-style "
   ^ "fast update detection (using file creation times as "
   ^ "``pseudo-inode-numbers''), even when running on a Unix system.  This "

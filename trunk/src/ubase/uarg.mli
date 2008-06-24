@@ -8,7 +8,7 @@
 (*  Automatique.  Distributed only by permission.                      *)
 (*                                                                     *)
 (***********************************************************************)
-(* Slightly modified version by BCP for Unixon, July 1999 *)
+(* Slightly modified version by BCP for Unison in 1999 and 2008 *)
 
 (* Module [Uarg]: parsing of command line arguments *)
 

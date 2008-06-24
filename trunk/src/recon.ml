@@ -84,7 +84,7 @@ let forceRoot: string Prefs.t =
      ^ "know what you are doing!")
 
 let forceRootPartial: Pred.t =
-  Pred.create "forcepartial"
+  Pred.create "forcepartial" ~advanced:true
     ("Including the preference \\texttt{forcepartial \\ARG{PATHSPEC} -> \\ARG{root}} causes Unison to "
      ^ "resolve all differences (even non-conflicting changes) in favor of "
      ^ "\\ARG{root} for the files in \\ARG{PATHSPEC} (see \\sectionref{pathspec}{Path Specification} "
@@ -112,7 +112,7 @@ let preferRoot: string Prefs.t =
      ^ "know what you are doing!")
 
 let preferRootPartial: Pred.t =
-  Pred.create "preferpartial"
+  Pred.create "preferpartial" ~advanced:true
     ("Including the preference \\texttt{preferpartial \\ARG{PATHSPEC} -> \\ARG{root}} "
      ^ "causes Unison always to "
      ^ "resolve conflicts in favor of \\ARG{root}, rather than asking for "

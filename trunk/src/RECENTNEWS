@@ -1,3 +1,13 @@
+CHANGES FROM VERSION 2.29.5
+
+* Lots of little documentation tidying.  (In particular, I finally
+  spent the time to separate preferences into Basic and Advanced!
+  This should hopefully make Unison a little more approachable for new
+  users.)
+
+
+
+-------------------------------
 CHANGES FROM VERSION 2.29.4
 
 * When using the internal transfer method, remove any temp file on the

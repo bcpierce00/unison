@@ -15,7 +15,7 @@ let redirect x = (traceprinter := x)
 
 let debugmods =
   Prefs.createStringList "debug"
-    "debug module xxx ('all' -> everything, 'verbose' -> more)" 
+    "!debug module xxx ('all' -> everything, 'verbose' -> more)" 
     ("This preference is used to make Unison print various sorts of "
      ^ "information about what it is doing internally on the standard "
      ^ "error stream.  It can be used many times, each time with the name "
@@ -92,14 +92,14 @@ let _ = Util.debugPrinter := Some(debug)
 
 let logging =
   Prefs.createBool "log" true
-    "record actions in file specified by logfile preference"
+    "!record actions in logfile"
     "When this flag is set, Unison will log all changes to the filesystems
      on a file."
 
 let logfile =
   Prefs.createString "logfile"
     (Util.fileInHomeDir "unison.log")
-    "Log file name"
+    "!logfile name"
     "By default, logging messages will be appended to the file
      \\verb|unison.log| in your HOME directory.  Set this preference if
      you prefer another file."
