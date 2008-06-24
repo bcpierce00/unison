@@ -1,3 +1,9 @@
+CHANGES FROM VERSION 2.29.6
+
+* Fix a small bug in the external copyprog setup.
+
+
+-------------------------------
 CHANGES FROM VERSION 2.29.5
 
 * Lots of little documentation tidying.  (In particular, I finally
