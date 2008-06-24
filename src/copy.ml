@@ -537,9 +537,9 @@ let formatConnectionInfo root =
          Safelist.find (function Clroot.ConnectLocal _ -> false | _ -> true)
            (Safelist.map Clroot.parseRoot (Globals.rawRoots()))
       with
-        Clroot.ConnectByShell (_,h',uo,_,_) ->
+        Clroot.ConnectByShell (_,rawhost,uo,_,_) ->
             (match uo with None -> "" | Some u -> u ^ "@")
-          ^ h ^ ":"
+          ^ rawhost ^ ":"
           (* Note that we don't do anything with the port -- hopefully
              this will not affect many people.  If we did want to include it,
              we'd have to fiddle with the rsync parameters in a deeper way. *)
