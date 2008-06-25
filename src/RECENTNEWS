@@ -1,3 +1,13 @@
+CHANGES FROM VERSION 2.29.8
+
+* Updated documentation.
+
+* Shortened the names of several preferences.  The old names are also
+  still supported, for backwards compatibility, but they do not appear
+  in the documentation.
+
+
+-------------------------------
 CHANGES FROM VERSION 2.29.7
 
 * Squashed a bug in transferring partially transferred directories
