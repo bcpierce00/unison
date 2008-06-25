@@ -387,6 +387,22 @@ let reallyTransferFile
 
 (****)
 
+(* BCP '06: This is a hack to work around a bug on the Windows platform
+   that causes lightweight threads on the server to hang.  I conjecture that
+   the problem has to do with the RPC mechanism, which was used here to
+   make a call *back* from the server to the client inside Trace.log so that
+   the log message would be appended to the log file on the client. *)
+(* BCP '08: Jerome thinks that printing these messages using Util.msg
+   may be causing the dreaded "assertion failure in remote.ml," which
+   happens only on windows and seems correlated with the xferbycopying
+   switch.  The conjecture is that some windows ssh servers may combine
+   the stdout and stderr streams, which would result in these messages
+   getting interleaved with Unison's RPC protocol stream. *)
+let loggit s =
+  if Prefs.read Globals.someHostIsRunningWindows
+    then () (* Util.msg "%s" *)
+    else Trace.log s
+
 let tryCopyMovedFile fspathTo pathTo realPathTo update desc fp ress id =
   Prefs.read Xferhint.xferbycopying
     &&
@@ -394,13 +410,6 @@ let tryCopyMovedFile fspathTo pathTo realPathTo update desc fp ress id =
     Util.convertUnixErrorsToTransient "tryCopyMovedFile" (fun() ->
       debug (fun () -> Util.msg "tryCopyMovedFile: -> %s /%s/\n"
         (Path.toString pathTo) (Os.fullfingerprint_to_string fp));
-      (* BCP '06: This is a hack to work around a bug on the Windows platform
-         that causes lightweight threads on the server to hang.  I conjecture that
-         the problem has to do with the RPC mechanism, which was used here to
-         make a call *back* from the server to the client inside Trace.log so that
-         the log message would be appended to the log file on the client. *)
-      let loggit = if Prefs.read Globals.someHostIsRunningWindows
-                   then Util.msg "%s" else Trace.log in
       match Xferhint.lookup fp with
         None ->
           false
@@ -592,7 +601,7 @@ let transferFileUsingExternalCopyprog
     let cmd = prog ^ " "
                ^ (Os.quotes fromSpec) ^ " "
                ^ (Os.quotes toSpec) in
-    Trace.log (Printf.sprintf "%s\n" cmd);
+    loggit (Printf.sprintf "%s\n" cmd);
     let _,log = Os.runExternalProgram cmd in
     debug (fun() -> Util.msg
              "transferFileUsingExternalCopyprog: returned\n------\n%s\n-----\n"
