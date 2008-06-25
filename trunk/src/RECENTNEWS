@@ -1,3 +1,41 @@
+CHANGES FROM VERSION 2.29.7
+
+* Squashed a bug in transferring partially transferred directories
+  containing symlinks.
+
+* Squashed some more bugs in partial rsync transfers (rsync, oddly,
+  creates files with zero permissions and then on the next run
+  discovers that it cannot write to the file it partially wrote
+  before!).
+
+* Added a "copyprogrest" preference, so that we can give different
+  command lines for invoking the external copy utility depending on
+  whether a partially transferred file already exists or not.  (Rsync
+  doesn't seem to care about this, but other utilities may.)
+
+
+
+
+-------------------------------
+CHANGES FROM VERSION 2.29.7
+
+* Squashed a bug in transferring partially transferred directories
+  containing symlinks.
+
+* Squashed some more bugs in partial rsync transfers (rsync, oddly,
+  creates files with zero permissions and then on the next run
+  discovers that it cannot write to the file it partially wrote
+  before!).
+
+* Added a "copyprogrest" preference, so that we can give different
+  command lines for invoking the external copy utility depending on
+  whether a partially transferred file already exists or not.  (Rsync
+  doesn't seem to care about this, but other utilities may.)
+
+
+
+
+-------------------------------
 CHANGES FROM VERSION 2.29.6
 
 * Fix a small bug in the external copyprog setup.

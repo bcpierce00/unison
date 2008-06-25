@@ -482,19 +482,28 @@ let transferFile
 (****)
 
 let copyprog =
-  Prefs.createString "copyprog" "rsync --partial --inplace --compress"
+  Prefs.createString "copyprog" "rsync --inplace --compress"
     "!external program for copying large files"
     ("A string giving the name of an "
      ^ "external program that can be used to copy large files efficiently  "
-     ^ "(plus command-line switches "
-     ^ "telling it to copy files in-place and to resume"
-     ^ "interrupted transfers).  "
+     ^ "(plus command-line switches telling it to copy files in-place).  "
+     ^ "The default setting invokes {\\tt rsync} with appropriate "
+     ^ "options---most users should not need to change it.")
+
+let copyprogrest =
+  Prefs.createString "copyprogrest" "rsync --partial --inplace --compress"
+    "!variant of copyprog for resuming partial transfers"
+    ("A variant of {\\tt copyprog} that names an external program "
+     ^ "that should be used to continue the transfer of a large file "
+     ^ "that has already been partially transferred.  Typically, "
+     ^ "{\\tt copyprogrest} will just be {\\tt copyprog} "
+     ^ "with one extra option (e.g., {\\tt --partial}, for rsync).  "
      ^ "The default setting invokes {\\tt rsync} with appropriate "
      ^ "options---most users should not need to change it.")
 
 let copythreshold =
   Prefs.createInt "copythreshold" (-1)
-    "!use external copyprog on files this big (if >=0, in Kb)"
+    "!use copyprog on files bigger than this (if >=0, in Kb)"
     ("A number indicating above what filesize (in kilobytes) Unison should "
      ^ "use the external "
      ^ "copying utility specified by {\\tt copyprog}. Specifying 0 will cause "
@@ -507,26 +516,37 @@ let copythreshold =
 let tryCopyMovedFileLocal connFrom
             (fspathTo, pathTo, realPathTo, update, desc, fp, ress, id) =
   Lwt.return (tryCopyMovedFile fspathTo pathTo realPathTo update desc fp ress id)
-
 let tryCopyMovedFileOnRoot =
   Remote.registerRootCmdWithConnection "tryCopyMovedFile" tryCopyMovedFileLocal
 
 let setFileinfoLocal connFrom (fspathTo, pathTo, desc) =
   Lwt.return (Fileinfo.set fspathTo pathTo (`Set Props.fileDefault) desc)
-
 let setFileinfoOnRoot =
   Remote.registerRootCmdWithConnection "setFileinfo" setFileinfoLocal
 
-let targetExistsWithCorrectSize fspathTo pathTo desc =
+let targetExists checkSize fspathTo pathTo =
      Os.exists fspathTo pathTo
-  && Props.length (Fileinfo.get false fspathTo pathTo).Fileinfo.desc = Props.length desc
+  && (match checkSize with
+        `CheckNonemptyAndMakeWriteable ->
+          let r =
+            Props.length (Fileinfo.get false fspathTo pathTo).Fileinfo.desc
+              > Uutil.Filesize.zero in
+          if r then begin
+            let n = Fspath.concatToString fspathTo pathTo in
+            let perms = (Unix.stat n).Unix.st_perm in
+            let perms' = perms lor 0o600 in
+            Unix.chmod n perms'
+          end;
+          r
+      | `CheckSize desc ->
+          Props.length (Fileinfo.get false fspathTo pathTo).Fileinfo.desc
+            = Props.length desc)
 
-let targetExistsWithCorrectSizeLocal connFrom (fspathTo, pathTo, desc) =
-  Lwt.return (targetExistsWithCorrectSize fspathTo pathTo desc)
-
-let targetExistsWithCorrectSizeOnRoot =
+let targetExistsLocal connFrom (checkSize, fspathTo, pathTo) =
+  Lwt.return (targetExists checkSize fspathTo pathTo)
+let targetExistsOnRoot =
   Remote.registerRootCmdWithConnection
-    "targetExistsWithCorrectSize" targetExistsWithCorrectSizeLocal
+    "targetExists" targetExistsLocal
 
 let formatConnectionInfo root =
   match root with
@@ -542,7 +562,8 @@ let formatConnectionInfo root =
           ^ rawhost ^ ":"
           (* Note that we don't do anything with the port -- hopefully
              this will not affect many people.  If we did want to include it,
-             we'd have to fiddle with the rsync parameters in a deeper way. *)
+             we'd have to fiddle with the rsync parameters in a slightly
+             deeper way. *)
       | Clroot.ConnectBySocket (h',_,_) ->
           h ^ ":"
       | Clroot.ConnectLocal _ -> assert false
@@ -555,8 +576,6 @@ let transferFileUsingExternalCopyprog
     >>= (fun b ->
   if b then Lwt.return ()
   else begin
-    Trace.log (Printf.sprintf "Using external program to copy %s\n"
-                 (Path.toString pathTo));
     Uutil.showProgress id Uutil.Filesize.zero "ext";
     let fromSpec =
         (formatConnectionInfo rootFrom)
@@ -564,23 +583,29 @@ let transferFileUsingExternalCopyprog
     let toSpec =
         (formatConnectionInfo rootTo)
       ^ (Fspath.concatToString fspathTo pathTo) in
-    let cmd = (Prefs.read copyprog) ^ " "
+    targetExistsOnRoot
+      rootTo rootFrom (`CheckNonemptyAndMakeWriteable, fspathTo, pathTo) >>= (fun b ->
+    let prog =
+      if b
+        then Prefs.read copyprogrest
+        else Prefs.read copyprog in
+    let cmd = prog ^ " "
                ^ (Os.quotes fromSpec) ^ " "
                ^ (Os.quotes toSpec) in
     Trace.log (Printf.sprintf "%s\n" cmd);
-    (* FIX: When possible, we should run this in a Lwt, not sequentially. *)
     let _,log = Os.runExternalProgram cmd in
     debug (fun() -> Util.msg
              "transferFileUsingExternalCopyprog: returned\n------\n%s\n-----\n"
                (Util.trimWhitespace log));
-    targetExistsWithCorrectSizeOnRoot rootTo rootFrom (fspathTo, pathTo, desc)
+    targetExistsOnRoot
+      rootTo rootFrom (`CheckSize desc, fspathTo, pathTo)
         >>= (fun b ->
     if not b then
       raise (Util.Transient (Printf.sprintf
         "External copy program did not create target file (or bad length): %s"
             (Path.toString pathTo)));
     Uutil.showProgress id (Props.length desc) "ext";
-    Lwt.return ())
+    Lwt.return ()))
   end)
 
 let file rootFrom pathFrom rootTo fspathTo pathTo realPathTo
@@ -600,12 +625,11 @@ let file rootFrom pathFrom rootTo fspathTo pathTo realPathTo
   | _ ->
       (* Check whether we actually need to copy the file (or whether it
          already exists from some interrupted previous transfer) *)
-      targetExistsWithCorrectSizeOnRoot
-        rootTo rootFrom (fspathTo, pathTo, desc) >>= (fun b ->
+      targetExistsOnRoot
+        rootTo rootFrom (`CheckSize desc, fspathTo, pathTo) >>= (fun b ->
       if b then begin
-        debug (fun () ->
-          Util.msg "Skipping transfer of %s/%s because it's already there\n"
-          (Fspath.toString fspathTo) (Path.toString pathTo));
+        Util.msg "%s/%s already exists\n"
+          (Fspath.toString fspathTo) (Path.toString pathTo);
         Lwt.return ()
       (* Check whether we should use an external program to copy the
          file *)
@@ -640,4 +664,3 @@ let file rootFrom pathFrom rootTo fspathTo pathTo realPathTo
       ) end >>= (fun () ->
   Trace.showTimer timer;
   Lwt.return ())
-
