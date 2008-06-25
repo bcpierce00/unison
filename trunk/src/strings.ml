@@ -4,7 +4,7 @@
 let docs =
     ("about", ("About Unison", 
      "Unison File Synchronizer\n\
-      Version 2.29.5\n\
+      Version 2.29.8\n\
       \n\
       "))
 ::
@@ -1111,86 +1111,84 @@ let docs =
       \032   or unison root1 root2 [options]\n\
       \032   or unison profilename [options]\n\
       \n\
-      Options:\n\
-      \032 -addprefsto xxx     file to add new prefs to\n\
-      \032 -addversionno       add version number to name of unison executable on server\n\
-      \032 -auto               automatically accept default actions\n\
-      \032 -backup xxx         add a pattern to the backup list\n\
-      \032 -backupcurrent xxx  add a pattern to the backupcurrent list\n\
-      \032 -backupcurrentnot xxx  add a pattern to the backupcurrentnot list\n\
-      \032 -backupdir xxx      Directory for storing centralized backups\n\
-      \032 -backuplocation xxx  where backups are stored ('local' or 'central')\n\
-      \032 -backupnot xxx      add a pattern to the backupnot list\n\
-      \032 -backupprefix xxx   prefix for the names of backup files\n\
-      \032 -backups            keep backup copies of all files (see also 'backup')\n\
-      \032 -backupsuffix xxx   a suffix to be added to names of backup files\n\
-      \032 -batch              batch mode: ask no questions at all\n\
-      \032 -confirmbigdeletes      request confirmation for whole-replica deletes\n\
-      \032 -confirmmerge       ask for confirmation before commiting results of a merge\n\
-      \032 -contactquietly      Suppress the 'contacting server' message during startup\n\
-      \032 -copyprog xxx       External program for copying large files\n\
-      \032 -copythreshold n    If nonnegative, use copyprog to transfer files larger tha\n\
-      n this\n\
-      \032 -debug xxx          debug module xxx ('all' -> everything, 'verbose' -> more)\n\
-      \032 -doc xxx            show documentation ('-doc topics' lists topics)\n\
-      \032 -dumbtty            do not try to change terminal settings in text UI\n\
-      \032 -fastcheck xxx      do fast update detection (`true', `false', or `default')\n\
-      \032 -follow xxx         add a pattern to the follow list\n\
-      \032 -force xxx          force changes from this replica to the other\n\
-      \032 -forcepartial xxx   add a pattern to the forcepartial list\n\
-      \032 -group              synchronize group\n\
-      \032 -height n           height (in lines) of main window in graphical interface\n\
-      \032 -host xxx           bind the socket to this host name in server socket mode\n\
-      \032 -ignore xxx         add a pattern to the ignore list\n\
-      \032 -ignorecase xxx     ignore upper/lowercase in filenames (`true', `false', or\n\
-      `default')\n\
-      \032 -ignorelocks        ignore locks left over from previous run (dangerous!)\n\
-      \032 -ignorenot xxx      add a pattern to the ignorenot list\n\
-      \032 -immutable xxx      add a pattern to the immutable list\n\
-      \032 -immutablenot xxx   add a pattern to the immutablenot list\n\
-      \032 -key xxx            define a keyboard shortcut for this profile (in some UIs)\n\
-      \032 -killserver         kill server when done (even when using sockets)\n\
-      \032 -label xxx          provide a descriptive string label for this profile\n\
-      \032 -log                record actions in file specified by logfile preference\n\
-      \032 -logfile xxx        Log file name\n\
-      \032 -maxbackups n       number of backed up versions of a file\n\
-      \032 -maxthreads n       maximum number of simultaneous file transfers\n\
-      \032 -merge xxx          add a pattern to the merge list\n\
-      \032 -mountpoint xxx     abort if this path does not exist\n\
-      \032 -numericids         don't map uid/gid values by user/group names\n\
-      \032 -owner              synchronize owner\n\
-      \032 -path xxx           path to synchronize\n\
-      \032 -perms n            part of the permissions which is synchronized\n\
-      \032 -prefer xxx         choose this replica's version for conflicting changes\n\
-      \032 -preferpartial xxx  add a pattern to the preferpartial list\n\
-      \032 -pretendwin         Use creation times for detecting updates\n\
-      \032 -repeat xxx         synchronize repeatedly (text interface only)\n\
-      \032 -retry n            re-try failed synchronizations N times (text interface on\n\
-      ly)\n\
-      \032 -root xxx           root of a replica\n\
-      \032 -rootalias xxx      Register alias for canonical root names\n\
-      \032 -rsrc xxx           synchronize resource forks and HFS meta-data (`true', `fa\n\
-      lse', or `default')\n\
-      \032 -rsync              activate the rsync transfer mode\n\
-      \032 -selftest           run internal tests and exit\n\
-      \032 -servercmd xxx      name of unison executable on remote server\n\
-      \032 -showarchive        show name of archive and 'true names' (for rootalias) of\n\
-      roots\n\
-      \032 -silent             print nothing (except error messages)\n\
-      \032 -socket xxx         act as a server on a socket\n\
-      \032 -sortbysize         list changed files by size, not name\n\
-      \032 -sortfirst xxx      add a pattern to the sortfirst list\n\
-      \032 -sortlast xxx       add a pattern to the sortlast list\n\
-      \032 -sortnewfirst       list new before changed files\n\
-      \032 -sshargs xxx        other arguments (if any) for remote shell command\n\
-      \032 -sshcmd xxx         path to the ssh executable\n\
-      \032 -terse              suppress status messages\n\
-      \032 -testserver         exit immediately after the connection to the server\n\
-      \032 -times              synchronize modification times\n\
-      \032 -ui xxx             select user interface ('text' or 'graphic'); command-line\n\
-      \032only\n\
-      \032 -version            print version and exit\n\
-      \032 -xferbycopying      optimize transfers using local copies, if possible\n\
+      Basic options:\n\
+      \032-auto              automatically accept default (nonconflicting) actions\n\
+      \032-batch             batch mode: ask no questions at all\n\
+      \032-doc xxx           show documentation ('-doc topics' lists topics)\n\
+      \032-follow xxx        add a pattern to the follow list\n\
+      \032-force xxx         force changes from this replica to the other\n\
+      \032-group             synchronize group attributes\n\
+      \032-ignore xxx        add a pattern to the ignore list\n\
+      \032-ignorenot xxx     add a pattern to the ignorenot list\n\
+      \032-owner             synchronize owner\n\
+      \032-path xxx          path to synchronize\n\
+      \032-perms n           part of the permissions which is synchronized\n\
+      \032-prefer xxx        choose this replica's version for conflicting changes\n\
+      \032-root xxx          root of a replica (should be used exactly twice)\n\
+      \032-silent            print nothing except error messages\n\
+      \032-terse             suppress status messages\n\
+      \032-testserver        exit immediately after the connection to the server\n\
+      \032-times             synchronize modification times\n\
+      \032-version           print version and exit\n\
+      \n\
+      Advanced options:\n\
+      \032-addprefsto xxx    file to add new prefs to\n\
+      \032-addversionno      add version number to name of unison on server\n\
+      \032-backup xxx        add a pattern to the backup list\n\
+      \032-backupcurr xxx    add a pattern to the backupcurr list\n\
+      \032-backupcurrnot xxx add a pattern to the backupcurrnot list\n\
+      \032-backupdir xxx     directory for storing centralized backups\n\
+      \032-backuploc xxx     where backups are stored ('local' or 'central')\n\
+      \032-backupnot xxx     add a pattern to the backupnot list\n\
+      \032-backupprefix xxx  prefix for the names of backup files\n\
+      \032-backups           keep backup copies of all files (see also 'backup')\n\
+      \032-backupsuffix xxx  a suffix to be added to names of backup files\n\
+      \032-confirmbigdel     ask about whole-replica (or path) deletes (default true)\n\
+      \032-confirmmerge      ask for confirmation before commiting results of a merge\n\
+      \032-contactquietly    suppress the 'contacting server' message during startup\n\
+      \032-copyprog xxx      external program for copying large files\n\
+      \032-copyprogrest xxx  variant of copyprog for resuming partial transfers\n\
+      \032-copythreshold n   use copyprog on files bigger than this (if >=0, in Kb)\n\
+      \032-debug xxx         debug module xxx ('all' -> everything, 'verbose' -> more)\n\
+      \032-diff xxx          command for showing differences between files\n\
+      \032-dumbtty           do not change terminal settings in text UI (default true)\n\
+      \032-fastcheck xxx     do fast update detection (true/false/default)\n\
+      \032-forcepartial xxx  add a pattern to the forcepartial list\n\
+      \032-height n          height (in lines) of main window in graphical interface\n\
+      \032-host xxx          bind the socket to this host name in server socket mode\n\
+      \032-ignorecase xxx    identify upper/lowercase filenames (true/false/default)\n\
+      \032-ignorelocks       ignore locks left over from previous run (dangerous!)\n\
+      \032-immutable xxx     add a pattern to the immutable list\n\
+      \032-immutablenot xxx  add a pattern to the immutablenot list\n\
+      \032-key xxx           define a keyboard shortcut for this profile (in some UIs)\n\
+      \032-killserver        kill server when done (even when using sockets)\n\
+      \032-label xxx         provide a descriptive string label for this profile\n\
+      \032-log               record actions in logfile (default true)\n\
+      \032-logfile xxx       logfile name\n\
+      \032-maxbackups n      number of backed up versions of a file\n\
+      \032-maxthreads n      maximum number of simultaneous file transfers\n\
+      \032-merge xxx         add a pattern to the merge list\n\
+      \032-mountpoint xxx    abort if this path does not exist\n\
+      \032-numericids        don't map uid/gid values by user/group names\n\
+      \032-preferpartial xxx add a pattern to the preferpartial list\n\
+      \032-pretendwin        Use creation times for detecting updates\n\
+      \032-repeat xxx        synchronize repeatedly (text interface only)\n\
+      \032-retry n           re-try failed synchronizations N times (text ui only)\n\
+      \032-rootalias xxx     register alias for canonical root names\n\
+      \032-rsrc xxx          synchronize resource forks (true/false/default)\n\
+      \032-rsync             activate the rsync transfer mode (default true)\n\
+      \032-selftest          run internal tests and exit\n\
+      \032-servercmd xxx     name of unison executable on remote server\n\
+      \032-showarchive       show 'true names' (for rootalias) of roots and archive\n\
+      \032-socket xxx        act as a server on a socket\n\
+      \032-sortbysize        list changed files by size, not name\n\
+      \032-sortfirst xxx     add a pattern to the sortfirst list\n\
+      \032-sortlast xxx      add a pattern to the sortlast list\n\
+      \032-sortnewfirst      list new before changed files\n\
+      \032-sshargs xxx       other arguments (if any) for remote shell command\n\
+      \032-sshcmd xxx        path to the ssh executable\n\
+      \032-ui xxx            select UI ('text' or 'graphic'); command-line only\n\
+      \032-xferbycopying     optimize transfers using local copies (default true)\n\
       \n\
       \032  Here, in more detail, is what they do. Many are discussed in greater\n\
       \032  detail in other sections of the manual.\n\
@@ -1223,9 +1221,9 @@ let docs =
       \032         kept is determined by the maxbackups preference.\n\
       \032         The syntax of pathspec is described in the section \"Path\n\
       \032         Specification\" .\n\
-      \032  backupcurrent xxx\n\
-      \032         Including the preference -backupcurrent pathspec causes Unison\n\
-      \032         to keep a backup of the current version of every file matching\n\
+      \032  backupcurr xxx\n\
+      \032         Including the preference -backupcurr pathspec causes Unison to\n\
+      \032         keep a backup of the current version of every file matching\n\
       \032         pathspec. This file will be saved as a backup with version\n\
       \032         number 000. Such backups can be used as inputs to external\n\
       \032         merging programs, for instance. See the documentatation for the\n\
@@ -1233,14 +1231,14 @@ let docs =
       \032         Conflicting Versions\" .\n\
       \032         The syntax of pathspec is described in the section \"Path\n\
       \032         Specification\" .\n\
-      \032  backupcurrentnot xxx\n\
-      \032         Exceptions to backupcurrent, like the ignorenot preference.\n\
+      \032  backupcurrnot xxx\n\
+      \032         Exceptions to backupcurr, like the ignorenot preference.\n\
       \032  backupdir xxx\n\
       \032         If this preference is set, Unison will use it as the name of\n\
       \032         the directory used to store backup files specified by the\n\
       \032         backup preference, when backuplocation is set to central. It is\n\
       \032         checked after the UNISONBACKUPDIR environment variable.\n\
-      \032  backuplocation xxx\n\
+      \032  backuploc xxx\n\
       \032         This preference determines whether backups should be kept\n\
       \032         locally, near the original files, or in a central directory\n\
       \032         specified by the backupdir preference. If set to local, backups\n\
@@ -1274,8 +1272,8 @@ let docs =
       \032         When this is set to true, the user interface will ask no\n\
       \032         questions at all. Non-conflicting changes will be propagated;\n\
       \032         conflicts will be skipped.\n\
-      \032  confirmbigdeletes \n\
-      \032         When this is set to true, Unison will request an extra\n\
+      \032  confirmbigdel \n\
+      \032         !When this is set to true, Unison will request an extra\n\
       \032         confirmation if it appears that the entire replica has been\n\
       \032         deleted, before propagating the change. If the batch flag is\n\
       \032         also set, synchronization will be aborted. When the path\n\
@@ -1289,7 +1287,7 @@ let docs =
       \032         works on temporary files, the user can then cancel all the\n\
       \032         effects of applying the merge if it turns out that the result\n\
       \032         is not satisfactory. In batch-mode, this preference has no\n\
-      \032         effect.\n\
+      \032         effect. Default is false.\n\
       \032  contactquietly \n\
       \032         If this flag is set, Unison will skip displaying the\n\
       \032         `Contacting server' message (which some users find annoying)\n\
@@ -1297,17 +1295,23 @@ let docs =
       \032  copyprog xxx\n\
       \032         A string giving the name of an external program that can be\n\
       \032         used to copy large files efficiently (plus command-line\n\
-      \032         switches telling it to copy files in-place and to\n\
-      \032         resumeinterrupted transfers). The default setting invokes rsync\n\
-      \032         with appropriate options--most users should not need to change\n\
-      \032         it.\n\
-      \032  copythreshold n \n\
+      \032         switches telling it to copy files in-place). The default\n\
+      \032         setting invokes rsync with appropriate options--most users\n\
+      \032         should not need to change it.\n\
+      \032  copyprogrest xxx\n\
+      \032         A variant of copyprog that names an external program that\n\
+      \032         should be used to continue the transfer of a large file that\n\
+      \032         has already been partially transferred. Typically, copyprogrest\n\
+      \032         will just be copyprog with one extra option (e.g., -partial,\n\
+      \032         for rsync). The default setting invokes rsync with appropriate\n\
+      \032         options--most users should not need to change it.\n\
+      \032  copythreshold n\n\
       \032         A number indicating above what filesize (in kilobytes) Unison\n\
       \032         should use the external copying utility specified by copyprog.\n\
       \032         Specifying 0 will cause all copies to use the external program;\n\
       \032         a negative number will prevent any files from using it. The\n\
-      \032         default is -1. the section \"Making Unison Faster on Large\n\
-      \032         Files\"\n\
+      \032         default is -1. See the section \"Making Unison Faster on Large\n\
+      \032         Files\" for more information.\n\
       \032  debug xxx\n\
       \032         This preference is used to make Unison print various sorts of\n\
       \032         information about what it is doing internally on the standard\n\
@@ -1406,7 +1410,7 @@ let docs =
       \032         When this flag is set to true, the group attributes of the\n\
       \032         files are synchronized. Whether the group names or the group\n\
       \032         identifiers are synchronizeddepends on the preference numerids.\n\
-      \032  height n \n\
+      \032  height n\n\
       \032         Used to set the height (in lines) of the main window in the\n\
       \032         graphical user interface.\n\
       \032  ignore xxx\n\
@@ -1491,11 +1495,11 @@ let docs =
       \032         By default, logging messages will be appended to the file\n\
       \032         unison.log in your HOME directory. Set this preference if you\n\
       \032         prefer another file.\n\
-      \032  maxbackups n \n\
+      \032  maxbackups n\n\
       \032         This preference specifies the number of backup versions that\n\
       \032         will be kept by unison, for each path that matches the\n\
       \032         predicate backup. The default is 2.\n\
-      \032  maxthreads n \n\
+      \032  maxthreads n\n\
       \032         This preference controls how much concurrency is allowed during\n\
       \032         the transport phase. Normally, it should be set reasonably high\n\
       \032         (default is 20) to maximize performance, but when Unison is\n\
@@ -1534,7 +1538,7 @@ let docs =
       \032         (This is useful for doing a fast sync of just one directory,\n\
       \032         for example.) Note that path preferences are intepreted\n\
       \032         literally--they are not regular expressions.\n\
-      \032  perms n \n\
+      \032  perms n\n\
       \032         The integer value of this preference is a mask indicating which\n\
       \032         permission bits should be synchronized. It is set by default to\n\
       \032         0o1777: all bits but the set-uid and set-gid bits are\n\
@@ -1572,7 +1576,7 @@ let docs =
       \032         synchronize repeatedly, rather than doing it just once and\n\
       \032         stopping. If the argument is a number, Unison will pause for\n\
       \032         that many seconds before beginning again.\n\
-      \032  retry n \n\
+      \032  retry n\n\
       \032         Setting this preference causes the text-mode interface to try\n\
       \032         again to synchronize updated paths where synchronization fails.\n\
       \032         Each such path will be tried N times.\n\
@@ -2539,8 +2543,8 @@ let docs =
       \n\
       "))
 ::
-    ("news", ("Changes in Version 2.29.5", 
-     "Changes in Version 2.29.5\n\
+    ("news", ("Changes in Version 2.29.8", 
+     "Changes in Version 2.29.8\n\
       \n\
       \032  Changes since 2.17:\n\
       \032    * Major rewrite and cleanup of the whole Mac OS X graphical user\n\
