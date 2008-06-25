@@ -320,6 +320,8 @@ let makeSymlink =
   Remote.registerRootCmd
     "makeSymlink"
     (fun (fspath, (workingDir, path, l)) ->
+       if Os.exists workingDir path then
+         Os.delete workingDir path;
        Os.symlink workingDir path l;
        Lwt.return ())
 
