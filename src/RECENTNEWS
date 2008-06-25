@@ -1,3 +1,10 @@
+CHANGES FROM VERSION 2.29.9
+
+* Trying a possible fix for the "assert failure in remote.ml" bug
+  (thanks Jerome!)
+
+
+-------------------------------
 CHANGES FROM VERSION 2.29.8
 
 * Updated documentation.
