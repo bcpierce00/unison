@@ -5,8 +5,8 @@
 
 let projectName = "unison"
 let majorVersion = 2
-let minorVersion = 29
-let pointVersionOrigin = 284 (* Revision that corresponds to point version 0 *)
+let minorVersion = 30
+let pointVersionOrigin = 294 (* Revision that corresponds to point version 0 *)
 
 (* Documentation:
    This is a program to construct a version of the form Major.Minor.Point,
@@ -49,6 +49,7 @@ let pointVersion = revision - pointVersionOrigin;;
 Printf.printf "MAJORVERSION=%d.%d\n" majorVersion minorVersion;;
 Printf.printf "VERSION=%d.%d.%d\n" majorVersion minorVersion pointVersion;;
 Printf.printf "NAME=%s\n" projectName;;
+
 
 
 

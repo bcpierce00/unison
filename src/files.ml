@@ -75,13 +75,14 @@ let performDelete = Remote.registerRootCmd "delete" deleteLocal
 (* FIX: maybe we should rename the destination before making any check ? *)
 let delete rootFrom pathFrom rootTo pathTo ui =
   Update.transaction (fun id ->
-    Update.replaceArchive rootFrom pathFrom None Update.NoArchive id true
+    Update.replaceArchive rootFrom pathFrom None Update.NoArchive id true false
       >>= (fun _ ->
     (* Unison do the next line cause we want to keep a backup of the file.
        FIX: We only need this when we are making backups *)
 	Update.updateArchive rootTo pathTo ui id >>= (fun _ ->
 	  Update.replaceArchive
-	    rootTo pathTo None Update.NoArchive id true >>= (fun localPathTo ->
+	    rootTo pathTo None Update.NoArchive id true false
+        >>= (fun localPathTo ->
     (* Make sure the target is unchanged *)
     (* (There is an unavoidable race condition here.) *)
 	      Update.checkNoUpdates rootTo pathTo ui >>= (fun () ->
@@ -424,7 +425,8 @@ let copy
   in
   (* BCP (6/08): We used to have an unwindProtect here that would *always* do the
      final performDelete.  This was removed so that failed partial transfers can
-     be restarted. *)
+     be restarted.  We instead remove individual failing files (not
+     directories) inside replaceArchive. *)
   Update.transaction (fun id ->
   (* Update the archive on the source replica (but don't commit
      the changes yet) and return the part of the new archive
@@ -437,17 +439,12 @@ let copy
   in
   copyRec localPathFrom tempPathTo realPathTo archFrom >>= (fun () ->
   make_backup >>= (fun _ ->
-  (* BCP: We put the unwindProtect here instead, so that we clean everything
-     up if there is a failure during the paranoid checking phase. *)
-  Remote.Thread.unwindProtect
-    (fun () ->
-       Update.replaceArchive
-         rootTo pathTo (Some (workingDir, tempPathTo))
-         archFrom id true >>= (fun _ ->
-       rename rootTo pathTo localPathTo workingDir tempPathTo realPathTo uiTo))
-    (fun _ ->
-       debug (fun() -> Util.msg "Removing temp files\n");
-       performDelete rootTo (Some workingDir, tempPathTo) ))))))
+  Update.replaceArchive
+    rootTo pathTo (Some (workingDir, tempPathTo))
+    archFrom id true true  >>= (fun _ ->
+  rename rootTo pathTo localPathTo workingDir tempPathTo realPathTo uiTo >>= (fun() ->
+  debug (fun() -> Util.msg "Removing temp files\n");
+  performDelete rootTo (Some workingDir, tempPathTo) )))))))
 
 (* ------------------------------------------------------------ *)
 
@@ -899,10 +896,10 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
              (fun transid ->
                 Update.replaceArchive root1 path
                  (Some(workingDirForMerge, workingarch))
-                 new_archive_entry transid false >>= (fun _ ->
+                 new_archive_entry transid false false >>= (fun _ ->
                 Update.replaceArchive root2 path
                   (Some(workingDirForMerge, workingarch))
-                  new_archive_entry transid false >>= (fun _ ->
+                  new_archive_entry transid false false >>= (fun _ ->
                 Lwt.return ())))
          end else 
            (Lwt.return ()) )))) )
