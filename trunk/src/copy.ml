@@ -530,8 +530,8 @@ let copyquoterem =
      ^ "This is needed by rsync, for example, which internal uses an ssh "
      ^ "connection requiring an extra level of quoting for paths containing "
      ^ "spaces. When this flag is set to {\\tt default}, extra quotes are "
-     ^ "added if the value of {\tt copyprog} contains the string "
-     ^ "{\tt rsync}.")
+     ^ "added if the value of {\\tt copyprog} contains the string "
+     ^ "{\\tt rsync}.")
 
 let tryCopyMovedFileLocal connFrom
             (fspathTo, pathTo, realPathTo, update, desc, fp, ress, id) =
