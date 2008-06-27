@@ -41,7 +41,7 @@ let quotes s =
   if Util.osType = `Win32 && not Util.isCygwin then
     "\"" ^ s ^ "\""
   else
-    "'" ^ Util.replacesubstring s "'" "'\''" ^ "'"
+    "'" ^ Util.replacesubstring s "'" "'\\''" ^ "'"
 
 (*****************************************************************************)
 (*                      QUERYING THE FILESYSTEM                              *)
