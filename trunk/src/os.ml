@@ -124,15 +124,15 @@ let rec childrenOf fspath path =
          if Util.endswith file !tempFileSuffix then begin
            let p = Path.child path filename in
            let i = Fileinfo.get false fspath p in
-           let secondsinaweek = 604800.0 in
-           if Props.time i.Fileinfo.desc +. secondsinaweek < Util.time()
+           let secondsinthirtydays = 2592000.0 in
+           if Props.time i.Fileinfo.desc +. secondsinthirtydays < Util.time()
            then begin
              debug (fun()-> Util.msg "deleting old temp file %s\n"
                       (Fspath.concatToString fspath p));
              delete fspath p
            end else
              debug (fun()-> Util.msg
-                      "keeping temp file %s since it is less than a week old\n"
+                      "keeping temp file %s since it is less than 30 days old\n"
                       (Fspath.concatToString fspath p));
          end;
          false
@@ -266,6 +266,11 @@ let safeFingerprint fspath path info optDig =
 
 let fullfingerprint_to_string (fp,rfp) =
   Printf.sprintf "(%s,%s)" (Fingerprint.toString fp) (Fingerprint.toString rfp)
+
+let reasonForFingerprintMismatch (digdata,digress) (digdata',digress') =
+  if digdata = digdata' then "resource fork"
+  else if digress = digress' then "file contents"
+  else "both file contents and resource fork"
 
 let fullfingerprint_dummy = (Fingerprint.dummy,Fingerprint.dummy)
 

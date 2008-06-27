@@ -1742,8 +1742,9 @@ let rec replaceArchiveRec fspath path arch paranoid deleteBadTempFiles =
         if dig' <> dig then begin
           if deleteBadTempFiles then Os.delete fspath path;
           raise (Util.Transient (Printf.sprintf
-            "The file %s was incorrectly transferred  (fingerprint mismatch)%s"
+            "The file %s was incorrectly transferred  (fingerprint mismatch in %s)%s"
             (Path.toString path)
+            (Os.reasonForFingerprintMismatch dig dig')
             (if deleteBadTempFiles then " -- temp file removed" else "")));
         end;
         ArchiveFile (Props.override info.Fileinfo.desc desc,
