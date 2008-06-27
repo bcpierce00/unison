@@ -4,7 +4,7 @@
 let docs =
     ("about", ("About Unison", 
      "Unison File Synchronizer\n\
-      Version 2.29.8\n\
+      Version 2.30.3\n\
       \n\
       "))
 ::
@@ -1148,6 +1148,8 @@ let docs =
       \032-contactquietly    suppress the 'contacting server' message during startup\n\
       \032-copyprog xxx      external program for copying large files\n\
       \032-copyprogrest xxx  variant of copyprog for resuming partial transfers\n\
+      \032-copyquoterem xxx  add quotes to remote file name for copyprog (true/false/def\n\
+      ault)\n\
       \032-copythreshold n   use copyprog on files bigger than this (if >=0, in Kb)\n\
       \032-debug xxx         debug module xxx ('all' -> everything, 'verbose' -> more)\n\
       \032-diff xxx          command for showing differences between files\n\
@@ -1305,6 +1307,14 @@ let docs =
       \032         will just be copyprog with one extra option (e.g., -partial,\n\
       \032         for rsync). The default setting invokes rsync with appropriate\n\
       \032         options--most users should not need to change it.\n\
+      \032  copyquoterem xxx\n\
+      \032         When set to true, this flag causes Unison to add an extra layer\n\
+      \032         of quotes to the remote path passed to the external copy\n\
+      \032         program. This is needed by rsync, for example, which internal\n\
+      \032         uses an ssh connection requiring an extra level of quoting for\n\
+      \032         paths containing spaces. When this flag is set to default,\n\
+      \032         extra quotes are added if the value of copyprog contains the\n\
+      \032         string rsync.\n\
       \032  copythreshold n\n\
       \032         A number indicating above what filesize (in kilobytes) Unison\n\
       \032         should use the external copying utility specified by copyprog.\n\
@@ -2543,8 +2553,8 @@ let docs =
       \n\
       "))
 ::
-    ("news", ("Changes in Version 2.29.8", 
-     "Changes in Version 2.29.8\n\
+    ("news", ("Changes in Version 2.30.3", 
+     "Changes in Version 2.30.3\n\
       \n\
       \032  Changes since 2.17:\n\
       \032    * Major rewrite and cleanup of the whole Mac OS X graphical user\n\
