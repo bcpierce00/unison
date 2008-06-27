@@ -637,7 +637,7 @@ let file rootFrom pathFrom rootTo fspathTo pathTo realPathTo
       targetExistsOnRoot
         rootTo rootFrom (`CheckSize desc, fspathTo, pathTo) >>= (fun b ->
       if b then begin
-        Util.msg "%s/%s already exists\n"
+        Util.msg "%s/%s has already been transferred\n"
           (Fspath.toString fspathTo) (Path.toString pathTo);
         Lwt.return ()
       (* Check whether we should use an external program to copy the
