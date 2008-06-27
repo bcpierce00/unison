@@ -522,6 +522,17 @@ let copythreshold =
      ^ "See \\sectionref{speeding}{Making Unison Faster on Large Files} "
      ^ "for more information.")
 
+let copyquoterem =
+  Prefs.createString "copyquoterem" "default"
+    "!add quotes to remote file name for copyprog (true/false/default)"
+    ("When set to {\\tt true}, this flag causes Unison to add an extra layer "
+     ^ "of quotes to the remote path passed to the external copy program. "
+     ^ "This is needed by rsync, for example, which internal uses an ssh "
+     ^ "connection requiring an extra level of quoting for paths containing "
+     ^ "spaces. When this flag is set to {\\tt default}, extra quotes are "
+     ^ "added if the value of {\tt copyprog} contains the string "
+     ^ "{\tt rsync}.")
+
 let tryCopyMovedFileLocal connFrom
             (fspathTo, pathTo, realPathTo, update, desc, fp, ress, id) =
   Lwt.return (tryCopyMovedFile fspathTo pathTo realPathTo update desc fp ress id)
@@ -586,22 +597,29 @@ let transferFileUsingExternalCopyprog
   if b then Lwt.return ()
   else begin
     Uutil.showProgress id Uutil.Filesize.zero "ext";
-    let fromSpec =
-        (formatConnectionInfo rootFrom)
-      ^ (Fspath.concatToString (snd rootFrom) pathFrom) in
-    let toSpec =
-        (formatConnectionInfo rootTo)
-      ^ (Fspath.concatToString fspathTo pathTo) in
     targetExistsOnRoot
       rootTo rootFrom (`CheckNonemptyAndMakeWriteable, fspathTo, pathTo) >>= (fun b ->
     let prog =
       if b
         then Prefs.read copyprogrest
         else Prefs.read copyprog in
+    let extraquotes = Prefs.read copyquoterem = "true" 
+                   || (  Prefs.read copyquoterem = "default"
+                      && Util.findsubstring "rsync" prog <> None) in
+    let addquotes root s =
+      match root with
+      | Common.Local, _ -> s
+      | Common.Remote _, _ -> if extraquotes then Os.quotes s else s in
+    let fromSpec =
+        (formatConnectionInfo rootFrom)
+      ^ (addquotes rootFrom (Fspath.concatToString (snd rootFrom) pathFrom)) in
+    let toSpec =
+        (formatConnectionInfo rootTo)
+      ^ (addquotes rootTo (Fspath.concatToString fspathTo pathTo)) in
     let cmd = prog ^ " "
                ^ (Os.quotes fromSpec) ^ " "
                ^ (Os.quotes toSpec) in
-    loggit (Printf.sprintf "%s\n" cmd);
+    Trace.log (Printf.sprintf "%s\n" cmd);
     let _,log = Os.runExternalProgram cmd in
     debug (fun() -> Util.msg
              "transferFileUsingExternalCopyprog: returned\n------\n%s\n-----\n"

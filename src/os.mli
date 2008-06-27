@@ -29,6 +29,7 @@ val delete : Fspath.t -> Path.local -> unit
    if any. *)
 type fullfingerprint
 val fullfingerprint_to_string : fullfingerprint -> string
+val reasonForFingerprintMismatch : fullfingerprint -> fullfingerprint -> string
 val fullfingerprint_dummy : fullfingerprint
 
 (* Use this function if the file may change during fingerprinting *)
