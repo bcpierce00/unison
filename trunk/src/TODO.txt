@@ -7,6 +7,33 @@ is not promise that anybody is going to implement it!)
 See the file BUGS.txt for a list of currently open bugs.
 
 ###########################################################################
+        
+CURRENT
+=======
+
+* Makefile for fstest
+
+* Reverse CheckNonemptyAndMakeWriteable 
+
+* Work on the Unison side
+     - create temp file
+     - start watcher based on watcherosx switch, passing all paths as args
+     - on each loop
+         - parse results into shallow and deep ones
+         - combine the two lists (marking which is which)
+         - sort the list
+         - if there are any adjacent pairs where the first is a prefix of the
+           second, drop the second and mark the first as deep
+         - go through the list and drop any item for whioch any PREFIX of
+           its path matches 'ignore' and doesn't match 'ignorenot'
+     - bulletproof, handling fatal errors and restarting completely from
+       scratch if necessary
+
+* See if there are other hacks that should be propagated to 2.27 (the
+  directory transfer throttle for sure!)
+
+
+###########################################################################
 
 SOON
 ====

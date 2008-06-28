@@ -1520,6 +1520,8 @@ let findUpdatesOnPaths pathList : Common.updateItem list Common.oneperpath =
      Lwt.return (ONEPERPATH(result))))))
 
 let findUpdates () : Common.updateItem list Common.oneperpath =
+  (* TODO: We should filter the paths to remove duplicates (including prefixes)
+     and ignored paths *)
   findUpdatesOnPaths (Prefs.read Globals.paths)
 
 
