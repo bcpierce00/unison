@@ -1,3 +1,13 @@
+CHANGES FROM VERSION 2.30.4
+
+* Work on text UI to prepare for new filesystem watcher functionality
+
+* Record some current TODO items
+
+
+
+
+-------------------------------
 CHANGES FROM VERSION 2.30.3
 
 * Update docs

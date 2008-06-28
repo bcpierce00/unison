@@ -97,7 +97,8 @@ let unisonGetVersion() = Uutil.myVersion
 Callback.register "unisonGetVersion" unisonGetVersion;;
 
 (* snippets from Uicommon, duplicated for now *)
-(* BCP: Duplicating this is a bad idea!!! *)
+(* BCP: Duplicating this is a really bad idea!!! *)
+
 (* First initialization sequence *)
 (* Returns a string option: command line profile, if any *)
 let unisonInit0() =

@@ -634,7 +634,8 @@ let suckOnWatcherFiles n =
       Globals.allRootsMap (fun r -> suckOnWatcherFileRoot r n)))
 
 let synchronizePathsFromFilesystemWatcher () =
-  let watcherfilename = Prefs.read Uicommon.repeat in
+  let watcherfilename = "" in
+  (* STOPPED HERE -- need to find the program using watcherosx preference and invoke it using a redirect to get the output into a temp file... *)
   let rec loop failedPaths = 
     let newpaths = suckOnWatcherFiles watcherfilename in
     if newpaths <> [] then
@@ -673,7 +674,12 @@ let rec synchronizeUntilDone () =
     try int_of_string (Prefs.read Uicommon.repeat)
     with Failure "int_of_string" ->
       (* If the 'repeat' pref is not a number, switch modes... *)
-      synchronizePathsFromFilesystemWatcher() in
+      if Prefs.read Uicommon.repeat = "watch" then 
+        synchronizePathsFromFilesystemWatcher() 
+      else
+        raise (Util.Fatal ("Value of 'repeat' preference ("
+                           ^Prefs.read Uicommon.repeat
+                           ^") should be either a number or 'watch'\n")) in
 
   let exitStatus = synchronizeUntilNoFailures() in
   if repeatinterval < 0 then

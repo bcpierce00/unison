@@ -4,7 +4,7 @@
 let docs =
     ("about", ("About Unison", 
      "Unison File Synchronizer\n\
-      Version 2.30.3\n\
+      Version 2.30.4\n\
       \n\
       "))
 ::
@@ -2553,8 +2553,8 @@ let docs =
       \n\
       "))
 ::
-    ("news", ("Changes in Version 2.30.3", 
-     "Changes in Version 2.30.3\n\
+    ("news", ("Changes in Version 2.30.4", 
+     "Changes in Version 2.30.4\n\
       \n\
       \032  Changes since 2.17:\n\
       \032    * Major rewrite and cleanup of the whole Mac OS X graphical user\n\
