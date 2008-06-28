@@ -16,7 +16,11 @@ void myCallbackFunction(
     for (i=0; i<numEvents; i++) {
         /* flags are unsigned long, IDs are uint64_t
         printf("Change %llu in %s, flags %lu\n", eventIds[i], paths[i], eventFlags[i]); */
-		printf("%s\n",paths[i]);
+		if (eventFlags[i] == kFSEventStreamEventFlagMustScanSubDirs) {
+			printf("*%s\n",paths[i]);
+		} else {
+			printf(".%s\n",paths[i]);
+		}
    }
 }
 
