@@ -13,8 +13,6 @@ CURRENT
 
 * Makefile for fstest
 
-* Reverse CheckNonemptyAndMakeWriteable 
-
 * Work on the Unison side
      - create temp file
      - start watcher based on watcherosx switch, passing all paths as args
@@ -30,7 +28,7 @@ CURRENT
        scratch if necessary
 
 * See if there are other hacks that should be propagated to 2.27 (the
-  directory transfer throttle for sure!)
+  directory transfer throttle for sure!), and Jerome's recent suggested fix
 
 
 ###########################################################################

@@ -316,10 +316,11 @@ let close_all_no_error infd outfd =
 let reallyTransferFile
     connFrom fspathFrom pathFrom fspathTo pathTo realPathTo
     update desc ressLength ressOnly id =
-  debug (fun() -> Util.msg "reallyTransferFile(%s,%s) -> (%s,%s,%s,%s)\n"
+  debug (fun() -> Util.msg "reallyTransferFile(%s,%s) -> (%s,%s,%s,%s)%s\n"
       (Fspath.toString fspathFrom) (Path.toString pathFrom)
       (Fspath.toString fspathTo) (Path.toString pathTo)
-      (Path.toString realPathTo) (Props.toString desc));
+      (Path.toString realPathTo) (Props.toString desc)
+      (if ressOnly then " (ONLY RESOURCE FORK)" else ""));
   let srcFileSize = Props.length desc in
   let file_id = Remote.newMsgId () in
 
@@ -547,20 +548,23 @@ let setFileinfoOnRoot =
 let targetExists checkSize fspathTo pathTo =
      Os.exists fspathTo pathTo
   && (match checkSize with
-        `CheckNonemptyAndMakeWriteable ->
+        `MakeWriteableAndCheckNonempty ->
+          let n = Fspath.concatToString fspathTo pathTo in
+          let perms = (Unix.stat n).Unix.st_perm in
+          let perms' = perms lor 0o600 in
+          Unix.chmod n perms';
           let r =
             Props.length (Fileinfo.get false fspathTo pathTo).Fileinfo.desc
               > Uutil.Filesize.zero in
-          if r then begin
-            let n = Fspath.concatToString fspathTo pathTo in
-            let perms = (Unix.stat n).Unix.st_perm in
-            let perms' = perms lor 0o600 in
-            Unix.chmod n perms'
-          end;
           r
-      | `CheckSize desc ->
-          Props.length (Fileinfo.get false fspathTo pathTo).Fileinfo.desc
-            = Props.length desc)
+      | `CheckDataSize desc ->
+             Props.length (Fileinfo.get false fspathTo pathTo).Fileinfo.desc
+               = Props.length desc
+      | `CheckSize (desc,ress) ->
+             Props.length (Fileinfo.get false fspathTo pathTo).Fileinfo.desc
+               = Props.length desc
+          && Osx.ressLength (Osx.getFileInfos fspathTo pathTo `FILE).Osx.ressInfo
+               = Osx.ressLength ress)
 
 let targetExistsLocal connFrom (checkSize, fspathTo, pathTo) =
   Lwt.return (targetExists checkSize fspathTo pathTo)
@@ -598,7 +602,7 @@ let transferFileUsingExternalCopyprog
   else begin
     Uutil.showProgress id Uutil.Filesize.zero "ext";
     targetExistsOnRoot
-      rootTo rootFrom (`CheckNonemptyAndMakeWriteable, fspathTo, pathTo) >>= (fun b ->
+      rootTo rootFrom (`MakeWriteableAndCheckNonempty, fspathTo, pathTo) >>= (fun b ->
     let prog =
       if b
         then Prefs.read copyprogrest
@@ -621,11 +625,13 @@ let transferFileUsingExternalCopyprog
                ^ (Os.quotes toSpec) in
     Trace.log (Printf.sprintf "%s\n" cmd);
     let _,log = Os.runExternalProgram cmd in
-    debug (fun() -> Util.msg
-             "transferFileUsingExternalCopyprog: returned\n------\n%s\n-----\n"
-               (Util.trimWhitespace log));
+    debug (fun() ->
+             let l = Util.trimWhitespace log in
+             Util.msg "transferFileUsingExternalCopyprog %s: returned...\n%s%s"
+               (Path.toString pathFrom)
+               l (if l="" then "" else "\n"));
     targetExistsOnRoot
-      rootTo rootFrom (`CheckSize desc, fspathTo, pathTo)
+      rootTo rootFrom (`CheckDataSize desc, fspathTo, pathTo)
         >>= (fun b ->
     if not b then
       raise (Util.Transient (Printf.sprintf
@@ -653,7 +659,7 @@ let file rootFrom pathFrom rootTo fspathTo pathTo realPathTo
       (* Check whether we actually need to copy the file (or whether it
          already exists from some interrupted previous transfer) *)
       targetExistsOnRoot
-        rootTo rootFrom (`CheckSize desc, fspathTo, pathTo) >>= (fun b ->
+        rootTo rootFrom (`CheckSize (desc,ress), fspathTo, pathTo) >>= (fun b ->
       if b then begin
         Util.msg "%s/%s has already been transferred\n"
           (Fspath.toString fspathTo) (Path.toString pathTo);
@@ -663,9 +669,9 @@ let file rootFrom pathFrom rootTo fspathTo pathTo realPathTo
       end else if
            Prefs.read copyprog <> ""
         && Prefs.read copythreshold >= 0
-        && Props.length desc >= Uutil.Filesize.ofInt64 (Int64.mul
-                                   (Int64.of_int 1000)
-                                   (Int64.of_int (Prefs.read copythreshold)))
+        && Props.length desc >= Uutil.Filesize.ofInt64
+                                   (Int64.mul (Int64.of_int 1000)
+                                     (Int64.of_int (Prefs.read copythreshold)))
         && update = `Copy
       then begin
         (* First use the external program to copy the data fork *)
@@ -674,13 +680,13 @@ let file rootFrom pathFrom rootTo fspathTo pathTo realPathTo
           update desc fp ress id >>= (fun () ->
         (* Now use the regular transport mechanism to copy the resource
            fork *)
-        begin if (Osx.ressLength ress) > Uutil.Filesize.zero then
+        begin if (Osx.ressLength ress) > Uutil.Filesize.zero then begin
           transferFile
             rootFrom pathFrom rootTo fspathTo pathTo realPathTo
             update desc fp ress true id
-        else Lwt.return ()
+        end else Lwt.return ()
         end >>= (fun() ->
-        (* Finally, initialize the file info *)
+        (* Finally, set the file info *)
         setFileinfoOnRoot rootTo rootFrom (fspathTo, pathTo, desc)))
       end else
         (* Just transfer the file in the usual way with Unison's

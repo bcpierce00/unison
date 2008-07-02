@@ -404,7 +404,6 @@ let runExternalProgram cmd =
          "") in
     (returnValue,mergeResultLog) 
   end else Lwt_unix.run (
-    debug (fun()-> Util.msg "Executing external program unix-style\n");
     Lwt_unix.open_process_full cmd (Unix.environment ()) 
     >>= (fun (out, ipt, err) ->
     readChannelsTillEof [out;err]
