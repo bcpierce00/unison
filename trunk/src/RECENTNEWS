@@ -1,3 +1,13 @@
+CHANGES FROM VERSION 2.31.-1
+
+* Fixed a couple of file-transfer bugs.  (One was about copying
+  resource forks.  Another was about restarting interrupted transfers
+  on files where exactly zero bytes had been transferred so far and
+  the file had been created with null permissions -- believe it or
+  not, this is possible with rsync!)  This required a protocol change,
+  so I'm also bumping the version number.
+
+-------------------------------
 CHANGES FROM VERSION 2.30.4
 
 * Work on text UI to prepare for new filesystem watcher functionality
