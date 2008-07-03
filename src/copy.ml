@@ -72,6 +72,7 @@ let localFile
           (Fspath.toString fspathTo) (Path.toString pathTo));
       let inFd = openFileIn fspathFrom pathFrom `DATA in
       protect (fun () ->
+        Os.delete fspathTo pathTo;
         let outFd = openFileOut fspathTo pathTo `DATA in
         protect (fun () ->
           Uutil.readWrite inFd outFd
