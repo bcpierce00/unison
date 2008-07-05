@@ -1522,6 +1522,10 @@ let findUpdatesOnPaths pathList : Common.updateItem list Common.oneperpath =
 let findUpdates () : Common.updateItem list Common.oneperpath =
   (* TODO: We should filter the paths to remove duplicates (including prefixes)
      and ignored paths *)
+(* FIX: The following line can be deleted -- it's just for debugging *)
+debug (fun() -> Util.msg "Running bogus external program\n");
+let _ = Os.runExternalProgram "dir" in
+debug (fun() -> Util.msg "Finished running bogus external program\n");
   findUpdatesOnPaths (Prefs.read Globals.paths)
 
 
