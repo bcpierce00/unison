@@ -1,3 +1,8 @@
+CHANGES FROM VERSION 2.31.2
+
+* Added a bit of debugging code for Alan.
+
+-------------------------------
 CHANGES FROM VERSION 2.31.1
 
 * Fixed a small bug with resuming interrupted file transfers when both
