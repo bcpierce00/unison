@@ -13,17 +13,17 @@
 
    A non-functor interface is provided to allow the Mac GUI to reuse the
    startup code for non-GUI options.
-*)
+ *)
 
 (* ---------------------------------------------------------------------- *)
 
 (* Some command-line arguments are handled specially during startup, e.g.,
-       -doc
-       -help
-       -version
-       -server
-       -socket
-       -ui
+   -doc
+   -help
+   -version
+   -server
+   -socket
+   -ui
    They are expected to appear on the command-line only, not in a
    profile. In particular, -version and -doc will print to the
    standard output, so they only make sense if invoked from the
@@ -36,8 +36,8 @@
    without loading a profile; and then we can't do command-line
    parsing because it is intertwined with profile loading.
 
-   NB: the Mac GUI handles these options and needs to change if they
-   any more are added.
+   NB: the Mac GUI handles these options itself and needs to change 
+   if any more are added.
 *)
 
 let versionPrefName = "version"
@@ -185,7 +185,7 @@ let init() = begin
   begin try
     let i = List.hd (Util.StringMap.find socketPrefName argv) in
     catch_all (fun () ->
-      Os.createUnisonDir();
+     Os.createUnisonDir();
       Remote.waitOnPort
         (begin try
            match Util.StringMap.find serverHostName argv with

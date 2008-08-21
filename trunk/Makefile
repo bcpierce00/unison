@@ -186,9 +186,9 @@ EXPORTTMP=$(TMP)/export-$(OSARCH)x.tmp
 exportnative:
 	-$(RM) -r $(EXPORTTMP)
 	cp -r src $(EXPORTTMP)
-	make realexportnative
+	$(MAKE) realexportnative
 ifeq ($(OSARCH),linux)
-	make realexportnative EXPORTSTATIC=true KIND=-static
+	$(MAKE) realexportnative EXPORTSTATIC=true KIND=-static
 endif
 	$(RM) -r $(EXPORTTMP)
 

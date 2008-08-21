@@ -357,6 +357,7 @@ open Lwt
 let readChannelTillEof c =
   let rec loop lines =
     try let l = input_line c in
+        (* Util.msg "%s\n" l; *)
         loop (l::lines)
     with End_of_file -> lines in
   String.concat "\n" (Safelist.rev (loop []))

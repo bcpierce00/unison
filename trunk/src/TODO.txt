@@ -30,6 +30,28 @@ CURRENT
 * See if there are other hacks that should be propagated to 2.27 (the
   directory transfer throttle for sure!), and Jerome's recent suggested fix
 
+* Rsync debugging
+
+     - R can't run with debugging (even in 2.13) -- Alan cannot reproduce
+
+     - when using socket mode under windows, upon completion of the first
+       external rsync call, the connection to the server is dropped (the
+       server gets an EOF and closes the connection; the client sees a
+       broken connection)
+
+          - only with rsync, not scp
+          - only with socket mode connection by Unison, not ssh mode
+          - seems to have nothing to do with ssh tunneling
+
+          - calling Unix.open_process_in instead of
+            Lwt_unix.open_process_full seems to make no difference
+
+          - one difference we can see is that, at the end of the transfer,
+            the ssh started by rsync (when run with with -v -v) says
+            something like "FD1 clearing O_NONBLOCK".  The similar call to
+            ssh from scp does not print this.
+
+       We're running under Cygwin (which is needed to have rsync)
 
 ###########################################################################
 

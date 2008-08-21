@@ -29,6 +29,10 @@ ifeq ($(shell uname),Darwin)
 else
 ifeq ($(shell uname),OpenBSD)
   OSARCH=OpenBSD
+else
+ifeq ($(shell uname),NetBSD)
+  OSARCH=NetBSD
+endif
 endif
 endif
 endif
@@ -259,6 +263,10 @@ else
   ifeq ($(shell echo type -t ocamldot | bash), file)
     OCAMLDOT=true
   endif
+endif
+
+ifeq ($(OSARCH), NetBSD)
+  OCAMLDOT=false
 endif
 
 # Rebuild dependencies (must be invoked manually)
