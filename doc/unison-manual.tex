@@ -2025,15 +2025,16 @@ adding the option ``{\tt -rshargs -C}'' to the command line or ``{\tt
 \SUBSECTION{Making Unison Faster on Large Files}{speeding}
 
 Unison's built-in implementation of the rsync algorithm makes transferring
-updates to existing files pretty fast.  However, for whole-file copies, the
-built-in transfer method is not highly optimized.  Also, if Unison is
-interrupted in the middle of transferring a large file, it will attempt to
-retransfer the whole thing on the next run.
+updates to existing files pretty fast.  However, for whole-file copies of
+newly created files, the built-in transfer method is not highly optimized.
+Also, if Unison is interrupted in the middle of transferring a large file,
+it will attempt to retransfer the whole thing on the next run.
 
-These shortcomings can be addressed by telling Unison to use an external
-file copying utility for whole-file transfers.  The recommended one is the
-standalone {\tt rsync} tool, which is available by default on most Unix
-systems and can easily be installed on Windows systems using Cygwin.
+These shortcomings can be addressed with a little extra work by telling
+Unison to use an external file copying utility for whole-file transfers.
+The recommended one is the standalone {\tt rsync} tool, which is available
+by default on most Unix systems and can easily be installed on Windows
+systems using Cygwin.
 
 If you have {\tt rsync} installed on both hosts, you can make Unison use it
 simply by setting the {\tt copythreshold} flag to something non-negative.
@@ -2044,15 +2045,35 @@ larger value, Unison will use the external utility for all files larger than
 this size (which is given in kilobytes, so setting it to 1000 will cause the
 external tool to be used for all transfers larger than a megabyte).
 
-If you want to use a different external copy utility, set the {\tt copyprog}
-preference. 
+If you want to use a different external copy utility, set both the {\tt
+  copyprog} and {\tt copyprogpartial} preferences---the former is used for
+the first transfer of a file, while the latter is used when Unison sees a
+partially transferred temp file on the receiving host.  Be careful here:
+Your external tool needs to be instructed to copy files in place (otherwise
+if the transfer is interrupted Unison will not notice that some of the data
+has already been transferred, the next time it tries).  The default values
+are: 
+\begin{verbatim}
+   copyprog      =   rsync --inplace --compress
+   copyprogrest  =   rsync --partial --inplace --compress
+\end{verbatim}
+You may also need to set the {\tt copyquoterem} preference.  When it is set
+to {\tt true}, this causes Unison to add an extra layer of quotes to
+the remote path passed to the external copy program. This is is needed by
+rsync, for example, which internally uses an ssh connection, requiring an
+extra level of quoting for paths containing spaces. When this flag is set to
+{\tt default}, extra quotes are added if the value of {\tt copyprog}
+contains the string {\tt rsync}.  The default value is {\tt default},
+naturally.
 
 If a {\em directory} transfer is interrupted, the next run of Unison will
-skip any files that were completely transferred before the interruption.
-Note, though, that the new directory will not appear in the destination
-filesystem until everything has been transferred---partially transferred
-directories are kept in a temporary location (with names like {\tt
-  .unison.DIRNAME....}) until the transfer is complete.  
+automatically skip any files that were completely transferred before the
+interruption.  (This behavior is always on: it does not depend on the
+setting of the {\tt copythreshold} preference.)  Note, though, that the new
+directory will not appear in the destination filesystem until everything has
+been transferred---partially transferred directories are kept in a temporary
+location (with names like {\tt .unison.DIRNAME....}) until the transfer is
+complete.
 
 
 \SUBSECTION{Fast Update Detection}{fastcheck}

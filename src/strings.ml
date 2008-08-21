@@ -4,7 +4,7 @@
 let docs =
     ("about", ("About Unison", 
      "Unison File Synchronizer\n\
-      Version 2.30.4\n\
+      Version 2.31.3\n\
       \n\
       "))
 ::
@@ -1148,8 +1148,6 @@ let docs =
       \032-contactquietly    suppress the 'contacting server' message during startup\n\
       \032-copyprog xxx      external program for copying large files\n\
       \032-copyprogrest xxx  variant of copyprog for resuming partial transfers\n\
-      \032-copyquoterem xxx  add quotes to remote file name for copyprog (true/false/def\n\
-      ault)\n\
       \032-copythreshold n   use copyprog on files bigger than this (if >=0, in Kb)\n\
       \032-debug xxx         debug module xxx ('all' -> everything, 'verbose' -> more)\n\
       \032-diff xxx          command for showing differences between files\n\
@@ -1307,14 +1305,6 @@ let docs =
       \032         will just be copyprog with one extra option (e.g., -partial,\n\
       \032         for rsync). The default setting invokes rsync with appropriate\n\
       \032         options--most users should not need to change it.\n\
-      \032  copyquoterem xxx\n\
-      \032         When set to true, this flag causes Unison to add an extra layer\n\
-      \032         of quotes to the remote path passed to the external copy\n\
-      \032         program. This is needed by rsync, for example, which internal\n\
-      \032         uses an ssh connection requiring an extra level of quoting for\n\
-      \032         paths containing spaces. When this flag is set to default,\n\
-      \032         extra quotes are added if the value of copyprog contains the\n\
-      \032         string rsync.\n\
       \032  copythreshold n\n\
       \032         A number indicating above what filesize (in kilobytes) Unison\n\
       \032         should use the external copying utility specified by copyprog.\n\
@@ -2346,16 +2336,16 @@ let docs =
       \n\
       \032  Unison's built-in implementation of the rsync algorithm makes\n\
       \032  transferring updates to existing files pretty fast. However, for\n\
-      \032  whole-file copies, the built-in transfer method is not highly\n\
-      \032  optimized. Also, if Unison is interrupted in the middle of\n\
-      \032  transferring a large file, it will attempt to retransfer the whole\n\
+      \032  whole-file copies of newly created files, the built-in transfer method\n\
+      \032  is not highly optimized. Also, if Unison is interrupted in the middle\n\
+      \032  of transferring a large file, it will attempt to retransfer the whole\n\
       \032  thing on the next run.\n\
       \n\
-      \032  These shortcomings can be addressed by telling Unison to use an\n\
-      \032  external file copying utility for whole-file transfers. The\n\
-      \032  recommended one is the standalone rsync tool, which is available by\n\
-      \032  default on most Unix systems and can easily be installed on Windows\n\
-      \032  systems using Cygwin.\n\
+      \032  These shortcomings can be addressed with a little extra work by\n\
+      \032  telling Unison to use an external file copying utility for whole-file\n\
+      \032  transfers. The recommended one is the standalone rsync tool, which is\n\
+      \032  available by default on most Unix systems and can easily be installed\n\
+      \032  on Windows systems using Cygwin.\n\
       \n\
       \032  If you have rsync installed on both hosts, you can make Unison use it\n\
       \032  simply by setting the copythreshold flag to something non-negative. If\n\
@@ -2367,16 +2357,33 @@ let docs =
       \032  it to 1000 will cause the external tool to be used for all transfers\n\
       \032  larger than a megabyte).\n\
       \n\
-      \032  If you want to use a different external copy utility, set the copyprog\n\
-      \032  preference.\n\
+      \032  If you want to use a different external copy utility, set both the\n\
+      \032  copyprog and copyprogpartial preferences--the former is used for the\n\
+      \032  first transfer of a file, while the latter is used when Unison sees a\n\
+      \032  partially transferred temp file on the receiving host. Be careful\n\
+      \032  here: Your external tool needs to be instructed to copy files in place\n\
+      \032  (otherwise if the transfer is interrupted Unison will not notice that\n\
+      \032  some of the data has already been transferred, the next time it\n\
+      \032  tries). The default values are:\n\
+      \032  copyprog      =   rsync --inplace --compress\n\
+      \032  copyprogrest  =   rsync --partial --inplace --compress\n\
+      \n\
+      \032  You may also need to set the copyquoterem preference. When it is set\n\
+      \032  to true, this causes Unison to add an extra layer of quotes to the\n\
+      \032  remote path passed to the external copy program. This is is needed by\n\
+      \032  rsync, for example, which internally uses an ssh connection, requiring\n\
+      \032  an extra level of quoting for paths containing spaces. When this flag\n\
+      \032  is set to default, extra quotes are added if the value of copyprog\n\
+      \032  contains the string rsync. The default value is default, naturally.\n\
       \n\
       \032  If a directory transfer is interrupted, the next run of Unison will\n\
-      \032  skip any files that were completely transferred before the\n\
-      \032  interruption. Note, though, that the new directory will not appear in\n\
-      \032  the destination filesystem until everything has been\n\
-      \032  transferred--partially transferred directories are kept in a temporary\n\
-      \032  location (with names like .unison.DIRNAME....) until the transfer is\n\
-      \032  complete.\n\
+      \032  automatically skip any files that were completely transferred before\n\
+      \032  the interruption. (This behavior is always on: it does not depend on\n\
+      \032  the setting of the copythreshold preference.) Note, though, that the\n\
+      \032  new directory will not appear in the destination filesystem until\n\
+      \032  everything has been transferred--partially transferred directories are\n\
+      \032  kept in a temporary location (with names like .unison.DIRNAME....)\n\
+      \032  until the transfer is complete.\n\
       \n\
       Fast Update Detection\n\
       \n\
@@ -2553,8 +2560,8 @@ let docs =
       \n\
       "))
 ::
-    ("news", ("Changes in Version 2.30.4", 
-     "Changes in Version 2.30.4\n\
+    ("news", ("Changes in Version 2.31.3", 
+     "Changes in Version 2.31.3\n\
       \n\
       \032  Changes since 2.17:\n\
       \032    * Major rewrite and cleanup of the whole Mac OS X graphical user\n\

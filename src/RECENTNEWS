@@ -1,3 +1,12 @@
+CHANGES FROM VERSION 2.31.3
+
+* Updated documentation with recently added preferences.
+
+* Applied patch from Antoine Reilles for NetBSD compilation
+
+* Makefile tidying
+
+-------------------------------
 CHANGES FROM VERSION 2.31.2
 
 * Added a bit of debugging code for Alan.

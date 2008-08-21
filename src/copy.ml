@@ -529,7 +529,7 @@ let copyquoterem =
     "!add quotes to remote file name for copyprog (true/false/default)"
     ("When set to {\\tt true}, this flag causes Unison to add an extra layer "
      ^ "of quotes to the remote path passed to the external copy program. "
-     ^ "This is needed by rsync, for example, which internal uses an ssh "
+     ^ "This is needed by rsync, for example, which internally uses an ssh "
      ^ "connection requiring an extra level of quoting for paths containing "
      ^ "spaces. When this flag is set to {\\tt default}, extra quotes are "
      ^ "added if the value of {\\tt copyprog} contains the string "
