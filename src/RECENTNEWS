@@ -1,3 +1,9 @@
+CHANGES FROM VERSION 2.31.4
+
+* Don't ignore files that look like backup files if the {\\tt
+  backuplocation} preference is set to {\\tt central}
+
+-------------------------------
 CHANGES FROM VERSION 2.31.3
 
 * Updated documentation with recently added preferences.

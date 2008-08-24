@@ -2,7 +2,7 @@
 (* $I2: Last modified by lescuyer *)
 (* Copyright 1999-2008 (see COPYING for details) *)
 
-(*------------------------------------------------------------------------------------*)
+(* --------------------------------------------------------------------------*)
 (* Preferences for backing up and stashing *)
    
 let debug = Util.debug "stasher"
@@ -147,7 +147,7 @@ let shouldBackupCurrent p =
 let _ = Pred.alias backupcurrent "backupcurrent"
 let _ = Pred.alias backupcurrentnot "backupcurrentnot"
 
-(*------------------------------------------------------------------------------------*)
+(* ---------------------------------------------------------------------------*)
 
 (* NB: We use Str.regexp here because we need group matching to retrieve
    and increment version numbers from backup file names. We only use
@@ -185,8 +185,8 @@ let backup_rx () =
   else
     raise (Util.Fatal "Either backupprefix or backupsuffix must contain '$VERSION'")
    
-(* We ignore files whose name ends in .unison.bak, since people may still have these lying around
-   from using previous versions of Unison. *)
+(* We ignore files whose name ends in .unison.bak, since people may still have these
+   lying around from using previous versions of Unison. *)
 let oldBackupPrefPathspec = "Name *.unison.bak"
 
 (* This function creates Rx regexps based on the preferences to ignore
@@ -209,10 +209,14 @@ let addBackupFilesToIgnorePref () =
     match dir_rx with 
       None   -> "Regex " ^ full 
     | Some _ -> "Regex " ^ dir in
-  debug (fun () -> 
-     Util.msg "New pattern being added to ignore preferences: %s\n" theRegExp);
+
   Globals.addRegexpToIgnore oldBackupPrefPathspec;
-  Globals.addRegexpToIgnore theRegExp
+  if Prefs.read backuplocation = "local" then begin
+    debug (fun () -> 
+       Util.msg "New pattern being added to ignore preferences (for backup files):\n   %s\n"
+         theRegExp);
+    Globals.addRegexpToIgnore theRegExp
+  end 
 
 (* We use references for functions that compute the prefixes and suffixes
    in order to avoid using functions from the Str module each time we need them. *)
