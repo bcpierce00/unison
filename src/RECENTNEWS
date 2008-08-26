@@ -1,3 +1,7 @@
+CHANGES FROM VERSION 2.31.5
+
+Resizing the update window vertically no longer moves the status label. Fix contributed by Pedro Melo.
+-------------------------------
 CHANGES FROM VERSION 2.31.4
 
 * Don't ignore files that look like backup files if the {\\tt
