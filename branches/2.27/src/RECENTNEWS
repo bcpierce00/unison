@@ -1,3 +1,7 @@
+CHANGES FROM VERSION 2.27.76
+
+Resizing the update window vertically no longer moves the status label. Fix contributed by Pedro Melo.
+-------------------------------
 CHANGES FROM VERSION 2.27.75
 
 * Tiny typo fix to docs
