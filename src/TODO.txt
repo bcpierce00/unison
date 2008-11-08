@@ -11,6 +11,13 @@ See the file BUGS.txt for a list of currently open bugs.
 CURRENT
 =======
 
+* Merge issues:
+     - It would be better to ignore the exit status of the external merge
+       tool and just look at what files it produced to decide what happened
+     - The function that runs the external program should not grab stdin /
+       stdout / stderr if Unison is running with the text UI. 
+     - The confirmation step should offer to display the new merged file.
+
 * Makefile for fstest
 
 * Work on the Unison side

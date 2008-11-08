@@ -493,7 +493,26 @@ let set fspath path kind t =
                     Unix.utimes abspath v v)
                  (fun()-> Unix.chmod abspath oldPerms)
              end
-           else Unix.utimes abspath v v)
+           else if false then begin
+             (* A special hack for Rasmus, who has a special situation that
+                requires the utimes-setting program to run 'setuid root'
+                (and we do not want all of Unison to run setuid, so we just
+                spin off an external utility to do it). *)
+             let time = Unix.localtime v in
+             let tstr = Printf.sprintf
+                          "%4d%02d%02d%2d%02d.%02d"
+                          (time.Unix.tm_year + 1900)
+                          (time.Unix.tm_mon + 1)
+                          time.Unix.tm_mday
+                          time.Unix.tm_hour
+                          time.Unix.tm_min
+                          time.Unix.tm_sec in
+             let cmd = "touch -m -a -t " ^ tstr ^ " " ^ abspath in
+             Util.msg "Running external program to set utimes:\n  %s\n" cmd;
+             let (r,_) = External.runExternalProgram cmd in
+             if r<>(Unix.WEXITED 0) then raise (Util.Transient "External time-setting command failed")
+           end else
+             Unix.utimes abspath v v)
   | _ ->
       ()
 

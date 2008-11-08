@@ -488,7 +488,7 @@ let rec diff root1 path1 ui1 root2 path2 ui2 showDiff id =
         "\"" ^ cmd ^ "\""
        else
          cmd) in
-    showDiff cmd (Os.readChannelTillEof c);
+    showDiff cmd (External.readChannelTillEof c);
     ignore (Unix.close_process_in c) in
   let (desc1, fp1, ress1, desc2, fp2, ress2) = Common.fileInfos ui1 ui2 in
   match root1,root2 with
@@ -743,7 +743,7 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
           (Os.quotes (Fspath.concatToString workingDirForMerge newarch)) in
       Trace.log (Printf.sprintf "Merge command: %s\n" cmd);
       
-      let returnValue, mergeResultLog = Os.runExternalProgram cmd in
+      let returnValue, mergeResultLog = External.runExternalProgram cmd in
       
       Trace.log (Printf.sprintf "Merge result (%s):\n%s\n"
                    (showStatus returnValue) mergeResultLog);

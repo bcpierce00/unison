@@ -63,7 +63,13 @@ let backupprefix =
      ^ " This keyword is ignored if it appears in a directory name"
      ^ " in the prefix; if it  does not appear anywhere"
      ^ " in the prefix or the suffix, it will be automatically"
-     ^ " placed at the beginning of the suffix.")
+     ^ " placed at the beginning of the suffix.  "
+     ^ "\n\n"
+     ^ "One thing to be careful of: If the {\\tt backuploc} preference is set "
+     ^ "to {\\tt local}, Unison will automatically ignore {\\em all} files "
+     ^ "whose prefix and suffix match {\\tt backupprefix} and {\\tt backupsuffix}.  "
+     ^ "So be careful to choose values for these preferences that are sufficiently "
+     ^ "different from the names of your real files.")
     
 let backupsuffix =
   Prefs.createString "backupsuffix" ""
