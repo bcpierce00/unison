@@ -1524,7 +1524,7 @@ let findUpdates () : Common.updateItem list Common.oneperpath =
      and ignored paths *)
 (* FIX: The following line can be deleted -- it's just for debugging *)
 debug (fun() -> Util.msg "Running bogus external program\n");
-let _ = Os.runExternalProgram "dir" in
+let _ = External.runExternalProgram "dir" in
 debug (fun() -> Util.msg "Finished running bogus external program\n");
   findUpdatesOnPaths (Prefs.read Globals.paths)
 

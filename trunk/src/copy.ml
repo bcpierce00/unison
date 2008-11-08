@@ -625,7 +625,7 @@ let transferFileUsingExternalCopyprog
                ^ (Os.quotes fromSpec) ^ " "
                ^ (Os.quotes toSpec) in
     Trace.log (Printf.sprintf "%s\n" cmd);
-    let _,log = Os.runExternalProgram cmd in
+    let _,log = External.runExternalProgram cmd in
     debug (fun() ->
              let l = Util.trimWhitespace log in
              Util.msg "transferFileUsingExternalCopyprog %s: returned...\n%s%s"
@@ -662,8 +662,9 @@ let file rootFrom pathFrom rootTo fspathTo pathTo realPathTo
       targetExistsOnRoot
         rootTo rootFrom (`CheckSize (desc,ress), fspathTo, pathTo) >>= (fun b ->
       if b then begin
-        Util.msg "%s/%s has already been transferred\n"
-          (Fspath.toString fspathTo) (Path.toString pathTo);
+        Trace.log (Printf.sprintf
+          "%s/%s has already been transferred\n"
+          (Fspath.toString fspathTo) (Path.toString pathTo));
         Lwt.return ()
       (* Check whether we should use an external program to copy the
          file *)

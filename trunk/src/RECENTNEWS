@@ -1,7 +1,57 @@
 CHANGES FROM VERSION 2.31.5
 
+* A special hack for Rasmus, who has a special situation that requires
+  the utimes-setting program to run 'setuid root' (and we do not want
+  all of Unison to run setuid, so we just spin off an external utility
+  to do it).  This functionality is disabled by default and requires
+  editing the source code (changing 'false' to 'true' on line 496 of
+  props.ml) and recompiling to enable.  If there are other people that
+  want it, we can easily make it accessible using a preference
+  instead, but I prefer not to add a preference until someone else
+  requests it, to avoid creating an incompatible version.
+
+* Logging tweak.
+
+
+
+-------------------------------
+CHANGES FROM VERSION 2.31.5
+
+* A special hack for Rasmus, who has a special situation that requires
+  the utimes-setting program to run 'setuid root' (and we do not want
+  all of Unison to run setuid, so we just spin off an external utility
+  to do it).  This functionality is disabled by default and requires
+  editing the source code (changing 'false' to 'true' on line 496 of
+  props.ml) and recompiling to enable.  If there are other people that
+  want it, we can easily make it accessible using a preference
+  instead, but I prefer not to add a preference until someone else
+  requests it, to avoid creating an incompatible version.
+
+* Logging tweak.
+
+
+
+-------------------------------
+CHANGES FROM VERSION 2.31.5
+
+* A special hack for Rasmus, who has a special situation that requires
+  the utimes-setting program to run 'setuid root' (and we do not want
+  all of Unison to run setuid, so we just spin off an external utility
+  to do it).  This functionality is disabled by default and requires
+  editing the source code (changing 'false' to 'true' on line 496 of
+  props.ml) and recompiling to enable.  If there are other people that
+  want it, we can easily make it accessible using a preference
+  instead, but I prefer not to add a preference until someone else
+  requests it, to avoid creating an incompatible version.
+
+* Logging tweak.
+
+
+CHANGES FROM VERSION 2.31.5
+
 Resizing the update window vertically no longer moves the status label. Fix contributed by Pedro Melo.
 -------------------------------
+
 CHANGES FROM VERSION 2.31.4
 
 * Don't ignore files that look like backup files if the {\\tt

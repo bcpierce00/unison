@@ -55,6 +55,4 @@ val initializeXferFunctions :
     ((Fspath.t * Path.local) -> (Fspath.t * Path.local) -> unit) ->
     unit
 
-val readChannelTillEof : in_channel -> string
-val runExternalProgram : string -> Unix.process_status * string
 val quotes : string -> string
