@@ -507,7 +507,8 @@ let set fspath path kind t =
                           time.Unix.tm_hour
                           time.Unix.tm_min
                           time.Unix.tm_sec in
-             let cmd = "touch -m -a -t " ^ tstr ^ " " ^ abspath in
+             let cmd = "/usr/local/bin/sudo -u root /usr/bin/touch -m -a -t "
+                       ^ tstr ^ " '" ^ abspath ^ "'" in
              Util.msg "Running external program to set utimes:\n  %s\n" cmd;
              let (r,_) = External.runExternalProgram cmd in
              if r<>(Unix.WEXITED 0) then raise (Util.Transient "External time-setting command failed")
