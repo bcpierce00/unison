@@ -500,7 +500,7 @@ let set fspath path kind t =
                 spin off an external utility to do it). *)
              let time = Unix.localtime v in
              let tstr = Printf.sprintf
-                          "%4d%02d%02d%2d%02d.%02d"
+                          "%4d%02d%02d%02d%02d.%02d"
                           (time.Unix.tm_year + 1900)
                           (time.Unix.tm_mon + 1)
                           time.Unix.tm_mday
