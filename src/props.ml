@@ -73,6 +73,9 @@ let permMask =
 let (fileDefault, dirDefault, fileSafe, dirSafe) =
   match Util.osType with
     `Win32 ->
+      debug
+        (fun() ->
+           Util.msg "Using windows defaults for file permissions");
       ((0o600, -1), (* rw------- *)
        (0o700, -1), (* rwx------ *)
        (0o600, -1), (* rw------- *)
@@ -162,8 +165,22 @@ let syncedPartsToString =
      bit 0o0002 "?" "-" "w" ^
      bit 0o0001 "?" "-" "x"
 
+let dontChmod =
+  Prefs.createBool "dontchmod" 
+  false
+  "!When set, never use the chmod system call"
+  ("By default, Unison uses the 'chmod' system call to set the permission bits"
+  ^ " of files after it has copied them.  But in some circumstances (and under "
+  ^ " some operating systems), the chmod call always fails.  Setting this "
+  ^ " preference completely prevents Unison from ever calling chmod.")
+
 let set fspath path kind (fp, mask) =
-  if mask <> 0 then  (* BCP: removed "|| kind <> `Update"  10/2005 *)
+  (* BCP: removed "|| kind <> `Update" on 10/2005, but reinserted it on 11/2008.
+     I'd removed it to make Dale Worley happy -- he wanted a way to make sure that
+     Unison would never call chmod, and setting prefs to 0 seemed like a reasonable
+     way to do this.  But in fact it caused new files to be created with wrong prefs.
+   *)
+  if (mask <> 0 || kind = `Set) && (not (Prefs.read dontChmod)) then
     Util.convertUnixErrorsToTransient
     "setting permissions"
       (fun () ->

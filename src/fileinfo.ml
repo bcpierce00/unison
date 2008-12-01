@@ -74,6 +74,12 @@ let set fspath path action newDesc =
     match action with
       `Set defDesc ->
         (* Set the permissions and maybe the other properties                *)
+        (* BCP [Nov 2008]: Jerome, in a message to unison-hackers on
+           Oct 5, 2005, suggested that this would be better as
+              `Set, Props.override (get false fspath path).desc newDesc
+           but this does not seem right to me (bcp): if the file was just
+           created, then its permissions are something like 0x600, whereas
+           the default permissions will set the world read bit, etc. *)
         `Set, Props.override defDesc newDesc
     | `Copy oldPath ->
         (* Set the permissions (using the permissions of the file at         *)

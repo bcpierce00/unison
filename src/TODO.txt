@@ -8,8 +8,8 @@ See the file BUGS.txt for a list of currently open bugs.
 
 ###########################################################################
         
-CURRENT
-=======
+* CURRENT
+* =======
 
 * Merge issues:
      - It would be better to ignore the exit status of the external merge
@@ -62,8 +62,8 @@ CURRENT
 
 ###########################################################################
 
-SOON
-====
+* SOON
+* ====
 
 **** Document: root, fspath, path (local/not)
 
@@ -182,8 +182,8 @@ SOON
 ** Peter Selinger has built an SHA256 implementation that should be usable
    as a drop-in replacement for MD5, if we ever need to do that
 
-BUILDING AND INSTALLING
-=======================
+* BUILDING AND INSTALLING
+* =======================
 
 ** 'make install' could be improved (and documented)
    1. Typing "make install' after a "make" should simply install the 
@@ -200,8 +200,8 @@ BUILDING AND INSTALLING
 should strip symbols from binary files in 'make exportnative'
 
 
-DOCUMENTATION
-=============
+* DOCUMENTATION
+* =============
 
 ** Put a little more order on the flags and preferences -- e.g.,
     organize them into "basic preferences", "advanced preferences,"
@@ -237,8 +237,8 @@ DOCUMENTATION
    ===> Try it and see.
 
 
-SMALL FUNCTIONALITY IMPROVEMENTS
-================================
+* SMALL FUNCTIONALITY IMPROVEMENTS
+* ================================
 
 **** The archive should indicate whether it is case-dependant or not.
      (This is important for correctness -- if the case-insensitive flag is
@@ -247,6 +247,12 @@ SMALL FUNCTIONALITY IMPROVEMENTS
 **** Use LargeFile (submodule of Unix) instead of standard file commands,
      to avoid problems with huge files
      DONE
+
+*** [Marcus Sundman, 2008] Unison can't propagate changes in read-only
+    folders. The correct way to do it is to temporarily add write
+    permissions for the user to the folder, then do the changes and then
+    reset the permissions. Now unison tries to just do the changes, which
+    fails with a "permission denied" error.
 
 *** [Adrian Stephens, 2007] I would like the scope of rootalias to be
     expanded so that any command that expects a root will perform aliasing
@@ -693,8 +699,8 @@ Maybe we should never emit a conflict for modtimes; instead, we just
   Make sure you pay attention to the compile line as it is important.
 
 
-USER INTERFACE
-==============
+* USER INTERFACE
+* ==============
 
 ** In menu Actions
     - show Diff applies to the current line, while
@@ -958,8 +964,8 @@ It would be nice to be able to STOP the GUI in the middle of propagating
   changes.  
 
 
-TIDYING
-=======
+* TIDYING
+* =======
 
 * Go through the sources and make all fatal and transient error messages
   as informative as possible 
@@ -975,8 +981,8 @@ Ocamlexc v1.0, the uncaught exceptions analyzer for Objective Caml is now
   Unison sources and see if it reveals any problems.
 
 
-LARGER EXTENSIONS
-=================
+* LARGER EXTENSIONS
+* =================
 
 Fast update checking would be cool... Some resources:
    FAM (used in Enlightenment) 
@@ -1034,8 +1040,8 @@ It might be nice to implement an (optional) safety check that detects
   paranoid.) 
 
 
-WINDOWS ISSUES
-==============
+* WINDOWS ISSUES
+* ==============
 
 Suggestion from Arnaud:
   I have been using XP for a while and despite all the problems I have, there
@@ -1077,3 +1083,7 @@ Comments from Karl Moerder:
     provided on FAT file systems) and the new way is the more Unix like way
     (added for NTFS file systems). The new way has rwxdpo bits for each
     group (and there can be several groups).
+
+Local Variables: 
+mode: outline
+End: 

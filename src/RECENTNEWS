@@ -1,3 +1,24 @@
+CHANGES FROM VERSION 2.31.11
+
+* Fixed a bug that was causing new files to be created with
+  permissions 0x600 instead of using a reasonable default (like
+  0x644), if the 'perms' flag was set to 0.  (Bug reported by Ben
+  Crowell.)
+
+* Added a new preference, 'dontchmod'.  By default, Unison uses the
+  'chmod' system call to set the permission bits of files after it has
+  copied them.  But in some circumstances (and under some operating
+  systems), the chmod call always fails.  Setting this preference
+  completely prevents Unison from ever calling chmod.
+
+* Add some suggestions to TODO file
+
+
+
+
+
+
+-------------------------------
 CHANGES FROM VERSION 2.31.10
 
 * Another slight tweak.
