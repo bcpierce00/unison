@@ -698,6 +698,27 @@ Maybe we should never emit a conflict for modtimes; instead, we just
      http://www-2.cs.cmu.edu/~jcl/programs/sync_file.tar.gz
   Make sure you pay attention to the compile line as it is important.
 
+[Ivo Welch] I would do a quick test of case sensitivity in the program
+itself at the time you do a first prf sync, so that the user does not have
+to bother with it.  Just write two files on each end which differ in case,
+and see if there is overwriting.  Then do the smart thing.  The long-named
+file in the .unison directory should keep this information thereafter.
+(BCP: Implementing this is more difficult than it might seem.  E.g.,
+whenever a symlink is followed we might need to go through the same
+exercise.  And then we'd need to be able to deal with replicas that are not
+all one way or the other...)
+
+[Ivo Welch] I would give some examples in the man page of what an xxx
+specification is.
+
+[Ivo Welch] I would allow '--' switches, in addition to the '-' switch spec.
+
+[Ivo Welch] On OSX, create a link from ~/Library/Application Support/Unison
+to .unison, just for ease of finding it. It took me a long time to find my
+.prf files.
+
+[Ivo Welch] the OSX GUI front end should be clear which side (left or right)
+the local host and which side the remote host is.
 
 * USER INTERFACE
 * ==============
