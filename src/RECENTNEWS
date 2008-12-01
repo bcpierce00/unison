@@ -1,3 +1,11 @@
+CHANGES FROM VERSION 2.32.0
+
+* Bumped version number to reflect newly added preference
+
+
+
+
+-------------------------------
 CHANGES FROM VERSION 2.31.11
 
 * Fixed a bug that was causing new files to be created with
