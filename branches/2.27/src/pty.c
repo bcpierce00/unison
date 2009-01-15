@@ -15,7 +15,7 @@ extern void uerror (char * cmdname, value arg) Noreturn;
 #define HAS_OPENPTY 1
 #endif
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(__NetBSD__)
 #include <util.h>
 #define HAS_OPENPTY 1
 #endif

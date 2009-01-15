@@ -1,3 +1,32 @@
+CHANGES FROM VERSION 2.27.101
+
+* Applied a patch from Karl M to make the GTK2 version build with
+  OCaml 3.11 on Windows.
+
+* Added some extra debugging code to remote.ml to give more
+  informative error messages when people encounter the longstanding
+  "assert failed during file transfer" bug.
+
+* Applied patch from Antoine Reilles for NetBSD compilation
+
+* Makefile tidying
+
+
+-------------------------------
+CHANGES FROM VERSION 2.27.76
+
+* Applied a patch from Karl M to make the GTK2 version build with
+  OCaml 3.11 on Windows.
+
+* Added some extra debugging code to remote.ml to give more
+  informative error messages when people encounter the longstanding
+  "assert failed during file transfer" bug.
+
+* Applied patch from Antoine Reilles for NetBSD compilation
+
+* Makefile tidying
+
+
 CHANGES FROM VERSION 2.27.76
 
 Resizing the update window vertically no longer moves the status label. Fix contributed by Pedro Melo.
