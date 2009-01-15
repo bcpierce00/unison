@@ -91,8 +91,15 @@ ifeq ($(OSARCH),win32)
   EXEC_EXT=.exe
   OBJ_EXT=.obj
   CWD=.
-  CLIBS+=-cclib win32rc/unison.res
-  STATICLIBS+=-cclib win32rc/unison.res
+#  Fix suggested by Karl M, Jan 2009:
+#    "The new flexlink wrapper that OCaml 3.11 uses was gagging on the res
+#    file. So the res file has to be passed through flexlink untouched to
+#    the linker.  I only touched the MSVC side, but mingw may have the same
+#    issue."
+#  CLIBS+=-cclib win32rc/unison.res
+#  STATICLIBS+=-cclib win32rc/unison.res
+  CLIBS+=-cclib "-link win32rc/unison.res"
+  STATICLIBS+=-cclib "-link win32rc/unison.res"
   buildexecutable::
 	@echo Building for Windows
 else

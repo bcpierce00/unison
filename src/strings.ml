@@ -4,7 +4,7 @@
 let docs =
     ("about", ("About Unison", 
      "Unison File Synchronizer\n\
-      Version 2.31.4\n\
+      Version 2.32.1\n\
       \n\
       "))
 ::
@@ -1148,9 +1148,12 @@ let docs =
       \032-contactquietly    suppress the 'contacting server' message during startup\n\
       \032-copyprog xxx      external program for copying large files\n\
       \032-copyprogrest xxx  variant of copyprog for resuming partial transfers\n\
+      \032-copyquoterem xxx  add quotes to remote file name for copyprog (true/false/def\n\
+      ault)\n\
       \032-copythreshold n   use copyprog on files bigger than this (if >=0, in Kb)\n\
       \032-debug xxx         debug module xxx ('all' -> everything, 'verbose' -> more)\n\
       \032-diff xxx          command for showing differences between files\n\
+      \032-dontchmod         When set, never use the chmod system call\n\
       \032-dumbtty           do not change terminal settings in text UI (default true)\n\
       \032-fastcheck xxx     do fast update detection (true/false/default)\n\
       \032-forcepartial xxx  add a pattern to the forcepartial list\n\
@@ -1263,6 +1266,11 @@ let docs =
       \032         prefix; if it does not appear anywhere in the prefix or the\n\
       \032         suffix, it will be automatically placed at the beginning of the\n\
       \032         suffix.\n\
+      \032         One thing to be careful of: If the backuploc preference is set\n\
+      \032         to local, Unison will automatically ignore all files whose\n\
+      \032         prefix and suffix match backupprefix and backupsuffix. So be\n\
+      \032         careful to choose values for these preferences that are\n\
+      \032         sufficiently different from the names of your real files.\n\
       \032  backups \n\
       \032         Setting this flag to true is equivalent to setting\n\
       \032         backuplocation to local and backup to Name *.\n\
@@ -1305,6 +1313,14 @@ let docs =
       \032         will just be copyprog with one extra option (e.g., -partial,\n\
       \032         for rsync). The default setting invokes rsync with appropriate\n\
       \032         options--most users should not need to change it.\n\
+      \032  copyquoterem xxx\n\
+      \032         When set to true, this flag causes Unison to add an extra layer\n\
+      \032         of quotes to the remote path passed to the external copy\n\
+      \032         program. This is needed by rsync, for example, which internally\n\
+      \032         uses an ssh connection requiring an extra level of quoting for\n\
+      \032         paths containing spaces. When this flag is set to default,\n\
+      \032         extra quotes are added if the value of copyprog contains the\n\
+      \032         string rsync.\n\
       \032  copythreshold n\n\
       \032         A number indicating above what filesize (in kilobytes) Unison\n\
       \032         should use the external copying utility specified by copyprog.\n\
@@ -1341,6 +1357,12 @@ let docs =
       \032         exactly the same information as the printed and HTML manuals,\n\
       \032         modulo formatting. Use -doc topics to obtain a list of the\n\
       \032         names of the various sections that can be printed.\n\
+      \032  dontchmod \n\
+      \032         By default, Unison uses the 'chmod' system call to set the\n\
+      \032         permission bits of files after it has copied them. But in some\n\
+      \032         circumstances (and under some operating systems), the chmod\n\
+      \032         call always fails. Setting this preference completely prevents\n\
+      \032         Unison from ever calling chmod.\n\
       \032  dumbtty \n\
       \032         When set to true, this flag makes the text mode user interface\n\
       \032         avoid trying to change any of the terminal settings. (Normally,\n\
@@ -2560,8 +2582,8 @@ let docs =
       \n\
       "))
 ::
-    ("news", ("Changes in Version 2.31.4", 
-     "Changes in Version 2.31.4\n\
+    ("news", ("Changes in Version 2.32.1", 
+     "Changes in Version 2.32.1\n\
       \n\
       \032  Changes since 2.17:\n\
       \032    * Major rewrite and cleanup of the whole Mac OS X graphical user\n\
