@@ -74,10 +74,10 @@ INSTALLDIR = $(HOME)/bin/
 install: doinstall
 
 installtext: 
-	make -C .. installtext
+	$(MAKE) -C .. installtext
 
 text: 
-	make -C .. text
+	$(MAKE) -C .. text
 
 doinstall: $(NAME)$(EXEC_EXT)
 	-mv $(INSTALLDIR)/$(NAME)$(EXEC_EXT) /tmp/$(NAME)-$(shell echo $$$$)
