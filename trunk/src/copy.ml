@@ -671,9 +671,11 @@ let file rootFrom pathFrom rootTo fspathTo pathTo realPathTo
       end else if
            Prefs.read copyprog <> ""
         && Prefs.read copythreshold >= 0
-        && Props.length desc >= Uutil.Filesize.ofInt64
-                                   (Int64.mul (Int64.of_int 1000)
-                                     (Int64.of_int (Prefs.read copythreshold)))
+        && Props.length desc >= Uutil.Filesize.ofInt64 (Int64.of_int 1)
+        && Props.length desc >=
+             Uutil.Filesize.ofInt64
+               (Int64.mul (Int64.of_int 1000)
+                  (Int64.of_int (Prefs.read copythreshold)))
         && update = `Copy
       then begin
         (* First use the external program to copy the data fork *)

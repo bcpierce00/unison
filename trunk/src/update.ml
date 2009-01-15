@@ -21,6 +21,8 @@ let debugignore = Trace.debug "ignore"
   format is modified (see file props.ml for the new function) *)
 (*FIX: also change Fileinfo.stamp to drop the info.ctime component, next time the
   format is modified *)
+(*FIX: also make Jerome's suggested change about file times (see his mesg in
+       unison-pending email folder). *)
 let archiveFormat = 22
 
 module NameMap = MyMap.Make (Name)

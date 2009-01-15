@@ -17,6 +17,7 @@ See the file BUGS.txt for a list of currently open bugs.
      - The function that runs the external program should not grab stdin /
        stdout / stderr if Unison is running with the text UI. 
      - The confirmation step should offer to display the new merged file.
+     - (There are some older merge issues documented below)
 
 * Makefile for fstest
 
@@ -86,6 +87,15 @@ See the file BUGS.txt for a list of currently open bugs.
 
 **** When deleting a directory, we should *not* skip over Unison temp files
      in the process of listing children
+
+*** Un-writeable directories can't be copied.
+    The 'rename' operation at the end of Files.copy will fail (at least on
+    OSX) if the path being renamed points to a directory and that directory
+    (not the one containing it!) is not writeable by the user.  To fix this,
+    we'd need to notice when we are renaming a directory and temporarily
+    make it writeable just before the rename and then make it what it should
+    be just after.  But I don't feel like writing this bit of code right
+    now, to handle such a corner case.  [BCP, November 2008]
 
 *** make the ETA bar show which file is actually transferring bytes at the
     moment
