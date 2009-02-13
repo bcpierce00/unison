@@ -1748,12 +1748,17 @@ let rec replaceArchiveRec fspath path arch paranoid deleteBadTempFiles =
         let dig' = Os.fingerprint fspath path info in
         let ress' = Osx.stamp info.Fileinfo.osX in
         if dig' <> dig then begin
-          if deleteBadTempFiles then Os.delete fspath path; 
+          let savepath = Path.addSuffixToFinalName path "-bad" in
+          (* if deleteBadTempFiles then Os.delete fspath path; *)
+          if deleteBadTempFiles then
+            Os.rename "save temp" fspath path fspath savepath; 
           raise (Util.Transient (Printf.sprintf
             "The file %s was incorrectly transferred  (fingerprint mismatch in %s)%s"
             (Path.toString path)
             (Os.reasonForFingerprintMismatch dig dig')
-            (if deleteBadTempFiles then " -- temp file removed" else "")));
+            (if deleteBadTempFiles
+               then " -- temp file saved as" ^ Path.toString savepath
+               else "")));
         end;
         ArchiveFile (Props.override info.Fileinfo.desc desc,
                      dig, Fileinfo.stamp info, ress')
