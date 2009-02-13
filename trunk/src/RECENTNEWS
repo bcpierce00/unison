@@ -1,3 +1,9 @@
+CHANGES FROM VERSION 2.32.2
+
+* Don't delete the temp file when a transfer fails due to a
+  fingerprint mismatch (so that we can have a look and see why!)
+
+-------------------------------
 CHANGES FROM VERSION 2.32.1
 
 * Applied a patch from Karl M to make the GTK2 version build with
