@@ -984,41 +984,60 @@ let immutable = Pred.create "immutable" ~advanced:true
 let immutablenot = Pred.create "immutablenot" ~advanced:true
    ("This preference overrides {\\tt immutable}.")
 
-let bigFileLength = 10 * 1024
-let bigFileLengthFS = Uutil.Filesize.ofInt bigFileLength
-let smallFileLength = 1024
-let fileLength = ref 0
-let t0 = ref 0.
+(** Status display **)
 
-(* Note that we do *not* want to do any status displays from the server
-   side, since this will cause the server to block until the client has
-   finished its own update detection and can receive and acknowledge
-   the status display message -- thus effectively serializing the client 
-   and server! *)
-let showStatusAddLength info =
-  if not !Trace.runningasserver then begin
-    let len1 = Props.length info.Fileinfo.desc in
-    let len2 = Osx.ressLength info.Fileinfo.osX.Osx.ressInfo in
-    if len1 >= bigFileLengthFS || len2 >= bigFileLengthFS then
-      fileLength := bigFileLength
-    else
-      fileLength :=
-        min bigFileLength
-          (!fileLength + Uutil.Filesize.toInt len1 + Uutil.Filesize.toInt len2)
-  end
+(* BCP (3/09) We used to try to be smart about showing status messages
+   at regular intervals, but people seem to find this confusing.
+   Let's replace all this with something simpler -- just show directories as
+   they are scanned...  (but I'll leave the code in for now, in case we find
+   we want to restore the old behavior). *)
+(*
+  let bigFileLength = 10 * 1024
+  let bigFileLengthFS = Uutil.Filesize.ofInt bigFileLength
+  let smallFileLength = 1024
+  let fileLength = ref 0
+  let t0 = ref 0.
 
-let showStatus path =
-  if not !Trace.runningasserver then begin
-    fileLength := !fileLength + smallFileLength;
-    if !fileLength >= bigFileLength then begin
-      fileLength := 0;
-      let t = Unix.gettimeofday () in
-      if t -. !t0 > 0.05 then begin
-        Trace.statusDetail ("scanning " ^ Path.toString path);
-        t0 := t
+  (* Note that we do *not* want to do any status displays from the server
+     side, since this will cause the server to block until the client has
+     finished its own update detection and can receive and acknowledge
+     the status display message -- thus effectively serializing the client 
+     and server! *)
+  let showStatusAddLength info =
+    if not !Trace.runningasserver then begin
+      let len1 = Props.length info.Fileinfo.desc in
+      let len2 = Osx.ressLength info.Fileinfo.osX.Osx.ressInfo in
+      if len1 >= bigFileLengthFS || len2 >= bigFileLengthFS then
+        fileLength := bigFileLength
+      else
+        fileLength :=
+          min bigFileLength
+           (!fileLength + Uutil.Filesize.toInt len1 + Uutil.Filesize.toInt len2)
+    end
+
+  let showStatus path =
+    if not !Trace.runningasserver then begin
+      fileLength := !fileLength + smallFileLength;
+      if !fileLength >= bigFileLength then begin
+        fileLength := 0;
+        let t = Unix.gettimeofday () in
+        if t -. !t0 > 0.05 then begin
+          Trace.statusDetail ("scanning... got to " ^ Path.toString path);
+          t0 := t
+        end
       end
     end
+*)
+
+let showStatus path = ()
+let showStatusAddLength info = ()
+
+let showStatusDir path =
+  if not !Trace.runningasserver then begin
+        Trace.statusDetail ("scanning... " ^ Path.toString path);
   end
+
+(* ------- *)
 
 let symlinkInfo =
   Common.Previous (`SYMLINK, Props.dummy, Os.fullfingerprint_dummy, Osx.ressDummy)
@@ -1079,7 +1098,7 @@ let checkContentsChange
                  (Util.msg "archStamp is ctime (%f)" stamp;
                   Util.msg " / info.ctime (%f)" info.Fileinfo.ctime)
            end;
-           Util.msg " / times: %f - %f - %b"
+           Util.msg " / times: %f = %f... %b"
              (Props.time archDesc) (Props.time info.Fileinfo.desc)
              (Props.same_time info.Fileinfo.desc archDesc);
            Util.msg " / lengths: %s - %s"
@@ -1122,10 +1141,15 @@ let checkContentsChange
              (Os.fullfingerprint_to_string archDig)
              (Os.fullfingerprint_to_string newDigest));
     if archDig = newDigest then begin
-      Some (ArchiveFile
-              (Props.setTime archDesc (Props.time info.Fileinfo.desc),
-               archDig, Fileinfo.stamp info, Fileinfo.ressStamp info)),
-      checkPropChange info archive archDesc
+      let newprops = Props.setTime archDesc (Props.time info.Fileinfo.desc) in
+      let newarch =
+        ArchiveFile
+
+          (newprops, archDig, Fileinfo.stamp info, Fileinfo.ressStamp info) in
+      debugverbose (fun() ->
+        Util.msg "  Contents match: update archive with new time...%f\n" 
+                   (Props.time newprops));      
+      Some newarch, checkPropChange info archive archDesc
     end else begin
       debug (fun() -> Util.msg "  Updated file\n");
       None,
@@ -1203,6 +1227,7 @@ let rec buildUpdateChildren
     fspath path (archChi: archive NameMap.t) fastCheck
     : archive NameMap.t option * (Name.t * Common.updateItem) list * bool
     =
+  showStatusDir path;
   let t = Trace.startTimerQuietly
             (Printf.sprintf "checking %s" (Path.toString path)) in
   let skip =

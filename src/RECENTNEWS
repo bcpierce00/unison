@@ -1,3 +1,20 @@
+CHANGES FROM VERSION 2.32.4
+
+* Text UI now includes the current time in its completion message
+
+* Fix a small bug that was affecting mainly windows users.  We need to
+  commit the archives at the end of the sync even if there are no
+  updates to propagate because some files (in fact, if we've just
+  switched to DST on windows, a LOT of files) might have new modtimes
+  in the archive.  (Changed the text UI only.  It's less clear where
+  to change the GUI.)
+
+* Small improvement to text UI "scanning..." messages, to print just
+  directories (hopefully making it clearer that individual files are
+  not necessarily being fingerprinted).
+
+
+-------------------------------
 CHANGES FROM VERSION 2.32.2
 
 * Don't delete the temp file when a transfer fails due to a
