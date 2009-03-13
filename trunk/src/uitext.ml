@@ -492,11 +492,14 @@ let rec interactAndPropagateChanges reconItemList
     let trans = updatesToDo - failures in
     let summary =
       Printf.sprintf
-       "Synchronization %s  (%d item%s transferred, %d skipped, %d failure%s)"
+       "Synchronization %s at %s  (%d item%s transferred, %d skipped, %d failed)"
        (if failures=0 then "complete" else "incomplete")
+       (let tm = Util.localtime (Util.time()) in
+        Printf.sprintf "%02d:%02d:%02d"
+          tm.Unix.tm_hour tm.Unix.tm_min tm.Unix.tm_sec)
        trans (if trans=1 then "" else "s")
        skipped
-       failures (if failures=1 then "" else "s") in
+       failures in
     Trace.log (summary ^ "\n");
     if skipped>0 then
       Safelist.iter
@@ -509,14 +512,18 @@ let rec interactAndPropagateChanges reconItemList
       Safelist.iter
         (fun p -> alwaysDisplayAndLog ("  failed: " ^ (Path.toString p)))
         failedPaths;
-    (skipped > 0, failures > 0, failedPaths)
-  in
-  if updatesToDo = 0 then
-    (display "No updates to propagate\n";
-     (skipped > 0, false, []))
-  else if proceed=ProceedImmediately then
+    (skipped > 0, failures > 0, failedPaths) in
+  if updatesToDo = 0 then begin
+    display "No updates to propagate\n";
+    (* BCP (3/09): We need to commit the archives even if there are
+       no updates to propagate because some files (in fact, if we've
+       just switched to DST on windows, a LOT of files) might have new
+       modtimes in the archive. *)
+    Update.commitUpdates ();
+    (skipped > 0, false, [])
+  end else if proceed=ProceedImmediately then begin
     doit()
-  else begin
+  end else begin
     displayWhenInteractive "\nProceed with propagating updates? ";
     selectAction
       (* BCP: I find it counterintuitive that every other prompt except this one
