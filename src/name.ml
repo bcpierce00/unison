@@ -27,4 +27,4 @@ let fromString s =
   s
 
 let hash n =
-  Hashtbl.hash (if Case.insensitive () then String.lowercase n else n)
+  Hashtbl.hash (if Case.insensitive () then String.lowercase (Case.normalize n) else n)

@@ -1,3 +1,11 @@
+CHANGES FROM VERSION 2.32.5
+
+* Ignore one hour differences for deciding whether a file may have
+  been updated.  This avoids slow update detection after daylight
+  saving time changes under Windows.  This makes it slightly more
+  likely to miss an update, but that should be safe enough.
+
+-------------------------------
 CHANGES FROM VERSION 2.32.4
 
 * Text UI now includes the current time in its completion message

@@ -562,8 +562,11 @@ let check fspath path stats t =
    we have to compare then using "similar". *)
 let same p p' =
   match p, p' with
-    Synced _, Synced _ -> similar p p'
-  | _                  -> extract p = extract p'
+    Synced _, Synced _ ->
+      similar p p'
+  | _                  ->
+      let delta = extract p -. extract p' in
+      delta = 0. || delta = 3600. || delta = -3600.
 
 let init _ = ()
 

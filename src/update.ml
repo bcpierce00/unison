@@ -17,8 +17,9 @@ let debugignore = Trace.debug "ignore"
    archive changes: old archives will then automatically be discarded.  (We
    do not use the unison version number for this because usually the archive
    representation does not change between unison versions.) *)
-(*FIX: change the approximate function in props.ml next time the
+(*FIX: Use similar_correct in props.ml next time the
   format is modified (see file props.ml for the new function) *)
+(*FIX: use Case.normalize next time the format is modified *)
 (*FIX: also change Fileinfo.stamp to drop the info.ctime component, next time the
   format is modified *)
 (*FIX: also make Jerome's suggested change about file times (see his mesg in
