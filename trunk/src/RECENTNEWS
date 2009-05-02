@@ -1,11 +1,19 @@
+CHANGES FROM VERSION 2.32.6
+
+* Update copyright notices and add GPLv3 boilerplate to .ml files
+  (.mli files are left with a short copyright line, to reduce clutter)
+
+-------------------------------
 CHANGES FROM VERSION 2.32.5
+
+* Update copyright notices and add GPLv3 boilerplate to .ml files
+  (.mli files are left with a short copyright line, to reduce clutter)
 
 * Ignore one hour differences for deciding whether a file may have
   been updated.  This avoids slow update detection after daylight
   saving time changes under Windows.  This makes it slightly more
   likely to miss an update, but that should be safe enough.
 
--------------------------------
 CHANGES FROM VERSION 2.32.4
 
 * Text UI now includes the current time in its completion message
@@ -39,19 +47,10 @@ CHANGES FROM VERSION 2.32.1
   shortcut-copying completely unrelated files that happen to also have
   zero length!).
 
-
-
-
-
-
-
 -------------------------------
 CHANGES FROM VERSION 2.32.0
 
 * Bumped version number to reflect newly added preference
-
-
-
 
 -------------------------------
 CHANGES FROM VERSION 2.31.11
@@ -69,34 +68,35 @@ CHANGES FROM VERSION 2.31.11
 
 * Add some suggestions to TODO file
 
-
-
-
-
-
 -------------------------------
 CHANGES FROM VERSION 2.31.10
 
 * Another slight tweak.
-
-
-
-
 
 -------------------------------
 CHANGES FROM VERSION 2.31.9
 
 * Slight tweak to the last commit, suggested by Rasmus.
 
-
-
-
 -------------------------------
 CHANGES FROM VERSION 2.31.8
 
 * (Forgot to add a couple of new files.)
 
+-------------------------------
+CHANGES FROM VERSION 2.31.5
 
+* A special hack for Rasmus, who has a special situation that requires
+  the utimes-setting program to run 'setuid root' (and we do not want
+  all of Unison to run setuid, so we just spin off an external utility
+  to do it).  This functionality is disabled by default and requires
+  editing the source code (changing 'false' to 'true' on line 496 of
+  props.ml) and recompiling to enable.  If there are other people that
+  want it, we can easily make it accessible using a preference
+  instead, but I prefer not to add a preference until someone else
+  requests it, to avoid creating an incompatible version.
+
+* Logging tweak.
 
 -------------------------------
 CHANGES FROM VERSION 2.31.5
@@ -113,44 +113,9 @@ CHANGES FROM VERSION 2.31.5
 
 * Logging tweak.
 
+* Resizing the update window vertically no longer moves the status
+  label. Fix contributed by Pedro Melo.
 
-
--------------------------------
-CHANGES FROM VERSION 2.31.5
-
-* A special hack for Rasmus, who has a special situation that requires
-  the utimes-setting program to run 'setuid root' (and we do not want
-  all of Unison to run setuid, so we just spin off an external utility
-  to do it).  This functionality is disabled by default and requires
-  editing the source code (changing 'false' to 'true' on line 496 of
-  props.ml) and recompiling to enable.  If there are other people that
-  want it, we can easily make it accessible using a preference
-  instead, but I prefer not to add a preference until someone else
-  requests it, to avoid creating an incompatible version.
-
-* Logging tweak.
-
-
-
--------------------------------
-CHANGES FROM VERSION 2.31.5
-
-* A special hack for Rasmus, who has a special situation that requires
-  the utimes-setting program to run 'setuid root' (and we do not want
-  all of Unison to run setuid, so we just spin off an external utility
-  to do it).  This functionality is disabled by default and requires
-  editing the source code (changing 'false' to 'true' on line 496 of
-  props.ml) and recompiling to enable.  If there are other people that
-  want it, we can easily make it accessible using a preference
-  instead, but I prefer not to add a preference until someone else
-  requests it, to avoid creating an incompatible version.
-
-* Logging tweak.
-
-
-CHANGES FROM VERSION 2.31.5
-
-Resizing the update window vertically no longer moves the status label. Fix contributed by Pedro Melo.
 -------------------------------
 
 CHANGES FROM VERSION 2.31.4
@@ -194,15 +159,10 @@ CHANGES FROM VERSION 2.30.4
 
 * Record some current TODO items
 
-
-
-
 -------------------------------
 CHANGES FROM VERSION 2.30.3
 
 * Update docs
-
-
 
 -------------------------------
 CHANGES FROM VERSION 2.30.2
@@ -219,13 +179,11 @@ CHANGES FROM VERSION 2.30.0
 
 * A better fix for the "single file transfer failed in large directory" issue.
 
-
 -------------------------------
 CHANGES FROM VERSION 2.29.9
 
 * Trying a possible fix for the "assert failure in remote.ml" bug
   (thanks Jerome!)
-
 
 -------------------------------
 CHANGES FROM VERSION 2.29.8
@@ -236,7 +194,6 @@ CHANGES FROM VERSION 2.29.8
   still supported, for backwards compatibility, but they do not appear
   in the documentation.
 
-
 -------------------------------
 CHANGES FROM VERSION 2.29.7
 
@@ -253,9 +210,6 @@ CHANGES FROM VERSION 2.29.7
   whether a partially transferred file already exists or not.  (Rsync
   doesn't seem to care about this, but other utilities may.)
 
-
-
-
 -------------------------------
 CHANGES FROM VERSION 2.29.7
 
@@ -271,15 +225,11 @@ CHANGES FROM VERSION 2.29.7
   command lines for invoking the external copy utility depending on
   whether a partially transferred file already exists or not.  (Rsync
   doesn't seem to care about this, but other utilities may.)
-
-
-
 
 -------------------------------
 CHANGES FROM VERSION 2.29.6
 
 * Fix a small bug in the external copyprog setup.
-
 
 -------------------------------
 CHANGES FROM VERSION 2.29.5
@@ -288,8 +238,6 @@ CHANGES FROM VERSION 2.29.5
   spent the time to separate preferences into Basic and Advanced!
   This should hopefully make Unison a little more approachable for new
   users.)
-
-
 
 -------------------------------
 CHANGES FROM VERSION 2.29.4
@@ -303,7 +251,6 @@ CHANGES FROM VERSION 2.29.4
 
 * Updated copyright notices to 2008.  :-)
 
-
 -------------------------------
 CHANGES FROM VERSION 2.29.3
 
@@ -316,7 +263,6 @@ CHANGES FROM VERSION 2.29.3
 CHANGES FROM VERSION 2.29.2
 
 * Automatically supply "user@" in argument to external copy program.
-
 
 -------------------------------
 CHANGES FROM VERSION 2.29.1
@@ -363,12 +309,10 @@ moment.
   Unison is run, it will continue filling in this temporary directory,
   skipping transferring files that it finds are already there.  
 
-
 -------------------------------
 CHANGES FROM VERSION 2.28.51
 
 * Propagating changes from 2.27 branch
-
 
 -------------------------------
 CHANGES FROM VERSION 2.28.51
@@ -512,7 +456,6 @@ CHANGES FROM VERSION 2.28.5
 
 * Add couple of missing files.
 
-
 -------------------------------
 CHANGES FROM VERSION 2.28.4
 
@@ -542,7 +485,6 @@ CHANGES FROM VERSION 2.28.1
 * Small fix to ctime (non-)handling in update detection under windows
   with fastcheck.  This *might* fix the bug that Karl M. has reported.  
   (Copying fix into trunk.)
-
 
 -------------------------------
 CHANGES FROM VERSION 2.28.-2

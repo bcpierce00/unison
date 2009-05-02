@@ -250,6 +250,16 @@ should strip symbols from binary files in 'make exportnative'
 * SMALL FUNCTIONALITY IMPROVEMENTS
 * ================================
 
+**** When I tell unison to ignore a file whose name has a comma in it,
+    then unison adds to the preferences file a line like:
+     ignore = Path{this file, has a comma}
+    which gets interpreted as "this file" OR " has a comma".
+    unison should be escaping that comma and write it as \, instead.
+
+**** Please let me say
+       root = ~/bla
+     instead of requiring me to give an absolute path to my home dir.
+
 **** The archive should indicate whether it is case-dependant or not.
      (This is important for correctness -- if the case-insensitive flag is
      set differently on different runs, things can get very confused!)
