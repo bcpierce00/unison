@@ -4,7 +4,7 @@
 let docs =
     ("about", ("About Unison", 
      "Unison File Synchronizer\n\
-      Version 2.32.7\n\
+      Version 2.32.9\n\
       \n\
       "))
 ::
@@ -2582,8 +2582,8 @@ let docs =
       \n\
       "))
 ::
-    ("news", ("Changes in Version 2.32.7", 
-     "Changes in Version 2.32.7\n\
+    ("news", ("Changes in Version 2.32.9", 
+     "Changes in Version 2.32.9\n\
       \n\
       \032  Changes since 2.31:\n\
       \032    * Small user interface changes\n\
@@ -2668,9 +2668,8 @@ let docs =
       \032           about suggesting a workaround (running once with fastcheck\n\
       \032           set to false). The failure message has been changed to give\n\
       \032           this advice.\n\
-      \032         + Many improvements to the OS X GUI (thanks to Alan Schmitt and\n\
-      \032           Craig Federighi), including a very nice new \"nested\n\
-      \032           directory\" display style and per-file progress bars.\n\
+      \032         + Further improvements to the OS X GUI (thanks to Alan Schmitt\n\
+      \032           and Craig Federighi).\n\
       \032    * Very preliminary support for triggering Unison from an external\n\
       \032      filesystem-watching utility. The current implementation is very\n\
       \032      simple, not efficient, and almost completely untested--not ready\n\
@@ -4036,7 +4035,7 @@ let docs =
       \n\
       References\n\
       \n\
-      \032  1. file://localhost/Users/bcpierce/current/unison/trunk/doc/temp.html#ssh-win\n\
+      \032  1. file://localhost/Users/bcpierce/current/unison/branches/2.32/doc/temp.html#ssh-win\n\
       \032  2. http://pauillac.inria.fr/~maranget/hevea/index.html\n\
       "))
 ::
