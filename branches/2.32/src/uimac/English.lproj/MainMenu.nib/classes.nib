@@ -1,0 +1,106 @@
+{
+    IBClasses = (
+        {
+            ACTIONS = {
+                copyLR = id; 
+                copyRL = id; 
+                forceNewer = id; 
+                forceOlder = id; 
+                ignoreExt = id; 
+                ignoreName = id; 
+                ignorePath = id; 
+                leaveAlone = id; 
+                merge = id; 
+                revert = id; 
+                selectConflicts = id; 
+            }; 
+            CLASS = FirstResponder; 
+            LANGUAGE = ObjC; 
+            SUPERCLASS = NSObject; 
+        }, 
+        {
+            ACTIONS = {
+                cancelProfileButton = id; 
+                createButton = id; 
+                endPasswordWindow = id; 
+                installCommandLineTool = id; 
+                onlineHelp = id; 
+                openButton = id; 
+                raiseAboutWindow = id; 
+                restartButton = id; 
+                saveProfileButton = id; 
+                syncButton = id; 
+            }; 
+            CLASS = MyController; 
+            LANGUAGE = ObjC; 
+            OUTLETS = {
+                ConnectingView = NSView; 
+                aboutWindow = NSWindow; 
+                chooseProfileView = NSView; 
+                detailsTextView = NSTextView; 
+                mainWindow = NSWindow; 
+                passwordCancelButton = NSButton; 
+                passwordText = NSTextField; 
+                passwordWindow = NSWindow; 
+                preferencesController = PreferencesController; 
+                preferencesView = NSView; 
+                profileController = ProfileController; 
+                statusText = NSTextField; 
+                tableView = ReconTableView; 
+                updatesText = NSTextField; 
+                updatesView = NSView; 
+                versionText = NSTextField; 
+            }; 
+            SUPERCLASS = NSObject; 
+        }, 
+        {
+            ACTIONS = {anyEnter = id; localClick = id; remoteClick = id; }; 
+            CLASS = PreferencesController; 
+            LANGUAGE = ObjC; 
+            OUTLETS = {
+                cancelButton = NSButton; 
+                firstRootText = NSTextField; 
+                localButtonCell = NSButtonCell; 
+                profileNameText = NSTextField; 
+                remoteButtonCell = NSButtonCell; 
+                saveButton = NSButton; 
+                secondRootHost = NSTextField; 
+                secondRootText = NSTextField; 
+                secondRootUser = NSTextField; 
+            }; 
+            SUPERCLASS = NSObject; 
+        }, 
+        {
+            CLASS = ProfileController; 
+            LANGUAGE = ObjC; 
+            OUTLETS = {tableView = NSTableView; }; 
+            SUPERCLASS = NSObject; 
+        }, 
+        {
+            CLASS = ProfileTableView; 
+            LANGUAGE = ObjC; 
+            OUTLETS = {myController = MyController; }; 
+            SUPERCLASS = NSTableView; 
+        }, 
+        {CLASS = ReconItem; LANGUAGE = ObjC; SUPERCLASS = NSObject; }, 
+        {
+            ACTIONS = {
+                copyLR = id; 
+                copyRL = id; 
+                forceNewer = id; 
+                forceOlder = id; 
+                ignoreExt = id; 
+                ignoreName = id; 
+                ignorePath = id; 
+                leaveAlone = id; 
+                merge = id; 
+                revert = id; 
+                selectConflicts = id; 
+            }; 
+            CLASS = ReconTableView; 
+            LANGUAGE = ObjC; 
+            SUPERCLASS = NSTableView; 
+        }
+    ); 
+    IBVersion = 1; 
+}

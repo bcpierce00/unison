@@ -1,0 +1,77 @@
+(* Unison file synchronizer: src/update.mli *)
+(* Copyright 1999-2009, Benjamin C. Pierce (see COPYING for details) *)
+
+module NameMap : Map.S with type key = Name.t
+
+type archive =
+    ArchiveDir of Props.t * archive NameMap.t
+  | ArchiveFile of Props.t * Os.fullfingerprint * Fileinfo.stamp * Osx.ressStamp
+  | ArchiveSymlink of string
+  | NoArchive
+
+(* Calculate a canonical name for the set of roots to be synchronized.  This
+   will be used in constructing the archive name for each root. Note, all
+   the roots in this canonical name will contain hostnames, even local
+   roots, so the roots are re-sorted. *)
+val storeRootsName : unit -> unit
+
+(* Retrieve the actual names of the roots *)
+val getRootsName : unit -> string 
+
+val findOnRoot :
+  Common.root -> Path.t list -> Common.updateItem list Lwt.t
+
+(* Structures describing dirty files/dirs (1 per path given in the -path preference) *)
+val findUpdates :
+  unit -> Common.updateItem list Common.oneperpath
+
+(* Take a tree of equal update contents and update the archive accordingly. *)
+val markEqual :
+  (Name.t, Common.updateContent * Common.updateContent) Tree.t -> unit
+
+(* Commit in memory the last archive updates, or rollback if an exception is
+   raised.  A commit function must have been specified on both sides before
+   finishing the transaction. *)
+type transaction
+val transaction : (transaction -> unit Lwt.t) -> unit Lwt.t
+
+(* Update a part of an archive *)
+val updateArchive :
+  Common.root -> Path.t -> Common.updateItem -> transaction ->
+  (Path.local * archive) Lwt.t
+(* Replace a part of an archive by another archive *)
+val replaceArchive :
+  Common.root -> Path.t -> (Fspath.t * Path.local) option ->
+  archive -> transaction -> bool -> bool -> Path.local Lwt.t
+(* Update only some permissions *)
+val updateProps :
+  Common.root -> Path.t -> Props.t option -> Common.updateItem ->
+  transaction -> Path.local Lwt.t
+
+(* Check that no updates has taken place in a given place of the filesystem *)
+val checkNoUpdates :
+ Common.root -> Path.t -> Common.updateItem -> unit Lwt.t
+
+(* Save to disk the archive updates *)
+val commitUpdates : unit -> unit
+
+(* In the user interface, it's helpful to know whether unison was started
+   with no archives.  (Then we can display file status as 'unknown' rather
+   than 'new', which seems friendlier for new users.)  This flag gets set
+   false by the crash recovery code when it determines that no archives were
+   present. *)
+val foundArchives : bool ref
+
+(* Unlock the archives, if they are locked. *)
+val unlockArchives : unit -> unit Lwt.t
+
+(* Translate a global path into a local path using the archive *)
+val translatePath : Common.root -> Path.t -> Path.local Lwt.t
+val translatePathLocal : Fspath.t -> Path.t -> Path.local
+
+(* Are we checking fast, or carefully? *)
+val useFastChecking : unit -> bool
+
+(* Print the archive to the current formatter (see Format) *)
+val showArchive: archive -> unit
+
