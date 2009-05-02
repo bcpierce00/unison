@@ -1,5 +1,20 @@
 (* Unison file synchronizer: src/update.ml *)
-(* Copyright 1999-2008 (see COPYING for details) *)
+(* Copyright 1999-2009, Benjamin C. Pierce 
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*)
+
 
 open Common
 let (>>=)  = Lwt.(>>=)
@@ -650,7 +665,7 @@ let ignorelocks =
     ("When this preference is set, Unison will ignore any lock files "
      ^ "that may have been left over from a previous run of Unison that "
      ^ "was interrupted while reading or writing archive files; by default, "
-     ^ "when Unison sees these lock files it will stop and request manual"
+     ^ "when Unison sees these lock files it will stop and request manual "
      ^ "intervention.  This "
      ^ "option should be set only if you are {\\em positive} that no other "
      ^ "instance of Unison might be concurrently accessing the same archive "

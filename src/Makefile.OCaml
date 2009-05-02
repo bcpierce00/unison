@@ -155,6 +155,8 @@ else
 endif
 endif
 
+MINOSXVERSION=10.5
+
 # NOTE: the OCAMLLIBDIR is not getting passed correctly?
 # The two cases for cltool are needed because Xcode 2.1+
 # builds in build/Default/, and earlier versions use build/
@@ -162,9 +164,9 @@ macexecutable: $(NAME)-blob.o
 #	sed -e's/@@VERSION@@/$(VERSION)/' $(UIMACDIR)/Info.plist.template > $(UIMACDIR)/Info.plist
 	(cd $(UIMACDIR); xcodebuild OCAMLLIBDIR="$(OCAMLLIBDIR)" SYMROOT=build)
 	if [ -e $(UIMACDIR)/build/Default ]; then \
-	  gcc -mmacosx-version-min=10.4 $(UIMACDIR)/cltool.c -o $(UIMACDIR)/build/Default/Unison.app/Contents/MacOS/cltool -framework Carbon; \
+	  gcc -mmacosx-version-min=$(MINOSXVERSION) $(UIMACDIR)/cltool.c -o $(UIMACDIR)/build/Default/Unison.app/Contents/MacOS/cltool -framework Carbon; \
 	else \
-	  gcc -mmacosx-version-min=10.4 $(UIMACDIR)/cltool.c -o $(UIMACDIR)/build/Unison.app/Contents/MacOS/cltool -framework Carbon; \
+	  gcc -mmacosx-version-min=$(MINOSXVERSION) $(UIMACDIR)/cltool.c -o $(UIMACDIR)/build/Unison.app/Contents/MacOS/cltool -framework Carbon; \
 	fi
 
 # OCaml objects for the bytecode version

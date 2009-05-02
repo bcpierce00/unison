@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/fspath.mli *)
-(* Copyright 1999-2008 (see COPYING for details) *)
+(* Copyright 1999-2009, Benjamin C. Pierce (see COPYING for details) *)
 
 (* Defines an abstract type of absolute filenames (fspaths)                  *)
 
