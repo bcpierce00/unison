@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/sortri.mli *)
-(* Copyright 1999-2008 (see COPYING for details) *)
+(* Copyright 1999-2009, Benjamin C. Pierce (see COPYING for details) *)
 
 (* Sort a list of recon items according to the current setting of 
    various preferences (defined in sort.ml, and accessible from the

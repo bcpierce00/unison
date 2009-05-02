@@ -669,7 +669,7 @@
 			baseConfigurationReference = 2E282CCC0D9AE2E800439D01 /* ExternalSettings.xcconfig */;
 			buildSettings = {
 				LIBRARY_SEARCH_PATHS = "";
-				SDKROOT = /Developer/SDKs/MacOSX10.4u.sdk;
+				SDKROOT = /Developer/SDKs/MacOSX10.5.sdk;
 				USER_HEADER_SEARCH_PATHS = $OCAMLLIBDIR;
 			};
 			name = Development;
