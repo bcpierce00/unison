@@ -4,7 +4,7 @@
 let docs =
     ("about", ("About Unison", 
      "Unison File Synchronizer\n\
-      Version 2.32.1\n\
+      Version 2.32.7\n\
       \n\
       "))
 ::
@@ -1154,7 +1154,7 @@ let docs =
       \032-debug xxx         debug module xxx ('all' -> everything, 'verbose' -> more)\n\
       \032-diff xxx          command for showing differences between files\n\
       \032-dontchmod         When set, never use the chmod system call\n\
-      \032-dumbtty           do not change terminal settings in text UI (default true)\n\
+      \032-dumbtty           do not change terminal settings in text UI\n\
       \032-fastcheck xxx     do fast update detection (true/false/default)\n\
       \032-forcepartial xxx  add a pattern to the forcepartial list\n\
       \032-height n          height (in lines) of main window in graphical interface\n\
@@ -1458,7 +1458,7 @@ let docs =
       \032         that may have been left over from a previous run of Unison that\n\
       \032         was interrupted while reading or writing archive files; by\n\
       \032         default, when Unison sees these lock files it will stop and\n\
-      \032         request manualintervention. This option should be set only if\n\
+      \032         request manual intervention. This option should be set only if\n\
       \032         you are positive that no other instance of Unison might be\n\
       \032         concurrently accessing the same archive files (e.g., because\n\
       \032         there was only one instance of unison running and it has just\n\
@@ -2582,16 +2582,133 @@ let docs =
       \n\
       "))
 ::
-    ("news", ("Changes in Version 2.32.1", 
-     "Changes in Version 2.32.1\n\
+    ("news", ("Changes in Version 2.32.7", 
+     "Changes in Version 2.32.7\n\
+      \n\
+      \032  Changes since 2.31:\n\
+      \032    * Small user interface changes\n\
+      \032         + Small change to text UI \"scanning...\" messages, to print just\n\
+      \032           directories (hopefully making it clearer that individual\n\
+      \032           files are not necessarily being fingerprinted).\n\
+      \032    * Minor fixes and improvements:\n\
+      \032         + Ignore one hour differences when deciding whether a file may\n\
+      \032           have been updated. This avoids slow update detection after\n\
+      \032           daylight saving time changes under Windows. This makes Unison\n\
+      \032           slightly more likely to miss an update, but it should be safe\n\
+      \032           enough.\n\
+      \032         + Fix a small bug that was affecting mainly windows users. We\n\
+      \032           need to commit the archives at the end of the sync even if\n\
+      \032           there are no updates to propagate because some files (in\n\
+      \032           fact, if we've just switched to DST on windows, a LOT of\n\
+      \032           files) might have new modtimes in the archive. (Changed the\n\
+      \032           text UI only. It's less clear where to change the GUI.)\n\
+      \032         + Don't delete the temp file when a transfer fails due to a\n\
+      \032           fingerprint mismatch (so that we can have a look and see\n\
+      \032           why!) We've also added more debugging code togive more\n\
+      \032           informative error messages when we encounter the dreaded and\n\
+      \032           longstanding \"assert failed during file transfer\" bug\n\
+      \n\
+      \032  Changes since 2.27:\n\
+      \032    * If Unison is interrupted during a directory transfer, it will now\n\
+      \032      leave the partially transferred directory intact in a temporary\n\
+      \032      location. (This maintains the invariant that new files/directories\n\
+      \032      are transferred either completely or not at all.) The next time\n\
+      \032      Unison is run, it will continue filling in this temporary\n\
+      \032      directory, skipping transferring files that it finds are already\n\
+      \032      there.\n\
+      \032    * We've added experimental support for invoking an external file\n\
+      \032      transfer tool for whole-file copies instead of Unison's built-in\n\
+      \032      transfer protocol. Three new preferences have been added:\n\
+      \032         + copyprog is a string giving the name (and command-line\n\
+      \032           switches, if needed) of an external program that can be used\n\
+      \032           to copy large files efficiently. By default, rsync is\n\
+      \032           invoked, but other tools such as scp can be used instead by\n\
+      \032           changing the value of this preference. (Although this is not\n\
+      \032           its primary purpose, rsync is actually a pretty fast way of\n\
+      \032           copying files that don't already exist on the receiving\n\
+      \032           host.) For files that do already exist on (but that have been\n\
+      \032           changed in one replica), Unison will always use its built-in\n\
+      \032           implementation of the rsync algorithm.\n\
+      \032         + Added a \"copyprogrest\" preference, so that we can give\n\
+      \032           different command lines for invoking the external copy\n\
+      \032           utility depending on whether a partially transferred file\n\
+      \032           already exists or not. (Rsync doesn't seem to care about\n\
+      \032           this, but other utilities may.)\n\
+      \032         + copythreshold is an integer (-1 by default), indicating above\n\
+      \032           what filesize (in megabytes) Unison should use the external\n\
+      \032           copying utility specified by copyprog. Specifying 0 will\n\
+      \032           cause ALL copies to use the external program; a negative\n\
+      \032           number will prevent any files from using it. (Default is -1.)\n\
+      \032      Thanks to Alan Schmitt for a huge amount of hacking and to an\n\
+      \032      anonymous sponsor for suggesting and underwriting this extension.\n\
+      \032    * Small improvements:\n\
+      \032         + Added a new preference, dontchmod. By default, Unison uses\n\
+      \032           the chmod system call to set the permission bits of files\n\
+      \032           after it has copied them. But in some circumstances (and\n\
+      \032           under some operating systems), the chmod call always fails.\n\
+      \032           Setting this preference completely prevents Unison from ever\n\
+      \032           calling chmod.\n\
+      \032         + Don't ignore files that look like backup files if the\n\
+      \032           backuplocation preference is set to central\n\
+      \032         + Shortened the names of several preferences. The old names are\n\
+      \032           also still supported, for backwards compatibility, but they\n\
+      \032           do not appear in the documentation.\n\
+      \032         + Lots of little documentation tidying. (In particular,\n\
+      \032           preferences are separated into Basic and Advanced! This\n\
+      \032           should hopefully make Unison a little more approachable for\n\
+      \032           new users.\n\
+      \032         + Unison can sometimes fail to transfer a file, giving the\n\
+      \032           unhelpful message \"Destination updated during\n\
+      \032           synchronization\" even though the file has not been changed.\n\
+      \032           This can be caused by programs that change either the file's\n\
+      \032           contents or the file's extended attributes without changing\n\
+      \032           its modification time. It's not clear what is the best fix\n\
+      \032           for this - it is not Unison's fault, but it makes Unison's\n\
+      \032           behavior puzzling - but at least Unison can be more helpful\n\
+      \032           about suggesting a workaround (running once with fastcheck\n\
+      \032           set to false). The failure message has been changed to give\n\
+      \032           this advice.\n\
+      \032         + Many improvements to the OS X GUI (thanks to Alan Schmitt and\n\
+      \032           Craig Federighi), including a very nice new \"nested\n\
+      \032           directory\" display style and per-file progress bars.\n\
+      \032    * Very preliminary support for triggering Unison from an external\n\
+      \032      filesystem-watching utility. The current implementation is very\n\
+      \032      simple, not efficient, and almost completely untested--not ready\n\
+      \032      for real users. But if someone wants to help improve it (e.g., by\n\
+      \032      writing a filesystem watcher for your favorite OS), please make\n\
+      \032      yourself known!\n\
+      \032      On the Unison side, the new behavior is very simple:\n\
+      \032         + use the text UI\n\
+      \032         + start Unison with the command-line flag \"-repeat FOO\", where\n\
+      \032           FOO is name of a file where Unison should look for\n\
+      \032           notifications of changes\n\
+      \032         + when it starts up, Unison will read the whole contents of\n\
+      \032           this file (on both hosts), which should be a\n\
+      \032           newline-separated list of paths (relative to the root of the\n\
+      \032           synchronization) and synchronize just these paths, as if it\n\
+      \032           had been started with the \"-path=xxx\" option for each one of\n\
+      \032           them\n\
+      \032         + when it finishes, it will sleep for a few seconds and then\n\
+      \032           examine the watchfile again; if anything has been added, it\n\
+      \032           will read the new paths, synchronize them, and go back to\n\
+      \032           sleep\n\
+      \032         + that's it!\n\
+      \032      To use this to drive Unison \"incrementally,\" just start it in this\n\
+      \032      mode and start up a tool (on each host) to watch for new changes\n\
+      \032      to the filesystem and append the appropriate paths to the\n\
+      \032      watchfile. Hopefully such tools should not be too hard to write.\n\
+      \032    * Bug fixes:\n\
+      \032         + Fixed a bug that was causing new files to be created with\n\
+      \032           permissions 0x600 instead of using a reasonable default (like\n\
+      \032           0x644), if the 'perms' flag was set to 0. (Bug reported by\n\
+      \032           Ben Crowell.)\n\
+      \032         + Follow maxthreads preference when transferring directories.\n\
       \n\
       \032  Changes since 2.17:\n\
       \032    * Major rewrite and cleanup of the whole Mac OS X graphical user\n\
       \032      interface by Craig Federighi. Thanks, Craig!!!\n\
       \032    * Small fix to ctime (non-)handling in update detection under\n\
       \032      windows with fastcheck.\n\
-      \n\
-      \032  Changes since 2.17:\n\
       \032    * Several small fixes to the GTK2 UI to make it work better under\n\
       \032      Windows [thanks to Karl M for these].\n\
       \032    * The backup functionality has been completely rewritten. The\n\
@@ -3017,13 +3134,10 @@ let docs =
       \032    * Fixed potential deadlock when synchronizing between Windows and\n\
       \032      Unix\n\
       \032    * Small improvements:\n\
-      \032         + If neither the\n\
-      \032           tt USERPROFILE nor the\n\
-      \032           tt HOME environment variables are set, then Unison will put\n\
-      \032           its temporary commit log (called\n\
-      \032           tt DANGER.README) into the directory named by the\n\
-      \032           tt UNISON environment variable, if any; otherwise it will use\n\
-      \032           tt C:.\n\
+      \032         + If neither the USERPROFILE nor the HOME environment variables\n\
+      \032           are set, then Unison will put its temporary commit log\n\
+      \032           (called DANGER.README) into the directory named by the UNISON\n\
+      \032           environment variable, if any; otherwise it will use C:.\n\
       \032         + alternative set of values for fastcheck: yes = true; no =\n\
       \032           false; default = auto.\n\
       \032         + -silent implies -contactquietly\n\
@@ -3070,9 +3184,8 @@ let docs =
       \032         + Paths that are not synchronized because of conflicts or\n\
       \032           errors during update detection are now noted in the log file.\n\
       \032         + [END] messages in log now use a briefer format\n\
-      \032         + Changed the text UI startup sequence so that\n\
-      \032           tt ./unison -ui text will use the default profile instead of\n\
-      \032           failing.\n\
+      \032         + Changed the text UI startup sequence so that ./unison -ui\n\
+      \032           text will use the default profile instead of failing.\n\
       \032         + Made some improvements to the error messages.\n\
       \032         + Added some debugging messages to remote.ml.\n\
       \n\
