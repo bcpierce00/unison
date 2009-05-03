@@ -1,3 +1,13 @@
+CHANGES FROM VERSION 2.32.10
+
+* Backed out last month's change to progress reporting during update
+  detection: in the text UI, it prints annoyingly many files; in the
+  GUI, it makes the progress bar race back and forth too fast.  Better
+  the way it was.  
+
+
+
+-------------------------------
 CHANGES FROM VERSION 2.32.9
 
 * Fix copyright date in manual
