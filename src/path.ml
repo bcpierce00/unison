@@ -170,8 +170,7 @@ let fromString str =
 
 let toString path = path
 
-let compare p1 p2 =
-  if Case.insensitive () then Util.nocase_cmp p1 p2 else compare p1 p2
+let compare p1 p2 = (Case.ops())#compare p1 p2
 
 let toDebugString path = String.concat " / " (toStringList path)
 
@@ -191,6 +190,7 @@ let addPrefixToFinalName path prefix =
     assert (not (isEmpty path));
     prefix ^ path
 
+(* No need to perform case normalization on local paths *)
 let hash p = Hashtbl.hash p
 
 (* Pref controlling whether symlinks are followed. *)

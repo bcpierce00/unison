@@ -34,11 +34,13 @@ let debugignore = Trace.debug "ignore"
    representation does not change between unison versions.) *)
 (*FIX: Use similar_correct in props.ml next time the
   format is modified (see file props.ml for the new function) *)
-(*FIX: use Case.normalize next time the format is modified *)
 (*FIX: also change Fileinfo.stamp to drop the info.ctime component, next time the
   format is modified *)
 (*FIX: also make Jerome's suggested change about file times (see his mesg in
        unison-pending email folder). *)
+(*FIX: one should also store whether we are in case-insensitive mode
+  in the archive and check the mode has not changed when the archive
+  is loaded *)
 let archiveFormat = 22
 
 module NameMap = MyMap.Make (Name)
@@ -1185,19 +1187,7 @@ let checkContentsChange
 
    Note that case conflicts and illegal filenames can only occur under Unix,
    when syncing with a Windows file system. *)
-let badWindowsFilenameRx =
-  (* FIX: This should catch all device names (like aux, con, ...).  I don't
-     know what all the possible device names are. *)
-  Rx.case_insensitive
-    (Rx.rx "\\.*|aux|con|lpt1|prn|(.*[\000-\031\\/<>:\"|].*)")
-
-let isBadWindowsFilename s =
-  (* FIX: should also check for a max filename length, not sure how much *)
-  Rx.match_string badWindowsFilenameRx (Name.toString s)
-let badFilename s =
-  (* Don't check unless we are syncing with Windows *)
-  Prefs.read Globals.someHostIsRunningWindows &&
-  isBadWindowsFilename s
+let badFilename s = Name.bad (Prefs.read Globals.someHostIsRunningWindows) s
 
 let getChildren fspath path =
   let children =

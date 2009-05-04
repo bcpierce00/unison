@@ -1,3 +1,14 @@
+CHANGES FROM VERSION 2.33.-4
+
+* Updated list of bad Windows file names following the MSDN
+  documentation (in particular, files with trailing dots are now
+  rejected when synchronizing with a Windows machine)
+* Experimental Unicode-aware case insensitive mode.  It is activated
+  when the preference "unicode" is set to true and Unison is in
+  case-insensitive mode.
+* Bumped version number to reflect the newly added preference
+
+-------------------------------
 CHANGES FROM VERSION 2.32.7
 
 * Move descriptions of recent changes to documentation.

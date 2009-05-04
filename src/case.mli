@@ -1,8 +1,15 @@
 (* Unison file synchronizer: src/case.mli *)
 (* Copyright 1999-2009, Benjamin C. Pierce (see COPYING for details) *)
 
-val insensitive : unit -> bool
+type mode
 
-val normalize : string -> string
+val ops : unit ->
+  < mode : mode;
+    compare : string -> string -> int;
+    hash : string -> int;
+    normalizePattern : string -> string;
+    caseInsensitiveMatch : bool;
+    normalizeMatchedString : string -> string;
+    badFilename : bool -> string -> bool >
 
 val init : bool -> unit

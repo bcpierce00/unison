@@ -20,11 +20,7 @@
    INCREMENT "UPDATE.ARCHIVEFORMAT" *)
 type t = string
 
-let compare n1 n2 =
-  if Case.insensitive () then
-    Util.nocase_cmp (Case.normalize n1) (Case.normalize n2)
-  else
-    compare n1 n2
+let compare n1 n2 = (Case.ops())#compare n1 n2
 
 let eq a b = (0 = (compare a b))
 
@@ -41,5 +37,7 @@ let fromString s =
   (* We ought to consider further checks, e.g., in Windows, no colons *)
   s
 
-let hash n =
-  Hashtbl.hash (if Case.insensitive () then String.lowercase (Case.normalize n) else n)
+let hash n = (Case.ops())#hash n
+
+let bad someHostIsRunningWindows n =
+  (Case.ops())#badFilename someHostIsRunningWindows n

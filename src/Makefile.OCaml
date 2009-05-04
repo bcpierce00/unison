@@ -179,7 +179,7 @@ OCAMLOBJS += \
           \
           lwt/pqueue.cmo lwt/lwt.cmo lwt/lwt_util.cmo lwt/lwt_unix.cmo \
           \
-          case.cmo pred.cmo uutil.cmo \
+          unicode_tables.cmo unicode.cmo case.cmo pred.cmo uutil.cmo \
           fileutil.cmo name.cmo path.cmo fspath.cmo fingerprint.cmo \
           abort.cmo osx.cmo external.cmo \
           props.cmo fileinfo.cmo os.cmo lock.cmo clroot.cmo common.cmo \
