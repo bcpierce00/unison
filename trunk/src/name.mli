@@ -9,3 +9,5 @@ val toString : t -> string
 val compare : t -> t -> int
 val eq : t -> t -> bool
 val hash : t -> int
+
+val bad : bool -> t -> bool

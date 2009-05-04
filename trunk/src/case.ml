@@ -34,16 +34,37 @@ let caseInsensitiveMode =
      ^ "useful to set the flag manually (e.g. when running Unison on a  "
      ^ "Unix system with a FAT [Windows] volume mounted).")
 
+let unicodeEncoding =
+  Prefs.createBool "unicode" false
+    "!assume Unicode encoding in case insensitive mode"
+    "When set to {\\tt true}, this flag causes Unison to perform \
+     case insensitive file comparisons assuming Unicode encoding"
+
 (* Defining this variable as a preference ensures that it will be propagated
    to the other host during initialization *)
 let someHostIsInsensitive =
   Prefs.createBool "someHostIsInsensitive" false
     "*Pseudo-preference for internal use only" ""
 
-(* Note: this function must be fast *)
-let insensitive () = Prefs.read someHostIsInsensitive
+(* During startup the client determines the case sensitivity of each root.   *)
+(* If any root is case insensitive, all roots must know it; we ensure this   *)
+(* by storing the information in a pref so that it is propagated to the      *)
+(* server with the rest of the prefs.                                        *)
+let init b =
+  Prefs.set someHostIsInsensitive
+    (Prefs.read caseInsensitiveMode = "yes" ||
+     Prefs.read caseInsensitiveMode = "true" ||
+     (Prefs.read caseInsensitiveMode = "default" && b))
 
-let needNormalization s =
+(****)
+
+(* Dots are ignored at the end of filenames under Windows. *)
+
+(* FIX: for the moment, simply disallow files ending with a dot.
+   This is more efficient, and this may well be good enough.
+   We should reconsider this is people start complaining...
+
+let hasTrailingDots s =
   let rec iter s pos len wasDot =
     if pos = len then wasDot else
     let c = s.[pos] in
@@ -67,31 +88,87 @@ let removeTrailingDots s =
   done;
   String.sub s' (!pos' + 1) (len - !pos' - 1)
 
-(* Dots are ignored at the end of filenames under Windows. *)
-let normalize s =
+let rmTrailDots s =
   s
 (*FIX: disabled for know -- requires an archive version change
   if
-    insensitive () &&
-(*FIX: should only be done when one host is running under Windows...
-(should be OK for now as it seems unlikely to have a file ending with
- a dot and the same file with the same name but no dot at the end)
     Prefs.read someHostIsRunningWindows &&
     not (Prefs.read allHostsAreRunningWindows) &&
-*)
-    needNormalization s
+    hasTrailingDots s
   then
     removeTrailingDots s
   else
     s
 *)
+*)
 
-(* During startup the client determines the case sensitivity of each root.   *)
-(* If any root is case insensitive, all roots must know it; we ensure this   *)
-(* by storing the information in a pref so that it is propagated to the      *)
-(* server with the rest of the prefs.                                        *)
-let init b =
-  Prefs.set someHostIsInsensitive
-    (Prefs.read caseInsensitiveMode = "yes" ||
-     Prefs.read caseInsensitiveMode = "true" ||
-     (Prefs.read caseInsensitiveMode = "default" && b))
+(****)
+
+(* Windows file naming conventions are descripted here:
+   <http://msdn.microsoft.com/en-us/library/aa365247(printer).aspx> *)
+let badWindowsFilenameRx =
+  Rx.case_insensitive
+    (Rx.rx
+       "(.*[\000-\031<>:\"/\\|?*].*)|\
+        ((con|prn|aux|nul|com[1-9]|lpt[1-9])(\\.[^.]*)?)|\
+        (.*[. ])")
+
+let isBadWindowsFilename s =
+  (* FIX: should also check for a max filename length, not sure how much *)
+  Rx.match_string badWindowsFilenameRx s
+let badFilename someHostIsRunningWindows s =
+  (* Don't check unless we are syncing with Windows *)
+  someHostIsRunningWindows && isBadWindowsFilename s
+
+(****)
+
+type mode = Sensitive | Insensitive | UnicodeInsensitive
+
+(*
+Important invariant:
+  if [compare s s' = 0],
+  then [hash s = hash s'] and
+  and  [Rx.match_string rx (normalizeMatchedString s) =
+        Rx.match_string rx (normalizeMatchedString s')]
+  (when [rx] has been compiled using the [caseInsensitiveMatch] mode)
+*)
+
+let sensitiveOps = object
+  method mode = Sensitive
+  method compare s s' = compare s s'
+  method hash s = Hashtbl.hash s
+  method normalizePattern s = s
+  method caseInsensitiveMatch = false
+  method normalizeMatchedString s = s
+  method badFilename w s = badFilename w s
+end
+
+let insensitiveOps = object
+  method mode = Insensitive
+  method compare s s' = Util.nocase_cmp s s'
+  method hash s = Hashtbl.hash (String.lowercase s)
+  method normalizePattern s = s
+  method caseInsensitiveMatch = true
+  method normalizeMatchedString s = s
+  method badFilename w s = badFilename w s
+end
+
+let unicodeInsensitiveOps = object
+  method mode = UnicodeInsensitive
+  method compare s s' = Unicode.compare s s'
+  method hash s = Hashtbl.hash (Unicode.normalize s)
+  method normalizePattern p = Unicode.normalize p
+  method caseInsensitiveMatch = false
+  method normalizeMatchedString s = Unicode.normalize s
+  method badFilename w s = not (Unicode.check_utf_8 s) || badFilename w s
+end
+
+(* Note: the dispatch must be fast *)
+let ops () =
+  if Prefs.read someHostIsInsensitive then begin
+    if Prefs.read unicodeEncoding then
+      unicodeInsensitiveOps
+    else
+      insensitiveOps
+  end else
+    sensitiveOps
