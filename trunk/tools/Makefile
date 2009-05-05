@@ -18,7 +18,7 @@ test: ask$(EXEC_EXT)
 	date | ./ask
 
 ../src/Makefile.ProjectInfo: ../src/mkProjectInfo
-	../src/mkProjectInfo > $@
+	$(MAKE) -C ../src Makefile.ProjectInfo
 
 ../src/mkProjectInfo: ../src/mkProjectInfo.ml
-	ocamlc -o $@ $^
+	$(MAKE) -C ../src mkProjectInfo
