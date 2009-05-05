@@ -90,7 +90,7 @@ let removeTrailingDots s =
 
 let rmTrailDots s =
   s
-(*FIX: disabled for know -- requires an archive version change
+(*FIX: disabled for now -- requires an archive version change
   if
     Prefs.read someHostIsRunningWindows &&
     not (Prefs.read allHostsAreRunningWindows) &&

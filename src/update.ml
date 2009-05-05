@@ -1004,56 +1004,57 @@ let immutablenot = Pred.create "immutablenot" ~advanced:true
 
 (** Status display **)
 
-(* BCP (3/09) We used to try to be smart about showing status messages
-   at regular intervals, but people seem to find this confusing.
-   Let's replace all this with something simpler -- just show directories as
-   they are scanned...  (but I'll leave the code in for now, in case we find
-   we want to restore the old behavior). *)
-(*
-  let bigFileLength = 10 * 1024
-  let bigFileLengthFS = Uutil.Filesize.ofInt bigFileLength
-  let smallFileLength = 1024
-  let fileLength = ref 0
-  let t0 = ref 0.
+let bigFileLength = 10 * 1024
+let bigFileLengthFS = Uutil.Filesize.ofInt bigFileLength
+let smallFileLength = 1024
+let fileLength = ref 0
+let t0 = ref 0.
 
-  (* Note that we do *not* want to do any status displays from the server
-     side, since this will cause the server to block until the client has
-     finished its own update detection and can receive and acknowledge
-     the status display message -- thus effectively serializing the client 
-     and server! *)
-  let showStatusAddLength info =
-    if not !Trace.runningasserver then begin
-      let len1 = Props.length info.Fileinfo.desc in
-      let len2 = Osx.ressLength info.Fileinfo.osX.Osx.ressInfo in
-      if len1 >= bigFileLengthFS || len2 >= bigFileLengthFS then
-        fileLength := bigFileLength
-      else
-        fileLength :=
-          min bigFileLength
-           (!fileLength + Uutil.Filesize.toInt len1 + Uutil.Filesize.toInt len2)
-    end
+(* Note that we do *not* want to do any status displays from the server
+   side, since this will cause the server to block until the client has
+   finished its own update detection and can receive and acknowledge
+   the status display message -- thus effectively serializing the client 
+   and server! *)
+let showStatusAddLength info =
+  if not !Trace.runningasserver then begin
+    let len1 = Props.length info.Fileinfo.desc in
+    let len2 = Osx.ressLength info.Fileinfo.osX.Osx.ressInfo in
+    if len1 >= bigFileLengthFS || len2 >= bigFileLengthFS then
+      fileLength := bigFileLength
+    else
+      fileLength :=
+        min bigFileLength
+         (!fileLength + Uutil.Filesize.toInt len1 + Uutil.Filesize.toInt len2)
+  end
 
-  let showStatus path =
-    if not !Trace.runningasserver then begin
-      fileLength := !fileLength + smallFileLength;
-      if !fileLength >= bigFileLength then begin
-        fileLength := 0;
-        let t = Unix.gettimeofday () in
-        if t -. !t0 > 0.05 then begin
-          Trace.statusDetail ("scanning... got to " ^ Path.toString path);
-          t0 := t
-        end
+let showStatus path =
+  if not !Trace.runningasserver then begin
+    fileLength := !fileLength + smallFileLength;
+    if !fileLength >= bigFileLength then begin
+      fileLength := 0;
+      let t = Unix.gettimeofday () in
+      if t -. !t0 > 0.05 then begin
+        Trace.statusDetail ("scanning... " ^ Path.toString path);
+        t0 := t
       end
     end
-*)
+  end
 
+let showStatusDir path = ()
+
+(* BCP (4/09) The code above tries to be smart about showing status messages
+   at regular intervals, but people seem to find this confusing.
+   I tried replace all this with something simpler -- just show directories as
+   they are scanned -- but this seems worse: it prints far too much stuff.
+   So I'm going to revert to the old version. *)
+(*
 let showStatus path = ()
 let showStatusAddLength info = ()
-
 let showStatusDir path =
   if not !Trace.runningasserver then begin
         Trace.statusDetail ("scanning... " ^ Path.toString path);
   end
+*)
 
 (* ------- *)
 
