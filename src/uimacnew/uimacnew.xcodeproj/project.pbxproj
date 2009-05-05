@@ -461,7 +461,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "if [ -x /usr/libexec/path_helper ]; then\n  eval `/usr/libexec/path_helper -s`\nfi\nif [ ! -x ${PROJECT_DIR}/../Makefile.ProjectInfo ]; then\n  if [ ! -x ${PROJECT_DIR}/../mkProjectInfo ]; then\n    cd ${PROJECT_DIR}/..; ocamlc -o mkProjectInfo mkProjectInfo.ml\n  fi\n  cd ${PROJECT_DIR}/..; ./mkProjectInfo > Makefile.ProjectInfo\nfi\nOCAMLLIBDIR=`ocamlc -v | tail -n -1 | sed -e 's/.* //g' | sed -e 's/\\\\\\/\\\\//g' | tr -d '\\r'`\nsource ${PROJECT_DIR}/../Makefile.ProjectInfo\necho MARKETING_VERSION = $VERSION > ${PROJECT_DIR}/ExternalSettings.xcconfig\necho OCAMLLIBDIR = $OCAMLLIBDIR >> ${PROJECT_DIR}/ExternalSettings.xcconfig";
+			shellScript = "if [ -x /usr/libexec/path_helper ]; then\n  eval `/usr/libexec/path_helper -s`\nfi\nif [ ! -x ${PROJECT_DIR}/../Makefile.ProjectInfo ]; then\n  if [ ! -x ${PROJECT_DIR}/../mkProjectInfo ]; then\n    cd ${PROJECT_DIR}/..; ocamlc -o mkProjectInfo unix.cma str.cma mkProjectInfo.ml\n  fi\n  cd ${PROJECT_DIR}/..; ./mkProjectInfo > Makefile.ProjectInfo\nfi\nOCAMLLIBDIR=`ocamlc -v | tail -n -1 | sed -e 's/.* //g' | sed -e 's/\\\\\\/\\\\//g' | tr -d '\\r'`\nsource ${PROJECT_DIR}/../Makefile.ProjectInfo\necho MARKETING_VERSION = $VERSION > ${PROJECT_DIR}/ExternalSettings.xcconfig\necho OCAMLLIBDIR = $OCAMLLIBDIR >> ${PROJECT_DIR}/ExternalSettings.xcconfig";
 		};
 		2E282CBA0D9AE17300439D01 /* Run Script (make unison-blob.o) */ = {
 			isa = PBXShellScriptBuildPhase;

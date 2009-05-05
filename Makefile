@@ -13,10 +13,10 @@ src:
 -include src/Makefile.ProjectInfo
 
 src/Makefile.ProjectInfo: src/mkProjectInfo
-	src/mkProjectInfo > $@
+	$(MAKE) -C src Makefile.ProjectInfo
 
 src/mkProjectInfo: src/mkProjectInfo.ml
-	ocamlc -o $@ $^
+	$(MAKE) -C src mkProjectInfo
 
 docs:
 	$(MAKE) -C src UISTYLE=text

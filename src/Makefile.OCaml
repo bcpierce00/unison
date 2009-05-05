@@ -125,6 +125,7 @@ else
   endif
 endif
 
+.PHONY: buildexecutable
 buildexecutable::
 	@echo NATIVE = $(NATIVE)
 	@echo THREADS = $(THREADS)
@@ -132,7 +133,7 @@ buildexecutable::
 	@echo OSTYPE = $(OSTYPE)
 	@echo OSARCH = $(OSARCH)
 
-ubase/projectInfo.ml: mkProjectInfo
+ubase/projectInfo.ml: Makefile.ProjectInfo
 	echo 'let myName = "'$(NAME)'";;' > $@
 	echo 'let myVersion = "'$(VERSION)'";;' >> $@
 	echo 'let myMajorVersion = "'$(MAJORVERSION)'";;' >> $@
@@ -160,6 +161,7 @@ MINOSXVERSION=10.5
 # NOTE: the OCAMLLIBDIR is not getting passed correctly?
 # The two cases for cltool are needed because Xcode 2.1+
 # builds in build/Default/, and earlier versions use build/
+.PHONY: macexecutable
 macexecutable: $(NAME)-blob.o
 #	sed -e's/@@VERSION@@/$(VERSION)/' $(UIMACDIR)/Info.plist.template > $(UIMACDIR)/Info.plist
 	(cd $(UIMACDIR); xcodebuild OCAMLLIBDIR="$(OCAMLLIBDIR)" SYMROOT=build)
@@ -388,6 +390,7 @@ clean::
 	-$(RM) -r *.obj *.lib *.exp
 	-$(RM) -r *.tmp *.bak?.tmp .*.bak?.tmp
 
+.PHONY: paths
 paths:
 	@echo PATH = $(PATH)
 	@echo OCAMLLIBDIR = $(OCAMLLIBDIR)
