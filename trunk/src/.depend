@@ -45,8 +45,8 @@ abort.cmo: uutil.cmi ubase/util.cmi ubase/trace.cmi ubase/safelist.cmi \
     abort.cmi 
 abort.cmx: uutil.cmx ubase/util.cmx ubase/trace.cmx ubase/safelist.cmx \
     abort.cmi 
-case.cmo: ubase/util.cmi unicode.cmi ubase/rx.cmi ubase/prefs.cmi case.cmi 
-case.cmx: ubase/util.cmx unicode.cmx ubase/rx.cmx ubase/prefs.cmx case.cmi 
+case.cmo: ubase/util.cmi unicode.cmi ubase/prefs.cmi case.cmi 
+case.cmx: ubase/util.cmx unicode.cmx ubase/prefs.cmx case.cmi 
 checksum.cmo: checksum.cmi 
 checksum.cmx: checksum.cmi 
 clroot.cmo: ubase/util.cmi ubase/rx.cmi ubase/prefs.cmi clroot.cmi 
@@ -111,8 +111,8 @@ main.cmx: uutil.cmx ubase/util.cmx uitext.cmx uicommon.cmx strings.cmx \
     ubase/safelist.cmx remote.cmx ubase/prefs.cmx os.cmx fspath.cmx 
 mkProjectInfo.cmo: 
 mkProjectInfo.cmx: 
-name.cmo: ubase/util.cmi case.cmi name.cmi 
-name.cmx: ubase/util.cmx case.cmx name.cmi 
+name.cmo: ubase/util.cmi ubase/rx.cmi case.cmi name.cmi 
+name.cmx: ubase/util.cmx ubase/rx.cmx case.cmx name.cmi 
 os.cmo: uutil.cmi ubase/util.cmi ubase/safelist.cmi props.cmi ubase/prefs.cmi \
     path.cmi osx.cmi name.cmi fspath.cmi fingerprint.cmi fileinfo.cmi os.cmi 
 os.cmx: uutil.cmx ubase/util.cmx ubase/safelist.cmx props.cmx ubase/prefs.cmx \

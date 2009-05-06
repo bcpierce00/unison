@@ -104,24 +104,6 @@ let rmTrailDots s =
 
 (****)
 
-(* Windows file naming conventions are descripted here:
-   <http://msdn.microsoft.com/en-us/library/aa365247(printer).aspx> *)
-let badWindowsFilenameRx =
-  Rx.case_insensitive
-    (Rx.rx
-       "(.*[\000-\031<>:\"/\\|?*].*)|\
-        ((con|prn|aux|nul|com[1-9]|lpt[1-9])(\\.[^.]*)?)|\
-        (.*[. ])")
-
-let isBadWindowsFilename s =
-  (* FIX: should also check for a max filename length, not sure how much *)
-  Rx.match_string badWindowsFilenameRx s
-let badFilename someHostIsRunningWindows s =
-  (* Don't check unless we are syncing with Windows *)
-  someHostIsRunningWindows && isBadWindowsFilename s
-
-(****)
-
 type mode = Sensitive | Insensitive | UnicodeInsensitive
 
 (*
@@ -140,7 +122,7 @@ let sensitiveOps = object
   method normalizePattern s = s
   method caseInsensitiveMatch = false
   method normalizeMatchedString s = s
-  method badFilename w s = badFilename w s
+  method badEncoding s = false
 end
 
 let insensitiveOps = object
@@ -150,7 +132,7 @@ let insensitiveOps = object
   method normalizePattern s = s
   method caseInsensitiveMatch = true
   method normalizeMatchedString s = s
-  method badFilename w s = badFilename w s
+  method badEncoding s = false
 end
 
 let unicodeInsensitiveOps = object
@@ -160,7 +142,7 @@ let unicodeInsensitiveOps = object
   method normalizePattern p = Unicode.normalize p
   method caseInsensitiveMatch = false
   method normalizeMatchedString s = Unicode.normalize s
-  method badFilename w s = not (Unicode.check_utf_8 s) || badFilename w s
+  method badEncoding s = not (Unicode.check_utf_8 s)
 end
 
 (* Note: the dispatch must be fast *)

@@ -10,4 +10,5 @@ val compare : t -> t -> int
 val eq : t -> t -> bool
 val hash : t -> int
 
-val bad : bool -> t -> bool
+val badEncoding : t -> bool
+val badFile : t -> bool

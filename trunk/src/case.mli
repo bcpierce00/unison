@@ -10,6 +10,6 @@ val ops : unit ->
     normalizePattern : string -> string;
     caseInsensitiveMatch : bool;
     normalizeMatchedString : string -> string;
-    badFilename : bool -> string -> bool >
+    badEncoding : string -> bool >
 
 val init : bool -> unit

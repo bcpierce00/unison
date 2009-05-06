@@ -1188,7 +1188,17 @@ let checkContentsChange
 
    Note that case conflicts and illegal filenames can only occur under Unix,
    when syncing with a Windows file system. *)
-let badFilename s = Name.bad (Prefs.read Globals.someHostIsRunningWindows) s
+let checkFilename s =
+  if Name.badEncoding s then
+    `BadEnc
+  else if
+    (* Don't check unless we are syncing with Windows *)
+    Prefs.read Globals.someHostIsRunningWindows &&
+    Name.badFile s
+  then
+    `BadName
+  else
+    `Ok
 
 let getChildren fspath path =
   let children =
@@ -1204,10 +1214,8 @@ let getChildren fspath path =
   let childStatus nm count =
     if count > 1 then
       `Dup
-    else if badFilename nm then
-      `Bad
     else
-      `Ok
+      checkFilename nm
   in
   let rec findDuplicates' res nm count l =
     match l with
@@ -1282,7 +1290,14 @@ let rec buildUpdateChildren
           in
           updates := (nm, uiChild) :: !updates;
           archive
-      | `Bad ->
+      | `BadEnc ->
+          let uiChild =
+            Error ("The file name is not encoded in Unicode ("
+                   ^ Path.toString path' ^ ")")
+          in
+          updates := (nm, uiChild) :: !updates;
+          archive
+      | `BadName ->
           let uiChild =
             Error ("The name of this Unix file is not allowed in Windows ("
                    ^ Path.toString path' ^ ")")
@@ -1449,10 +1464,14 @@ let rec buildUpdate archive fspath fullpath here path =
         try
           Safelist.find (fun (name', _) -> Name.eq name name') children
         with Not_found ->
-          (name, if badFilename name then `Bad else `Ok)
+          (name, checkFilename name)
       in
       match status with
-        `Bad ->
+       | `BadEnc ->
+          raise (Util.Transient
+                   ("The path " ^ Path.toString fullpath ^
+                    " is not encoded in Unicode"))
+       | `BadName ->
           raise (Util.Transient
                    ("The path " ^ Path.toString fullpath ^
                     " is not allowed in Windows"))

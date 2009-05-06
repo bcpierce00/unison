@@ -1,5 +1,14 @@
 CHANGES FROM VERSION 2.33.2
 
+* Improved error messages when rejecting non-unicode encoded file names
+* uigtk2: fixed the code for transcoding from Windows Codepage 1252 to
+  UTF-8 (for some reason, I mistakenly took a table corresponding to
+  Codepage 1250 instead)
+* Windows: added icons with transparency
+
+-------------------------------
+CHANGES FROM VERSION 2.33.2
+
 * Incorporate Makefile improvements from Martin von Gagern
 
 -------------------------------
