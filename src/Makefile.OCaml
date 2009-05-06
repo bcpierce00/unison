@@ -105,14 +105,15 @@ ifeq ($(OSARCH),win32)
 else
   # Unix system, or Cygwin with GNU C compiler
   OBJ_EXT=.o
-  CWD=$(shell pwd)
   ifeq ($(OSARCH),win32gnuc)
+    CWD=.
     EXEC_EXT=.exe
     CLIBS+=-cclib win32rc/unison.res.lib
     STATIC=false                      # Cygwin is not MinGW :-(
     buildexecutable::
 	@echo Building for Windows with Cygwin GNU C
   else
+    CWD=$(shell pwd)
     EXEC_EXT=
     # openpty is in the libutil library
     ifneq ($(OSARCH),solaris)
@@ -342,6 +343,9 @@ else
   CAMLLIBS=$(OCAMLLIBS)
 
 endif
+
+win32rc/unison.res: win32rc/unison.rc win32rc/U.ico
+	windres win32rc/unison.rc win32rc/unison.res
 
 win32rc/unison.res.lib: win32rc/unison.res
 	windres win32rc/unison.res win32rc/unison.res.lib

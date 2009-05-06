@@ -39,5 +39,18 @@ let fromString s =
 
 let hash n = (Case.ops())#hash n
 
-let bad someHostIsRunningWindows n =
-  (Case.ops())#badFilename someHostIsRunningWindows n
+(****)
+
+let badEncoding s = (Case.ops())#badEncoding s
+
+(* Windows file naming conventions are descripted here:
+   <http://msdn.microsoft.com/en-us/library/aa365247(printer).aspx> *)
+let badWindowsFilenameRx =
+  Rx.case_insensitive
+    (Rx.rx
+       "(.*[\000-\031<>:\"/\\|?*].*)|\
+        ((con|prn|aux|nul|com[1-9]|lpt[1-9])(\\.[^.]*)?)|\
+        (.*[. ])")
+
+(* FIX: should also check for a max filename length, not sure how much *)
+let badFile s = Rx.match_string badWindowsFilenameRx s
