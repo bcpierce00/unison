@@ -50,7 +50,9 @@ let rec select str l f =
   | (pref, g)::r ->
       if Util.startswith str pref then
         let l = String.length pref in
-        g (Util.trimWhitespace (String.sub str l (String.length str - l)))
+        let s =
+          Util.trimWhitespace (String.sub str l (String.length str - l)) in
+        g ((Case.ops())#normalizePattern s)
       else
         select str r f
 
@@ -61,7 +63,7 @@ let compile_pattern clause =
   let (p,v) =
     match Util.splitIntoWordsByString clause mapSeparator with
       [p] -> (p,None)
-    | [p;v] -> (p, Some ((Case.ops())#normalizePattern (Util.trimWhitespace v)))
+    | [p;v] -> (p, Some (Util.trimWhitespace v))
     | [] -> raise (Prefs.IllegalValue "Empty pattern")
     | _ -> raise (Prefs.IllegalValue ("Malformed pattern: "
                   ^ "\"" ^ clause ^ "\"\n"
