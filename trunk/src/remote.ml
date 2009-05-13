@@ -923,7 +923,7 @@ let buildShellConnection shell host userOpt portOpt rootName termInteract =
      goes into text mode; this does not happen if unison is
      invoked from cygwin's bash.  By setting CYGWIN=binmode
      we force the pipe to remain in binary mode. *)
-  Unix.putenv "CYGWIN" "binmode";
+  System.putenv "CYGWIN" "binmode";
   debug (fun ()-> Util.msg "Shell connection: %s (%s)\n"
            shellCmd (String.concat ", " args));
   let term =
@@ -1059,7 +1059,7 @@ let openConnectionStart clroot =
            goes into text mode; this does not happen if unison is
            invoked from cygwin's bash.  By setting CYGWIN=binmode
            we force the pipe to remain in binary mode. *)
-        Unix.putenv "CYGWIN" "binmode";
+        System.putenv "CYGWIN" "binmode";
         debug (fun ()-> Util.msg "Shell connection: %s (%s)\n"
                  shellCmd (String.concat ", " args));
         let (term,pid) =
@@ -1203,7 +1203,9 @@ let waitOnPort hostOpt port =
 
 let beAServer () =
   begin try
-    Sys.chdir (Sys.getenv "HOME")
+    Util.convertUnixErrorsToFatal
+      "changing working directory"
+      (fun () -> System.chdir (System.fspathFromString (System.getenv "HOME")))
   with Not_found ->
     Util.msg
       "Environment variable HOME unbound: \

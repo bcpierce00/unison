@@ -28,15 +28,15 @@ let debugverbose = Trace.debug "files+"
 let commitLogName = Util.fileInHomeDir "DANGER.README"
     
 let writeCommitLog source target tempname =
-  let sourcename = Fspath.toString source in
-  let targetname = Fspath.toString target in
+  let sourcename = Fspath.toDebugString source in
+  let targetname = Fspath.toDebugString target in
   debug (fun() -> Util.msg "Writing commit log: renaming %s to %s via %s\n"
     sourcename targetname tempname);
   Util.convertUnixErrorsToFatal
     "writing commit log"
     (fun () ->
        let c =
-         open_out_gen [Open_wronly; Open_creat; Open_trunc; Open_excl]
+         System.open_out_gen [Open_wronly; Open_creat; Open_trunc; Open_excl]
            0o600 commitLogName in
        Printf.fprintf c "Warning: the last run of %s terminated abnormally "
          Uutil.myName;
@@ -50,16 +50,16 @@ let clearCommitLog () =
   debug (fun() -> (Util.msg "Deleting commit log\n"));
   Util.convertUnixErrorsToFatal
     "clearing commit log"
-      (fun () -> Unix.unlink commitLogName)
+      (fun () -> System.unlink commitLogName)
     
 let processCommitLog () =
-  if Sys.file_exists commitLogName then begin
+  if System.file_exists commitLogName then begin
     raise(Util.Fatal(
           Printf.sprintf
             "Warning: the previous run of %s terminated in a dangerous state.
             Please consult the file %s, delete it, and try again."
                 Uutil.myName
-                commitLogName))
+                (System.fspathToPrintString commitLogName)))
   end else
     Lwt.return ()
       
@@ -77,10 +77,10 @@ let deleteLocal (fspath, (workingDirOpt, path)) =
   (* so we don't call the stasher in this case.                             *)
   begin match workingDirOpt with
     Some p -> 
-      debug (fun () -> Util.msg  "deleteLocal [%s] (%s, %s)\n" (Fspath.toString fspath) (Fspath.toString p) (Path.toString path));
+      debug (fun () -> Util.msg  "deleteLocal [%s] (%s, %s)\n" (Fspath.toDebugString fspath) (Fspath.toDebugString p) (Path.toString path));
       Os.delete p path
   | None ->
-      debug (fun () -> Util.msg "deleteLocal [%s] (None, %s)\n" (Fspath.toString fspath) (Path.toString path));
+      debug (fun () -> Util.msg "deleteLocal [%s] (None, %s)\n" (Fspath.toDebugString fspath) (Path.toString path));
       Stasher.backup fspath path `AndRemove
   end;
   Lwt.return ()
@@ -162,13 +162,13 @@ let renameLocal (root, (localTargetPath, fspath, pathFrom, pathTo)) =
   debug (fun () -> Util.msg "Renaming %s to %s in %s; root is %s\n" 
       (Path.toString pathFrom) 
       (Path.toString pathTo) 
-      (Fspath.toString fspath) 
-      (Fspath.toString root));
+      (Fspath.toDebugString fspath) 
+      (Fspath.toDebugString root));
   let source = Fspath.concat fspath pathFrom in
   let target = Fspath.concat fspath pathTo in
   Util.convertUnixErrorsToTransient
     (Printf.sprintf "renaming %s to %s"
-       (Fspath.toString source) (Fspath.toString target))
+       (Fspath.toDebugString source) (Fspath.toDebugString target))
     (fun () ->
       debugverbose (fun() ->
         Util.msg "calling Fileinfo.get from renameLocal\n");
@@ -178,7 +178,7 @@ let renameLocal (root, (localTargetPath, fspath, pathFrom, pathTo)) =
         Util.msg "back from Fileinfo.get from renameLocal\n");
       if filetypeFrom = `ABSENT then raise (Util.Transient (Printf.sprintf
            "Error while renaming %s to %s -- source file has disappeared!"
-	   (Fspath.toString source) (Fspath.toString target)));
+	   (Fspath.toPrintString source) (Fspath.toPrintString target)));
       let filetypeTo =
         (Fileinfo.get false target Path.empty).Fileinfo.typ in
       
@@ -199,9 +199,10 @@ let renameLocal (root, (localTargetPath, fspath, pathFrom, pathTo)) =
         debug (fun() -> Util.msg "rename: moveFirst=true\n");
         let tmpPath = Os.tempPath fspath pathTo in
         let temp = Fspath.concat fspath tmpPath in
-        let temp' = Fspath.toString temp in
+        let temp' = Fspath.toDebugString temp in
 
-        debug (fun() -> Util.msg "moving %s to %s\n" (Fspath.toString target) temp');
+        debug (fun() ->
+          Util.msg "moving %s to %s\n" (Fspath.toDebugString target) temp');
         Stasher.backup root localTargetPath `ByCopying;
         writeCommitLog source target temp';
         Util.finalize (fun() ->
@@ -216,7 +217,8 @@ let renameLocal (root, (localTargetPath, fspath, pathFrom, pathTo)) =
           Util.convertUnixErrorsToFatal "renaming with commit log"
             (fun () ->
               debug (fun() -> Util.msg "rename %s to %s\n"
-                       (Fspath.toString source) (Fspath.toString target));
+                       (Fspath.toDebugString source)
+                       (Fspath.toDebugString target));
               Os.rename "renameLocal(2)"
                 source Path.empty target Path.empty))
           (fun _ -> clearCommitLog());
@@ -231,7 +233,7 @@ let renameLocal (root, (localTargetPath, fspath, pathFrom, pathTo)) =
 	  if filetypeFrom = `FILE then
             Util.msg
               "Contents of %s after renaming = %s\n" 
-              (Fspath.toString target)
+              (Fspath.toDebugString target)
     	      (Fingerprint.toString (Fingerprint.file target Path.empty)));
       end;
       Lwt.return ())
@@ -268,7 +270,7 @@ let checkContentsChangeLocal
     raise (Util.Transient (Printf.sprintf
       "The file %s\nhas been modified during synchronization.  \
        Transfer aborted."
-      (Fspath.concatToString currfspath path)));
+      (Fspath.toPrintString (Fspath.concat currfspath path))));
   match archStamp with
     Fileinfo.InodeStamp inode
     when info.Fileinfo.inode = inode
@@ -283,7 +285,7 @@ let checkContentsChangeLocal
         raise (Util.Transient (Printf.sprintf
           "The file %s\nhas been modified during synchronization.  \
            Transfer aborted.%s"
-          (Fspath.concatToString currfspath path)
+          (Fspath.toPrintString (Fspath.concat currfspath path))
           (if    Update.useFastChecking () 
               && Props.same_time info.Fileinfo.desc archDesc
            then
@@ -488,12 +490,12 @@ let rec diff root1 path1 ui1 root2 path2 ui2 showDiff id =
     let cmd =
       if Util.findsubstring "CURRENT1" (Prefs.read diffCmd) = None then
           (Prefs.read diffCmd)
-        ^ " " ^ (Os.quotes (Fspath.toString fspath1))
-        ^ " " ^ (Os.quotes (Fspath.toString fspath2))
+        ^ " " ^ (Fspath.quotes fspath1)
+        ^ " " ^ (Fspath.quotes fspath2)
       else
         Util.replacesubstrings (Prefs.read diffCmd)
-          ["CURRENT1", Os.quotes (Fspath.toString fspath1);
-           "CURRENT2", Os.quotes (Fspath.toString fspath2)] in
+          ["CURRENT1", Fspath.quotes fspath1;
+           "CURRENT2", Fspath.quotes fspath2] in
     (* Doesn't seem to work well on Windows! 
        let c = Lwt_unix.run (Lwt_unix.open_process_in cmd) in *)
     let c = Unix.open_process_in
@@ -559,12 +561,12 @@ let rec diff root1 path1 ui1 root2 path2 ui2 showDiff id =
 
 (* Taken from ocamltk/jpf/fileselect.ml *)
 let get_files_in_directory dir =
-  let dirh = Fspath.opendir (Fspath.canonize (Some dir)) in
+  let dirh = System.opendir dir in
   let files = ref [] in
   begin try
-    while true do files := Unix.readdir dirh :: !files done
+    while true do files := System.readdir dirh :: !files done
   with End_of_file ->
-    Unix.closedir dirh
+    System.closedir dirh
   end;
   Sort.list (<) !files
 
@@ -750,12 +752,12 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
       let dig2 = Os.fingerprint workingDirForMerge working2 info2 in
       let cmd = formatMergeCmd
           path
-          (Os.quotes (Fspath.concatToString workingDirForMerge working1))
-          (Os.quotes (Fspath.concatToString workingDirForMerge working2))
-          (match arch with None -> None | Some f -> Some(Os.quotes (Fspath.toString f)))
-          (Os.quotes (Fspath.concatToString workingDirForMerge new1))
-          (Os.quotes (Fspath.concatToString workingDirForMerge new2))
-          (Os.quotes (Fspath.concatToString workingDirForMerge newarch)) in
+          (Fspath.quotes (Fspath.concat workingDirForMerge working1))
+          (Fspath.quotes (Fspath.concat workingDirForMerge working2))
+          (match arch with None -> None | Some f -> Some(Fspath.quotes f))
+          (Fspath.quotes (Fspath.concat workingDirForMerge new1))
+          (Fspath.quotes (Fspath.concat workingDirForMerge new2))
+          (Fspath.quotes (Fspath.concat workingDirForMerge newarch)) in
       Trace.log (Printf.sprintf "Merge command: %s\n" cmd);
       
       let returnValue, mergeResultLog = External.runExternalProgram cmd in
@@ -782,10 +784,10 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
 
       (* Check which files got created by the merge command and do something appropriate
          with them *)
-      debug (fun()-> Util.msg "New file 1 = %s\n" (Fspath.concatToString workingDirForMerge new1));
-      let new1exists = Sys.file_exists (Fspath.concatToString workingDirForMerge new1) in
-      let new2exists = Sys.file_exists (Fspath.concatToString workingDirForMerge new2) in
-      let newarchexists = Sys.file_exists (Fspath.concatToString workingDirForMerge newarch) in
+      debug (fun()-> Util.msg "New file 1 = %s\n" (Fspath.toDebugString (Fspath.concat workingDirForMerge new1)));
+      let new1exists = Fs.file_exists (Fspath.concat workingDirForMerge new1) in
+      let new2exists = Fs.file_exists (Fspath.concat workingDirForMerge new2) in
+      let newarchexists = Fs.file_exists (Fspath.concat workingDirForMerge newarch) in
       
       if new1exists && new2exists then begin
         if newarchexists then 
@@ -828,8 +830,8 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
 	  
       else if (not new1exists) && (not new2exists) && (not newarchexists) then begin
         say (fun () -> Util.msg "No outputs detected \n");
-        let working1_still_exists = Sys.file_exists (Fspath.concatToString workingDirForMerge working1) in
-        let working2_still_exists = Sys.file_exists (Fspath.concatToString workingDirForMerge working2) in
+        let working1_still_exists = Fs.file_exists (Fspath.concat workingDirForMerge working1) in
+        let working2_still_exists = Fs.file_exists (Fspath.concat workingDirForMerge working2) in
 	
         if working1_still_exists && working2_still_exists then begin
           say (fun () -> Util.msg "No output from merge cmd and both original files are still present\n");
@@ -893,7 +895,7 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
          copyBack workingDirForMerge working1 root1 path desc1 ui1 id >>= (fun () ->
          copyBack workingDirForMerge working2 root2 path desc2 ui2 id >>= (fun () ->
          let arch_fspath = Fspath.concat workingDirForMerge workingarch in
-         if (Sys.file_exists (Fspath.toString arch_fspath)) then begin
+         if Fs.file_exists arch_fspath then begin
            debug (fun () -> Util.msg "Updating unison archives for %s to reflect results of merge\n"
                    (Path.toString path));
            if not (Stasher.shouldBackupCurrent path) then
@@ -904,7 +906,7 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
            debug (fun () -> Util.msg "New digest is %s\n" (Os.fullfingerprint_to_string dig));
            let new_archive_entry =
              Update.ArchiveFile
-               (Props.get (Fspath.stat arch_fspath) infoarch.osX, dig,
+               (Props.get (Fs.stat arch_fspath) infoarch.osX, dig,
                 Fileinfo.stamp (Fileinfo.get true arch_fspath Path.empty),
                 Osx.stamp infoarch.osX) in
            Update.transaction

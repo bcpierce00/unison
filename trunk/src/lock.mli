@@ -4,6 +4,6 @@
 (* A simple utility module for setting and releasing inter-process locks
    using entries in the filesystem. *)
 
-val acquire : string -> bool
-val release : string -> unit
-val is_locked : string -> bool
+val acquire : System.fspath -> bool
+val release : System.fspath -> unit
+val is_locked : System.fspath -> bool

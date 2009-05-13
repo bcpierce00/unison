@@ -32,16 +32,16 @@ type t = { typ : typ; inode : int; ctime : float;
 (* Stat function that pays attention to pref for following links             *)
 let statFn fromRoot fspath path =
   let fullpath = Fspath.concat fspath path in
-  let stats = Fspath.lstat fullpath in
+  let stats = Fs.lstat fullpath in
   if stats.Unix.LargeFile.st_kind = Unix.S_LNK 
      && fromRoot 
      && Path.followLink path
   then 
-    try Fspath.stat fullpath 
+    try Fs.stat fullpath 
     with Unix.Unix_error((Unix.ENOENT | Unix.ENOTDIR),_,_) ->
       raise (Util.Transient (Printf.sprintf
         "Path %s is marked 'follow' but its target is missing"
-        (Fspath.toString fullpath)))
+        (Fspath.toPrintString fullpath)))
   else
     stats
 
@@ -52,7 +52,8 @@ let get fromRoot fspath path =
        try
          let stats = statFn fromRoot fspath path in
          debugV (fun () ->
-                   Util.msg "%s: %b %f %f\n" (Fspath.concatToString fspath path)
+                   Util.msg "%s: %b %f %f\n"
+                     (Fspath.toDebugString (Fspath.concat fspath path))
                      fromRoot stats.Unix.LargeFile.st_ctime stats.Unix.LargeFile.st_mtime);
          let typ =
            match stats.Unix.LargeFile.st_kind with
@@ -62,7 +63,7 @@ let get fromRoot fspath path =
            | _ ->
                raise (Util.Transient
                         ("path " ^
-                         (Fspath.concatToString fspath path) ^
+                         (Fspath.toPrintString (Fspath.concat fspath path)) ^
                          " has unknown file type"))
          in
          let osxInfos = Osx.getFileInfos fspath path typ in
@@ -82,7 +83,9 @@ let get fromRoot fspath path =
            osX      = Osx.getFileInfos fspath path `ABSENT })
 
 let check fspath path props =
-  Props.check fspath path (statFn false fspath path) props
+  Util.convertUnixErrorsToTransient
+  "checking file information"
+    (fun () -> Props.check fspath path (statFn false fspath path) props)
 
 let set fspath path action newDesc =
   let (kind, p) =
@@ -159,3 +162,26 @@ let unchanged fspath path info =
   (info', dataUnchanged,
    Osx.ressUnchanged info.osX.Osx.ressInfo info'.osX.Osx.ressInfo
      (Some t0) dataUnchanged)
+
+(****)
+
+let get' f =
+  Util.convertUnixErrorsToTransient
+  "querying file information"
+    (fun () ->
+       try
+         let stats = System.stat f in
+         let typ = `FILE in
+         let osxInfos = Osx.defaultInfos typ in
+         { typ   = typ;
+           inode = stats.Unix.LargeFile.st_ino land 0x3FFFFFFF;
+           ctime = stats.Unix.LargeFile.st_ctime;
+           desc  = Props.get stats osxInfos;
+           osX   = osxInfos }
+       with
+         Unix.Unix_error((Unix.ENOENT | Unix.ENOTDIR),_,_) ->
+         { typ = `ABSENT;
+           inode    = 0;
+           ctime    = 0.0;
+           desc     = Props.dummy;
+           osX      = Osx.defaultInfos `ABSENT })

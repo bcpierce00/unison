@@ -77,7 +77,7 @@ val percentageOfTotal :
   int        (* percentage of total *)
 val monthname : int -> string
 val percent2string : float -> string
-val fileInHomeDir : string -> string
+val fileInHomeDir : string -> System.fspath
 
 (* Just like the versions in the Unix module, but raising Transient
    instead of Unix_error *)
@@ -96,9 +96,9 @@ val warn : string -> unit
 
 (* Someone should supply a function here that will convert a simple filename
    to a filename in the unison directory *)
-val supplyFileInUnisonDirFn : (string -> string) -> unit
+val supplyFileInUnisonDirFn : (string -> System.fspath) -> unit
 (* Use it like this: *)
-val fileInUnisonDir : string -> string
+val fileInUnisonDir : string -> System.fspath
 
 (* Printing and formatting functions *)
 

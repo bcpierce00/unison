@@ -63,3 +63,6 @@ val readWriteBounded :
   -> Filesize.t
   -> (int -> unit)              (* progress notification *)
   -> unit
+
+(* Escape shell parameters *)
+val quotes : string -> string

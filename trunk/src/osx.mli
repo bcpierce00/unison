@@ -9,8 +9,10 @@ val rsrc : bool Prefs.t
 type 'a ressInfo
 type ressStamp = unit ressInfo
 type info =
-  { ressInfo : (string * int64) ressInfo;
+  { ressInfo : (Fspath.t * int64) ressInfo;
     finfo : string }
+
+val defaultInfos :  [> `DIRECTORY | `FILE ] -> info
 
 val getFileInfos : Fspath.t -> Path.local -> [> `DIRECTORY | `FILE ] -> info
 val setFileInfos : Fspath.t -> Path.local -> string -> unit
@@ -25,8 +27,6 @@ val ressDummy : ressStamp
 val ressStampToString : ressStamp -> string
 
 val stamp : info -> ressStamp
-
-val appleDoubleFile : Fspath.t -> Path.local -> string
 
 val openRessIn : Fspath.t -> Path.local -> in_channel
 val openRessOut : Fspath.t -> Path.local -> Uutil.Filesize.t -> out_channel

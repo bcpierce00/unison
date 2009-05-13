@@ -44,10 +44,11 @@ let usage speclist errmsg =
 let current = ref 0;;
 
 let parse speclist anonfun errmsg =
+  let argv = System.argv () in
   let initpos = !current in
   let stop error =
     let progname =
-      if initpos < Array.length Sys.argv then Sys.argv.(initpos) else "(?)" in
+      if initpos < Array.length argv then argv.(initpos) else "(?)" in
     begin match error with
       | Unknown s when s = "-help" -> ()
       | Unknown s ->
@@ -63,10 +64,10 @@ let parse speclist anonfun errmsg =
     usage speclist errmsg;
     exit 2;
   in
-  let l = Array.length Sys.argv in
+  let l = Array.length argv in
   incr current;
   while !current < l do
-    let ss = Sys.argv.(!current) in
+    let ss = argv.(!current) in
     if String.length ss >= 1 & String.get ss 0 = '-' then begin
       let args = Util.splitIntoWords ss '=' in
       let s = Safelist.nth args 0 in
@@ -74,7 +75,7 @@ let parse speclist anonfun errmsg =
         match args with
           [_] ->
             if !current + 1 >= l then stop (Missing s) else
-             let a = Sys.argv.(!current+1) in
+             let a = argv.(!current+1) in
              incr current;
              (try conv a with Failure _ -> stop (Wrong (s, a, mesg)))
         | [_;a] -> (try conv a with Failure _ -> stop (Wrong (s, a, mesg)))
@@ -98,7 +99,7 @@ let parse speclist anonfun errmsg =
         | Float f  -> f (arg float_of_string "a float")
         | Rest f ->
             while !current < l-1 do
-              f Sys.argv.(!current+1);
+              f argv.(!current+1);
               incr current;
             done;
       with Bad m -> stop (Message m);

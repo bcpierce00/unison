@@ -758,8 +758,7 @@ let scanProfiles () =
           (f, info))
        (Safelist.filter (fun name -> not (   Util.startswith name ".#"
                                           || Util.startswith name Os.tempFilePrefix))
-          (Files.ls (Fspath.toString Os.unisonDir)
-             "*.prf")))
+          (Files.ls Os.unisonDir "*.prf")))
 
 let getProfile () =
   (* The selected profile *)
@@ -852,7 +851,7 @@ let getProfile () =
       let profile = prof#text in
       if profile <> "" then
         let filename = Prefs.profilePathname profile in
-        if Sys.file_exists filename then
+        if System.file_exists filename then
           okBox
             ~title:(Uutil.myName ^ " error")
             ~message:("Profile \""
@@ -861,7 +860,7 @@ let getProfile () =
         else
           (* Make an empty file *)
           let ch =
-            open_out_gen
+            System.open_out_gen
               [Open_wronly; Open_creat; Open_trunc] 0o600 filename in
           close_out ch;
           fillLst profile;
@@ -2020,7 +2019,7 @@ in
     grAdd grRestart
       (fileMenu#add_item ~key:key
             ~callback:(fun _ ->
-               if Sys.file_exists (Prefs.profilePathname name) then begin
+               if System.file_exists (Prefs.profilePathname name) then begin
                  Trace.status ("Loading profile " ^ name);
                  loadProfile name; detectCmd()
                end else
@@ -2146,7 +2145,7 @@ let start = function
       let displayAvailable =
         Util.osType = `Win32
           ||
-        try Unix.getenv "DISPLAY" <> "" with Not_found -> false
+        try System.getenv "DISPLAY" <> "" with Not_found -> false
       in
       if displayAvailable then Private.start Uicommon.Graphic
       else Uitext.Body.start Uicommon.Text

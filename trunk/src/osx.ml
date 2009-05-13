@@ -48,20 +48,6 @@ let init b =
 
 (****)
 
-let appleDoubleFile fspath path =
-  let f = Fspath.concatToString fspath path in
-  let len = String.length f in
-  try
-    let i = 1 + String.rindex f '/' in
-    let res = String.create (len + 2) in
-    String.blit f 0 res 0 i;
-    res.[i] <- '.';
-    res.[i + 1] <- '_';
-    String.blit f i res (i + 2) (len - i);
-    res
-  with Not_found ->
-    assert false
-
 let doubleMagic = "\000\005\022\007"
 let doubleVersion = "\000\002\000\000"
 let doubleFiller = String.make 16 '\000'
@@ -96,7 +82,8 @@ let setInt4 v =
 
 let fail path msg =
   raise (Util.Transient
-           (Format.sprintf "Malformed AppleDouble file '%s' (%s)" path msg))
+           (Format.sprintf "Malformed AppleDouble file '%s' (%s)"
+              (Fspath.toPrintString path) msg))
 
 let readDouble path inch len =
   let buf = String.create len in
@@ -123,8 +110,8 @@ let protect f g =
     raise e
 
 let openDouble fspath path =
-  let path = appleDoubleFile fspath path in
-  let inch = try open_in_bin path with Sys_error _ -> raise Not_found in
+  let path = Fspath.appleDouble (Fspath.concat fspath path) in
+  let inch = try Fs.open_in_bin path with Sys_error _ -> raise Not_found in
   protect (fun () ->
     Util.convertUnixErrorsToTransient "opening AppleDouble file" (fun () ->
       let header = readDouble path inch 26 in
@@ -166,12 +153,13 @@ let ressStampToString r =
         ino mtime ctime (Uutil.Filesize.toString len)
 
 type info =
-  { ressInfo : (string * int64) ressInfo;
+  { ressInfo : (Fspath.t * int64) ressInfo;
     finfo : string }
 
 external getFileInfosInternal :
-      string -> bool -> string * int64 = "getFileInfos"
-external setFileInfosInternal : string -> string -> unit = "setFileInfos"
+  System.fspath -> bool -> string * int64 = "getFileInfos"
+external setFileInfosInternal :
+  System.fspath -> string -> unit = "setFileInfos"
 
 let defaultInfos typ =
   match typ with
@@ -216,7 +204,7 @@ let getFileInfos fspath path typ =
         try
           let (fInfo, rsrcLength) =
             getFileInfosInternal
-              (Fspath.concatToString fspath path) (typ = `FILE) in
+              (Fspath.toSysPath (Fspath.concat fspath path)) (typ = `FILE) in
           { ressInfo =
               if rsrcLength = 0L then NoRess
               else HfsRess (Uutil.Filesize.ofInt64 rsrcLength);
@@ -242,7 +230,7 @@ let getFileInfos fspath path typ =
                   "")
                 (fun () -> close_in_noerr inch)
             in
-            let stats = Unix.LargeFile.stat doublePath in
+            let stats = Fs.stat doublePath in
             { ressInfo =
                 if rsrcLength = 0L then NoRess else
                 AppleDoubleRess
@@ -286,10 +274,9 @@ let setFileInfos fspath path finfo =
   assert (finfo <> "");
   Util.convertUnixErrorsToTransient "setting file informations" (fun () ->
     try
-      let (fullFinfo, _) =
-        getFileInfosInternal (Fspath.concatToString fspath path) false in
-      setFileInfosInternal (Fspath.concatToString fspath path)
-        (insertInfo fullFinfo finfo)
+      let p = Fspath.toSysPath (Fspath.concat fspath path) in
+      let (fullFinfo, _) = getFileInfosInternal p false in
+      setFileInfosInternal p (insertInfo fullFinfo finfo)
     with Unix.Unix_error ((Unix.EOPNOTSUPP | Unix.ENOSYS), _, _) ->
       (* Not an HFS volume.  Look for an AppleDouble file *)
       let (fspath, path) = Fspath.findWorkingDir fspath path in
@@ -307,7 +294,7 @@ let setFileInfos fspath path finfo =
               (fun () -> close_in_noerr inch)
           in
           let outch =
-            open_out_gen [Open_wronly; Open_binary] 0o600 doublePath in
+            Fs.open_out_gen [Open_wronly; Open_binary] 0o600 doublePath in
           protect
             (fun () ->
                writeDoubleFromOffset doublePath outch ofs
@@ -321,14 +308,14 @@ let setFileInfos fspath path finfo =
                    (Format.sprintf
                       "Unable to set the file type and creator: \n\
                        The AppleDouble file '%s' has no fileinfo entry."
-                      doublePath))
+                      (Fspath.toPrintString doublePath)))
         end
       with Not_found ->
         (* No AppleDouble file, create one if needed. *)
         if finfo <> "F" && finfo <> "D" then begin
-          let path = appleDoubleFile fspath path in
+          let path = Fspath.appleDouble (Fspath.concat fspath path) in
           let outch =
-            open_out_gen
+            Fs.open_out_gen
               [Open_wronly; Open_creat; Open_excl; Open_binary] 0o600 path
           in
           protect (fun () ->
@@ -403,8 +390,8 @@ let openRessIn fspath path =
   Util.convertUnixErrorsToTransient "reading resource fork" (fun () ->
     try
       Unix.in_channel_of_descr
-        (Unix.openfile
-           (Fspath.concatToString fspath (ressPath path))
+        (Fs.openfile
+           (Fspath.concat fspath (ressPath path))
            [Unix.O_RDONLY] 0o444)
     with Unix.Unix_error ((Unix.ENOENT | Unix.ENOTDIR), _, _) ->
       let (doublePath, inch, entries) = openDouble fspath path in
@@ -421,13 +408,13 @@ let openRessOut fspath path length =
   Util.convertUnixErrorsToTransient "writing resource fork" (fun () ->
     try
       Unix.out_channel_of_descr
-        (Unix.openfile
-           (Fspath.concatToString fspath (ressPath path))
+        (Fs.openfile
+           (Fspath.concat fspath (ressPath path))
            [Unix.O_WRONLY;Unix.O_TRUNC] 0o600)
     with Unix.Unix_error ((Unix.ENOENT | Unix.ENOTDIR), _, _) ->
-      let path = appleDoubleFile fspath path in
+      let path = Fspath.appleDouble (Fspath.concat fspath path) in
       let outch =
-        open_out_gen
+        Fs.open_out_gen
           [Open_wronly; Open_creat; Open_excl; Open_binary] 0o600 path
       in
       protect (fun () ->

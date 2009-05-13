@@ -27,7 +27,7 @@ let dumbtty =
   Prefs.createBool "dumbtty"
     (match Util.osType with
         `Unix ->
-          (try (Unix.getenv "EMACS" <> "") with
+          (try (System.getenv "EMACS" <> "") with
            Not_found -> false)
       | _ ->
           true)
@@ -215,7 +215,7 @@ let interact rilist =
           begin match !Prefs.profileName with None -> assert false |
             Some(n) ->
               display ("  To un-ignore, edit "
-                       ^ (Prefs.profilePathname n)
+                       ^ System.fspathToPrintString (Prefs.profilePathname n)
                        ^ " and restart " ^ Uutil.myName ^ "\n") end;
           let nukeIgnoredRis =
             Safelist.filter (fun ri -> not (Globals.shouldIgnore ri.path)) in
@@ -284,7 +284,7 @@ let interact rilist =
                      Uicommon.showDiffs ri
                        (fun title text ->
                           try
-                            let pager = Sys.getenv "PAGER" in
+                            let pager = System.getenv "PAGER" in
                             restoreTerminal ();
                             let out = Unix.open_process_out pager in
                             Printf.fprintf out "\n%s\n\n%s\n\n" title text;
@@ -614,7 +614,8 @@ let watcherchan = ref None
 
 let suckOnWatcherFileLocal n =
   Util.convertUnixErrorsToFatal
-    ("Reading changes from watcher process in file " ^ n)
+    ("Reading changes from watcher process in file " ^
+     System.fspathToPrintString n)
     (fun () ->
        (* The main loop, invoked from two places below *)
        let rec loop ch =
@@ -636,15 +637,15 @@ let suckOnWatcherFileLocal n =
        (* Make sure there's a file to watch, then read from it *)
        match !watcherchan with
          None -> 
-           if Sys.file_exists n then begin
-             let ch = open_in n in
+           if System.file_exists n then begin
+             let ch = System.open_in_bin n in
              watcherchan := Some(ch);
              loop ch
            end else []
        | Some(ch) -> loop ch
       )
 
-let suckOnWatcherFileRoot: Common.root -> string -> (string list) Lwt.t =
+let suckOnWatcherFileRoot: Common.root -> System.fspath -> (string list) Lwt.t =
   Remote.registerRootCmd
     "suckOnWatcherFile"
     (fun (fspath, n) ->
@@ -656,7 +657,7 @@ let suckOnWatcherFiles n =
       Globals.allRootsMap (fun r -> suckOnWatcherFileRoot r n)))
 
 let synchronizePathsFromFilesystemWatcher () =
-  let watcherfilename = "" in
+  let watcherfilename = System.fspathFromString "" in
   (* STOPPED HERE -- need to find the program using watcherosx preference and invoke it using a redirect to get the output into a temp file... *)
   let rec loop failedPaths = 
     let newpaths = suckOnWatcherFiles watcherfilename in

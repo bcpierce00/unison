@@ -186,7 +186,7 @@ let init() = begin
      this in Util just because the Prefs module lives below the Os module in the
      dependency hierarchy, so Prefs can't call Os directly.) *)
   Util.supplyFileInUnisonDirFn 
-    (fun n -> Fspath.toString (Os.fileInUnisonDir(n)));
+    (fun n -> Os.fileInUnisonDir(n));
 
   (* Start a server if requested *)
   if Util.StringMap.mem serverPrefName argv then begin

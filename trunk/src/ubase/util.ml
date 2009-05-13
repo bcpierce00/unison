@@ -257,7 +257,7 @@ let safeGetenv var =
   convertUnixErrorsToFatal
     "querying environment"
     (fun () ->
-       try Unix.getenv var
+       try System.getenv var
        with Not_found ->
          raise (Fatal ("Environment variable " ^ var ^ " not found")))
 
@@ -423,21 +423,22 @@ let padto n s = s ^ (String.make (max 0 (n - String.length s)) ' ')
 (*              Building pathnames in the user's home dir                    *)
 (*****************************************************************************)
 
-let fileInHomeDir n =
-  if (osType = `Unix) || isCygwin then
-    Filename.concat (safeGetenv "HOME") n
-  else if osType = `Win32 then
-    let dirString =
-      try Unix.getenv "HOME" (* Windows 9x with Cygwin HOME set *)
-      with Not_found ->
-      try Unix.getenv "USERPROFILE" (* Windows NT/2K standard *)
-      with Not_found ->
-      try Unix.getenv "UNISON" (* Use UNISON dir if it is set *)
-      with Not_found ->
-      "c:/" (* Default *) in
-    Filename.concat dirString n
-  else
-    assert false (* osType can't be anything else *)
+let homeDir () =
+  System.fspathFromString
+    (if (osType = `Unix) || isCygwin then
+       safeGetenv "HOME"
+     else if osType = `Win32 then
+       try System.getenv "HOME" (* Windows 9x with Cygwin HOME set *)
+       with Not_found ->
+       try System.getenv "USERPROFILE" (* Windows NT/2K standard *)
+       with Not_found ->
+       try System.getenv "UNISON" (* Use UNISON dir if it is set *)
+       with Not_found ->
+       "c:/" (* Default *)
+     else
+       assert false (* osType can't be anything else *))
+
+let fileInHomeDir n = System.fspathConcat (homeDir ()) n
 
 (*****************************************************************************)
 (*           "Upcall" for building pathnames in the .unison dir              *)

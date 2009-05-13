@@ -1,4 +1,4 @@
-(* Unison file synchronizer: src/linktk.ml *)
+(* Unison file synchronizer: src/system.ml *)
 (* Copyright 1999-2009, Benjamin C. Pierce 
 
     This program is free software: you can redistribute it and/or modify
@@ -15,5 +15,5 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 *)
 
-
-module TopLevel = Main.Body(Uitk.Body)
+include System_generic
+(*include System_win*)

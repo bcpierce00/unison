@@ -265,13 +265,13 @@ let verboseArchiveName thisRoot =
 (* Load in the archive in [fspath]; check that archiveFormat (first line)
    and roots (second line) match skip the third line (time stamp), and read
    in the archive *)
-let loadArchiveLocal (fspath: Fspath.t) (thisRoot: string) :
+let loadArchiveLocal fspath (thisRoot: string) :
     (archive * int * string) option =
-  let f = Fspath.toString fspath in
-  debug (fun() -> Util.msg "Loading archive from %s\n" f);
+  debug (fun() ->
+    Util.msg "Loading archive from %s\n" (System.fspathToDebugString fspath));
   Util.convertUnixErrorsToFatal "loading archive" (fun () ->
-    if Sys.file_exists f then
-      let c = open_in_bin f in
+    if System.file_exists fspath then
+      let c = System.open_in_bin fspath in
       let header = input_line c in
       (* Sanity check on archive format *)
       if header<>formatString then begin
@@ -306,16 +306,19 @@ let loadArchiveLocal (fspath: Fspath.t) (thisRoot: string) :
            "Archive file seems damaged (%s): \
             throw away archives on both machines and try again" s))
     else
-      (debug (fun() -> Util.msg "Archive %s not found\n" f);
+      (debug (fun() ->
+         Util.msg "Archive %s not found\n"
+           (System.fspathToDebugString fspath));
       None))
 
 (* Inverse to loadArchiveLocal *)
 let storeArchiveLocal fspath thisRoot archive hash magic =
- let f = Fspath.toString fspath in
- debug (fun() -> Util.msg "Saving archive in %s\n" f);
+ debug (fun() ->
+    Util.msg "Saving archive in %s\n" (System.fspathToDebugString fspath));
  Util.convertUnixErrorsToFatal "saving archive" (fun () ->
    let c =
-     open_out_gen [Open_wronly; Open_creat; Open_trunc; Open_binary] 0o600 f
+     System.open_out_gen
+       [Open_wronly; Open_creat; Open_trunc; Open_binary] 0o600 fspath
    in
    output_string c formatString;
    output_string c "\n";
@@ -330,10 +333,11 @@ let storeArchiveLocal fspath thisRoot archive hash magic =
 let removeArchiveLocal ((fspath: Fspath.t), (v: archiveVersion)): unit Lwt.t =
   Lwt.return
     (let (name,_) = archiveName fspath v in
-     let f = Fspath.toString (Os.fileInUnisonDir name) in
-     debug (fun() -> Util.msg "Removing archive %s\n" f);
+     let fspath = Os.fileInUnisonDir name in
+     debug (fun() ->
+       Util.msg "Removing archive %s\n" (System.fspathToDebugString fspath));
      Util.convertUnixErrorsToFatal "removing archive" (fun () ->
-       if Sys.file_exists f then Sys.remove f))
+       if System.file_exists fspath then System.unlink fspath))
 
 (* [removeArchiveOnRoot root v] invokes [removeArchive fspath v] on the
    server, where [fspath] is the path to root on the server *)
@@ -347,11 +351,11 @@ let commitArchiveLocal ((fspath: Fspath.t), ())
   Lwt.return
     (let (fromname,_) = archiveName fspath ScratchArch in
      let (toname,_) = archiveName fspath NewArch in
-     let ffrom = Fspath.toString (Os.fileInUnisonDir fromname) in
-     let fto = Fspath.toString (Os.fileInUnisonDir toname) in
+     let ffrom = Os.fileInUnisonDir fromname in
+     let fto = Os.fileInUnisonDir toname in
      Util.convertUnixErrorsToFatal
        "committing"
-         (fun () -> Unix.rename ffrom fto))
+         (fun () -> System.rename ffrom fto))
 
 (* [commitArchiveOnRoot root v] invokes [commitArchive fspath v] on the
    server, where [fspath] is the path to root on the server *)
@@ -366,20 +370,23 @@ let postCommitArchiveLocal (fspath,())
   Lwt.return
     (let (fromname,_) = archiveName fspath NewArch in
      let (toname, thisRoot) = archiveName fspath MainArch in
-     let ffrom = Fspath.toString (Os.fileInUnisonDir fromname) in
-     let fto = Fspath.toString (Os.fileInUnisonDir toname) in
-     debug (fun() -> Util.msg "Copying archive %s to %s\n" ffrom fto);
+     let ffrom = Os.fileInUnisonDir fromname in
+     let fto = Os.fileInUnisonDir toname in
+     debug (fun() ->
+       Util.msg "Copying archive %s to %s\n"
+         (System.fspathToDebugString ffrom)
+         (System.fspathToDebugString fto));
      Util.convertUnixErrorsToFatal "copying archive" (fun () ->
        let outFd =
-         open_out_gen
+         System.open_out_gen
            [Open_wronly; Open_creat; Open_trunc; Open_binary] 0o600 fto in
-       Unix.chmod fto 0o600; (* In case the file already existed *)
-       let inFd = open_in_gen [Open_rdonly; Open_binary] 0o444 ffrom in
+       System.chmod fto 0o600; (* In case the file already existed *)
+       let inFd = System.open_in_bin ffrom in
        Uutil.readWrite inFd outFd (fun _ -> ());
        close_in inFd;
        close_out outFd;
        let arcFspath = Os.fileInUnisonDir toname in
-       let info = Fileinfo.get false arcFspath Path.empty in
+       let info = Fileinfo.get' arcFspath in
        Hashtbl.replace archiveInfoCache thisRoot info))
 
 (* [postCommitArchiveOnRoot root v] invokes [postCommitArchive fspath v] on
@@ -450,8 +457,9 @@ let dumpArchiveLocal (fspath,()) =
   let (name, root) = archiveName fspath MainArch in
   let archive = getArchive root in
   let f = Util.fileInHomeDir "unison.dump" in
-  debug (fun () -> Printf.eprintf "Dumping archive into `%s'\n" f);
-  let ch = open_out_gen [Open_wronly; Open_trunc; Open_creat] 0o600 f in
+  debug (fun () -> Printf.eprintf "Dumping archive into `%s'\n"
+                     (System.fspathToDebugString f));
+  let ch = System.open_out_gen [Open_wronly; Open_creat; Open_trunc] 0o600 f in
   let (outfn,flushfn) = Format.get_formatter_output_functions () in
   Format.set_formatter_out_channel ch;
   Format.printf "Contents of archive for %s\n" root;
@@ -483,17 +491,17 @@ let loadArchiveOnRoot: Common.root -> bool -> (int * string) option Lwt.t =
            (* If the archive is not in a stable state, we need to
               perform archive recovery.  So, the optimistic loading
               fails. *)
-           Sys.file_exists (Fspath.toString (Os.fileInUnisonDir newArcName))
+           Sys.file_exists newArcName
              ||
            let (lockFilename, _) = archiveName fspath Lock in
-           let lockFile = Fspath.toString (Os.fileInUnisonDir lockFilename) in
+           let lockFile = Os.fileInUnisonDir lockFilename in
            Lock.is_locked lockFile
          then
            Lwt.return None
          else
            let (arcName,thisRoot) = archiveName fspath MainArch in
            let arcFspath = Os.fileInUnisonDir arcName in
-           let info = Fileinfo.get false arcFspath Path.empty in
+           let info = Fileinfo.get' arcFspath in
            if archiveUnchanged fspath info then
              (* The archive is unchanged.  So, we don't need to do
                 anything. *)
@@ -501,7 +509,7 @@ let loadArchiveOnRoot: Common.root -> bool -> (int * string) option Lwt.t =
            else begin
              match loadArchiveLocal arcFspath thisRoot with
                Some (arch, hash, magic) ->
-                 let info' = Fileinfo.get false arcFspath Path.empty in
+                 let info' = Fileinfo.get' arcFspath in
                  if fileUnchanged info info' then begin
                    setArchiveLocal thisRoot arch;
                    Hashtbl.replace archiveInfoCache thisRoot info;
@@ -517,7 +525,7 @@ let loadArchiveOnRoot: Common.root -> bool -> (int * string) option Lwt.t =
          match loadArchiveLocal arcFspath thisRoot with
            Some (arch, hash, magic) ->
              setArchiveLocal thisRoot arch;
-             let info = Fileinfo.get false arcFspath Path.empty in
+             let info = Fileinfo.get' arcFspath in
              Hashtbl.replace archiveInfoCache thisRoot info;
              Lwt.return (Some (hash, magic))
          | None ->
@@ -551,7 +559,8 @@ let loadArchives (optimistic: bool) : bool Lwt.t =
       ^ "  b) Move the archive files on each machine to some other directory\n"
       ^ "     (in case they may be useful for debugging).\n"
       ^ "     The archive files on this machine are in the directory\n"
-      ^ (Printf.sprintf "       %s\n" (Fspath.toString Os.unisonDir))
+      ^ (Printf.sprintf "       %s\n"
+           (System.fspathToPrintString Os.unisonDir))
       ^ "     and have names of the form\n"
       ^ "       arXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n"
       ^ "     where the X's are a hexidecimal number .\n"
@@ -641,12 +650,12 @@ let transaction (f: int -> unit Lwt.t): unit Lwt.t =
 
 let lockArchiveLocal fspath =
   let (lockFilename, _) = archiveName fspath Lock in
-  let lockFile = Fspath.toString (Os.fileInUnisonDir lockFilename) in
+  let lockFile = Os.fileInUnisonDir lockFilename in
   if Lock.acquire lockFile then
     None
   else
     Some (Printf.sprintf "The file %s on host %s should be deleted"
-            lockFile Os.myCanonicalHostName)
+            (System.fspathToPrintString lockFile) Os.myCanonicalHostName)
 
 let lockArchiveOnRoot: Common.root -> unit -> string option Lwt.t =
   Remote.registerRootCmd
@@ -654,7 +663,7 @@ let lockArchiveOnRoot: Common.root -> unit -> string option Lwt.t =
 
 let unlockArchiveLocal fspath =
   Lock.release
-    (Fspath.toString (Os.fileInUnisonDir (fst (archiveName fspath Lock))))
+    (Os.fileInUnisonDir (fst (archiveName fspath Lock)))
 
 let unlockArchiveOnRoot: Common.root -> unit -> unit Lwt.t =
   Remote.registerRootCmd
@@ -746,10 +755,10 @@ let archivesExistOnRoot: Common.root -> unit -> (bool * bool) Lwt.t =
     (fun (fspath,rootsName) ->
        let (oldname,_) = archiveName fspath MainArch in
        let oldexists =
-         Sys.file_exists (Fspath.toString (Os.fileInUnisonDir oldname)) in
+         System.file_exists (Os.fileInUnisonDir oldname) in
        let (newname,_) = archiveName fspath NewArch in
        let newexists =
-         Sys.file_exists (Fspath.toString (Os.fileInUnisonDir newname)) in
+         System.file_exists (Os.fileInUnisonDir newname) in
        Lwt.return (oldexists, newexists))
 
 let (archiveNameOnRoot
@@ -762,7 +771,7 @@ let (archiveNameOnRoot
        Lwt.return
          (name,
           Os.myCanonicalHostName,
-          Sys.file_exists (Fspath.toString (Os.fileInUnisonDir name))))
+          System.file_exists (Os.fileInUnisonDir name)))
 
 let forall = Safelist.for_all (fun x -> x)
 let exists = Safelist.exists (fun x -> x)
@@ -863,7 +872,7 @@ let rec updatePathInArchive archive fspath
   debugverbose
     (fun() ->
       Printf.eprintf "updatePathInArchive %s %s [%s] [%s]\n"
-        (archive2string archive) (Fspath.toString fspath)
+        (archive2string archive) (Fspath.toDebugString fspath)
         (Path.toString here) (Path.toString rest));
   match Path.deconstruct rest with
     None ->
@@ -926,7 +935,7 @@ let translatePath =
 let isDir fspath path =
   let fullFspath = Fspath.concat fspath path in
   try
-    (Fspath.stat fullFspath).Unix.LargeFile.st_kind = Unix.S_DIR
+    (Fs.stat fullFspath).Unix.LargeFile.st_kind = Unix.S_DIR
   with Unix.Unix_error _ -> false
 
 (***********************************************************************
@@ -949,7 +958,7 @@ let abortIfAnyMountpointsAreMissing fspath =
        if not (Os.exists fspath path) then
          raise (Util.Fatal
            (Printf.sprintf "Path %s / %s is designated as a mountpoint, but points to nothing on host %s\n"
-             (Fspath.toString fspath) (Path.toString path) Os.myCanonicalHostName)))
+             (Fspath.toPrintString fspath) (Path.toString path) Os.myCanonicalHostName)))
     (Prefs.read mountpoints)
 
 
@@ -1341,7 +1350,7 @@ and buildUpdateRec archive currfspath path fastCheck =
   try
     debug (fun() ->
       Util.msg "buildUpdate: %s\n"
-        (Fspath.concatToString currfspath path));
+        (Fspath.toDebugString (Fspath.concat currfspath path)));
     let info = Fileinfo.get true currfspath path in
     match (info.Fileinfo.typ, archive) with
       (`ABSENT, NoArchive) ->
@@ -1512,7 +1521,7 @@ let rec buildUpdate archive fspath fullpath here path =
    items; as a side effect, update the local archive w.r.t. time-stamps for
    unchanged files *)
 let findLocal fspath pathList: Common.updateItem list =
-  debug (fun() -> Util.msg "findLocal %s\n" (Fspath.toString fspath));
+  debug (fun() -> Util.msg "findLocal %s\n" (Fspath.toDebugString fspath));
   addHashToTempNames fspath;
   (* Maybe we should remember the device number where the root lives at 
      the beginning of update detection, so that we can check, below, that 
@@ -1721,7 +1730,7 @@ let rec stripArchive path arch =
 let updateArchiveLocal fspath path ui id =
   debug (fun() ->
     Util.msg "updateArchiveLocal %s %s\n"
-      (Fspath.toString fspath) (Path.toString path));
+      (Fspath.toDebugString fspath) (Path.toString path));
   let root = thisRootsGlobalName fspath in
   let archive = getArchive root in
   let (localPath, subArch) = getPathInArchive archive Path.empty path in
@@ -1756,7 +1765,7 @@ let markEqualLocal fspath paths =
     (fun path uc ->
        debug (fun() ->
          Util.msg "markEqualLocal %s %s\n"
-           (Fspath.toString fspath) (Path.toString path));
+           (Fspath.toDebugString fspath) (Path.toString path));
        let arch, (subArch, localPath) =
          updatePathInArchive !archive fspath Path.empty path
            (fun archive _ localPath ->
@@ -1824,7 +1833,7 @@ let rec replaceArchiveRec fspath path arch paranoid deleteBadTempFiles =
 let replaceArchiveLocal fspath pathTo location arch id paranoid deleteBadTempFiles =
   debug (fun() -> Util.msg
              "replaceArchiveLocal %s %s\n"
-             (Fspath.toString fspath)
+             (Fspath.toDebugString fspath)
              (Path.toString pathTo)
         );
   let root = thisRootsGlobalName fspath in
@@ -1901,7 +1910,7 @@ let doUpdateProps arch propOpt ui =
 let updatePropsLocal fspath path propOpt ui id =
   debug (fun() ->
     Util.msg "updatePropsLocal %s %s\n"
-      (Fspath.toString fspath) (Path.toString path));
+      (Fspath.toDebugString fspath) (Path.toString path));
   let root = thisRootsGlobalName fspath in
   let commit () =
     let archive = getArchive root in
@@ -1929,7 +1938,7 @@ let updateProps root path propOpt ui id =
 let checkNoUpdatesLocal fspath pathInArchive ui =
   debug (fun() ->
     Util.msg "checkNoUpdatesLocal %s %s\n"
-      (Fspath.toString fspath) (Path.toString pathInArchive));
+      (Fspath.toDebugString fspath) (Path.toString pathInArchive));
   let archive = getArchive (thisRootsGlobalName fspath) in
   let (localPath, archive) =
     getPathInArchive archive Path.empty pathInArchive in

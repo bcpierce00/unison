@@ -1,5 +1,15 @@
 CHANGES FROM VERSION 2.33.2
 
+* Added an abstraction layer over Unix/Sys modules in order to be able
+  to redefine all system calls involving filenames
+* Implemented corresponding bindings for the Windows Unicode API
+  (not activated by default yet)
+* Uses improved emulation of "select" call provided by Ocaml 3.11
+  under Windows (the GUI should not freeze as much during synchronization)
+
+-------------------------------
+CHANGES FROM VERSION 2.33.2
+
 * Fixed predicate matching in Unicode case-insensitive mode
 
 -------------------------------

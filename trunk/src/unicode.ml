@@ -775,7 +775,7 @@ let rec scan s' j s i l =
       cont s' j s (i + 4) l v
     end
   end else
-    String.sub s' 0 j
+    String.sub s' 0 (j + 2)
 
 and cont s' j s i l v =
   if v < 0x10000 then begin
@@ -790,7 +790,7 @@ and cont s' j s i l v =
 
 let to_utf_16 s =
   let l = String.length s in
-  let s' = String.create (2 * l) in
+  let s' = String.make (2 * l + 2) '\000' in
   scan s' 0 s 0 l
 
 (****)
@@ -798,21 +798,29 @@ let to_utf_16 s =
 let rec scan s' i' l' s i l =
   if i + 2 <= l then begin
     let v = get_2 s i in
-    if v < 0xD800 || v > 0xDFFF then
+    if v = 0 then
+      String.sub s' 0 i'  (* null *)
+    else if v < 0xD800 || v > 0xDFFF then
       let i' = encode_char s' i' l' v in
       scan s' i' l' s (i + 2) l
     else if v >= 0xdc00 || i + 4 > l then
-      fail ()
+      let i' = encode_char s' i' l' v in
+      scan s' i' l' s (i + 2) l
+(*      fail ()  *)
     else begin
       let v' = get_2 s (i + 2) in
-      if v' < 0xDC00 || v' > 0XDFFF then fail () else
-      let i' =
-        encode_char s' i' l' ((v - 0xD800) lsl 10 + (v' - 0xDC00) + 0x10000)
-      in
-      scan s' i' l' s (i + 4) l
+      if v' < 0xDC00 || v' > 0XDFFF then
+        let i' = encode_char s' i' l' v in
+        scan s' i' l' s (i + 2) l
+(*        fail ()*)
+      else
+        let i' =
+          encode_char s' i' l' ((v - 0xD800) lsl 10 + (v' - 0xDC00) + 0x10000)
+        in
+        scan s' i' l' s (i + 4) l
     end
   end else if i < l then
-    fail ()
+    fail () (* Odd number of chars *)
   else
     String.sub s' 0 i'
 
@@ -842,7 +850,7 @@ let rec scan s i l =
     let c2 = get s (i + 2) in
     (c1 lor c2) land 0xc0 = 0x80 &&
     let v = c lsl 12 + c1 lsl 6 + c2 - 0xe2080 in
-    v >= 0x800 &&
+    v >= 0x800 && (v < 0xd800 || v > 0xdfff) &&
     scan s (i + 3) l
   end else begin
     (* 10000 - 10FFFF *)
