@@ -63,11 +63,8 @@ val diff :
 (* terminated) synchronizations                                              *)
 val processCommitLogs : unit -> unit
 
-(* List the files in a directory matching a pattern.  (It would be better
-   to use fspath, etc., here instead of string) *)
-val ls : string -> string -> string list
-
-val get_files_in_directory : string -> string list
+(* List the files in a directory matching a pattern. *)
+val ls : System.fspath -> string -> string list
 
 val merge :
      Common.root                  (* first root *)

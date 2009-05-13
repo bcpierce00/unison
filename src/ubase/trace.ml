@@ -112,7 +112,7 @@ let logging =
      on a file."
 
 let logfile =
-  Prefs.createString "logfile"
+  Prefs.createFspath "logfile"
     (Util.fileInHomeDir "unison.log")
     "!logfile name"
     "By default, logging messages will be appended to the file
@@ -127,7 +127,7 @@ let rec getLogch() =
     None ->
       let file = Prefs.read logfile in
       let ch =
-        open_out_gen [Open_wronly; Open_append; Open_creat] 0o600 file in
+        System.open_out_gen [Open_wronly; Open_creat; Open_append] 0o600 file in
       logch := Some (ch, file);
       ch
   | Some(ch, file) ->

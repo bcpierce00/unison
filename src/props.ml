@@ -199,13 +199,13 @@ let set fspath path kind (fp, mask) =
     Util.convertUnixErrorsToTransient
     "setting permissions"
       (fun () ->
-        let abspath = Fspath.concatToString fspath path in
+        let abspath = Fspath.concat fspath path in
         debug
           (fun() ->
             Util.msg "Setting permissions for %s to %s (%s)\n"
-              abspath (toString (fileperm2perm fp))
+              (Fspath.toDebugString abspath) (toString (fileperm2perm fp))
               (Printf.sprintf "%o/%o" fp mask));
-        Unix.chmod abspath fp)
+        Fs.chmod abspath fp)
 
 let get stats _ = (stats.Unix.LargeFile.st_perm, Prefs.read permMask)
 
@@ -220,7 +220,7 @@ let check fspath path stats (fp, mask) =
              The filesystem probably does not support all permission bits. \
              You should probably set the \"perms\" option to 0o%o \
              (or to 0 if you don't need to synchronize permissions)."
-            (Fspath.concatToString fspath path)
+            (Fspath.toPrintString (Fspath.concat fspath path))
             (syncedPartsToString (fp, mask))
             (syncedPartsToString (fp', mask))
             (mask land (lnot (fp lxor fp')))))
@@ -261,7 +261,7 @@ module Id (M : sig
   val to_num : string -> int
   val toString : int -> string
   val syncedPartsToString : int -> string
-  val set : string -> int -> unit
+  val set : Fspath.t -> int -> unit
   val get : Unix.LargeFile.stats -> int
 end) : S = struct
 
@@ -328,7 +328,7 @@ let set fspath path kind id =
       Util.convertUnixErrorsToTransient
         "setting file ownership"
         (fun () ->
-           let abspath = Fspath.concatToString fspath path in
+           let abspath = Fspath.concat fspath path in
            M.set abspath id)
 
 let tbl = Hashtbl.create 17
@@ -366,7 +366,7 @@ let to_num nm = (Unix.getpwnam nm).Unix.pw_uid
 let toString id = (Unix.getpwuid id).Unix.pw_name
 let syncedPartsToString = toString
 
-let set path id = Unix.chown path id (-1)
+let set path id = Fs.chown path id (-1)
 let get stats = stats.Unix.LargeFile.st_uid
 
 end)
@@ -387,7 +387,7 @@ let to_num nm = (Unix.getgrnam nm).Unix.gr_gid
 let toString id = (Unix.getgrgid id).Unix.gr_name
 let syncedPartsToString = toString
 
-let set path id = Unix.chown path (-1) id
+let set path id = Fs.chown path (-1) id
 let get stats = stats.Unix.LargeFile.st_gid
 
 end)
@@ -488,13 +488,6 @@ let syncedPartsToString t = match t with
   Synced _    -> toString t
 | NotSynced _ -> ""
 
-let iCanWrite p =
-  try
-    Unix.access p [Unix.W_OK];
-    true
-  with
-    Unix.Unix_error _ -> false
-
 (* FIX: Probably there should be a check here that prevents us from ever     *)
 (* setting a file's modtime into the future.                                 *)
 let set fspath path kind t =
@@ -503,8 +496,8 @@ let set fspath path kind t =
       Util.convertUnixErrorsToTransient
         "setting modification time"
         (fun () ->
-           let abspath = Fspath.concatToString fspath path in
-           if Util.osType = `Win32 && not (iCanWrite abspath) then
+           let abspath = Fspath.concat fspath path in
+           if not (Fs.canSetTime abspath) then
              begin
               (* Nb. This workaround was proposed by Dmitry Bely, to
                  work around the fact that Unix.utimes fails on readonly
@@ -518,12 +511,12 @@ let set fspath path kind t =
                  certainly don't want to make it WORLD-writable, even
                  briefly!). *)
                let oldPerms =
-                 (Unix.LargeFile.lstat abspath).Unix.LargeFile.st_perm in
+                 (Fs.lstat abspath).Unix.LargeFile.st_perm in
                Util.finalize
                  (fun()->
-                    Unix.chmod abspath 0o600;
-                    Unix.utimes abspath v v)
-                 (fun()-> Unix.chmod abspath oldPerms)
+                    Fs.chmod abspath 0o600;
+                    Fs.utimes abspath v v)
+                 (fun()-> Fs.chmod abspath oldPerms)
              end
            else if false then begin
              (* A special hack for Rasmus, who has a special situation that
@@ -540,12 +533,12 @@ let set fspath path kind t =
                           time.Unix.tm_min
                           time.Unix.tm_sec in
              let cmd = "/usr/local/bin/sudo -u root /usr/bin/touch -m -a -t "
-                       ^ tstr ^ " '" ^ abspath ^ "'" in
+                       ^ tstr ^ " " ^ Fspath.quotes abspath in
              Util.msg "Running external program to set utimes:\n  %s\n" cmd;
              let (r,_) = External.runExternalProgram cmd in
              if r<>(Unix.WEXITED 0) then raise (Util.Transient "External time-setting command failed")
            end else
-             Unix.utimes abspath v v)
+             Fs.utimes abspath v v)
   | _ ->
       ()
 
@@ -568,7 +561,7 @@ let check fspath path stats t =
              (Format.sprintf
                 "Failed to set modification time of file %s to %s: \
              the time was set to %s instead"
-            (Fspath.concatToString fspath path)
+            (Fspath.toPrintString (Fspath.concat fspath path))
             (syncedPartsToString t)
             (syncedPartsToString t')))
 

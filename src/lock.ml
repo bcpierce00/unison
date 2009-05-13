@@ -17,23 +17,23 @@
 
 
 let rename oldFile newFile =
-  begin try Unix.link oldFile newFile with Unix.Unix_error _ -> () end;
-  let res = try (Unix.LargeFile.stat oldFile).Unix.LargeFile.st_nlink = 2
+  begin try System.link oldFile newFile with Unix.Unix_error _ -> () end;
+  let res = try (System.stat oldFile).Unix.LargeFile.st_nlink = 2
             with Unix.Unix_error _ -> false
   in
-  Unix.unlink oldFile;
+  System.unlink oldFile;
   res
 
 let flags = [Unix.O_WRONLY; Unix.O_CREAT; Unix.O_EXCL]
 let create name mode =
   try
-    Unix.close (Unix.openfile name flags mode);
+    Unix.close (System.openfile name flags mode);
     true
   with Unix.Unix_error (Unix.EEXIST, _, _) ->
     false
 
 let rec unique name i mode =
-  let nm = name ^ string_of_int i in
+  let nm = System.fspathAddSuffixToFinalName name (string_of_int i) in
   if create nm mode then nm else
     (* highly unlikely *)
     unique name (i + 1) mode
@@ -48,9 +48,9 @@ let acquire name =
        | _ ->
            create name 0o600)
 
-let release name = try Unix.unlink name with Unix.Unix_error _ -> ()
+let release name = try System.unlink name with Unix.Unix_error _ -> ()
 
 let is_locked name =
   Util.convertUnixErrorsToTransient
     "Lock.test"
-    (fun () -> Sys.file_exists name)
+    (fun () -> System.file_exists name)

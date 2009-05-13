@@ -32,7 +32,7 @@ module PathMap =
     (struct
        type t = Fspath.t * Path.local
        let hash (fspath, path) =
-         (Hashtbl.hash (Fspath.toString fspath) + 13217 * Path.hash path)
+         (Fspath.hash fspath + 13217 * Path.hash path)
            land
          0x3FFFFFFF
        let equal = (=)
@@ -71,7 +71,7 @@ let insertEntry p fp =
     debug (fun () ->
       let (fspath, path) = p in
       Util.msg "insertEntry: fspath=%s, path=%s, fp=%s\n"
-        (Fspath.toString fspath)
+        (Fspath.toDebugString fspath)
         (Path.toString path) (Os.fullfingerprint_to_string fp));
     (* Neither of these should be able to raise Not_found *)
     PathMap.replace path2fingerprintMap p fp;
@@ -83,7 +83,7 @@ let deleteEntry p =
     debug (fun () ->
       let (fspath, path) = p in
       Util.msg "deleteEntry: fspath=%s, path=%s\n"
-        (Fspath.toString fspath) (Path.toString path));
+        (Fspath.toDebugString fspath) (Path.toString path));
     try
       let fp = PathMap.find path2fingerprintMap p in
       PathMap.remove path2fingerprintMap p;
@@ -100,8 +100,8 @@ let renameEntry pOrig pNew =
       let (fspathOrig, pathOrig) = pOrig in
       let (fspathNew, pathNew) = pNew in
       Util.msg "renameEntry: fsOrig=%s, pOrig=%s, fsNew=%s, pNew=%s\n"
-        (Fspath.toString fspathOrig) (Path.toString pathOrig)
-        (Fspath.toString fspathNew) (Path.toString pathNew));
+        (Fspath.toDebugString fspathOrig) (Path.toString pathOrig)
+        (Fspath.toDebugString fspathNew) (Path.toString pathNew));
     try
       let fp = PathMap.find path2fingerprintMap pOrig in
       PathMap.remove path2fingerprintMap pOrig;

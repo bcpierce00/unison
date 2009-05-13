@@ -98,6 +98,8 @@ ifeq ($(OSARCH),win32)
 #    issue."
 #  CLIBS+=-cclib win32rc/unison.res
 #  STATICLIBS+=-cclib win32rc/unison.res
+  COBJS+=system_win_stubs$(OBJ_EXT)
+  WINOBJS=system_win.cmo
   CLIBS+=-cclib "-link win32rc/unison.res"
   STATICLIBS+=-cclib "-link win32rc/unison.res"
   buildexecutable::
@@ -108,6 +110,8 @@ else
   ifeq ($(OSARCH),win32gnuc)
     CWD=.
     EXEC_EXT=.exe
+    COBJS+=system_win_stubs$(OBJ_EXT)
+    WINOBJS=system_win.cmo
     CLIBS+=-cclib win32rc/unison.res.lib
     STATIC=false                      # Cygwin is not MinGW :-(
     buildexecutable::
@@ -176,14 +180,19 @@ macexecutable: $(NAME)-blob.o
 # File extensions will be substituted for the native code version
 
 OCAMLOBJS += \
+          ubase/rx.cmo \
+	  \
+          unicode_tables.cmo unicode.cmo \
+          $(WINOBJS) system_generic.cmo system.cmo \
+          \
           ubase/projectInfo.cmo ubase/myMap.cmo ubase/safelist.cmo \
-          ubase/uprintf.cmo ubase/util.cmo ubase/rx.cmo ubase/uarg.cmo \
+          ubase/uprintf.cmo ubase/util.cmo ubase/uarg.cmo \
           ubase/prefs.cmo ubase/trace.cmo \
           \
           lwt/pqueue.cmo lwt/lwt.cmo lwt/lwt_util.cmo lwt/lwt_unix.cmo \
           \
-          unicode_tables.cmo unicode.cmo case.cmo pred.cmo uutil.cmo \
-          fileutil.cmo name.cmo path.cmo fspath.cmo fingerprint.cmo \
+          case.cmo pred.cmo uutil.cmo \
+          fileutil.cmo name.cmo path.cmo fspath.cmo fs.cmo fingerprint.cmo \
           abort.cmo osx.cmo external.cmo \
           props.cmo fileinfo.cmo os.cmo lock.cmo clroot.cmo common.cmo \
           tree.cmo checksum.cmo terminal.cmo \

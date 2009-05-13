@@ -24,30 +24,29 @@ let debug = Trace.debug "copy"
 
 let openFileIn fspath path kind =
   match kind with
-    `DATA   -> open_in_gen [Open_rdonly; Open_binary] 0o444
-                 (Fspath.concatToString fspath path)
+    `DATA   -> Fs.open_in_bin (Fspath.concat fspath path)
   | `RESS _ -> Osx.openRessIn fspath path
 
 let openFileOut fspath path kind =
   match kind with
     `DATA     ->
-      let fullpath = Fspath.concatToString fspath path in
+      let fullpath = Fspath.concat fspath path in
       let flags = [Unix.O_WRONLY;Unix.O_CREAT] in
       let perm = 0o600 in
       begin match Util.osType with
         `Win32 ->
-          open_out_gen
+          Fs.open_out_gen
             [Open_wronly; Open_creat; Open_excl; Open_binary] perm fullpath
       | `Unix ->
           let fd =
             try
-              Unix.openfile fullpath (Unix.O_EXCL :: flags) perm
+              Fs.openfile fullpath (Unix.O_EXCL :: flags) perm
             with
               Unix.Unix_error
                 ((Unix.EOPNOTSUPP | Unix.EUNKNOWNERR 524), _, _) ->
               (* O_EXCL not supported under a Netware NFS-mounted filesystem.
                  Solaris and Linux report different errors. *)
-                Unix.openfile fullpath (Unix.O_TRUNC :: flags) perm
+                Fs.openfile fullpath (Unix.O_TRUNC :: flags) perm
           in
           Unix.out_channel_of_descr fd
       end
@@ -83,8 +82,8 @@ let localFile
       use_id (fun id -> Uutil.showProgress id Uutil.Filesize.zero "l");
       debug (fun () ->
         Util.msg "Copy.localFile %s / %s to %s / %s\n"
-          (Fspath.toString fspathFrom) (Path.toString pathFrom)
-          (Fspath.toString fspathTo) (Path.toString pathTo));
+          (Fspath.toDebugString fspathFrom) (Path.toString pathFrom)
+          (Fspath.toDebugString fspathTo) (Path.toString pathTo));
       let inFd = openFileIn fspathFrom pathFrom `DATA in
       protect (fun () ->
         Os.delete fspathTo pathTo;
@@ -333,8 +332,8 @@ let reallyTransferFile
     connFrom fspathFrom pathFrom fspathTo pathTo realPathTo
     update desc ressLength ressOnly id =
   debug (fun() -> Util.msg "reallyTransferFile(%s,%s) -> (%s,%s,%s,%s)%s\n"
-      (Fspath.toString fspathFrom) (Path.toString pathFrom)
-      (Fspath.toString fspathTo) (Path.toString pathTo)
+      (Fspath.toDebugString fspathFrom) (Path.toString pathFrom)
+      (Fspath.toDebugString fspathTo) (Path.toString pathTo)
       (Path.toString realPathTo) (Props.toString desc)
       (if ressOnly then " (ONLY RESOURCE FORK)" else ""));
   let srcFileSize = Props.length desc in
@@ -347,7 +346,7 @@ let reallyTransferFile
     (* Data fork *)
     if Os.exists fspathTo pathTo then begin
       debug (fun() -> Util.msg "Removing old temp file %s / %s\n"
-               (Fspath.toString fspathTo) (Path.toString pathTo));
+               (Fspath.toDebugString fspathTo) (Path.toString pathTo));
       Os.delete fspathTo pathTo
     end;
     startReceivingFile
@@ -438,7 +437,7 @@ let tryCopyMovedFile fspathTo pathTo realPathTo update desc fp ress id =
           debug (fun () ->
             Util.msg
               "tryCopyMovedFile: found match at %s,%s. Try local copying\n"
-              (Fspath.toString candidateFspath)
+              (Fspath.toDebugString candidateFspath)
               (Path.toString candidatePath));
           try
             if Os.exists candidateFspath candidatePath then begin
@@ -562,25 +561,21 @@ let setFileinfoOnRoot =
   Remote.registerRootCmdWithConnection "setFileinfo" setFileinfoLocal
 
 let targetExists checkSize fspathTo pathTo =
-     Os.exists fspathTo pathTo
+  let info = Fileinfo.get false fspathTo pathTo in
+  info.Fileinfo.typ = `FILE
   && (match checkSize with
         `MakeWriteableAndCheckNonempty ->
-          let n = Fspath.concatToString fspathTo pathTo in
-          let perms = (Unix.stat n).Unix.st_perm in
+          let n = Fspath.concat fspathTo pathTo in
+          let perms = Props.perms info.Fileinfo.desc in
           let perms' = perms lor 0o600 in
-          Unix.chmod n perms';
-          let r =
-            Props.length (Fileinfo.get false fspathTo pathTo).Fileinfo.desc
-              > Uutil.Filesize.zero in
-          r
+          Fs.chmod n perms';
+          Props.length info.Fileinfo.desc > Uutil.Filesize.zero
       | `CheckDataSize desc ->
-             Props.length (Fileinfo.get false fspathTo pathTo).Fileinfo.desc
-               = Props.length desc
+             Props.length info.Fileinfo.desc = Props.length desc
       | `CheckSize (desc,ress) ->
-             Props.length (Fileinfo.get false fspathTo pathTo).Fileinfo.desc
-               = Props.length desc
-          && Osx.ressLength (Osx.getFileInfos fspathTo pathTo `FILE).Osx.ressInfo
-               = Osx.ressLength ress)
+             Props.length info.Fileinfo.desc = Props.length desc
+          && Osx.ressLength info.Fileinfo.osX.Osx.ressInfo =
+             Osx.ressLength ress)
 
 let targetExistsLocal connFrom (checkSize, fspathTo, pathTo) =
   Lwt.return (targetExists checkSize fspathTo pathTo)
@@ -629,16 +624,18 @@ let transferFileUsingExternalCopyprog
     let addquotes root s =
       match root with
       | Common.Local, _ -> s
-      | Common.Remote _, _ -> if extraquotes then Os.quotes s else s in
+      | Common.Remote _, _ -> if extraquotes then Uutil.quotes s else s in
     let fromSpec =
         (formatConnectionInfo rootFrom)
-      ^ (addquotes rootFrom (Fspath.concatToString (snd rootFrom) pathFrom)) in
+      ^ (addquotes rootFrom
+           (Fspath.toString (Fspath.concat (snd rootFrom) pathFrom))) in
     let toSpec =
         (formatConnectionInfo rootTo)
-      ^ (addquotes rootTo (Fspath.concatToString fspathTo pathTo)) in
+      ^ (addquotes rootTo
+           (Fspath.toString (Fspath.concat fspathTo pathTo))) in
     let cmd = prog ^ " "
-               ^ (Os.quotes fromSpec) ^ " "
-               ^ (Os.quotes toSpec) in
+               ^ (Uutil.quotes fromSpec) ^ " "
+               ^ (Uutil.quotes toSpec) in
     Trace.log (Printf.sprintf "%s\n" cmd);
     let _,log = External.runExternalProgram cmd in
     debug (fun() ->
@@ -662,7 +659,7 @@ let file rootFrom pathFrom rootTo fspathTo pathTo realPathTo
   debug (fun() -> Util.msg "copyRegFile(%s,%s) -> (%s,%s,%s,%s,%s)\n"
       (Common.root2string rootFrom) (Path.toString pathFrom)
       (Common.root2string rootTo) (Path.toString realPathTo)
-      (Fspath.toString fspathTo) (Path.toString pathTo)
+      (Fspath.toDebugString fspathTo) (Path.toString pathTo)
       (Props.toString desc));
   let timer = Trace.startTimer "Transmitting file" in
   begin match rootFrom, rootTo with
@@ -679,7 +676,7 @@ let file rootFrom pathFrom rootTo fspathTo pathTo realPathTo
       if b then begin
         Trace.log (Printf.sprintf
           "%s/%s has already been transferred\n"
-          (Fspath.toString fspathTo) (Path.toString pathTo));
+          (Fspath.toDebugString fspathTo) (Path.toString pathTo));
         Lwt.return ()
       (* Check whether we should use an external program to copy the
          file *)
@@ -710,8 +707,8 @@ let file rootFrom pathFrom rootTo fspathTo pathTo realPathTo
       end else
         (* Just transfer the file in the usual way with Unison's
            built-in facilities *)
-        transferFile
-          rootFrom pathFrom rootTo fspathTo pathTo realPathTo
+        transferFile 
+         rootFrom pathFrom rootTo fspathTo pathTo realPathTo
           update desc fp ress false id
       ) end >>= (fun () ->
   Trace.showTimer timer;

@@ -10,7 +10,9 @@ val concat : t -> Path.local -> t
 
 val canonize : string option -> t
 val toString : t -> string
-val concatToString : t -> Path.local -> string
+val toPrintString : t -> string
+val toDebugString : t -> string
+val toSysPath : t -> System.fspath
 
 (* If fspath+path refers to a (followed) symlink, then return the directory  *)
 (* of the symlink's target; otherwise return the parent dir of path.  If     *)
@@ -26,8 +28,10 @@ val appleDouble : t -> t
 (* Return the resource fork filename; if root dir, raise Invalid_argument    *)
 val rsrc : t -> t
 
-(* Wrapped system calls that use invariants of the fspath internal rep       *)
-(* BE SURE TO USE ONLY THESE, NOT VERSIONS FROM THE UNIX MODULE!             *)
-val stat : t -> Unix.LargeFile.stats
-val lstat : t -> Unix.LargeFile.stats
-val opendir : t -> Unix.dir_handle
+(* Escaped fspath (to pass as shell parameter) *)
+val quotes : t -> string
+
+(* CASE-SENSITIVE comparison between fspaths *)
+val compare : t -> t -> int
+(* CASE-SENSITIVE hash of a fspath *)
+val hash : t -> int

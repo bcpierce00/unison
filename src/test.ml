@@ -25,25 +25,25 @@ let debug = Trace.debug "test"
 let verbose = Trace.debug "test"
 
 let rec remove_file_or_dir d =
-  match try Some(Unix.lstat d) with Unix.Unix_error((Unix.ENOENT | Unix.ENOTDIR),_,_) -> None with
+  match try Some(Fs.lstat d) with Unix.Unix_error((Unix.ENOENT | Unix.ENOTDIR),_,_) -> None with
   | Some(s) ->
-    if s.Unix.st_kind = Unix.S_DIR then begin
-      let handle = Unix.opendir d in
+    if s.Unix.LargeFile.st_kind = Unix.S_DIR then begin
+      let handle = Fs.opendir d in
       let rec loop () =
-        let r = try Some(Unix.readdir handle) with End_of_file -> None in
+        let r = try Some(Fs.readdir handle) with End_of_file -> None in
         match r with
         | Some f ->
             if f="." || f=".." then loop ()
             else begin
-              remove_file_or_dir (d^"/"^f);
+              remove_file_or_dir (Fspath.concat d (Path.fromString f));
               loop ()
             end  
         | None ->
-            Unix.closedir handle;
-            Unix.rmdir d
+            Fs.closedir handle;
+            Fs.rmdir d
       in loop ()
     end else 
-      Sys.remove d
+      Fs.unlink d
   | None -> ()
 
 let read_chan chan =
@@ -53,10 +53,12 @@ let read_chan chan =
   string
 
 let read file =
+(*
   if file = "-" then
     read_chan stdin
-  else 
-    let chan = open_in_bin file in
+  else
+*)
+    let chan = Fs.open_in_bin file in
     try
       let r = read_chan chan in
       close_in chan;
@@ -66,10 +68,14 @@ let read file =
       raise exn
 
 let write file s =
+(*
   if file = "-" then
     output_string stdout s
-  else 
-    let chan = open_out_bin file in
+  else
+*)
+    let chan =
+      Fs.open_out_gen
+        [Open_wronly; Open_creat; Open_trunc; Open_binary] 0o600 file in
     try
       output_string chan s;
       close_out chan
@@ -79,20 +85,19 @@ let write file s =
 
 let read_dir d =
   let ignored = ["."; ".."] in
-  let d = Unix.opendir d in
+  let d = Fs.opendir d in
   let rec do_read acc =
     try
-      (match (Unix.readdir d) with
+      (match (Fs.readdir d) with
        | s when Safelist.mem s ignored -> do_read acc
        | f -> do_read (f :: acc))
     with End_of_file -> acc
   in
   let files = do_read [] in
-  Unix.closedir d;
+  Fs.closedir d;
   files
 
-let extend p file =
-  p ^ "/" ^ file
+let extend p file = Fspath.concat p (Path.fromString file)
 
 type fs =
   | File of string
@@ -124,10 +129,10 @@ let fsopt2string = function
 
 let readfs p =
   let rec loop p = 
-    let s = Unix.lstat p in
-    match s.Unix.st_kind with
+    let s = Fs.lstat p in
+    match s.Unix.LargeFile.st_kind with
       | Unix.S_REG -> File (read p)
-      | Unix.S_LNK -> Link (Unix.readlink p)
+      | Unix.S_LNK -> Link (Fs.readlink p)
       | Unix.S_DIR -> Dir (Safelist.map (fun x -> (x, loop (extend p x))) (read_dir p))
       | _ -> assert false
   in try Some(loop p) with
@@ -140,11 +145,11 @@ let writefs p fs =
   let rec loop p = function
     | File s ->
         verbose (fun() -> Util.msg "Writing %s with contents %s (fingerprint %s)\n"
-                   p s (Fingerprint.toString (Fingerprint.string s)));
+                   (Fspath.toDebugString p) s (Fingerprint.toString (Fingerprint.string s)));
         write p s
-    | Link s -> Unix.symlink s p
+    | Link s -> Fs.symlink s p
     | Dir files ->
-        Unix.mkdir p default_perm;
+        Fs.mkdir p default_perm;
         Safelist.iter (fun (x,cont) -> loop (extend p x) cont) files
   in
   remove_file_or_dir p;
@@ -157,41 +162,41 @@ let checkRootEmpty : Common.root -> unit -> unit Lwt.t =
        if Os.exists fspath Path.empty then
          raise (Util.Fatal (Printf.sprintf
            "Path %s is not empty at start of tests!"
-             (Fspath.toString fspath)));
+             (Fspath.toPrintString fspath)));
        Lwt.return ())
 
 let makeRootEmpty : Common.root -> unit -> unit Lwt.t =
   Remote.registerRootCmd
     "makeRootEmpty"
     (fun (fspath, ()) ->
-       remove_file_or_dir (Fspath.toString fspath);
+       remove_file_or_dir fspath;
        Lwt.return ())
 
 let getfs : Common.root -> unit -> (fs option) Lwt.t =
   Remote.registerRootCmd
     "getfs"
     (fun (fspath, ()) ->
-       Lwt.return (readfs (Fspath.toString fspath)))
+       Lwt.return (readfs fspath))
 
 let getbackup : Common.root -> unit -> (fs option) Lwt.t =
   Remote.registerRootCmd
     "getbackup"
     (fun (fspath, ()) ->
-       Lwt.return (readfs (Fspath.toString (Stasher.backupDirectory ()))))
+       Lwt.return (readfs (Stasher.backupDirectory ())))
 
 let makeBackupEmpty : Common.root -> unit -> unit Lwt.t =
   Remote.registerRootCmd
     "makeBackupEmpty"
     (fun (fspath, ()) ->
-       let b = Fspath.toString (Stasher.backupDirectory ()) in
-       debug (fun () -> Util.msg "Removing %s\n" b);
+       let b = Stasher.backupDirectory () in
+       debug (fun () -> Util.msg "Removing %s\n" (Fspath.toDebugString b));
        Lwt.return (remove_file_or_dir b))
 
 let putfs : Common.root -> fs -> unit Lwt.t =
   Remote.registerRootCmd
     "putfs"
     (fun (fspath, fs) ->
-       writefs (Fspath.toString fspath) fs;
+       writefs fspath fs;
        Lwt.return ())
 
 let loadPrefs l =
@@ -257,7 +262,7 @@ let test() =
             (Globals.rawRoots())) then
     raise (Util.Fatal 
       "Self-tests can only be run if both roots include the string 'test'");
-  if Util.findsubstring "test" (Fspath.toString (Stasher.backupDirectory())) = None then
+  if Util.findsubstring "test" (Fspath.toPrintString (Stasher.backupDirectory())) = None then
     raise (Util.Fatal 
         ("Self-tests can only be run if the 'backupdir' preference (or wherever the backup "
        ^ "directory name is coming from, e.g. the UNISONBACKUPDIR environment variable) "

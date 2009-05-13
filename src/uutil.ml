@@ -141,3 +141,17 @@ let readWriteBounded source target len notify =
       notify !l
   in
   Util.convertUnixErrorsToTransient "readWriteBounded" (fun () -> read len)
+
+(*****************************************************************************)
+(*                      ESCAPING SHELL PARAMETERS                            *)
+(*****************************************************************************)
+
+(* Using single quotes is simpler under Unix but they are not accepted
+   by the Windows shell.  Double quotes without further quoting is
+   sufficient with Windows as filenames are not allowed to contain
+   double quotes. *)
+let quotes s =
+  if Util.osType = `Win32 && not Util.isCygwin then
+    "\"" ^ s ^ "\""
+  else
+    "'" ^ Util.replacesubstring s "'" "'\\''" ^ "'"

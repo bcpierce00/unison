@@ -14,8 +14,9 @@ val normalize : string -> string
    by Mac OS X. *)
 val compose : string -> string
 
-(* Convert to and from little-endian UTF-16 encoding *)
-(*XXX What about null-termination? *)
+(* Convert to and from a null-terminated little-endian UTF-16 string *)
+(* Do not fail on isolated surrogate but rather generate ill-formed
+   UTF-8 characters, so that the conversion never fails. *)
 val to_utf_16 : string -> string
 val from_utf_16 : string -> string
 

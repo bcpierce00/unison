@@ -19,7 +19,7 @@ let profileName = ref None
 
 let profilePathname n =
   let f = Util.fileInUnisonDir n in
-  if Sys.file_exists f then f
+  if System.file_exists f then f
   else Util.fileInUnisonDir (n ^ ".prf")
 
 let thePrefsFile () = 
@@ -146,6 +146,11 @@ let createString name default doc fulldoc =
     (fun v -> [v])
     (fun cell -> Uarg.String (fun s -> set cell s))
 
+let createFspath name default doc fulldoc =
+  createPrefInternal name default doc fulldoc 
+    (fun v -> [System.fspathToString v])
+    (fun cell -> Uarg.String (fun s -> set cell (System.fspathFromString s)))
+
 let createStringList name doc fulldoc =
   createPrefInternal name [] doc fulldoc
     (fun v -> v)
@@ -260,7 +265,7 @@ let string2int name string =
    in the same order as in the file. *)
 let rec readAFile filename : (string * int * string * string) list =
   let chan =
-    try open_in (profilePathname filename)
+    try System.open_in_bin (profilePathname filename)
     with Sys_error _ ->
       raise(Util.Fatal(Printf.sprintf "Preference file %s not found" filename)) in
   let rec loop lines =
@@ -370,10 +375,12 @@ let addLine l =
       then profilePathname (read addprefsto)
       else thePrefsFile() in
   try
-    debug (fun() -> Util.msg "Adding '%s' to %s\n" l filename);
-    let resultmsg = l ^ "' added to profile " ^ filename in 
+    debug (fun() ->
+      Util.msg "Adding '%s' to %s\n" l (System.fspathToDebugString filename));
+    let resultmsg =
+      l ^ "' added to profile " ^ System.fspathToPrintString filename in
     let ochan =
-      open_out_gen [Open_wronly; Open_append; Open_creat] 0o600 filename
+      System.open_out_gen [Open_wronly; Open_creat; Open_append] 0o600 filename
     in
     output_string ochan l;
     output_string ochan "\n";

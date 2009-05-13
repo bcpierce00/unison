@@ -38,8 +38,8 @@ let root2hostname root =
 
 let root2string root =
   match root with
-    (Local, fspath) -> Fspath.toString fspath
-  | (Remote host, fspath) -> "//"^host^"/"^(Fspath.toString fspath)
+    (Local, fspath) -> Fspath.toPrintString fspath
+  | (Remote host, fspath) -> "//"^host^"/"^(Fspath.toPrintString fspath)
 
 (* ------------------------------------------------------------------------- *)
 (*                      Root comparison                                      *)
@@ -50,7 +50,7 @@ let compareRoots x y =
     (Local,fspath1), (Local,fspath2) ->
       (* FIX: This is a path comparison, should it take case
          sensitivity into account ? *)
-      compare (Fspath.toString fspath1) (Fspath.toString fspath2)
+      Fspath.compare fspath1 fspath2
   | (Local,_), (Remote _,_) -> -1
   | (Remote _,_), (Local,_) -> 1
   | (Remote host1, fspath1), (Remote host2, fspath2) ->
@@ -60,7 +60,7 @@ let compareRoots x y =
       if result = 0 then
         (* FIX: This is a path comparison, should it take case
            sensitivity into account ? *)
-        compare (Fspath.toString fspath1) (Fspath.toString fspath2)
+        Fspath.compare fspath1 fspath2
       else
         result
 

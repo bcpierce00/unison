@@ -170,7 +170,7 @@ let gtk_sync () =
    non-ASCII characters. *)
 
 let code =
-  [| 0x0000; 0x0001; 0x0002; 0x0003; 0x0004; 0x0005; 0x0006; 0x0007;
+  [| 0x0020; 0x0001; 0x0002; 0x0003; 0x0004; 0x0005; 0x0006; 0x0007;
      0x0008; 0x0009; 0x000A; 0x000B; 0x000C; 0x000D; 0x000E; 0x000F;
      0x0010; 0x0011; 0x0012; 0x0013; 0x0014; 0x0015; 0x0016; 0x0017;
      0x0018; 0x0019; 0x001A; 0x001B; 0x001C; 0x001D; 0x001E; 0x001F;
@@ -227,7 +227,7 @@ let transcodeDoc s =
 (****)
 
 let wf_utf8 =
-  [[('\x00', '\x7F')];
+  [[('\x01', '\x7F')];
    [('\xC2', '\xDF'); ('\x80', '\xBF')];
    [('\xE0', '\xE0'); ('\xA0', '\xBF'); ('\x80', '\xBF')];
    [('\xE1', '\xEC'); ('\x80', '\xBF'); ('\x80', '\xBF')];
@@ -273,7 +273,9 @@ let validate = expl validate_rec
 (****)
 
 let protect_char buf c =
-  if c < '\x80' then
+  if c = '\x00' then
+    Buffer.add_char buf ' '
+  else if c < '\x80' then
     Buffer.add_char buf c
   else
     let c = Char.code c in
@@ -303,13 +305,18 @@ let protect s =
 let escapeMarkup s = Glib.Markup.escape_text s
 
 let transcode s =
+  if Prefs.read Case.unicodeEncoding then
+    protect s
+  else
   try
     Glib.Convert.locale_to_utf8 s
   with Glib.Convert.Error _ ->
     protect s
 
 let transcodeFilename s =
-  if Util.osType = `Win32 then transcode s else
+  if Prefs.read Case.unicodeEncoding then
+    protect s
+  else if Util.osType = `Win32 then transcode s else
   try
     Glib.Convert.filename_to_utf8 s
   with Glib.Convert.Error _ ->
@@ -901,16 +908,17 @@ let provideProfileKey filename k profile info =
         None -> profileKeymap.(i) <- Some(profile,info)
       | Some(otherProfile,_) ->
           raise (Util.Fatal
-            ("Error scanning profile "^filename^":\n"
+            ("Error scanning profile "^
+                System.fspathToPrintString filename ^":\n"
              ^ "shortcut key "^k^" is already bound to profile "
              ^ otherProfile))
     else
       raise (Util.Fatal
-        ("Error scanning profile "^filename^":\n"
+        ("Error scanning profile "^ System.fspathToPrintString filename ^":\n"
          ^ "Value of 'key' preference must be a single digit (0-9), "
          ^ "not " ^ k))
   with int_of_string -> raise (Util.Fatal
-    ("Error scanning profile "^filename^":\n"
+    ("Error scanning profile "^ System.fspathToPrintString filename ^":\n"
      ^ "Value of 'key' preference must be a single digit (0-9), "
      ^ "not " ^ k))
 
@@ -941,8 +949,7 @@ let scanProfiles () =
           (f, info))
        (Safelist.filter (fun name -> not (   Util.startswith name ".#"
                                           || Util.startswith name Os.tempFilePrefix))
-          (Files.ls (Fspath.toString Os.unisonDir)
-             "*.prf")))
+          (Files.ls Os.unisonDir "*.prf")))
 
 let getProfile () =
   (* The selected profile *)
@@ -1038,7 +1045,7 @@ let getProfile () =
       let profile = prof#text in
       if profile <> "" then
         let filename = Prefs.profilePathname profile in
-        if Sys.file_exists filename then
+        if System.file_exists filename then
           okBox
             ~title:"Error" ~typ:`ERROR
             ~message:("Profile \""
@@ -1047,8 +1054,8 @@ let getProfile () =
         else
           (* Make an empty file *)
           let ch =
-            open_out_gen
-              [Open_wronly; Open_creat; Open_trunc] 0o600 filename in
+            System.open_out_gen
+              [Open_wronly; Open_creat; Open_excl] 0o600 filename in
           close_out ch;
           fillLst profile;
           exit () in
@@ -1585,9 +1592,11 @@ let rec createToplevelWindow () =
 
   let greenPixel  = "00dd00" in
   let redPixel    = "ff2040" in
-  let yellowPixel = "999900" in
   let lightbluePixel = "8888FF" in
+(*
+  let yellowPixel = "999900" in
   let blackPixel  = "000000" in
+*)
   let buildPixmap p =
     GDraw.pixmap_from_xpm_d ~window:toplevelWindow ~data:p () in
   let buildPixmaps f c1 =
@@ -1598,10 +1607,12 @@ let rec createToplevelWindow () =
   let ignoreAct = buildPixmaps Pixmaps.ignore redPixel in
   let doneIcon = buildPixmap Pixmaps.success in
   let failedIcon = buildPixmap Pixmaps.failure in
+  let mergeLogo = buildPixmaps Pixmaps.mergeLogo greenPixel in
+(*
   let rightArrowBlack = buildPixmap (Pixmaps.copyAB blackPixel) in
   let leftArrowBlack = buildPixmap (Pixmaps.copyBA blackPixel) in
-  let mergeLogo = buildPixmaps Pixmaps.mergeLogo greenPixel in
   let mergeLogoBlack = buildPixmap (Pixmaps.mergeLogo blackPixel) in
+*)
 
   let displayArrow i j action =
     let changedFromDefault = match !theState.(j).ri.replicas with
@@ -2362,7 +2373,7 @@ lst_store#set ~row ~column:c_path path;
     grAdd grRestart
       (fileMenu#add_item ~key:key
             ~callback:(fun _ ->
-               if Sys.file_exists (Prefs.profilePathname name) then begin
+               if System.file_exists (Prefs.profilePathname name) then begin
                  Trace.status ("Loading profile " ^ name);
                  loadProfile name; detectCmd ()
                end else
@@ -2496,7 +2507,7 @@ let start = function
       let displayAvailable =
         Util.osType = `Win32
           ||
-        try Unix.getenv "DISPLAY" <> "" with Not_found -> false
+        try System.getenv "DISPLAY" <> "" with Not_found -> false
       in
       if displayAvailable then Private.start Uicommon.Graphic
       else Uitext.Body.start Uicommon.Text

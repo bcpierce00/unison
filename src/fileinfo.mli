@@ -11,6 +11,7 @@ val get : bool -> Fspath.t -> Path.local -> t
 val set : Fspath.t -> Path.local ->
           [`Set of Props.t | `Copy of Path.local | `Update of Props.t] ->
           Props.t -> unit
+val get' : System.fspath -> t
 
 (* IF THIS CHANGES, MAKE SURE TO INCREMENT THE ARCHIVE VERSION NUMBER!       *)
 type stamp =

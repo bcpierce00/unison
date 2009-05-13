@@ -23,20 +23,21 @@ type t = string
 (* Assumes that (fspath, path) is a file and gives its ``digest '', that is  *)
 (* a short string of cryptographic quality representing it.                  *)
 let file fspath path =
-  let f = Fspath.toString (Fspath.concat fspath path) in
+  let f = Fspath.concat fspath path in
   Util.convertUnixErrorsToTransient
-    ("digesting " ^ f)
-    (fun () -> Digest.file f)
+    ("digesting " ^ Fspath.toPrintString f)
+    (fun () -> Fs.digestFile f)
 
 let maxLength = Uutil.Filesize.ofInt max_int
 let subfile path offset len =
   if len > maxLength then
     raise (Util.Transient
-             (Format.sprintf "File '%s' too big for fingerprinting" path));
+             (Format.sprintf "File '%s' too big for fingerprinting"
+                (Fspath.toPrintString path)));
   Util.convertUnixErrorsToTransient
     "digesting subfile"
     (fun () ->
-       let inch = open_in_bin path in
+       let inch = Fs.open_in_bin path in
        begin try
          LargeFile.seek_in inch offset;
          let res = Digest.channel inch (Uutil.Filesize.toInt len) in
@@ -47,7 +48,8 @@ let subfile path offset len =
            close_in_noerr inch;
            raise (Util.Transient
                     (Format.sprintf
-                       "Error in digesting subfile '%s': truncated file" path))
+                       "Error in digesting subfile '%s': truncated file"
+                       (Fspath.toPrintString path)))
        | e ->
            close_in_noerr inch;
            raise e

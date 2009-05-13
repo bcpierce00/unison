@@ -32,6 +32,13 @@ val createString :
      -> string              (* full (tex) documentation string *)
      -> string t            (*   -> new preference value *)
   
+val createFspath :
+        string              (* preference name *)
+     -> System.fspath       (* initial value *)
+     -> string              (* documentation string *)
+     -> string              (* full (tex) documentation string *)
+     -> System.fspath t     (*   -> new preference value *)
+  
 val createStringList :
         string              (* preference name *)
      -> string              (* documentation string *)
@@ -81,7 +88,7 @@ val printUsage : string -> unit
 val profileName : string option ref
 
 (* Calculate the full pathname of a preference file                          *)
-val profilePathname : string -> string
+val profilePathname : string -> System.fspath
 
 (* Add a new preference to the file on disk (the result is a diagnostic      *)
 (* message that can be displayed to the user to verify where the new pref    *)

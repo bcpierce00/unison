@@ -492,7 +492,7 @@ let initPrefs ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
     (* If the profile does not exist, create an empty one (this should only
        happen if the profile is 'default', since otherwise we will already
        have checked that the named one exists). *)
-    if not(Sys.file_exists (Prefs.profilePathname profileName)) then
+    if not(System.file_exists (Prefs.profilePathname profileName)) then
       Prefs.addComment "Unison preferences file";
 
     (* Load the profile *)
@@ -663,7 +663,7 @@ let uiInit
   let profileName =
     begin match !clprofile with
       None ->
-        let dirString = Fspath.toString Os.unisonDir in
+        let dirString = Os.unisonDir in
         let profiles_exist = (Files.ls dirString "*.prf")<>[] in
         let clroots_given = (Globals.rawRoots() <> []) in
         let n =
@@ -683,8 +683,9 @@ let uiInit
         n
     | Some n ->
         let f = Prefs.profilePathname n in
-        if not(Sys.file_exists f)
-        then (reportError (Printf.sprintf "Profile %s does not exist" f);
+        if not(System.file_exists f)
+        then (reportError (Printf.sprintf "Profile %s does not exist"
+                             (System.fspathToPrintString f));
               exit 1);
         n
     end in
