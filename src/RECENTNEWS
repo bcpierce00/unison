@@ -1,3 +1,14 @@
+CHANGES FROM VERSION 2.32.12
+
+* Fixed bug in GTK UI: buttons could be incorrectly activated back during
+  synchronization
+* Improved error message when trying to synchronize a symlink to a
+  Windows machine
+* Uses improved emulation of "select" call provided by Ocaml 3.11
+  under Windows (the GUI should not freeze as much during synchronization)
+* Improved Unison icon
+
+-------------------------------
 CHANGES FROM VERSION 2.32.11
 
 * Fix up docs.
