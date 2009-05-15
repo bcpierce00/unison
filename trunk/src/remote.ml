@@ -918,7 +918,7 @@ let buildShellConnection shell host userOpt portOpt rootName termInteract =
 let canonizeLocally s unicode =
   (* We need to select the proper API in order to compute correctly the
      canonical fspath *)
-  Fs.setUnicodeEncoding (Case.useUnicodeAPI unicode);
+  Fs.setUnicodeEncoding unicode;
   Fspath.canonize s
 
 let canonizeOnServer =
@@ -929,7 +929,7 @@ let canonizeOnServer =
 let canonize clroot = (* connection for clroot must have been set up already *)
   match clroot with
     Clroot.ConnectLocal s ->
-      (Common.Local, canonizeLocally s (Prefs.read Case.unicodePref))
+      (Common.Local, canonizeLocally s (Case.useUnicodeAPI ()))
   | _ ->
       match
         try
@@ -950,7 +950,7 @@ let rec hostFspath clroot =
     None
 
 let canonizeRoot rootName clroot termInteract =
-  let unicode = Prefs.read Case.unicodePref in
+  let unicode = Case.useUnicodeAPI () in
   let finish ioServer s =
     (* We need to always compute the fspath as it depends on
        unicode settings *)
@@ -1001,7 +1001,7 @@ let openConnectionStart clroot =
          end >>= fun ioServer ->
          (* We need to always compute the fspath as it depends on
             unicode settings *)
-         let unicode = Prefs.read Case.unicodePref in
+         let unicode = Case.useUnicodeAPI () in
          canonizeOnServer ioServer (s, unicode) >>= fun (host, fspath) ->
          connectedHosts :=
            listReplace (clroot, (host, fspath, ioServer)) !connectedHosts;
@@ -1012,7 +1012,7 @@ let openConnectionStart clroot =
   | Clroot.ConnectByShell(shell,host,userOpt,portOpt,s) ->
       match hostFspath clroot with
          Some x ->
-           let unicode = Prefs.read Case.unicodePref in
+           let unicode = Case.useUnicodeAPI () in
            (* We recompute the fspath as it may have changed due to
               unicode settings *)
            Lwt_unix.run
@@ -1103,7 +1103,7 @@ let openConnectionEnd (i1,i2,o1,o2,s,_,clroot,pid) =
       Unix.close i1; Unix.close o2;
       Lwt_unix.run
         (initConnection i2 o1 >>= fun ioServer ->
-         let unicode = Prefs.read Case.unicodePref in
+         let unicode = Case.useUnicodeAPI () in
          canonizeOnServer ioServer (s, unicode) >>= fun (host, fspath) ->
          connectedHosts :=
            listReplace (clroot, (host, fspath, ioServer)) !connectedHosts;

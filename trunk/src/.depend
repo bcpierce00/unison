@@ -149,10 +149,10 @@ recon.cmx: ubase/util.cmx update.cmx tree.cmx ubase/trace.cmx sortri.cmx \
     globals.cmx fileinfo.cmx common.cmx recon.cmi 
 remote.cmo: uutil.cmi ubase/util.cmi ubase/trace.cmi terminal.cmi system.cmi \
     ubase/safelist.cmi ubase/prefs.cmi os.cmi lwt/lwt_unix.cmi lwt/lwt.cmi \
-    fspath.cmi common.cmi clroot.cmi remote.cmi 
+    fspath.cmi fs.cmi common.cmi clroot.cmi case.cmi remote.cmi 
 remote.cmx: uutil.cmx ubase/util.cmx ubase/trace.cmx terminal.cmx system.cmx \
     ubase/safelist.cmx ubase/prefs.cmx os.cmx lwt/lwt_unix.cmx lwt/lwt.cmx \
-    fspath.cmx common.cmx clroot.cmx remote.cmi 
+    fspath.cmx fs.cmx common.cmx clroot.cmx case.cmx remote.cmi 
 sortri.cmo: ubase/util.cmi ubase/safelist.cmi ubase/prefs.cmi pred.cmi \
     path.cmi common.cmi sortri.cmi 
 sortri.cmx: ubase/util.cmx ubase/safelist.cmx ubase/prefs.cmx pred.cmx \
