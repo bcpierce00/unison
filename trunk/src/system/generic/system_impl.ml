@@ -1,4 +1,4 @@
-(* Unison file synchronizer: src/system.ml *)
+(* Unison file synchronizer: src/system/generic/system_impl.ml *)
 (* Copyright 1999-2009, Benjamin C. Pierce 
 
     This program is free software: you can redistribute it and/or modify
@@ -15,4 +15,17 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 *)
 
-include System_impl.System
+module System = System_generic
+module Fs = struct
+  include System_generic
+
+  let canSetTime win f =
+    not win ||
+    try
+      Unix.access f [Unix.W_OK];
+      true
+    with
+      Unix.Unix_error _ -> false
+
+  let setUnicodeEncoding _ = ()
+end

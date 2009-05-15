@@ -52,12 +52,14 @@ CAMLprim value c_openpty() {
 
 #else // not HAS_OPENPTY
 
+#define Nothing ((value) 0)
+
 CAMLprim value setControllingTerminal(value fdVal) {
-  unix_error (ENOSYS, "setControllingTerminal", NULL);
+  unix_error (ENOSYS, "setControllingTerminal", Nothing);
 }
 
 CAMLprim value c_openpty() {
-  unix_error (ENOSYS, "openpty", NULL);
+  unix_error (ENOSYS, "openpty", Nothing);
 }
 
 #endif

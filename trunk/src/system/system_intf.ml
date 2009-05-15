@@ -1,4 +1,4 @@
-(* Unison file synchronizer: src/system_intf.ml *)
+(* Unison file synchronizer: src/system/system_intf.ml *)
 (* Copyright 1999-2009, Benjamin C. Pierce 
 
     This program is free software: you can redistribute it and/or modify

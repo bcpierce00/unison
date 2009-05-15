@@ -1,3 +1,16 @@
+CHANGES FROM VERSION 2.34.0
+
+* Bumped minor version: incompatible protocol changes
+* The use of the Windows Unicode API is now controlled via the
+  "unicode" directive
+* Fixed bug in GTK UI: buttons could be incorrectly reenabled during
+  synchronization
+* Improved error message when trying to synchronize a symlink to a
+  Windows machine
+* Fixed compilation warnings in lwt_unix.ml and pty.c
+* Added some missing convertUnixErrorsToTransient
+
+-------------------------------
 CHANGES FROM VERSION 2.33.2
 
 * Added an abstraction layer over Unix/Sys modules in order to be able

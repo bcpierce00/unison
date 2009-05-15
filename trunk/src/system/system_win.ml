@@ -1,4 +1,4 @@
-(* Unison file synchronizer: src/system_win.ml *)
+(* Unison file synchronizer: src/system/system_win.ml *)
 (* Copyright 1999-2009, Benjamin C. Pierce 
 
     This program is free software: you can redistribute it and/or modify
@@ -16,11 +16,6 @@
 *)
 
 (*XXXX
-Compilation/configuration issues
-
-Adapt fspath.ml to use Unix rather than Sys variants of getcwd and chdir?
-
-XXX Do not forget operations in fspath.ml...
 
 We have to propagate the encoding mode when canonizing roots
 ===> new major version
@@ -34,10 +29,7 @@ Unix.execvp
 Lwt_unix.open_process_full
 Lwt_unix.open_process_in
 
-- Try to hide the console when not using ssh
-- Use SetConsoleOutputCP/SetConsoleCP in text mode
-
-copy icons to 2.32 ?
+- Use SetConsoleOutputCP/SetConsoleCP in text mode ???
 *)
 
 type fspath = string
@@ -94,7 +86,8 @@ let argv () = Array.map utf8 (argv_impl ())
 (****)
 
 type dir_entry = Dir_empty | Dir_read of string | Dir_toread
-type dir_handle =
+type dir_handle = Unix.dir_handle
+type dir_handle' =
   { handle : int; mutable entry_read: dir_entry }
 
 external stat_impl : string -> string -> Unix.LargeFile.stats = "win_stat"
@@ -138,20 +131,25 @@ let getcwd () =
 
 let badFileRx = Rx.rx ".*[?*].*"
 
+let ud : dir_handle' -> dir_handle = Obj.magic
+let du : dir_handle -> dir_handle' = Obj.magic
+
 let opendir d =
   if Rx.match_string badFileRx d then
     raise (Unix.Unix_error (Unix.ENOENT, "opendir", d));
   try
     let (first_entry, handle) = findfirst (epath (fspathConcat d "*")) in
-    { handle = handle; entry_read = Dir_read first_entry }
+    ud { handle = handle; entry_read = Dir_read first_entry }
   with End_of_file ->
-    { handle = 0; entry_read = Dir_empty }
+    ud { handle = 0; entry_read = Dir_empty }
 let readdir d =
+  let d = du d in
   match d.entry_read with
     Dir_empty -> raise End_of_file
   | Dir_read name -> d.entry_read <- Dir_toread; utf8 name
   | Dir_toread -> utf8 (findnext d.handle)
 let closedir d =
+  let d = du d in
   match d.entry_read with
     Dir_empty -> ()
   | _         -> findclose d.handle

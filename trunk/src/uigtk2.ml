@@ -1463,8 +1463,10 @@ let rec createToplevelWindow () =
 		    )
           | None,   _ ->
               (false, true, false) in
-        grSet grAction activate1;
-        grSet grDiff activate2;
+        if not !busy then begin
+          grSet grAction activate1;
+          grSet grDiff activate2
+        end;
         if details then
           showDetailsButton#misc#show ()
         else

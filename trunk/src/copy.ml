@@ -565,10 +565,11 @@ let targetExists checkSize fspathTo pathTo =
   info.Fileinfo.typ = `FILE
   && (match checkSize with
         `MakeWriteableAndCheckNonempty ->
-          let n = Fspath.concat fspathTo pathTo in
           let perms = Props.perms info.Fileinfo.desc in
           let perms' = perms lor 0o600 in
-          Fs.chmod n perms';
+          Util.convertUnixErrorsToTransient
+            "making target writable"
+            (fun () -> Fs.chmod (Fspath.concat fspathTo pathTo) perms');
           Props.length info.Fileinfo.desc > Uutil.Filesize.zero
       | `CheckDataSize desc ->
              Props.length info.Fileinfo.desc = Props.length desc

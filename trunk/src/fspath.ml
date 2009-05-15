@@ -28,11 +28,7 @@
 (*      All fspaths are absolute                                             *)
 (*                                                                         - *)
 
-module Fs = struct
-  let getcwd = System.getcwd
-  let chdir = System.chdir
-  let readlink = System.readlink
-end
+module Fs = System_impl.Fs
 
 let debug = Util.debug "fspath"
 let debugverbose = Util.debug "fsspath+"
@@ -240,9 +236,7 @@ let localString2fspath s =
 (* Filename, and Sys modules of ocaml have subtle differences under Windows  *)
 (* and Unix.  So, be very careful with any changes !!!                       *)
 let canonizeFspath p0 =
-  let p =
-    System.fspathFromString
-      (match p0 with None -> "." | Some "" -> "." | Some s -> s) in
+  let p = match p0 with None -> "." | Some "" -> "." | Some s -> s in
   let p' =
     begin
       let original = Fs.getcwd() in
@@ -251,7 +245,7 @@ let canonizeFspath p0 =
           (Fs.chdir p; (* This might raise Sys_error *)
            Fs.getcwd()) in
         Fs.chdir original;
-        System.fspathToString newp
+        newp
       with
         Sys_error why ->
 	  (* We could not chdir to p.  Either                                *)
@@ -264,18 +258,17 @@ let canonizeFspath p0 =
 	  (* fails, we just quit.  This works nicely for most cases of (1),  *)
 	  (* it works for (2), and on (3) it may leave a mess for someone    *)
 	  (* else to pick up.                                                *)
-          let p = System.fspathToString p in
           let p = if Util.osType = `Win32 then Fileutil.backslashes2forwardslashes p else p in
           if isRootDir p then raise
             (Util.Fatal (Printf.sprintf
                "Cannot find canonical name of root directory %s\n(%s)" p why));
           let parent = myDirname p in
           let parent' = begin
-            (try Fs.chdir (System.fspathFromString parent) with
+            (try Fs.chdir parent with
                Sys_error why2 -> raise (Util.Fatal (Printf.sprintf
                  "Cannot find canonical name of %s: unable to cd either to it\n
 (%s)\nor to its parent %s\n(%s)" p why parent why2)));
-            System.fspathToString (Fs.getcwd()) end in
+            Fs.getcwd() end in
           Fs.chdir original;
           let bn = Filename.basename p in
           if bn="" then parent'
@@ -307,30 +300,27 @@ let canonize x =
 
 let maxlinks = 100
 let findWorkingDir fspath path =
-  let abspath = toSysPath (concat fspath path) in
+  let abspath = toString (concat fspath path) in
   let realpath =
     if not (Path.followLink path) then abspath else
     let rec followlinks n p =
       if n>=maxlinks then
         raise
           (Util.Transient (Printf.sprintf
-             "Too many symbolic links from %s"
-                (System.fspathToPrintString abspath)));
+             "Too many symbolic links from %s" abspath));
       try
         let link = Fs.readlink p in
         let linkabs =
           if Filename.is_relative link then
-            System.fspathConcat (System.fspathDirname p) link
-          else System.fspathFromString link in
+            Fs.fspathConcat (Fs.fspathDirname p) link
+          else link in
         followlinks (n+1) linkabs
       with
         Unix.Unix_error _ -> p in
     followlinks 0 abspath in
-  let realpath = System.fspathToString realpath in
   if isRootDir realpath then
     raise (Util.Transient(Printf.sprintf
-                            "The path %s is a root directory"
-                            (System.fspathToPrintString abspath)));
+                            "The path %s is a root directory" abspath));
   let realpath = Fileutil.removeTrailingSlashes realpath in
   let p = Filename.basename realpath in
   debug

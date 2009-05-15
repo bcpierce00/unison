@@ -15,44 +15,46 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 *)
 
+module System = System_impl.Fs
+
 type fspath = Fspath.t
 type dir_handle = System.dir_handle
 
-let symlink l f = System.symlink l (Fspath.toSysPath f)
+let symlink l f = System.symlink l (Fspath.toString f)
 
-let readlink f = System.readlink (Fspath.toSysPath f)
+let readlink f = System.readlink (Fspath.toString f)
 
-let chown f usr grp = System.chown (Fspath.toSysPath f) usr grp
+let chown f usr grp = System.chown (Fspath.toString f) usr grp
 
-let chmod f mode = System.chmod (Fspath.toSysPath f) mode
+let chmod f mode = System.chmod (Fspath.toString f) mode
 
-let utimes f t1 t2 = System.utimes (Fspath.toSysPath f) t1 t2
+let utimes f t1 t2 = System.utimes (Fspath.toString f) t1 t2
 
-let unlink f = System.unlink (Fspath.toSysPath f)
+let unlink f = System.unlink (Fspath.toString f)
 
-let rmdir f = System.rmdir (Fspath.toSysPath f)
+let rmdir f = System.rmdir (Fspath.toString f)
 
-let mkdir f mode = System.mkdir (Fspath.toSysPath f) mode
+let mkdir f mode = System.mkdir (Fspath.toString f) mode
 
-let rename f f' = System.rename (Fspath.toSysPath f) (Fspath.toSysPath f')
+let rename f f' = System.rename (Fspath.toString f) (Fspath.toString f')
 
-let stat f = System.stat (Fspath.toSysPath f)
+let stat f = System.stat (Fspath.toString f)
 
-let lstat f = System.lstat (Fspath.toSysPath f)
+let lstat f = System.lstat (Fspath.toString f)
 
-let openfile f flags perms = System.openfile (Fspath.toSysPath f) flags perms
+let openfile f flags perms = System.openfile (Fspath.toString f) flags perms
 
-let opendir f = System.opendir (Fspath.toSysPath f)
+let opendir f = System.opendir (Fspath.toString f)
 
 let readdir = System.readdir
 
 let closedir = System.closedir
 
 let open_in_gen flags mode f =
-  System.open_in_gen flags mode (Fspath.toSysPath f)
+  System.open_in_gen flags mode (Fspath.toString f)
 
 let open_out_gen flags mode f =
-  System.open_out_gen flags mode (Fspath.toSysPath f)
+  System.open_out_gen flags mode (Fspath.toString f)
 
 (****)
 
@@ -73,11 +75,6 @@ let digestFile f =
   d
 
 let canSetTime f =
-  Util.osType <> `Win32 ||
-  try
-    Unix.access (System.fspathToString (Fspath.toSysPath f)) [Unix.W_OK];
-    true
-  with
-    Unix.Unix_error _ -> false
+  System.canSetTime (Util.osType <> `Win32) (Fspath.toString f)
 
-let useUnicodeEncoding _ = ()
+let setUnicodeEncoding = System.setUnicodeEncoding
