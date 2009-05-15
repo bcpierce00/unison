@@ -83,8 +83,9 @@ buildexecutable::
 ####################################################################
 ### Default parameters
 
-INCLFLAGS=-I lwt -I ubase
+INCLFLAGS=-I lwt -I ubase -I system
 CAMLFLAGS+=$(INCLFLAGS)
+CAMLFLAGS+=-I system/$(SYSTEM)
 
 ifeq ($(OSARCH),win32)
   # Win32 system
@@ -98,8 +99,9 @@ ifeq ($(OSARCH),win32)
 #    issue."
 #  CLIBS+=-cclib win32rc/unison.res
 #  STATICLIBS+=-cclib win32rc/unison.res
-  COBJS+=system_win_stubs$(OBJ_EXT)
-  WINOBJS=system_win.cmo
+  COBJS+=system/system_win_stubs$(OBJ_EXT)
+  WINOBJS=system/system_win.cmo
+  SYSTEM=win
   CLIBS+=-cclib "-link win32rc/unison.res"
   STATICLIBS+=-cclib "-link win32rc/unison.res"
   buildexecutable::
@@ -110,8 +112,9 @@ else
   ifeq ($(OSARCH),win32gnuc)
     CWD=.
     EXEC_EXT=.exe
-    COBJS+=system_win_stubs$(OBJ_EXT)
-    WINOBJS=system_win.cmo
+    COBJS+=system/system_win_stubs$(OBJ_EXT)
+    WINOBJS=system/system_win.cmo
+    SYSTEM=win
     CLIBS+=-cclib win32rc/unison.res.lib
     STATIC=false                      # Cygwin is not MinGW :-(
     buildexecutable::
@@ -119,6 +122,8 @@ else
   else
     CWD=$(shell pwd)
     EXEC_EXT=
+    WINOBJS=
+    SYSTEM=generic
     # openpty is in the libutil library
     ifneq ($(OSARCH),solaris)
       ifneq ($(OSARCH),osx)
@@ -183,7 +188,9 @@ OCAMLOBJS += \
           ubase/rx.cmo \
 	  \
           unicode_tables.cmo unicode.cmo \
-          $(WINOBJS) system_generic.cmo system.cmo \
+          $(WINOBJS) system/system_generic.cmo \
+          system/$(SYSTEM)/system_impl.cmo \
+          system.cmo \
           \
           ubase/projectInfo.cmo ubase/myMap.cmo ubase/safelist.cmo \
           ubase/uprintf.cmo ubase/util.cmo ubase/uarg.cmo \
@@ -275,6 +282,9 @@ endif
 
 # Include an automatically generated list of dependencies
 include .depend
+# Additional dependencied depending on the system
+system.cmo fs.cmo: system/$(SYSTEM)/system_impl.cmo
+system.cmx fs.cmx: system/$(SYSTEM)/system_impl.cmx
 
 ifeq ($(OSARCH), OpenBSD)
   ifeq ($(shell echo type ocamldot | ksh), file)
@@ -293,7 +303,7 @@ endif
 # Rebuild dependencies (must be invoked manually)
 .PHONY: depend
 depend::
-	ocamldep $(INCLFLAGS) *.mli *.ml */*.ml */*.mli > .depend
+	ocamldep $(INCLFLAGS) *.mli *.ml */*.ml */*.mli */*/*.ml */*/*.mli > .depend
 ifdef OCAMLDOT
 	echo 'digraph G {' > dot.tmp
 	echo '{ rank = same; "Fileinfo"; "Props"; "Fspath"; "Os"; "Path"; }'\
@@ -377,7 +387,7 @@ win32rc/unison.res.lib: win32rc/unison.res
 
 %.o %.obj: %.c
 	@echo "$(OCAMLOPT): $< ---> $@"
-	$(CAMLC) $(CAMLFLAGS) -c $(CWD)/$<
+	$(CAMLC) $(CAMLFLAGS) -ccopt -o -ccopt $(CWD)/$@ -c $(CWD)/$<
 
 $(NAME)$(EXEC_EXT): $(CAMLOBJS) $(COBJS)
 	@echo Linking $@
@@ -402,6 +412,7 @@ clean::
 	-$(RM) -r *.o core gmon.out *~ .*~
 	-$(RM) -r *.obj *.lib *.exp
 	-$(RM) -r *.tmp *.bak?.tmp .*.bak?.tmp
+	-$(RM) system/*.cm[iox] system/*.{o,obj}
 
 .PHONY: paths
 paths:

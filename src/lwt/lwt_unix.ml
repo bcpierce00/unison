@@ -280,8 +280,7 @@ let wait () = waitpid [] (-1)
 let system cmd =
   match Unix.fork () with
      0 -> begin try
-            Unix.execv "/bin/sh" [| "/bin/sh"; "-c"; cmd |];
-            assert false
+            Unix.execv "/bin/sh" [| "/bin/sh"; "-c"; cmd |]
           with _ ->
             exit 127
           end
@@ -380,8 +379,7 @@ let open_proc cmd proc input output toclose =
             Unix.close output
           end;
           List.iter Unix.close toclose;
-          Unix.execv "/bin/sh" [| "/bin/sh"; "-c"; cmd |];
-          exit 127
+          Unix.execv "/bin/sh" [| "/bin/sh"; "-c"; cmd |]
   | id -> Hashtbl.add popen_processes proc id
 
 let open_process_in cmd =
@@ -423,8 +421,7 @@ let open_proc_full cmd env proc output input error toclose =
           Unix.dup2 output Unix.stdout; Unix.close output;
           Unix.dup2 error Unix.stderr; Unix.close error;
           List.iter Unix.close toclose;
-          Unix.execve "/bin/sh" [| "/bin/sh"; "-c"; cmd |] env;
-          exit 127
+          Unix.execve "/bin/sh" [| "/bin/sh"; "-c"; cmd |] env
   | id -> Hashtbl.add popen_processes proc id
 
 let open_process_full cmd env =

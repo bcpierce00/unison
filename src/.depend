@@ -12,7 +12,7 @@ files.cmi: uutil.cmi system.cmi props.cmi path.cmi lwt/lwt_util.cmi \
     lwt/lwt.cmi common.cmi 
 fileutil.cmi: 
 fingerprint.cmi: uutil.cmi path.cmi fspath.cmi 
-fs.cmi: system_intf.cmo fspath.cmi 
+fs.cmi: system/system_intf.cmo fspath.cmi 
 fspath.cmi: system.cmi path.cmi name.cmi 
 globals.cmi: ubase/prefs.cmi path.cmi lwt/lwt.cmi common.cmi 
 lock.cmi: system.cmi 
@@ -27,7 +27,7 @@ remote.cmi: ubase/prefs.cmi lwt/lwt.cmi fspath.cmi common.cmi clroot.cmi
 sortri.cmi: common.cmi 
 stasher.cmi: ubase/prefs.cmi path.cmi os.cmi fspath.cmi 
 strings.cmi: 
-system.cmi: system_intf.cmo 
+system.cmi: system/system_intf.cmo 
 terminal.cmi: 
 test.cmi: 
 transfer.cmi: uutil.cmi lwt/lwt.cmi 
@@ -87,8 +87,8 @@ fileutil.cmo: fileutil.cmi
 fileutil.cmx: fileutil.cmi 
 fingerprint.cmo: uutil.cmi ubase/util.cmi fspath.cmi fs.cmi fingerprint.cmi 
 fingerprint.cmx: uutil.cmx ubase/util.cmx fspath.cmx fs.cmx fingerprint.cmi 
-fs.cmo: ubase/util.cmi system.cmi fspath.cmi fs.cmi 
-fs.cmx: ubase/util.cmx system.cmx fspath.cmx fs.cmi 
+fs.cmo: ubase/util.cmi fspath.cmi fs.cmi 
+fs.cmx: ubase/util.cmx fspath.cmx fs.cmi 
 fspath.cmo: uutil.cmi ubase/util.cmi system.cmi ubase/rx.cmi path.cmi \
     name.cmi fileutil.cmi fspath.cmi 
 fspath.cmx: uutil.cmx ubase/util.cmx system.cmx ubase/rx.cmx path.cmx \
@@ -167,14 +167,8 @@ stasher.cmx: ubase/util.cmx system.cmx ubase/safelist.cmx remote.cmx \
     fileutil.cmx fileinfo.cmx copy.cmx common.cmx stasher.cmi 
 strings.cmo: strings.cmi 
 strings.cmx: strings.cmi 
-system_generic.cmo: 
-system_generic.cmx: 
-system_intf.cmo: 
-system_intf.cmx: 
-system.cmo: system_win.cmo system.cmi 
-system.cmx: system_win.cmx system.cmi 
-system_win.cmo: unicode.cmi ubase/rx.cmi 
-system_win.cmx: unicode.cmx ubase/rx.cmx 
+system.cmo: system.cmi 
+system.cmx: system.cmi 
 terminal.cmo: ubase/safelist.cmi ubase/rx.cmi lwt/lwt_unix.cmi lwt/lwt.cmi \
     terminal.cmi 
 terminal.cmx: ubase/safelist.cmx ubase/rx.cmx lwt/lwt_unix.cmx lwt/lwt.cmx \
@@ -289,6 +283,12 @@ lwt/lwt_util.cmo: lwt/lwt.cmi lwt/lwt_util.cmi
 lwt/lwt_util.cmx: lwt/lwt.cmx lwt/lwt_util.cmi 
 lwt/pqueue.cmo: lwt/pqueue.cmi 
 lwt/pqueue.cmx: lwt/pqueue.cmi 
+system/system_generic.cmo: 
+system/system_generic.cmx: 
+system/system_intf.cmo: 
+system/system_intf.cmx: 
+system/system_win.cmo: unicode.cmi ubase/rx.cmi 
+system/system_win.cmx: unicode.cmx ubase/rx.cmx 
 ubase/myMap.cmo: ubase/myMap.cmi 
 ubase/myMap.cmx: ubase/myMap.cmi 
 ubase/prefs.cmo: ubase/util.cmi ubase/uarg.cmi system.cmi ubase/safelist.cmi \
@@ -325,3 +325,11 @@ ubase/trace.cmi: ubase/prefs.cmi
 ubase/uarg.cmi: 
 ubase/uprintf.cmi: 
 ubase/util.cmi: system.cmi 
+lwt/example/editor.cmo: lwt/lwt_unix.cmi 
+lwt/example/editor.cmx: lwt/lwt_unix.cmx 
+lwt/example/relay.cmo: lwt/lwt_unix.cmi lwt/lwt.cmi 
+lwt/example/relay.cmx: lwt/lwt_unix.cmx lwt/lwt.cmx 
+system/generic/system_impl.cmo: system/system_generic.cmo 
+system/generic/system_impl.cmx: system/system_generic.cmx 
+system/win/system_impl.cmo: system/system_win.cmo system/system_generic.cmo 
+system/win/system_impl.cmx: system/system_win.cmx system/system_generic.cmx 

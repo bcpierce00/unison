@@ -3,6 +3,8 @@
 #include <caml/memory.h>
 #include <caml/fail.h>
 
+#define _WIN32_WINDOWS 0x0410
+
 #include <wtypes.h>
 #include <winbase.h>
 #include <fcntl.h>
@@ -124,7 +126,7 @@ CAMLprim value win_chmod (value path, value wpath, value perm) {
     win32_maperr (GetLastError ());
     uerror("chmod", path);
   }
-  
+
   CAMLreturn (Val_unit);
 }
 
@@ -217,34 +219,6 @@ CAMLprim value win_open (value path, value wpath, value flags, value perm) {
   CAMLreturn(win_alloc_handle(h));
 }
 
-/*
-static int file_kind_table[] = {
-  S_IFREG, S_IFDIR, S_IFCHR, S_IFBLK, 0, S_IFIFO, 0
-};
-
-static value stat_aux(int use_64, struct _stati64 *buf)
-{
-  CAMLparam0 ();
-  CAMLlocal1 (v);
-
-  v = caml_alloc (12, 0);
-  Store_field (v, 0, Val_int (buf->st_dev));
-  Store_field (v, 1, Val_int (buf->st_ino));
-  Store_field (v, 2, cst_to_constr (buf->st_mode & S_IFMT, file_kind_table,
-                                    sizeof(file_kind_table) / sizeof(int), 0));
-  Store_field (v, 3, Val_int(buf->st_mode & 07777));
-  Store_field (v, 4, Val_int (buf->st_nlink));
-  Store_field (v, 5, Val_int (buf->st_uid));
-  Store_field (v, 6, Val_int (buf->st_gid));
-  Store_field (v, 7, Val_int (buf->st_rdev));
-  Store_field (v, 8,
-               use_64 ? copy_int64(buf->st_size) : Val_int (buf->st_size));
-  Store_field (v, 9, copy_double((double) buf->st_atime));
-  Store_field (v, 10, copy_double((double) buf->st_mtime));
-  Store_field (v, 11, copy_double((double) buf->st_ctime));
-  CAMLreturn (v);
-}
-*/
 #define MAKEDWORDLONG(a,b) ((DWORDLONG)(((DWORD)(a))|(((DWORDLONG)((DWORD)(b)))<<32)))
 #define FILETIME_TO_TIME(ft) (((((ULONGLONG) ft.dwHighDateTime) << 32) + ft.dwLowDateTime) / 10000000ull - 11644473600ull)
 
@@ -258,7 +232,7 @@ CAMLprim value win_stat(value path, value wpath)
 
   h = CreateFileW ((LPCWSTR) String_val (wpath), 0, 0, NULL, OPEN_EXISTING,
 		   FILE_FLAG_BACKUP_SEMANTICS | FILE_ATTRIBUTE_READONLY, NULL);
-  
+
   if (h == INVALID_HANDLE_VALUE) {
     win32_maperr (GetLastError ());
     uerror("stat", path);
@@ -306,50 +280,42 @@ CAMLprim value win_stat(value path, value wpath)
   CAMLreturn (v);
 }
 
-/*
-CAMLprim value win_stat(value path, value wpath)
-{
-  CAMLparam2(path,wpath);
-  int ret;
-  struct _stati64 buf;
-  ret = _wstati64((const wchar_t *)String_val(wpath), &buf);
-  if (ret == -1) uerror("stat", path);
-  CAMLreturn(stat_aux(1, &buf));
-}
-*/
-
 CAMLprim value win_chdir (value path, value wpath)
 {
   CAMLparam2(path,wpath);
   if (!SetCurrentDirectoryW ((LPWSTR)wpath)) {
     win32_maperr(GetLastError());
     uerror("chdir", path);
-  }    
+  }
   CAMLreturn (Val_unit);
 }
 
 CAMLprim value win_getcwd (value unit)
 {
-  int len;
+  int res;
   LPWSTR s;
   CAMLparam0();
-  CAMLlocal1 (res);
+  CAMLlocal1 (path);
 
-  len = GetCurrentDirectoryW (0, NULL);
-  if (len == 0) {
-    win32_maperr(GetLastError());
-    uerror("getcwd", Nothing);
-  }
-  s = stat_alloc (len * 2 + 2);
-  len = GetCurrentDirectoryW (len, s);
-  if (len == 0) {
+  s = stat_alloc (32768 * 2);
+  res = GetCurrentDirectoryW (32768, s);
+  if (res == 0) {
     stat_free (s);
     win32_maperr(GetLastError());
     uerror("getcwd", Nothing);
   }
-  res = copy_wstring(s);
+  /* Normalize the path */
+  res = GetLongPathNameW (s, s, 32768);
+  if (res == 0) {
+    stat_free (s);
+    win32_maperr(GetLastError());
+    uerror("getcwd", Nothing);
+  }
+  /* Convert the drive letter to uppercase */
+  if (s[0] >= L'a' && s[0] <= L'z') s[0] -= 32;
+  path = copy_wstring(s);
   stat_free (s);
-  CAMLreturn (res);
+  CAMLreturn (path);
 }
 
 CAMLprim value win_findfirstw(value name)
@@ -424,7 +390,7 @@ CAMLprim value win_getenv(value var)
   res = copy_wstring(s);
   stat_free (s);
   CAMLreturn (res);
-  
+
 }
 
 CAMLprim value win_putenv(value var, value wvar, value v)

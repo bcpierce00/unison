@@ -1,7 +1,9 @@
 (* Unison file synchronizer: src/case.mli *)
 (* Copyright 1999-2009, Benjamin C. Pierce (see COPYING for details) *)
 
+val unicodePref : string Prefs.t
 val unicodeEncoding : bool Prefs.t
+val useUnicodeAPI : string -> bool
 
 type mode
 

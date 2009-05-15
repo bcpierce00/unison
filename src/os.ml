@@ -210,7 +210,11 @@ let symlink =
          Fs.symlink l abspath)
   else
     fun fspath path l ->
-      raise (Util.Transient "symlink not supported under Win32")
+      raise (Util.Transient
+               (Format.sprintf
+                  "Cannot create symlink \"%s\": \
+                   symlinks are not supported under Windows"
+                  (Fspath.toPrintString (Fspath.concat fspath path))))
 
 (* Create a new directory, using the permissions from the given props        *)
 let createDir fspath path props =

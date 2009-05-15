@@ -15,14 +15,6 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 *)
 
-
-(*
-XXX
-- Check exception handling
-- Use Lwt_unix.system for the merge function
-   (Unix.open_process_in for diff)
-*)
-
 let (>>=) = Lwt.bind
 
 let debug = Trace.debug "remote"
@@ -474,21 +466,17 @@ let addversionno =
 
 (* List containing the connected hosts and the file descriptors of
    the communication. *)
-(*
-(* Perhaps the list would be better indexed by root
-     (host name [+ user name] [+ socket]) ... *)
-let connectedHosts = ref []
+let connectionsByHosts = ref []
 
 (* Gets the Read/Write file descriptors for a host;
    the connection must have been set up by canonizeRoot before calling *)
 let hostConnection host =
-  try Safelist.assoc host !connectedHosts
+  try Safelist.assoc host !connectionsByHosts
   with Not_found ->
-    raise(Util.Fatal "hostConnection")
-*)
+    raise(Util.Fatal "Remote.hostConnection")
 
-(* connectedHosts is a list of command-line roots, their corresponding
-   canonical host names and canonical fspaths, and their connections.
+(* connectedHosts is a list of command-line roots and their corresponding
+   canonical host names.
    Local command-line roots are not in the list.
    Although there can only be one remote host per sync, it's possible
    connectedHosts to hold more than one hosts if more than one sync is
@@ -497,22 +485,6 @@ let hostConnection host =
    same canonical root.
 *)
 let connectedHosts = ref []
-let hostConnection host = (* host must be canonical *)
-  let rec loop = function
-      [] -> raise(Util.Fatal "Remote.hostConnection")
-    | (cl,h,fspath,conn)::tl -> if h=host then conn else loop tl in
-  loop !connectedHosts
-
-let canonize clroot = (* connection for clroot must have been set up already *)
-  match clroot with
-    Clroot.ConnectLocal s -> (Common.Local, Fspath.canonize s)
-  | _ ->
-    let rec loop = function
-        [] -> raise(Util.Fatal "Remote.canonize")
-      | (cl,h,fspath,conn)::tl ->
-        if cl=clroot then (Common.Remote h,fspath) else loop tl in
-    loop !connectedHosts
-
 
 (**********************************************************************
                        CLIENT/SERVER PROTOCOLS
@@ -943,37 +915,66 @@ let buildShellConnection shell host userOpt portOpt rootName termInteract =
   end;
   initConnection i2 o1
 
+let canonizeLocally s unicode =
+  (* We need to select the proper API in order to compute correctly the
+     canonical fspath *)
+  Fs.setUnicodeEncoding (Case.useUnicodeAPI unicode);
+  Fspath.canonize s
+
 let canonizeOnServer =
   registerServerCmd "canonizeOnServer"
-    (fun _ s -> Lwt.return (Os.myCanonicalHostName, Fspath.canonize s))
+    (fun _ (s, unicode) ->
+       Lwt.return (Os.myCanonicalHostName, canonizeLocally s unicode))
 
-let canonizeRoot rootName clroot termInteract =
-  let finish ioServer s =
-    canonizeOnServer ioServer s >>= (fun (host, fspath) ->
-    connectedHosts := (clroot,host,fspath,ioServer)::(!connectedHosts);
-    Lwt.return (Common.Remote host,fspath)) in
-  let rec hostfspath = function
-         [] -> None
-       | (clroot',host,fspath,_)::tl ->
-         if clroot=clroot'
-         then Some(Lwt.return(Common.Remote host,fspath))
-         else hostfspath tl in
+let canonize clroot = (* connection for clroot must have been set up already *)
   match clroot with
     Clroot.ConnectLocal s ->
-      Lwt.return (Common.Local, Fspath.canonize s)
+      (Common.Local, canonizeLocally s (Prefs.read Case.unicodePref))
+  | _ ->
+      match
+        try
+          Some (Safelist.assoc clroot !connectedHosts)
+        with Not_found ->
+          None
+      with
+        None                -> raise (Util.Fatal "Remote.canonize")
+      | Some (h, fspath, _) -> (Common.Remote h, fspath)
+
+let listReplace v l = v :: Safelist.remove_assoc (fst v) l
+
+let rec hostFspath clroot =
+  try
+    let (_, _, ioServer) = Safelist.assoc clroot !connectedHosts in
+    Some (Lwt.return ioServer)
+  with Not_found ->
+    None
+
+let canonizeRoot rootName clroot termInteract =
+  let unicode = Prefs.read Case.unicodePref in
+  let finish ioServer s =
+    (* We need to always compute the fspath as it depends on
+       unicode settings *)
+    canonizeOnServer ioServer (s, unicode) >>= (fun (host, fspath) ->
+    connectedHosts :=
+      listReplace (clroot, (host, fspath, ioServer)) !connectedHosts;
+    connectionsByHosts := listReplace (host, ioServer) !connectionsByHosts;
+    Lwt.return (Common.Remote host,fspath)) in
+  match clroot with
+    Clroot.ConnectLocal s ->
+      Lwt.return (Common.Local, canonizeLocally s unicode)
   | Clroot.ConnectBySocket(host,port,s) ->
-      (match hostfspath !connectedHosts with
+      begin match hostFspath clroot with
         Some x -> x
-      | None ->
-          buildSocketConnection host port >>= (fun ioServer ->
-            finish ioServer s))
+      | None   -> buildSocketConnection host port
+      end >>= fun ioServer ->
+      finish ioServer s
   | Clroot.ConnectByShell(shell,host,userOpt,portOpt,s) ->
-      (match hostfspath !connectedHosts with
+      begin match hostFspath clroot with
         Some x -> x
-      | None ->
-          buildShellConnection
-            shell host userOpt portOpt rootName termInteract >>=
-          (fun ioServer -> finish ioServer s))
+      | None   -> buildShellConnection
+                   shell host userOpt portOpt rootName termInteract
+      end >>= fun ioServer ->
+      finish ioServer s
 
 (* A new interface, useful for terminal interaction, it should
    eventually replace canonizeRoot and buildShellConnection *)
@@ -993,80 +994,97 @@ let openConnectionStart clroot =
     Clroot.ConnectLocal s ->
       None
   | Clroot.ConnectBySocket(host,port,s) ->
-      (* This check isn't foolproof as the host in the clroot might not be canonical *)
-      if (Safelist.exists (fun (clroot',_,_,_) -> clroot=clroot') !connectedHosts)
-      then None
-      else begin
-        let ioServer = Lwt_unix.run(buildSocketConnection host port) in
-        let (host,fspath) = Lwt_unix.run(canonizeOnServer ioServer s) in
-        connectedHosts := (clroot,host,fspath,ioServer)::(!connectedHosts);
-        None
-      end
+      Lwt_unix.run
+        (begin match hostFspath clroot with
+           Some x -> x
+         | None   -> buildSocketConnection host port
+         end >>= fun ioServer ->
+         (* We need to always compute the fspath as it depends on
+            unicode settings *)
+         let unicode = Prefs.read Case.unicodePref in
+         canonizeOnServer ioServer (s, unicode) >>= fun (host, fspath) ->
+         connectedHosts :=
+           listReplace (clroot, (host, fspath, ioServer)) !connectedHosts;
+         connectionsByHosts :=
+           listReplace (host, ioServer) !connectionsByHosts;
+         Lwt.return ());
+      None
   | Clroot.ConnectByShell(shell,host,userOpt,portOpt,s) ->
-      if (Safelist.exists (fun (clroot',_,_,_) -> clroot=clroot') !connectedHosts)
-      then None
-      else begin
-        let remoteCmd =
-          (if Prefs.read serverCmd="" then Uutil.myName
-           else Prefs.read serverCmd)
-          ^ (if Prefs.read addversionno then "-" ^ Uutil.myMajorVersion else "")
-          ^ " -server" in
-        let userArgs =
-          match userOpt with
-            None -> []
-          | Some user -> ["-l"; user] in
-        let portArgs =
-          match portOpt with
-            None -> []
-          | Some port -> ["-p"; port] in
-        let shellCmd =
-          (if shell = "ssh" then
-            Prefs.read sshCmd
-          else if shell = "rsh" then
-            Prefs.read rshCmd
-          else
-            shell) in
-        let shellCmdArgs = 
-          (if shell = "ssh" then
-            Prefs.read sshargs
-          else if shell = "rsh" then
-            Prefs.read rshargs
-          else
-            "") in
-        let preargs =
-            ([shellCmd]@userArgs@portArgs@
-             [host]@
-             (if shell="ssh" then ["-e none"] else [])@
-             [shellCmdArgs;remoteCmd]) in
-        (* Split compound arguments at space chars, to make
-           create_process happy *)
-        let args =
-          Safelist.concat
-            (Safelist.map (fun s -> Util.splitIntoWords s ' ') preargs) in
-        let argsarray = Array.of_list args in
-        let (i1,o1) = Unix.pipe() in
-        let (i2,o2) = Unix.pipe() in
-        (* We need to make sure that there is only one reader and one
-           writer by pipe, so that, when one side of the connection
-           dies, the other side receives an EOF or a SIGPIPE. *)
-        Unix.set_close_on_exec i2;
-        Unix.set_close_on_exec o1;
-        (* We add CYGWIN=binmode to the environment before calling
-           ssh because the cygwin implementation on Windows sometimes
-           puts the pipe in text mode (which does end of line
-           translation).  Specifically, if unison is invoked from
-           a DOS command prompt or other non-cygwin context, the pipe
-           goes into text mode; this does not happen if unison is
-           invoked from cygwin's bash.  By setting CYGWIN=binmode
-           we force the pipe to remain in binary mode. *)
-        System.putenv "CYGWIN" "binmode";
-        debug (fun ()-> Util.msg "Shell connection: %s (%s)\n"
-                 shellCmd (String.concat ", " args));
-        let (term,pid) =
-          Terminal.create_session shellCmd argsarray i1 o2 Unix.stderr in
-        (* after terminal interact, remember to close i1 and o2 *)
-        Some(i1,i2,o1,o2,s,term,clroot,pid)
-      end
+      match hostFspath clroot with
+         Some x ->
+           let unicode = Prefs.read Case.unicodePref in
+           (* We recompute the fspath as it may have changed due to
+              unicode settings *)
+           Lwt_unix.run
+             (x >>= fun ioServer ->
+              canonizeOnServer ioServer (s, unicode) >>= fun (host, fspath) ->
+              connectedHosts :=
+                listReplace (clroot, (host, fspath, ioServer)) !connectedHosts;
+              connectionsByHosts :=
+                listReplace (host, ioServer) !connectionsByHosts;
+              Lwt.return ());
+           None
+      | None ->
+          let remoteCmd =
+            (if Prefs.read serverCmd="" then Uutil.myName
+             else Prefs.read serverCmd)
+            ^ (if Prefs.read addversionno then "-" ^ Uutil.myMajorVersion else "")
+            ^ " -server" in
+          let userArgs =
+            match userOpt with
+              None -> []
+            | Some user -> ["-l"; user] in
+          let portArgs =
+            match portOpt with
+              None -> []
+            | Some port -> ["-p"; port] in
+          let shellCmd =
+            (if shell = "ssh" then
+              Prefs.read sshCmd
+            else if shell = "rsh" then
+              Prefs.read rshCmd
+            else
+              shell) in
+          let shellCmdArgs = 
+            (if shell = "ssh" then
+              Prefs.read sshargs
+            else if shell = "rsh" then
+              Prefs.read rshargs
+            else
+              "") in
+          let preargs =
+              ([shellCmd]@userArgs@portArgs@
+               [host]@
+               (if shell="ssh" then ["-e none"] else [])@
+               [shellCmdArgs;remoteCmd]) in
+          (* Split compound arguments at space chars, to make
+             create_process happy *)
+          let args =
+            Safelist.concat
+              (Safelist.map (fun s -> Util.splitIntoWords s ' ') preargs) in
+          let argsarray = Array.of_list args in
+          let (i1,o1) = Unix.pipe() in
+          let (i2,o2) = Unix.pipe() in
+          (* We need to make sure that there is only one reader and one
+             writer by pipe, so that, when one side of the connection
+             dies, the other side receives an EOF or a SIGPIPE. *)
+          Unix.set_close_on_exec i2;
+          Unix.set_close_on_exec o1;
+          (* We add CYGWIN=binmode to the environment before calling
+             ssh because the cygwin implementation on Windows sometimes
+             puts the pipe in text mode (which does end of line
+             translation).  Specifically, if unison is invoked from
+             a DOS command prompt or other non-cygwin context, the pipe
+             goes into text mode; this does not happen if unison is
+             invoked from cygwin's bash.  By setting CYGWIN=binmode
+             we force the pipe to remain in binary mode. *)
+          System.putenv "CYGWIN" "binmode";
+          debug (fun ()-> Util.msg "Shell connection: %s (%s)\n"
+                   shellCmd (String.concat ", " args));
+          let (term,pid) =
+            Terminal.create_session shellCmd argsarray i1 o2 Unix.stderr in
+          (* after terminal interact, remember to close i1 and o2 *)
+          Some(i1,i2,o1,o2,s,term,clroot,pid)
 
 let openConnectionPrompt = function
     (i1,i2,o1,o2,s,Some fdTerm,clroot,pid) ->
@@ -1083,9 +1101,15 @@ let openConnectionReply = function
 
 let openConnectionEnd (i1,i2,o1,o2,s,_,clroot,pid) =
       Unix.close i1; Unix.close o2;
-      let ioServer = Lwt_unix.run (initConnection i2 o1) in
-      let (host,fspath) = Lwt_unix.run(canonizeOnServer ioServer s) in
-      connectedHosts := (clroot,host,fspath,ioServer)::(!connectedHosts)
+      Lwt_unix.run
+        (initConnection i2 o1 >>= fun ioServer ->
+         let unicode = Prefs.read Case.unicodePref in
+         canonizeOnServer ioServer (s, unicode) >>= fun (host, fspath) ->
+         connectedHosts :=
+           listReplace (clroot, (host, fspath, ioServer)) !connectedHosts;
+         connectionsByHosts :=
+           listReplace (host, ioServer) !connectionsByHosts;
+         Lwt.return ())
 
 let openConnectionCancel (i1,i2,o1,o2,s,fdopt,clroot,pid) =
       try Unix.kill pid Sys.sigkill with _ -> ();

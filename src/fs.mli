@@ -8,4 +8,4 @@ include System_intf.Core with type fspath = Fspath.t
 val digestFile : Fspath.t -> string
 val canSetTime : Fspath.t -> bool
 
-val useUnicodeEncoding : bool -> unit
+val setUnicodeEncoding : bool -> unit

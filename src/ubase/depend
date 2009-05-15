@@ -2,8 +2,6 @@ myMap.cmo: myMap.cmi
 myMap.cmx: myMap.cmi 
 prefs.cmo: util.cmi uarg.cmi safelist.cmi prefs.cmi 
 prefs.cmx: util.cmx uarg.cmx safelist.cmx prefs.cmi 
-projectInfo.cmo: 
-projectInfo.cmx: 
 rx.cmo: rx.cmi 
 rx.cmx: rx.cmi 
 safelist.cmo: safelist.cmi 
