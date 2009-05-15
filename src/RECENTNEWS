@@ -1,5 +1,9 @@
 CHANGES FROM VERSION 2.34.0
 
+* Cleaned-up the Unicode selection logic
+-------------------------------
+CHANGES FROM VERSION 2.34.0
+
 * Bumped minor version: incompatible protocol changes
 * The use of the Windows Unicode API is now controlled via the
   "unicode" directive
