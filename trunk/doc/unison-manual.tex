@@ -1255,7 +1255,7 @@ A more powerful way of changing archive names is provided by the
 \verb|rootalias| preference.  The preference file may contain any number of
 lines of the form: 
 \begin{alltt}
-    rootalias = //\NT{hostnameA}//\NT{path-to-replicaA} -> //\NT{hostnameB}//\NT{path-to-replicaB}
+    rootalias = //\NT{hostnameA}//\NT{path-to-replicaA} -> //\NT{hostnameB}/\NT{path-to-replicaB}
 \end{alltt}
 When calculating the name of the archive files for a given pair of roots,
 Unison replaces any root that matches the left-hand side of any rootalias
@@ -1264,8 +1264,10 @@ rule by the corresponding right-hand side.
 So, if you need to relocate a root on one of the hosts, you can add a
 rule of the form:
 \begin{alltt}
-    rootalias = //\NT{new-hostname}//\NT{new-path} -> //\NT{old-hostname}//\NT{old-path}
+    rootalias = //\NT{new-hostname}//\NT{new-path} -> //\NT{old-hostname}/\NT{old-path}
 \end{alltt}
+Note that root aliases are case-sensitive, even on case-insensitive file
+systems.
 
 {\em Warning}: The \verb|rootalias| option is dangerous and should only
 be used if you are sure you know what you're doing.  In particular, it
