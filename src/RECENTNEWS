@@ -1,5 +1,13 @@
 CHANGES FROM VERSION 2.34.0
 
+* Small documentation fix suggested by mszsummer.
+
+
+
+
+-------------------------------
+CHANGES FROM VERSION 2.34.0
+
 * Cleaned-up the Unicode selection logic
 -------------------------------
 CHANGES FROM VERSION 2.34.0
@@ -13,6 +21,14 @@ CHANGES FROM VERSION 2.34.0
   Windows machine
 * Fixed compilation warnings in lwt_unix.ml and pty.c
 * Added some missing convertUnixErrorsToTransient
+
+-------------------------------
+CHANGES FROM VERSION 2.33.2
+
+* Small documentation fix suggested by mszsummer.
+
+
+
 
 -------------------------------
 CHANGES FROM VERSION 2.33.2
