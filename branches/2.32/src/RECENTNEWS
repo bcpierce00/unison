@@ -1,3 +1,10 @@
+CHANGES FROM VERSION 2.32.19
+
+* Small documentation fix suggested by mszsummer.
+
+
+
+-------------------------------
 CHANGES FROM VERSION 2.32.12
 
 * Fixed bug in GTK UI: buttons could be incorrectly activated back during

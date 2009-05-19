@@ -1,11 +1,7 @@
 
-Changes in Version 2.32.10
+Changes in Version 2.32.12
 
    Changes since 2.31:
-     * Small user interface changes
-          + Small change to text UI "scanning..." messages, to print just
-            directories (hopefully making it clearer that individual
-            files are not necessarily being fingerprinted).
      * Minor fixes and improvements:
           + Ignore one hour differences when deciding whether a file may
             have been updated. This avoids slow update detection after
