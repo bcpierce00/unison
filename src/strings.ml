@@ -4,7 +4,7 @@
 let docs =
     ("about", ("About Unison", 
      "Unison File Synchronizer\n\
-      Version 2.32.10\n\
+      Version 2.32.12\n\
       \n\
       "))
 ::
@@ -2582,14 +2582,10 @@ let docs =
       \n\
       "))
 ::
-    ("news", ("Changes in Version 2.32.10", 
-     "Changes in Version 2.32.10\n\
+    ("news", ("Changes in Version 2.32.12", 
+     "Changes in Version 2.32.12\n\
       \n\
       \032  Changes since 2.31:\n\
-      \032    * Small user interface changes\n\
-      \032         + Small change to text UI \"scanning...\" messages, to print just\n\
-      \032           directories (hopefully making it clearer that individual\n\
-      \032           files are not necessarily being fingerprinted).\n\
       \032    * Minor fixes and improvements:\n\
       \032         + Ignore one hour differences when deciding whether a file may\n\
       \032           have been updated. This avoids slow update detection after\n\
