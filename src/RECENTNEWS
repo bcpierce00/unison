@@ -1,5 +1,10 @@
 CHANGES FROM VERSION 2.34.0
 
+* Got rid of the 16MiB marshalling limit by marshalling to a bigarray
+
+-------------------------------
+CHANGES FROM VERSION 2.34.0
+
 * Use system dependant API for spawning processes.
   (Unicode API under Windows.)
 * Fixed the bug with ssh not working when running unison from a cygwin

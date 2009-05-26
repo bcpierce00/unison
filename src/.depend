@@ -1,4 +1,5 @@
 abort.cmi: uutil.cmi 
+bytearray.cmi: 
 case.cmi: ubase/prefs.cmi 
 checksum.cmi: 
 clroot.cmi: 
@@ -23,14 +24,15 @@ path.cmi: name.cmi
 pred.cmi: 
 props.cmi: uutil.cmi ubase/prefs.cmi path.cmi osx.cmi fspath.cmi 
 recon.cmi: path.cmi common.cmi 
-remote.cmi: ubase/prefs.cmi lwt/lwt.cmi fspath.cmi common.cmi clroot.cmi 
+remote.cmi: ubase/prefs.cmi lwt/lwt.cmi fspath.cmi common.cmi clroot.cmi \
+    bytearray.cmi 
 sortri.cmi: common.cmi 
 stasher.cmi: ubase/prefs.cmi path.cmi os.cmi fspath.cmi 
 strings.cmi: 
 system.cmi: system/system_intf.cmo 
 terminal.cmi: 
 test.cmi: 
-transfer.cmi: uutil.cmi lwt/lwt.cmi 
+transfer.cmi: uutil.cmi lwt/lwt.cmi bytearray.cmi 
 transport.cmi: uutil.cmi lwt/lwt.cmi common.cmi 
 tree.cmi: 
 uicommon.cmi: uutil.cmi ubase/prefs.cmi path.cmi lwt/lwt.cmi common.cmi 
@@ -47,6 +49,8 @@ abort.cmo: uutil.cmi ubase/util.cmi ubase/trace.cmi ubase/safelist.cmi \
     abort.cmi 
 abort.cmx: uutil.cmx ubase/util.cmx ubase/trace.cmx ubase/safelist.cmx \
     abort.cmi 
+bytearray.cmo: bytearray.cmi 
+bytearray.cmx: bytearray.cmi 
 case.cmo: ubase/util.cmi unicode.cmi ubase/prefs.cmi case.cmi 
 case.cmx: ubase/util.cmx unicode.cmx ubase/prefs.cmx case.cmi 
 checksum.cmo: checksum.cmi 
@@ -60,11 +64,13 @@ common.cmx: uutil.cmx ubase/util.cmx ubase/safelist.cmx props.cmx path.cmx \
 copy.cmo: xferhint.cmi uutil.cmi ubase/util.cmi transfer.cmi ubase/trace.cmi \
     ubase/safelist.cmi remote.cmi props.cmi ubase/prefs.cmi path.cmi osx.cmi \
     os.cmi lwt/lwt_util.cmi lwt/lwt.cmi globals.cmi fspath.cmi fs.cmi \
-    fileinfo.cmi external.cmi common.cmi clroot.cmi abort.cmi copy.cmi 
+    fileinfo.cmi external.cmi common.cmi clroot.cmi bytearray.cmi abort.cmi \
+    copy.cmi 
 copy.cmx: xferhint.cmx uutil.cmx ubase/util.cmx transfer.cmx ubase/trace.cmx \
     ubase/safelist.cmx remote.cmx props.cmx ubase/prefs.cmx path.cmx osx.cmx \
     os.cmx lwt/lwt_util.cmx lwt/lwt.cmx globals.cmx fspath.cmx fs.cmx \
-    fileinfo.cmx external.cmx common.cmx clroot.cmx abort.cmx copy.cmi 
+    fileinfo.cmx external.cmx common.cmx clroot.cmx bytearray.cmx abort.cmx \
+    copy.cmi 
 external.cmo: ubase/util.cmi system.cmi ubase/safelist.cmi lwt/lwt_util.cmi \
     lwt/lwt_unix.cmi lwt/lwt.cmi external.cmi 
 external.cmx: ubase/util.cmx system.cmx ubase/safelist.cmx lwt/lwt_util.cmx \
@@ -149,10 +155,10 @@ recon.cmx: ubase/util.cmx update.cmx tree.cmx ubase/trace.cmx sortri.cmx \
     globals.cmx fileinfo.cmx common.cmx recon.cmi 
 remote.cmo: uutil.cmi ubase/util.cmi ubase/trace.cmi terminal.cmi system.cmi \
     ubase/safelist.cmi ubase/prefs.cmi os.cmi lwt/lwt_unix.cmi lwt/lwt.cmi \
-    fspath.cmi fs.cmi common.cmi clroot.cmi case.cmi remote.cmi 
+    fspath.cmi fs.cmi common.cmi clroot.cmi case.cmi bytearray.cmi remote.cmi 
 remote.cmx: uutil.cmx ubase/util.cmx ubase/trace.cmx terminal.cmx system.cmx \
     ubase/safelist.cmx ubase/prefs.cmx os.cmx lwt/lwt_unix.cmx lwt/lwt.cmx \
-    fspath.cmx fs.cmx common.cmx clroot.cmx case.cmx remote.cmi 
+    fspath.cmx fs.cmx common.cmx clroot.cmx case.cmx bytearray.cmx remote.cmi 
 sortri.cmo: ubase/util.cmi ubase/safelist.cmi ubase/prefs.cmi pred.cmi \
     path.cmi common.cmi sortri.cmi 
 sortri.cmx: ubase/util.cmx ubase/safelist.cmx ubase/prefs.cmx pred.cmx \
@@ -184,9 +190,9 @@ test.cmx: uutil.cmx ubase/util.cmx update.cmx uicommon.cmx transport.cmx \
     lwt/lwt.cmx globals.cmx fspath.cmx fs.cmx fingerprint.cmx common.cmx \
     test.cmi 
 transfer.cmo: uutil.cmi ubase/util.cmi ubase/trace.cmi ubase/safelist.cmi \
-    lwt/lwt.cmi checksum.cmi transfer.cmi 
+    lwt/lwt.cmi checksum.cmi bytearray.cmi transfer.cmi 
 transfer.cmx: uutil.cmx ubase/util.cmx ubase/trace.cmx ubase/safelist.cmx \
-    lwt/lwt.cmx checksum.cmx transfer.cmi 
+    lwt/lwt.cmx checksum.cmx bytearray.cmx transfer.cmi 
 transport.cmo: uutil.cmi ubase/util.cmi update.cmi ubase/trace.cmi \
     stasher.cmi remote.cmi props.cmi ubase/prefs.cmi path.cmi osx.cmi \
     lwt/lwt_util.cmi lwt/lwt.cmi globals.cmi files.cmi common.cmi abort.cmi \
