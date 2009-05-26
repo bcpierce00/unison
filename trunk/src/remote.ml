@@ -33,18 +33,18 @@ let windowsHack = Sys.os_type <> "Unix"
 (****)
 
 let encodeInt m =
-  let int_buf = String.create 4 in
-  String.set int_buf 0 (Char.chr ( m         land 0xff));
-  String.set int_buf 1 (Char.chr ((m lsr 8)  land 0xff));
-  String.set int_buf 2 (Char.chr ((m lsr 16) land 0xff));
-  String.set int_buf 3 (Char.chr ((m lsr 24) land 0xff));
+  let int_buf = Bytearray.create 4 in
+  int_buf.{0} <- Char.chr ( m         land 0xff);
+  int_buf.{1} <- Char.chr ((m lsr 8)  land 0xff);
+  int_buf.{2} <- Char.chr ((m lsr 16) land 0xff);
+  int_buf.{3} <- Char.chr ((m lsr 24) land 0xff);
   int_buf
 
-let decodeInt int_buf =
-  let b0 = Char.code (String.get int_buf 0) in
-  let b1 = Char.code (String.get int_buf 1) in
-  let b2 = Char.code (String.get int_buf 2) in
-  let b3 = Char.code (String.get int_buf 3) in
+let decodeInt int_buf i =
+  let b0 = Char.code (int_buf.{i + 0}) in
+  let b1 = Char.code (int_buf.{i + 1}) in
+  let b2 = Char.code (int_buf.{i + 2}) in
+  let b3 = Char.code (int_buf.{i + 3}) in
   ((b3 lsl 24) lor (b2 lsl 16) lor (b1 lsl 8) lor b0)
 
 (*************************************************************************)
@@ -76,7 +76,7 @@ type connection =
     outputChannel : Unix.file_descr;
     outputBuffer : string;
     mutable outputLength : int;
-    outputQueue : (string * int * int) list Queue.t;
+    outputQueue : (Bytearray.t * int * int) list Queue.t;
     mutable pendingOutput : bool;
     mutable flowControl : bool;
     mutable canWrite : bool;
@@ -114,7 +114,7 @@ let rec grab_rec conn s pos len =
     grab_rec conn s pos len)
   end else begin
     let l = min (len - pos) conn.inputLength in
-    String.blit conn.inputBuffer 0 s pos l;
+    Bytearray.blit_from_string conn.inputBuffer 0 s pos l;
     conn.inputLength <- conn.inputLength - l;
     if conn.inputLength > 0 then
       String.blit conn.inputBuffer l conn.inputBuffer 0 conn.inputLength;
@@ -126,7 +126,7 @@ let rec grab_rec conn s pos len =
 
 let grab conn s len =
   assert (len > 0);
-  assert (String.length s <= len);
+  assert (Bytearray.length s <= len);
   grab_rec conn s 0 len
 
 let peek_without_blocking conn =
@@ -158,7 +158,7 @@ let rec fill_buffer_2 conn s pos len =
     fill_buffer_2 conn s pos len)
   else begin
     let l = min (len - pos) (outputBuffer_size - conn.outputLength) in
-    String.blit s pos conn.outputBuffer conn.outputLength l;
+    Bytearray.blit_to_string s pos conn.outputBuffer conn.outputLength l;
     conn.outputLength <- conn.outputLength + l;
     if pos + l < len then
       fill_buffer_2 conn s (pos + l) len
@@ -171,7 +171,7 @@ let rec fill_buffer conn l =
     (s, pos, len) :: rem ->
       assert (pos >= 0);
       assert (len >= 0);
-      assert (pos + len <= String.length s);
+      assert (pos <= Bytearray.length s - len);
       fill_buffer_2 conn s pos len >>= (fun () ->
       fill_buffer conn rem)
   | [] ->
@@ -331,11 +331,11 @@ end
 (*                              MARSHALING                                   *)
 (*****************************************************************************)
 
-type tag = string
+type tag = Bytearray.t
 
 type 'a marshalFunction =
-  'a -> (string * int * int) list -> (string * int * int) list
-type 'a unmarshalFunction =  string -> 'a
+  'a -> (Bytearray.t * int * int) list -> (Bytearray.t * int * int) list
+type 'a unmarshalFunction = Bytearray.t -> 'a
 type 'a marshalingFunctions = 'a marshalFunction * 'a unmarshalFunction
 
 let registeredSet = ref Util.StringSet.empty
@@ -346,9 +346,9 @@ let rec first_chars len msg =
       ""
   | (s, p, l) :: rem ->
       if l < len then
-        String.sub s p l ^ first_chars (len - l) rem
+        Bytearray.sub s p l ^ first_chars (len - l) rem
       else
-        String.sub s p len
+        Bytearray.sub s p len
 
 (* An integer just a little smaller than the maximum representable in 30 bits *)
 let hugeint = 1000000000
@@ -359,50 +359,47 @@ let safeMarshal marshalPayload tag data rem =
     let start = first_chars (min length 10) rem' in
     let start = if length > 10 then start ^ "..." else start in
     let start = String.escaped start in
-    Util.msg "Fatal error in safeMarshal: sending too many (%d) bytes with tag %s and contents [%s]\n" length tag start; 
+    Util.msg "Fatal error in safeMarshal: sending too many (%d) bytes with tag %s and contents [%s]\n" length (Bytearray.to_string tag) start; 
     raise (Util.Fatal ((Printf.sprintf
-             "Message payload too large (%d, %s, [%s]).  \n" length tag start)
+             "Message payload too large (%d, %s, [%s]).  \n"
+                length (Bytearray.to_string tag) start)
              ^ "This is a bug in Unison; if it happens to you in a repeatable way, \n"
              ^ "please post a report on the unison-users mailing list."))
   end;
-  let l = String.length tag in
+  let l = Bytearray.length tag in
   debugE (fun() ->
             let start = first_chars (min length 10) rem' in
             let start = if length > 10 then start ^ "..." else start in
             let start = String.escaped start in
-            Util.msg "send [%s] '%s' %d bytes\n" tag start length);
+            Util.msg "send [%s] '%s' %d bytes\n"
+              (Bytearray.to_string tag) start length);
   ((encodeInt (l + length), 0, 4) :: (tag, 0, l) :: rem')
 
 let safeUnmarshal unmarshalPayload tag buf =
-  let taglength = String.length tag in
-  let identifier = String.sub buf 0 (min taglength (String.length buf)) in
-  if identifier = tag then
+  let taglength = Bytearray.length tag in
+  if Bytearray.prefix tag buf 0 then
     unmarshalPayload buf taglength
   else
+    let identifier =
+      String.escaped
+        (Bytearray.sub buf 0 (min taglength (Bytearray.length buf))) in
     raise (Util.Fatal
-             (Printf.sprintf "[safeUnmarshal] expected %s but got %s"
-                tag identifier))
+             (Printf.sprintf "[safeUnmarshal] expected '%s' but got '%s'"
+                (String.escaped (Bytearray.to_string tag)) identifier))
 
 let registerTag string =
   if Util.StringSet.mem string !registeredSet then
     raise (Util.Fatal (Printf.sprintf "tag %s is already registered" string))
   else
     registeredSet := Util.StringSet.add string !registeredSet;
-  string
+  Bytearray.of_string string
 
 let defaultMarshalingFunctions =
   (fun data rem ->
-     try
-       let s = Marshal.to_string data [Marshal.No_sharing] in
-       let l = String.length s in
-       ((s, 0, String.length s) :: rem, l)
-     with Out_of_memory ->
-       raise (Util.Fatal
-                "Trying to transfer too much data in one go.\n\
-                 If this happens during update detection, try to\n\
-                 synchronize smaller pieces of the replica first\n\
-                 using the \"path\" directive.")),
-  (fun buf pos -> Marshal.from_string buf pos)
+     let s = Bytearray.marshal data [Marshal.No_sharing] in
+     let l = Bytearray.length s in
+     ((s, 0, l) :: rem, l)),
+  (fun buf pos -> Bytearray.unmarshal buf pos)
 
 let makeMarshalingFunctions payloadMarshalingFunctions string =
   let (marshalPayload, unmarshalPayload) = payloadMarshalingFunctions in
@@ -529,24 +526,24 @@ two switch roles.)
 
 let receivePacket conn =
   (* Get the length of the packet *)
-  let int_buf = String.create 4 in
+  let int_buf = Bytearray.create 4 in
   grab conn int_buf 4 >>= (fun () ->
-  let length = decodeInt int_buf in
+  let length = decodeInt int_buf 0 in
   assert (length >= 0);
   (* Get packet *)
-  let buf = String.create length in
+  let buf = Bytearray.create length in
   grab conn buf length >>= (fun () ->
   (debugE (fun () ->
              let start =
-               if length > 10 then (String.sub buf 0 10) ^ "..."
-               else String.sub buf 0 length in
+               if length > 10 then (Bytearray.sub buf 0 10) ^ "..."
+               else Bytearray.sub buf 0 length in
              let start = String.escaped start in
              Util.msg "receive '%s' %d bytes\n" start length);
    Lwt.return buf)))
 
 type servercmd =
-  connection -> string ->
-  ((string * int * int) list -> (string * int * int) list) Lwt.t
+  connection -> Bytearray.t ->
+  ((Bytearray.t * int * int) list -> (Bytearray.t * int * int) list) Lwt.t
 let serverCmds = ref (Util.StringMap.empty : servercmd Util.StringMap.t)
 
 type header =
@@ -565,16 +562,16 @@ let processRequest conn id cmdName buf =
   in
   Lwt.try_bind (fun () -> cmd conn buf)
     (fun marshal ->
-       debugE (fun () -> Util.msg "Sending result (id: %d)\n" (decodeInt id));
+       debugE (fun () -> Util.msg "Sending result (id: %d)\n" (decodeInt id 0));
        dump conn ((id, 0, 4) :: marshalHeader NormalResult (marshal [])))
     (function
        Util.Transient s ->
          debugE (fun () ->
-           Util.msg "Sending transient exception (id: %d)\n" (decodeInt id));
+           Util.msg "Sending transient exception (id: %d)\n" (decodeInt id 0));
          dump conn ((id, 0, 4) :: marshalHeader (TransientExn s) [])
      | Util.Fatal s ->
          debugE (fun () ->
-           Util.msg "Sending fatal exception (id: %d)\n" (decodeInt id));
+           Util.msg "Sending fatal exception (id: %d)\n" (decodeInt id 0));
          dump conn ((id, 0, 4) :: marshalHeader (FatalExn s) [])
      | e ->
          Lwt.fail e)
@@ -605,9 +602,9 @@ let rec receive conn =
      Lwt.return ()) >>= (fun () ->
   debugE (fun () -> Util.msg "Waiting for next message\n");
   (* Get the message ID *)
-  let id = String.create 4 in
+  let id = Bytearray.create 4 in
   grab conn id 4 >>= (fun () ->
-  let num_id = decodeInt id in
+  let num_id = decodeInt id 0 in
   if num_id = 0 then begin
     debugE (fun () -> Util.msg "Received the write permission\n");
     allowWrites conn;
@@ -752,12 +749,14 @@ let registerRootCmdWithConnection
 
 let connectionHeader = "Unison " ^ Uutil.myMajorVersion ^ "\n"
 
-let rec checkHeader conn prefix buffer pos len =
+let rec checkHeader conn buffer pos len =
   if pos = len then
     Lwt.return ()
   else begin
     (grab conn buffer 1 >>= (fun () ->
-    if buffer.[0] <> connectionHeader.[pos] then
+    if buffer.{0} <> connectionHeader.[pos] then
+      let prefix =
+        String.sub connectionHeader 0 pos ^ Bytearray.to_string buffer in
       let rest = peek_without_blocking conn in
       Lwt.fail
         (Util.Fatal
@@ -765,15 +764,15 @@ let rec checkHeader conn prefix buffer pos len =
              expected \""
            ^ String.escaped (* (String.sub connectionHeader 0 (pos + 1)) *)
                connectionHeader
-           ^ "\" but received \"" ^ String.escaped (prefix ^ buffer ^ rest) ^ "\", \n"
-           ^ "which differs at \"" ^ String.escaped (prefix ^ buffer) ^ "\".\n"
+           ^ "\" but received \"" ^ String.escaped (prefix ^ rest) ^ "\", \n"
+           ^ "which differs at \"" ^ String.escaped prefix ^ "\".\n"
            ^ "This can happen because you have different versions of Unison\n"
            ^ "installed on the client and server machines, or because\n"
            ^ "your connection is failing and somebody is printing an error\n"
            ^ "message, or because your remote login shell is printing\n"
            ^ "something itself before starting Unison."))
     else
-      checkHeader conn (prefix ^ buffer) buffer (pos + 1) len))
+      checkHeader conn buffer (pos + 1) len))
   end
 
 (****)
@@ -808,7 +807,8 @@ let initConnection in_ch out_ch =
     ignore(Sys.set_signal Sys.sigpipe Sys.Signal_ignore);
   let conn = setupIO in_ch out_ch in
   conn.canWrite <- false;
-  checkHeader conn "" " " 0 (String.length connectionHeader) >>= (fun () ->
+  checkHeader
+    conn (Bytearray.create 1) 0 (String.length connectionHeader) >>= (fun () ->
   Lwt.ignore_result (receive conn);
   negociateFlowControl conn >>= (fun () ->
   Lwt.return conn))
@@ -1144,7 +1144,8 @@ let commandLoop in_ch out_ch =
   let conn = setupIO in_ch out_ch in
   try
     Lwt_unix.run
-      (dump conn [(connectionHeader, 0, String.length connectionHeader)]
+      (dump conn [(Bytearray.of_string connectionHeader, 0,
+                   String.length connectionHeader)]
          >>= (fun () ->
        (* Set the local warning printer to make an RPC to the client and
           show the warning there; ditto for the message printer *)

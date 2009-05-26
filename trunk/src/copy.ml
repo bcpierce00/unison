@@ -211,8 +211,8 @@ let marshalTransferInstruction =
   (fun (file_id, (data, pos, len)) rem ->
      ((Remote.encodeInt file_id, 0, 4) :: (data, pos, len) :: rem, len + 4)),
   (fun buf pos ->
-     let len = String.length buf - pos - 4 in
-     (Remote.decodeInt (String.sub buf pos 4), (buf, pos + 4, len)))
+     let len = Bytearray.length buf - pos - 4 in
+     (Remote.decodeInt buf pos, (buf, pos + 4, len)))
 
 let processTransferInstructionRemotely =
   Remote.registerSpecialServerCmd
