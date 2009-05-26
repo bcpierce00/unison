@@ -562,25 +562,23 @@ let setFileinfoOnRoot =
   Remote.registerRootCmdWithConnection "setFileinfo" setFileinfoLocal
 
 let targetExists checkSize fspathTo pathTo =
-     Os.exists fspathTo pathTo
+  let info = Fileinfo.get false fspathTo pathTo in
+  info.Fileinfo.typ = `FILE
   && (match checkSize with
         `MakeWriteableAndCheckNonempty ->
-          let n = Fspath.concatToString fspathTo pathTo in
-          let perms = (Unix.stat n).Unix.st_perm in
+          let perms = Props.perms info.Fileinfo.desc in
           let perms' = perms lor 0o600 in
-          Unix.chmod n perms';
-          let r =
-            Props.length (Fileinfo.get false fspathTo pathTo).Fileinfo.desc
-              > Uutil.Filesize.zero in
-          r
+          Util.convertUnixErrorsToTransient
+            "making target writable"
+            (fun () ->
+               Unix.chmod (Fspath.concatToString fspathTo pathTo) perms');
+          Props.length info.Fileinfo.desc > Uutil.Filesize.zero
       | `CheckDataSize desc ->
-             Props.length (Fileinfo.get false fspathTo pathTo).Fileinfo.desc
-               = Props.length desc
+             Props.length info.Fileinfo.desc = Props.length desc
       | `CheckSize (desc,ress) ->
-             Props.length (Fileinfo.get false fspathTo pathTo).Fileinfo.desc
-               = Props.length desc
-          && Osx.ressLength (Osx.getFileInfos fspathTo pathTo `FILE).Osx.ressInfo
-               = Osx.ressLength ress)
+             Props.length info.Fileinfo.desc = Props.length desc
+          && Osx.ressLength info.Fileinfo.osX.Osx.ressInfo =
+             Osx.ressLength ress)
 
 let targetExistsLocal connFrom (checkSize, fspathTo, pathTo) =
   Lwt.return (targetExists checkSize fspathTo pathTo)

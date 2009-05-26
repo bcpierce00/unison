@@ -242,7 +242,9 @@ let getFileInfos fspath path typ =
                   "")
                 (fun () -> close_in_noerr inch)
             in
-            let stats = Unix.LargeFile.stat doublePath in
+            let stats =
+              Util.convertUnixErrorsToTransient "stating AppleDouble file"
+                (fun () -> Unix.LargeFile.stat doublePath) in
             { ressInfo =
                 if rsrcLength = 0L then NoRess else
                 AppleDoubleRess
