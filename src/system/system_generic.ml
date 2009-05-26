@@ -61,3 +61,13 @@ let getcwd = Sys.getcwd
 
 let file_exists = Sys.file_exists
 let open_in_bin = open_in_bin
+
+(****)
+
+let create_process = Unix.create_process
+let open_process_in = Unix.open_process_in
+let open_process_out = Unix.open_process_out
+let open_process_full cmd = Unix.open_process_full cmd (Unix.environment ())
+let close_process_in = Unix.close_process_in
+let close_process_out = Unix.close_process_out
+let close_process_full = Unix.close_process_full

@@ -226,101 +226,25 @@ let transcodeDoc s =
 
 (****)
 
-let wf_utf8 =
-  [[('\x01', '\x7F')];
-   [('\xC2', '\xDF'); ('\x80', '\xBF')];
-   [('\xE0', '\xE0'); ('\xA0', '\xBF'); ('\x80', '\xBF')];
-   [('\xE1', '\xEC'); ('\x80', '\xBF'); ('\x80', '\xBF')];
-   [('\xED', '\xED'); ('\x80', '\x9F'); ('\x80', '\xBF')];
-   [('\xEE', '\xEF'); ('\x80', '\xBF'); ('\x80', '\xBF')];
-   [('\xF0', '\xF0'); ('\x90', '\xBF'); ('\x80', '\xBF'); ('\x80', '\xBF')];
-   [('\xF1', '\xF3'); ('\x80', '\xBF'); ('\x80', '\xBF'); ('\x80', '\xBF')];
-   [('\xF4', '\xF4'); ('\x80', '\x8F'); ('\x80', '\xBF'); ('\x80', '\xBF')]]
-
-let rec accept_seq l s i len =
-  match l with
-    [] ->
-      Some i
-  | (a, b) :: r ->
-      if i = len || s.[i] < a || s.[i] > b then
-        None
-      else
-        accept_seq r s (i + 1) len
-
-let rec accept_rec l s i len =
-  match l with
-    [] ->
-      None
-  | seq :: r ->
-      match accept_seq seq s i len with
-        None -> accept_rec r s i len
-      | res  -> res
-
-let accept = accept_rec wf_utf8
-
-(***)
-
-let rec validate_rec s i len =
-  i = len ||
-  match accept s i len with
-    Some i -> validate_rec s i len
-  | None   -> false
-
-let expl f s = f s 0 (String.length s)
-
-let validate = expl validate_rec
-
-(****)
-
-let protect_char buf c =
-  if c = '\x00' then
-    Buffer.add_char buf ' '
-  else if c < '\x80' then
-    Buffer.add_char buf c
-  else
-    let c = Char.code c in
-    Buffer.add_char buf (Char.chr (c lsr 6 + 0xC0));
-    Buffer.add_char buf (Char.chr (c land 0x3f + 0x80))
-
-let rec protect_rec buf s i len =
-  if i = len then
-    Buffer.contents buf
-  else
-    match accept s i len with
-      Some i' ->
-        Buffer.add_substring buf s i (i' - i);
-        protect_rec buf s i' len
-    | None ->
-        protect_char buf s.[i];
-        protect_rec buf s (i + 1) len
-
-(* Convert a string to UTF8 by keeping all UTF8 characters unchanged
-   and considering all other characters as ISO 8859-1 characters *)
-let protect s =
-  let buf = Buffer.create (String.length s * 2) in
-  expl (protect_rec buf) s
-
-(****)
-
 let escapeMarkup s = Glib.Markup.escape_text s
+
+let transcodeFilename s =
+  if Prefs.read Case.unicodeEncoding then
+    Unicode.protect s
+  else if Util.osType = `Win32 then transcodeDoc s else
+  try
+    Glib.Convert.filename_to_utf8 s
+  with Glib.Convert.Error _ ->
+    Unicode.protect s
 
 let transcode s =
   if Prefs.read Case.unicodeEncoding then
-    protect s
+    Unicode.protect s
   else
   try
     Glib.Convert.locale_to_utf8 s
   with Glib.Convert.Error _ ->
-    protect s
-
-let transcodeFilename s =
-  if Prefs.read Case.unicodeEncoding then
-    protect s
-  else if Util.osType = `Win32 then transcode s else
-  try
-    Glib.Convert.filename_to_utf8 s
-  with Glib.Convert.Error _ ->
-    protect s
+    Unicode.protect s
 
 (**********************************************************************
                        USEFUL LOW-LEVEL WIDGETS
@@ -861,7 +785,8 @@ let getPassword rootName msg =
   t#vbox#set_spacing 12;
 
   let header =
-    primaryText (Format.sprintf "Connecting to '%s'..." (protect rootName)) in
+    primaryText
+      (Format.sprintf "Connecting to '%s'..." (Unicode.protect rootName)) in
 
   let h1 = GPack.hbox ~border_width:6 ~spacing:12 ~packing:t#vbox#pack () in
   (* FIX: DIALOG_AUTHENTICATION is way better but is not available
@@ -869,7 +794,8 @@ let getPassword rootName msg =
   ignore (GMisc.image ~stock:(*`DIALOG_AUTHENTICATION*)`DIALOG_QUESTION ~icon_size:`DIALOG
             ~yalign:0. ~packing:h1#pack ());
   let v1 = GPack.vbox ~spacing:12 ~packing:h1#pack () in
-  ignore(GMisc.label ~markup:(header ^ "\n\n" ^ escapeMarkup (protect msg))
+  ignore(GMisc.label ~markup:(header ^ "\n\n" ^
+                              escapeMarkup (Unicode.protect msg))
            ~selectable:true ~yalign:0. ~packing:v1#pack ());
 
   let passwordE = GEdit.entry ~packing:v1#pack ~visibility:false () in
@@ -1084,7 +1010,8 @@ let getProfile () =
       let (profile, info) = lst#get_row_data i in
       result := Some profile;
       begin match info.roots with
-        [r1; r2] -> root1#set_text (protect r1); root2#set_text (protect r2);
+        [r1; r2] -> root1#set_text (Unicode.protect r1);
+                    root2#set_text (Unicode.protect r2);
                     tbl#misc#set_sensitive true
       | _        -> root1#set_text ""; root2#set_text "";
                     tbl#misc#set_sensitive false
@@ -1370,13 +1297,15 @@ let rec createToplevelWindow () =
       ~headers_clickable:false () in
   let s = Uicommon.roots2string () in
   ignore (lst#append_column
-    (GTree.view_column ~title:(" " ^ protect (String.sub s  0 12) ^ " ")
+    (GTree.view_column
+       ~title:(" " ^ Unicode.protect (String.sub s  0 12) ^ " ")
        ~renderer:(GTree.cell_renderer_text [], ["text", c_replica1]) ()));
   ignore (lst#append_column
     (GTree.view_column ~title:"  Action  "
        ~renderer:(GTree.cell_renderer_pixbuf [], ["pixbuf", c_action]) ()));
   ignore (lst#append_column
-    (GTree.view_column ~title:(" " ^ protect (String.sub s  15 12) ^ " ")
+    (GTree.view_column
+       ~title:(" " ^ Unicode.protect (String.sub s  15 12) ^ " ")
        ~renderer:(GTree.cell_renderer_text [], ["text", c_replica2]) ()));
   ignore (lst#append_column
     (GTree.view_column ~title:"  Status  " ()));
@@ -1404,8 +1333,9 @@ let rec createToplevelWindow () =
       (fun i data ->
          mainWindow#set_column
            ~title_active:false ~auto_resize:true ~title:data i)
-      [| " " ^ protect (String.sub s  0 12) ^ " "; "  Action  ";
-         " " ^ protect (String.sub s 15 12) ^ " "; "  Status  "; " Path" |]
+      [| " " ^ Unicode.protect (String.sub s  0 12) ^ " "; "  Action  ";
+         " " ^ Unicode.protect (String.sub s 15 12) ^ " "; "  Status  ";
+         " Path" |]
   in
   setMainWindowColumnHeaders();
 
@@ -2177,7 +2107,8 @@ lst_store#set ~row ~column:c_path path;
 
   let descl =
     if loc1 = loc2 then "right to left" else
-    Printf.sprintf "from %s to %s" (protect loc2) (protect loc1) in
+    Printf.sprintf "from %s to %s"
+      (Unicode.protect loc2) (Unicode.protect loc1) in
   let right =
     actionsMenu#add_image_item ~key:GdkKeysyms._less ~callback:leftAction
       ~image:((GMisc.image ~stock:`GO_BACK ~icon_size:`MENU ())#coerce)

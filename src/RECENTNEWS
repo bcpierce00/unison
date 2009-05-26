@@ -1,5 +1,17 @@
 CHANGES FROM VERSION 2.34.0
 
+* Use system dependant API for spawning processes.
+  (Unicode API under Windows.)
+* Fixed the bug with ssh not working when running unison from a cygwin
+  shell.
+* Move [protect] function (which converts a string to UTF-8 by keeping
+  all UTF-8 characters unchanged and considering all other characters
+  as ISO 8859-1 characters) from uigtk2.ml to unicode.ml, as it may be
+  useful for the other UIs.
+
+-------------------------------
+CHANGES FROM VERSION 2.34.0
+
 * Small documentation fix suggested by mszsummer.
 
 

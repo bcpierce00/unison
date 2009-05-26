@@ -286,9 +286,9 @@ let interact rilist =
                           try
                             let pager = System.getenv "PAGER" in
                             restoreTerminal ();
-                            let out = Unix.open_process_out pager in
+                            let out = System.open_process_out pager in
                             Printf.fprintf out "\n%s\n\n%s\n\n" title text;
-                            let _ = Unix.close_process_out out in
+                            let _ = System.close_process_out out in
                             setupTerminal ()
                           with Not_found ->
                             Printf.printf "\n%s\n\n%s\n\n" title text)

@@ -865,3 +865,69 @@ let rec scan s i l =
   end
 
 let check_utf_8 s = scan s 0 (String.length s)
+
+(****)
+
+let wf_utf8 =
+  [[('\x01', '\x7F')];
+   [('\xC2', '\xDF'); ('\x80', '\xBF')];
+   [('\xE0', '\xE0'); ('\xA0', '\xBF'); ('\x80', '\xBF')];
+   [('\xE1', '\xEC'); ('\x80', '\xBF'); ('\x80', '\xBF')];
+   [('\xED', '\xED'); ('\x80', '\x9F'); ('\x80', '\xBF')];
+   [('\xEE', '\xEF'); ('\x80', '\xBF'); ('\x80', '\xBF')];
+   [('\xF0', '\xF0'); ('\x90', '\xBF'); ('\x80', '\xBF'); ('\x80', '\xBF')];
+   [('\xF1', '\xF3'); ('\x80', '\xBF'); ('\x80', '\xBF'); ('\x80', '\xBF')];
+   [('\xF4', '\xF4'); ('\x80', '\x8F'); ('\x80', '\xBF'); ('\x80', '\xBF')]]
+
+let rec accept_seq l s i len =
+  match l with
+    [] ->
+      Some i
+  | (a, b) :: r ->
+      if i = len || s.[i] < a || s.[i] > b then
+        None
+      else
+        accept_seq r s (i + 1) len
+
+let rec accept_rec l s i len =
+  match l with
+    [] ->
+      None
+  | seq :: r ->
+      match accept_seq seq s i len with
+        None -> accept_rec r s i len
+      | res  -> res
+
+let accept = accept_rec wf_utf8
+
+(***)
+
+let protect_char buf c =
+  if c = '\x00' then
+    Buffer.add_char buf ' '
+  else if c < '\x80' then
+    Buffer.add_char buf c
+  else
+    let c = Char.code c in
+    Buffer.add_char buf (Char.chr (c lsr 6 + 0xC0));
+    Buffer.add_char buf (Char.chr (c land 0x3f + 0x80))
+
+let rec protect_rec buf s i len =
+  if i = len then
+    Buffer.contents buf
+  else
+    match accept s i len with
+      Some i' ->
+        Buffer.add_substring buf s i (i' - i);
+        protect_rec buf s i' len
+    | None ->
+        protect_char buf s.[i];
+        protect_rec buf s (i + 1) len
+
+let expl f s = f s 0 (String.length s)
+
+(* Convert a string to UTF8 by keeping all UTF8 characters unchanged
+   and considering all other characters as ISO 8859-1 characters *)
+let protect s =
+  let buf = Buffer.create (String.length s * 2) in
+  expl (protect_rec buf) s

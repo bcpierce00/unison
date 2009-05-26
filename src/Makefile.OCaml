@@ -283,8 +283,8 @@ endif
 # Include an automatically generated list of dependencies
 include .depend
 # Additional dependencied depending on the system
-system.cmo fs.cmo: system/$(SYSTEM)/system_impl.cmo
-system.cmx fs.cmx: system/$(SYSTEM)/system_impl.cmx
+system.cmo fspath.cmo fs.cmo: system/$(SYSTEM)/system_impl.cmo
+system.cmx fspath.cmx fs.cmx: system/$(SYSTEM)/system_impl.cmx
 
 ifeq ($(OSARCH), OpenBSD)
   ifeq ($(shell echo type ocamldot | ksh), file)

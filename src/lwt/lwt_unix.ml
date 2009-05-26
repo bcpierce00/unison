@@ -291,6 +291,12 @@ let system cmd =
 type lwt_in_channel = in_channel
 type lwt_out_channel = out_channel
 
+let intern_in_channel ch =
+  Unix.set_nonblock (Unix.descr_of_in_channel ch); ch
+let intern_out_channel ch =
+  Unix.set_nonblock (Unix.descr_of_out_channel ch); ch
+
+
 let wait_inchan ic = wait_read (Unix.descr_of_in_channel ic)
 let wait_outchan oc = wait_write (Unix.descr_of_out_channel oc)
 

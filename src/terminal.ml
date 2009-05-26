@@ -183,7 +183,7 @@ let create_session cmd args new_stdin new_stdout new_stderr =
   match openpty () with
     None ->
       (None,
-       Unix.create_process cmd args new_stdin new_stdout new_stderr)
+       System.create_process cmd args new_stdin new_stdout new_stderr)
   | Some (masterFd, slaveFd) ->
 (*
       Printf.printf "openpty returns %d--%d\n" (dumpFd fdM) (dumpFd fdS); flush stdout;

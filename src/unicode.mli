@@ -22,3 +22,7 @@ val from_utf_16 : string -> string
 
 (* Check wether the string contains only well-formed UTF-8 characters *)
 val check_utf_8 : string -> bool
+
+(* Convert a string to UTF-8 by keeping all UTF-8 characters unchanged
+   and considering all other characters as ISO 8859-1 characters *)
+val protect : string -> string

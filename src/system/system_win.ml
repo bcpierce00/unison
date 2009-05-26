@@ -17,19 +17,19 @@
 
 (*XXXX
 
-We have to propagate the encoding mode when canonizing roots
-===> new major version
+Backport to stable:
+- Unix.select in lwt_unix (after some testing...)
+- fix to daylight saving changes
 
-TO CONVERT
-==========
-Unix.open_process_in
-Unix.open_process_out
-Unix.create_process
-Unix.execvp
-Lwt_unix.open_process_full
-Lwt_unix.open_process_in
+Try to rename several time if access denied the first time
+
+Remove 16Mib limit by using a temp file (or bigarray)
+http://caml.inria.fr/pub/ml-archives/caml-list/2004/06/2176c54608c3c39e2dbbd9365c2fc6bb.en.html
+http://caml.inria.fr/pub/ml-archives/caml-list/2007/01/04ef3c364e41f5f60f70192609d87035.en.html
 
 - Use SetConsoleOutputCP/SetConsoleCP in text mode ???
+http://www.codeproject.com/KB/cpp/unicode_console_output.aspx?display=Print
+
 *)
 
 type fspath = string
@@ -190,3 +190,100 @@ let file_exists f =
       sys_error e
 
 let open_in_bin f = open_in_gen [Open_rdonly; Open_binary] 0 f
+
+(****)
+
+external win_create_process :
+  string -> string -> string ->
+  Unix.file_descr -> Unix.file_descr -> Unix.file_descr -> int
+  = "w_create_process" "w_create_process_native"
+
+let make_cmdline args =
+  let maybe_quote f =
+    if String.contains f ' ' || String.contains f '\"'
+    then Filename.quote f
+    else f in
+  String.concat " " (List.map maybe_quote (Array.to_list args))
+
+let create_process prog args fd1 fd2 fd3 =
+  win_create_process
+    prog (utf16 prog) (utf16 (make_cmdline args)) fd1 fd2 fd3
+
+(****)
+
+(* The following is by Xavier Leroy and Pascal Cuoq,
+   projet Cristal, INRIA Rocquencourt.
+   Taken from the Objective Caml win32unix library. *)
+
+type popen_process =
+    Process of in_channel * out_channel
+  | Process_in of in_channel
+  | Process_out of out_channel
+  | Process_full of in_channel * out_channel * in_channel
+
+let popen_processes = (Hashtbl.create 7 : (popen_process, int) Hashtbl.t)
+
+let open_proc cmd proc input output error =
+  let shell =
+    try getenv "COMSPEC"
+    with Not_found -> raise(Unix.Unix_error(Unix.ENOEXEC, "open_proc", cmd)) in
+  let pid =
+    win_create_process
+      shell (utf16 shell) (utf16 (shell ^ " /c " ^ cmd)) input output error in
+  Hashtbl.add popen_processes proc pid
+
+let open_process_in cmd =
+  let (in_read, in_write) = Unix.pipe() in
+  Unix.set_close_on_exec in_read;
+  let inchan = Unix.in_channel_of_descr in_read in
+  open_proc cmd (Process_in inchan) Unix.stdin in_write Unix.stderr;
+  Unix.close in_write;
+  inchan
+
+let open_process_out cmd =
+  let (out_read, out_write) = Unix.pipe() in
+  Unix.set_close_on_exec out_write;
+  let outchan = Unix.out_channel_of_descr out_write in
+  open_proc cmd (Process_out outchan) out_read Unix.stdout Unix.stderr;
+  Unix.close out_read;
+  outchan
+
+let open_process_full cmd =
+  let (in_read, in_write) = Unix.pipe() in
+  let (out_read, out_write) = Unix.pipe() in
+  let (err_read, err_write) = Unix.pipe() in
+  Unix.set_close_on_exec in_read;
+  Unix.set_close_on_exec out_write;
+  Unix.set_close_on_exec err_read;
+  let inchan = Unix.in_channel_of_descr in_read in
+  let outchan = Unix.out_channel_of_descr out_write in
+  let errchan = Unix.in_channel_of_descr err_read in
+  open_proc cmd (Process_full(inchan, outchan, errchan))
+                out_read in_write err_write;
+  Unix.close out_read; Unix.close in_write; Unix.close err_write;
+  (inchan, outchan, errchan)
+
+let find_proc_id fun_name proc =
+  try
+    let pid = Hashtbl.find popen_processes proc in
+    Hashtbl.remove popen_processes proc;
+    pid
+  with Not_found ->
+    raise(Unix.Unix_error(Unix.EBADF, fun_name, ""))
+
+let close_process_in inchan =
+  let pid = find_proc_id "close_process_in" (Process_in inchan) in
+  close_in inchan;
+  snd(Unix.waitpid [] pid)
+
+let close_process_out outchan =
+  let pid = find_proc_id "close_process_out" (Process_out outchan) in
+  close_out outchan;
+  snd(Unix.waitpid [] pid)
+
+let close_process_full (inchan, outchan, errchan) =
+  let pid =
+    find_proc_id "close_process_full"
+                 (Process_full(inchan, outchan, errchan)) in
+  close_in inchan; close_out outchan; close_in errchan;
+  snd(Unix.waitpid [] pid)
