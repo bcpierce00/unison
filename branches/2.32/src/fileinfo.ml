@@ -82,7 +82,9 @@ let get fromRoot fspath path =
            osX      = Osx.getFileInfos fspath path `ABSENT })
 
 let check fspath path props =
-  Props.check fspath path (statFn false fspath path) props
+  Util.convertUnixErrorsToTransient
+  "checking file information"
+    (fun () -> Props.check fspath path (statFn false fspath path) props)
 
 let set fspath path action newDesc =
   let (kind, p) =
