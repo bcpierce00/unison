@@ -67,4 +67,16 @@ val link : fspath -> fspath -> unit
 val chdir : fspath -> unit
 val getcwd : unit -> fspath
 
+val create_process :
+  string -> string array ->
+  Unix.file_descr -> Unix.file_descr -> Unix.file_descr -> int
+val open_process_in : string -> in_channel
+val open_process_out : string -> out_channel
+val open_process_full :
+  string -> in_channel * out_channel * in_channel
+val close_process_in : in_channel -> Unix.process_status
+val close_process_out : out_channel -> Unix.process_status
+val close_process_full :
+  in_channel * out_channel * in_channel -> Unix.process_status
+
 end

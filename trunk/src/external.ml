@@ -64,9 +64,9 @@ let readChannelsTillEof l =
 let runExternalProgram cmd =
   if Util.osType = `Win32 && not Util.isCygwin then begin
     debug (fun()-> Util.msg "Executing external program windows-style\n");
-    let c = Unix.open_process_in ("\"" ^ cmd ^ "\"") in
+    let c = System.open_process_in ("\"" ^ cmd ^ "\"") in
     let log = readChannelTillEof c in
-    let returnValue = Unix.close_process_in c in
+    let returnValue = System.close_process_in c in
     let mergeResultLog =
       cmd ^
       (if log <> "" then "\n\n" ^ log else "") ^
@@ -76,12 +76,12 @@ let runExternalProgram cmd =
          "") in
     (returnValue,mergeResultLog) 
   end else Lwt_unix.run (
-    Lwt_unix.open_process_full cmd (Unix.environment ()) 
-    >>= (fun (out, ipt, err) ->
+    let (out, ipt, err) as desc = System.open_process_full cmd in
+    let out = Lwt_unix.intern_in_channel out in
+    let err = Lwt_unix.intern_in_channel err in
     readChannelsTillEof [out;err]
     >>= (function [logOut;logErr] ->
-    Lwt_unix.close_process_full (out, ipt, err)
-    >>= (fun returnValue ->
+    let returnValue = System.close_process_full desc in
     let logOut = Util.trimWhitespace logOut in
     let logErr = Util.trimWhitespace logErr in
     return (returnValue, (
@@ -92,6 +92,6 @@ let runExternalProgram cmd =
          else logOut ^ "\n\n" ^ ("Error Output:" ^ logErr))
       ^ (if returnValue = Unix.WEXITED 0
          then ""
-         else "\n\n" ^ Util.process_status_to_string returnValue))))
+         else "\n\n" ^ Util.process_status_to_string returnValue)))
       (* Stop typechechecker from complaining about non-exhaustive pattern above *)
-      | _ -> assert false))) 
+      | _ -> assert false))

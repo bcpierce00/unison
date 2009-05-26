@@ -899,12 +899,13 @@ let buildShellConnection shell host userOpt portOpt rootName termInteract =
   debug (fun ()-> Util.msg "Shell connection: %s (%s)\n"
            shellCmd (String.concat ", " args));
   let term =
+    Util.convertUnixErrorsToFatal "starting shell connection" (fun () ->
     match termInteract with
       None ->
-        ignore (Unix.create_process shellCmd argsarray i1 o2 Unix.stderr);
+        ignore (System.create_process shellCmd argsarray i1 o2 Unix.stderr);
         None
     | Some callBack ->
-        fst (Terminal.create_session shellCmd argsarray i1 o2 Unix.stderr)
+        fst (Terminal.create_session shellCmd argsarray i1 o2 Unix.stderr))
   in
   Unix.close i1; Unix.close o2;
   begin match term, termInteract with

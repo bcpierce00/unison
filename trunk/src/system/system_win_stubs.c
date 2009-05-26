@@ -23,6 +23,8 @@
 #include <stdio.h>
 #include <windows.h>
 
+#define NT_MAX_PATH 32768
+
 #define Nothing ((value) 0)
 
 struct filedescr {
@@ -293,28 +295,24 @@ CAMLprim value win_chdir (value path, value wpath)
 CAMLprim value win_getcwd (value unit)
 {
   int res;
-  LPWSTR s;
+  wchar_t s[NT_MAX_PATH];
   CAMLparam0();
   CAMLlocal1 (path);
 
-  s = stat_alloc (32768 * 2);
-  res = GetCurrentDirectoryW (32768, s);
+  res = GetCurrentDirectoryW (NT_MAX_PATH, s);
   if (res == 0) {
-    stat_free (s);
     win32_maperr(GetLastError());
     uerror("getcwd", Nothing);
   }
   /* Normalize the path */
-  res = GetLongPathNameW (s, s, 32768);
+  res = GetLongPathNameW (s, s, NT_MAX_PATH);
   if (res == 0) {
-    stat_free (s);
     win32_maperr(GetLastError());
     uerror("getcwd", Nothing);
   }
   /* Convert the drive letter to uppercase */
   if (s[0] >= L'a' && s[0] <= L'z') s[0] -= 32;
   path = copy_wstring(s);
-  stat_free (s);
   CAMLreturn (path);
 }
 
@@ -427,4 +425,60 @@ CAMLprim value win_argv(value unit)
   }
   LocalFree (l);
   CAMLreturn (res);
+}
+
+CAMLprim value w_create_process_native
+(value prog, value wprog, value wargs, value fd1, value fd2, value fd3)
+{
+  int res, flags;
+  PROCESS_INFORMATION pi;
+  STARTUPINFOW si;
+  wchar_t fullname [MAX_PATH];
+  HANDLE h;
+  CAMLparam5(wprog, wargs, fd1, fd2, fd3);
+
+  res = SearchPathW (NULL, (LPCWSTR) String_val(wprog), L".exe",
+		     MAX_PATH, fullname, NULL);
+  if (res == 0) {
+    win32_maperr (GetLastError ());
+    uerror("create_process", prog);
+  }
+
+  ZeroMemory(&si, sizeof(STARTUPINFO));
+
+  si.cb = sizeof(STARTUPINFO);
+  si.dwFlags = STARTF_USESTDHANDLES;
+  si.hStdInput = Handle_val(fd1);
+  si.hStdOutput = Handle_val(fd2);
+  si.hStdError = Handle_val(fd3);
+
+  flags = GetPriorityClass (GetCurrentProcess ());
+  /*
+  h = CreateFile ("CONOUT$", GENERIC_WRITE, FILE_SHARE_WRITE, NULL,
+                  OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+  if (h != INVALID_HANDLE_VALUE)
+    CloseHandle (h);
+  else {
+    flags |= CREATE_NEW_CONSOLE;
+    //    si.dwFlags |= STARTF_USESHOWWINDOW;
+    //    si.wShowWindow = SW_MINIMIZE;
+  }
+  */
+
+  res = CreateProcessW (fullname, (LPWSTR) String_val(wargs),
+			NULL, NULL, TRUE, flags,
+		        NULL, NULL, &si, &pi);
+  if (res == 0) {
+    win32_maperr (GetLastError ());
+    uerror("create_process", prog);
+  }
+
+  CloseHandle (pi.hThread);
+  CAMLreturn (Val_long (pi.hProcess));
+}
+
+CAMLprim value w_create_process(value * argv, int argn)
+{
+  return w_create_process_native(argv[0], argv[1], argv[2],
+				 argv[3], argv[4], argv[5]);
 }

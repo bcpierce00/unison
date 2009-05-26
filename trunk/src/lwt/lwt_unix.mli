@@ -49,6 +49,9 @@ val system : string -> Unix.process_status Lwt.t
 type lwt_in_channel
 type lwt_out_channel
 
+val intern_in_channel : in_channel -> lwt_in_channel
+val intern_out_channel : out_channel -> lwt_out_channel
+
 val input_char : lwt_in_channel -> char Lwt.t
 val input_line : lwt_in_channel -> string Lwt.t
 val input : lwt_in_channel -> string -> int -> int -> int Lwt.t

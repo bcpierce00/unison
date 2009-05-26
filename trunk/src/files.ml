@@ -496,9 +496,7 @@ let rec diff root1 path1 ui1 root2 path2 ui2 showDiff id =
         Util.replacesubstrings (Prefs.read diffCmd)
           ["CURRENT1", Fspath.quotes fspath1;
            "CURRENT2", Fspath.quotes fspath2] in
-    (* Doesn't seem to work well on Windows! 
-       let c = Lwt_unix.run (Lwt_unix.open_process_in cmd) in *)
-    let c = Unix.open_process_in
+    let c = System.open_process_in
       (if Util.osType = `Win32 && not Util.isCygwin then
         (* BCP: Proposed by Karl M. to deal with the standard windows 
            command processor's weird treatment of spaces and quotes: *)
@@ -506,7 +504,7 @@ let rec diff root1 path1 ui1 root2 path2 ui2 showDiff id =
        else
          cmd) in
     showDiff cmd (External.readChannelTillEof c);
-    ignore (Unix.close_process_in c) in
+    ignore (System.close_process_in c) in
   let (desc1, fp1, ress1, desc2, fp2, ress2) = Common.fileInfos ui1 ui2 in
   match root1,root2 with
     (Local,fspath1),(Local,fspath2) ->
