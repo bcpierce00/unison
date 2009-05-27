@@ -1043,7 +1043,8 @@ let showStatus path =
       fileLength := 0;
       let t = Unix.gettimeofday () in
       if t -. !t0 > 0.05 then begin
-        Trace.statusDetail ("scanning... " ^ Path.toString path);
+        Uutil.showUpdateStatus (Path.toString path);
+(*Trace.statusDetail ("scanning... " ^ Path.toString path);*)
         t0 := t
       end
     end
@@ -1436,7 +1437,7 @@ and buildUpdateRec archive currfspath path fastCheck =
 let rec buildUpdate archive fspath fullpath here path =
   match Path.deconstruct path with
     None ->
-      showStatus path;
+      showStatus here;
       let (arch, ui) =
         buildUpdateRec archive fspath here (useFastChecking()) in
       (begin match arch with
@@ -1572,8 +1573,9 @@ let findUpdatesOnPaths pathList : Common.updateItem list Common.oneperpath =
        findOnRoot r pathList)
        (fun (host, _) ->
          begin match host with
-           Remote(_) -> Trace.statusDetail "Waiting for changes from server"
-         | _ -> ()
+           Remote _ -> Uutil.showUpdateStatus "";
+                       Trace.statusDetail "Waiting for changes from server"
+         | _        -> ()
          end)
        >>= (fun updates ->
      Trace.showTimer t;
