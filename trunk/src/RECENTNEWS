@@ -1,5 +1,12 @@
 CHANGES FROM VERSION 2.34.0
 
+* Windows Unicode API: when a file cannot be renamed due to a sharing
+  violation error or an access denied error, retry for up to 1 second,
+  in case the file is temporarily opened by an indexer or an anti-virus.
+
+-------------------------------
+CHANGES FROM VERSION 2.34.0
+
 * Text UI: during update detection, display status by updating a
   single line rather than generating a new line of output every so
   often.  That should be less confusing.
