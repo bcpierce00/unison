@@ -46,6 +46,8 @@ module File :
 val setProgressPrinter :
   (File.t -> Filesize.t ->  string -> unit) -> unit
 val showProgress : File.t -> Filesize.t -> string -> unit
+val setUpdateStatusPrinter : (string -> unit) option -> unit
+val showUpdateStatus : string -> unit
 
 (* Utility function to transfer bytes from one file descriptor to another
    until EOF *)
