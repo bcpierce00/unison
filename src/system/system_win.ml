@@ -21,12 +21,6 @@ Backport to stable:
 - Unix.select in lwt_unix (after some testing...)
 - fix to daylight saving changes
 
-Try to rename several time if access denied the first time
-
-Remove 16Mib limit by using a temp file (or bigarray)
-http://caml.inria.fr/pub/ml-archives/caml-list/2004/06/2176c54608c3c39e2dbbd9365c2fc6bb.en.html
-http://caml.inria.fr/pub/ml-archives/caml-list/2007/01/04ef3c364e41f5f60f70192609d87035.en.html
-
 - Use SetConsoleOutputCP/SetConsoleCP in text mode ???
 http://www.codeproject.com/KB/cpp/unicode_console_output.aspx?display=Print
 

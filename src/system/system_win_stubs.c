@@ -101,10 +101,21 @@ CAMLprim value win_unlink(value path, value wpath)
 
 CAMLprim value win_rename(value path1, value wpath1, value wpath2)
 {
+  int err, t;
   CAMLparam3(path1, wpath1, wpath2);
+
+  t = 10;
+ retry:
   if (!MoveFileExW((LPWSTR)String_val(wpath1), (LPWSTR)String_val(wpath2),
 		  MOVEFILE_REPLACE_EXISTING)) {
-    win32_maperr (GetLastError ());
+    err = GetLastError ();
+    if ((err == ERROR_SHARING_VIOLATION || err == ERROR_ACCESS_DENIED) &&
+        t < 1000) {
+      Sleep (t);
+      t *= 2;
+      goto retry;
+    }
+    win32_maperr (err);
     uerror("rename", path1);
   }
   CAMLreturn (Val_unit);
