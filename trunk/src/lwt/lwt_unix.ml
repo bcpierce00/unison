@@ -132,6 +132,11 @@ let rec run thread =
               ([], [], [])
           | Unix.Unix_error (Unix.EBADF, _, _) ->
               (List.filter bad_fd infds, List.filter bad_fd outfds, [])
+          | Unix.Unix_error (Unix.EPIPE, _, _)
+            when windows_hack && recent_ocaml ->
+            (* Workaround for a bug in Ocaml 3.11: select fails with an
+               EPIPE error when the file descriptor is remotely closed *)
+              (infds, [], [])
       in
       restart_threads !event_counter now;
       List.iter
