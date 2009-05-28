@@ -1,3 +1,11 @@
+CHANGES FROM VERSION 2.32.25
+
+* Fixed quotation of paths and names when writing to a preference file
+* Workaround for bug in new "select" implementation in Ocaml 3.11
+  (select fails with EPIPE error when monitoring a remotely closed
+   file descriptor)
+
+-------------------------------
 CHANGES FROM VERSION 2.32.23
 
 * Added some missing convertUnixErrorsToTransient

@@ -360,7 +360,7 @@ let quote s =
   let pos = ref 0 in
   for i = 0 to len - 1 do
     match s.[i] with
-      '*' | '?' | '[' | '{' as c ->
+      '*' | '?' | '[' | '{' | '}' | ',' | '\\' as c ->
         buf.[!pos] <- '\\'; buf.[!pos + 1] <- c; pos := !pos + 2
     | c ->
         buf.[!pos] <- c; pos := !pos + 1
