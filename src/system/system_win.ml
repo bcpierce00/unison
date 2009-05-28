@@ -20,6 +20,7 @@
 Backport to stable:
 - Unix.select in lwt_unix (after some testing...)
 - fix to daylight saving changes
+- Proper quoting of path and names
 
 - Use SetConsoleOutputCP/SetConsoleCP in text mode ???
 http://www.codeproject.com/KB/cpp/unicode_console_output.aspx?display=Print

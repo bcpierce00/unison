@@ -1,5 +1,13 @@
 CHANGES FROM VERSION 2.34.0
 
+* Fixed quotation of paths and names when writing to a preference file
+* Workaround for bug in new "select" implementation in Ocaml 3.11
+  (select fails with EPIPE error when monitoring a remotely closed
+   file descriptor)
+
+-------------------------------
+CHANGES FROM VERSION 2.34.0
+
 * Windows Unicode API: when a file cannot be renamed due to a sharing
   violation error or an access denied error, retry for up to 1 second,
   in case the file is temporarily opened by an indexer or an anti-virus.
