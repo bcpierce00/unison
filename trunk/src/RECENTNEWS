@@ -1,5 +1,9 @@
 CHANGES FROM VERSION 2.34.0
 
+* Fix to the Mac GUI: the bigarray library is now required
+-------------------------------
+CHANGES FROM VERSION 2.34.0
+
 * Case sensitivity information put in the archive (in a backward
   compatible way) and checked when the archive is loaded
 
