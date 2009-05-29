@@ -94,6 +94,13 @@ let setProgressPrinter p = progressPrinter := p
 let showProgress i bytes ch =
   if i <> File.dummy then !progressPrinter i bytes ch
 
+let statusPrinter = ref None
+let setUpdateStatusPrinter p = statusPrinter := p
+let showUpdateStatus path =
+  match !statusPrinter with
+    Some f -> f path
+  | None   -> Trace.statusDetail path
+
 (*****************************************************************************)
 (*               Copy bytes from one file_desc to another                    *)
 (*****************************************************************************)
