@@ -28,6 +28,9 @@ let someHostIsInsensitive =
 (* Note: this function must be fast *)
 let insensitive () = Prefs.read someHostIsInsensitive
 
+let modeDescription () =
+  if insensitive () then "Latin-1 case insensitive" else "case sensitive"
+
 let needNormalization s =
   let rec iter s pos len wasDot =
     if pos = len then wasDot else

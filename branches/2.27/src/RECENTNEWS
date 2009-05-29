@@ -1,3 +1,18 @@
+CHANGES FROM VERSION 2.27.109
+
+Backport to stable release:
+* Ignore one hour differences for deciding whether a file may have
+  been updated.  This avoids slow update detection after daylight
+  saving time changes under Windows.  This makes it slightly more
+  likely to miss an update, but that should be safe enough.
+* Improved Unison icon under Windows
+* Fixed quotation of paths and names when writing to a preference file
+* Case sensitivity information put in the archive (in a backward
+  compatible way) and checked when the archive is loaded
+* Uses improved emulation of "select" call provided by Ocaml 3.11
+  under Windows (the GUI does not freeze as much during synchronization)
+
+-------------------------------
 CHANGES FROM VERSION 2.27.101
 
 * Applied a patch from Karl M to make the GTK2 version build with
