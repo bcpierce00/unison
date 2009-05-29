@@ -111,6 +111,9 @@ CAMLprim value win_rename(value path1, value wpath1, value wpath2)
     err = GetLastError ();
     if ((err == ERROR_SHARING_VIOLATION || err == ERROR_ACCESS_DENIED) &&
         t < 1000) {
+      /* The renaming may fail due to an indexer or an anti-virus.
+         We retry after a short time in the hope that this other
+         program is done with the file. */
       Sleep (t);
       t *= 2;
       goto retry;

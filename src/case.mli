@@ -7,7 +7,7 @@ val useUnicodeAPI : unit -> bool
 type mode
 
 val ops : unit ->
-  < mode : mode;
+  < mode : mode; modeDesc : string;
     compare : string -> string -> int;
     hash : string -> int;
     normalizePattern : string -> string;
