@@ -534,7 +534,10 @@ let rec interactAndPropagateChanges reconItemList
        no updates to propagate because some files (in fact, if we've
        just switched to DST on windows, a LOT of files) might have new
        modtimes in the archive. *)
-    Update.commitUpdates ();
+    (* JV (5/09): Don't save the archive in repeat mode as it has some
+       costs and its unlikely there is much change to the archives in
+       this mode. *)
+    if Prefs.read Uicommon.repeat = "" then Update.commitUpdates ();
     (skipped > 0, false, [])
   end else if proceed=ProceedImmediately then begin
     doit()
@@ -586,9 +589,31 @@ let checkForDangerousPath dangerousPaths =
   end
 
 let synchronizeOnce() =
+  let showStatus path =
+    if path = "" then Util.set_infos "" else
+    let max_len = 70 in
+    let mid = (max_len - 3) / 2 in
+    let path =
+      let l = String.length path in
+      if l <= max_len then path else
+      String.sub path 0 (max_len - mid - 3) ^ "..." ^
+      String.sub path (l - mid) mid
+    in
+    let c = "-\\|/".[truncate (mod_float (4. *. Unix.gettimeofday ()) 4.)] in
+    Util.set_infos (Format.sprintf "%c %s" c path)
+  in
   Trace.status "Looking for changes";
+  if not (Prefs.read Trace.terse) && (Prefs.read Trace.debugmods = []) then
+    Uutil.setUpdateStatusPrinter (Some showStatus);
+
+  let updates = Update.findUpdates() in
+
+  Uutil.setUpdateStatusPrinter None;
+  Util.set_infos "";
+
   let (reconItemList, anyEqualUpdates, dangerousPaths) =
-    Recon.reconcileAll (Update.findUpdates()) in
+    Recon.reconcileAll updates in
+
   if reconItemList = [] then begin
     (if anyEqualUpdates then
       Trace.status ("Nothing to do: replicas have been changed only "

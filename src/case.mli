@@ -2,6 +2,7 @@
 (* Copyright 1999-2009, Benjamin C. Pierce (see COPYING for details) *)
 
 val insensitive : unit -> bool
+val modeDescription : unit -> string
 
 val normalize : string -> string
 
