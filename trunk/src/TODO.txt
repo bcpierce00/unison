@@ -85,9 +85,6 @@ See the file BUGS.txt for a list of currently open bugs.
        - diagnosis: the merge stuff is not correctly updating the archive in
          the event of a partial reconciliation
 
-**** When deleting a directory, we should *not* skip over Unison temp files
-     in the process of listing children
-
 *** Un-writeable directories can't be copied.
     The 'rename' operation at the end of Files.copy will fail (at least on
     OSX) if the path being renamed points to a directory and that directory
@@ -203,10 +200,6 @@ See the file BUGS.txt for a list of currently open bugs.
    ~/bin/, especially considering that ~/bin is the wrong place to do the 
    install under OSX (it should be ~/Apps or ~/Apps/bin)
 
-** document the dynamically linked version, as some user already reported
-  that it works fine.  Also, try to make the statistics window work with
-  this version.  [This is "under windows," I think.]
-
 should strip symbols from binary files in 'make exportnative'
 
 
@@ -250,12 +243,6 @@ should strip symbols from binary files in 'make exportnative'
 * SMALL FUNCTIONALITY IMPROVEMENTS
 * ================================
 
-**** When I tell unison to ignore a file whose name has a comma in it,
-    then unison adds to the preferences file a line like:
-     ignore = Path{this file, has a comma}
-    which gets interpreted as "this file" OR " has a comma".
-    unison should be escaping that comma and write it as \, instead.
-
 **** Please let me say
        root = ~/bla
      instead of requiring me to give an absolute path to my home dir.
@@ -263,10 +250,6 @@ should strip symbols from binary files in 'make exportnative'
 **** The archive should indicate whether it is case-dependant or not.
      (This is important for correctness -- if the case-insensitive flag is
      set differently on different runs, things can get very confused!)
-
-**** Use LargeFile (submodule of Unix) instead of standard file commands,
-     to avoid problems with huge files
-     DONE
 
 *** [Marcus Sundman, 2008] Unison can't propagate changes in read-only
     folders. The correct way to do it is to temporarily add write
@@ -298,9 +281,6 @@ should strip symbols from binary files in 'make exportnative'
        - otherwise, put them in a central place if one is given
        - Update.incrVersionsOfBackups should not be externally visible
 
-*** there's an HFS+ aware version of rsync called rsyncx. It should be
-    relatively easy to import that functionality into unison.
-
 *** Consider altering the socket method, so the server accepts connections
     only on a particular address? This would be very useful, because many people
     tunnel unison over an OpenVPN Link, and this software works with virtual
@@ -311,10 +291,6 @@ should strip symbols from binary files in 'make exportnative'
 *** unison -help doesn't go to stdout so it's hard to pipe it into less
     ===> Probably *all* output should go to stdout, not stderr (but maybe
          we need a switch to recover the current behavior)
-
-*** for the MSVC version of unison, we should deal with the nonstandard
-    semantics regarding read-only files.
-    ===> What does that mean??
 
 *** If a root resides on a `host' with an ever and unpredictably changing
     host name (like a public login cluster with dozens of machines and a
@@ -338,9 +314,6 @@ should strip symbols from binary files in 'make exportnative'
 *** When unison notices lock files in the archive directory, it should
     offer to delete them *for* the user, rather than forcing the user to
     delete them manually.
-
-*** improve error reporting when Unison is started with different versions of
-    client and server
 
 *** A switch to delete files before replication. It's not something I
     would have considered doing, and in normal replication, there have
@@ -380,15 +353,6 @@ should strip symbols from binary files in 'make exportnative'
 
 ** we should reload the current preference file (if it's changed, at least)
    when we restart
-
-** [A good idea for the ssh prompt issue...]  I'm not sure why you would
-  need a C implementation; you could do the same thing in CAML that expect
-  does: allocate a PTY, start up ssh on that, and interact with it. On
-  Windows, you can probably do the same with the Win32 console API,
-  although I don't see why such an improvement needs to work uniformly
-  across all platforms to be useful.  [Note that allocating PTYs is not
-  very portable, but we could at least try allocating one and see if
-  something useful comes back...]
 
 ** An idea for the interface to the external merge functionality:
   created a general mechanism for invoking external functionality...
@@ -481,16 +445,6 @@ should strip symbols from binary files in 'make exportnative'
    mechanism for getting the list of files from another program (plugin)?
    ===> needs to be documented (look at rx.ml)
 
-** seems not to recognise ignores when they are inside a path that has
-   just been added.
-===> Jamey claims that if we add a new directory, some of whose children
-     are ignored, then when this new dir is propagated, also the ignored
-     stuff gets copied  (if this is true, then it's probably a bug in
-     update.ml) 
-
-* When loading archives (not just when dumping them), one should check that
-  they have the same checksum.
-
 * [July 2002, S. Garfinkel] Maybe we should turn the 'time' option on by
   default.  We might need to help people a little on the upgrading,
   though.  When you did a sync with time=false, then a sync with
@@ -544,9 +498,6 @@ should strip symbols from binary files in 'make exportnative'
   messages in the text ui.  See Dale Worley's message for a detailed
   proposal. 
 
-Make sure that no filesystem check is missing in the transport agent.
-  ===> What does this mean?
-
 Would be nice to have the Unison log file relative to my home directory,
  like this 
        logfile = ~/.unision/log
@@ -577,10 +528,6 @@ The -sortbysize is nice, but what I would really like is a -limitbysize.
   to only those that are below the threshold size. The syntax is
   obvious... It should be -limitbysize xxx, where xxx is the size
   (preferably in kb, but bytes will do as well).
-
-Maybe we should use getcwd for canonizing roots under Unix.  For some
-  systems (Linux, for instance), getcwd succeeds even when some parent
-  directory is not readable.
 
 [From Yan Seiner]
   Can unison modify the (*nix) environment to show the
@@ -706,17 +653,8 @@ Maybe have an option to tell do not transfer toto.dvi if toto.tex exists (or
             Execute rm core If core
             Execute make clean If Makefile
 
-We should put in a preference that forces Unison to do really safe update
-  detection (with fingerprinting), even on Unix systems.  (Maybe just for
-  some paths?)
-
 Maybe we should never emit a conflict for modtimes; instead, we just
   propagate the largest one.
-
-[John Langford] Some code for (at least partially) handling large files
-  can be found in 64bit_ops.c in:
-     http://www-2.cs.cmu.edu/~jcl/programs/sync_file.tar.gz
-  Make sure you pay attention to the compile line as it is important.
 
 [Ivo Welch] I would do a quick test of case sensitivity in the program
 itself at the time you do a first prf sync, so that the user does not have
@@ -865,35 +803,6 @@ the local host and which side the remote host is.
   ("Select an existing profile...").  I think the help topics should be
   available here.
 
-* [Jamey Leifer] The file list is confusing since the paths
-  are sometime relative to the root and sometimes relative to the
-  previous path:
-     Mail/drafts/3
-       inbox/5538
-         5539
-         5540
-  I now understand that the indentation is significant, but it's not
-  that clear. A further confusion is that there's varying amounts of
-  indentation depending on the depth of the enclosing path:
-     foo/1
-       2
-     boo/goo/loo/1
-           3
-           4
-  This is really hard to parse since the fonts are variable width.
-  I would prefer to read the former as:
-     Mail/drafts/3
-          inbox/5538
-                5539
-                5540
-  (with the indentation actually showing the relationship) though this
-  may take too much horizontal space.  Alternatively, one could choose a
-  Windows-style display:
-   |-Mail/drafts/3
-     |-inbox/5538
-       |- 5539
-       |- 5540
-
 Unison's gui offers an `Actions' menu with a variety of features
   regarding preferences.  I would love to see an action with the following
   semantics: if the two files differ only in their modification time,
@@ -930,8 +839,6 @@ The scroll bar is not usable during transport: every time a line changes
   seem confusing.  (Two different shades of green?  Three? ...)  If we
   really want this, probably the best is to put in some preferences for the
   user to control the colors of all the arrows individually.
-
-Under Windows, convert filename to Unicode before printing them.
 
 Text mode user interface should be brought up to date with graphical
   interface (it should prompt for profile selection, creation, root
@@ -1098,12 +1005,6 @@ Suggestion from Arnaud:
   A good project for a student :-)
   -- 
   PS: see http://www.simplythebest.net/shellenh.html for some examples.
-
-when typing ctrl-c in windows (dos-window in win98SE) when
-  unison is asking for conflicting updates there araises following
-  message (sorry for my bad translation to english):
-  "This program is closes because of a non-valid action. Contact the
-  manufactura if the error remains".                            
 
 NTFS seems to have two ways of setting a file read-only!  
 Comments from Karl Moerder:

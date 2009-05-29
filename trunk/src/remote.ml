@@ -1229,9 +1229,10 @@ let waitOnPort hostOpt port =
 
 let beAServer () =
   begin try
+    let home = System.getenv "HOME" in
     Util.convertUnixErrorsToFatal
       "changing working directory"
-      (fun () -> System.chdir (System.fspathFromString (System.getenv "HOME")))
+      (fun () -> System.chdir (System.fspathFromString home))
   with Not_found ->
     Util.msg
       "Environment variable HOME unbound: \

@@ -591,7 +591,7 @@ let fatalError message =
   ignore (GMisc.label
             ~markup:(primaryText title ^ "\n\n" ^
                      escapeMarkup (transcode message))
-            ~selectable:true ~yalign:0. ~packing:v1#add ());
+            ~line_wrap:true ~selectable:true ~yalign:0. ~packing:v1#add ());
   t#add_button_stock `QUIT `QUIT;
   t#set_default_response `QUIT;
   grabFocus t; t#show(); ignore (t#run ()); t#destroy (); releaseFocus ();

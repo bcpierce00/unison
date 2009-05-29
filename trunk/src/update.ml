@@ -41,6 +41,8 @@ let debugignore = Trace.debug "ignore"
 (*FIX: one should also store whether we are in case-insensitive mode
   in the archive and check the mode has not changed when the archive
   is loaded *)
+(*FIX: consider changing the way case-sensitivity mode is stored in
+  the archive *)
 let archiveFormat = 22
 
 module NameMap = MyMap.Make (Name)
@@ -249,6 +251,54 @@ let archivesIdentical l =
     h::r -> h <> None && Safelist.for_all (fun h' -> h = h') r
   | _    -> true
 
+let (archiveNameOnRoot
+       : Common.root ->  archiveVersion -> (string * string * bool) Lwt.t)
+    =
+  Remote.registerRootCmd
+    "archiveName"
+      (fun (fspath, v) ->
+       let (name,_) = archiveName fspath v in
+       Lwt.return
+         (name,
+          Os.myCanonicalHostName,
+          System.file_exists (Os.fileInUnisonDir name)))
+
+let checkArchiveCaseSensitivity l =
+  match l with
+    Some (_, magic) :: _ ->
+      begin try
+        let archMode = String.sub magic 0 (String.index magic '\000') in
+        let curMode = (Case.ops ())#modeDesc in
+        if curMode <> archMode then begin
+          (* We cannot compute the archive name locally as it
+             currently depends on the os type *)
+          Globals.allRootsMap
+            (fun r -> archiveNameOnRoot r MainArch) >>= fun names ->
+          let l =
+            List.map
+              (fun (name, host, _) ->
+                 Format.sprintf "    archive %s on host %s" name host)
+              names
+          in
+          Lwt.fail
+            (Util.Fatal
+               (String.concat "\n"
+                  ("Warning: incompatible case sensitivity settings." ::
+                    Format.sprintf "Unison is currently in %s mode," curMode ::
+                    Format.sprintf
+                      "while the archives assume %s mode." archMode ::
+                    "You should either change Unison's setup " ::
+                    "or delete the following archives:" ::
+                    l @
+                    ["Then, try again."])))
+        end else
+          Lwt.return ()
+      with Not_found ->
+        Lwt.return ()
+      end
+  | _ ->
+      Lwt.return ()
+
 (*****************************************************************************)
 (*                      LOADING AND SAVING ARCHIVES                          *)
 (*****************************************************************************)
@@ -324,8 +374,10 @@ let storeArchiveLocal fspath thisRoot archive hash magic =
    output_string c "\n";
    output_string c (verboseArchiveName thisRoot);
    output_string c "\n";
-   output_string c (Printf.sprintf "Written at %s\n"
-                      (Util.time2string (Util.time())));
+   (* This third line is purely informative *)
+   output_string c (Printf.sprintf "Written at %s - %s mode\n"
+                      (Util.time2string (Util.time()))
+                      ((Case.ops())#modeDesc));
    Marshal.to_channel c (archive, hash, magic) [Marshal.No_sharing];
    close_out c)
 
@@ -565,6 +617,7 @@ let loadArchives (optimistic: bool) : bool Lwt.t =
       ^ "       arXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n"
       ^ "     where the X's are a hexidecimal number .\n"
       ^ "  c) Run unison again to synchronize from scratch.\n"));
+  checkArchiveCaseSensitivity checksums >>= fun () ->
   if Prefs.read dumpArchives then 
     Globals.allRootsMap (fun r -> dumpArchiveOnRoot r ())
      >>= (fun _ -> Lwt.return identicals)
@@ -760,18 +813,6 @@ let archivesExistOnRoot: Common.root -> unit -> (bool * bool) Lwt.t =
        let newexists =
          System.file_exists (Os.fileInUnisonDir newname) in
        Lwt.return (oldexists, newexists))
-
-let (archiveNameOnRoot
-       : Common.root ->  archiveVersion -> (string * string * bool) Lwt.t)
-    =
-  Remote.registerRootCmd
-    "archiveName"
-      (fun (fspath, v) ->
-       let (name,_) = archiveName fspath v in
-       Lwt.return
-         (name,
-          Os.myCanonicalHostName,
-          System.file_exists (Os.fileInUnisonDir name)))
 
 let forall = Safelist.for_all (fun x -> x)
 let exists = Safelist.exists (fun x -> x)
@@ -1626,7 +1667,8 @@ let commitUpdates () =
      Remote.Thread.unwindProtect
        (fun () ->
           let magic =
-            Format.sprintf "%.f.%d" (Unix.gettimeofday ()) (Unix.getpid ())
+            Format.sprintf "%s\000%.f.%d"
+              ((Case.ops ())#modeDesc) (Unix.gettimeofday ()) (Unix.getpid ())
           in
           Globals.allRootsMap (fun r -> prepareCommitOnRoot r magic)
             >>= (fun checksums ->

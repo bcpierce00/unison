@@ -1,5 +1,11 @@
 CHANGES FROM VERSION 2.34.0
 
+* Case sensitivity information put in the archive (in a backward
+  compatible way) and checked when the archive is loaded
+
+-------------------------------
+CHANGES FROM VERSION 2.34.0
+
 * Fixed quotation of paths and names when writing to a preference file
 * Workaround for bug in new "select" implementation in Ocaml 3.11
   (select fails with EPIPE error when monitoring a remotely closed

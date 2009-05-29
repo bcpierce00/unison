@@ -132,6 +132,7 @@ Important invariant:
 
 let sensitiveOps = object
   method mode = Sensitive
+  method modeDesc = "case sensitive"
   method compare s s' = compare s s'
   method hash s = Hashtbl.hash s
   method normalizePattern s = s
@@ -142,6 +143,7 @@ end
 
 let insensitiveOps = object
   method mode = Insensitive
+  method modeDesc = "Latin-1 case insensitive"
   method compare s s' = Util.nocase_cmp s s'
   method hash s = Hashtbl.hash (String.lowercase s)
   method normalizePattern s = s
@@ -152,6 +154,7 @@ end
 
 let unicodeInsensitiveOps = object
   method mode = UnicodeInsensitive
+  method modeDesc = "Unicode case insensitive"
   method compare s s' = Unicode.compare s s'
   method hash s = Hashtbl.hash (Unicode.normalize s)
   method normalizePattern p = Unicode.normalize p
