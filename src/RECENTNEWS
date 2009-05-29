@@ -1,3 +1,8 @@
+CHANGES FROM VERSION 2.32.32
+
+* Got rid of the 16MiB marshalling limit by marshalling to a bigarray
+
+-------------------------------
 CHANGES FROM VERSION 2.32.30
 
 * Case sensitivity information put in the archive (in a backward

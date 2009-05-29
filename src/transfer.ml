@@ -56,7 +56,7 @@ let debugLog =   Trace.debug "rsynclog"
 
 open Lwt
 
-type transfer_instruction = string * int * int
+type transfer_instruction = Bytearray.t * int * int
 
 type transmitter = transfer_instruction -> unit Lwt.t
 
@@ -100,7 +100,7 @@ let blockSize64 = Int64.of_int blockSize
 let maxQueueSize = 65500
 let maxQueueSizeFS = Uutil.Filesize.ofInt maxQueueSize
 type tokenQueue =
-  { mutable data : string;       (* the queued tokens *)
+  { mutable data : Bytearray.t;  (* the queued tokens *)
     mutable previous : [`Str of int | `Block of int | `None];
                                  (* some informations about the
                                     previous token *)
@@ -117,29 +117,29 @@ let tokenProg t =
 
 let encodeInt3 s pos i =
   assert (i >= 0 && i < 256 * 256 * 256);
-  s.[pos + 0] <- Char.chr ((i lsr 0) land 0xff);
-  s.[pos + 1] <- Char.chr ((i lsr 8) land 0xff);
-  s.[pos + 2] <- Char.chr ((i lsr 16) land 0xff)
+  s.{pos + 0} <- Char.chr ((i lsr 0) land 0xff);
+  s.{pos + 1} <- Char.chr ((i lsr 8) land 0xff);
+  s.{pos + 2} <- Char.chr ((i lsr 16) land 0xff)
 
 let decodeInt3 s pos =
-  (Char.code s.[pos + 0] lsl 0) lor
-  (Char.code s.[pos + 1] lsl 8) lor
-  (Char.code s.[pos + 2] lsl 16)
+  (Char.code s.{pos + 0} lsl 0) lor
+  (Char.code s.{pos + 1} lsl 8) lor
+  (Char.code s.{pos + 2} lsl 16)
 
 let encodeInt2 s pos i =
   assert (i >= 0 && i < 65536);
-  s.[pos + 0] <- Char.chr ((i lsr 0) land 0xff);
-  s.[pos + 1] <- Char.chr ((i lsr 8) land 0xff)
+  s.{pos + 0} <- Char.chr ((i lsr 0) land 0xff);
+  s.{pos + 1} <- Char.chr ((i lsr 8) land 0xff)
 
 let decodeInt2 s pos =
-  (Char.code s.[pos + 0] lsl 0) lor (Char.code s.[pos + 1] lsl 8)
+  (Char.code s.{pos + 0} lsl 0) lor (Char.code s.{pos + 1} lsl 8)
 
 let encodeInt1 s pos i =
   assert (i >= 0 && i < 256);
-  s.[pos + 0] <- Char.chr i
+  s.{pos + 0} <- Char.chr i
 
 let decodeInt1 s pos =
-  Char.code s.[pos + 0]
+  Char.code s.{pos + 0}
 
 (* Transmit the contents of the tokenQueue *)
 let flushQueue q showProgress transmit cond =
@@ -154,34 +154,34 @@ let flushQueue q showProgress transmit cond =
 
 let pushEOF q showProgress transmit =
   flushQueue q showProgress transmit
-    (q.pos + 1 > String.length q.data) >>= (fun () ->
-  q.data.[q.pos] <- 'E';
+    (q.pos + 1 > Bytearray.length q.data) >>= (fun () ->
+  q.data.{q.pos} <- 'E';
   q.pos <- q.pos + 1;
   q.previous <- `None;
   return ())
 
 let pushString q id transmit s pos len =
-  flushQueue q id transmit (q.pos + len + 3 > String.length q.data)
+  flushQueue q id transmit (q.pos + len + 3 > Bytearray.length q.data)
     >>= (fun () ->
-  if q.pos + 3 + len > String.length q.data then begin
+  if q.pos + 3 + len > Bytearray.length q.data then begin
     (* The file is longer than expected, so the string does not fit in
        the buffer *)
     assert (q.pos = 0);
-    q.data <- String.create maxQueueSize
+    q.data <- Bytearray.create maxQueueSize
   end;
-  q.data.[q.pos] <- 'S';
+  q.data.{q.pos} <- 'S';
   encodeInt2 q.data (q.pos + 1) len;
-  assert (q.pos + 3 + len <= String.length q.data);
-  String.blit s pos q.data (q.pos + 3) len;
+  assert (q.pos + 3 + len <= Bytearray.length q.data);
+  Bytearray.blit_from_string s pos q.data (q.pos + 3) len;
   q.pos <- q.pos + len + 3;
   q.prog <- q.prog + len;
   q.previous <- `Str len;
   return ())
 
 let rec growString q id transmit len' s pos len =
-  let l = min (String.length q.data - q.pos) len in
-  String.blit s pos q.data q.pos l;
-  assert (q.data.[q.pos - len' - 3] = 'S');
+  let l = min (Bytearray.length q.data - q.pos) len in
+  Bytearray.blit_from_string s pos q.data q.pos l;
+  assert (q.data.{q.pos - len' - 3} = 'S');
   assert (decodeInt2 q.data (q.pos - len' - 2) = len');
   let len'' = len' + l in
   encodeInt2 q.data (q.pos - len' - 2) len'';
@@ -194,8 +194,8 @@ let rec growString q id transmit len' s pos len =
     return ()
 
 let pushBlock q id transmit pos =
-  flushQueue q id transmit (q.pos + 5 > String.length q.data) >>= (fun () ->
-  q.data.[q.pos] <- 'B';
+  flushQueue q id transmit (q.pos + 5 > Bytearray.length q.data) >>= (fun () ->
+  q.data.{q.pos} <- 'B';
   encodeInt3 q.data (q.pos + 1) pos;
   encodeInt1 q.data (q.pos + 4) 1;
   q.pos <- q.pos + 5;
@@ -205,7 +205,7 @@ let pushBlock q id transmit pos =
 
 let growBlock q id transmit pos =
   let count = decodeInt1 q.data (q.pos - 1) in
-  assert (q.data.[q.pos - 5] = 'B');
+  assert (q.data.{q.pos - 5} = 'B');
   assert (decodeInt3 q.data (q.pos - 4) + count = pos);
   assert (count < 255);
   encodeInt1 q.data (q.pos - 1) (count + 1);
@@ -234,7 +234,7 @@ let makeQueue length =
       (* We need to make sure here that the size of the queue is not
          larger than 65538
          (1 byte: header, 2 bytes: string size, 65535 bytes: string) *)
-      String.create
+      Bytearray.create
         (if length > maxQueueSizeFS then maxQueueSize else
          Uutil.Filesize.toInt length + 10);
     pos = 0; previous = `None; prog = 0 }
@@ -272,12 +272,12 @@ let send infd length showProgress transmit =
 
 let rec receiveRec outfd showProgress data pos maxPos =
   if pos = maxPos then false else
-  match data.[pos] with
+  match data.{pos} with
     'S' ->
       let length = decodeInt2 data (pos + 1) in
       if Trace.enabled "generic" then debug (fun() -> Util.msg
           "receiving %d bytes\n" length);
-      reallyWrite outfd data (pos + 3) length;
+      reallyWrite outfd (Bytearray.sub data (pos + 3) length) 0 length;
       showProgress length;
       receiveRec outfd showProgress data (pos + length + 3) maxPos
   | 'E' ->
@@ -403,13 +403,13 @@ struct
     let maxPos = pos + len in
     let rec decode pos =
       if pos = maxPos then false else
-      match data.[pos] with
+      match data.{pos} with
         'S' ->
           let length = decodeInt2 data (pos + 1) in
           if Trace.enabled "rsynctoken" then
             debugToken (fun() ->
               Util.msg "decompressing string (%d bytes)\n" length);
-          reallyWrite outfd data (pos + 3) length;
+          reallyWrite outfd (Bytearray.sub data (pos + 3) length) 0 length;
           progress := !progress + length;
           decode (pos + length + 3)
       | 'B' ->
