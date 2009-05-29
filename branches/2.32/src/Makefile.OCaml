@@ -179,7 +179,7 @@ OCAMLOBJS += \
           \
           lwt/pqueue.cmo lwt/lwt.cmo lwt/lwt_util.cmo lwt/lwt_unix.cmo \
           \
-          case.cmo pred.cmo uutil.cmo \
+          bytearray.cmo case.cmo pred.cmo uutil.cmo \
           fileutil.cmo name.cmo path.cmo fspath.cmo fingerprint.cmo \
           abort.cmo osx.cmo external.cmo \
           props.cmo fileinfo.cmo os.cmo lock.cmo clroot.cmo common.cmo \
@@ -187,15 +187,15 @@ OCAMLOBJS += \
           transfer.cmo xferhint.cmo remote.cmo globals.cmo copy.cmo \
           stasher.cmo update.cmo \
 	  files.cmo sortri.cmo recon.cmo transport.cmo \
-          strings.cmo uicommon.cmo uitext.cmo test.cmo 
+          strings.cmo uicommon.cmo uitext.cmo test.cmo
 
 OCAMLOBJS+=main.cmo
 
 # OCaml libraries for the bytecode version
 # File extensions will be substituted for the native code version
-OCAMLLIBS+=unix.cma str.cma
+OCAMLLIBS+=unix.cma str.cma bigarray.cma
 
-COBJS+=osxsupport$(OBJ_EXT) pty$(OBJ_EXT)
+COBJS+=osxsupport$(OBJ_EXT) pty$(OBJ_EXT) bytearray_stubs$(OBJ_EXT)
 
 ########################################################################
 ### User Interface setup

@@ -37,7 +37,7 @@
 
 
 (* Transfer instruction giving data to build a file incrementally *)
-type transfer_instruction = string * int * int
+type transfer_instruction = Bytearray.t * int * int
 
 type transmitter = transfer_instruction -> unit Lwt.t
 
