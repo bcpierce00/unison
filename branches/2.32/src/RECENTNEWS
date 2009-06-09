@@ -1,3 +1,16 @@
+CHANGES FROM VERSION 2.32.33
+
+* Fix to the Mac GUI: the bigarray library is now required
+* Improvement to the code for resuming directory transfers:
+  - make sure file information (permissions, ...) has been properly set
+    when using a previously transferred temp file
+  - make sure previously transferred directories are writable
+  (other changes made in the developer version of Unison require a
+  protocol change)
+* Fixed bug in Lwt_unix.run which could make it fail with a Not_found
+  exception (see [Not_found raised in tryCopyMovedFile] errors)
+
+-------------------------------
 CHANGES FROM VERSION 2.32.32
 
 * Got rid of the 16MiB marshalling limit by marshalling to a bigarray
