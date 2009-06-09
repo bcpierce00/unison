@@ -1976,6 +1976,7 @@ lst_store#set ~row ~column:c_path path;
   let detectCmdName = "Restart" in
   let detectCmd () =
     getLock detectUpdatesAndReconcile;
+    updateDetails ();
     if Prefs.read Globals.batch then begin
       Prefs.set Globals.batch false; synchronize()
     end

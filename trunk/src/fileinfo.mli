@@ -4,8 +4,7 @@
 type typ = [`ABSENT | `FILE | `DIRECTORY | `SYMLINK]
 val type2string : typ -> string
 
-type t = { typ : typ; inode : int; ctime : float;
-           desc : Props.t; osX : Osx.info}
+type t = { typ : typ; inode : int; desc : Props.t; osX : Osx.info}
 
 val get : bool -> Fspath.t -> Path.local -> t
 val set : Fspath.t -> Path.local ->

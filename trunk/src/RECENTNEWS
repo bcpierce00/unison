@@ -1,5 +1,18 @@
 CHANGES FROM VERSION 2.34.0
 
+* Improvement to the code for resuming directory transfers:
+  - make sure file information (permissions, ...) has been properly set
+    when using a previously transferred temp file
+  - make sure previously transferred directories are writable
+* Some cleanup in file transfer implementation
+* Got rid of all occurrences of "try ... with _ -> ..."
+* Removed ctime field from Fileinfo.t
+* Fixed bug in Lwt_unix.run which could make it fail with a Not_found
+  exception
+
+-------------------------------
+CHANGES FROM VERSION 2.34.0
+
 * Fix to the Mac GUI: the bigarray library is now required
 -------------------------------
 CHANGES FROM VERSION 2.34.0

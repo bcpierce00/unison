@@ -18,7 +18,7 @@
 let (>>=) = Lwt.bind
 
 let debug = Trace.debug "remote"
-let debugV = Trace.debug "remote+"
+let debugV = Trace.debug "remote_emit+"
 let debugE = Trace.debug "remote+"
 let debugT = Trace.debug "remote+"
 
@@ -29,16 +29,21 @@ let debugT = Trace.debug "remote+"
 *)
 
 let windowsHack = Sys.os_type <> "Unix"
+let recent_ocaml =
+  Scanf.sscanf Sys.ocaml_version "%d.%d"
+    (fun maj min -> (maj = 3 && min >= 11) || maj > 3)
 
 (****)
 
+let intSize = 4
+
 let encodeInt m =
-  let int_buf = Bytearray.create 4 in
+  let int_buf = Bytearray.create intSize in
   int_buf.{0} <- Char.chr ( m         land 0xff);
   int_buf.{1} <- Char.chr ((m lsr 8)  land 0xff);
   int_buf.{2} <- Char.chr ((m lsr 16) land 0xff);
   int_buf.{3} <- Char.chr ((m lsr 24) land 0xff);
-  int_buf
+  (int_buf, 0, intSize)
 
 let decodeInt int_buf i =
   let b0 = Char.code (int_buf.{i + 0}) in
@@ -198,7 +203,7 @@ let rec flush_buffer conn =
     conn.canWrite <- false;
     debugE (fun() -> Util.msg "Sending write token\n");
     (* Special message allowing the other side to write *)
-    fill_buffer conn [(encodeInt 0, 0, 4)] >>= (fun () ->
+    fill_buffer conn [encodeInt 0] >>= (fun () ->
     flush_buffer conn) >>= (fun () ->
     if windowsHack then begin
       debugE (fun() -> Util.msg "Restarting reader\n");
@@ -217,11 +222,6 @@ let rec flush_buffer conn =
     conn.pendingOutput <- false;
     Lwt.return ()
   end
-
-let rec msg_length l =
-  match l with
-    [] -> 0
-  | (s, p, l)::r -> l + msg_length r
 
 (* Send all pending messages *)
 let rec dump_rec conn =
@@ -350,22 +350,8 @@ let rec first_chars len msg =
       else
         Bytearray.sub s p len
 
-(* An integer just a little smaller than the maximum representable in 30 bits *)
-let hugeint = 1000000000
-
 let safeMarshal marshalPayload tag data rem =
   let (rem', length) = marshalPayload data rem in
-  if length > hugeint then  begin
-    let start = first_chars (min length 10) rem' in
-    let start = if length > 10 then start ^ "..." else start in
-    let start = String.escaped start in
-    Util.msg "Fatal error in safeMarshal: sending too many (%d) bytes with tag %s and contents [%s]\n" length (Bytearray.to_string tag) start; 
-    raise (Util.Fatal ((Printf.sprintf
-             "Message payload too large (%d, %s, [%s]).  \n"
-                length (Bytearray.to_string tag) start)
-             ^ "This is a bug in Unison; if it happens to you in a repeatable way, \n"
-             ^ "please post a report on the unison-users mailing list."))
-  end;
   let l = Bytearray.length tag in
   debugE (fun() ->
             let start = first_chars (min length 10) rem' in
@@ -373,7 +359,7 @@ let safeMarshal marshalPayload tag data rem =
             let start = String.escaped start in
             Util.msg "send [%s] '%s' %d bytes\n"
               (Bytearray.to_string tag) start length);
-  ((encodeInt (l + length), 0, 4) :: (tag, 0, l) :: rem')
+  (encodeInt (l + length) :: (tag, 0, l) :: rem')
 
 let safeUnmarshal unmarshalPayload tag buf =
   let taglength = Bytearray.length tag in
@@ -526,8 +512,8 @@ two switch roles.)
 
 let receivePacket conn =
   (* Get the length of the packet *)
-  let int_buf = Bytearray.create 4 in
-  grab conn int_buf 4 >>= (fun () ->
+  let int_buf = Bytearray.create intSize in
+  grab conn int_buf intSize >>= (fun () ->
   let length = decodeInt int_buf 0 in
   assert (length >= 0);
   (* Get packet *)
@@ -563,22 +549,25 @@ let processRequest conn id cmdName buf =
   Lwt.try_bind (fun () -> cmd conn buf)
     (fun marshal ->
        debugE (fun () -> Util.msg "Sending result (id: %d)\n" (decodeInt id 0));
-       dump conn ((id, 0, 4) :: marshalHeader NormalResult (marshal [])))
+       dump conn ((id, 0, intSize) :: marshalHeader NormalResult (marshal [])))
     (function
        Util.Transient s ->
          debugE (fun () ->
            Util.msg "Sending transient exception (id: %d)\n" (decodeInt id 0));
-         dump conn ((id, 0, 4) :: marshalHeader (TransientExn s) [])
+         dump conn ((id, 0, intSize) :: marshalHeader (TransientExn s) [])
      | Util.Fatal s ->
          debugE (fun () ->
            Util.msg "Sending fatal exception (id: %d)\n" (decodeInt id 0));
-         dump conn ((id, 0, 4) :: marshalHeader (FatalExn s) [])
+         dump conn ((id, 0, intSize) :: marshalHeader (FatalExn s) [])
      | e ->
          Lwt.fail e)
 
 (* Message ids *)
 type msgId = int
 module MsgIdMap = Map.Make (struct type t = msgId let compare = compare end)
+(* An integer just a little smaller than the maximum representable in
+   30 bits *)
+let hugeint = 1000000000
 let ids = ref 1
 let newMsgId () = incr ids; if !ids = hugeint then ids := 2; !ids
 
@@ -593,7 +582,7 @@ let find_receiver id =
 (* Receiving thread: read a message and dispatch it to the right
    thread or create a new thread to process requests. *)
 let rec receive conn =
-  (if windowsHack && conn.canWrite then
+  (if windowsHack && conn.canWrite && not recent_ocaml then
      let wait = Lwt.wait () in
      assert (conn.reader = None);
      conn.reader <- Some wait;
@@ -602,8 +591,8 @@ let rec receive conn =
      Lwt.return ()) >>= (fun () ->
   debugE (fun () -> Util.msg "Waiting for next message\n");
   (* Get the message ID *)
-  let id = Bytearray.create 4 in
-  grab conn id 4 >>= (fun () ->
+  let id = Bytearray.create intSize in
+  grab conn id intSize >>= (fun () ->
   let num_id = decodeInt id 0 in
   if num_id = 0 then begin
     debugE (fun () -> Util.msg "Received the write permission\n");
@@ -679,7 +668,7 @@ let registerSpecialServerCmd
     let id = newMsgId () in (* Message ID *)
     assert (id >= 0); (* tracking down an assert failure in receivePacket... *)
     let request =
-      (encodeInt id, 0, 4) ::
+      encodeInt id ::
       marshalHeader (Request cmdName) (marshalArgs serverArgs [])
     in
     let reply = wait_for_reply id in
@@ -1113,12 +1102,13 @@ let openConnectionEnd (i1,i2,o1,o2,s,_,clroot,pid) =
          Lwt.return ())
 
 let openConnectionCancel (i1,i2,o1,o2,s,fdopt,clroot,pid) =
-      try Unix.kill pid Sys.sigkill with _ -> ();
-      try Unix.close i1 with _ -> ();
-      try Unix.close i2 with _ -> ();
-      try Unix.close o1 with _ -> ();
-      try Unix.close o2 with _ -> ();
-      match fdopt with None -> () | Some fd -> (try Unix.close fd with _ -> ())
+      try Unix.kill pid Sys.sigkill with Unix.Unix_error _ -> ();
+      try Unix.close i1 with Unix.Unix_error _ -> ();
+      try Unix.close i2 with Unix.Unix_error _ -> ();
+      try Unix.close o1 with Unix.Unix_error _ -> ();
+      try Unix.close o2 with Unix.Unix_error _ -> ();
+      match fdopt with
+       None -> () | Some fd -> (try Unix.close fd with Unix.Unix_error _ -> ())
 
 (****************************************************************************)
 (*                     SERVER-MODE COMMAND PROCESSING LOOP                  *)

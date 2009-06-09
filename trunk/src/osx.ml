@@ -110,6 +110,7 @@ let protect f g =
     raise e
 
 let openDouble fspath path =
+  let (fspath, path) = Fspath.findWorkingDir fspath path in
   let path = Fspath.appleDouble (Fspath.concat fspath path) in
   let inch = try Fs.open_in_bin path with Sys_error _ -> raise Not_found in
   protect (fun () ->
@@ -212,7 +213,6 @@ let getFileInfos fspath path typ =
         with Unix.Unix_error ((Unix.EOPNOTSUPP | Unix.ENOSYS), _, _) ->
           (* Not a HFS volume.  Look for an AppleDouble file *)
           try
-            let (fspath, path) = Fspath.findWorkingDir fspath path in
             let (doublePath, inch, entries) = openDouble fspath path in
             let (rsrcOffset, rsrcLength) =
               try Safelist.assoc `RSRC entries with Not_found ->
@@ -281,7 +281,6 @@ let setFileInfos fspath path finfo =
       setFileInfosInternal p (insertInfo fullFinfo finfo)
     with Unix.Unix_error ((Unix.EOPNOTSUPP | Unix.ENOSYS), _, _) ->
       (* Not an HFS volume.  Look for an AppleDouble file *)
-      let (fspath, path) = Fspath.findWorkingDir fspath path in
       begin try
         let (doublePath, inch, entries) = openDouble fspath path in
         begin try

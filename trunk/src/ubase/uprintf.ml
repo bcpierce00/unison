@@ -37,7 +37,7 @@ let fprintf outchan doafter format =
                 let p =
                   try
                     int_of_string (String.sub format (i+1) (j-i-1))
-                  with _ ->
+                  with Failure _ ->
                     invalid_arg "fprintf: bad %s format" in
                 if p > 0 && String.length s < p then begin
                   output_string outchan
