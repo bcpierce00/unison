@@ -10,9 +10,11 @@ val file :
  -> [`Update of (Uutil.Filesize.t * Uutil.Filesize.t) | `Copy]
  -> Props.t             (* permissions for new file *)
  -> Os.fullfingerprint  (* fingerprint of file *)
+ -> Fileinfo.stamp option
+                        (* source file stamp, if available *)
  -> Osx.ressStamp       (* ressource info of file *)
  -> Uutil.File.t        (* file's index in UI (for progress bars) *)
- -> unit Lwt.t
+ -> Fileinfo.t Lwt.t    (* information regarding the transferred file *)
 
 val localFile :
     Fspath.t             (* fspath of source *)

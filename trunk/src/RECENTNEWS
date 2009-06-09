@@ -1,3 +1,43 @@
+CHANGES FROM VERSION 2.35.-17
+
+* Bumped minor version: many incompatible protocol changes
+
+* Message lengths are checksummed to guard against protocol corruption
+  (no more [Invalid_argument "String.create"])
+
+* Experimental streaming protocol for transferring file contents (can
+  be disabled by setting the directive "stream" to false): file
+  contents is transfered asynchronously (without waiting for a response
+  from the destination after each chunk sent) rather than using the
+  synchronous RPC mechanism.  As a consequence:
+  - Unison now transfers the contents of a single file at a time
+    (Unison used to transfer several contents simultaneously in order
+    to hide the connection latency.)
+  - the transfer of large files uses the full available bandwidth
+    and is not slowed done due to the connection latency anymore
+  - we get performance improvement for small files as well by
+    scheduling many files simultaneously (as scheduling a file for
+    transfer consume little ressource: it does not mean allocating a
+    large buffer anymore)
+
+* Improvement to the code for resuming directory transfers:
+  - if a file was not correctly transferred (or the source has been
+    modified since, with unchanged size), Unison performs a new
+    transfer rather than failing
+  - spurious files are deleted (this can happen if a file is deleted
+    on the source replica before resuming the transfer; not deleting
+    the file would result in it reappearing on the target replica)
+
+* More file transfer implementation cleanup.  In particular, the
+  "paranoid check" (checking whether the file has been correctly
+  transferred) is moved to copy.ml.  This way, one can avoid computing
+  a file fingerprint twice when a file is already transferred, and
+  when using the "transfer by copying" optimization.
+  The check of the source file is also moved to copy.ml, so if the
+  paranoid check fails, we can tell whether this is due to the source
+  file being modified.
+
+-------------------------------
 CHANGES FROM VERSION 2.34.0
 
 * Improvement to the code for resuming directory transfers:

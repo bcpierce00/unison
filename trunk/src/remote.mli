@@ -104,3 +104,13 @@ val registerRootCmdWithConnection :
     -> Common.root                  (* other root *)
     -> 'a                           (* additional arguments *)
     -> 'b Lwt.t                     (* result *)
+
+val streamingActivated : bool Prefs.t
+
+val registerStreamCmd :
+  string ->
+  ('a ->
+   (Bytearray.t * int * int) list -> (Bytearray.t * int * int) list * int) *
+  (Bytearray.t -> int -> 'a) ->
+  (connection -> 'a -> unit) ->
+  connection -> (('a -> unit Lwt.t) -> 'b Lwt.t) -> 'b Lwt.t

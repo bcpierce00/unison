@@ -44,3 +44,26 @@ let check id =
   end
 
 let testException e = e = Util.Transient "Aborted"
+
+let (>>=) = Lwt.bind
+
+let mergeErrors id e runningThreads =
+  if not (testException e) then file id;
+  match e with
+    Util.Transient _ ->
+      let e = ref e in
+      Lwt_util.iter
+        (fun act ->
+           Lwt.catch
+              (fun () -> act >>= fun _ -> Lwt.return ())
+              (fun e' ->
+                 match e' with
+                   Util.Transient _ ->
+                     if testException !e then e := e';
+                     Lwt.return ()
+                 | _                ->
+                     Lwt.fail e'))
+        runningThreads >>= fun () ->
+      Lwt.fail !e
+  | _ ->
+      Lwt.fail e

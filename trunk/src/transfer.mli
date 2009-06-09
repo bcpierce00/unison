@@ -80,7 +80,7 @@ module Rsync :
     (* Compute block informations from the old file *)
     val rsyncPreprocess :
 	   in_channel            (* old file descriptor *)
-        -> rsync_block_info list
+        -> rsync_block_info
 
     (* Interpret a transfer instruction *)
     val rsyncDecompress :
@@ -95,7 +95,7 @@ module Rsync :
     (* Using block informations, parse the new file and send transfer
        instructions accordingly *)
     val rsyncCompress :
-	   rsync_block_info list
+	   rsync_block_info
                               (* block info received from the destination *)
         -> in_channel         (* new file descriptor *)
         -> Uutil.Filesize.t   (* source file length *)
