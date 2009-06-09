@@ -74,6 +74,11 @@ let lwt_protect f g =
 
 (****)
 
+let setFileinfo fspathTo pathTo realPathTo update desc =
+  match update with
+    `Update _ -> Fileinfo.set fspathTo pathTo (`Copy realPathTo) desc
+  | `Copy     -> Fileinfo.set fspathTo pathTo (`Set Props.fileDefault) desc
+
 let localFile
      fspathFrom pathFrom fspathTo pathTo realPathTo update desc ressLength ido =
   let use_id f = match ido with Some id -> f id | None -> () in
@@ -114,11 +119,7 @@ let localFile
             (fun () -> close_out_noerr outFd))
           (fun () -> close_in_noerr inFd);
       end;
-      match update with
-        `Update _ ->
-          Fileinfo.set fspathTo pathTo (`Copy realPathTo) desc
-      | `Copy ->
-          Fileinfo.set fspathTo pathTo (`Set Props.fileDefault) desc)
+      setFileinfo fspathTo pathTo realPathTo update desc)
 
 (****)
 
@@ -396,10 +397,7 @@ let reallyTransferFile
          Lwt.fail e))
     end else
       Lwt.return ()) >>= (fun () ->
-    begin match update with
-      `Update _ -> Fileinfo.set fspathTo pathTo (`Copy realPathTo) desc
-    | `Copy     -> Fileinfo.set fspathTo pathTo (`Set Props.fileDefault) desc
-    end;
+    setFileinfo fspathTo pathTo realPathTo update desc;
     Lwt.return ()))
 
 (****)
@@ -557,7 +555,10 @@ let tryCopyMovedFileOnRoot =
   Remote.registerRootCmdWithConnection "tryCopyMovedFile" tryCopyMovedFileLocal
 
 let setFileinfoLocal connFrom (fspathTo, pathTo, desc) =
-  Lwt.return (Fileinfo.set fspathTo pathTo (`Set Props.fileDefault) desc)
+  setFileinfo fspathTo pathTo
+    pathTo `Copy (*FIX: should be realPathTo and update *)
+    desc;
+  Lwt.return ()
 let setFileinfoOnRoot =
   Remote.registerRootCmdWithConnection "setFileinfo" setFileinfoLocal
 
@@ -678,7 +679,8 @@ let file rootFrom pathFrom rootTo fspathTo pathTo realPathTo
         Trace.log (Printf.sprintf
           "%s/%s has already been transferred\n"
           (Fspath.toString fspathTo) (Path.toString pathTo));
-        Lwt.return ()
+        (* Make sure the file information is right *)
+        setFileinfoOnRoot rootTo rootFrom (fspathTo, pathTo, desc)
       (* Check whether we should use an external program to copy the
          file *)
       end else if

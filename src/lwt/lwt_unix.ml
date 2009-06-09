@@ -141,33 +141,39 @@ let rec run thread =
       restart_threads !event_counter now;
       List.iter
         (fun fd ->
-           match List.assoc fd !inputs with
-             `Read (buf, pos, len, res) ->
-                wrap_syscall inputs fd res
-                  (fun () -> Unix.read fd buf pos len)
-           | `Accept res ->
-                wrap_syscall inputs fd res
-                  (fun () ->
-                     let (s, _) as v = Unix.accept fd in
-                     if not windows_hack then Unix.set_nonblock s;
-                     v)
-           | `Wait res ->
-                wrap_syscall inputs fd res (fun () -> ()))
+           try
+             match List.assoc fd !inputs with
+               `Read (buf, pos, len, res) ->
+                  wrap_syscall inputs fd res
+                    (fun () -> Unix.read fd buf pos len)
+             | `Accept res ->
+                  wrap_syscall inputs fd res
+                    (fun () ->
+                       let (s, _) as v = Unix.accept fd in
+                       if not windows_hack then Unix.set_nonblock s;
+                       v)
+             | `Wait res ->
+                  wrap_syscall inputs fd res (fun () -> ())
+           with Not_found ->
+             ())
         readers;
       List.iter
         (fun fd ->
-           match List.assoc fd !outputs with
-             `Write (buf, pos, len, res) ->
-                wrap_syscall outputs fd res
-                  (fun () -> Unix.write fd buf pos len)
-           | `CheckSocket res ->
-                wrap_syscall outputs fd res
-                  (fun () ->
-                     try ignore (Unix.getpeername fd) with
-                       Unix.Unix_error (Unix.ENOTCONN, _, _) ->
-                         ignore (Unix.read fd " " 0 1))
-           | `Wait res ->
-                wrap_syscall inputs fd res (fun () -> ()))
+           try
+             match List.assoc fd !outputs with
+               `Write (buf, pos, len, res) ->
+                  wrap_syscall outputs fd res
+                    (fun () -> Unix.write fd buf pos len)
+             | `CheckSocket res ->
+                  wrap_syscall outputs fd res
+                    (fun () ->
+                       try ignore (Unix.getpeername fd) with
+                         Unix.Unix_error (Unix.ENOTCONN, _, _) ->
+                           ignore (Unix.read fd " " 0 1))
+             | `Wait res ->
+                  wrap_syscall inputs fd res (fun () -> ())
+           with Not_found ->
+             ())
         writers;
       if !child_exited then begin
         child_exited := false;

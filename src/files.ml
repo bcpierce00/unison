@@ -139,23 +139,28 @@ let setProp fromRoot fromPath toRoot toPath newDesc oldDesc uiFrom uiTo =
 	setPropRemote2 toRoot (toLocalPath, `Update oldDesc, newDesc))))
     
 (* ------------------------------------------------------------ *)
-    
+
 let mkdirRemote =
   Remote.registerRootCmd
     "mkdir"
     (fun (fspath,(workingDir,path)) ->
-       let createIt() = Os.createDir workingDir path Props.dirDefault in
-       if Os.exists workingDir path then
-         if (Fileinfo.get false workingDir path).Fileinfo.typ <> `DIRECTORY then begin
+       let info = Fileinfo.get false workingDir path in
+       if info.Fileinfo.typ = `DIRECTORY then begin
+         begin try
+           (* Make sure the directory is writable *)
+           Unix.chmod (Fspath.concatToString workingDir path)
+             (Props.perms info.Fileinfo.desc lor 0o700)
+         with Unix.Unix_error _ -> () end;
+         Lwt.return info.Fileinfo.desc
+       end else begin
+         if info.Fileinfo.typ <> `ABSENT then
            Os.delete workingDir path;
-           createIt()
-         end else ()
-       else
-         createIt();
-       Lwt.return (Fileinfo.get false workingDir path).Fileinfo.desc)
-    
+         Os.createDir workingDir path Props.dirDefault;
+         Lwt.return (Fileinfo.get false workingDir path).Fileinfo.desc
+       end)
+
 let mkdir onRoot workingDir path = mkdirRemote onRoot (workingDir,path)
-    
+
 (* ------------------------------------------------------------ *)
     
 let renameLocal (root, (localTargetPath, fspath, pathFrom, pathTo)) =
@@ -457,9 +462,7 @@ let copy
   Update.replaceArchive
     rootTo pathTo (Some (workingDir, tempPathTo))
     archFrom id true true  >>= (fun _ ->
-  rename rootTo pathTo localPathTo workingDir tempPathTo realPathTo uiTo >>= (fun() ->
-  debug (fun() -> Util.msg "Removing temp files\n");
-  performDelete rootTo (Some workingDir, tempPathTo) )))))))
+  rename rootTo pathTo localPathTo workingDir tempPathTo realPathTo uiTo))))))
 
 (* ------------------------------------------------------------ *)
 
