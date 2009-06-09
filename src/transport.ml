@@ -87,7 +87,12 @@ let stashCurrentVersions fromRoot toRoot path =
 
 let doAction (fromRoot,toRoot) path fromContents toContents id =
   Lwt_util.resize_region actionReg (Prefs.read maxthreads);
-  Lwt_util.resize_region Files.copyReg (Prefs.read maxthreads);
+  (* When streaming, we can transfer many file simultaneously:
+     as the contents of only one file is transferred in one direction
+     at any time, little ressource is consumed this way. *)
+  Lwt_util.resize_region Files.copyReg
+    (if Prefs.read Remote.streamingActivated then 4000 else
+     Prefs.read maxthreads);
   Lwt_util.run_in_region actionReg 1 (fun () ->
     if not !Trace.sendLogMsgsToStderr then
       Trace.statusDetail (Path.toString path);

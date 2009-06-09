@@ -41,8 +41,7 @@ val updateArchive :
   (Path.local * archive) Lwt.t
 (* Replace a part of an archive by another archive *)
 val replaceArchive :
-  Common.root -> Path.t -> (Fspath.t * Path.local) option ->
-  archive -> transaction -> bool -> bool -> Path.local Lwt.t
+  Common.root -> Path.t -> archive -> transaction -> Path.local Lwt.t
 (* Update only some permissions *)
 val updateProps :
   Common.root -> Path.t -> Props.t option -> Common.updateItem ->

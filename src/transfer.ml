@@ -342,16 +342,6 @@ struct
     in
     iter 0 arg 0 0
 
-  let rec rev_split_rec accu1 accu2 n l =
-    if n = 100000 then
-      rev_split_rec (accu2 :: accu1) [] 0 l
-    else
-      match l with
-        []     -> accu2 :: accu1
-      | x :: r -> rev_split_rec accu1 (x :: accu2) (n + 1) r
-
-  let rev_split l = rev_split_rec [] [] 0 l
-
   (* Given a block size, get blocks from the old file and compute a
      checksum and a fingerprint for each one. *)
   let rsyncPreprocess infd =
@@ -369,7 +359,7 @@ struct
     (* Limit the number of block so that there is no overflow in
        encodeInt3 *)
     let rev_bi = blockIter infd addBlock [] (256*256*256) in
-    let bi = rev_split rev_bi in
+    let bi = Safelist.rev rev_bi in
     debugLog (fun() -> Util.msg "%d blocks\n" (Safelist.length bi));
     Trace.showTimer timer;
     bi
@@ -441,11 +431,6 @@ struct
 
   let hash checksum = checksum
 
-  let rec sigLength sigs =
-    match sigs with
-      []     -> 0
-    | x :: r -> Safelist.length x + sigLength r
-
   (* Compute the hash table length as a function of the number of blocks *)
   let hashTableLength signatures =
     let rec upperPowerOfTwo n n2 =
@@ -454,23 +439,21 @@ struct
       else
         upperPowerOfTwo n (2 * n2)
     in
-    2 * (upperPowerOfTwo (sigLength signatures) 32)
+    2 * (upperPowerOfTwo (Safelist.length signatures) 32)
 
   (* Hash the block signatures into the hash table *)
   let hashSig hashTableLength signatures =
     let hashTable = Array.make hashTableLength [] in
-    let rec addList k l l' =
-      match l, l' with
-        [], [] ->
+    let rec addList k l =
+      match l with
+        [] ->
           ()
-      | [], r :: r' ->
-          addList k r r'
-      | ((cs, fp) :: r), _ ->
+      | (cs, fp) :: r ->
           let h = (hash cs) land (hashTableLength - 1) in
           hashTable.(h) <- (k, cs, fp)::(hashTable.(h));
-          addList (k + 1) r l'
+          addList (k + 1) r
     in
-    addList 0 [] signatures;
+    addList 0 signatures;
     hashTable
 
   (* Given a key, retrieve the corresponding entry in the table *)

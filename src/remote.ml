@@ -35,7 +35,9 @@ let recent_ocaml =
 
 (****)
 
-let intSize = 4
+let intSize = 5
+
+let intHash x = ((x * 791538121) lsr 23 + 17) land 255
 
 let encodeInt m =
   let int_buf = Bytearray.create intSize in
@@ -43,6 +45,7 @@ let encodeInt m =
   int_buf.{1} <- Char.chr ((m lsr 8)  land 0xff);
   int_buf.{2} <- Char.chr ((m lsr 16) land 0xff);
   int_buf.{3} <- Char.chr ((m lsr 24) land 0xff);
+  int_buf.{4} <- Char.chr (intHash m);
   (int_buf, 0, intSize)
 
 let decodeInt int_buf i =
@@ -50,7 +53,13 @@ let decodeInt int_buf i =
   let b1 = Char.code (int_buf.{i + 1}) in
   let b2 = Char.code (int_buf.{i + 2}) in
   let b3 = Char.code (int_buf.{i + 3}) in
-  ((b3 lsl 24) lor (b2 lsl 16) lor (b1 lsl 8) lor b0)
+  let m = (b3 lsl 24) lor (b2 lsl 16) lor (b1 lsl 8) lor b0 in
+  if Char.code (int_buf.{i + 4}) <> intHash m then
+    raise (Util.Fatal
+             "Protocol error: corrupted message received;\n\
+              if it happens to you in a repeatable way, \n\
+              please post a report on the unison-users mailing list.");
+  m
 
 (*************************************************************************)
 (*                           LOW-LEVEL IO                                *)
@@ -171,6 +180,8 @@ let rec fill_buffer_2 conn s pos len =
       Lwt.return ()
   end
 
+let bufReg = Lwt_util.make_region 1
+
 let rec fill_buffer conn l =
   match l with
     (s, pos, len) :: rem ->
@@ -181,6 +192,29 @@ let rec fill_buffer conn l =
       fill_buffer conn rem)
   | [] ->
       Lwt.return ()
+
+let fill_buffer conn l =
+  Lwt_util.run_in_region bufReg 1 (fun () -> fill_buffer conn l)
+let send_output conn =
+  Lwt_util.run_in_region bufReg 1 (fun () -> send_output conn)
+
+
+let blockedStream = ref None
+
+let rec streamWaitForWrite conn =
+  if conn.canWrite then Lwt.return () else begin
+    debugE (fun() -> Util.msg "Stream: waiting for write token\n");
+    let w = Lwt.wait () in
+    blockedStream := Some w;
+    w >>= fun () ->
+    debugE (fun() -> Util.msg "Stream: restarting\n");
+    streamWaitForWrite conn
+  end
+
+let restartStream () =
+  match !blockedStream with
+    Some w -> blockedStream := None; Lwt.wakeup w ()
+  | None   -> ()
 
 (*
    Flow-control mechanism (only active under windows).
@@ -195,6 +229,13 @@ let rec fill_buffer conn l =
    messages can still be coalesced.
 *)
 let needFlowControl = windowsHack
+
+let rec flush_buffer_simpl conn =
+  if conn.outputLength > 0 then
+    send_output conn >>= fun () ->
+    flush_buffer_simpl conn
+  else
+    Lwt.return ()
 
 (* Loop until the output buffer is empty *)
 let rec flush_buffer conn =
@@ -235,23 +276,27 @@ let rec dump_rec conn =
     (* We wait a bit before flushing everything, so that other packets
        send just afterwards can be coalesced *)
     Lwt_unix.yield () >>= (fun () ->
-    try
-      ignore (Queue.peek conn.outputQueue);
+    if not (Queue.is_empty conn.outputQueue) then
       dump_rec conn
-    with Queue.Empty ->
-      flush_buffer conn)
+    else begin
+      flush_buffer conn >>= fun () ->
+      if not (Queue.is_empty conn.outputQueue) then
+        signalSomethingToWrite conn;
+      Lwt.return ()
+    end)
 
 (* Start the thread that write all pending messages, if this thread is
    not running at this time *)
-let signalSomethingToWrite conn =
+and signalSomethingToWrite conn =
   if not conn.canWrite && conn.pendingOutput then
     debugE
       (fun () -> Util.msg "Something to write, but no write token (%d)\n"
                           conn.tokens);
-  if conn.pendingOutput = false && conn.canWrite then begin
+  if not conn.pendingOutput && conn.canWrite then begin
     conn.pendingOutput <- true;
     Lwt.ignore_result (dump_rec conn)
-  end
+  end;
+  if conn.canWrite then restartStream ()
 
 (* Add a message to the output queue and schedule its emission *)
 (* A message is a list of fragments of messages, represented by triplets
@@ -532,11 +577,17 @@ type servercmd =
   ((Bytearray.t * int * int) list -> (Bytearray.t * int * int) list) Lwt.t
 let serverCmds = ref (Util.StringMap.empty : servercmd Util.StringMap.t)
 
+type serverstream =
+  connection -> Bytearray.t -> unit
+let serverStreams = ref (Util.StringMap.empty : serverstream Util.StringMap.t)
+
 type header =
     NormalResult
   | TransientExn of string
   | FatalExn of string
   | Request of string
+  | Stream of string
+  | StreamAbort
 
 let ((marshalHeader, unmarshalHeader) : header marshalingFunctions) =
   makeMarshalingFunctions defaultMarshalingFunctions "rsp"
@@ -561,6 +612,38 @@ let processRequest conn id cmdName buf =
          dump conn ((id, 0, intSize) :: marshalHeader (FatalExn s) [])
      | e ->
          Lwt.fail e)
+
+let streamAbortedSrc = ref 0
+let streamAbortedDst = ref false
+
+let streamError = Hashtbl.create 7
+
+let abortStream conn id =
+  if not !streamAbortedDst then begin
+    streamAbortedDst := true;
+    let request = encodeInt id :: marshalHeader StreamAbort [] in
+    fill_buffer conn request >>= fun () ->
+    flush_buffer_simpl conn
+  end else
+    Lwt.return ()
+
+let processStream conn id cmdName buf =
+  let id = decodeInt id 0 in
+  if Hashtbl.mem streamError id then
+   abortStream conn id
+  else begin
+    begin try
+      let cmd =
+        try Util.StringMap.find cmdName !serverStreams
+        with Not_found -> raise (Util.Fatal (cmdName ^ " not registered!"))
+      in
+      cmd conn buf;
+      Lwt.return ()
+    with e ->
+      Hashtbl.add streamError id e;
+      abortStream conn id
+    end
+  end
 
 (* Message ids *)
 type msgId = int
@@ -627,6 +710,15 @@ let rec receive conn =
     | FatalExn s ->
         debugV (fun() -> Util.msg "receive: Fatal remote error '%s']" s);
         Lwt.wakeup_exn (find_receiver num_id) (Util.Fatal ("Server: " ^ s));
+        receive conn
+    | Stream cmdName ->
+        receivePacket conn >>= fun buf ->
+        if conn.flowControl then conn.tokens <- conn.tokens - 1;
+        processStream conn id cmdName buf >>= fun () ->
+        receive conn
+    | StreamAbort ->
+        if conn.flowControl then conn.tokens <- conn.tokens - 1;
+        streamAbortedSrc := num_id;
         receive conn
     end)
   end))
@@ -731,6 +823,75 @@ let registerRootCmdWithConnection
     | _  -> let conn = hostConnection (hostOfRoot localRoot) in
             client0 conn args
 
+let streamReg = Lwt_util.make_region 1
+
+let streamingActivated =
+  Prefs.createBool "stream" true
+    ("!use a streaming protocol for transferring file contents")
+    "When this preference is set, Unison will use an experimental \
+     streaming protocol for transferring file contents more efficiently. \
+     The default value is \\texttt{true}."
+
+let registerStreamCmd
+    (cmdName : string)
+    marshalingFunctionsArgs
+    (serverSide : connection -> 'a -> unit)
+    =
+  let cmd =
+    registerSpecialServerCmd
+      cmdName marshalingFunctionsArgs defaultMarshalingFunctions
+      (fun conn v -> serverSide conn v; Lwt.return ())
+  in
+  let ping =
+    registerServerCmd (cmdName ^ "Ping")
+      (fun conn (id : int) ->
+         try
+           let e = Hashtbl.find streamError id in
+           Hashtbl.remove streamError id;
+           streamAbortedDst := false;
+           Lwt.fail e
+         with Not_found ->
+           Lwt.return ())
+  in
+  (* Check that this command name has not already been bound *)
+  if (Util.StringMap.mem cmdName !serverStreams) then
+    raise (Util.Fatal (cmdName ^ " already registered!"));
+  (* Create marshaling and unmarshaling functions *)
+  let ((marshalArgs,unmarshalArgs) : 'a marshalingFunctions) =
+    makeMarshalingFunctions marshalingFunctionsArgs (cmdName ^ "-str") in
+  (* Create a server function and remember it *)
+  let server conn buf =
+    let args = unmarshalArgs buf in
+    serverSide conn args
+  in
+  serverStreams := Util.StringMap.add cmdName server !serverStreams;
+  (* Create a client function and return it *)
+  let client conn id serverArgs =
+    if !streamAbortedSrc = id then raise (Util.Transient "Streaming aborted");
+    streamWaitForWrite conn >>= fun () ->
+    debugE (fun () -> Util.msg "Sending stream chunk (id: %d)\n" id);
+    if !streamAbortedSrc = id then raise (Util.Transient "Streaming aborted");
+    let request =
+      encodeInt id ::
+      marshalHeader (Stream cmdName) (marshalArgs serverArgs [])
+    in
+    fill_buffer conn request
+  in
+  fun conn sender ->
+    if not (Prefs.read streamingActivated) then
+      sender (fun v -> cmd conn v)
+    else begin
+      (* At most one active stream at a time *)
+      let id = newMsgId () in (* Message ID *)
+      Lwt.try_bind
+        (fun () ->
+           Lwt_util.run_in_region streamReg 1
+             (fun () ->
+                Lwt_unix.yield () >>= fun () ->
+                sender (fun v -> client conn id v)))
+        (fun v -> ping conn id >>= fun () -> Lwt.return v)
+	(fun e -> ping conn id >>= fun () -> Lwt.fail e)
+    end
 
 (****************************************************************************
                      BUILDING CONNECTIONS TO THE SERVER

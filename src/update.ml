@@ -1830,46 +1830,7 @@ let markEqual equals =
           Tree.map (fun n -> n) (fun (uc1,uc2) -> uc2) equals])
   end
 
-let rec replaceArchiveRec fspath path arch paranoid deleteBadTempFiles =
-  match arch with
-    ArchiveDir (desc, children) ->
-      ArchiveDir (desc,
-                  NameMap.mapi
-                    (fun nm a ->
-                       replaceArchiveRec
-                         fspath (Path.child path nm) a paranoid deleteBadTempFiles)
-                    children)
-  | ArchiveFile (desc, dig, stamp, ress) ->
-      if paranoid then begin
-        (* Paranoid check: recompute the file's digest to match it with
-           the archive's *)
-        let info = Fileinfo.get false fspath path in
-        let dig' = Os.fingerprint fspath path info in
-        let ress' = Osx.stamp info.Fileinfo.osX in
-        if dig' <> dig then begin
-          let savepath = Path.addSuffixToFinalName path "-bad" in
-          (* if deleteBadTempFiles then Os.delete fspath path; *)
-          if deleteBadTempFiles then
-            Os.rename "save temp" fspath path fspath savepath; 
-          raise (Util.Transient (Printf.sprintf
-            "The file %s was incorrectly transferred  (fingerprint mismatch in %s)%s"
-            (Path.toString path)
-            (Os.reasonForFingerprintMismatch dig dig')
-            (if deleteBadTempFiles
-               then " -- temp file saved as" ^ Path.toString savepath
-               else "")));
-        end;
-        ArchiveFile (Props.override info.Fileinfo.desc desc,
-                     dig, Fileinfo.stamp info, ress')
-      end else begin
-        ArchiveFile (desc, dig, stamp, ress)
-      end
-  | ArchiveSymlink l ->
-      ArchiveSymlink l
-  | NoArchive ->
-      arch
-
-let replaceArchiveLocal fspath pathTo location arch id paranoid deleteBadTempFiles =
+let replaceArchiveLocal fspath pathTo arch id =
   debug (fun() -> Util.msg
              "replaceArchiveLocal %s %s\n"
              (Fspath.toDebugString fspath)
@@ -1877,20 +1838,12 @@ let replaceArchiveLocal fspath pathTo location arch id paranoid deleteBadTempFil
         );
   let root = thisRootsGlobalName fspath in
   let localPath = translatePathLocal fspath pathTo in
-  let (workingDir, tempPathTo) =
-    match location with
-      None     -> (fspath, localPath)
-    | Some loc -> loc
-  in
-  let newArch =
-    replaceArchiveRec workingDir tempPathTo arch paranoid deleteBadTempFiles in
   let commit () =
     debug (fun() -> Util.msg "replaceArchiveLocal: committing\n");
-    let _ = Stasher.stashCurrentVersion fspath localPath (Some tempPathTo) in
     let archive = getArchive root in
     let archive, () =
       updatePathInArchive archive fspath Path.empty pathTo
-        (fun _ _ _ -> newArch, ())
+        (fun _ _ _ -> arch, ())
     in
     setArchiveLocal root archive
   in
@@ -1900,13 +1853,11 @@ let replaceArchiveLocal fspath pathTo location arch id paranoid deleteBadTempFil
 let replaceArchiveOnRoot =
   Remote.registerRootCmd
     "replaceArchive"
-    (fun (fspath, (pathTo, location, arch, id, paranoid, deleteBadTempFiles)) ->
-       Lwt.return (replaceArchiveLocal fspath pathTo location arch
-                                       id paranoid deleteBadTempFiles))
+    (fun (fspath, (pathTo, arch, id)) ->
+       Lwt.return (replaceArchiveLocal fspath pathTo arch id))
 
-let replaceArchive root pathTo location archive id paranoid deleteBadTempFiles =
-  replaceArchiveOnRoot root
-    (pathTo, location, archive, id, paranoid, deleteBadTempFiles)
+let replaceArchive root pathTo archive id =
+  replaceArchiveOnRoot root (pathTo, archive, id)
 
 (* Update the archive to reflect
       - the last observed state of the file on disk (ui)
