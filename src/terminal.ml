@@ -77,7 +77,7 @@ let ptyMasterOpen () =
         x.[9] <- a2.(j);
         let fdOpt =
           try Some(Unix.openfile x [Unix.O_RDWR] 0)
-          with _ -> None in
+          with Unix.Unix_error _ -> None in
         match fdOpt with None -> ()
         | Some fdMaster ->
           x.[5] <- 't';
@@ -92,7 +92,7 @@ let ptySlaveOpen = function
   | Some(fdMaster,ttySlave) ->
       let slave =
         try Some (Unix.openfile ttySlave [Unix.O_RDWR] 0o600)
-        with _ -> None in
+        with Unix.Unix_error _ -> None in
       (try Unix.close fdMaster with Unix.Unix_error(_,_,_) -> ());
       slave
 
@@ -202,7 +202,7 @@ let create_session cmd args new_stdin new_stdout new_stderr =
             Unix.tcsetattr slaveFd Unix.TCSANOW tio;
             perform_redirections new_stdin new_stdout new_stderr;
             Unix.execvp cmd args (* never returns *)
-          with _ ->
+          with Unix.Unix_error _ ->
             Printf.eprintf "Some error in create_session child\n";
             flush stderr;
             exit 127

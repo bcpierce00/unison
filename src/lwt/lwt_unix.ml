@@ -141,33 +141,39 @@ let rec run thread =
       restart_threads !event_counter now;
       List.iter
         (fun fd ->
-           match List.assoc fd !inputs with
-             `Read (buf, pos, len, res) ->
-                wrap_syscall inputs fd res
-                  (fun () -> Unix.read fd buf pos len)
-           | `Accept res ->
-                wrap_syscall inputs fd res
-                  (fun () ->
-                     let (s, _) as v = Unix.accept fd in
-                     if not windows_hack then Unix.set_nonblock s;
-                     v)
-           | `Wait res ->
-                wrap_syscall inputs fd res (fun () -> ()))
+           try
+             match List.assoc fd !inputs with
+               `Read (buf, pos, len, res) ->
+                  wrap_syscall inputs fd res
+                    (fun () -> Unix.read fd buf pos len)
+             | `Accept res ->
+                  wrap_syscall inputs fd res
+                    (fun () ->
+                       let (s, _) as v = Unix.accept fd in
+                       if not windows_hack then Unix.set_nonblock s;
+                       v)
+             | `Wait res ->
+                  wrap_syscall inputs fd res (fun () -> ())
+           with Not_found ->
+             ())
         readers;
       List.iter
         (fun fd ->
-           match List.assoc fd !outputs with
-             `Write (buf, pos, len, res) ->
-                wrap_syscall outputs fd res
-                  (fun () -> Unix.write fd buf pos len)
-           | `CheckSocket res ->
-                wrap_syscall outputs fd res
-                  (fun () ->
-                     try ignore (Unix.getpeername fd) with
-                       Unix.Unix_error (Unix.ENOTCONN, _, _) ->
-                         ignore (Unix.read fd " " 0 1))
-           | `Wait res ->
-                wrap_syscall inputs fd res (fun () -> ()))
+           try
+             match List.assoc fd !outputs with
+               `Write (buf, pos, len, res) ->
+                  wrap_syscall outputs fd res
+                    (fun () -> Unix.write fd buf pos len)
+             | `CheckSocket res ->
+                  wrap_syscall outputs fd res
+                    (fun () ->
+                       try ignore (Unix.getpeername fd) with
+                         Unix.Unix_error (Unix.ENOTCONN, _, _) ->
+                           ignore (Unix.read fd " " 0 1))
+             | `Wait res ->
+                  wrap_syscall inputs fd res (fun () -> ())
+           with Not_found ->
+             ())
         writers;
       if !child_exited then begin
         child_exited := false;
@@ -208,6 +214,8 @@ let read ch buf pos len =
 
 let write ch buf pos len =
   try
+    if windows_hack && recent_ocaml then
+      raise (Unix.Unix_error (Unix.EAGAIN, "", ""));
     Lwt.return (Unix.write ch buf pos len)
   with
     Unix.Unix_error ((Unix.EAGAIN | Unix.EWOULDBLOCK), _, _) ->
@@ -284,11 +292,7 @@ let wait () = waitpid [] (-1)
 
 let system cmd =
   match Unix.fork () with
-     0 -> begin try
-            Unix.execv "/bin/sh" [| "/bin/sh"; "-c"; cmd |]
-          with _ ->
-            exit 127
-          end
+     0 -> Unix.execv "/bin/sh" [| "/bin/sh"; "-c"; cmd |]
   | id -> Lwt.bind (waitpid [] id) (fun (pid, status) -> Lwt.return status)
 
 (****)

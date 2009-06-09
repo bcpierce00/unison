@@ -76,7 +76,7 @@ let differentSuffix (Fspath f1) (Fspath f2) =
       try
         let n' = String.rindex_from f (len-n) '/' in
         String.sub f (n'+1) (len-n'-1)
-      with _ -> f in
+      with Not_found -> f in
     let s1 = suffix f1 len1 in
     let s2 = suffix f2 len2 in
     (s1,s2)

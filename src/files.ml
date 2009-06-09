@@ -139,23 +139,28 @@ let setProp fromRoot fromPath toRoot toPath newDesc oldDesc uiFrom uiTo =
 	setPropRemote2 toRoot (toLocalPath, `Update oldDesc, newDesc))))
     
 (* ------------------------------------------------------------ *)
-    
+
 let mkdirRemote =
   Remote.registerRootCmd
     "mkdir"
     (fun (fspath,(workingDir,path)) ->
-       let createIt() = Os.createDir workingDir path Props.dirDefault in
-       if Os.exists workingDir path then
-         if (Fileinfo.get false workingDir path).Fileinfo.typ <> `DIRECTORY then begin
+       let info = Fileinfo.get false workingDir path in
+       if info.Fileinfo.typ = `DIRECTORY then begin
+         begin try
+           (* Make sure the directory is writable *)
+           Fs.chmod (Fspath.concat workingDir path)
+             (Props.perms info.Fileinfo.desc lor 0o700)
+         with Unix.Unix_error _ -> () end;
+         Lwt.return info.Fileinfo.desc
+       end else begin
+         if info.Fileinfo.typ <> `ABSENT then
            Os.delete workingDir path;
-           createIt()
-         end else ()
-       else
-         createIt();
-       Lwt.return (Fileinfo.get false workingDir path).Fileinfo.desc)
-    
+         Os.createDir workingDir path Props.dirDefault;
+         Lwt.return (Fileinfo.get false workingDir path).Fileinfo.desc
+       end)
+
 let mkdir onRoot workingDir path = mkdirRemote onRoot (workingDir,path)
-    
+
 (* ------------------------------------------------------------ *)
     
 let renameLocal (root, (localTargetPath, fspath, pathFrom, pathTo)) =
@@ -362,7 +367,7 @@ let copy
       (root2string rootTo) (Path.toString pathTo));
   (* Calculate target paths *)
   setupTargetPaths rootTo pathTo
-     >>= (fun (workingDir, realPathTo, tempPathTo, localPathTo) ->
+     >>= fun (workingDir, realPathTo, tempPathTo, localPathTo) ->
   (* Inner loop for recursive copy... *)
   let rec copyRec pFrom      (* Path to copy from *)
                   pTo        (* (Temp) path to copy to *)
@@ -449,19 +454,17 @@ let copy
      the changes yet) and return the part of the new archive
      corresponding to this path *)
   Update.updateArchive rootFrom pathFrom uiFrom id
-    >>= (fun (localPathFrom, archFrom) ->
+    >>= fun (localPathFrom, archFrom) ->
   let make_backup =
     (* Perform (asynchronously) a backup of the destination files *)
     Update.updateArchive rootTo pathTo uiTo id
   in
-  copyRec localPathFrom tempPathTo realPathTo archFrom >>= (fun () ->
-  make_backup >>= (fun _ ->
+  copyRec localPathFrom tempPathTo realPathTo archFrom >>= fun () ->
+  make_backup >>= fun _ ->
   Update.replaceArchive
     rootTo pathTo (Some (workingDir, tempPathTo))
-    archFrom id true true  >>= (fun _ ->
-  rename rootTo pathTo localPathTo workingDir tempPathTo realPathTo uiTo >>= (fun() ->
-  debug (fun() -> Util.msg "Removing temp files\n");
-  performDelete rootTo (Some workingDir, tempPathTo) )))))))
+    archFrom id true true  >>= fun _ ->
+  rename rootTo pathTo localPathTo workingDir tempPathTo realPathTo uiTo)
 
 (* ------------------------------------------------------------ *)
 

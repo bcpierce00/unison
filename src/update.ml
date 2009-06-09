@@ -626,7 +626,7 @@ let loadArchives (optimistic: bool) : bool Lwt.t =
 (* commitActions(thisRoot, id) <- action *)
 let setCommitAction (thisRoot: string) (id: int) (action: unit -> unit): unit =
   let key = (thisRoot, id) in
-  Hashtbl.add commitActions key action
+  Hashtbl.replace commitActions key action
 
 (* perform and remove the action associated with (thisRoot, id) *)
 let softCommitLocal (thisRoot: string) (id: int) =
@@ -1165,8 +1165,7 @@ let checkContentsChange
                  (Util.msg "archStamp is inode (%d)" inode;
                   Util.msg " / info.inode (%d)" info.Fileinfo.inode)
              | Fileinfo.CtimeStamp stamp ->
-                 (Util.msg "archStamp is ctime (%f)" stamp;
-                  Util.msg " / info.ctime (%f)" info.Fileinfo.ctime)
+                 (Util.msg "archStamp is ctime (%f)" stamp)
            end;
            Util.msg " / times: %f = %f... %b"
              (Props.time archDesc) (Props.time info.Fileinfo.desc)
@@ -1627,10 +1626,6 @@ let findUpdatesOnPaths pathList : Common.updateItem list Common.oneperpath =
 let findUpdates () : Common.updateItem list Common.oneperpath =
   (* TODO: We should filter the paths to remove duplicates (including prefixes)
      and ignored paths *)
-(* FIX: The following line can be deleted -- it's just for debugging *)
-debug (fun() -> Util.msg "Running bogus external program\n");
-let _ = External.runExternalProgram "dir" in
-debug (fun() -> Util.msg "Finished running bogus external program\n");
   findUpdatesOnPaths (Prefs.read Globals.paths)
 
 

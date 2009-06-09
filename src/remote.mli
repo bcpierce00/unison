@@ -94,7 +94,8 @@ val defaultMarshalingFunctions :
   ('a ->
    (Bytearray.t * int * int) list -> (Bytearray.t * int * int) list * int) *
   (Bytearray.t -> int -> 'b)
-val encodeInt : int -> Bytearray.t
+val intSize : int
+val encodeInt : int -> Bytearray.t * int * int
 val decodeInt : Bytearray.t -> int -> int
 val registerRootCmdWithConnection :
     string                          (* command name *)

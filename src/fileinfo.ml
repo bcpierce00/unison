@@ -26,8 +26,7 @@ let type2string = function
   | `DIRECTORY -> "dir"
   | `SYMLINK   -> "symlink"
 
-type t = { typ : typ; inode : int; ctime : float;
-           desc : Props.t; osX : Osx.info}
+type t = { typ : typ; inode : int; desc : Props.t; osX : Osx.info}
 
 (* Stat function that pays attention to pref for following links             *)
 let statFn fromRoot fspath path =
@@ -71,14 +70,12 @@ let get fromRoot fspath path =
            inode    = (* The inode number is truncated so that
                          it fits in a 31 bit ocaml integer *)
                       stats.Unix.LargeFile.st_ino land 0x3FFFFFFF;
-           ctime    = stats.Unix.LargeFile.st_ctime;
            desc     = Props.get stats osxInfos;
            osX      = osxInfos }
        with
          Unix.Unix_error((Unix.ENOENT | Unix.ENOTDIR),_,_) ->
          { typ = `ABSENT;
            inode    = 0;
-           ctime    = 0.0;
            desc     = Props.dummy;
            osX      = Osx.getFileInfos fspath path `ABSENT })
 
@@ -175,13 +172,11 @@ let get' f =
          let osxInfos = Osx.defaultInfos typ in
          { typ   = typ;
            inode = stats.Unix.LargeFile.st_ino land 0x3FFFFFFF;
-           ctime = stats.Unix.LargeFile.st_ctime;
            desc  = Props.get stats osxInfos;
            osX   = osxInfos }
        with
          Unix.Unix_error((Unix.ENOENT | Unix.ENOTDIR),_,_) ->
          { typ = `ABSENT;
            inode    = 0;
-           ctime    = 0.0;
            desc     = Props.dummy;
            osX      = Osx.defaultInfos `ABSENT })

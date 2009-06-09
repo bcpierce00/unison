@@ -329,7 +329,7 @@ let backupPath fspath path =
 
   let path0 = makeBackupName path 0 in
   let sourceTyp = (Fileinfo.get true fspath path).Fileinfo.typ in
-  let path0Typ = (Fileinfo.get true sFspath path0).Fileinfo.typ in
+  let path0Typ = (Fileinfo.get false sFspath path0).Fileinfo.typ in
 
   if   (   sourceTyp = `FILE && path0Typ = `FILE
        && (Fingerprint.file fspath path) = (Fingerprint.file sFspath path0))
@@ -408,13 +408,13 @@ let backup fspath path (finalDisposition : [`AndRemove | `ByCopying]) =
             debug (fun () -> Util.msg "  Finished copying; deleting %s / %s\n"
               (Fspath.toDebugString fspath) (Path.toString path));
             disposeIfNeeded() in
-          try 
-            if finalDisposition = `AndRemove then
+          if finalDisposition = `AndRemove then
+            try
               Os.rename "backup" fspath path backRoot backPath
-            else
+            with Util.Transient _ ->
+              debug (fun () -> Util.msg "Rename failed -- copying instead\n");
               byCopying()
-          with _ -> 
-            debug (fun () -> Util.msg "Rename failed -- copying instead\n");
+          else
             byCopying()
       end else begin
 	debug (fun () -> Util.msg "Path %s / %s does not need to be backed up\n"
