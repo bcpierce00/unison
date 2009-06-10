@@ -1,5 +1,12 @@
 CHANGES FROM VERSION 2.35.-17
 
+* Fixed bug resulting in slow performances when transferring a file
+  using our rsync implementation from a 64-bit architecture to a
+  32-bit architecture.
+
+-------------------------------
+CHANGES FROM VERSION 2.35.-17
+
 * Bumped minor version: many incompatible protocol changes
 
 * Message lengths are checksummed to guard against protocol corruption
