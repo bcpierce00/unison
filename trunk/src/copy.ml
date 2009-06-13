@@ -337,7 +337,7 @@ let streamTransferInstruction =
 
 let compress conn
      (biOpt, fspathFrom, pathFrom, fileKind, sizeFrom, id, file_id) =
-  Util.convertUnixErrorsToTransient "rsync sender"
+  Lwt.catch
     (fun () ->
        streamTransferInstruction conn
          (fun processTransferInstructionRemotely ->
@@ -362,6 +362,10 @@ let compress conn
                  Lwt.return ())
               (fun () ->
                  close_in_noerr infd)))
+    (fun e ->
+       (* We cannot wrap the code above with the handler below,
+          as the code is executed asynchronously. *)
+       Util.convertUnixErrorsToTransient "rsync sender" (fun () -> raise e))
 
 let compressRemotely = Remote.registerServerCmd "compress" compress
 

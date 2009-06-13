@@ -120,8 +120,6 @@ let openDouble fspath path =
         fail path "bad magic number";
       if String.sub header 4 4 <> doubleVersion then
         fail path "bad version";
-      if String.sub header 8 16 <> doubleFiller then
-        fail path "bad filler";
       let numEntries = getInt2 header 24 in
       let entries = ref [] in
       for i = 1 to numEntries do
