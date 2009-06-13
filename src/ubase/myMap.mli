@@ -113,11 +113,10 @@ module type S =
        equal data.  [cmp] is the equality predicate used to compare
        the data associated with the keys. *)
 
-    val validate: 'a t -> [`Ok | `Duplicate of key | `Invalid]
+    val validate: 'a t -> [`Ok | `Duplicate of key | `Invalid of key * key]
   end
 (** Output signature of the functor {!Map.Make}. *)
 
 module Make (Ord : OrderedType) : S with type key = Ord.t
 (** Functor building an implementation of the map structure
    given a totally ordered type. *)
-

@@ -1,5 +1,19 @@
 CHANGES FROM VERSION 2.35.-17
 
+* Fixed bug introduced during file transfer cleanup that could lead to
+  uncaught exceptions
+* Simplified function validate in myMap.ml
+* Mac OS: do not check filler contents in Apple Double files
+  (the spec says it should be all zeroes, but Mac OS sets it to
+   "Mac OS X        "...)
+* Use a hard link rather than a copy when possible for creating the
+  MainArch-files in Update.postCommitArchive
+* Remove duplicate calls to Stasher.stashCurrentVersion in update.ml
+  (as well as now unnecessary calls to Update.updateArchive in files.ml)
+
+-------------------------------
+CHANGES FROM VERSION 2.35.-17
+
 * Fixed bug resulting in slow performances when transferring a file
   using our rsync implementation from a 64-bit architecture to a
   32-bit architecture.

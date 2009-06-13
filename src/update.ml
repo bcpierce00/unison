@@ -225,11 +225,12 @@ let rec checkArchive (top: bool) (path: Path.t) (arch: archive) (h: int): int =
                            "Corrupted archive: \
                             the file %s occurs twice in path %s"
                            (Name.toString nm) (Path.toString path)));
-      | `Invalid ->
+      | `Invalid (nm, nm') ->
           raise
             (Util.Fatal (Printf.sprintf
-                           "Corrupted archive: the files are not \
+                           "Corrupted archive: the files %s and %s are not \
                             correctely ordered in directory %s"
+                           (Name.toString nm) (Name.toString nm')
                            (Path.toString path)));
       end;
       NameMap.fold
@@ -389,7 +390,8 @@ let removeArchiveLocal ((fspath: Fspath.t), (v: archiveVersion)): unit Lwt.t =
      debug (fun() ->
        Util.msg "Removing archive %s\n" (System.fspathToDebugString fspath));
      Util.convertUnixErrorsToFatal "removing archive" (fun () ->
-       if System.file_exists fspath then System.unlink fspath))
+       try System.unlink fspath
+       with Unix.Unix_error (Unix.ENOENT, _, _) -> ()))
 
 (* [removeArchiveOnRoot root v] invokes [removeArchive fspath v] on the
    server, where [fspath] is the path to root on the server *)
@@ -429,14 +431,19 @@ let postCommitArchiveLocal (fspath,())
          (System.fspathToDebugString ffrom)
          (System.fspathToDebugString fto));
      Util.convertUnixErrorsToFatal "copying archive" (fun () ->
-       let outFd =
-         System.open_out_gen
-           [Open_wronly; Open_creat; Open_trunc; Open_binary] 0o600 fto in
-       System.chmod fto 0o600; (* In case the file already existed *)
-       let inFd = System.open_in_bin ffrom in
-       Uutil.readWrite inFd outFd (fun _ -> ());
-       close_in inFd;
-       close_out outFd;
+       System.unlink fto;
+       begin try
+         System.link ffrom fto
+       with Unix.Unix_error _ ->
+         let outFd =
+           System.open_out_gen
+             [Open_wronly; Open_creat; Open_trunc; Open_binary] 0o600 fto in
+         System.chmod fto 0o600; (* In case the file already existed *)
+         let inFd = System.open_in_bin ffrom in
+         Uutil.readWrite inFd outFd (fun _ -> ());
+         close_in inFd;
+         close_out outFd
+       end;
        let arcFspath = Os.fileInUnisonDir toname in
        let info = Fileinfo.get' arcFspath in
        Hashtbl.replace archiveInfoCache thisRoot info))
@@ -1775,7 +1782,6 @@ let updateArchiveLocal fspath path ui id =
   let (localPath, subArch) = getPathInArchive archive Path.empty path in
   let newArch = updateArchiveRec ui (stripArchive path subArch) in
   let commit () =
-    let _ = Stasher.stashCurrentVersion fspath localPath None in
     let archive = getArchive root in
     let archive, () =
       updatePathInArchive archive fspath Path.empty path

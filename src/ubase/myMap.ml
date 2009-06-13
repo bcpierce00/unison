@@ -39,7 +39,7 @@ module type S =
     val fold: (key -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
     val compare: ('a -> 'a -> int) -> 'a t -> 'a t -> int
     val equal: ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
-    val validate: 'a t -> [`Ok | `Duplicate of key | `Invalid]
+    val validate: 'a t -> [`Ok | `Duplicate of key | `Invalid of key * key]
   end
 
 module Make(Ord: OrderedType) = struct
@@ -227,43 +227,26 @@ module Make(Ord: OrderedType) = struct
     let rec validate_both v m v' =
       match m with
         Empty ->
-          `Ok
+          let c = Ord.compare v v' in
+          if c < 0 then `Ok
+          else if c = 0 then `Duplicate v
+          else `Invalid (v, v')
       | Node (l, v'', _, r, _) ->
-          val_combine
-            (val_combine
-               (let c = Ord.compare v'' v' in
-                if c < 0 then `Ok
-                else if c = 0 then `Duplicate v''
-                else `Invalid)
-               (let c = Ord.compare v v'' in
-                if c < 0 then `Ok
-                else if c = 0 then `Duplicate v''
-                else `Invalid))
-            (val_combine (validate_both v l v'') (validate_both v'' r v'))
+          val_combine (validate_both v l v'') (validate_both v'' r v')
 
     let rec validate_left m v =
       match m with
         Empty ->
           `Ok
       | Node (l, v', _, r, _) ->
-          val_combine
-            (let c = Ord.compare v' v in
-             if c < 0 then `Ok
-             else if c = 0 then `Duplicate v'
-             else `Invalid)
-            (val_combine (validate_left l v') (validate_both v' r v))
+          val_combine (validate_left l v') (validate_both v' r v)
 
     let rec validate_right v m =
       match m with
         Empty ->
           `Ok
       | Node (l, v', _, r, _) ->
-          val_combine
-            (let c = Ord.compare v v' in
-             if c < 0 then `Ok
-             else if c = 0 then `Duplicate v'
-             else `Invalid)
-            (val_combine (validate_both v l v') (validate_right v' r))
+          val_combine (validate_both v l v') (validate_right v' r)
 
     let validate m =
       match m with
