@@ -3,7 +3,7 @@
 #include <caml/memory.h>
 #include <caml/fail.h>
 
-#define _WIN32_WINDOWS 0x0410
+#define WINVER 0x0500
 
 #include <wtypes.h>
 #include <winbase.h>
@@ -119,6 +119,18 @@ CAMLprim value win_rename(value path1, value wpath1, value wpath2)
       goto retry;
     }
     win32_maperr (err);
+    uerror("rename", path1);
+  }
+  CAMLreturn (Val_unit);
+}
+
+CAMLprim value win_link(value path1, value wpath1, value wpath2)
+{
+  CAMLparam3(path1, wpath1, wpath2);
+
+  if (!CreateHardLinkW((LPWSTR)String_val(wpath2), (LPWSTR)String_val(wpath1),
+                       NULL)) {
+    win32_maperr (GetLastError ());
     uerror("rename", path1);
   }
   CAMLreturn (Val_unit);

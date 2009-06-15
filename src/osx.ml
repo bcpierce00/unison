@@ -15,6 +15,9 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 *)
 
+let debug = Trace.debug "osx"
+
+(****)
 
 external isMacOSXPred : unit -> bool = "isMacOSX"
 
@@ -51,8 +54,37 @@ let init b =
 let doubleMagic = "\000\005\022\007"
 let doubleVersion = "\000\002\000\000"
 let doubleFiller = String.make 16 '\000'
+let ressource_fork_empty_tag = "This resource fork intentionally left blank   "
 let finfoLength = 32L
 let emptyFinderInfo () = String.make 32 '\000'
+let empty_ressource_fork =
+  "\000\000\001\000" ^
+  "\000\000\001\000" ^
+  "\000\000\000\000" ^
+  "\000\000\000\030" ^
+  ressource_fork_empty_tag ^
+  String.make (66+128) '\000' ^
+  "\000\000\001\000" ^
+  "\000\000\001\000" ^
+  "\000\000\000\000" ^
+  "\000\000\000\030" ^
+  "\000\000\000\000" ^
+  "\000\000\000\000" ^
+  "\000\028\000\030" ^
+  "\255\255"
+let empty_attribute_chunk () =
+  "\000\000" ^ (* pad *)
+  "ATTR" ^  (* magic *)
+  "\000\000\000\000" ^ (* debug tag *)
+  "\000\000\014\226" ^ (* total size *)
+  "\000\000\000\156" ^ (* data_start *)
+  "\000\000\000\000" ^ (* data_length *)
+  "\000\000\000\000" ^ (* reserved *)
+  "\000\000\000\000" ^
+  "\000\000\000\000" ^
+  "\000\000" ^ (* flags *)
+  "\000\000" ^ (* num_attrs *)
+   String.make 3690 '\000'
 
 let getInt2 buf ofs = (Char.code buf.[ofs]) * 256 + Char.code buf.[ofs + 1]
 
@@ -80,25 +112,28 @@ let setInt4 v =
   set 0; set 1; set 2; set 3;
   s
 
-let fail path msg =
+let fail dataFspath dataPath doubleFspath msg =
   raise (Util.Transient
-           (Format.sprintf "Malformed AppleDouble file '%s' (%s)"
-              (Fspath.toPrintString path) msg))
+           (Format.sprintf
+              "The AppleDouble Header file '%s' \
+               associated to data file %s is malformed: %s"
+              (Fspath.toPrintString doubleFspath)
+              (Fspath.toPrintString (Fspath.concat dataFspath dataPath)) msg))
 
-let readDouble path inch len =
+let readDouble dataFspath dataPath doubleFspath inch len =
   let buf = String.create len in
   begin try
     really_input inch buf 0 len
   with End_of_file ->
-    fail path "truncated"
+    fail dataFspath dataPath doubleFspath "truncated"
   end;
   buf
 
-let readDoubleFromOffset path inch offset len =
+let readDoubleFromOffset dataFspath dataPath doubleFspath inch offset len =
   LargeFile.seek_in inch offset;
-  readDouble path inch len
+  readDouble dataFspath dataPath doubleFspath inch len
 
-let writeDoubleFromOffset path outch offset str =
+let writeDoubleFromOffset outch offset str =
   LargeFile.seek_out outch offset;
   output_string outch str
 
@@ -109,27 +144,27 @@ let protect f g =
     begin try g () with Sys_error _  | Unix.Unix_error _ -> () end;
     raise e
 
-let openDouble fspath path =
-  let (fspath, path) = Fspath.findWorkingDir fspath path in
-  let path = Fspath.appleDouble (Fspath.concat fspath path) in
-  let inch = try Fs.open_in_bin path with Sys_error _ -> raise Not_found in
+let openDouble dataFspath dataPath =
+  let doubleFspath = Fspath.appleDouble (Fspath.concat dataFspath dataPath) in
+  let inch =
+    try Fs.open_in_bin doubleFspath with Sys_error _ -> raise Not_found in
   protect (fun () ->
     Util.convertUnixErrorsToTransient "opening AppleDouble file" (fun () ->
-      let header = readDouble path inch 26 in
+      let header = readDouble dataFspath dataPath doubleFspath inch 26 in
       if String.sub header 0 4 <> doubleMagic then
-        fail path "bad magic number";
+        fail dataFspath dataPath doubleFspath "bad magic number";
       if String.sub header 4 4 <> doubleVersion then
-        fail path "bad version";
+        fail dataFspath dataPath doubleFspath "bad version";
       let numEntries = getInt2 header 24 in
       let entries = ref [] in
       for i = 1 to numEntries do
-        let entry = readDouble path inch 12 in
+        let entry = readDouble dataFspath dataPath doubleFspath inch 12 in
         let id = getID entry 0 in
         let ofs = getInt4 entry 4 in
         let len = getInt4 entry 8 in
         entries := (id, (ofs, len)) :: !entries
       done;
-      (path, inch, !entries)))
+      (doubleFspath, inch, !entries)))
     (fun () -> close_in_noerr inch)
 
 (****)
@@ -195,7 +230,7 @@ let extractInfo typ info =
   in
   trim info
 
-let getFileInfos fspath path typ =
+let getFileInfos dataFspath dataPath typ =
   if not (Prefs.read rsrc) then defaultInfos typ else
   match typ with
     (`FILE | `DIRECTORY) as typ ->
@@ -203,7 +238,9 @@ let getFileInfos fspath path typ =
         try
           let (fInfo, rsrcLength) =
             getFileInfosInternal
-              (Fspath.toSysPath (Fspath.concat fspath path)) (typ = `FILE) in
+              (Fspath.toSysPath (Fspath.concat dataFspath dataPath))
+              (typ = `FILE)
+          in
           { ressInfo =
               if rsrcLength = 0L then NoRess
               else HfsRess (Uutil.Filesize.ofInt64 rsrcLength);
@@ -211,26 +248,51 @@ let getFileInfos fspath path typ =
         with Unix.Unix_error ((Unix.EOPNOTSUPP | Unix.ENOSYS), _, _) ->
           (* Not a HFS volume.  Look for an AppleDouble file *)
           try
-            let (doublePath, inch, entries) = openDouble fspath path in
+            let (workingDir, realPath) =
+              Fspath.findWorkingDir dataFspath dataPath in
+            let (doubleFspath, inch, entries) =
+              openDouble workingDir realPath in
             let (rsrcOffset, rsrcLength) =
-              try Safelist.assoc `RSRC entries with Not_found ->
+              try
+                let (offset, len) = Safelist.assoc `RSRC entries in
+                (* We need to check that the ressource fork is not a
+                   dummy one included for compatibility reasons *)
+                if len = 286L &&
+                   protect (fun () ->
+                     LargeFile.seek_in inch (Int64.add offset 16L);
+                     let len = String.length ressource_fork_empty_tag in
+                     let buf = String.create len in
+                     really_input inch buf 0 len;
+                     buf = ressource_fork_empty_tag)
+                     (fun () -> close_in_noerr inch)
+                then
+                  (0L, 0L)
+                else
+                  (offset, len)
+              with Not_found ->
                 (0L, 0L)
             in
+            debug (fun () ->
+              Util.msg
+                "AppleDouble for file %s / %s: ressource fork length: %d\n"
+                (Fspath.toDebugString dataFspath) (Path.toString dataPath)
+                (Int64.to_int rsrcLength));
             let finfo =
               protect (fun () ->
                 try
                   let (ofs, len) = Safelist.assoc `FINFO entries in
-                  if len <> finfoLength then fail doublePath "bad finder info";
-                  let res = readDoubleFromOffset doublePath inch ofs 32 in
-                  close_in inch;
-                  res
+                  if len < finfoLength then
+                    fail dataFspath dataPath doubleFspath "bad finder info";
+                  readDoubleFromOffset
+                    dataFspath dataPath doubleFspath inch ofs 32
                 with Not_found ->
                   "")
                 (fun () -> close_in_noerr inch)
             in
+            close_in inch;
             let stats =
               Util.convertUnixErrorsToTransient "stating AppleDouble file"
-                (fun () -> Fs.stat doublePath) in
+                (fun () -> Fs.stat doubleFspath) in
             { ressInfo =
                 if rsrcLength = 0L then NoRess else
                 AppleDoubleRess
@@ -249,7 +311,7 @@ let getFileInfos fspath path typ =
                    | `Unix  -> 0.
                    end,
                    Uutil.Filesize.ofInt64 rsrcLength,
-                   (doublePath, rsrcOffset));
+                   (doubleFspath, rsrcOffset));
               finfo = extractInfo typ finfo }
           with Not_found ->
             defaultInfos typ)
@@ -270,34 +332,37 @@ let insertInfo fullInfo info =
   String.blit info (offset + 2) fullInfo 24 2;
   fullInfo
 
-let setFileInfos fspath path finfo =
+let setFileInfos dataFspath dataPath finfo =
   assert (finfo <> "");
   Util.convertUnixErrorsToTransient "setting file informations" (fun () ->
     try
-      let p = Fspath.toSysPath (Fspath.concat fspath path) in
+      let p = Fspath.toSysPath (Fspath.concat dataFspath dataPath) in
       let (fullFinfo, _) = getFileInfosInternal p false in
       setFileInfosInternal p (insertInfo fullFinfo finfo)
     with Unix.Unix_error ((Unix.EOPNOTSUPP | Unix.ENOSYS), _, _) ->
       (* Not an HFS volume.  Look for an AppleDouble file *)
+      let (workingDir, realPath) = Fspath.findWorkingDir dataFspath dataPath in
       begin try
-        let (doublePath, inch, entries) = openDouble fspath path in
+        let (doubleFspath, inch, entries) = openDouble workingDir realPath in
         begin try
           let (ofs, len) = Safelist.assoc `FINFO entries in
-          if len <> finfoLength then fail doublePath "bad finder info";
+          if len < finfoLength then
+            fail dataFspath dataPath doubleFspath "bad finder info";
           let fullFinfo =
             protect
               (fun () ->
-                let res = readDoubleFromOffset doublePath inch ofs 32 in
+                let res =
+                  readDoubleFromOffset
+                    dataFspath dataPath doubleFspath inch ofs 32 in
                 close_in inch;
                 res)
               (fun () -> close_in_noerr inch)
           in
           let outch =
-            Fs.open_out_gen [Open_wronly; Open_binary] 0o600 doublePath in
+            Fs.open_out_gen [Open_wronly; Open_binary] 0o600 doubleFspath in
           protect
             (fun () ->
-               writeDoubleFromOffset doublePath outch ofs
-                 (insertInfo fullFinfo finfo);
+               writeDoubleFromOffset outch ofs (insertInfo fullFinfo finfo);
                close_out outch)
             (fun () ->
                close_out_noerr outch);
@@ -307,25 +372,39 @@ let setFileInfos fspath path finfo =
                    (Format.sprintf
                       "Unable to set the file type and creator: \n\
                        The AppleDouble file '%s' has no fileinfo entry."
-                      (Fspath.toPrintString doublePath)))
+                      (Fspath.toPrintString doubleFspath)))
         end
       with Not_found ->
         (* No AppleDouble file, create one if needed. *)
         if finfo <> "F" && finfo <> "D" then begin
-          let path = Fspath.appleDouble (Fspath.concat fspath path) in
+          let doubleFspath =
+            Fspath.appleDouble (Fspath.concat workingDir realPath) in
           let outch =
             Fs.open_out_gen
-              [Open_wronly; Open_creat; Open_excl; Open_binary] 0o600 path
+              [Open_wronly; Open_creat; Open_excl; Open_binary] 0o600
+              doubleFspath
           in
+          (* Apparently, for compatibility with various old versions
+             of Mac OS X that did not follow the AppleDouble specification,
+             we have to include a dummy ressource fork...
+             We also put an empty extended attribute section at the
+             end of the finder info section, mimicking the Mac OS X
+             kernel behavior.  *)
           protect (fun () ->
             output_string outch doubleMagic;
             output_string outch doubleVersion;
             output_string outch doubleFiller;
-            output_string outch "\000\001"; (* One entry *)
+            output_string outch "\000\002"; (* Two entries *)
             output_string outch "\000\000\000\009"; (* Finder info *)
-            output_string outch "\000\000\000\038"; (* offset *)
-            output_string outch "\000\000\000\032"; (* length *)
+            output_string outch "\000\000\000\050"; (* offset *)
+            output_string outch "\000\000\014\176"; (* length *)
+            output_string outch "\000\000\000\002"; (* Ressource fork *)
+            output_string outch "\000\000\014\226"; (* offset *)
+            output_string outch "\000\000\001\030"; (* length *)
             output_string outch (insertInfo (emptyFinderInfo ()) finfo);
+            output_string outch (empty_attribute_chunk ());
+                                                    (* extended attributes *)
+            output_string outch empty_ressource_fork;
             close_out outch)
             (fun () -> close_out_noerr outch)
         end
@@ -373,6 +452,10 @@ let ressFingerprint fspath path info =
   | HfsRess _ ->
       Fingerprint.file fspath (ressPath path)
   | AppleDoubleRess (_, _, _, len, (path, offset)) ->
+      debug (fun () ->
+        Util.msg "ressource fork fingerprint: path %s, offset %d, len %d"
+        (Fspath.toString path)
+        (Int64.to_int offset) (Uutil.Filesize.toInt len));
       Fingerprint.subfile path offset len
 
 let ressLength ress =
@@ -423,12 +506,14 @@ let openRessOut fspath path length =
         output_string outch "\000\002"; (* Two entries *)
         output_string outch "\000\000\000\009"; (* Finder info *)
         output_string outch "\000\000\000\050"; (* offset *)
-        output_string outch "\000\000\000\032"; (* length *)
+        output_string outch "\000\000\014\176"; (* length *)
         output_string outch "\000\000\000\002"; (* Resource fork *)
-        output_string outch "\000\000\000\082"; (* offset *)
+        output_string outch "\000\000\014\226"; (* offset *)
         output_string outch (setInt4 (Uutil.Filesize.toInt64 length));
                                                 (* length *)
         output_string outch (emptyFinderInfo ());
+        output_string outch (empty_attribute_chunk ());
+                                                (* extended attributes *)
         flush outch)
         (fun () -> close_out_noerr outch);
       outch)

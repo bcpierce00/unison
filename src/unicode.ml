@@ -836,7 +836,7 @@ let rec scan s i l =
   i = l ||
   let c = get s i in
   if c < 0x80 then
-    scan s (i + 1) l
+    c <> 0 && scan s (i + 1) l
   else if c < 0xE0 then begin
     (* 80 - 7FF *)
     c >= 0xc2 && i + 1 < l &&
@@ -850,7 +850,7 @@ let rec scan s i l =
     let c2 = get s (i + 2) in
     (c1 lor c2) land 0xc0 = 0x80 &&
     let v = c lsl 12 + c1 lsl 6 + c2 - 0xe2080 in
-    v >= 0x800 && (v < 0xd800 || v > 0xdfff) &&
+    v >= 0x800 && (v < 0xd800 || (v > 0xdfff && v <> 0xfffe && v <> 0xffff)) &&
     scan s (i + 3) l
   end else begin
     (* 10000 - 10FFFF *)
