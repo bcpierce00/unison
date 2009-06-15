@@ -1,5 +1,15 @@
 CHANGES FROM VERSION 2.35.-17
 
+* Properly deals with non-conformant AppleDouble files produced by Mac
+  OS X; for compatibility, produce AppleDouble files with the same
+  structure as the one produced by Mac OS X.
+* Fixed a bug that resulted in Unison missing ressource fork changes
+* Windows Unicode API: use hard links when available when commiting
+  the archive to disk
+
+-------------------------------
+CHANGES FROM VERSION 2.35.-17
+
 * Fixed bug introduced during file transfer cleanup that could lead to
   uncaught exceptions
 * Simplified function validate in myMap.ml

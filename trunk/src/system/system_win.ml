@@ -85,6 +85,7 @@ external rmdir_impl : string -> string -> unit = "win_rmdir"
 external mkdir_impl : string -> string -> unit = "win_mkdir"
 external unlink_impl : string -> string -> unit = "win_unlink"
 external rename_impl : string -> string -> string -> unit = "win_rename"
+external link_impl : string -> string -> string -> unit = "win_link"
 external chmod_impl : string -> string -> int -> unit = "win_chmod"
 external utimes_impl :
   string -> string -> float -> float -> unit = "win_utimes"
@@ -105,7 +106,7 @@ let rename f1 f2 = rename_impl f1 (epath f1) (epath f2)
 let chmod f perm = chmod_impl f (epath f) perm
 let chown _ _ _ = raise (Unix.Unix_error (Unix.ENOSYS, "chown", ""))
 let utimes f t1 t2 = utimes_impl f (epath f) t1 t2
-let link _ _ = raise (Unix.Unix_error (Unix.ENOSYS, "link", ""))
+let link f1 f2 = link_impl f1 (epath f1) (epath f2)
 let openfile f flags perm = open_impl f (epath f) flags perm
 let readlink _ = raise (Unix.Unix_error (Unix.ENOSYS, "readlink", ""))
 let symlink _ _ = raise (Unix.Unix_error (Unix.ENOSYS, "symlink", ""))

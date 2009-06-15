@@ -266,7 +266,7 @@ let safeFingerprint fspath path info optDig =
   in
   retryLoop 10 info (* Maximum retries: 10 times *)
     (match optDig with None -> None | Some (d, _) -> Some d)
-    (match optDig with None -> None | Some (_, d) -> Some d)
+    None
 
 let fullfingerprint_to_string (fp,rfp) =
   Printf.sprintf "(%s,%s)" (Fingerprint.toString fp) (Fingerprint.toString rfp)
