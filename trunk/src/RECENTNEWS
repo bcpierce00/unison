@@ -1,5 +1,24 @@
 CHANGES FROM VERSION 2.35.-17
 
+* Use a better file name for keeping a copy of an incorrectly
+  transferred file.  In particular, this is now a temp filename, and
+  Unison will not try to propagate it next time it is run.
+* In function Stasher.backup, use Fspath.findWorkingDir to find the
+  right file to rename or delete, possibly following symlinks.
+* Uigtk2: relabelled "Restart" button to "Rescan"
+* Uigtk2: performance improvements
+* Don't get the home directory from environment variable HOME under
+  Windows (except for Cygwin binaries): we don't want the behavior of
+  Unison to depends on whether it is run from a Cygwin shell (where
+  HOME is set) or in any other way (where HOME is usually not set).
+* Unicode normalization: put characters in canonical order
+* Fixed recently introduced bug in Update.postCommitArchive
+* Uicommon: always reparse the command line when loading a profile
+  (not just the first time)
+
+-------------------------------
+CHANGES FROM VERSION 2.35.-17
+
 * Properly deals with non-conformant AppleDouble files produced by Mac
   OS X; for compatibility, produce AppleDouble files with the same
   structure as the one produced by Mac OS X.

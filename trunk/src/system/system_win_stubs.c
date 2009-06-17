@@ -353,7 +353,7 @@ CAMLprim value win_findfirstw(value name)
   h = FindFirstFileW((LPCWSTR) String_val(name),&fileinfo);
   if (h == INVALID_HANDLE_VALUE) {
     DWORD err = GetLastError();
-    if (err == ERROR_NO_MORE_FILES)
+    if ((err == ERROR_NO_MORE_FILES) || (err == ERROR_FILE_NOT_FOUND))
       raise_end_of_file();
     else {
       win32_maperr(err);

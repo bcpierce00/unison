@@ -431,7 +431,9 @@ let postCommitArchiveLocal (fspath,())
          (System.fspathToDebugString ffrom)
          (System.fspathToDebugString fto));
      Util.convertUnixErrorsToFatal "copying archive" (fun () ->
-       System.unlink fto;
+       begin try
+         System.unlink fto
+       with Unix.Unix_error (Unix.ENOENT, _, _) -> () end;
        begin try
          System.link ffrom fto
        with Unix.Unix_error _ ->

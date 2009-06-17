@@ -20,6 +20,14 @@ val compose : string -> string
 val to_utf_16 : string -> string
 val from_utf_16 : string -> string
 
+(* Convert to and from a null-terminated little-endian UTF-16 string *)
+(* Invalid NTFS characters are mapped to characters in the unicode
+   private use area *)
+(* FIX: not correct at the moment: should deal properly with paths such as
+   //?/foo/   c:\foo\bar   ... *)
+val to_utf_16_filename : string -> string
+val from_utf_16_filename : string -> string
+
 (* Check wether the string contains only well-formed UTF-8 characters *)
 val check_utf_8 : string -> bool
 

@@ -15,22 +15,6 @@ Linux, Solaris:
 SERIOUS
 =======
 
-[June 2006, Schmitt and Newton]
-  Alan said: I realized yesterday that I had xferbycopying set to false, so I  
-  turned it back on. However some automatic unison synchronization  
-  failed last night, with the message:
-  > Shortcut: copying 1148507176.26619_0.top.inrialpes.fr:2,ST from  
-  > local file Maildir/.Caml/cur/1148507176.26619_0.top.inrialpes.fr:2,
-  > Uncaught exception Not_found
-  > Fatal error: Lost connection with the server  
-  Ryan Newton later sent BCP a debug trace showing this happening, but it
-  did not elucidate the problem.  For the moment, I've (BCP) just protected
-  the tryCopyMovedFile function with a call to convertUnixErrorsToTransient,
-  which should help if the Not_found is being raised from there.  (In the
-  debug trace, we see "success" printed by this function and then the
-  crash.  An obvious culprit is the call to Xferhint.insert, but my reading
-  of the code is that this should not fail.) 
-
 [June 2006, Jim]
   By the way, there is a bug if you are doing a merge and
   are propagating times, the times of the merged file end
@@ -39,44 +23,6 @@ SERIOUS
   the times...
   ==> Best to make them both equal to the time of merging
 
-[May 2006, Schmitt]
-  In presence of path that cannot be propagated, Unison may have a fatal
-    error "archives not identical". 
-  Here is the setting:
-    replica A:
-      tmp/ubug/foo
-      tmp/toto/foo
-    replica B:
-      tmp/
-  profile:
-    root = /Users/schmitta/tmp
-    root = ssh://beauty/tmp
-    # common options
-    sshargs = -C
-    servercmd = bin/unison
-    path = ubug/foo
-    path = toto
-  The run: (* message that there are no archive *)
-    local          beauty.local
-             error            ubug/foo
-    path ubug/foo is not valid because ubug is not a directory in one of the replicas
-    dir      ---->            toto  [f]
-    Proceed with propagating updates? [] y
-    Propagating updates
-    UNISON 2.19.2 started propagating changes at 17:40:47 on 30 May 2006
-    [ERROR] Skipping ubug/foo
-      path ubug/foo is not valid because ubug is not a directory in one of the replicas
-    [BGN] Copying toto
-      from /Users/schmitta/tmp
-      to //beauty.local//Users/schmitta/tmp
-    [END] Copying toto
-    UNISON 2.19.2 finished propagating changes at 17:40:47 on 30 May 2006
-    Saving synchronizer state
-    Dumping archives to ~/unison.dump on both hosts
-    Finished dumping archives
-    Fatal error: Internal error: New archives are not identical.
-    Retaining original archives.  Please run Unison again to bring them up to date.
-  ===> This one was recently [March 07] fixed by Jerome
 
 [July 2002, Findler]
   I get this message from unison:
@@ -104,24 +50,6 @@ SERIOUS
   ===> We should use some more information to make sure the archive names are
        unique enough.  But what, exactly?
 
-[Aug 2002] OSX native filesystems are case insensitive, like Windows, but
-Unison does not currently recognize this.  A workaround is to set the
-'ignorecase' preference explicitly to true.
-
-[July 2002] Unison does not understand Windows' non-Latin character set
-  encodings.  For some other character sets (e.g. European characters
-  such as u-umlaut), only the display is affected.  For character sets
-  that use multi-byte encoding schemes (e.g. Japanese), Unison can
-  actually get confused and synchronize incorrectly.  (One case where
-  this can happen is if the second byte of a two-byte character is
-  actually a slash!)
-     ==> This would be hard to fix, given OCaml's current poor support
-         for localization.  Jacques Garrigue made some suggestions (bcp
-         has them in a mail message) that might be the basis for looking
-         at this if someone is really motivated, but they look like real
-         work. 
-     ==> The right think to do is to use the Windows Unicode API
-
 [APril 2002, Jason Eisner] Recently I found an aliasing problem that may
   endanger Unison's semantics.  
   --
@@ -138,12 +66,6 @@ Unison does not currently recognize this.  A workaround is to set the
   separate information for the two names in the archive files.
   [A long example is in a mailmessage in BCP's files]
 
-[April 2002] File times are reported incorrectly under Win32 after a
-  switch to/from daylight saving time.  Here is a link, to shed some
-  light on why this might be happening:
-  http://www.codeproject.com/datetime/dstbugs.asp
-  FIXED (a difference of exactly one hour is ignored)
-
 starting Unison on two non-existent local directories leads to an
   assertion failure in path.ml
 
@@ -158,59 +80,6 @@ Sascha Kuzins  [July 2002]
   German)
   I use Unison on two XP Professional machines, German versions, with the
   simple tcp connection.
-
-Andy Starrer  [Aug 2002]
-  After connecting to server and trying to do first original sync
-   with empty client dir, the server searches a while and then shows a dialog:
-  --
-   Uncaught exception File "/usr/ports/net/unison/work/unison-2.9.1/path.ml,
-    line 0, characters 1785-1797: Assertion failed
-  -- 
-  using an awk line & char numbering print,
-   these char #s in path.ml fall on the "assert false" on line 69
-  (first line of file shows char count of 0)
-  -- 
-  66 1707 let parent path =
-  67 1725   match rtl path with
-  68 1747     RTL(_::p) -> RTL(p)
-  69 1771   | RTL [] -> assert false
-  70 1798   | LTR _ -> assert false
-  --
-  ===> Who is calling parent on an empty path???
-  
-Another report of the same (?) bug by Ruslan Ermolov:
-  Attempting to symlink ~/.unison/backup to
-  another (real) directory results in the following uncaught exception:
-  --
-  : $ ls -ld ~/.unison/*backup
-  : lrwx------  1 ru  sunbay   10 Aug  6 15:22 /home/ru/.unison/backup -> realbackup
-  : drwx------  2 ru  sunbay  512 Aug  6 15:22 /home/ru/.unison/realbackup
-  : $ unison -batch -backup='Name *' /tmp/replica1 /tmp/replica2
-  : Contacting server...
-  : Looking for changes
-  : Reconciling changes
-  : 
-  : replica1       replica2           
-  : deleted  ---->            a  
-  : replica1     : deleted
-  : replica2     : unchanged file   
-  :   modified at 15:22 on  6 Aug, 2002  size 0         rw-------
-  : Propagating updates
-  : 
-  : 
-  : UNISON started propagating changes at 15:26:04 on 06 Aug 2002
-  : [BGN] Deleting a
-  :   from /tmp/replica2
-  : Uncaught exception File "/usr/ports/net/unison/work/unison-2.9.1/path.ml", line 0, characters 1785-1797: Assertion failed
-  --
-  OTOH, Unison follows ~/.unison if it's symlinked, and I use this feature
-  when using SSH as a transport.  
-
-Jamey Leifer [July 2002]
- * [graphic ui, bug] If one of the files "has unknown type" (i.e. is a
-   system file), then pressing "f" (i.e. "Retry on unsynchronised items")
-   results in an error window and unison quiting.  To me "Retry" implies
-   less drastic behaviour.  It should just report errors as normal.
 
 BCP  [May 2002]
   The "rescan paths that failed previous sync" function misses some files.
@@ -237,34 +106,6 @@ Jason Eisner [April, 2002]
   remote myfile as usual, handling clock skew as for any other propagation.
   Other file properties should probably NOT be propagated.
 
-Unison should report a better error message when a modified file slips
-  through the fast check and is later detected during transport.
-
-I got this
-  C:\CygWin\home\kmoerder>unison a ssh://moerder/a
-  kmoerder@moerder's password:
-  C:\CygWin\home\kmoerder>Fatal error: Error in grabbing:
-  Broken pipe [read()]
-
-This should be caught and reported cleanly:
-  ~/.unison> unison ~/.unison/mail
-  Uncaught exception Invalid_argument("Os.string2name('/home/bcpierce/.unison/mail.prf' contains a '/')")
-
-dworley:
-  Unison sometimes aborts if one of the files it is synchronizing
-  changes during the run.  Most of the time, it can step over the
-  file correctly, but sometimes it bails out.  This can be a problem
-  in an environment where you cannot guarantee that the two
-  filesystems are stable during the Unison run.
-  ==> More information needed
-
-Karl Moerder:
-  The statusdepth doesn't seem to change anything (like it is being
-  ignored). I set it to 2 ("statusdepth = 2" in my .prf file) and got the
-  same display as the default (setting of 1). I didn't check if the
-  default really acted like 1, so it could be that I need to set it to a
-  higher value. I can play with it more later if you need me to.
-
 Karl Moerder:
   The synchronization of modification times does not work on directories
   (WinNT folders) or on read-only files. I found this when I tried to
@@ -272,15 +113,6 @@ Karl Moerder:
   gracefully on these. The "[click..." message is a nice touch.
   ==> [Nothing we can do for read-only files; need to patch ocaml for
        directories...]
- 
-Bob H. reported an abnormal failure during transport that apparently led to
-  an immediate, dirty termination instead of a clean failure, trapped and
-  properly displayed in the user interface:
-   - on Windows (of course)
-   - Unison was trying to propagate a file onto a file that was open
-     in another application; in Windows, this causes an error
-   - the error was apparently not caught in the usual way, but instead
-     terminated Unison, leaving a DANGER.README file
 
 "After I synchronized two directories I created a new profile, which
   defaulted to the same directories.  I synchronized again (no changes,
@@ -297,12 +129,6 @@ Bob H. reported an abnormal failure during transport that apparently led to
 
 The "Diff" window [under Windows] sometimes shows nothing.  Does this
   arise from a missing "Diff" program?  We should detect this case!
-
-"Hanrahan, Donald" <dhanrahan@logicon.com>
-  Finally, I discovered that a preceeding "/" in a "defaultpath" entry
-  (e.g., defaultpath=/myshare/myfolder
-  vs. defaultpath=myshare/myfolder) seems to cause an unhandled
-  exception (Invalid_argument <"os.string2path">) to occur.
 
 ---------------------------------------------------------------------------
 COSMETIC 

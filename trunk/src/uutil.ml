@@ -137,7 +137,7 @@ let readWriteBounded source target len notify =
       if n > 0 then begin
         let _ = output target buf 0 n in
         l := !l + n;
-        if !l > 100 * 1024 then begin
+        if !l >= 100 * 1024 then begin
           notify !l;
           l := 0
         end;

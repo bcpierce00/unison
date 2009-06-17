@@ -147,12 +147,18 @@ let getLock f =
 
 let sync_action = ref None
 
-let gtk_sync () =
-  begin match !sync_action with
-    Some f -> f ()
-  | None   -> ()
-  end;
-  while Glib.Main.iteration false do () done
+let last = ref (0.)
+
+let gtk_sync forced =
+  let t = Unix.gettimeofday () in
+  if !last = 0. || forced || t -. !last > 0.05 then begin
+    last := t;
+    begin match !sync_action with
+      Some f -> f ()
+    | None   -> ()
+    end;
+    while Glib.Main.iteration false do () done
+  end
 
 (**********************************************************************
                       CHARACTER SET TRANSCODING
@@ -810,7 +816,7 @@ let getPassword rootName msg =
   let res = t#run () in
   let pwd = passwordE#text in
   t#destroy (); releaseFocus ();
-  gtk_sync ();
+  gtk_sync true;
   begin match res with
     `DELETE_EVENT | `QUIT -> safeExit (); ""
   | `OK                   -> pwd
@@ -1211,7 +1217,7 @@ let rec createToplevelWindow () =
   let grAction = ref [] in
   let grDiff = ref [] in
   let grGo = ref [] in
-  let grRestart = ref [] in
+  let grRescan = ref [] in
   let grAdd gr w = gr := w#misc::!gr in
   let grSet gr st = Safelist.iter (fun x -> x#set_sensitive st) !gr in
 
@@ -1410,13 +1416,13 @@ let rec createToplevelWindow () =
       let v =
         float row /. float (mainWindow#rows + 1) *. (upper-.lower) +. lower
       in
-      adj#set_value (min v (upper -. adj#page_size))
+      adj#set_value (min v (upper -. adj#page_size));
     end in
 
   let makeFirstUnfinishedVisible pRiInFocus =
     let im = Array.length !theState in
     let rec find i =
-      if i >= im then () else
+      if i >= im then makeRowVisible im else
       match pRiInFocus (!theState.(i).ri), !theState.(i).whatHappened with
         true, None -> makeRowVisible i
       | _ -> find (i+1) in
@@ -1463,7 +1469,7 @@ let rec createToplevelWindow () =
     if !progressBarPulse then progressBar#pulse ();
     ignore (statusContext#push (transcode m));
     (* Force message to be displayed immediately *)
-    gtk_sync ()
+    gtk_sync false
   in
 
   let formatStatus major minor = (Util.padto 30 (major ^ "  ")) ^ minor in
@@ -1612,19 +1618,32 @@ lst_store#set ~row ~column:c_path path;
     if !current = Some i then updateDetails ();
     updateButtons () in
 
+  let fastRedisplay i =
+    let (r1, action, r2, status, path) = columnsOf i in
+    displayStatusIcon i status;
+    if status = "failed" then begin
+      mainWindow#set_cell
+        ~text:(transcodeFilename path ^
+               "       [failed: click on this line for details]") i 4
+    end
+  in
+
   let totalBytesToTransfer = ref Uutil.Filesize.zero in
   let totalBytesTransferred = ref Uutil.Filesize.zero in
 
+  let lastFrac = ref 0. in
   let displayGlobalProgress v =
-    progressBar#set_fraction (max 0. (min 1. (v /. 100.)));
+    if v = 0. || abs_float (v -. !lastFrac) > 1. then begin
+      lastFrac := v;
+      progressBar#set_fraction (max 0. (min 1. (v /. 100.)))
+    end;
 (*
     if v > 0.5 then
       progressBar#set_text (Util.percent2string v)
     else
       progressBar#set_text "";
 *)
-    (* Force message to be displayed immediately *)
-    gtk_sync () in
+  in
 
   let showGlobalProgress b =
     (* Concatenate the new message *)
@@ -1660,9 +1679,10 @@ lst_store#set ~row ~column:c_path path;
       else Util.percent2string (Uutil.Filesize.percentageOfTotalSize b len) in
     let dbg = if Trace.enabled "progress" then dbg ^ "/" else "" in
     let newstatus = dbg ^ newstatus in
-    mainWindow#set_cell ~text:newstatus i 3;
+    let oldstatus = mainWindow#cell_text i 3 in
+    if oldstatus <> newstatus then mainWindow#set_cell ~text:newstatus i 3;
     showGlobalProgress bytes;
-    gtk_sync ();
+    gtk_sync false;
     begin match item.ri.replicas with
       Different (_, _, dir, _) ->
         begin match !dir with
@@ -1727,7 +1747,7 @@ lst_store#set ~row ~column:c_path path;
     grSet grAction false;
     grSet grDiff false;
     grSet grGo false;
-    grSet grRestart false;
+    grSet grRescan false;
 
     mainWindow#clear();
     detailsWindow#buffer#set_text "";
@@ -1764,7 +1784,7 @@ lst_store#set ~row ~column:c_path path;
     displayMain();
     progressBarPulse := false; sync_action := None; displayGlobalProgress 0.;
     grSet grGo (Array.length !theState > 0);
-    grSet grRestart true;
+    grSet grRescan true;
     if Prefs.read Globals.confirmBigDeletes then begin
       if dangerousPaths <> [] then begin
         Prefs.set Globals.batch false;
@@ -1810,7 +1830,7 @@ lst_store#set ~row ~column:c_path path;
        "Permanently ignore files with this name (in any dir)");
 
   (*
-  grAdd grRestart
+  grAdd grRescan
     (ignoreMenu#add_item ~callback:
        (fun () -> getLock ignoreDialog) "Edit ignore patterns");
   *)
@@ -1853,7 +1873,7 @@ lst_store#set ~row ~column:c_path path;
       grSet grAction false;
       grSet grDiff false;
       grSet grGo false;
-      grSet grRestart false;
+      grSet grRescan false;
 
       Trace.status "Propagating changes";
       Transport.logStart ();
@@ -1901,9 +1921,13 @@ lst_store#set ~row ~column:c_path path;
                                fail e)
                     >>= (fun res ->
                       theSI.whatHappened <- Some (res, !textDetailed);
-                  redisplay i;
-                  makeFirstUnfinishedVisible pRiThisRound;
-                  gtk_sync ();
+                  fastRedisplay i;
+                  sync_action :=
+                    Some
+                      (fun () ->
+                         makeFirstUnfinishedVisible pRiThisRound;
+                         sync_action := None);
+                  gtk_sync false;
                   return ())
             | Some _ ->
                 return () (* Already processed this one (e.g. merged it) *)
@@ -1922,6 +1946,7 @@ lst_store#set ~row ~column:c_path path;
       Trace.showTimer t;
       Trace.status "Updating synchronizer state";
       let t = Trace.startTimer "Updating synchronizer state" in
+      gtk_sync true;
       Update.commitUpdates();
       Trace.showTimer t;
 
@@ -1946,7 +1971,7 @@ lst_store#set ~row ~column:c_path path;
            failures (if failures=""||skipped="" then "" else ", ") skipped);
       displayGlobalProgress 0.;
 
-      grSet grRestart true
+      grSet grRescan true
     end in
 
   (*********************************************************************
@@ -1971,9 +1996,22 @@ lst_store#set ~row ~column:c_path path;
                     getLock synchronize) ());
 
   (*********************************************************************
-    Restart button
+    Rescan button
    *********************************************************************)
-  let detectCmdName = "Restart" in
+  let loadProfile p =
+    debug (fun()-> Util.msg "Loading profile %s..." p);
+    Uicommon.initPrefs p displayWaitMessage getFirstRoot getSecondRoot
+      termInteract;
+    displayNewProfileLabel p;
+    setMainWindowColumnHeaders()
+  in
+
+  let reloadProfile () =
+    match !Prefs.profileName with
+      None -> ()
+    | Some(n) -> loadProfile n in
+
+  let detectCmdName = "Rescan" in
   let detectCmd () =
     getLock detectUpdatesAndReconcile;
     updateDetails ();
@@ -1982,11 +2020,11 @@ lst_store#set ~row ~column:c_path path;
     end
   in
 (*  actionBar#insert_space ();*)
-  grAdd grRestart
+  grAdd grRescan
     (actionBar#insert_button ~text:detectCmdName
        ~icon:((GMisc.image ~stock:`REFRESH ())#coerce)
        ~tooltip:"Check for updates"
-       ~callback: detectCmd ());
+       ~callback: (fun () -> reloadProfile(); detectCmd()) ());
 
   (*********************************************************************
     Buttons for <--, M, -->, Skip
@@ -2230,37 +2268,24 @@ lst_store#set ~row ~column:c_path path;
     Synchronization menu
    *********************************************************************)
 
-  let loadProfile p =
-    debug (fun()-> Util.msg "Loading profile %s..." p);
-    Uicommon.initPrefs p displayWaitMessage getFirstRoot getSecondRoot
-      termInteract;
-    displayNewProfileLabel p;
-    setMainWindowColumnHeaders()
-  in
-
-  let reloadProfile () =
-    match !Prefs.profileName with
-      None -> ()
-    | Some(n) -> loadProfile n in
-
   grAdd grGo
     (fileMenu#add_image_item ~key:GdkKeysyms._g
        ~image:(GMisc.image ~stock:`EXECUTE ~icon_size:`MENU () :> GObj.widget)
        ~callback:(fun () -> getLock synchronize)
        ~label:"Go" ());
-  grAdd grRestart
+  grAdd grRescan
     (fileMenu#add_image_item ~key:GdkKeysyms._r
        ~image:(GMisc.image ~stock:`REFRESH ~icon_size:`MENU () :> GObj.widget)
        ~callback:(fun () -> reloadProfile(); detectCmd())
        ~label:detectCmdName ());
-  grAdd grRestart
+  grAdd grRescan
     (fileMenu#add_item ~key:GdkKeysyms._a
        ~callback:(fun () ->
                     reloadProfile();
                     Prefs.set Globals.batch true;
                     detectCmd())
        "Detect updates and proceed (without waiting)");
-  grAdd grRestart
+  grAdd grRescan
     (fileMenu#add_item ~key:GdkKeysyms._f
        ~callback:(
          fun () ->
@@ -2282,7 +2307,7 @@ lst_store#set ~row ~column:c_path path;
            let failedindices = loop 0 [] in
            let failedpaths =
              Safelist.map (fun i -> !theState.(i).ri.path) failedindices in
-           debug (fun()-> Util.msg "Restarting with paths = %s\n"
+           debug (fun()-> Util.msg "Rescaning with paths = %s\n"
                     (String.concat ", " (Safelist.map
                                            (fun p -> "'"^(Path.toString p)^"'")
                                            failedpaths)));
@@ -2294,7 +2319,7 @@ lst_store#set ~row ~column:c_path path;
 
   ignore (fileMenu#add_separator ());
 
-  grAdd grRestart
+  grAdd grRescan
     (fileMenu#add_image_item ~key:GdkKeysyms._p
        ~callback:(fun _ ->
           match getProfile() with
@@ -2304,7 +2329,7 @@ lst_store#set ~row ~column:c_path path;
        ~label:"Select a new profile from the profile dialog..." ());
 
   let fastProf name key =
-    grAdd grRestart
+    grAdd grRescan
       (fileMenu#add_item ~key:key
             ~callback:(fun _ ->
                if System.file_exists (Prefs.profilePathname name) then begin
@@ -2370,7 +2395,7 @@ lst_store#set ~row ~column:c_path path;
   grSet grAction false;
   grSet grDiff false;
   grSet grGo false;
-  grSet grRestart false;
+  grSet grRescan false;
 
   ignore (toplevelWindow#event#connect#delete ~callback:
             (fun _ -> safeExit (); true));
@@ -2399,7 +2424,7 @@ let start _ =
     (* Ask the Remote module to call us back at regular intervals during
        long network operations. *)
     let rec tick () =
-      gtk_sync ();
+      gtk_sync true;
       Lwt_unix.sleep 0.05 >>= tick
     in
     ignore_result (tick ());
