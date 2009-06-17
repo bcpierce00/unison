@@ -428,8 +428,12 @@ let homeDir () =
     (if (osType = `Unix) || isCygwin then
        safeGetenv "HOME"
      else if osType = `Win32 then
+(*We don't want the behavior of Unison to depends on whether it is run
+  from a Cygwin shell (where HOME is set) or in any other way (where
+  HOME is usually not set)
        try System.getenv "HOME" (* Windows 9x with Cygwin HOME set *)
        with Not_found ->
+*)
        try System.getenv "USERPROFILE" (* Windows NT/2K standard *)
        with Not_found ->
        try System.getenv "UNISON" (* Use UNISON dir if it is set *)

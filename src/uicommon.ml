@@ -505,7 +505,8 @@ let initPrefs ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
   end;
 
   (* Parse the command line.  This will override settings from the profile. *)
-  if !firstTime then begin
+  (* JV (6/09): always reparse the command line *)
+  if true (*!firstTime*) then begin
     debug (fun() -> Util.msg "about to parse command line");
     Prefs.parseCmdLine usageMsg;
   end;

@@ -49,10 +49,11 @@ let extendedPath f =
   else
     f
 
-let utf16 s = Unicode.to_utf_16 s
-let utf8 s = Unicode.from_utf_16 s
-let path16 = utf16
-let epath f = utf16 (extendedPath f)
+let utf8 = Unicode.from_utf_16
+let utf16 = Unicode.to_utf_16
+let path8 = Unicode.from_utf_16(*_filename*)
+let path16 = Unicode.to_utf_16(*_filename*)
+let epath f = path16 (extendedPath f)
 
 let sys_error e =
   match e with
@@ -117,7 +118,7 @@ let chdir f =
   with e -> sys_error e
 let getcwd () =
   try
-    utf8 (getcwd_impl ())
+    path8 (getcwd_impl ())
   with e -> sys_error e
 
 let badFileRx = Rx.rx ".*[?*].*"
@@ -137,8 +138,8 @@ let readdir d =
   let d = du d in
   match d.entry_read with
     Dir_empty -> raise End_of_file
-  | Dir_read name -> d.entry_read <- Dir_toread; utf8 name
-  | Dir_toread -> utf8 (findnext d.handle)
+  | Dir_read name -> d.entry_read <- Dir_toread; path8 name
+  | Dir_toread -> path8 (findnext d.handle)
 let closedir d =
   let d = du d in
   match d.entry_read with

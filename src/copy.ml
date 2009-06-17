@@ -123,18 +123,24 @@ type transferStatus =
 
 (* Paranoid check: recompute the transferred file's digest to match it
    with the archive's *)
-let paranoidCheck fspathTo pathTo desc fp ress =
+let paranoidCheck fspathTo pathTo realPathTo desc fp ress =
   let info = Fileinfo.get false fspathTo pathTo in
   let fp' = Os.fingerprint fspathTo pathTo info in
   if fp' <> fp then begin
-    let savepath = Path.addSuffixToFinalName pathTo "-bad" in
+    let savepath =
+      Os.tempPath ~fresh:true fspathTo
+        (match Path.deconstructRev realPathTo with
+           Some (nm, _) -> Path.addSuffixToFinalName
+                             (Path.child Path.empty nm) "-bad"
+         | None         -> Path.fromString "bad")
+    in
     Os.rename "save temp" fspathTo pathTo fspathTo savepath;
     Lwt.return (Failure (Printf.sprintf
       "The file %s was incorrectly transferred  (fingerprint mismatch in %s) \
        -- temp file saved as %s"
       (Path.toString pathTo)
       (Os.reasonForFingerprintMismatch fp fp')
-      (Path.toString savepath)))
+      (Fspath.toDebugString (Fspath.concat fspathTo savepath))))
   end else
     Lwt.return (Success info)
 
@@ -205,11 +211,11 @@ let copyContents fspathFrom pathFrom fspathTo pathTo fileKind fileLength ido =
 
 let localFile
      fspathFrom pathFrom fspathTo pathTo realPathTo update desc ressLength ido =
-  let use_id f = match ido with Some id -> f id | None -> () in
+(*  let use_id f = match ido with Some id -> f id | None -> () in*)
   Util.convertUnixErrorsToTransient
     "copying locally"
     (fun () ->
-      use_id (fun id -> Uutil.showProgress id Uutil.Filesize.zero "l");
+(*      use_id (fun id -> Uutil.showProgress id Uutil.Filesize.zero "l");*)
       debug (fun () ->
         Util.msg "Copy.localFile %s / %s to %s / %s\n"
           (Fspath.toDebugString fspathFrom) (Path.toString pathFrom)
@@ -485,7 +491,7 @@ let transferRessourceForkAndSetFileinfo
     Lwt.return ()
   end >>= fun () ->
   setFileinfo fspathTo pathTo realPathTo update desc;
-  paranoidCheck fspathTo pathTo desc fp ress
+  paranoidCheck fspathTo pathTo realPathTo desc fp ress
 
 let reallyTransferFile
       connFrom fspathFrom pathFrom fspathTo pathTo realPathTo
@@ -738,7 +744,7 @@ let file rootFrom pathFrom rootTo fspathTo pathTo realPathTo
       localFile
         fspathFrom pathFrom fspathTo pathTo realPathTo
         update desc (Osx.ressLength ress) (Some id);
-      paranoidCheck fspathTo pathTo desc fp ress
+      paranoidCheck fspathTo pathTo realPathTo desc fp ress
   | _ ->
       transferFile
         rootFrom pathFrom rootTo fspathTo pathTo realPathTo

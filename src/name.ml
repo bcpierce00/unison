@@ -49,8 +49,11 @@ let badWindowsFilenameRx =
   Rx.case_insensitive
     (Rx.rx
        "(.*[\000-\031<>:\"/\\|?*].*)|\
-        ((con|prn|aux|nul|com[1-9]|lpt[1-9])(\\.[^.]*)?)|\
+        ((con|prn|aux|nul|com[1-9]|lpt[1-9])(\\..*)?)|\
         (.*[. ])")
+
+let badWindowsFilenameRelaxedRx =
+  Rx.case_insensitive (Rx.rx "(con|prn|aux|nul|com[1-9]|lpt[1-9])(\\..*)?")
 
 (* FIX: should also check for a max filename length, not sure how much *)
 let badFile s = Rx.match_string badWindowsFilenameRx s

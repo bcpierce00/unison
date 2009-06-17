@@ -366,10 +366,11 @@ let backup fspath path (finalDisposition : [`AndRemove | `ByCopying]) =
       (Fspath.toDebugString fspath)
       (Path.toString path));
   Util.convertUnixErrorsToTransient "backup" (fun () ->
+    let (workingDir,realPath) = Fspath.findWorkingDir fspath path in
     let disposeIfNeeded() =
       if finalDisposition = `AndRemove then
-        Os.delete fspath path in
-    if not (Os.exists fspath path) then 
+        Os.delete workingDir realPath in
+    if not (Os.exists workingDir realPath) then 
       debug (fun () -> Util.msg
         "File %s in %s does not exist, so no need to back up\n"  
         (Path.toString path) (Fspath.toDebugString fspath))
@@ -410,7 +411,7 @@ let backup fspath path (finalDisposition : [`AndRemove | `ByCopying]) =
             disposeIfNeeded() in
           if finalDisposition = `AndRemove then
             try
-              Os.rename "backup" fspath path backRoot backPath
+              Os.rename "backup" workingDir realPath backRoot backPath
             with Util.Transient _ ->
               debug (fun () -> Util.msg "Rename failed -- copying instead\n");
               byCopying()
