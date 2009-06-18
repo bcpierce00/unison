@@ -166,7 +166,11 @@ else
 endif
 endif
 
-MINOSXVERSION=10.5
+MINOSXVERSION=10.4
+XCODEFLAGS=-sdk macosx$(MINOSXVERSION)
+ifeq ($(OSARCH),osx)
+  CAMLFLAGS+=-ccopt -mmacosx-version-min=$(MINOSXVERSION)
+endif
 
 # NOTE: the OCAMLLIBDIR is not getting passed correctly?
 # The two cases for cltool are needed because Xcode 2.1+
@@ -174,7 +178,7 @@ MINOSXVERSION=10.5
 .PHONY: macexecutable
 macexecutable: $(NAME)-blob.o
 #	sed -e's/@@VERSION@@/$(VERSION)/' $(UIMACDIR)/Info.plist.template > $(UIMACDIR)/Info.plist
-	(cd $(UIMACDIR); xcodebuild OCAMLLIBDIR="$(OCAMLLIBDIR)" SYMROOT=build)
+	(cd $(UIMACDIR); xcodebuild $(XCODEFLAGS) OCAMLLIBDIR="$(OCAMLLIBDIR)" SYMROOT=build)
 	if [ -e $(UIMACDIR)/build/Default ]; then \
 	  gcc -mmacosx-version-min=$(MINOSXVERSION) $(UIMACDIR)/cltool.c -o $(UIMACDIR)/build/Default/Unison.app/Contents/MacOS/cltool -framework Carbon; \
 	else \
