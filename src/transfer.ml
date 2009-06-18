@@ -451,6 +451,10 @@ struct
       | [], r :: r' ->
           addList k r r'
       | ((cs, fp) :: r), _ ->
+          (* Negative 31-bits integers are sign-extended when
+             unmarshalled on a 64-bit architecture, so we
+             truncate them back to 31 bits. *)
+          let cs = cs land 0x7fffffff in
           let h = (hash cs) land (hashTableLength - 1) in
           hashTable.(h) <- (k, cs, fp)::(hashTable.(h));
           addList (k + 1) r l'
