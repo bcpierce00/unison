@@ -53,6 +53,7 @@ let doubleVersion = "\000\002\000\000"
 let doubleFiller = String.make 16 '\000'
 let finfoLength = 32L
 let emptyFinderInfo () = String.make 32 '\000'
+let ressource_fork_empty_tag = "This resource fork intentionally left blank   "
 
 let getInt2 buf ofs = (Char.code buf.[ofs]) * 256 + Char.code buf.[ofs + 1]
 
@@ -118,8 +119,6 @@ let openDouble fspath path =
         fail path "bad magic number";
       if String.sub header 4 4 <> doubleVersion then
         fail path "bad version";
-      if String.sub header 8 16 <> doubleFiller then
-        fail path "bad filler";
       let numEntries = getInt2 header 24 in
       let entries = ref [] in
       for i = 1 to numEntries do
@@ -213,21 +212,36 @@ let getFileInfos fspath path typ =
             let (fspath, path) = Fspath.findWorkingDir fspath path in
             let (doublePath, inch, entries) = openDouble fspath path in
             let (rsrcOffset, rsrcLength) =
-              try Safelist.assoc `RSRC entries with Not_found ->
-                (0L, 0L)
+              try
+                let (offset, len) = Safelist.assoc `RSRC entries in
+                (* We need to check that the ressource fork is not a
+                   dummy one included for compatibility reasons *)
+                if len = 286L &&
+                   protect (fun () ->
+                     LargeFile.seek_in inch (Int64.add offset 16L);
+                     let len = String.length ressource_fork_empty_tag in
+                     let buf = String.create len in
+                     really_input inch buf 0 len;
+                     buf = ressource_fork_empty_tag)
+                     (fun () -> close_in_noerr inch)
+                then
+                  (0L, 0L)
+                else
+                  (offset, len)
+              with Not_found ->
+                 (0L, 0L)
             in
             let finfo =
               protect (fun () ->
                 try
                   let (ofs, len) = Safelist.assoc `FINFO entries in
-                  if len <> finfoLength then fail doublePath "bad finder info";
-                  let res = readDoubleFromOffset doublePath inch ofs 32 in
-                  close_in inch;
-                  res
+                  if len < finfoLength then fail doublePath "bad finder info";
+                  readDoubleFromOffset doublePath inch ofs 32
                 with Not_found ->
                   "")
                 (fun () -> close_in_noerr inch)
             in
+            close_in inch;
             let stats = Unix.LargeFile.stat doublePath in
             { ressInfo =
                 if rsrcLength = 0L then NoRess else
@@ -283,7 +297,7 @@ let setFileInfos fspath path finfo =
         let (doublePath, inch, entries) = openDouble fspath path in
         begin try
           let (ofs, len) = Safelist.assoc `FINFO entries in
-          if len <> finfoLength then fail doublePath "bad finder info";
+          if len < finfoLength then fail doublePath "bad finder info";
           let fullFinfo =
             protect
               (fun () ->

@@ -1,3 +1,16 @@
+CHANGES FROM VERSION 2.27.140
+
+Backport to stable release:
+* Fixed bug resulting in slow performances when transferring a file
+  using our rsync implementation from a 64-bit architecture to a
+  32-bit architecture.
+* Fixed bug in Lwt_unix.run which could make it fail with a Not_found
+  exception (see [Not_found raised in tryCopyMovedFile] errors)
+* Properly deals with non-conformant AppleDouble files produced
+  by Mac OS X.
+* Fixed bug that results in Unison missing ressource fork changes
+
+-------------------------------
 CHANGES FROM VERSION 2.27.109
 
 Backport to stable release:
