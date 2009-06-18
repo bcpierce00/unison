@@ -155,7 +155,7 @@ else
 endif
 endif
 
-MINOSXVERSION=10.5
+MINOSXVERSION=10.4
 
 # NOTE: the OCAMLLIBDIR is not getting passed correctly?
 # The two cases for cltool are needed because Xcode 2.1+
