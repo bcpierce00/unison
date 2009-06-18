@@ -15,6 +15,9 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 *)
 
+let debug = Trace.debug "osx"
+
+(****)
 
 external isMacOSXPred : unit -> bool = "isMacOSX"
 
@@ -65,8 +68,37 @@ let appleDoubleFile fspath path =
 let doubleMagic = "\000\005\022\007"
 let doubleVersion = "\000\002\000\000"
 let doubleFiller = String.make 16 '\000'
+let ressource_fork_empty_tag = "This resource fork intentionally left blank   "
 let finfoLength = 32L
 let emptyFinderInfo () = String.make 32 '\000'
+let empty_ressource_fork =
+  "\000\000\001\000" ^
+  "\000\000\001\000" ^
+  "\000\000\000\000" ^
+  "\000\000\000\030" ^
+  ressource_fork_empty_tag ^
+  String.make (66+128) '\000' ^
+  "\000\000\001\000" ^
+  "\000\000\001\000" ^
+  "\000\000\000\000" ^
+  "\000\000\000\030" ^
+  "\000\000\000\000" ^
+  "\000\000\000\000" ^
+  "\000\028\000\030" ^
+  "\255\255"
+let empty_attribute_chunk () =
+  "\000\000" ^ (* pad *)
+  "ATTR" ^  (* magic *)
+  "\000\000\000\000" ^ (* debug tag *)
+  "\000\000\014\226" ^ (* total size *)
+  "\000\000\000\156" ^ (* data_start *)
+  "\000\000\000\000" ^ (* data_length *)
+  "\000\000\000\000" ^ (* reserved *)
+  "\000\000\000\000" ^
+  "\000\000\000\000" ^
+  "\000\000" ^ (* flags *)
+  "\000\000" ^ (* num_attrs *)
+   String.make 3690 '\000'
 
 let getInt2 buf ofs = (Char.code buf.[ofs]) * 256 + Char.code buf.[ofs + 1]
 
@@ -132,8 +164,6 @@ let openDouble fspath path =
         fail path "bad magic number";
       if String.sub header 4 4 <> doubleVersion then
         fail path "bad version";
-      if String.sub header 8 16 <> doubleFiller then
-        fail path "bad filler";
       let numEntries = getInt2 header 24 in
       let entries = ref [] in
       for i = 1 to numEntries do
@@ -227,21 +257,41 @@ let getFileInfos fspath path typ =
             let (fspath, path) = Fspath.findWorkingDir fspath path in
             let (doublePath, inch, entries) = openDouble fspath path in
             let (rsrcOffset, rsrcLength) =
-              try Safelist.assoc `RSRC entries with Not_found ->
+              try
+                let (offset, len) = Safelist.assoc `RSRC entries in
+                (* We need to check that the ressource fork is not a
+                   dummy one included for compatibility reasons *)
+                if len = 286L &&
+                   protect (fun () ->
+                     LargeFile.seek_in inch (Int64.add offset 16L);
+                     let len = String.length ressource_fork_empty_tag in
+                     let buf = String.create len in
+                     really_input inch buf 0 len;
+                     buf = ressource_fork_empty_tag)
+                     (fun () -> close_in_noerr inch)
+                then
+                  (0L, 0L)
+                else
+                  (offset, len)
+              with Not_found ->
                 (0L, 0L)
             in
+            debug (fun () ->
+              Util.msg
+                "AppleDouble for file %s / %s: ressource fork length: %d\n"
+                (Fspath.toString fspath) (Path.toString path)
+                (Int64.to_int rsrcLength));
             let finfo =
               protect (fun () ->
                 try
                   let (ofs, len) = Safelist.assoc `FINFO entries in
-                  if len <> finfoLength then fail doublePath "bad finder info";
-                  let res = readDoubleFromOffset doublePath inch ofs 32 in
-                  close_in inch;
-                  res
+                  if len < finfoLength then fail doublePath "bad finder info";
+                  readDoubleFromOffset doublePath inch ofs 32
                 with Not_found ->
                   "")
                 (fun () -> close_in_noerr inch)
             in
+            close_in inch;
             let stats =
               Util.convertUnixErrorsToTransient "stating AppleDouble file"
                 (fun () -> Unix.LargeFile.stat doublePath) in
@@ -299,7 +349,7 @@ let setFileInfos fspath path finfo =
         let (doublePath, inch, entries) = openDouble fspath path in
         begin try
           let (ofs, len) = Safelist.assoc `FINFO entries in
-          if len <> finfoLength then fail doublePath "bad finder info";
+          if len < finfoLength then fail doublePath "bad finder info";
           let fullFinfo =
             protect
               (fun () ->
@@ -333,15 +383,27 @@ let setFileInfos fspath path finfo =
             open_out_gen
               [Open_wronly; Open_creat; Open_excl; Open_binary] 0o600 path
           in
+          (* Apparently, for compatibility with various old versions
+             of Mac OS X that did not follow the AppleDouble specification,
+             we have to include a dummy ressource fork...
+             We also put an empty extended attribute section at the
+             end of the finder info section, mimicking the Mac OS X
+             kernel behavior.  *)
           protect (fun () ->
             output_string outch doubleMagic;
             output_string outch doubleVersion;
             output_string outch doubleFiller;
-            output_string outch "\000\001"; (* One entry *)
+            output_string outch "\000\002"; (* Two entries *)
             output_string outch "\000\000\000\009"; (* Finder info *)
-            output_string outch "\000\000\000\038"; (* offset *)
-            output_string outch "\000\000\000\032"; (* length *)
+            output_string outch "\000\000\000\050"; (* offset *)
+            output_string outch "\000\000\014\176"; (* length *)
+            output_string outch "\000\000\000\002"; (* Ressource fork *)
+            output_string outch "\000\000\014\226"; (* offset *)
+            output_string outch "\000\000\001\030"; (* length *)
             output_string outch (insertInfo (emptyFinderInfo ()) finfo);
+            output_string outch (empty_attribute_chunk ());
+                                                    (* extended attributes *)
+            output_string outch empty_ressource_fork;
             close_out outch)
             (fun () -> close_out_noerr outch)
         end
@@ -389,6 +451,9 @@ let ressFingerprint fspath path info =
   | HfsRess _ ->
       Fingerprint.file fspath (ressPath path)
   | AppleDoubleRess (_, _, _, len, (path, offset)) ->
+      debug (fun () ->
+        Util.msg "ressource fork fingerprint: path %s, offset %d, len %d"
+        path (Int64.to_int offset) (Uutil.Filesize.toInt len));
       Fingerprint.subfile path offset len
 
 let ressLength ress =
@@ -439,12 +504,14 @@ let openRessOut fspath path length =
         output_string outch "\000\002"; (* Two entries *)
         output_string outch "\000\000\000\009"; (* Finder info *)
         output_string outch "\000\000\000\050"; (* offset *)
-        output_string outch "\000\000\000\032"; (* length *)
+        output_string outch "\000\000\014\176"; (* length *)
         output_string outch "\000\000\000\002"; (* Resource fork *)
-        output_string outch "\000\000\000\082"; (* offset *)
+        output_string outch "\000\000\014\226"; (* offset *)
         output_string outch (setInt4 (Uutil.Filesize.toInt64 length));
                                                 (* length *)
         output_string outch (emptyFinderInfo ());
+        output_string outch (empty_attribute_chunk ());
+                                                (* extended attributes *)
         flush outch)
         (fun () -> close_out_noerr outch);
       outch)
