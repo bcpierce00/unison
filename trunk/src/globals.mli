@@ -22,8 +22,8 @@ val roots : unit -> Common.root * Common.root
 (* same thing, as a list                                                     *)
 val rootsList : unit -> Common.root list
 
-(* same thing, but in a standard order and ensuring that the Local root, if  *)
-(* any, comes first                                                          *)
+(* same thing, but in a standard order and ensuring that a Local root        *)
+(* comes first                                                               *)
 val rootsInCanonicalOrder : unit -> Common.root list
 
 (* Run a command on all roots                                                *)

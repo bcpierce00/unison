@@ -88,7 +88,7 @@ let checkContentsChangeLocal
        Transfer aborted."
       (Fspath.toPrintString (Fspath.concat fspathFrom pathFrom))))
 
-let checkContentsChangeOnHost =
+let checkContentsChangeOnRoot =
   Remote.registerRootCmd
     "checkContentsChange"
     (fun (fspathFrom,
@@ -99,7 +99,7 @@ let checkContentsChangeOnHost =
 
 let checkContentsChange
       root pathFrom archDesc archDig archStamp archRess paranoid =
-  checkContentsChangeOnHost
+  checkContentsChangeOnRoot
     root (pathFrom, archDesc, archDig, archStamp, archRess, paranoid)
 
 (****)
@@ -211,11 +211,9 @@ let copyContents fspathFrom pathFrom fspathTo pathTo fileKind fileLength ido =
 
 let localFile
      fspathFrom pathFrom fspathTo pathTo realPathTo update desc ressLength ido =
-(*  let use_id f = match ido with Some id -> f id | None -> () in*)
   Util.convertUnixErrorsToTransient
     "copying locally"
     (fun () ->
-(*      use_id (fun id -> Uutil.showProgress id Uutil.Filesize.zero "l");*)
       debug (fun () ->
         Util.msg "Copy.localFile %s / %s to %s / %s\n"
           (Fspath.toDebugString fspathFrom) (Path.toString pathFrom)
@@ -462,7 +460,6 @@ let transferFileContents
   Lwt.catch
     (fun () ->
        decompressor := Remote.MsgIdMap.add file_id decompr !decompressor;
-       Uutil.showProgress id Uutil.Filesize.zero "f";
        compressRemotely connFrom
          (bi, fspathFrom, pathFrom, fileKind, srcFileSize, id, file_id)
          >>= fun () ->
@@ -720,7 +717,8 @@ let transferFile
            rootFrom pathFrom rootTo fspathTo pathTo realPathTo
            update desc fp ress id useExistingTarget
   in
-  (* When streaming, we only transfer one file at a time *)
+  (* When streaming, we only transfer one file at a time, so we don't
+     need to limit the number of concurrent transfers *)
   if Prefs.read Remote.streamingActivated then
     f ()
   else

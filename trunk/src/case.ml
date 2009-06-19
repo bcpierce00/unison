@@ -133,7 +133,7 @@ Important invariant:
 let sensitiveOps = object
   method mode = Sensitive
   method modeDesc = "case sensitive"
-  method compare s s' = compare s s'
+  method compare s s' = compare (s : string) s'
   method hash s = Hashtbl.hash s
   method normalizePattern s = s
   method caseInsensitiveMatch = false
