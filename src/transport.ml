@@ -75,16 +75,6 @@ let logLwtNumbered (lwtDescription: string) (lwtShortDescription: string)
     (fun _ ->
       Printf.sprintf "[END] %s\n" lwtShortDescription)
 
-let stashCurrentVersionOnRoot: Common.root -> Path.t -> unit Lwt.t = 
-  Remote.registerRootCmd 
-    "stashCurrentVersion" 
-    (fun (fspath, path) -> 
-      Lwt.return (Stasher.stashCurrentVersion fspath (Update.translatePathLocal fspath path) None))
-    
-let stashCurrentVersions fromRoot toRoot path =
-  stashCurrentVersionOnRoot fromRoot path >>= (fun()->
-  stashCurrentVersionOnRoot toRoot path)
-
 let doAction (fromRoot,toRoot) path fromContents toContents id =
   Lwt_util.resize_region actionReg (Prefs.read maxthreads);
   (* When streaming, we can transfer many file simultaneously:
@@ -125,8 +115,7 @@ let doAction (fromRoot,toRoot) path fromContents toContents id =
               ("Updating file " ^ Path.toString path)
               (fun () ->
                 Files.copy (`Update (fileSize uiFrom uiTo))
-                  fromRoot path uiFrom toRoot path uiTo id >>= (fun()->
-                stashCurrentVersions fromRoot toRoot path))
+                  fromRoot path uiFrom toRoot path uiTo id)
         | (_, _, _, uiFrom), (_, _, _, uiTo) ->
             logLwtNumbered
               ("Copying " ^ Path.toString path ^ "\n  from " ^
@@ -135,8 +124,7 @@ let doAction (fromRoot,toRoot) path fromContents toContents id =
               ("Copying " ^ Path.toString path)
               (fun () ->
                  Files.copy `Copy
-                   fromRoot path uiFrom toRoot path uiTo id >>= (fun()->
-               stashCurrentVersions fromRoot toRoot path)))
+                   fromRoot path uiFrom toRoot path uiTo id))
       (fun e -> Trace.log
           (Printf.sprintf
              "Failed: %s\n" (Util.printException e));

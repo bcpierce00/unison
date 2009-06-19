@@ -29,27 +29,17 @@ val findUpdates :
 val markEqual :
   (Name.t, Common.updateContent * Common.updateContent) Tree.t -> unit
 
-(* Commit in memory the last archive updates, or rollback if an exception is
-   raised.  A commit function must have been specified on both sides before
-   finishing the transaction. *)
-type transaction
-val transaction : (transaction -> unit Lwt.t) -> unit Lwt.t
-
-(* Update a part of an archive *)
-val updateArchive :
-  Common.root -> Path.t -> Common.updateItem -> transaction ->
-  (Path.local * archive) Lwt.t
+(* Get and update a part of an archive (the archive remains unchanged) *)
+val updateArchive : Fspath.t -> Path.local -> Common.updateItem -> archive
 (* Replace a part of an archive by another archive *)
-val replaceArchive :
-  Common.root -> Path.t -> archive -> transaction -> Path.local Lwt.t
+val replaceArchive : Common.root -> Path.t -> archive -> unit Lwt.t
+val replaceArchiveLocal : Fspath.t -> Path.local -> archive -> unit
 (* Update only some permissions *)
 val updateProps :
-  Common.root -> Path.t -> Props.t option -> Common.updateItem ->
-  transaction -> Path.local Lwt.t
+  Fspath.t -> 'a Path.path -> Props.t option -> Common.updateItem -> unit
 
 (* Check that no updates has taken place in a given place of the filesystem *)
-val checkNoUpdates :
- Common.root -> Path.t -> Common.updateItem -> unit Lwt.t
+val checkNoUpdates : Fspath.t -> Path.local -> Common.updateItem -> unit
 
 (* Save to disk the archive updates *)
 val commitUpdates : unit -> unit

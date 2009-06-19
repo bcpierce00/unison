@@ -13,8 +13,3 @@ val check : Uutil.File.t -> unit
 
 (* Test whether the exeption is an abort exception. *)
 val testException : exn -> bool
-
-(* When one thread has failed (in a non-fatal way), this function will
-   abort the current transfer and wait for all other threads in the
-   list to terminate before continuing *)
-val mergeErrors : Uutil.File.t -> exn -> 'a Lwt.t list -> 'b Lwt.t
