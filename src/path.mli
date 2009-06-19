@@ -19,7 +19,7 @@ val isEmpty : local -> bool
 val child : 'a path -> Name.t -> 'a path
 val parent : local -> local
 val finalName : t -> Name.t option
-val deconstruct : t -> (Name.t * t) option
+val deconstruct : 'a path -> (Name.t * 'a path) option
 val deconstructRev : local -> (Name.t * local) option
 
 val fromString : string -> 'a path

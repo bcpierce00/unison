@@ -1,5 +1,10 @@
 CHANGES FROM VERSION 2.35.-17
 
+* Various small changes
+
+-------------------------------
+CHANGES FROM VERSION 2.35.-17
+
 * Use a better file name for keeping a copy of an incorrectly
   transferred file.  In particular, this is now a temp filename, and
   Unison will not try to propagate it next time it is run.

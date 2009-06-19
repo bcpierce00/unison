@@ -960,8 +960,9 @@ let initConnection in_ch out_ch =
   checkHeader
     conn (Bytearray.create 1) 0 (String.length connectionHeader) >>= (fun () ->
   Lwt.ignore_result (receive conn);
-  negociateFlowControl conn >>= (fun () ->
-  Lwt.return conn))
+  (* Flow control negociation can be done asynchronously. *)
+  Lwt.ignore_result (negociateFlowControl conn);
+  Lwt.return conn)
 
 let inetAddr host =
   let targetHostEntry = Unix.gethostbyname host in

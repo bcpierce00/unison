@@ -213,19 +213,26 @@ let archiveName fspath (v: archiveVersion): string * string =
    NoArchive appears only at root-level (indicated by [top]).  Property: Two
    archives of the same labeled-tree structure have the same hash-value.
    NB: [h] is the hash accumulator *)
-let rec checkArchive (top: bool) (path: Path.t) (arch: archive) (h: int): int =
+(* Note that we build the current path as a list of names, as this is
+   much cheaper than using values of type [Path.t] *)
+let rec checkArchive
+      (top: bool) (path: Name.t list) (arch: archive) (h: int): int =
   match arch with
     ArchiveDir (desc, children) ->
       begin match NameMap.validate children with
         `Ok ->
           ()
       | `Duplicate nm ->
+          let path =
+            List.fold_right (fun n p -> Path.child p n) path Path.empty in
           raise
             (Util.Fatal (Printf.sprintf
                            "Corrupted archive: \
                             the file %s occurs twice in path %s"
                            (Name.toString nm) (Path.toString path)));
       | `Invalid (nm, nm') ->
+          let path =
+            List.fold_right (fun n p -> Path.child p n) path Path.empty in
           raise
             (Util.Fatal (Printf.sprintf
                            "Corrupted archive: the files %s and %s are not \
@@ -236,7 +243,7 @@ let rec checkArchive (top: bool) (path: Path.t) (arch: archive) (h: int): int =
       NameMap.fold
         (fun n a h ->
            Uutil.hash2 (Name.hash n)
-                       (checkArchive false (Path.child path n) a h))
+                       (checkArchive false (n :: path) a h))
         children (Props.hash desc h)
   | ArchiveFile (desc, dig, _, ress) ->
       Uutil.hash2 (Hashtbl.hash dig) (Props.hash desc h)
@@ -1653,7 +1660,7 @@ let prepareCommitLocal (fspath, magic) =
      showArchive archive;
      Format.print_flush();
    **)
-  let archiveHash = checkArchive true Path.empty archive 0 in
+  let archiveHash = checkArchive true [] archive 0 in
   storeArchiveLocal
     (Os.fileInUnisonDir newName) root archive archiveHash magic;
   Lwt.return (Some archiveHash)
