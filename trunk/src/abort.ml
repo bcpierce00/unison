@@ -15,21 +15,45 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 *)
 
-
 let debug = Trace.debug "abort"
-
-let files = ref ([] : Uutil.File.t list)
-let abortAll = ref false
 
 (****)
 
-let reset () = files := []; abortAll := false
+let maxerrors =
+  Prefs.createInt "maxerrors" 1
+    "!maximum number of errors before a directory transfer is aborted"
+    "This preference controls after how many errors Unison aborts a \
+     directory transfer.  Setting it to a large number allows Unison \
+     to transfer most of a directory even when some files fail to be \
+     copied.  The default is 1.  If the preference is set to high, \
+     Unison may take a long time to abort in case of repeated \
+     failures (for instance, when the disk is full)."
+
+(****)
+
+let files = Hashtbl.create 17
+let abortAll = ref false
+
+let errorCountCell id =
+  try
+    Hashtbl.find files id
+  with Not_found ->
+    let c = ref 0 in
+    Hashtbl.add files id c;
+    c
+
+let errorCount id = !(errorCountCell id)
+let bumpErrorCount id = incr (errorCountCell id)
+
+(****)
+
+let reset () = Hashtbl.clear files; abortAll := false
 
 (****)
 
 let file id =
   debug (fun() -> Util.msg "Aborting line %s\n" (Uutil.File.toString id));
-  files := id :: !files
+  bumpErrorCount id
 
 let all () = abortAll := true
 
@@ -37,33 +61,10 @@ let all () = abortAll := true
 
 let check id =
   debug (fun() -> Util.msg "Checking line %s\n" (Uutil.File.toString id));
-  if !abortAll || Safelist.mem id !files then begin
+  if !abortAll || errorCount id >= Prefs.read maxerrors then begin
     debug (fun() ->
       Util.msg "Abort failure for line %s\n" (Uutil.File.toString id));
     raise (Util.Transient "Aborted")
   end
 
 let testException e = e = Util.Transient "Aborted"
-
-let (>>=) = Lwt.bind
-
-let mergeErrors id e runningThreads =
-  if not (testException e) then file id;
-  match e with
-    Util.Transient _ ->
-      let e = ref e in
-      Lwt_util.iter
-        (fun act ->
-           Lwt.catch
-              (fun () -> act >>= fun _ -> Lwt.return ())
-              (fun e' ->
-                 match e' with
-                   Util.Transient _ ->
-                     if testException !e then e := e';
-                     Lwt.return ()
-                 | _                ->
-                     Lwt.fail e'))
-        runningThreads >>= fun () ->
-      Lwt.fail !e
-  | _ ->
-      Lwt.fail e

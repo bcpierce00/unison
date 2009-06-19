@@ -470,9 +470,6 @@ let postCommitArchiveOnRoot: Common.root -> unit -> unit Lwt.t =
 (* archiveCache: map(rootGlobalName, archive) *)
 let archiveCache = Hashtbl.create 7
 
-(*  commitAction: map(rootGlobalName * transactionId, action: unit -> unit) *)
-let commitActions = Hashtbl.create 7
-
 (* Retrieve an archive from the cache *)
 let getArchive (thisRoot: string): archive =
   Hashtbl.find archiveCache thisRoot
@@ -639,79 +636,6 @@ let loadArchives (optimistic: bool) : bool Lwt.t =
      >>= (fun _ -> Lwt.return identicals)
   else Lwt.return identicals)
 
-(* commitActions(thisRoot, id) <- action *)
-let setCommitAction (thisRoot: string) (id: int) (action: unit -> unit): unit =
-  let key = (thisRoot, id) in
-  Hashtbl.replace commitActions key action
-
-(* perform and remove the action associated with (thisRoot, id) *)
-let softCommitLocal (thisRoot: string) (id: int) =
-  debug (fun () ->
-    Util.msg "Committing %d\n" id);
-  let key = (thisRoot, id) in
-  Hashtbl.find commitActions key ();
-  Hashtbl.remove commitActions key
-
-(* invoke softCommitLocal on a given root (which is possibly remote) *)
-let softCommitOnRoot: Common.root -> int -> unit Lwt.t =
-  Remote.registerRootCmd
-    "softCommit"
-    (fun (fspath, id) ->
-       Lwt.return (softCommitLocal (thisRootsGlobalName fspath) id))
-
-(* Commit the archive on all roots. The archive must have been updated on
-   all roots before that.  I.e., carry out the action corresponding to [id]
-   on all the roots *)
-let softCommit (id: int): unit Lwt.t =
-  Util.convertUnixErrorsToFatal "softCommit" (*XXX*)
-    (fun () ->
-       Globals.allRootsIter
-         (fun r -> softCommitOnRoot r id))
-
-(* [rollBackLocal thisRoot id] removes the action associated with (thisRoot,
-   id) *)
-let rollBackLocal thisRoot id =
-  let key = (thisRoot, id) in
-  try Hashtbl.remove commitActions key with Not_found -> ()
-
-let rollBackOnRoot: Common.root -> int -> unit Lwt.t =
-  Remote.registerRootCmd
-    "rollBack"
-    (fun (fspath, id) ->
-       Lwt.return (rollBackLocal (thisRootsGlobalName fspath) id))
-
-(* Rollback the archive on all roots. *)
-(* I.e., remove the action associated with [id] on all roots *)
-let rollBack id =
-  Util.convertUnixErrorsToFatal "rollBack" (*XXX*)
-    (fun () ->
-       Globals.allRootsIter
-         (fun r -> rollBackOnRoot r id))
-
-let ids = ref 0
-let new_id () = incr ids; !ids
-
-type transaction = int
-
-(* [transaction f]: transactional execution
- * [f] should take in a unique id, which it can use to `setCommitAction',
- * and returns a thread.
- * When the thread finishes execution, the committing action associated with
- * [id] is invoked.
- *)
-let transaction (f: int -> unit Lwt.t): unit Lwt.t =
-  let id = new_id () in
-  Lwt.catch
-    (fun () ->
-       f id >>= (fun () ->
-       softCommit id))
-    (fun exn ->
-       match exn with
-         Util.Transient _ ->
-           rollBack id >>= (fun () ->
-           Lwt.fail exn)
-       | _ ->
-           Lwt.fail exn)
 
 (*****************************************************************************)
 (*                               Archive locking                             *)
@@ -922,9 +846,9 @@ let doArchiveCrashRecovery () =
    returns [(ar, result)], then update archive with [ar] at [rest] and
    return [result]. *)
 let rec updatePathInArchive archive fspath
-    (here: Path.local) (rest: Path.t)
-    (action: archive -> Fspath.t -> Path.local -> archive * 'c):
-    archive * 'c
+    (here: Path.local) (rest: 'a Path.path)
+    (action: archive -> Path.local -> archive):
+    archive
     =
   debugverbose
     (fun() ->
@@ -933,7 +857,7 @@ let rec updatePathInArchive archive fspath
         (Path.toString here) (Path.toString rest));
   match Path.deconstruct rest with
     None ->
-      action archive fspath here
+      action archive here
   | Some(name, rest') ->
       let (desc, name', child, otherChildren) =
         match archive with
@@ -949,13 +873,13 @@ let rec updatePathInArchive archive fspath
       match
         updatePathInArchive child fspath (Path.child here name') rest' action
       with
-        NoArchive, res ->
-          if otherChildren = NameMap.empty && desc == Props.dummy then
-            NoArchive, res
+        NoArchive ->
+          if NameMap.is_empty otherChildren && desc == Props.dummy then
+            NoArchive
           else
-            ArchiveDir (desc, otherChildren), res
-      | child, res ->
-          ArchiveDir (desc, NameMap.add name' child otherChildren), res
+            ArchiveDir (desc, otherChildren)
+      | child ->
+          ArchiveDir (desc, NameMap.add name' child otherChildren)
 
 (*************************************************************************)
 (*                  Extract of a part of a archive                       *)
@@ -1782,33 +1706,14 @@ let rec stripArchive path arch =
   | ArchiveSymlink _ | NoArchive ->
       arch
 
-let updateArchiveLocal fspath path ui id =
+let updateArchive fspath path ui =
   debug (fun() ->
-    Util.msg "updateArchiveLocal %s %s\n"
+    Util.msg "updateArchive %s %s\n"
       (Fspath.toDebugString fspath) (Path.toString path));
   let root = thisRootsGlobalName fspath in
   let archive = getArchive root in
-  let (localPath, subArch) = getPathInArchive archive Path.empty path in
-  let newArch = updateArchiveRec ui (stripArchive path subArch) in
-  let commit () =
-    let archive = getArchive root in
-    let archive, () =
-      updatePathInArchive archive fspath Path.empty path
-        (fun _ _ _ -> newArch, ()) in
-    setArchiveLocal root archive in
-  setCommitAction root id commit;
-  debug (fun() ->
-    Util.msg "updateArchiveLocal --> %s\n" (Path.toString localPath));
-  (localPath, newArch)
-
-let updateArchiveOnRoot =
-  Remote.registerRootCmd
-    "updateArchive"
-    (fun (fspath, (path, ui, id)) ->
-       Lwt.return (updateArchiveLocal fspath path ui id))
-
-let updateArchive root path ui id =
-  updateArchiveOnRoot root (path, ui, id)
+  let (_, subArch) = getPathInArchive archive Path.empty path in
+  updateArchiveRec ui (stripArchive path subArch)
 
 (* This function is called for files changed only in identical ways.
    It only updates the archives and perhaps makes backups. *)
@@ -1820,13 +1725,12 @@ let markEqualLocal fspath paths =
        debug (fun() ->
          Util.msg "markEqualLocal %s %s\n"
            (Fspath.toDebugString fspath) (Path.toString path));
-       let arch, (subArch, localPath) =
+       let arch =
          updatePathInArchive !archive fspath Path.empty path
-           (fun archive _ localPath ->
-              let arch = updateArchiveRec (Updates (uc, New)) archive in
-              arch, (arch, localPath))
+           (fun archive localPath ->
+              Stasher.stashCurrentVersion fspath localPath None;
+              updateArchiveRec (Updates (uc, New)) archive)
        in
-       Stasher.stashCurrentVersion fspath localPath None;
        archive := arch);
   setArchiveLocal root !archive
 
@@ -1845,34 +1749,27 @@ let markEqual equals =
           Tree.map (fun n -> n) (fun (uc1,uc2) -> uc2) equals])
   end
 
-let replaceArchiveLocal fspath pathTo arch id =
+let replaceArchiveLocal fspath path newArch =
   debug (fun() -> Util.msg
              "replaceArchiveLocal %s %s\n"
              (Fspath.toDebugString fspath)
-             (Path.toString pathTo)
+             (Path.toString path)
         );
   let root = thisRootsGlobalName fspath in
-  let localPath = translatePathLocal fspath pathTo in
-  let commit () =
-    debug (fun() -> Util.msg "replaceArchiveLocal: committing\n");
-    let archive = getArchive root in
-    let archive, () =
-      updatePathInArchive archive fspath Path.empty pathTo
-        (fun _ _ _ -> arch, ())
-    in
-    setArchiveLocal root archive
-  in
-  setCommitAction root id commit;
-  localPath
+  let archive = getArchive root in
+  let archive =
+    updatePathInArchive archive fspath Path.empty path (fun _ _ -> newArch) in
+  setArchiveLocal root archive
 
 let replaceArchiveOnRoot =
   Remote.registerRootCmd
     "replaceArchive"
-    (fun (fspath, (pathTo, arch, id)) ->
-       Lwt.return (replaceArchiveLocal fspath pathTo arch id))
+    (fun (fspath, (pathTo, arch)) ->
+       replaceArchiveLocal fspath pathTo arch;
+       Lwt.return ())
 
-let replaceArchive root pathTo archive id =
-  replaceArchiveOnRoot root (pathTo, archive, id)
+let replaceArchive root pathTo archive =
+  replaceArchiveOnRoot root (pathTo, archive)
 
 (* Update the archive to reflect
       - the last observed state of the file on disk (ui)
@@ -1912,37 +1809,24 @@ let doUpdateProps arch propOpt ui =
       end
   | None -> newArch
 
-let updatePropsLocal fspath path propOpt ui id =
+let updateProps fspath path propOpt ui =
   debug (fun() ->
-    Util.msg "updatePropsLocal %s %s\n"
+    Util.msg "updateProps %s %s\n"
       (Fspath.toDebugString fspath) (Path.toString path));
   let root = thisRootsGlobalName fspath in
-  let commit () =
-    let archive = getArchive root in
-    let archive, () =
-      updatePathInArchive archive fspath Path.empty path
-        (fun arch _ _ -> doUpdateProps arch propOpt ui, ()) in
-    setArchiveLocal root archive in
-  setCommitAction root id commit;
-  let localPath = translatePathLocal fspath path in
-  localPath
-
-let updatePropsOnRoot =
-  Remote.registerRootCmd
-   "updateProps"
-     (fun (fspath, (path, propOpt, ui, id)) ->
-        Lwt.return (updatePropsLocal fspath path propOpt ui id))
-
-let updateProps root path propOpt ui id =
-   updatePropsOnRoot root (path, propOpt, ui, id)
+  let archive = getArchive root in
+  let archive =
+    updatePathInArchive archive fspath Path.empty path
+      (fun arch _ -> doUpdateProps arch propOpt ui) in
+  setArchiveLocal root archive
 
 (*************************************************************************)
 (*                  Make sure no change has happened                     *)
 (*************************************************************************)
 
-let checkNoUpdatesLocal fspath pathInArchive ui =
+let checkNoUpdates fspath pathInArchive ui =
   debug (fun() ->
-    Util.msg "checkNoUpdatesLocal %s %s\n"
+    Util.msg "checkNoUpdates %s %s\n"
       (Fspath.toDebugString fspath) (Path.toString pathInArchive));
   let archive = getArchive (thisRootsGlobalName fspath) in
   let (localPath, archive) =
@@ -1959,12 +1843,3 @@ let checkNoUpdatesLocal fspath pathInArchive ui =
                 "  (if this happens repeatedly on a file that has not been changed, \n"
               ^ "  try running once with 'fastcheck' set to false)"
               else "")))
-
-let checkNoUpdatesOnRoot =
-  Remote.registerRootCmd
-    "checkNoUpdates"
-    (fun (fspath, (pathInArchive, ui)) ->
-       Lwt.return (checkNoUpdatesLocal fspath pathInArchive ui))
-
-let checkNoUpdates root pathInArchive ui =
-  checkNoUpdatesOnRoot root (pathInArchive, ui)

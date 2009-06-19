@@ -127,22 +127,30 @@ let paranoidCheck fspathTo pathTo realPathTo desc fp ress =
   let info = Fileinfo.get false fspathTo pathTo in
   let fp' = Os.fingerprint fspathTo pathTo info in
   if fp' <> fp then begin
-    let savepath =
-      Os.tempPath ~fresh:true fspathTo
-        (match Path.deconstructRev realPathTo with
-           Some (nm, _) -> Path.addSuffixToFinalName
-                             (Path.child Path.empty nm) "-bad"
-         | None         -> Path.fromString "bad")
-    in
-    Os.rename "save temp" fspathTo pathTo fspathTo savepath;
-    Lwt.return (Failure (Printf.sprintf
-      "The file %s was incorrectly transferred  (fingerprint mismatch in %s) \
-       -- temp file saved as %s"
-      (Path.toString pathTo)
-      (Os.reasonForFingerprintMismatch fp fp')
-      (Fspath.toDebugString (Fspath.concat fspathTo savepath))))
+    Lwt.return (Failure (Os.reasonForFingerprintMismatch fp fp'))
   end else
     Lwt.return (Success info)
+
+let saveTempFileLocal (fspathTo, (pathTo, realPathTo, reason)) =
+  let savepath =
+    Os.tempPath ~fresh:true fspathTo
+      (match Path.deconstructRev realPathTo with
+         Some (nm, _) -> Path.addSuffixToFinalName
+                           (Path.child Path.empty nm) "-bad"
+       | None         -> Path.fromString "bad")
+  in
+  Os.rename "save temp" fspathTo pathTo fspathTo savepath;
+  Lwt.fail
+    (Util.Transient
+       (Printf.sprintf
+        "The file %s was incorrectly transferred  (fingerprint mismatch in %s) \
+         -- temp file saved as %s"
+        (Path.toString pathTo)
+        reason
+        (Fspath.toDebugString (Fspath.concat fspathTo savepath))))
+
+let saveTempFileOnRoot =
+  Remote.registerRootCmd "saveTempFile" saveTempFileLocal
 
 (****)
 
@@ -202,7 +210,6 @@ let copyContents fspathFrom pathFrom fspathTo pathTo fileKind fileLength ido =
             Uutil.readWriteBounded inFd outFd fileLength
               (fun l ->
                  use_id (fun id ->
-                   Abort.check id;
                    Uutil.showProgress id (Uutil.Filesize.ofInt l) "l"));
             close_in inFd;
             close_out outFd)
@@ -228,22 +235,6 @@ let localFile
 
 (****)
 
-(* BCP '06: This is a hack to work around a bug on the Windows platform
-   that causes lightweight threads on the server to hang.  I conjecture that
-   the problem has to do with the RPC mechanism, which was used here to
-   make a call *back* from the server to the client inside Trace.log so that
-   the log message would be appended to the log file on the client. *)
-(* BCP '08: Jerome thinks that printing these messages using Util.msg
-   may be causing the dreaded "assertion failure in remote.ml," which
-   happens only on windows and seems correlated with the xferbycopying
-   switch.  The conjecture is that some windows ssh servers may combine
-   the stdout and stderr streams, which would result in these messages
-   getting interleaved with Unison's RPC protocol stream. *)
-let loggit s =
-  if Prefs.read Globals.someHostIsRunningWindows
-    then () (* Util.msg "%s" *)
-    else Trace.log s
-
 let tryCopyMovedFile fspathTo pathTo realPathTo update desc fp ress id =
   if not (Prefs.read Xferhint.xferbycopying) then None else
   Util.convertUnixErrorsToTransient "tryCopyMovedFile" (fun() ->
@@ -253,10 +244,6 @@ let tryCopyMovedFile fspathTo pathTo realPathTo update desc fp ress id =
       None ->
         None
     | Some (candidateFspath, candidatePath) ->
-        loggit (Printf.sprintf
-          "Shortcut: copying %s from local file %s\n"
-          (Path.toString realPathTo)
-          (Path.toString candidatePath));
         debug (fun () ->
           Util.msg
             "tryCopyMovedFile: found match at %s,%s. Try local copying\n"
@@ -272,33 +259,36 @@ let tryCopyMovedFile fspathTo pathTo realPathTo update desc fp ress id =
             if isTransferred then begin
               debug (fun () -> Util.msg "tryCopyMoveFile: success.\n");
               Xferhint.insertEntry (fspathTo, pathTo) fp;
-              Some info
+              let msg =
+                Printf.sprintf
+                 "Shortcut: copied %s from local file %s\n"
+                 (Path.toString realPathTo)
+                 (Path.toString candidatePath)
+              in
+              Some (info, msg)
             end else begin
               debug (fun () ->
-                Util.msg "tryCopyMoveFile: candidate file modified!");
+                Util.msg "tryCopyMoveFile: candidate file %s modified!\n"
+                  (Path.toString candidatePath));
               Xferhint.deleteEntry (candidateFspath, candidatePath);
               Os.delete fspathTo pathTo;
-              loggit (Printf.sprintf
-                "Shortcut didn't work because %s was modified\n"
-                (Path.toString candidatePath));
               None
             end
           end else begin
-            loggit (Printf.sprintf
-              "Shortcut didn't work because %s disappeared!\n"
-              (Path.toString candidatePath));
+            debug (fun () ->
+              Util.msg "tryCopyMoveFile: candidate file %s disappeared!\n"
+                (Path.toString candidatePath));
             Xferhint.deleteEntry (candidateFspath, candidatePath);
             None
           end
         with
           Util.Transient s ->
             debug (fun () ->
-              Util.msg "tryCopyMovedFile: local copy didn't work [%s]" s);
+              Util.msg
+                "tryCopyMovedFile: local copy from %s didn't work [%s]"
+                (Path.toString candidatePath) s);
             Xferhint.deleteEntry (candidateFspath, candidatePath);
             Os.delete fspathTo pathTo;
-            loggit (Printf.sprintf
-              "Local copy of %s failed\n"
-              (Path.toString candidatePath));
             None)
 
 (****)
@@ -345,11 +335,13 @@ let compress conn
     (fun () ->
        streamTransferInstruction conn
          (fun processTransferInstructionRemotely ->
+            (* We abort the file transfer on error if it has not
+               already started *)
+            if fileKind = `DATA then Abort.check id;
             let infd = openFileIn fspathFrom pathFrom fileKind in
             lwt_protect
               (fun () ->
                  let showProgress count =
-                   Abort.check id;
                    Uutil.showProgress id (Uutil.Filesize.ofInt count) "r" in
                  let compr =
                    match biOpt with
@@ -397,9 +389,12 @@ let close_all_no_error infd outfd =
   end
 
 (* Lazy creation of the destination file *)
-let destinationFd fspath path kind len outfd =
+let destinationFd fspath path kind len outfd id =
   match !outfd with
     None    ->
+      (* We abort the file transfer on error if it has not
+         already started *)
+      if kind = `DATA then Abort.check id;
       let fd = openFileOut fspath path kind len in
       outfd := Some fd;
       fd
@@ -414,7 +409,6 @@ let transferFileContents
   let outfd = ref None in
   let infd = ref None in
   let showProgress count =
-    Abort.check id;
     Uutil.showProgress id (Uutil.Filesize.ofInt count) "r" in
   let (bi, decompr) =
     match update with
@@ -443,7 +437,7 @@ let transferFileContents
               fun ti ->
               let fd =
                 destinationFd
-                  fspathTo pathTo fileKind srcFileSize outfd in
+                  fspathTo pathTo fileKind srcFileSize outfd id in
               let eof =
                 Transfer.Rsync.rsyncDecompress ifd fd showProgress ti
               in
@@ -452,7 +446,8 @@ let transferFileContents
         (None,
          (* Simple generic decompressor *)
          fun ti ->
-         let fd = destinationFd fspathTo pathTo fileKind srcFileSize outfd in
+         let fd =
+           destinationFd fspathTo pathTo fileKind srcFileSize outfd id in
          let eof = Transfer.receive fd showProgress ti in
          if eof then begin close_out fd; outfd := None end)
   in
@@ -670,14 +665,14 @@ let transferFileLocal connFrom
       "%s/%s has already been transferred\n"
       (Fspath.toDebugString fspathTo) (Path.toString pathTo));
     setFileinfo fspathTo pathTo realPathTo update desc;
-    Lwt.return (`DONE (Success info))
+    Lwt.return (`DONE (Success info, None))
   end else
    match
      tryCopyMovedFile fspathTo pathTo realPathTo update desc fp ress id
    with
-     Some info ->
+     Some (info, msg) ->
        (* Transfer was performed by copying *)
-       Lwt.return (`DONE (Success info))
+       Lwt.return (`DONE (Success info, Some msg))
    | None ->
        if shouldUseExternalCopyprog update desc then
          Lwt.return (`EXTERNAL (prepareExternalTransfer fspathTo pathTo))
@@ -685,7 +680,7 @@ let transferFileLocal connFrom
          reallyTransferFile
            connFrom fspathFrom pathFrom fspathTo pathTo realPathTo
            update desc fp ress id >>= fun status ->
-         Lwt.return (`DONE status)
+         Lwt.return (`DONE (status, None))
        end
 
 let transferFileOnRoot =
@@ -702,15 +697,19 @@ let bufferSize sz =
   8 (* Read buffer *)
 
 let transferFile
-    rootFrom pathFrom rootTo fspathTo pathTo realPathTo
-    update desc fp ress id =
+      rootFrom pathFrom rootTo fspathTo pathTo realPathTo
+      update desc fp ress id =
   let f () =
     Abort.check id;
     transferFileOnRoot rootTo rootFrom
       (snd rootFrom, pathFrom, fspathTo, pathTo, realPathTo,
        update, desc, fp, ress, id) >>= fun status ->
     match status with
-      `DONE status ->
+      `DONE (status, msg) ->
+         begin match msg with
+           Some msg -> Trace.log msg
+         | None     -> ()
+         end;
          Lwt.return status
     | `EXTERNAL useExistingTarget ->
          transferFileUsingExternalCopyprog
@@ -759,4 +758,5 @@ let file rootFrom pathFrom rootTo fspathTo pathTo realPathTo
          We check this before reporting a failure *)
       checkContentsChange rootFrom pathFrom desc fp stamp ress true
         >>= fun () ->
-      Lwt.fail (Util.Transient reason)
+      (* This function always fails! *)
+      saveTempFileOnRoot rootTo (pathTo, realPathTo, reason)

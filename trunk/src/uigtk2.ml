@@ -1625,7 +1625,8 @@ lst_store#set ~row ~column:c_path path;
       mainWindow#set_cell
         ~text:(transcodeFilename path ^
                "       [failed: click on this line for details]") i 4
-    end
+    end;
+    if !current = Some i then updateDetails ();
   in
 
   let totalBytesToTransfer = ref Uutil.Filesize.zero in

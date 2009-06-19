@@ -1,3 +1,26 @@
+CHANGES FROM VERSION 2.36.-27
+
+* Bumped version number: incompatible protocol changes
+
+* Partial transfer of directories.  If an error occurs while
+  transferring a directory, the part transferred so far is copied into
+  place (and the archives are updated accordingly).
+  The "maxerrors" preference controls how many transfer error Unison
+  will accept before stopping the transfer of a directory (by default,
+  only one).  This makes it possible to transfer most of a directory
+  even if there are some errors.  Currently, only the first error is
+  reported by the GUIs.
+* Save a copy of a failed transfer only when the source file is
+  unchanged.
+* Function Trace.log is not called anymore from Copy.tryCopyMovedFile
+  as Trace.log performs a callback to the client inside a Lwt_unix.run
+  event loop, which introduces spurious synchronization between
+  threads.  Instead, the function returns a message which is sent back
+  to the client.
+* Code reorganization in files.ml/update.ml to minimize the number of
+  network roundtrips.
+
+-------------------------------
 CHANGES FROM VERSION 2.35.-17
 
 * Various small changes
