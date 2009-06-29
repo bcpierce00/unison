@@ -1,3 +1,65 @@
+\begin{changesfromversion}{2.32.44}
+\item Improvement to the code for resuming directory transfers:
+  (1) make sure file information (permissions, ...) has been properly set
+    when using a previously transferred temp file
+  (2) make sure previously transferred directories are writable
+  (other changes made in the developer version of Unison require a
+  protocol change)
+\item Got rid of the 16MiB marshalling limit by marshalling to a bigarray
+\item Ignore one hour differences for deciding whether a file may have
+  been updated.  This avoids slow update detection after daylight
+  saving time changes under Windows.  This makes it slightly more
+  likely to miss an update, but that should be safe enough.
+\item  Improved Unison icon under Windows
+\item Case sensitivity information put in the archive (in a backward
+  compatible way) and checked when the archive is loaded
+\item Uses improved emulation of "select" call provided by Ocaml 3.11
+  under Windows (the GUI does not freeze as much during synchronization)
+\item Upgraded to GPL version 3 and added copyright notice to
+  documentation files.
+\item Unison can sometimes fail to transfer a file, giving the unhelpful
+  message "Destination updated during synchronization" even though the
+  file has not been changed.  This can be caused by programs that
+  change either the file's contents *or* the file's extended
+  attributes without changing its modification time.  I'm not sure
+  what is the best fix for this -- it is not Unison's fault, but it
+  makes Unison's behavior puzzling -- but at least Unison can be more
+  helpful about suggesting a workaround (running once with 'fastcheck'
+  set to false).  The failure message has been changed to give this
+  advice.
+\item Text UI
+\begin{itemize}
+\item During update detection, display status by updating a
+  single line rather than generating a new line of output every so
+  often.  That should be less confusing.
+\item In repeat mode, don't save the archives when there is no
+  update.  Indeed, in this mode, we should minimize the amount of work
+  performed and it is unlikely that the archives have changed much.
+\end{itemize}
+\item Bugfixes
+\begin{itemize}
+\item Fixed quotation of paths and names when writing to a preference file
+\item Fixed bug resulting in slow performances when transferring a file
+  using our rsync implementation from a 64-bit architecture to a
+  32-bit architecture.
+\item Fixed bug in \verb|Lwt_unix.run| which could make it fail with a
+\verb|Not_found|   exception (see [\verb|Not_found| raised in
+   tryCopyMovedFile] errors) 
+\item Properly deals with non-conformant AppleDouble files produced
+  by Mac OS X.
+\item Fixed bug that results in Unison missing ressource fork changes
+\item  Applied a patch from Karl M to make the GTK2 version build with
+  OCaml 3.11 on Windows.
+\item  Added some extra debugging code to remote.ml to give more
+  informative error messages when people encounter the longstanding
+  "assert failed during file transfer" bug.
+\item Applied patch from Antoine Reilles for NetBSD compilation
+\item Resizing the update window vertically no longer moves the status
+label. Fix contributed by Pedro Melo. 
+\end{itemize}
+\end{changesfromversion}
+
+
 \begin{changesfromversion}{2.31}
 \item Minor fixes and improvements:
 \begin{itemize}
