@@ -4,7 +4,7 @@
 let docs =
     ("about", ("About Unison", 
      "Unison File Synchronizer\n\
-      Version 2.27.74\n\
+      Version 2.27.149\n\
       \n\
       "))
 ::
@@ -422,7 +422,7 @@ let docs =
       \n\
       \032  indicates that the file c has been modified only in the second\n\
       \032  replica, and that the default action is therefore to propagate the new\n\
-      \032  version to the first replica. To follw Unison's recommendation, press\n\
+      \032  version to the first replica. To follow Unison's recommendation, press\n\
       \032  the \"f\" at the prompt.\n\
       \n\
       \032  If both replicas are modified and their contents are different, then\n\
@@ -439,7 +439,7 @@ let docs =
       \n\
       \032  These display conventions are used by both versions of the user\n\
       \032  interface. The only difference lies in the way in which Unison's\n\
-      \032  default actions are either accepted or overriden by the user.\n\
+      \032  default actions are either accepted or overridden by the user.\n\
       \n\
       \032  Textual Interface:\n\
       \032    * The status of each modified file is displayed, in turn. When the\n\
@@ -1402,7 +1402,7 @@ let docs =
       \032         differ in (upper- and lower-case) `spelling' are treated as the\n\
       \032         same file. When the flag is set to false, Unison will treat all\n\
       \032         filenames as case sensitive. Ordinarily, when the flag is set\n\
-      \032         to t default, filenames are automatically taken to be\n\
+      \032         to default, filenames are automatically taken to be\n\
       \032         case-insensitive if either host is running Windows or OSX. In\n\
       \032         rare circumstances it is useful to set the flag manually (e.g.\n\
       \032         when running Unison on a Unix system with a FAT [Windows]\n\
@@ -2350,11 +2350,11 @@ let docs =
       \n\
       \032  To prevent accidents, Unison provides a preference called mountpoint.\n\
       \032  Including a line like\n\
-      \032            mountpoint = /mnt/foo\n\
+      \032            mountpoint = foo\n\
       \n\
       \032  in your preference file will cause Unison to check, after it finishes\n\
-      \032  detecting updates, that something actually exists at the path /mnt/foo\n\
-      \032  on both replicas; if it does not, the Unison run will abort.\n\
+      \032  detecting updates, that something actually exists at the path foo on\n\
+      \032  both replicas; if it does not, the Unison run will abort.\n\
       \n\
       Click-starting Unison\n\
       \n\
@@ -2483,8 +2483,8 @@ let docs =
       \n\
       "))
 ::
-    ("news", ("Changes in Version 2.27.74", 
-     "Changes in Version 2.27.74\n\
+    ("news", ("Changes in Version 2.27.149", 
+     "Changes in Version 2.27.149\n\
       \n\
       \032  Changes since 2.17:\n\
       \032    * Major rewrite and cleanup of the whole Mac OS X graphical user\n\
