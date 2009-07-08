@@ -25,39 +25,37 @@ let debug = Trace.debug "recon"
 
 let setDirection ri dir force =
   match ri.replicas with
-    Different(rc1,rc2,d,default) when force=`Force || default=Conflict ->
+    Different
+      ({rc1 = rc1; rc2 = rc2; direction = d; default_direction = default } as diff)
+          when force=`Force || default=Conflict ->
       if dir=`Replica1ToReplica2 then
-        d := Replica1ToReplica2
+        diff.direction <- Replica1ToReplica2
       else if dir=`Replica2ToReplica1 then
-        d := Replica2ToReplica1
-      else if dir=`Merge then
-        if Globals.shouldMerge ri.path then d := Merge else () 
-      else  (* dir = `Older or dir = `Newer *)
-        let (_,s1,p1,_) = rc1 in
-        let (_,s2,p2,_) = rc2 in
-        if s1<>`Deleted && s2<>`Deleted then begin
-          let comp = (Props.time p1) -. (Props.time p2) in
+        diff.direction <- Replica2ToReplica1
+      else if dir=`Merge then begin
+        if Globals.shouldMerge ri.path then diff.direction <- Merge
+      end else  (* dir = `Older or dir = `Newer *)
+        if rc1.status<>`Deleted && rc2.status<>`Deleted then begin
+          let comp = Props.time rc1.desc -. Props.time rc2.desc in
           let comp = if dir=`Newer then -. comp else comp in
           if comp = 0.0 then
             ()
           else if comp<0.0 then
-            d := Replica1ToReplica2
+            diff.direction <- Replica1ToReplica2
           else
-            d := Replica2ToReplica1
-        end else if s1=`Deleted && dir=`Newer then begin
-          d := Replica2ToReplica1
-        end else if s2=`Deleted && dir=`Newer then begin
-          d := Replica1ToReplica2
+            diff.direction <- Replica2ToReplica1
+        end else if rc1.status=`Deleted && dir=`Newer then begin
+          diff.direction <- Replica2ToReplica1
+        end else if rc2.status=`Deleted && dir=`Newer then begin
+          diff.direction <- Replica1ToReplica2
         end
   | _ ->
       ()
 
 let revertToDefaultDirection ri =
   match ri.replicas with
-    Different(_,_,d,default) ->
-      d := default
-  | _ ->
-      ()
+    Different diff -> diff.direction <- diff.default_direction
+  | _              -> ()
 
 (* Find out which direction we need to propagate changes if we want to       *)
 (* consider the given root to be the "truth"                                 *)
@@ -213,16 +211,34 @@ let rec checkForError ui =
       | Absent | File _ | Symlink _ ->
           ()
 
+let rec collectErrors ui rem =
+  match ui with
+    NoUpdates ->
+      rem
+  | Error err ->
+      err :: rem
+  | Updates (uc, _) ->
+      match uc with
+        Dir (_, children, _, _) ->
+          Safelist.fold_right
+            (fun (_, uiSub) rem -> collectErrors uiSub rem) children rem
+      | Absent | File _ | Symlink _ ->
+          rem
+
 (* lifting errors in individual updates to replica problems                  *)
-let propagateErrors (rplc: Common.replicas): Common.replicas =
+let propagateErrors allowPartial (rplc: Common.replicas): Common.replicas =
   match rplc with
     Problem _ ->
       rplc
-  | Different ((_, _, _, ui1), (_, _, _, ui2), _, _) ->
+  | Different diff when allowPartial ->
+      Different { diff with
+                  errors1 = collectErrors diff.rc1.ui [];
+                  errors2 = collectErrors diff.rc2.ui [] }
+  | Different diff ->
       try
-        checkForError ui1;
+        checkForError diff.rc1.ui;
         try
-          checkForError ui2;
+          checkForError diff.rc2.ui;
           rplc
         with UpdateError err ->
           Problem ("[root 2]: " ^ err)
@@ -235,29 +251,29 @@ let update2replicaContent (conflict: bool) ui ucNew oldType:
     Common.replicaContent =
   match ucNew with
     Absent ->
-      (`ABSENT, `Deleted, Props.dummy, ui)
+      {typ = `ABSENT; status = `Deleted; desc = Props.dummy; ui = ui}
   | File (desc, ContentsSame) ->
-      (`FILE, `PropsChanged, desc, ui)
+      {typ = `FILE; status = `PropsChanged; desc = desc; ui = ui}
   | File (desc, _) when oldType <> `FILE ->
-      (`FILE, `Created, desc, ui)
+      {typ = `FILE; status = `Created; desc = desc; ui = ui}
   | File (desc, ContentsUpdated _) ->
-      (`FILE, `Modified, desc, ui)
+      {typ = `FILE; status = `Modified; desc = desc; ui = ui}
   | Symlink l when oldType <> `SYMLINK ->
-      (`SYMLINK, `Created, Props.dummy, ui)
+      {typ = `SYMLINK; status = `Created; desc = Props.dummy; ui = ui}
   | Symlink l ->
-      (`SYMLINK, `Modified, Props.dummy, ui)
+      {typ = `SYMLINK; status = `Modified; desc = Props.dummy; ui = ui}
   | Dir (desc, _, _, _) when oldType <> `DIRECTORY ->
-      (`DIRECTORY, `Created, desc, ui)
+      {typ = `DIRECTORY; status = `Created; desc = desc; ui = ui}
   | Dir (desc, _, PropsUpdated, _) ->
-      (`DIRECTORY, `PropsChanged, desc, ui)
+      {typ = `DIRECTORY; status = `PropsChanged; desc = desc; ui = ui}
   | Dir (desc, _, PropsSame, _) when conflict ->
       (* Special case: the directory contents has been modified and the      *)
       (* directory is in conflict.  (We don't want to display a conflict     *)
       (* between an unchanged directory and a file, for instance: this would *)
       (* be rather puzzling to the user)                                     *)
-      (`DIRECTORY, `Modified, desc, ui)
+      {typ = `DIRECTORY; status = `Modified; desc = desc; ui = ui}
   | Dir (desc, _, PropsSame, _) ->
-      (`DIRECTORY, `Unchanged, desc, ui)
+      {typ = `DIRECTORY; status = `Unchanged; desc =desc; ui = ui}
 
 let oldType (prev: Common.prevState): Fileinfo.typ =
   match prev with
@@ -277,24 +293,28 @@ let describeUpdate ui
     Updates (ucNewStatus, prev) ->
       let typ = oldType prev in
       (update2replicaContent false ui ucNewStatus typ,
-       (typ, `Unchanged, oldDesc prev, NoUpdates))
+       {typ = typ; status = `Unchanged; desc = oldDesc prev; ui = NoUpdates})
   | _  -> assert false
 
 (* Computes the reconItems when only one side has been updated.  (We split   *)
 (* this out into a separate function to avoid duplicating all the symmetric  *)
 (* cases.)                                                                   *)
-let rec reconcileNoConflict ui whatIsUpdated
+let rec reconcileNoConflict allowPartial ui whatIsUpdated
     (result: (Name.t, Common.replicas) Tree.u)
     : (Name.t, Common.replicas) Tree.u =
   let different() =
     let rcUpdated, rcNotUpdated = describeUpdate ui in
     match whatIsUpdated with
       Rep2Updated ->
-        Different(rcNotUpdated, rcUpdated,
-                  ref Replica2ToReplica1, Replica2ToReplica1)
+        Different {rc1 = rcNotUpdated; rc2 = rcUpdated;
+                   direction = Replica2ToReplica1;
+                   default_direction = Replica2ToReplica1;
+                   errors1 = []; errors2 = []}
     | Rep1Updated ->
-        Different(rcUpdated, rcNotUpdated,
-                  ref Replica1ToReplica2, Replica1ToReplica2) in
+        Different {rc1 = rcUpdated; rc2 = rcNotUpdated;
+                   direction = Replica1ToReplica2;
+                   default_direction = Replica1ToReplica2;
+                   errors1 = []; errors2 = []} in
   match ui with
   | NoUpdates -> result
   | Error err ->
@@ -307,11 +327,11 @@ let rec reconcileNoConflict ui whatIsUpdated
       Safelist.fold_left
         (fun result (theName, uiChild) ->
            Tree.leave
-             (reconcileNoConflict
+             (reconcileNoConflict allowPartial
                 uiChild whatIsUpdated (Tree.enter result theName)))
         r children
   | Updates _ ->
-      Tree.add result (propagateErrors (different ()))
+      Tree.add result (propagateErrors allowPartial (different ()))
 
 (* [combineChildrn children1 children2] combines two name-sorted lists of    *)
 (* type [(Name.t * Common.updateItem) list] to a single list of type         *)
@@ -361,32 +381,32 @@ let add_equal (counter, archiveUpdated) equal v =
 (*           Tree.u                                                          *)
 (*   unequals: (Name.t, Common.replicas) Tree.u                              *)
 (* --                                                                        *)
-let rec reconcile path ui1 ui2 counter equals unequals =
+let rec reconcile allowPartial path ui1 ui2 counter equals unequals =
   let different uc1 uc2 oldType equals unequals =
     (equals,
      Tree.add unequals
-       (propagateErrors
-          (Different(update2replicaContent true ui1 uc1 oldType,
-                     update2replicaContent true ui2 uc2 oldType,
-                     ref Conflict,
-                     Conflict)))) in
+       (propagateErrors allowPartial
+          (Different {rc1 = update2replicaContent true ui1 uc1 oldType;
+                      rc2 = update2replicaContent true ui2 uc2 oldType;
+                      direction = Conflict; default_direction = Conflict;
+                      errors1 = []; errors2 = []}))) in
   let toBeMerged uc1 uc2 oldType equals unequals =
     (equals,
      Tree.add unequals
-       (propagateErrors
-          (Different(update2replicaContent true ui1 uc1 oldType,
-                     update2replicaContent true ui2 uc2 oldType,
-                     ref Merge,
-                     Merge)))) in
+       (propagateErrors allowPartial
+          (Different {rc1 = update2replicaContent true ui1 uc1 oldType;
+                      rc2 = update2replicaContent true ui2 uc2 oldType;
+                      direction = Merge; default_direction = Merge;
+                      errors1 = []; errors2 = []}))) in
   match (ui1, ui2) with
     (Error s, _) ->
       (equals, Tree.add unequals (Problem s))
   | (_, Error s) ->
       (equals, Tree.add unequals (Problem s))
   | (NoUpdates, _)  ->
-      (equals, reconcileNoConflict ui2 Rep2Updated unequals)
+      (equals, reconcileNoConflict allowPartial ui2 Rep2Updated unequals)
   | (_, NoUpdates) ->
-      (equals, reconcileNoConflict ui1 Rep1Updated unequals)
+      (equals, reconcileNoConflict allowPartial ui1 Rep1Updated unequals)
   | (Updates (Absent, _), Updates (Absent, _)) ->
       (add_equal counter equals (Absent, Absent), unequals)
   | (Updates (Dir (desc1, children1, propsChanged1, _) as uc1, prevState1),
@@ -407,15 +427,16 @@ let rec reconcile path ui1 ui2 counter equals unequals =
            (equals,
             Tree.add unequals
               (Different
-                 (update2replicaContent false ui1 uc1 `DIRECTORY,
-                  update2replicaContent false ui2 uc2 `DIRECTORY,
-                  ref action, action)))
+                 {rc1 = update2replicaContent false ui1 uc1 `DIRECTORY;
+                  rc2 = update2replicaContent false ui2 uc2 `DIRECTORY;
+                  direction = action; default_direction = action;
+                  errors1 = []; errors2 = []}))
        in
        (* Apply reconcile on children. *)
        Safelist.fold_left
          (fun (equals, unequals) (name,ui1,ui2) ->
            let (eq, uneq) =
-              reconcile (Path.child path name) ui1 ui2 counter
+              reconcile allowPartial (Path.child path name) ui1 ui2 counter
                (Tree.enter equals name) (Tree.enter unequals name)
            in
            (Tree.leave eq, Tree.leave uneq))
@@ -481,8 +502,9 @@ let dangerousPath u1 u2 =
 
 (* The second component of the return value is true if there is at least one *)
 (* file that is updated in the same way on both roots                        *)
-let reconcileList (pathUpdatesList: (Path.t * Common.updateItem list) list)
-    : Common.reconItem list * bool * Path.t list =
+let reconcileList allowPartial
+      (pathUpdatesList: (Path.t * Common.updateItem list) list)
+      : Common.reconItem list * bool * Path.t list =
   let counter = ref 0 in
   let archiveUpdated = ref false in
   let (equals, unequals, dangerous) =
@@ -491,7 +513,7 @@ let reconcileList (pathUpdatesList: (Path.t * Common.updateItem list) list)
         match updatesList with
           [ui1; ui2] ->
             let (equals, unequals) =
-              reconcile path ui1 ui2 (counter, archiveUpdated)
+              reconcile allowPartial path ui1 ui2 (counter, archiveUpdated)
                 (enterPath path equals) (enterPath path unequals)
             in
             (leavePath path equals, leavePath path unequals,
@@ -516,12 +538,10 @@ let reconcileList (pathUpdatesList: (Path.t * Common.updateItem list) list)
    according to the roots and paths of synchronization, builds the           
    corresponding reconItem list.  A second component indicates whether there 
    is any file updated in the same way on both sides. *)
-let reconcileAll (ONEPERPATH(updatesListList)) =
+let reconcileAll ?(allowPartial = false) (ONEPERPATH(updatesListList)) =
   Trace.status "Reconciling changes";
   debug (fun() -> Util.msg "reconcileAll\n");
   let pathList = Prefs.read Globals.paths in
   let pathUpdatesList =
     sortPaths (Safelist.combine pathList updatesListList) in
-  reconcileList pathUpdatesList
-
-let reconcileTwo p ui ui' = reconcileList [(p, [ui; ui'])]
+  reconcileList allowPartial pathUpdatesList

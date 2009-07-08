@@ -661,11 +661,13 @@ let transferFileLocal connFrom
     (* File is already fully transferred (from some interrupted
        previous transfer). *)
     (* Make sure permissions are right. *)
-    Trace.log (Printf.sprintf
-      "%s/%s has already been transferred\n"
-      (Fspath.toDebugString fspathTo) (Path.toString pathTo));
+    let msg =
+      Printf.sprintf
+        "%s/%s has already been transferred\n"
+        (Fspath.toDebugString fspathTo) (Path.toString pathTo)
+    in
     setFileinfo fspathTo pathTo realPathTo update desc;
-    Lwt.return (`DONE (Success info, None))
+    Lwt.return (`DONE (Success info, Some msg))
   end else
    match
      tryCopyMovedFile fspathTo pathTo realPathTo update desc fp ress id

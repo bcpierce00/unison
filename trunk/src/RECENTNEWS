@@ -1,5 +1,17 @@
 CHANGES FROM VERSION 2.36.-27
 
+* Allow partial transfer of a directory when there was an error deep
+  inside this directory during update detection.  At the moment, this
+  is only activated with the text and GTK UIs, which have been
+  modified so that they show that the transfer is going to be partial
+  and so that they can display all errors.
+* Changed types Common.replicaContent and Common.replicas to use
+  records rather than tuples, as this is more readable and easier to
+  extend.
+
+-------------------------------
+CHANGES FROM VERSION 2.36.-27
+
 * Bumped version number: incompatible protocol changes
 
 * Partial transfer of directories.  If an error occurs while

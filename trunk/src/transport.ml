@@ -88,7 +88,7 @@ let doAction (fromRoot,toRoot) path fromContents toContents id =
       Trace.statusDetail (Path.toString path);
     Remote.Thread.unwindProtect (fun () ->
       match fromContents, toContents with
-        (`ABSENT, _, _, _), (_, _, _, uiTo) ->
+          {typ = `ABSENT}, {ui = uiTo} ->
              logLwtNumbered
                ("Deleting " ^ Path.toString path ^
                 "\n  from "^ root2string toRoot)
@@ -97,8 +97,8 @@ let doAction (fromRoot,toRoot) path fromContents toContents id =
         (* No need to transfer the whole directory/file if there were only
            property modifications on one side.  (And actually, it would be
            incorrect to transfer a directory in this case.) *)
-        | (_, (`Unchanged | `PropsChanged), fromProps, uiFrom),
-          (_, (`Unchanged | `PropsChanged), toProps, uiTo) ->
+        | {status= `Unchanged | `PropsChanged; desc= fromProps; ui= uiFrom},
+          {status= `Unchanged | `PropsChanged; desc= toProps; ui = uiTo} ->
             logLwtNumbered
               ("Copying properties for " ^ Path.toString path
                ^ "\n  from " ^ root2string fromRoot ^ "\n  to " ^
@@ -107,7 +107,7 @@ let doAction (fromRoot,toRoot) path fromContents toContents id =
               (fun () ->
                 Files.setProp
                   fromRoot path toRoot path fromProps toProps uiFrom uiTo)
-        | (`FILE, _, _, uiFrom), (`FILE, _, _, uiTo) ->
+        | {typ = `FILE; ui = uiFrom}, {typ = `FILE; ui = uiTo} ->
             logLwtNumbered
               ("Updating file " ^ Path.toString path ^ "\n  from " ^
                root2string fromRoot ^ "\n  to " ^
@@ -116,7 +116,7 @@ let doAction (fromRoot,toRoot) path fromContents toContents id =
               (fun () ->
                 Files.copy (`Update (fileSize uiFrom uiTo))
                   fromRoot path uiFrom toRoot path uiTo id)
-        | (_, _, _, uiFrom), (_, _, _, uiTo) ->
+        | {ui = uiFrom}, {ui = uiTo} ->
             logLwtNumbered
               ("Copying " ^ Path.toString path ^ "\n  from " ^
                root2string fromRoot ^ "\n  to " ^
@@ -137,8 +137,8 @@ let propagate root1 root2 reconItem id showMergeFn =
       Trace.log (Printf.sprintf "[ERROR] Skipping %s\n  %s\n"
                    (Path.toString path) p);
       return ()
-  | Different(rc1,rc2,dir,_) ->
-      match !dir with
+  | Different {rc1 = rc1; rc2 = rc2; direction = dir} ->
+      match dir with
         Conflict ->
           Trace.log (Printf.sprintf "[CONFLICT] Skipping %s\n"
                        (Path.toString path));
@@ -149,7 +149,7 @@ let propagate root1 root2 reconItem id showMergeFn =
           doAction (root2, root1) path rc2 rc1 id
       | Merge -> 
           begin match (rc1,rc2) with
-            (`FILE, _, _, ui1), (`FILE, _, _, ui2) ->
+            {typ = `FILE; ui = ui1}, {typ = `FILE; ui = ui2} ->
               Files.merge root1 root2 path id ui1 ui2 showMergeFn;
               return ()
           | _ -> raise (Util.Transient "Can only merge two existing files")

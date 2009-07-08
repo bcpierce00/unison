@@ -2,16 +2,13 @@
 (* Copyright 1999-2009, Benjamin C. Pierce (see COPYING for details) *)
 
 val reconcileAll :
-     Common.updateItem list Common.oneperpath
+     ?allowPartial:bool         (* whether we allow partial synchronization
+                                   of directories (default to false) *)
+  -> Common.updateItem list Common.oneperpath
                                 (* one updateItem per replica, per path *)
   -> Common.reconItem list      (* List of updates that need propagated *)
      * bool                     (* Any file updated equally on all roots*)
      * Path.t list              (* Paths which have been emptied on one side*)
-(* --------------- *)
-
-val reconcileTwo : Path.t -> Common.updateItem -> Common.updateItem ->
-  Common.reconItem list * bool * Path.t list
-
 
 (* Use the current values of the '-prefer <ROOT>' and '-force <ROOT>'        *)
 (* preferences to override the reconciler's choices                          *)

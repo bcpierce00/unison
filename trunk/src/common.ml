@@ -109,7 +109,11 @@ type status =
   | `Created
   | `Unchanged ]
 
-type replicaContent = Fileinfo.typ * status * Props.t * updateItem
+type replicaContent =
+  { typ : Fileinfo.typ;
+    status : status;
+    desc : Props.t;
+    ui : updateItem }
 
 type direction =
     Conflict
@@ -123,13 +127,17 @@ let direction2string = function
   | Replica1ToReplica2 -> "replica1 to replica2"
   | Replica2ToReplica1 -> "replica2 to replica1"
 
+type difference =
+  { rc1 : replicaContent;
+    rc2 : replicaContent;
+    errors1 : string list;
+    errors2 : string list;
+    mutable direction : direction;
+    default_direction : direction }
+
 type replicas =
-    Problem of string    (* There was a problem during update detection *)
-  | Different            (* Replicas differ *)
-    of replicaContent    (*   - content of first replica *)
-     * replicaContent    (*   - content of second replica *)
-     * direction ref     (*   - action to take *)
-     * direction         (*   - default action to take *)
+    Problem of string       (* There was a problem during update detection *)
+  | Different of difference (* Replicas differ *)
 
 type reconItem =
     {path : Path.t;
@@ -144,8 +152,8 @@ let uiLength = function
     Updates(uc,_) -> ucLength uc
   | _             -> Uutil.Filesize.zero
 
-let riAction (_, s, _, _) (_, s', _, _) =
-  match s, s' with
+let riAction rc rc' =
+  match rc.status, rc'.status with
     `Deleted, _ ->
       `Delete
   | (`Unchanged | `PropsChanged), (`Unchanged | `PropsChanged) ->
@@ -153,16 +161,16 @@ let riAction (_, s, _, _) (_, s', _, _) =
   | _ ->
       `Copy
 
-let rcLength ((_, _, p, _) as rc) rc' =
+let rcLength rc rc' =
   if riAction rc rc' = `SetProps then
     Uutil.Filesize.zero
   else
-    Props.length p
+    Props.length rc.desc
 
 let riLength ri =
   match ri.replicas with
-    Different(rc1, rc2, dir, _) ->
-      begin match !dir with
+    Different {rc1 = rc1; rc2 = rc2; direction = dir} ->
+      begin match dir with
         Replica1ToReplica2 -> rcLength rc1 rc2
       | Replica2ToReplica1 -> rcLength rc2 rc1
       | Conflict           -> Uutil.Filesize.zero
@@ -193,26 +201,32 @@ let fileInfos ui1 ui2 =
 
 let problematic ri =
   match ri.replicas with
-    Problem _ -> true
-  | Different (_,_,d,_) -> (!d = Conflict)
+    Problem _      -> true
+  | Different diff -> diff.direction = Conflict
+
+let partiallyProblematic ri =
+  match ri.replicas with
+    Problem _      ->
+      true
+  | Different diff ->
+      diff.direction = Conflict || diff.errors1 <> [] || diff.errors2 <> []
 
 let isDeletion ri =
   match ri.replicas with
-    Different(rc1, rc2, rDir, _) ->
-      (match (!rDir, rc1, rc2) with
-        (Replica1ToReplica2, (`ABSENT, _, _, _), _) -> true
-      | (Replica2ToReplica1, _, (`ABSENT, _, _, _)) -> true
+    Different {rc1 = rc1; rc2 = rc2; direction = rDir} ->
+      (match rDir, rc1.typ, rc2.typ with
+        Replica1ToReplica2, `ABSENT, _ -> true
+      | Replica2ToReplica1, _, `ABSENT -> true
       | _ -> false)
   | _ -> false
 
-let rcType (fi, _, _, _) =
-  Fileinfo.type2string fi
+let rcType rc = Fileinfo.type2string rc.typ
 
 let riFileType ri =
   match ri.replicas with
-    Different(rc1, rc2, dir, _) ->
-      begin match !dir with
+    Different {rc1 = rc1; rc2 = rc2; default_direction = dir} ->
+      begin match dir with
         Replica2ToReplica1 -> rcType rc2
-      | _		           -> rcType rc1
+      | _		   -> rcType rc1
       end
   | _ -> "nonexistent"
