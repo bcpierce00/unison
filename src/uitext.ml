@@ -171,26 +171,45 @@ let rec selectAction batch actions tryagain =
       getInput ()
   | Some i -> i)
 
+let alwaysDisplayErrors prefix l =
+  List.iter
+    (fun err -> alwaysDisplay (Format.sprintf "%s%s\n" prefix err)) l
+
 let alwaysDisplayDetails ri =
-  alwaysDisplay ((Uicommon.details2string ri "  ") ^ "\n")
+  alwaysDisplay ((Uicommon.details2string ri "  ") ^ "\n");
+  match ri.replicas with
+    Problem _ ->
+      ()
+  | Different diff ->
+      alwaysDisplayErrors "[root 1]: " diff.errors1;
+      alwaysDisplayErrors "[root 2]: " diff.errors2
 
 let displayDetails ri =
   if not (Prefs.read silent) then alwaysDisplayDetails ri
 
 let displayri ri =
-  let s = Uicommon.reconItem2string Path.empty ri "" ^ "  " in
-  let s =
+  let (r1, action, r2, path) = Uicommon.reconItem2stringList Path.empty ri in
+  let forced =
     match ri.replicas with
-      Different(_,_,d,def) when !d<>def ->
-        let s = Util.replacesubstring s "<-?->" "<=?=>" in
-        let s = Util.replacesubstring s "---->" "====>" in
-        let s = Util.replacesubstring s "<----" "<====" in
-        s
-    | _ -> s in
+      Different diff -> diff.direction <> diff.default_direction
+    | Problem _      -> false
+  in
+  let (defaultAction, forcedAction) =
+    match action with
+      Uicommon.AError      -> ("error", "error")
+    | Uicommon.ASkip _     -> ("<-?->", "<=?=>")
+    | Uicommon.ALtoR false -> ("---->", "====>")
+    | Uicommon.ALtoR true  -> ("--?->", "==?=>")
+    | Uicommon.ARtoL false -> ("<----", "<====")
+    | Uicommon.ARtoL true  -> ("<-?--", "<=?==")
+    | Uicommon.AMerge      -> ("<-M->", "<=M=>")
+  in
+  let action = if forced then forcedAction else defaultAction in
+  let s = Format.sprintf "%s %s %s   %s  " r1 action r2 path in
   match ri.replicas with
     Problem _ ->
       alwaysDisplay s
-  | Different (_,_,d,_) when !d=Conflict ->
+  | Different {direction = d} when d=Conflict ->
       alwaysDisplay s
   | _ ->
       display s
@@ -225,8 +244,8 @@ let interact rilist =
         displayri ri;
         match ri.replicas with
           Problem s -> display "\n"; display s; display "\n"; next()
-        | Different(rc1,rc2,dir,_) ->
-            if Prefs.read Uicommon.auto && !dir<>Conflict then begin
+        | Different ({rc1 = rc1; rc2 = rc2; direction = dir} as diff) ->
+            if Prefs.read Uicommon.auto && dir<>Conflict then begin
               display "\n"; next()
             end else
               let (descr, descl) =
@@ -243,14 +262,14 @@ let interact rilist =
               end;
               selectAction
                 (if Prefs.read Globals.batch then Some " " else None)
-                [((if !dir=Conflict && not (Prefs.read Globals.batch)
+                [((if dir=Conflict && not (Prefs.read Globals.batch)
                      then ["f"]  (* Offer no default behavior if we've got
                                     a conflict and we're in interactive mode *)
                      else ["";"f";" "]),
                   ("follow " ^ Uutil.myName ^ "'s recommendation (if any)"),
                   fun ()->
                     newLine ();
-                    if !dir = Conflict && not (Prefs.read Globals.batch)
+                    if dir = Conflict && not (Prefs.read Globals.batch)
                     then begin
                       display "No default action [type '?' for help]\n";
                       repeat()
@@ -274,7 +293,7 @@ let interact rilist =
                  (["m"],
                   ("merge the versions"),
                   (fun () ->
-                    dir := Merge;
+                    diff.direction <- Merge;
                     redisplayri();
                     next()));
                  (["d"],
@@ -332,19 +351,19 @@ let interact rilist =
                  (["/"],
                   ("skip"),
                   (fun () ->
-                    dir := Conflict;
+                    diff.direction <- Conflict;
                     redisplayri();
                     next()));
                  ([">";"."],
                   ("propagate from " ^ descr),
                   (fun () ->
-                    dir := Replica1ToReplica2;
+                    diff.direction <- Replica1ToReplica2;
                     redisplayri();
                     next()));
                  (["<";","],
                   ("propagate from " ^ descl),
                   (fun () ->
-                    dir := Replica2ToReplica1;
+                    diff.direction <- Replica2ToReplica1;
                     redisplayri();
                     next()))
                 ]
@@ -612,7 +631,7 @@ let synchronizeOnce() =
   Util.set_infos "";
 
   let (reconItemList, anyEqualUpdates, dangerousPaths) =
-    Recon.reconcileAll updates in
+    Recon.reconcileAll ~allowPartial:true updates in
 
   if reconItemList = [] then begin
     (if anyEqualUpdates then

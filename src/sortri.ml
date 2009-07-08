@@ -104,14 +104,14 @@ let shouldSortFirst ri =
 let shouldSortLast ri =
   Pred.test sortlast (Path.toString ri.path)
 
-let newItem ri = 
+let newItem ri =
   let newItem1 ri =
     match ri.replicas with
-      Different((_, `Created, _, _), _, _, _) -> true
+      Different diff -> diff.rc1.status = `Created
     | _ -> false in
   let newItem2 ri =
     match ri.replicas with
-      Different(_, (_, `Created, _, _), _, _) -> true
+      Different diff -> diff.rc2.status = `Created
     | _ -> false
   in newItem1 ri || newItem2 ri
 
@@ -130,6 +130,7 @@ let compareReconItems () =
     let cmp = 
       combineCmp [
         pred problematic;
+        pred partiallyProblematic;
         pred shouldSortFirst;
         invertCmp (pred shouldSortLast);
         if newfirst then pred newItem else 0;

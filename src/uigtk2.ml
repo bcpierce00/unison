@@ -795,9 +795,7 @@ let getPassword rootName msg =
       (Format.sprintf "Connecting to '%s'..." (Unicode.protect rootName)) in
 
   let h1 = GPack.hbox ~border_width:6 ~spacing:12 ~packing:t#vbox#pack () in
-  (* FIX: DIALOG_AUTHENTICATION is way better but is not available
-     in the current release of LablGTK2... *)
-  ignore (GMisc.image ~stock:(*`DIALOG_AUTHENTICATION*)`DIALOG_QUESTION ~icon_size:`DIALOG
+  ignore (GMisc.image ~stock:`DIALOG_AUTHENTICATION ~icon_size:`DIALOG
             ~yalign:0. ~packing:h1#pack ());
   let v1 = GPack.vbox ~spacing:12 ~packing:h1#pack () in
   ignore(GMisc.label ~markup:(header ^ "\n\n" ^
@@ -1198,6 +1196,8 @@ let displayWaitMessage () =
 
 (* ------ *)
 
+type status = NoStatus | Done | Failed
+
 let rec createToplevelWindow () =
   let toplevelWindow = getMyWindow() in
   (* There is already a default icon under Windows, and transparent
@@ -1218,8 +1218,16 @@ let rec createToplevelWindow () =
   let grDiff = ref [] in
   let grGo = ref [] in
   let grRescan = ref [] in
+  let grDetail = ref [] in
   let grAdd gr w = gr := w#misc::!gr in
   let grSet gr st = Safelist.iter (fun x -> x#set_sensitive st) !gr in
+  let grDisactivateAll () =
+    grSet grAction false;
+    grSet grDiff false;
+    grSet grGo false;
+    grSet grRescan false;
+    grSet grDetail false
+  in
 
   (*********************************************************************
     Create the menu bar
@@ -1349,64 +1357,82 @@ let rec createToplevelWindow () =
     Create the details window
    *********************************************************************)
 
-  let (showDetailsButton, detailsWindow) =
+  let showDetCommand () =
+    let details =
+      match !current with
+	None ->
+          None
+      | Some row ->
+	  match !theState.(row).whatHappened with
+	    Some (Util.Failed _, Some det) ->
+              let path = Path.toString !theState.(row).ri.path in
+              Some ("Merge execution details for file" ^
+                    transcodeFilename path,
+                    det)
+	  | _ ->
+              match !theState.(row).ri.replicas with
+                Problem _ ->
+                  None
+              | Different diff ->
+                  let prefix s l =
+                    Safelist.map (fun err -> Format.sprintf "%s%s\n" s err) l
+                  in
+                  let errors =
+                    Safelist.append
+                      (prefix "[root 1]: " diff.errors1)
+                      (prefix "[root 2]: " diff.errors2)
+                  in
+                  let path = Path.toString !theState.(row).ri.path in
+                  Some ("Errors for file " ^ transcodeFilename path,
+                        String.concat "\n" errors)
+    in
+    match details with
+      None                  -> ((* Should not happen *))
+    | Some (title, details) -> messageBox ~title (transcode details)
+  in
+
+  let detailsWindow =
     let sw =
       GBin.frame ~packing:(toplevelVBox#pack ~expand:false)
         ~shadow_type:`IN (*~hpolicy:`AUTOMATIC ~vpolicy:`NEVER*) () in
-    let hb =GPack.hbox ~packing:sw#add () in
-    (GButton.button ~label:"View details..."
-         ~show:false ~packing:(hb#pack ~expand:false) (),
-     GText.view ~editable:false ~wrap_mode:`NONE ~packing:hb#add ())
-
+    GText.view ~editable:false ~wrap_mode:`NONE ~packing:sw#add ()
   in
   detailsWindow#misc#modify_font (Lazy.force fontMonospaceMediumPango);
   detailsWindow#misc#set_size_chars ~height:3 ~width:112 ();
   detailsWindow#misc#set_can_focus false;
-  let showDetCommand () = 
-    let details =
-      match !current with
-	None -> "[No details available]"
-      | Some row -> 
-	  (match !theState.(row).whatHappened with
-	    Some (Util.Failed _, Some det) -> det
-	  |  _ -> "[No details available]") in
-    messageBox ~title:"Merge execution details" details
-  in
-  ignore (showDetailsButton#connect#clicked ~callback:showDetCommand);
-  
+
   let updateButtons () =
     match !current with
       None ->
         grSet grAction false;
         grSet grDiff false;
-	showDetailsButton#misc#hide ()
+	grSet grDetail false
     | Some row ->
-        let (details, activate1, activate2) =
-          match !theState.(row).whatHappened, !theState.(row).ri.replicas with
-          | None,   Different((`FILE, _, _, _),(`FILE, _, _, _), _, _) ->
-              (false, true, true)
-          | Some res,   Different((`FILE, _, _, _),(`FILE, _, _, _), _, _) ->
-	      (match res with 
-		Util.Succeeded, _ -> (false, false, true)
-	      |	Util.Failed s, None -> (false, false, true)
-	      |	Util.Failed s, Some dText -> (true, false, false)
-		    )
-          | Some res, _ ->
-	      (match res with 
-		Util.Succeeded, _ -> (false, false, false)
-	      |	Util.Failed s, None -> (false, false, false)
-	      |	Util.Failed s, Some dText -> (true, false, false)
-		    )
-          | None,   _ ->
-              (false, true, false) in
+        let details =
+          begin match !theState.(row).ri.replicas with
+            Different diff -> diff.errors1 <> [] || diff.errors2 <> []
+          | Problem _      -> false
+          end
+            ||
+          begin match !theState.(row).whatHappened with
+            Some (Util.Failed _, Some dText) -> true
+          | _                                -> false
+          end
+        in
+        grSet grDetail details;
         if not !busy then begin
-          grSet grAction activate1;
-          grSet grDiff activate2
+          let activateAction = !theState.(row).whatHappened = None in
+          let activateDiff =
+            activateAction &&
+            match !theState.(row).ri.replicas with
+              Different {rc1 = {typ = `FILE}; rc2 = {typ = `FILE}} ->
+                true
+            | _ ->
+                false
+          in
+          grSet grAction activateAction;
+          grSet grDiff activateDiff
         end;
-        if details then
-          showDetailsButton#misc#show ()
-        else
-          showDetailsButton#misc#hide ()
   in
 
   let makeRowVisible row =
@@ -1498,8 +1524,8 @@ let rec createToplevelWindow () =
     let rec loop i =
       if i < l then
         match !theState.(i).ri.replicas with
-          Different (_, _, dir, _)
-              when not (Prefs.read Uicommon.auto) || !dir = Conflict ->
+          Different {direction = dir}
+              when not (Prefs.read Uicommon.auto) || dir = Conflict ->
             select i
         | _ ->
             loop (i + 1) in
@@ -1510,27 +1536,24 @@ let rec createToplevelWindow () =
   let columnsOf i =
     let oldPath = if i = 0 then Path.empty else !theState.(i-1).ri.path in
     let status =
-      match !theState.(i).whatHappened with
-        None -> "      "
-      | Some conf ->
-          match !theState.(i).ri.replicas with
-            Different(_,_,{contents=Conflict},_) | Problem _ ->
-              "      "
-          | _ ->
-              match conf with
-                Util.Succeeded, _ -> "done  "
-              | Util.Failed _, _  -> "failed" in
-    let s = Uicommon.reconItem2string oldPath !theState.(i).ri status in
-    (* FIX: This is ugly *)
-    (String.sub s  0 8,
-     String.sub s  9 5,
-     String.sub s 15 8,
-     String.sub s 25 6,
-     String.sub s 32 (String.length s - 32)) in
+      match !theState.(i).ri.replicas with
+        Different {direction = Conflict} | Problem _ ->
+          NoStatus
+      | _ ->
+          match !theState.(i).whatHappened with
+            None                     -> NoStatus
+          | Some (Util.Succeeded, _) -> Done
+          | Some (Util.Failed _, _)  -> Failed
+    in
+    let (r1, action, r2, path) =
+      Uicommon.reconItem2stringList oldPath !theState.(i).ri in
+    (r1, action, r2, status, path)
+  in
 
   let greenPixel  = "00dd00" in
   let redPixel    = "ff2040" in
   let lightbluePixel = "8888FF" in
+  let orangePixel = "ff9303" in
 (*
   let yellowPixel = "999900" in
   let blackPixel  = "000000" in
@@ -1540,11 +1563,14 @@ let rec createToplevelWindow () =
   let buildPixmaps f c1 =
     (buildPixmap (f c1), buildPixmap (f lightbluePixel)) in
 
-  let rightArrow = buildPixmaps Pixmaps.copyAB greenPixel in
-  let leftArrow = buildPixmaps Pixmaps.copyBA greenPixel in
-  let ignoreAct = buildPixmaps Pixmaps.ignore redPixel in
   let doneIcon = buildPixmap Pixmaps.success in
   let failedIcon = buildPixmap Pixmaps.failure in
+  let rightArrow = buildPixmaps Pixmaps.copyAB greenPixel in
+  let leftArrow = buildPixmaps Pixmaps.copyBA greenPixel in
+  let orangeRightArrow = buildPixmaps Pixmaps.copyAB orangePixel in
+  let orangeLeftArrow = buildPixmaps Pixmaps.copyBA orangePixel in
+  let ignoreAct = buildPixmaps Pixmaps.ignore redPixel in
+  let failedIcons = (failedIcon, failedIcon) in
   let mergeLogo = buildPixmaps Pixmaps.mergeLogo greenPixel in
 (*
   let rightArrowBlack = buildPixmap (Pixmaps.copyAB blackPixel) in
@@ -1554,23 +1580,29 @@ let rec createToplevelWindow () =
 
   let displayArrow i j action =
     let changedFromDefault = match !theState.(j).ri.replicas with
-        Different(_,_,{contents=curr},default) -> curr<>default
+        Different diff -> diff.direction <> diff.default_direction
       | _ -> false in
     let sel pixmaps =
       if changedFromDefault then snd pixmaps else fst pixmaps in
-    match action with
-	"<-?->" -> mainWindow#set_cell ~pixmap:(sel ignoreAct) i 1
-      | "<-M->" -> mainWindow#set_cell ~pixmap:(sel mergeLogo) i 1
-      | "---->" -> mainWindow#set_cell ~pixmap:(sel rightArrow) i 1
-      | "<----" -> mainWindow#set_cell ~pixmap:(sel leftArrow) i 1
-      | "error" -> mainWindow#set_cell ~pixmap:failedIcon i 1
-      |    _    -> assert false in
+    let pixmaps =
+      match action with
+        Uicommon.AError      -> failedIcons
+      | Uicommon.ASkip _     -> ignoreAct
+      | Uicommon.ALtoR false -> rightArrow
+      | Uicommon.ALtoR true  -> orangeRightArrow
+      | Uicommon.ARtoL false -> leftArrow
+      | Uicommon.ARtoL true  -> orangeLeftArrow
+      | Uicommon.AMerge      -> mergeLogo
+    in
+    mainWindow#set_cell ~pixmap:(sel pixmaps) i 1
+  in
+
 
   let displayStatusIcon i status =
     match status with
-    | "failed" -> mainWindow#set_cell ~pixmap:failedIcon i 3
-    | "done  " -> mainWindow#set_cell ~pixmap:doneIcon i 3
-    | _        -> mainWindow#set_cell ~text:status i 3 in
+    | Failed   -> mainWindow#set_cell ~pixmap:failedIcon i 3
+    | Done     -> mainWindow#set_cell ~pixmap:doneIcon i 3
+    | NoStatus -> mainWindow#set_cell ~text:" " i 3 in
 
   let displayMain() =
     (* The call to mainWindow#clear below side-effect current,
@@ -1589,8 +1621,9 @@ lst_store#set ~row ~column:c_status status;
 lst_store#set ~row ~column:c_path path;
 *)
       ignore (mainWindow#prepend
-                [ r1; ""; r2; status; transcodeFilename path ]);
-      displayArrow 0 i action
+                [ r1; ""; r2; ""; transcodeFilename path ]);
+      displayArrow 0 i action;
+      displayStatusIcon i status
     done;
     debug (fun()-> Util.msg "reset current to %s\n"
              (match savedCurrent with None->"None" | Some(i) -> string_of_int i));
@@ -1609,11 +1642,10 @@ lst_store#set ~row ~column:c_path path;
     mainWindow#set_cell ~text:r2     i 2;
     displayStatusIcon i status;
     mainWindow#set_cell ~text:(transcodeFilename path)   i 4;
-    if status = "failed" then begin
+    if status = Failed then
       mainWindow#set_cell
         ~text:(transcodeFilename path ^
-               "       [failed: click on this line for details]") i 4
-    end;
+               "       [failed: click on this line for details]") i 4;
     mainWindow#thaw ();
     if !current = Some i then updateDetails ();
     updateButtons () in
@@ -1621,11 +1653,10 @@ lst_store#set ~row ~column:c_path path;
   let fastRedisplay i =
     let (r1, action, r2, status, path) = columnsOf i in
     displayStatusIcon i status;
-    if status = "failed" then begin
+    if status = Failed then
       mainWindow#set_cell
         ~text:(transcodeFilename path ^
-               "       [failed: click on this line for details]") i 4
-    end;
+               "       [failed: click on this line for details]") i 4;
     if !current = Some i then updateDetails ();
   in
 
@@ -1685,8 +1716,8 @@ lst_store#set ~row ~column:c_path path;
     showGlobalProgress bytes;
     gtk_sync false;
     begin match item.ri.replicas with
-      Different (_, _, dir, _) ->
-        begin match !dir with
+      Different diff ->
+        begin match diff.direction with
           Replica1ToReplica2 ->
             if root2IsLocal then
               clientWritten := !clientWritten +. Uutil.Filesize.toFloat bytes
@@ -1745,10 +1776,7 @@ lst_store#set ~row ~column:c_path path;
    ******************************************************************)
 
   let detectUpdatesAndReconcile () =
-    grSet grAction false;
-    grSet grDiff false;
-    grSet grGo false;
-    grSet grRescan false;
+    grDisactivateAll ();
 
     mainWindow#clear();
     detailsWindow#buffer#set_text "";
@@ -1763,7 +1791,7 @@ lst_store#set ~row ~column:c_path path;
       updates in
     let reconcile updates =
       let t = Trace.startTimer "Reconciling" in
-      let reconRes = Recon.reconcileAll updates in
+      let reconRes = Recon.reconcileAll ~allowPartial:true updates in
       Trace.showTimer t;
       reconRes in
     let (reconItemList, thereAreEqualUpdates, dangerousPaths) =
@@ -1871,10 +1899,7 @@ lst_store#set ~row ~column:c_path path;
     if Array.length !theState = 0 then
       Trace.status "Nothing to synchronize"
     else begin
-      grSet grAction false;
-      grSet grDiff false;
-      grSet grGo false;
-      grSet grRescan false;
+      grDisactivateAll ();
 
       Trace.status "Propagating changes";
       Transport.logStart ();
@@ -2035,8 +2060,8 @@ lst_store#set ~row ~column:c_path path;
       Some i ->
         let theSI = !theState.(i) in
         begin match theSI.whatHappened, theSI.ri.replicas with
-          None, Different(_, _, dir, _) ->
-            f dir;
+          None, Different diff ->
+            f diff;
             redisplay i;
             nextInteresting ()
         | _ ->
@@ -2044,10 +2069,12 @@ lst_store#set ~row ~column:c_path path;
         end
     | None ->
         () in
-  let leftAction     _ = doAction (fun dir -> dir := Replica2ToReplica1) in
-  let rightAction    _ = doAction (fun dir -> dir := Replica1ToReplica2) in
-  let questionAction _ = doAction (fun dir -> dir := Conflict) in
-  let mergeAction    _ = doAction (fun dir -> dir := Merge) in
+  let leftAction _ =
+    doAction (fun diff -> diff.direction <- Replica2ToReplica1) in
+  let rightAction _ =
+    doAction (fun diff -> diff.direction <- Replica1ToReplica2) in
+  let questionAction _ = doAction (fun diff -> diff.direction <- Conflict) in
+  let mergeAction    _ = doAction (fun diff -> diff.direction <- Merge) in
 
   actionBar#insert_space ();
   grAdd grAction
@@ -2106,6 +2133,15 @@ lst_store#set ~row ~column:c_path path;
                   ~tooltip:"Merge the two items at each replica"
                   ~callback:mergeCmd ());
  *)
+  (*********************************************************************
+    Detail button
+   *********************************************************************)
+  actionBar#insert_space ();
+  grAdd grDetail (actionBar#insert_button ~text:"Details"
+                    ~icon:((GMisc.image ~stock:`INFO ())#coerce)
+                    ~tooltip:"Show details"
+                    ~callback:showDetCommand ());
+
   (*********************************************************************
     Keyboard commands
    *********************************************************************)
@@ -2299,10 +2335,7 @@ lst_store#set ~row ~column:c_path path;
                  | Some(Util.Succeeded, _) -> false)
               || match !theState.(i).ri.replicas with
                    Problem _ -> true
-                 | Different(rc1,rc2,dir,_) ->
-                     (match !dir with
-                        Conflict -> true
-                      | _ -> false) in
+                 | Different diff -> diff.direction = Conflict in
              if notok then loop (i+1) (i::acc)
              else loop (i+1) (acc) in
            let failedindices = loop 0 [] in
@@ -2393,10 +2426,7 @@ lst_store#set ~row ~column:c_path path;
   (*********************************************************************
     Finish up
    *********************************************************************)
-  grSet grAction false;
-  grSet grDiff false;
-  grSet grGo false;
-  grSet grRescan false;
+  grDisactivateAll ();
 
   ignore (toplevelWindow#event#connect#delete ~callback:
             (fun _ -> safeExit (); true));

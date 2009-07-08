@@ -1646,8 +1646,10 @@ let commitUpdates () =
 (* the result of patching [archive] using [ui] *)
 let rec updateArchiveRec ui archive =
   match ui with
-    NoUpdates | Error _ ->
+    NoUpdates ->
       archive
+  | Error _ ->
+      NoArchive
   | Updates (uc, _) ->
       match uc with
         Absent ->

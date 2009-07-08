@@ -64,7 +64,7 @@ external displayStatus : string -> unit = "displayStatus";;
 let callbackThreadCreate() = 
 	let tCode () = 
 		bridgeThreadWait 1;
-	in Thread.create tCode (); Thread.create tCode ();
+	in ignore (Thread.create tCode ()); ignore (Thread.create tCode ());
 	let tid = Thread.create tCode ()
 	in Thread.join tid;
 ;;
@@ -337,8 +337,8 @@ Callback.register "unisonRiToDetails" unisonRiToDetails;;
 let unisonRiToPath ri = Path.toString ri.ri.path;;
 Callback.register "unisonRiToPath" unisonRiToPath;;
 
-let rcToString (_,status,_,_) =
-  match status with
+let rcToString rc =
+  match rc.status with
     `Deleted      -> "Deleted"
   | `Modified     -> "Modified"
   | `PropsChanged -> "PropsChanged"
@@ -347,12 +347,12 @@ let rcToString (_,status,_,_) =
 let unisonRiToLeft ri =
   match ri.ri.replicas with
     Problem _ -> ""
-  | Different(rc,_,_,_) -> rcToString rc;;
+  | Different {rc1 = rc} -> rcToString rc;;
 Callback.register "unisonRiToLeft" unisonRiToLeft;;
 let unisonRiToRight ri =
   match ri.ri.replicas with
     Problem _ -> ""
-  | Different(_,rc,_,_) -> rcToString rc;;
+  | Different {rc2 = rc} -> rcToString rc;;
 Callback.register "unisonRiToRight" unisonRiToRight;;
 
 let unisonRiToFileSize ri =
@@ -371,28 +371,28 @@ let direction2niceString = function (* from Uicommon where it's not exported *)
 let unisonRiToDirection ri =
   match ri.ri.replicas with
     Problem _ -> "XXXXX"
-  | Different(_,_,d,_) -> direction2niceString !d;;
+  | Different diff -> direction2niceString diff.direction;;
 Callback.register "unisonRiToDirection" unisonRiToDirection;;
 
 let unisonRiSetLeft ri =
   match ri.ri.replicas with
     Problem _ -> ()
-  | Different(_,_,d,_) -> d := Replica2ToReplica1;;
+  | Different diff -> diff.direction <- Replica2ToReplica1;;
 Callback.register "unisonRiSetLeft" unisonRiSetLeft;;
 let unisonRiSetRight ri =
   match ri.ri.replicas with
     Problem _ -> ()
-  | Different(_,_,d,_) -> d := Replica1ToReplica2;;
+  | Different diff -> diff.direction <- Replica1ToReplica2;;
 Callback.register "unisonRiSetRight" unisonRiSetRight;;
 let unisonRiSetConflict ri =
   match ri.ri.replicas with
     Problem _ -> ()
-  | Different(_,_,d,_) -> d := Conflict;;
+  | Different diff -> diff.direction <- Conflict;;
 Callback.register "unisonRiSetConflict" unisonRiSetConflict;;
 let unisonRiSetMerge ri =
   match ri.ri.replicas with
     Problem _ -> ()
-  | Different(_,_,d,_) -> d := Merge;;
+  | Different diff -> diff.direction <- Merge;;
 Callback.register "unisonRiSetMerge" unisonRiSetMerge;;
 let unisonRiForceOlder ri =
   Recon.setDirection ri.ri `Older `Force;;
@@ -405,7 +405,7 @@ let unisonRiToProgress ri =
   match (ri.statusMessage, ri.whatHappened,ri.ri.replicas) with
     (None,None,_) -> ""
   | (Some s,None,_) -> s
-  | (_,_,Different(_,_,{contents=Conflict},_)) -> ""
+  | (_,_,Different {direction = Conflict}) -> ""
   | (_,_,Problem _) -> ""
   | (_,Some Util.Succeeded,_) -> "done"
   | (_,Some (Util.Failed s),_) -> "FAILED";;
@@ -435,7 +435,8 @@ let filesAreDifferent status1 status2 =
 let canDiff ri = 
   match ri.ri.replicas with
     Problem _ -> false
-  | Different((`FILE, status1, _, _),(`FILE, status2, _, _), _, _) ->
+  | Different {rc1 = {typ = `FILE; status = status1};
+               rc2 = {typ = `FILE; status = status2}} ->
       filesAreDifferent status1 status2
   | Different _ -> false;;
 Callback.register "canDiff" canDiff;;
@@ -448,7 +449,9 @@ let showDiffs ri printer errprinter id =
     Problem _ ->
       errprinter
         "Can't diff files: there was a problem during update detection"
-  | Different((`FILE, status1, _, ui1), (`FILE, status2, _, ui2), _, _) ->
+  | Different
+        {rc1 = {typ = `FILE; status = status1; ui = ui1};
+         rc2 = {typ = `FILE; status = status2; ui = ui2}} ->
       if filesAreDifferent status1 status2 then
         (let (root1,root2) = Globals.roots() in
          begin
@@ -619,7 +622,7 @@ Callback.register "unisonSecondRootString" unisonSecondRootString;;
    the current setting is Conflict *)
 let unisonRiIsConflict ri =
   match ri.ri.replicas with
-  | Different(_,_,_,Conflict) -> true
+  | Different {default_direction = Conflict} -> true
   | _ -> false;;
 Callback.register "unisonRiIsConflict" unisonRiIsConflict;;
 
@@ -628,13 +631,13 @@ Callback.register "unisonRiIsConflict" unisonRiIsConflict;;
    the reconItems table *)
 let changedFromDefault ri = 
   match ri.ri.replicas with
-    Different(_,_,{contents=curr},default) -> curr<>default
+    Different diff -> diff.direction <> diff.default_direction
    | _ -> false;;
 Callback.register "changedFromDefault" changedFromDefault;;
 
 let unisonRiRevert ri =
   match ri.ri.replicas with
-  | Different(_,_,d,d0) -> d := d0
+  | Different diff -> diff.direction <- diff.default_direction
   | _ -> ();;
 Callback.register "unisonRiRevert" unisonRiRevert;;
 

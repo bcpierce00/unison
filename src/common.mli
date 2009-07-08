@@ -87,7 +87,11 @@ type status =
   | `Unchanged ]
 
 (* Variable name prefix: "rc" *)
-type replicaContent = Fileinfo.typ * status * Props.t * updateItem
+type replicaContent =
+  { typ : Fileinfo.typ;
+    status : status;
+    desc : Props.t;
+    ui : updateItem }
 
 type direction =
     Conflict
@@ -97,15 +101,19 @@ type direction =
 
 val direction2string : direction -> string
 
+type difference =
+  { rc1 : replicaContent;           (* - content of first replica *)
+    rc2 : replicaContent;           (* - content of second replica *)
+    errors1 : string list;          (* - deep errors in first replica *)
+    errors2 : string list;          (* - deep errors in second replica *)
+    mutable direction : direction;  (* - action to take (it's mutable so that
+                                         the user interface can change it) *)
+    default_direction : direction } (* - default action to take *)
+
 (* Variable name prefix: "rplc" *)
 type replicas =
-    Problem of string    (* There was a problem during update detection *)
-  | Different            (* Replicas differ *)
-    of replicaContent    (*   - content of first replica *)
-     * replicaContent    (*   - content of second replica *)
-     * direction ref     (*   - action to take (it's a ref so that the
-                                user interface can change it) *)
-     * direction         (*   - default action to take *)
+    Problem of string       (* There was a problem during update detection *)
+  | Different of difference (* Replicas differ *)
 
 (* Variable name prefix: "ri" *)
 type reconItem =
@@ -124,4 +132,7 @@ val fileInfos :
 (* True if the ri's type is Problem or if it is Different and the direction
    is Conflict *)
 val problematic : reconItem -> bool
+(* True if the ri is problematic or if it has some deep errors in a
+   directory *)
+val partiallyProblematic : reconItem -> bool
 val isDeletion  : reconItem -> bool

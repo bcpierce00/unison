@@ -187,17 +187,16 @@ let prevProps newprops ui =
       (* || Props.similar newprops oldprops *)
       " (was: "^(Props.toString oldprops)^")"
 
-let replicaContent2string rc sep = 
-  let (typ, status, desc, ui) = rc in
-  let d s = s ^ sep ^ Props.toString desc ^ prevProps desc ui in
-  match typ, status with
+let replicaContent2string rc sep =
+  let d s = s ^ sep ^ Props.toString rc.desc ^ prevProps rc.desc rc.ui in
+  match rc.typ, rc.status with
     `ABSENT, `Unchanged ->
       "absent"
   | _, `Unchanged ->
       "unchanged "
-     ^(Util.truncateString (Fileinfo.type2string typ) 7)
+     ^(Util.truncateString (Fileinfo.type2string rc.typ) 7)
      ^ sep
-     ^(Props.toString desc)
+     ^(Props.toString rc.desc)
   | `ABSENT, `Deleted -> "deleted"
   | `FILE, `Created ->
      d (choose "new file         " "file             ")
@@ -223,8 +222,7 @@ let replicaContent2string rc sep =
       assert false
   
 let replicaContent2shortString rc =
-  let (typ, status, _, _) = rc in
-  match typ, status with
+  match rc.typ, rc.status with
     _, `Unchanged             -> "        "
   | `ABSENT, `Deleted         -> "deleted "
   | `FILE, `Created           -> choose "new file" "file    "
@@ -255,7 +253,7 @@ let details2string theRi sep =
   match theRi.replicas with
     Problem s ->
       Printf.sprintf "Error: %s\n" s
-  | Different(rc1, rc2, _, _) ->
+  | Different {rc1 = rc1; rc2 = rc2} ->
       let root1str, root2str =
         roots2niceStrings 12 (Globals.roots()) in
       Printf.sprintf "%s : %s\n%s : %s"
@@ -286,25 +284,39 @@ let roots2string () =
   let replica1, replica2 = roots2niceStrings 12 (Globals.roots()) in
   (Printf.sprintf "%s   %s       " replica1 replica2) 
 
-let direction2niceString = function
-    Conflict           -> "<-?->"
-  | Replica1ToReplica2 -> "---->"
-  | Replica2ToReplica1 -> "<----"
-  | Merge              -> "<-M->"
+type action = AError | ASkip of bool | ALtoR of bool | ARtoL of bool | AMerge
+
+let direction2action partial dir =
+  match dir with
+    Conflict           -> ASkip partial
+  | Replica1ToReplica2 -> ALtoR partial
+  | Replica2ToReplica1 -> ARtoL partial
+  | Merge              -> AMerge
+
+let action2niceString action =
+  match action with
+    AError      -> "error"
+  | ASkip _     -> "<-?->"
+  | ALtoR false -> "---->"
+  | ALtoR true  -> "--?->"
+  | ARtoL false -> "<----"
+  | ARtoL true  -> "<-?--"
+  | AMerge      -> "<-M->"
+
+let reconItem2stringList oldPath theRI =
+  match theRI.replicas with
+    Problem s ->
+      ("        ", AError, "        ", displayPath oldPath theRI.path)
+  | Different diff ->
+      let partial = diff.errors1 <> [] || diff.errors2 <> [] in
+      (replicaContent2shortString diff.rc1,
+       direction2action partial diff.direction,
+       replicaContent2shortString diff.rc2,
+       displayPath oldPath theRI.path)
 
 let reconItem2string oldPath theRI status =
-  let theLine =
-    match theRI.replicas with
-      Problem s ->
-        "         error           " ^ status
-    | Different(rc1, rc2, dir, _) ->
-        let signs =
-          Printf.sprintf "%s %s %s"
-            (replicaContent2shortString rc1)
-            (direction2niceString (!dir))
-            (replicaContent2shortString rc2) in
-        Printf.sprintf "%s  %s" signs status in
-  Printf.sprintf "%s %s" theLine (displayPath oldPath theRI.path)
+  let (r1, action, r2, path) = reconItem2stringList oldPath theRI in
+  Format.sprintf "%s %s %s %s %s" r1 (action2niceString action) r2 status path
 
 let exn2string = function
     Sys.Break      -> "Terminated!"
@@ -319,7 +331,7 @@ let showDiffs ri printer errprinter id =
     Problem _ ->
       errprinter
         "Can't diff files: there was a problem during update detection"
-  | Different((`FILE, _, _, ui1), (`FILE, _, _, ui2), _, _) ->
+  | Different {rc1 = {typ = `FILE; ui = ui1}; rc2 = {typ = `FILE; ui = ui2}} ->
       let (root1,root2) = Globals.roots() in
       begin
         try Files.diff root1 p ui1 root2 p ui2 printer id

@@ -59,6 +59,12 @@ val roots2string : unit -> string
    initial components that are the same as the previous path *)
 val reconItem2string : Path.t -> Common.reconItem -> string -> string
 
+type action = AError | ASkip of bool | ALtoR of bool | ARtoL of bool | AMerge
+
+(* Same as previous function, but returns a tuple of strings *)
+val reconItem2stringList :
+  Path.t -> Common.reconItem -> string * action * string * string
+
 (* Format an exception for display *)
 val exn2string : exn -> string
 
