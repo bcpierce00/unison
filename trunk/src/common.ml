@@ -113,7 +113,8 @@ type replicaContent =
   { typ : Fileinfo.typ;
     status : status;
     desc : Props.t;
-    ui : updateItem }
+    ui : updateItem;
+    size : int * Uutil.Filesize.t }
 
 type direction =
     Conflict
@@ -165,7 +166,7 @@ let rcLength rc rc' =
   if riAction rc rc' = `SetProps then
     Uutil.Filesize.zero
   else
-    Props.length rc.desc
+    snd rc.size
 
 let riLength ri =
   match ri.replicas with

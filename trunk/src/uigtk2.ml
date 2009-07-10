@@ -78,12 +78,6 @@ myNameCapitalized myNameCapitalized myNameCapitalized myNameCapitalized myNameCa
  Font preferences
  **********************************************************************)
 
-let fontMonospaceMedium =
-  if Util.osType = `Win32 then
-    lazy (Gdk.Font.load "-*-Courier New-Medium-R-Normal--*-110-*-*-*-*-*-*")
-  else
-    lazy (Gdk.Font.load "-*-Clean-Medium-R-Normal--*-130-*-*-*-*-*-*")
-
 let fontMonospaceMediumPango = lazy (Pango.Font.from_string "monospace")
 
 (**********************************************************************
@@ -107,6 +101,7 @@ let icon =
 
 type stateItem = { mutable ri : reconItem;
                    mutable bytesTransferred : Uutil.Filesize.t;
+                   mutable bytesToTransfer : Uutil.Filesize.t;
                    mutable whatHappened : (Util.confirmation * string option) option}
 let theState = ref [||]
 
@@ -372,12 +367,6 @@ let warnBox title message =
                          HIGHER-LEVEL WIDGETS
 ***********************************************************************)
 
-(*
-XXX
-* Accurate write accounting:
-  - Local copies on the remote side are ignored
-  - What about failures?
-*)
 class stats width height =
   let pixmap = GDraw.pixmap ~width ~height () in
   let area =
@@ -479,17 +468,8 @@ let statistics () =
   ignore (lst#append ["Reception rate"]);
   ignore (lst#append ["Data received"]);
   ignore (lst#append ["File data written"]);
-  let style = lst#misc#style#copy in
-  (* BCP: Removed this on 6/13/2006 as a workaround for a bug reported
-     by Norman Ramsey.  Apparently, lablgtl2 uses Gdk.Font, which is
-     deprecated; its associated operations don't work in recent versions
-     of gtk2. *)
-  (* style#set_font (Lazy.force fontMonospaceMedium); *)
   for r = 0 to 2 do
-    lst#set_row ~selectable:false r;
-    for c = 1 to 3 do
-      lst#set_cell ~style r c
-    done
+    lst#set_row ~selectable:false r
   done;
 
   ignore (t#event#connect#map (fun _ ->
@@ -1370,9 +1350,10 @@ let rec createToplevelWindow () =
                     transcodeFilename path,
                     det)
 	  | _ ->
+              let path = Path.toString !theState.(row).ri.path in
               match !theState.(row).ri.replicas with
-                Problem _ ->
-                  None
+                Problem err ->
+                  Some ("Errors for file " ^ transcodeFilename path, err)
               | Different diff ->
                   let prefix s l =
                     Safelist.map (fun err -> Format.sprintf "%s%s\n" s err) l
@@ -1382,7 +1363,11 @@ let rec createToplevelWindow () =
                       (prefix "[root 1]: " diff.errors1)
                       (prefix "[root 2]: " diff.errors2)
                   in
-                  let path = Path.toString !theState.(row).ri.path in
+                  let errors =
+                    match !theState.(row).whatHappened with
+                       Some (Util.Failed err, _) -> err :: errors
+                    |  _                         -> errors
+                  in
                   Some ("Errors for file " ^ transcodeFilename path,
                         String.concat "\n" errors)
     in
@@ -1393,8 +1378,8 @@ let rec createToplevelWindow () =
 
   let detailsWindow =
     let sw =
-      GBin.frame ~packing:(toplevelVBox#pack ~expand:false)
-        ~shadow_type:`IN (*~hpolicy:`AUTOMATIC ~vpolicy:`NEVER*) () in
+      GBin.scrolled_window ~packing:(toplevelVBox#pack ~expand:false)
+        ~shadow_type:`IN ~hpolicy:`AUTOMATIC ~vpolicy:`AUTOMATIC () in
     GText.view ~editable:false ~wrap_mode:`NONE ~packing:sw#add ()
   in
   detailsWindow#misc#modify_font (Lazy.force fontMonospaceMediumPango);
@@ -1411,12 +1396,12 @@ let rec createToplevelWindow () =
         let details =
           begin match !theState.(row).ri.replicas with
             Different diff -> diff.errors1 <> [] || diff.errors2 <> []
-          | Problem _      -> false
+          | Problem _      -> true
           end
             ||
           begin match !theState.(row).whatHappened with
-            Some (Util.Failed _, Some dText) -> true
-          | _                                -> false
+            Some (Util.Failed _, _) -> true
+          | _                       -> false
           end
         in
         grSet grDetail details;
@@ -1468,8 +1453,11 @@ let rec createToplevelWindow () =
           | Some(Util.Failed(s), None) -> s
 	  | Some(Util.Failed(s), Some resultLog) -> s in 
 	let path = Path.toString !theState.(row).ri.path in
-        detailsWindow#buffer#set_text
-          (transcodeFilename path ^ "\n" ^ transcode details);
+        let txt = transcodeFilename path ^ "\n" ^ transcode details in
+        let len = String.length txt in
+        let txt =
+          if txt.[len - 1] = '\n' then String.sub txt 0 (len - 1) else txt in
+        detailsWindow#buffer#set_text txt
     end;
     (* Display text *)
     updateButtons () in
@@ -1690,7 +1678,7 @@ lst_store#set ~row ~column:c_path path;
   let initGlobalProgress b =
     totalBytesToTransfer := b;
     totalBytesTransferred := Uutil.Filesize.zero;
-    showGlobalProgress Uutil.Filesize.zero
+    displayGlobalProgress 0.
   in
 
   let (root1,root2) = Globals.roots () in
@@ -1698,12 +1686,11 @@ lst_store#set ~row ~column:c_path path;
   let root2IsLocal = fst root2 = Local in
 
   let showProgress i bytes dbg =
-(* XXX There should be a way to reset the amount of bytes transferred... *)
     let i = Uutil.File.toLine i in
     let item = !theState.(i) in
     item.bytesTransferred <- Uutil.Filesize.add item.bytesTransferred bytes;
     let b = item.bytesTransferred in
-    let len = Common.riLength item.ri in
+    let len = item.bytesToTransfer in
     let newstatus =
       if b = Uutil.Filesize.zero || len = Uutil.Filesize.zero then "start "
       else if len = Uutil.Filesize.zero then
@@ -1775,6 +1762,14 @@ lst_store#set ~row ~column:c_path path;
    Main detect-updates-and-reconcile logic
    ******************************************************************)
 
+  let commitUpdates () =
+    Trace.status "Updating synchronizer state";
+    let t = Trace.startTimer "Updating synchronizer state" in
+    gtk_sync true;
+    Update.commitUpdates();
+    Trace.showTimer t
+  in
+
   let detectUpdatesAndReconcile () =
     grDisactivateAll ();
 
@@ -1796,17 +1791,22 @@ lst_store#set ~row ~column:c_path path;
       reconRes in
     let (reconItemList, thereAreEqualUpdates, dangerousPaths) =
       reconcile (findUpdates ()) in
+    if not !Update.foundArchives then commitUpdates ();
     if reconItemList = [] then
-      if thereAreEqualUpdates then
-        Trace.status "Replicas have been changed only in identical ways since last sync"
-      else
+      if thereAreEqualUpdates then begin
+        if !Update.foundArchives then commitUpdates ();
+        Trace.status
+          "Replicas have been changed only in identical ways since last sync"
+      end else
         Trace.status "Everything is up to date"
     else
       Trace.status "Check and/or adjust selected actions; then press Go";
     theState :=
       Array.of_list
          (Safelist.map
-            (fun ri -> { ri = ri; bytesTransferred = Uutil.Filesize.zero;
+            (fun ri -> { ri = ri;
+                         bytesTransferred = Uutil.Filesize.zero;
+                         bytesToTransfer = Uutil.Filesize.zero;
                          whatHappened = None })
             reconItemList);
     current := None;
@@ -1826,7 +1826,11 @@ lst_store#set ~row ~column:c_path path;
     Help menu
    *********************************************************************)
   let addDocSection (shortname, (name, docstr)) =
-    if shortname <> "" && name <> "" then
+    if shortname = "about" then
+      ignore (helpMenu#add_image_item
+                ~stock:`ABOUT ~callback:(fun () -> documentation shortname)
+                ~label:name ())
+    else if shortname <> "" && name <> "" then
       ignore (helpMenu#add_item
                 ~callback:(fun () -> documentation shortname)
                 name) in
@@ -1905,9 +1909,15 @@ lst_store#set ~row ~column:c_path path;
       Transport.logStart ();
       let totalLength =
         Array.fold_left
-          (fun l si -> Uutil.Filesize.add l (Common.riLength si.ri))
+          (fun l si ->
+             si.bytesTransferred <- Uutil.Filesize.zero;
+             let len =
+               if si.whatHappened = None then Common.riLength si.ri else
+               Uutil.Filesize.zero
+             in
+             si.bytesToTransfer <- len;
+             Uutil.Filesize.add l len)
           Uutil.Filesize.zero !theState in
-      displayGlobalProgress 0.;
       initGlobalProgress totalLength;
       let t = Trace.startTimer "Propagating changes" in
       let im = Array.length !theState in
@@ -1946,6 +1956,12 @@ lst_store#set ~row ~column:c_path path;
                            | _ ->
                                fail e)
                     >>= (fun res ->
+                      let rem =
+                        Uutil.Filesize.sub
+                          theSI.bytesToTransfer theSI.bytesTransferred
+                      in
+                      if rem <> Uutil.Filesize.zero then
+                        showProgress (Uutil.File.ofLine i) rem "done";
                       theSI.whatHappened <- Some (res, !textDetailed);
                   fastRedisplay i;
                   sync_action :=
@@ -1960,21 +1976,17 @@ lst_store#set ~row ~column:c_path path;
           in
           loop (i + 1) (action :: actions) pRiThisRound
         end else
-          return actions
+          actions
       in
       Lwt_unix.run
-        (loop 0 [] (fun ri -> not (Common.isDeletion ri)) >>= (fun actions ->
-          Lwt_util.join actions));
+        (let actions = loop 0 [] (fun ri -> not (Common.isDeletion ri)) in
+         Lwt_util.join actions);
       Lwt_unix.run
-        (loop 0 [] Common.isDeletion >>= (fun actions ->
-          Lwt_util.join actions));
+        (let actions = loop 0 [] Common.isDeletion in
+         Lwt_util.join actions);
       Transport.logFinish ();
       Trace.showTimer t;
-      Trace.status "Updating synchronizer state";
-      let t = Trace.startTimer "Updating synchronizer state" in
-      gtk_sync true;
-      Update.commitUpdates();
-      Trace.showTimer t;
+      commitUpdates ();
 
       let failures =
         let count =
@@ -1984,6 +1996,20 @@ lst_store#set ~row ~column:c_path path;
             0 !theState in
         if count = 0 then "" else
           Printf.sprintf "%d failure%s" count (if count=1 then "" else "s") in
+      let partials =
+        let count =
+          Array.fold_left
+            (fun l si ->
+               l + match si.whatHappened with
+                     Some(Util.Succeeded, _)
+                     when partiallyProblematic si.ri &&
+                          not (problematic si.ri) ->
+                       1
+                   | _ ->
+                       0)
+            0 !theState in
+        if count = 0 then "" else
+          Printf.sprintf "%d partially transferred" count in
       let skipped =
         let count =
           Array.fold_left
@@ -1993,8 +2019,8 @@ lst_store#set ~row ~column:c_path path;
         if count = 0 then "" else
           Printf.sprintf "%d skipped" count in
       Trace.status
-        (Printf.sprintf "Synchronization complete         %s%s%s"
-           failures (if failures=""||skipped="" then "" else ", ") skipped);
+        (Printf.sprintf "Synchronization complete         %s"
+           (String.concat ", " [failures; partials; skipped]));
       displayGlobalProgress 0.;
 
       grSet grRescan true
@@ -2113,10 +2139,22 @@ lst_store#set ~row ~column:c_path path;
     match !current with
       Some i ->
         getLock (fun () ->
-          Uicommon.showDiffs !theState.(i).ri
+          let item = !theState.(i) in
+          let len =
+            match item.ri.replicas with
+              Problem _ ->
+                Uutil.Filesize.zero
+            | Different diff ->
+                snd (if root1IsLocal then diff.rc2 else diff.rc1).size
+          in
+          item.bytesTransferred <- Uutil.Filesize.zero;
+          item.bytesToTransfer <- len;
+          initGlobalProgress len;
+          Uicommon.showDiffs item.ri
             (fun title text -> messageBox ~title (transcode text))
             Trace.status (Uutil.File.ofLine i);
-          displayGlobalProgress 0.)
+          displayGlobalProgress 0.;
+          fastRedisplay i)
     | None ->
         () in
 

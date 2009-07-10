@@ -14,6 +14,7 @@ Callback.register "unisonNonGuiStartup" unisonNonGuiStartup;;
 
 type stateItem = { mutable ri : reconItem;
                    mutable bytesTransferred : Uutil.Filesize.t;
+                   mutable bytesToTransfer : Uutil.Filesize.t;
                    mutable whatHappened : Util.confirmation option;
                    mutable statusMessage : string option };;
 let theState = ref [| |];;
@@ -28,6 +29,7 @@ external displayGlobalProgress : float -> unit = "displayGlobalProgress";;
 let totalBytesToTransfer = ref Uutil.Filesize.zero;;
 let totalBytesTransferred = ref Uutil.Filesize.zero;;
 
+let lastFrac = ref 0.;;
 let showGlobalProgress b =
   (* Concatenate the new message *)
   totalBytesTransferred := Uutil.Filesize.add !totalBytesTransferred b;
@@ -37,12 +39,15 @@ let showGlobalProgress b =
     else (Uutil.Filesize.percentageOfTotalSize
        !totalBytesTransferred !totalBytesToTransfer)
   in
-  displayGlobalProgress v;;
+  if v = 0. || abs_float (v -. !lastFrac) > 1. then begin
+    lastFrac := v;
+    displayGlobalProgress v
+  end;;
 
 let initGlobalProgress b =
   totalBytesToTransfer := b;
   totalBytesTransferred := Uutil.Filesize.zero;
-  showGlobalProgress Uutil.Filesize.zero;;
+  displayGlobalProgress 0.;;
 
 (* Defined in Bridge.m, used to redisplay the table
    when the status for a row changes *)
@@ -76,21 +81,21 @@ external reloadTable : int -> unit = "reloadTable";;
 (* from uigtk2 *)
 let showProgress i bytes dbg =
 (*  Trace.status "showProgress"; *)
-(* XXX There should be a way to reset the amount of bytes transferred... *)
   let i = Uutil.File.toLine i in
   let item = !theState.(i) in
   item.bytesTransferred <- Uutil.Filesize.add item.bytesTransferred bytes;
   let b = item.bytesTransferred in
-  let len = Common.riLength item.ri in
+  let len = item.bytesToTransfer in
   let newstatus =
     if b = Uutil.Filesize.zero || len = Uutil.Filesize.zero then "start "
     else if len = Uutil.Filesize.zero then
       Printf.sprintf "%5s " (Uutil.Filesize.toString b)
     else Util.percent2string (Uutil.Filesize.percentageOfTotalSize b len) in
+  let oldstatus = item.statusMessage in
   item.statusMessage <- Some newstatus;
   showGlobalProgress bytes;
 (* FIX: No status window in Mac version, see GTK version for how to do it *)
-  reloadTable i;;
+  if oldstatus <> Some newstatus then reloadTable i;;
 
 let unisonGetVersion() = Uutil.myVersion
 ;;
@@ -231,6 +236,12 @@ Callback.register "openConnectionReply" Remote.openConnectionReply;;
 Callback.register "openConnectionEnd" Remote.openConnectionEnd;;
 Callback.register "openConnectionCancel" Remote.openConnectionCancel;;
 
+let commitUpdates () =
+  Trace.status "Updating synchronizer state";
+  let t = Trace.startTimer "Updating synchronizer state" in
+  Update.commitUpdates();
+  Trace.showTimer t
+
 let do_unisonInit2 () =
   (* Canonize the names of the roots and install them in Globals. *)
   Globals.installRoots2();
@@ -295,17 +306,22 @@ let do_unisonInit2 () =
   let reconcile updates = Recon.reconcileAll updates in
   let (reconItemList, thereAreEqualUpdates, dangerousPaths) =
     reconcile (findUpdates ()) in
+  if not !Update.foundArchives then commitUpdates ();
   if reconItemList = [] then
-    if thereAreEqualUpdates then
-      Trace.status "Replicas have been changed only in identical ways since last sync"
-    else
+    if thereAreEqualUpdates then begin
+      if !Update.foundArchives then commitUpdates ();
+      Trace.status
+        "Replicas have been changed only in identical ways since last sync"
+    end else
       Trace.status "Everything is up to date"
   else
     Trace.status "Check and/or adjust selected actions; then press Go";
   Trace.status (Printf.sprintf "There are %d reconitems" (Safelist.length reconItemList));
   let stateItemList =
     Safelist.map
-      (fun ri -> { ri = ri; bytesTransferred = Uutil.Filesize.zero;
+      (fun ri -> { ri = ri;
+                   bytesTransferred = Uutil.Filesize.zero;
+                   bytesToTransfer = Uutil.Filesize.zero;
                    whatHappened = None; statusMessage = None })
       reconItemList in
   theState := Array.of_list stateItemList;
@@ -476,9 +492,15 @@ let do_unisonSynchronize () =
     Transport.logStart ();
     let totalLength =
       Array.fold_left
-        (fun l si -> Uutil.Filesize.add l (Common.riLength si.ri))
+        (fun l si ->
+           si.bytesTransferred <- Uutil.Filesize.zero;
+           let len =
+             if si.whatHappened = None then Common.riLength si.ri else
+             Uutil.Filesize.zero
+           in
+           si.bytesToTransfer <- len;
+           Uutil.Filesize.add l len)
         Uutil.Filesize.zero !theState in
-    displayGlobalProgress 0.;
     initGlobalProgress totalLength;
     let t = Trace.startTimer "Propagating changes" in
     let im = Array.length !theState in
@@ -507,6 +529,12 @@ let do_unisonSynchronize () =
                          | _ ->
                              fail e)
                   >>= (fun res ->
+                let rem =
+                  Uutil.Filesize.sub
+                    theSI.bytesToTransfer theSI.bytesTransferred
+                in
+                if rem <> Uutil.Filesize.zero then
+                  showProgress (Uutil.File.ofLine i) rem "done";
                 theSI.whatHappened <- Some res;
                 return ())
           | Some _ ->
@@ -524,10 +552,7 @@ let do_unisonSynchronize () =
         Lwt_util.join actions));
     Transport.logFinish ();
     Trace.showTimer t;
-    Trace.status "Updating synchronizer state";
-    let t = Trace.startTimer "Updating synchronizer state" in
-    Update.commitUpdates();
-    Trace.showTimer t;
+    commitUpdates ();
 
     let failures =
       let count =
@@ -537,6 +562,20 @@ let do_unisonSynchronize () =
           0 !theState in
       if count = 0 then "" else
         Printf.sprintf "%d failure%s" count (if count=1 then "" else "s") in
+    let partials =
+      let count =
+        Array.fold_left
+          (fun l si ->
+             l + match si.whatHappened with
+                   Some Util.Succeeded
+                   when partiallyProblematic si.ri &&
+                        not (problematic si.ri) ->
+                     1
+                 | _ ->
+                     0)
+          0 !theState in
+      if count = 0 then "" else
+        Printf.sprintf "%d partially transferred" count in
     let skipped =
       let count =
         Array.fold_left
@@ -546,9 +585,9 @@ let do_unisonSynchronize () =
       if count = 0 then "" else
         Printf.sprintf "%d skipped" count in
     Trace.status
-      (Printf.sprintf "Synchronization complete         %s%s%s"
-         failures (if failures=""||skipped="" then "" else ", ") skipped);
-    initGlobalProgress Uutil.Filesize.zero;
+      (Printf.sprintf "Synchronization complete         %s"
+         (String.concat ", " [failures; partials; skipped]));
+    initGlobalProgress Uutil.Filesize.dummy;
   end;;
 external syncComplete : unit -> unit = "syncComplete";;
 

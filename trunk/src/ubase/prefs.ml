@@ -281,6 +281,7 @@ and parseLines filename lines =
     match lines with
       [] -> res
     | theLine :: rest ->
+        let theLine = Util.removeTrailingCR theLine in
         let l = Util.trimWhitespace theLine in
         if l = "" || l.[0]='#' then
           loop rest (lineNum+1) res

@@ -391,17 +391,34 @@ let verifyMerge title text =
     end else
       true
   end
-      
+
+type stateItem =
+  { mutable ri : reconItem;
+    mutable bytesTransferred : Uutil.Filesize.t;
+    mutable bytesToTransfer : Uutil.Filesize.t }
+
 let doTransport reconItemList =
+  let items =
+    Array.map
+      (fun ri ->
+         {ri = ri;
+          bytesTransferred = Uutil.Filesize.zero;
+          bytesToTransfer = Common.riLength ri})
+      (Array.of_list reconItemList)
+  in
+  let totalBytesTransferred = ref Uutil.Filesize.zero in
   let totalBytesToTransfer =
     ref
-      (Safelist.fold_left
-         (fun l ri -> Uutil.Filesize.add l (Common.riLength ri))
-         Uutil.Filesize.zero reconItemList) in
-  let totalBytesTransferred = ref Uutil.Filesize.zero in
+      (Array.fold_left
+         (fun s item -> Uutil.Filesize.add item.bytesToTransfer s)
+         Uutil.Filesize.zero items)
+  in
   let t0 = Unix.gettimeofday () in
-  let showProgress _ b _ =
-    totalBytesTransferred := Uutil.Filesize.add !totalBytesTransferred b;
+  let showProgress i bytes dbg =
+    let i = Uutil.File.toLine i in
+    let item = items.(i) in
+    item.bytesTransferred <- Uutil.Filesize.add item.bytesTransferred bytes;
+    totalBytesTransferred := Uutil.Filesize.add !totalBytesTransferred bytes;
     let v =
       (Uutil.Filesize.percentageOfTotalSize
          !totalBytesTransferred !totalBytesToTransfer)
@@ -422,48 +439,57 @@ let doTransport reconItemList =
 
   Transport.logStart ();
   let fFailedPaths = ref [] in
-  let uiWrapper ri f =
-    catch f
+  let fPartialPaths = ref [] in
+  let uiWrapper i item f =
+    Lwt.try_bind f
+      (fun () ->
+         if partiallyProblematic item.ri && not (problematic item.ri) then
+           fPartialPaths := item.ri.path :: !fPartialPaths;
+         Lwt.return ())
       (fun e ->
         match e with
           Util.Transient s ->
-            let m = "[" ^ (Path.toString ri.path)  ^ "]: " ^ s in
+            let rem =
+              Uutil.Filesize.sub
+                item.bytesToTransfer item.bytesTransferred
+            in
+            if rem <> Uutil.Filesize.zero then
+              showProgress (Uutil.File.ofLine i) rem "done";
+            let m = "[" ^ (Path.toString item.ri.path)  ^ "]: " ^ s in
             alwaysDisplay ("Failed " ^ m ^ "\n");
-            fFailedPaths := ri.path :: !fFailedPaths;
+            fFailedPaths := item.ri.path :: !fFailedPaths;
             return ()
         | _ ->
             fail e) in
-  let counter = ref 0 in
-  let rec loop ris actions pRiThisRound =
-    match ris with
-      [] ->
-        actions
-    | ri :: rest when pRiThisRound ri ->
-        loop rest
-          (uiWrapper ri
-             (fun () -> (* We need different line numbers so that
-                           transport operations are aborted independently *)
-                        incr counter;
-                        Transport.transportItem ri
-                          (Uutil.File.ofLine !counter) verifyMerge)
-           :: actions)
-          pRiThisRound
-    | _ :: rest ->
-        loop rest actions pRiThisRound
+  let im = Array.length items in
+  let rec loop i actions pRiThisRound =
+    if i < im then begin
+      let item = items.(i) in
+      let actions =
+        if pRiThisRound item.ri then
+          uiWrapper i item
+            (fun () -> Transport.transportItem item.ri
+                         (Uutil.File.ofLine i) verifyMerge)
+          :: actions
+        else
+          actions
+      in
+      loop (i + 1) actions pRiThisRound
+    end else
+      actions
   in
   Lwt_unix.run
-    (let actions = loop reconItemList []
-        (fun ri -> not (Common.isDeletion ri)) in
-    Lwt_util.join actions);
+    (let actions = loop 0 [] (fun ri -> not (Common.isDeletion ri)) in
+     Lwt_util.join actions);
   Lwt_unix.run
-    (let actions = loop reconItemList [] Common.isDeletion in
-    Lwt_util.join actions);
+    (let actions = loop 0 [] Common.isDeletion in
+     Lwt_util.join actions);
   Transport.logFinish ();
 
   Uutil.setProgressPrinter (fun _ _ _ -> ());
   Util.set_infos "";
 
-  (Safelist.rev !fFailedPaths)
+  (Safelist.rev !fFailedPaths, Safelist.rev !fPartialPaths)
 
 let setWarnPrinterForInitialization()=
   Util.warnPrinter :=
@@ -505,8 +531,8 @@ let formatStatus major minor =
     s
 
 let rec interactAndPropagateChanges reconItemList
-            : bool * bool * (Path.t list)
-              (* anySkipped?, anyFailures?, failingPaths *) =
+            : bool * bool * bool * (Path.t list)
+              (* anySkipped?, anyPartial?, anyFailures?, failingPaths *) =
   let (proceed,newReconItemList) = interact reconItemList in
   let (updatesToDo, skipped) =
     Safelist.fold_left
@@ -518,20 +544,25 @@ let rec interactAndPropagateChanges reconItemList
     if not (Prefs.read Globals.batch || Prefs.read Trace.terse) then newLine();
     if not (Prefs.read Trace.terse) then Trace.status "Propagating updates";
     let timer = Trace.startTimer "Transmitting all files" in
-    let failedPaths = doTransport newReconItemList in
+    let (failedPaths, partialPaths) = doTransport newReconItemList in
     let failures = Safelist.length failedPaths in
+    let partials = Safelist.length partialPaths in
     Trace.showTimer timer;
     if not (Prefs.read Trace.terse) then Trace.status "Saving synchronizer state";
     Update.commitUpdates ();
     let trans = updatesToDo - failures in
     let summary =
       Printf.sprintf
-       "Synchronization %s at %s  (%d item%s transferred, %d skipped, %d failed)"
+       "Synchronization %s at %s  (%d item%s transferred, %s%d skipped, %d failed)"
        (if failures=0 then "complete" else "incomplete")
        (let tm = Util.localtime (Util.time()) in
         Printf.sprintf "%02d:%02d:%02d"
           tm.Unix.tm_hour tm.Unix.tm_min tm.Unix.tm_sec)
        trans (if trans=1 then "" else "s")
+       (if partials <> 0 then
+          Format.sprintf "%d partially transferred, " partials
+        else
+          "")
        skipped
        failures in
     Trace.log (summary ^ "\n");
@@ -542,13 +573,18 @@ let rec interactAndPropagateChanges reconItemList
           alwaysDisplayAndLog
             ("  skipped: " ^ (Path.toString ri.path)))
         newReconItemList;
+    if partials>0 then
+      Safelist.iter
+        (fun p ->
+           alwaysDisplayAndLog ("  partially transferred: " ^ Path.toString p))
+        partialPaths;
     if failures>0 then
       Safelist.iter
         (fun p -> alwaysDisplayAndLog ("  failed: " ^ (Path.toString p)))
         failedPaths;
-    (skipped > 0, failures > 0, failedPaths) in
+    (skipped > 0, partials > 0, failures > 0, failedPaths) in
+  if not !Update.foundArchives then Update.commitUpdates ();
   if updatesToDo = 0 then begin
-    display "No updates to propagate\n";
     (* BCP (3/09): We need to commit the archives even if there are
        no updates to propagate because some files (in fact, if we've
        just switched to DST on windows, a LOT of files) might have new
@@ -556,8 +592,10 @@ let rec interactAndPropagateChanges reconItemList
     (* JV (5/09): Don't save the archive in repeat mode as it has some
        costs and its unlikely there is much change to the archives in
        this mode. *)
-    if Prefs.read Uicommon.repeat = "" then Update.commitUpdates ();
-    (skipped > 0, false, [])
+    if !Update.foundArchives && Prefs.read Uicommon.repeat = "" then
+      Update.commitUpdates ();
+    display "No updates to propagate\n";
+    (skipped > 0, false, false, [])
   end else if proceed=ProceedImmediately then begin
     doit()
   end else begin
@@ -642,9 +680,9 @@ let synchronizeOnce() =
     (Uicommon.perfectExit, [])
   end else begin
     checkForDangerousPath dangerousPaths;
-    let (anySkipped, anyFailures, failedPaths) =
+    let (anySkipped, anyPartial, anyFailures, failedPaths) =
       interactAndPropagateChanges reconItemList in
-    let exitStatus = Uicommon.exitCode(anySkipped,anyFailures) in
+    let exitStatus = Uicommon.exitCode(anySkipped || anyPartial,anyFailures) in
     (exitStatus, failedPaths)
   end
 

@@ -247,33 +247,44 @@ let propagateErrors allowPartial (rplc: Common.replicas): Common.replicas =
 
 type singleUpdate = Rep1Updated | Rep2Updated
 
-let update2replicaContent (conflict: bool) ui ucNew oldType:
+let update2replicaContent path (conflict: bool) ui ucNew oldType:
     Common.replicaContent =
+  let size = Update.updateSize path ui in
   match ucNew with
     Absent ->
-      {typ = `ABSENT; status = `Deleted; desc = Props.dummy; ui = ui}
+      {typ = `ABSENT; status = `Deleted; desc = Props.dummy;
+       ui = ui; size = size}
   | File (desc, ContentsSame) ->
-      {typ = `FILE; status = `PropsChanged; desc = desc; ui = ui}
+      {typ = `FILE; status = `PropsChanged; desc = desc;
+       ui = ui; size = size}
   | File (desc, _) when oldType <> `FILE ->
-      {typ = `FILE; status = `Created; desc = desc; ui = ui}
+      {typ = `FILE; status = `Created; desc = desc;
+       ui = ui; size = size}
   | File (desc, ContentsUpdated _) ->
-      {typ = `FILE; status = `Modified; desc = desc; ui = ui}
+      {typ = `FILE; status = `Modified; desc = desc;
+       ui = ui; size = size}
   | Symlink l when oldType <> `SYMLINK ->
-      {typ = `SYMLINK; status = `Created; desc = Props.dummy; ui = ui}
+      {typ = `SYMLINK; status = `Created; desc = Props.dummy;
+       ui = ui; size = size}
   | Symlink l ->
-      {typ = `SYMLINK; status = `Modified; desc = Props.dummy; ui = ui}
+      {typ = `SYMLINK; status = `Modified; desc = Props.dummy;
+       ui = ui; size = size}
   | Dir (desc, _, _, _) when oldType <> `DIRECTORY ->
-      {typ = `DIRECTORY; status = `Created; desc = desc; ui = ui}
+      {typ = `DIRECTORY; status = `Created; desc = desc;
+       ui = ui; size = size}
   | Dir (desc, _, PropsUpdated, _) ->
-      {typ = `DIRECTORY; status = `PropsChanged; desc = desc; ui = ui}
+      {typ = `DIRECTORY; status = `PropsChanged; desc = desc;
+       ui = ui; size = size}
   | Dir (desc, _, PropsSame, _) when conflict ->
       (* Special case: the directory contents has been modified and the      *)
       (* directory is in conflict.  (We don't want to display a conflict     *)
       (* between an unchanged directory and a file, for instance: this would *)
       (* be rather puzzling to the user)                                     *)
-      {typ = `DIRECTORY; status = `Modified; desc = desc; ui = ui}
+      {typ = `DIRECTORY; status = `Modified; desc = desc;
+       ui = ui; size = size}
   | Dir (desc, _, PropsSame, _) ->
-      {typ = `DIRECTORY; status = `Unchanged; desc =desc; ui = ui}
+      {typ = `DIRECTORY; status = `Unchanged; desc =desc;
+       ui = ui; size = size}
 
 let oldType (prev: Common.prevState): Fileinfo.typ =
   match prev with
@@ -287,23 +298,24 @@ let oldDesc (prev: Common.prevState): Props.t =
 
 (* [describeUpdate ui] returns the replica contents for both the case of     *)
 (* updating and the case of non-updatingd                                    *)
-let describeUpdate ui
+let describeUpdate path ui
     : Common.replicaContent * Common.replicaContent =
   match ui with
     Updates (ucNewStatus, prev) ->
       let typ = oldType prev in
-      (update2replicaContent false ui ucNewStatus typ,
-       {typ = typ; status = `Unchanged; desc = oldDesc prev; ui = NoUpdates})
+      (update2replicaContent path false ui ucNewStatus typ,
+       {typ = typ; status = `Unchanged; desc = oldDesc prev;
+        ui = NoUpdates; size = Update.updateSize path NoUpdates})
   | _  -> assert false
 
 (* Computes the reconItems when only one side has been updated.  (We split   *)
 (* this out into a separate function to avoid duplicating all the symmetric  *)
 (* cases.)                                                                   *)
-let rec reconcileNoConflict allowPartial ui whatIsUpdated
+let rec reconcileNoConflict allowPartial path ui whatIsUpdated
     (result: (Name.t, Common.replicas) Tree.u)
     : (Name.t, Common.replicas) Tree.u =
   let different() =
-    let rcUpdated, rcNotUpdated = describeUpdate ui in
+    let rcUpdated, rcNotUpdated = describeUpdate path ui in
     match whatIsUpdated with
       Rep2Updated ->
         Different {rc1 = rcNotUpdated; rc2 = rcUpdated;
@@ -327,7 +339,7 @@ let rec reconcileNoConflict allowPartial ui whatIsUpdated
       Safelist.fold_left
         (fun result (theName, uiChild) ->
            Tree.leave
-             (reconcileNoConflict allowPartial
+             (reconcileNoConflict allowPartial (Path.child path theName)
                 uiChild whatIsUpdated (Tree.enter result theName)))
         r children
   | Updates _ ->
@@ -386,16 +398,16 @@ let rec reconcile allowPartial path ui1 ui2 counter equals unequals =
     (equals,
      Tree.add unequals
        (propagateErrors allowPartial
-          (Different {rc1 = update2replicaContent true ui1 uc1 oldType;
-                      rc2 = update2replicaContent true ui2 uc2 oldType;
+          (Different {rc1 = update2replicaContent path true ui1 uc1 oldType;
+                      rc2 = update2replicaContent path true ui2 uc2 oldType;
                       direction = Conflict; default_direction = Conflict;
                       errors1 = []; errors2 = []}))) in
   let toBeMerged uc1 uc2 oldType equals unequals =
     (equals,
      Tree.add unequals
        (propagateErrors allowPartial
-          (Different {rc1 = update2replicaContent true ui1 uc1 oldType;
-                      rc2 = update2replicaContent true ui2 uc2 oldType;
+          (Different {rc1 = update2replicaContent path true ui1 uc1 oldType;
+                      rc2 = update2replicaContent path true ui2 uc2 oldType;
                       direction = Merge; default_direction = Merge;
                       errors1 = []; errors2 = []}))) in
   match (ui1, ui2) with
@@ -404,9 +416,9 @@ let rec reconcile allowPartial path ui1 ui2 counter equals unequals =
   | (_, Error s) ->
       (equals, Tree.add unequals (Problem s))
   | (NoUpdates, _)  ->
-      (equals, reconcileNoConflict allowPartial ui2 Rep2Updated unequals)
+      (equals, reconcileNoConflict allowPartial path ui2 Rep2Updated unequals)
   | (_, NoUpdates) ->
-      (equals, reconcileNoConflict allowPartial ui1 Rep1Updated unequals)
+      (equals, reconcileNoConflict allowPartial path ui1 Rep1Updated unequals)
   | (Updates (Absent, _), Updates (Absent, _)) ->
       (add_equal counter equals (Absent, Absent), unequals)
   | (Updates (Dir (desc1, children1, propsChanged1, _) as uc1, prevState1),
@@ -427,8 +439,8 @@ let rec reconcile allowPartial path ui1 ui2 counter equals unequals =
            (equals,
             Tree.add unequals
               (Different
-                 {rc1 = update2replicaContent false ui1 uc1 `DIRECTORY;
-                  rc2 = update2replicaContent false ui2 uc2 `DIRECTORY;
+                 {rc1 = update2replicaContent path false ui1 uc1 `DIRECTORY;
+                  rc2 = update2replicaContent path false ui2 uc2 `DIRECTORY;
                   direction = action; default_direction = action;
                   errors1 = []; errors2 = []}))
        in
