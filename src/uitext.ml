@@ -237,7 +237,7 @@ let interact rilist =
                        ^ System.fspathToPrintString (Prefs.profilePathname n)
                        ^ " and restart " ^ Uutil.myName ^ "\n") end;
           let nukeIgnoredRis =
-            Safelist.filter (fun ri -> not (Globals.shouldIgnore ri.path)) in
+            Safelist.filter (fun ri -> not (Globals.shouldIgnore ri.path1)) in
           loop (nukeIgnoredRis (ri::prev)) (nukeIgnoredRis ril) in
         (* This should work on most terminals: *)
         let redisplayri() = overwrite (); displayri ri; display "\n" in
@@ -278,17 +278,17 @@ let interact rilist =
                  (["I"],
                   ("ignore this path permanently"),
                   (fun () ->
-                     ignore (Uicommon.ignorePath ri.path) rest
+                     ignore (Uicommon.ignorePath ri.path1) rest
                        "this path"));
                  (["E"],
                   ("permanently ignore files with this extension"),
                   (fun () ->
-                     ignore (Uicommon.ignoreExt ri.path) rest
+                     ignore (Uicommon.ignoreExt ri.path1) rest
                        "files with this extension"));
                  (["N"],
                   ("permanently ignore paths ending with this name"),
                   (fun () ->
-                     ignore (Uicommon.ignoreName ri.path) rest
+                     ignore (Uicommon.ignoreName ri.path1) rest
                        "files with this name"));
                  (["m"],
                   ("merge the versions"),
@@ -444,7 +444,7 @@ let doTransport reconItemList =
     Lwt.try_bind f
       (fun () ->
          if partiallyProblematic item.ri && not (problematic item.ri) then
-           fPartialPaths := item.ri.path :: !fPartialPaths;
+           fPartialPaths := item.ri.path1 :: !fPartialPaths;
          Lwt.return ())
       (fun e ->
         match e with
@@ -455,9 +455,9 @@ let doTransport reconItemList =
             in
             if rem <> Uutil.Filesize.zero then
               showProgress (Uutil.File.ofLine i) rem "done";
-            let m = "[" ^ (Path.toString item.ri.path)  ^ "]: " ^ s in
+            let m = "[" ^ (Path.toString item.ri.path1)  ^ "]: " ^ s in
             alwaysDisplay ("Failed " ^ m ^ "\n");
-            fFailedPaths := item.ri.path :: !fFailedPaths;
+            fFailedPaths := item.ri.path1 :: !fFailedPaths;
             return ()
         | _ ->
             fail e) in
@@ -571,7 +571,7 @@ let rec interactAndPropagateChanges reconItemList
         (fun ri ->
         if problematic ri then
           alwaysDisplayAndLog
-            ("  skipped: " ^ (Path.toString ri.path)))
+            ("  skipped: " ^ (Path.toString ri.path1)))
         newReconItemList;
     if partials>0 then
       Safelist.iter

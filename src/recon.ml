@@ -33,7 +33,7 @@ let setDirection ri dir force =
       else if dir=`Replica2ToReplica1 then
         diff.direction <- Replica2ToReplica1
       else if dir=`Merge then begin
-        if Globals.shouldMerge ri.path then diff.direction <- Merge
+        if Globals.shouldMerge ri.path1 then diff.direction <- Merge
       end else  (* dir = `Older or dir = `Newer *)
         if rc1.status<>`Deleted && rc2.status<>`Deleted then begin
           let comp = Props.time rc1.desc -. Props.time rc2.desc in
@@ -167,7 +167,7 @@ let overrideReconcilerChoices ris =
     Safelist.iter (fun ri -> setDirection ri dir force) ris
   end;
   Safelist.iter (fun ri ->
-                   let (rootp,forcep) = lookupPreferredRootPartial ri.path in
+                   let (rootp,forcep) = lookupPreferredRootPartial ri.path1 in
                    if rootp<>"" then begin
                      let dir = root2direction rootp in
                        setDirection ri dir forcep
@@ -312,8 +312,8 @@ let describeUpdate path ui
 (* this out into a separate function to avoid duplicating all the symmetric  *)
 (* cases.)                                                                   *)
 let rec reconcileNoConflict allowPartial path ui whatIsUpdated
-    (result: (Name.t, Common.replicas) Tree.u)
-    : (Name.t, Common.replicas) Tree.u =
+    (result: (Name.t * Name.t, Common.replicas) Tree.u)
+    : (Name.t * Name.t, Common.replicas) Tree.u =
   let different() =
     let rcUpdated, rcNotUpdated = describeUpdate path ui in
     match whatIsUpdated with
@@ -340,7 +340,7 @@ let rec reconcileNoConflict allowPartial path ui whatIsUpdated
         (fun result (theName, uiChild) ->
            Tree.leave
              (reconcileNoConflict allowPartial (Path.child path theName)
-                uiChild whatIsUpdated (Tree.enter result theName)))
+                uiChild whatIsUpdated (Tree.enter result (theName, theName))))
         r children
   | Updates _ ->
       Tree.add result (propagateErrors allowPartial (different ()))
@@ -355,19 +355,19 @@ let combineChildren children1 children2 =
       [],_ ->
         Safelist.rev_append r
           (Safelist.map
-             (fun (name,ui) -> (name,NoUpdates,ui)) children2)
+             (fun (name,ui) -> (name,NoUpdates,name,ui)) children2)
     | _,[] ->
         Safelist.rev_append r
           (Safelist.map
-             (fun (name,ui) -> (name,ui,NoUpdates)) children1)
+             (fun (name,ui) -> (name,ui,name,NoUpdates)) children1)
     | (name1,ui1)::rem1, (name2,ui2)::rem2 ->
         let dif = Name.compare name1 name2 in
         if dif = 0 then
-          loop ((name1,ui1,ui2)::r) rem1 rem2
+          loop ((name1,ui1,name2,ui2)::r) rem1 rem2
         else if dif < 0 then
-          loop ((name1,ui1,NoUpdates)::r) rem1 children2
+          loop ((name1,ui1,name1,NoUpdates)::r) rem1 children2
         else
-          loop ((name2,NoUpdates,ui2)::r) children1 rem2
+          loop ((name2,NoUpdates,name2,ui2)::r) children1 rem2
   in
   loop [] children1 children2
 
@@ -389,11 +389,11 @@ let add_equal (counter, archiveUpdated) equal v =
 (* propagating changes to make the two replicas equal.                       *)
 (* --                                                                        *)
 (* It uses two accumulators:                                                 *)
-(*   equals: (Name.t, Common.updateContent * Common.updateContent)           *)
+(*   equals: (Name.t * Name.t, Common.updateContent * Common.updateContent)  *)
 (*           Tree.u                                                          *)
-(*   unequals: (Name.t, Common.replicas) Tree.u                              *)
+(*   unequals: (Name.t * Name.t, Common.replicas) Tree.u                     *)
 (* --                                                                        *)
-let rec reconcile allowPartial path ui1 ui2 counter equals unequals =
+let rec reconcile allowPartial path ui1 ui2 counter (equals:(_*_,_)Tree.u) unequals =
   let different uc1 uc2 oldType equals unequals =
     (equals,
      Tree.add unequals
@@ -446,10 +446,11 @@ let rec reconcile allowPartial path ui1 ui2 counter equals unequals =
        in
        (* Apply reconcile on children. *)
        Safelist.fold_left
-         (fun (equals, unequals) (name,ui1,ui2) ->
+         (fun (equals, unequals) (name1,ui1,name2,ui2) ->
            let (eq, uneq) =
-              reconcile allowPartial (Path.child path name) ui1 ui2 counter
-               (Tree.enter equals name) (Tree.enter unequals name)
+              reconcile allowPartial (Path.child path name1) ui1 ui2 counter
+               (Tree.enter equals (name1, name2))
+               (Tree.enter unequals (name1, name2))
            in
            (Tree.leave eq, Tree.leave uneq))
          dirResult
@@ -492,10 +493,14 @@ let sortPaths pathUpdatesList =
     (fun (p1, _) (p2, _) -> Path.compare p1 p2 <= 0)
     pathUpdatesList
 
-let rec enterPath p t =
-  match Path.deconstruct p with
-    None          -> t
-  | Some (nm, p') -> enterPath p' (Tree.enter t nm)
+let rec enterPath p1 p2 t =
+  match Path.deconstruct p1, Path.deconstruct p2 with
+    None, None ->
+      t
+  | Some (nm1, p1'), Some (nm2, p2') ->
+      enterPath p1' p2' (Tree.enter t (nm1, nm2))
+  | _ ->
+      assert false (* Cannot happen, as the paths are equal up to case *)
 
 let rec leavePath p t =
   match Path.deconstruct p with
@@ -515,23 +520,22 @@ let dangerousPath u1 u2 =
 (* The second component of the return value is true if there is at least one *)
 (* file that is updated in the same way on both roots                        *)
 let reconcileList allowPartial
-      (pathUpdatesList: (Path.t * Common.updateItem list) list)
+      (pathUpdatesList:
+         (Path.t * Common.updateItem * Path.t * Common.updateItem) list)
       : Common.reconItem list * bool * Path.t list =
   let counter = ref 0 in
   let archiveUpdated = ref false in
   let (equals, unequals, dangerous) =
     Safelist.fold_left
-      (fun (equals, unequals, dangerous) (path,updatesList) ->
-        match updatesList with
-          [ui1; ui2] ->
-            let (equals, unequals) =
-              reconcile allowPartial path ui1 ui2 (counter, archiveUpdated)
-                (enterPath path equals) (enterPath path unequals)
-            in
-            (leavePath path equals, leavePath path unequals,
-             if dangerousPath ui1 ui2 then path :: dangerous else dangerous)
-        | _ ->
-            assert false)
+      (fun (equals, unequals, dangerous) (path1,ui1,path2,ui2) ->
+         let (equals, unequals) =
+           reconcile allowPartial
+             path1 ui1 ui2 (counter, archiveUpdated)
+             (enterPath path1 path2 equals)
+             (enterPath path1 path2 unequals)
+         in
+         (leavePath path1 equals, leavePath path1 unequals,
+          if dangerousPath ui1 ui2 then path1 :: dangerous else dangerous))
       (Tree.start, Tree.start, []) pathUpdatesList in
   let unequals = Tree.finish unequals in
   debug (fun() -> Util.msg "reconcile: %d results\n" (Tree.size unequals));
@@ -539,9 +543,13 @@ let reconcileList allowPartial
   Update.markEqual equals;
   (* Commit archive updates done up to now *)
   if !archiveUpdated then Update.commitUpdates ();
-  let result = Tree.flatten unequals Path.empty Path.child [] in
+  let result =
+    Tree.flatten unequals (Path.empty, Path.empty)
+      (fun (p1, p2) (nm1, nm2) -> (Path.child p1 nm1, Path.child p2 nm2)) [] in
   let unsorted =
-    Safelist.map (fun (p, rplc) -> {path = p; replicas = rplc}) result in
+    Safelist.map
+     (fun ((p1, p2), rplc) -> {path1 = p1; path2 = p2; replicas = rplc})
+     result in
   let sorted = Sortri.sortReconItems unsorted in
   overrideReconcilerChoices sorted;
   (sorted, not (Tree.is_empty equals), dangerous)
@@ -550,10 +558,7 @@ let reconcileList allowPartial
    according to the roots and paths of synchronization, builds the           
    corresponding reconItem list.  A second component indicates whether there 
    is any file updated in the same way on both sides. *)
-let reconcileAll ?(allowPartial = false) (ONEPERPATH(updatesListList)) =
+let reconcileAll ?(allowPartial = false) updatesList =
   Trace.status "Reconciling changes";
   debug (fun() -> Util.msg "reconcileAll\n");
-  let pathList = Prefs.read Globals.paths in
-  let pathUpdatesList =
-    sortPaths (Safelist.combine pathList updatesListList) in
-  reconcileList allowPartial pathUpdatesList
+  reconcileList allowPartial updatesList

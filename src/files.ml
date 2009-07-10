@@ -699,20 +699,20 @@ let showStatus = function
   | Unix.WSIGNALED i -> Printf.sprintf "killed with signal %d" i
   | Unix.WSTOPPED i -> Printf.sprintf "stopped with signal %d" i
 
-let merge root1 root2 path id ui1 ui2 showMergeFn =
+let merge root1 path1 ui1 root2 path2 ui2 id showMergeFn =
   debug (fun () -> Util.msg "merge path %s between roots %s and %s\n"
-      (Path.toString path) (root2string root1) (root2string root2));
+      (Path.toString path1) (root2string root1) (root2string root2));
 
   (* The following assumes root1 is always local: switch them if needed to make this so *)
-  let (root1,root2) = 
+  let (root1,path1,ui1,root2,path2,ui2) = 
     match root1 with
-      (Local,fspath1) -> (root1,root2)
-    | _ -> (root2,root1) in
+      (Local,fspath1) -> (root1,path1,ui1,root2,path2,ui2)
+    | _ -> (root2,path2,ui2,root1,path1,ui1) in
 
   let (localPath1, (workingDirForMerge, basep), fspath1) =
     match root1 with
       (Local,fspath1) ->
-        let localPath1 = Update.translatePathLocal fspath1 path in
+        let localPath1 = Update.translatePathLocal fspath1 path1 in
         (localPath1, Fspath.findWorkingDir fspath1 localPath1, fspath1)
     | _ -> assert false in
   
@@ -754,9 +754,9 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
            `Copy desc1 fp1 None ress1 id >>= fun info ->
          Lwt.return ());
       Lwt_unix.run
-	(Update.translatePath root2 path >>= (fun path ->
+	(Update.translatePath root2 path2 >>= (fun path2 ->
 	  Copy.file
-	    root2 path root1 workingDirForMerge working2 basep
+	    root2 path2 root1 workingDirForMerge working2 basep
 	    `Copy desc2 fp2 None ress2 id) >>= fun info ->
          Lwt.return ());
       
@@ -805,7 +805,7 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
       let info2 = Fileinfo.get false workingDirForMerge working2 in
       let dig2 = Os.fingerprint workingDirForMerge working2 info2 in
       let cmd = formatMergeCmd
-          path
+          path1
           (Fspath.quotes (Fspath.concat workingDirForMerge working1))
           (Fspath.quotes (Fspath.concat workingDirForMerge working2))
           (match arch with None -> None | Some f -> Some(Fspath.quotes f))
@@ -828,7 +828,7 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
          the displaying from the querying... *)
       if not
           (showMergeFn
-             (Printf.sprintf "Results of merging %s" (Path.toString path))
+             (Printf.sprintf "Results of merging %s" (Path.toString path1))
              mergeResultLog) then
         raise (Util.Transient ("Merge command canceled by the user"));
       
@@ -946,14 +946,14 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
 
       Lwt_unix.run
 	(debug (fun () -> Util.msg "Committing results of merge\n");
-         copyBack workingDirForMerge working1 root1 path desc1 ui1 id >>= (fun () ->
-         copyBack workingDirForMerge working2 root2 path desc2 ui2 id >>= (fun () ->
+         copyBack workingDirForMerge working1 root1 path1 desc1 ui1 id >>= (fun () ->
+         copyBack workingDirForMerge working2 root2 path2 desc2 ui2 id >>= (fun () ->
          let arch_fspath = Fspath.concat workingDirForMerge workingarch in
          if Fs.file_exists arch_fspath then begin
            debug (fun () -> Util.msg "Updating unison archives for %s to reflect results of merge\n"
-                   (Path.toString path));
-           if not (Stasher.shouldBackupCurrent path) then
-             Util.msg "Warning: 'backupcurrent' is not set for path %s\n" (Path.toString path);
+                   (Path.toString path1));
+           if not (Stasher.shouldBackupCurrent path1) then
+             Util.msg "Warning: 'backupcurrent' is not set for path %s\n" (Path.toString path1);
            Stasher.stashCurrentVersion workingDirForMerge localPath1 (Some workingarch);
            let infoarch = Fileinfo.get false workingDirForMerge workingarch in
            let dig = Os.fingerprint arch_fspath Path.empty infoarch in
@@ -963,8 +963,8 @@ let merge root1 root2 path id ui1 ui2 showMergeFn =
                (Props.get (Fs.stat arch_fspath) infoarch.osX, dig,
                 Fileinfo.stamp (Fileinfo.get true arch_fspath Path.empty),
                 Osx.stamp infoarch.osX) in
-           Update.replaceArchive root1 path new_archive_entry >>= fun _ ->
-           Update.replaceArchive root2 path new_archive_entry >>= fun _ ->
+           Update.replaceArchive root1 path1 new_archive_entry >>= fun _ ->
+           Update.replaceArchive root2 path2 new_archive_entry >>= fun _ ->
            Lwt.return ()
          end else 
            (Lwt.return ()) )))) )

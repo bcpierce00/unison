@@ -1529,7 +1529,7 @@ let findOnRoot =
     (fun (fspath, pathList) ->
        Lwt.return (findLocal fspath pathList))
 
-let findUpdatesOnPaths pathList : Common.updateItem list Common.oneperpath =
+let findUpdatesOnPaths pathList =
   Lwt_unix.run
     (loadArchives true >>= (fun ok ->
      begin if ok then Lwt.return () else begin
@@ -1545,7 +1545,8 @@ let findUpdatesOnPaths pathList : Common.updateItem list Common.oneperpath =
      let t = Trace.startTimer "Collecting changes" in
      Globals.allRootsMapWithWaitingAction (fun r ->
        debug (fun() -> Util.msg "findOnRoot %s\n" (root2string r));
-       findOnRoot r pathList)
+       findOnRoot r pathList >>= fun updates ->
+       Lwt.return (List.combine pathList updates))
        (fun (host, _) ->
          begin match host with
            Remote _ -> Uutil.showUpdateStatus "";
@@ -1554,11 +1555,18 @@ let findUpdatesOnPaths pathList : Common.updateItem list Common.oneperpath =
          end)
        >>= (fun updates ->
      Trace.showTimer t;
-     let result = Safelist.transpose updates in
+     let result =
+       Safelist.map
+         (fun r ->
+            match r with
+              [(p1, u1); (p2, u2)] -> (p1,u1,p2,u2)
+            | _                    -> assert false)
+         (Safelist.transpose updates)
+     in
      Trace.status "";
-     Lwt.return (ONEPERPATH(result))))))
+     Lwt.return result))))
 
-let findUpdates () : Common.updateItem list Common.oneperpath =
+let findUpdates () =
   (* TODO: We should filter the paths to remove duplicates (including prefixes)
      and ignored paths *)
   findUpdatesOnPaths (Prefs.read Globals.paths)
@@ -1742,8 +1750,8 @@ let markEqual equals =
     Lwt_unix.run
       (Globals.allRootsIter2
          markEqualOnRoot
-         [Tree.map (fun n -> n) (fun (uc1,uc2) -> uc1) equals;
-          Tree.map (fun n -> n) (fun (uc1,uc2) -> uc2) equals])
+         [Tree.map (fun (nm1, nm2) -> nm1) (fun (uc1,uc2) -> uc1) equals;
+          Tree.map (fun (nm1, nm2) -> nm2) (fun (uc1,uc2) -> uc2) equals])
   end
 
 let replaceArchiveLocal fspath path newArch =
