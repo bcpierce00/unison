@@ -1239,6 +1239,10 @@ let rec buildUpdateChildren
     Pred.test immutable (Path.toString path) &&
     not (Pred.test immutablenot (Path.toString path))
   in
+(*
+if skip then (None, [], false) else
+let curChildren = ref (NameMap.fold (fun nm _ rem -> (nm, `Ok) :: rem) archChi []) in
+*)
   let curChildren = ref (getChildren fspath path) in
   let emptied = not (NameMap.is_empty archChi) && !curChildren = [] in
   let updates = ref [] in
@@ -1395,17 +1399,8 @@ and buildUpdateRec archive currfspath path fastCheck =
         debug (fun() -> Util.msg "  buildUpdate -> New directory\n");
         let (newChildren, childUpdates, _) =
           buildUpdateChildren currfspath path NameMap.empty fastCheck in
-        (* BCPFIX: This is a bit of a hack and does not really work, since
-           it means that we calculate the size of a directory just once and
-           then never update our idea of how big it is.  The size should
-           really be recalculated when things change. *)
-        let newdesc =
-           Props.setLength info.Fileinfo.desc
-             (Safelist.fold_left
-               (fun s (_,ui) -> Uutil.Filesize.add s (uiLength ui))
-               Uutil.Filesize.zero childUpdates) in
         (None,
-         Updates (Dir (newdesc, childUpdates, PropsUpdated, false),
+         Updates (Dir (info.Fileinfo.desc, childUpdates, PropsUpdated, false),
                   oldInfoOf archive))
   with
     Util.Transient(s) -> None, Error(s)
@@ -1826,6 +1821,71 @@ let updateProps fspath path propOpt ui =
 (*                  Make sure no change has happened                     *)
 (*************************************************************************)
 
+let reportUpdate warnFastCheck explanation =
+  let msg =
+    "Destination updated during synchronization\n" ^ explanation ^
+   if warnFastCheck then
+     "  (if this happens repeatedly on a file that has not been changed, \n\
+     \  try running once with 'fastcheck' set to false)"
+   else
+     ""
+  in
+  raise (Util.Transient msg)
+
+let rec explainUpdate path ui =
+  match ui with
+    NoUpdates ->
+      ()
+  | Error err ->
+      raise (Util.Transient ("Could not check destination:\n" ^ err))
+  | Updates (Absent, _) ->
+      reportUpdate false
+        (Format.sprintf "The file %s has been deleted\n"
+           (Path.toString path))
+  | Updates (File (_, ContentsSame), _) ->
+      reportUpdate false
+        (Format.sprintf "The properties of file %s have been modified\n"
+           (Path.toString path))
+  | Updates (File (desc, ContentsUpdated (_, _, ress)),
+             Previous (`FILE, oldDesc, _, oldRess)) ->
+      reportUpdate
+        (useFastChecking()
+           &&
+         Props.same_time desc oldDesc
+           &&
+         Props.length desc = Props.length oldDesc
+           &&
+         not (excelFile path)
+           &&
+         Osx.ressUnchanged oldRess ress None true)
+        (Format.sprintf "The contents of file %s has been modified\n"
+           (Path.toString path))
+  | Updates (File (_, ContentsUpdated _), _) ->
+      reportUpdate false
+        (Format.sprintf "The file %s has been created\n"
+           (Path.toString path))
+  | Updates (Symlink _, Previous (`SYMLINK, _, _, _)) ->
+      reportUpdate false
+        (Format.sprintf "The symlink %s has been modified\n"
+           (Path.toString path))
+  | Updates (Symlink _, _) ->
+      reportUpdate false
+        (Format.sprintf "The symlink %s has been created\n"
+           (Path.toString path))
+  | Updates (Dir (_, _, PropsUpdated, _), Previous (`DIRECTORY, _, _, _)) ->
+      reportUpdate false
+        (Format.sprintf
+           "The properties of directory %s have been modified\n"
+           (Path.toString path))
+  | Updates (Dir (_, _, PropsUpdated, _), _) ->
+      reportUpdate false
+        (Format.sprintf "The directory %s has been created\n"
+           (Path.toString path))
+  | Updates (Dir (_, uiChildren, PropsSame, _), _) ->
+      List.iter
+        (fun (nm, uiChild) -> explainUpdate (Path.child path nm) uiChild)
+        uiChildren
+
 let checkNoUpdates fspath pathInArchive ui =
   debug (fun() ->
     Util.msg "checkNoUpdates %s %s\n"
@@ -1838,10 +1898,79 @@ let checkNoUpdates fspath pathInArchive ui =
   let archive = updateArchiveRec ui archive in
   (* ...and check that this is a good description of what's out in the world *)
   let (_, uiNew) = buildUpdateRec archive fspath localPath false in
-  if uiNew <> NoUpdates then
-    raise (Util.Transient (
-             "Destination updated during synchronization\n"
-           ^ (if useFastChecking() then
-                "  (if this happens repeatedly on a file that has not been changed, \n"
-              ^ "  try running once with 'fastcheck' set to false)"
-              else "")))
+  explainUpdate pathInArchive uiNew
+
+(*****************************************************************************)
+(*                                UPDATE SIZE                                *)
+(*****************************************************************************)
+
+let sizeZero = (0, Uutil.Filesize.zero)
+let sizeOne = (1, Uutil.Filesize.zero)
+let sizeAdd (items, bytes) (items', bytes') =
+  (items + items', Uutil.Filesize.add bytes bytes')
+
+let fileSize desc ress =
+  (1, Uutil.Filesize.add (Props.length desc) (Osx.ressLength ress))
+
+let rec archiveSize arch =
+  match arch with
+    NoArchive ->
+      sizeZero
+  | ArchiveDir (_, arcCh) ->
+      NameMap.fold
+        (fun _ ar size -> sizeAdd size (archiveSize ar))
+        arcCh sizeOne
+  | ArchiveFile (desc, _, _, ress) ->
+      fileSize desc ress
+  | ArchiveSymlink _ ->
+      sizeOne
+
+let rec updateSizeRec archive ui =
+  match ui with
+    NoUpdates ->
+      archiveSize archive
+  | Error _ ->
+      sizeZero
+  | Updates (uc, _) ->
+      match uc with
+        Absent ->
+          sizeZero
+      | File (desc, ContentsSame) ->
+          begin match archive with
+            ArchiveFile (_, _, _, ress) -> fileSize desc ress
+          | _                           -> assert false
+          end
+      | File (desc, ContentsUpdated (_, _, ress)) ->
+          fileSize desc ress
+      | Symlink l ->
+          sizeOne
+      | Dir (_, children, _, _) ->
+          match archive with
+            ArchiveDir (_, arcCh) ->
+              let ch = NameMap.map (fun ch -> (ch, NoUpdates)) arcCh in
+              let ch =
+                List.fold_left
+                  (fun ch (nm, uiChild) ->
+                     let arcChild =
+                       try fst (NameMap.find nm ch)
+                       with Not_found -> NoArchive
+                     in
+                     NameMap.add nm (arcChild, uiChild) ch)
+                  ch children
+              in
+              NameMap.fold
+                (fun _ (ar, ui) size -> sizeAdd size (updateSizeRec ar ui))
+                ch sizeOne
+          | _ ->
+              List.fold_left
+                (fun size (_, uiChild) ->
+                   sizeAdd size (updateSizeRec NoArchive uiChild))
+                sizeOne children
+
+let updateSize path ui =
+  let rootLocal = List.hd (Globals.rootsInCanonicalOrder ()) in
+  let fspathLocal = snd rootLocal in
+  let root = thisRootsGlobalName fspathLocal in
+  let archive = getArchive root in
+  let (_, subArch) = getPathInArchive archive Path.empty path in
+  updateSizeRec subArch ui

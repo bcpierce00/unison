@@ -1,5 +1,27 @@
 CHANGES FROM VERSION 2.36.-27
 
+* Accurate computation of the amount of data to transfer
+* Accurate update of the amount of data transferred, including:
+  - when transferring by copying on the remote host
+  - when the file was already transferred to the remote host
+  - in case of errors
+* Text UI: list partially transferred directories in transfer summary
+  and use appropriate exit code (indicating that some files were skipped)
+* Improved error reporting when the destination is updated during
+  synchronization: Unison now tells which file has been updated, and how.
+* Fix include directive failure when the line ends by CRLF
+  (the CR was not removed)
+* Limit the length of temporary file names
+* Ignore errors when writing to the log file
+* Mac UI: some performance improvements
+* GTK UI: possibility to display errors in auxiliary detail window +
+  other small changes
+* Save archive after update detection when there is no archive on disk yet
+* GTK UI: Made restart work also when roots are given from the command line
+
+-------------------------------
+CHANGES FROM VERSION 2.36.-27
+
 * Allow partial transfer of a directory when there was an error deep
   inside this directory during update detection.  At the moment, this
   is only activated with the text and GTK UIs, which have been

@@ -319,6 +319,14 @@ let createUnisonDir() =
 (*                           TEMPORARY FILES                                 *)
 (*****************************************************************************)
 
+(* Truncate a filename to at most [l] bytes, making sure of not
+   truncating an UTF-8 character *)
+let rec truncate_filename s l =
+  if l >= 0 && Char.code s.[l] land 0xC0 = 0x80 then
+    truncate_filename s (l - 1)
+  else
+    String.sub s 0 l
+
 (* Generates an unused fspath for a temporary file.                          *)
 let genTempPath fresh fspath path prefix suffix =
   let rec f i =
@@ -326,9 +334,19 @@ let genTempPath fresh fspath path prefix suffix =
       if i=0 then suffix
       else Printf.sprintf "..%03d.%s" i suffix in
     let tempPath =
-      Path.addPrefixToFinalName
-        (Path.addSuffixToFinalName path s)
-        prefix
+      match Path.deconstructRev path with
+        None ->
+          assert false
+      | Some (name, parentPath) ->
+          let name = Name.toString name in
+          let len = String.length name in
+          let maxlen = 64 in
+          let name =
+            if len <= maxlen then name else
+            (truncate_filename name maxlen ^
+             Digest.to_hex (Digest.string name))
+          in
+          Path.child parentPath (Name.fromString (prefix ^ name ^ s))
     in
     if fresh && exists fspath tempPath then f (i + 1) else tempPath
   in f 0

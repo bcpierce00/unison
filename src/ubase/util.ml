@@ -387,6 +387,11 @@ let endswith s1 s2 =
 let concatmap sep f l =
   String.concat sep (Safelist.map f l)
 
+let removeTrailingCR s =
+  let l = String.length s in
+  if l = 0 || s.[l - 1] <> '\r' then s else
+  String.sub s 0 (l - 1)
+
 let rec trimWhitespace s =
   let l = String.length s in
   if l=0 then s

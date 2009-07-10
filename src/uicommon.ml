@@ -187,8 +187,11 @@ let prevProps newprops ui =
       (* || Props.similar newprops oldprops *)
       " (was: "^(Props.toString oldprops)^")"
 
+let replicaContentDesc rc =
+  Props.toString (Props.setLength rc.desc (snd rc.size))
+
 let replicaContent2string rc sep =
-  let d s = s ^ sep ^ Props.toString rc.desc ^ prevProps rc.desc rc.ui in
+  let d s = s ^ sep ^ replicaContentDesc rc ^ prevProps rc.desc rc.ui in
   match rc.typ, rc.status with
     `ABSENT, `Unchanged ->
       "absent"
@@ -196,7 +199,7 @@ let replicaContent2string rc sep =
       "unchanged "
      ^(Util.truncateString (Fileinfo.type2string rc.typ) 7)
      ^ sep
-     ^(Props.toString rc.desc)
+     ^ replicaContentDesc rc
   | `ABSENT, `Deleted -> "deleted"
   | `FILE, `Created ->
      d (choose "new file         " "file             ")
@@ -484,11 +487,15 @@ let promptForRoots getFirstRoot getSecondRoot =
    we ignore the command line *)
 let firstTime = ref(true)
 
+(* Roots given on the command line *)
+let rawRoots = ref []
+
 (* BCP: WARNING: Some of the code from here is duplicated in uimacbridge...! *)
 let initPrefs ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
               ~termInteract =
   (* Restore prefs to their default values, if necessary *)
   if not !firstTime then Prefs.resetToDefaults();
+  Globals.setRawRoots !rawRoots;
 
   (* Tell the preferences module the name of the profile *)
   Prefs.profileName := Some(profileName);
@@ -646,9 +653,9 @@ let uiInit
       match Util.StringMap.find "rest" args with
         [] -> ()
       | [profile] -> clprofile := Some profile
-      | [root1;root2] -> Globals.setRawRoots [root1;root2]
+      | [root1;root2] -> rawRoots := [root1;root2]
       | [root1;root2;profile] ->
-          Globals.setRawRoots [root1;root2];
+          rawRoots := [root1;root2];
           clprofile := Some profile
       | _ ->
           (reportError(Printf.sprintf
@@ -666,7 +673,7 @@ let uiInit
     (match !clprofile with
       None -> Util.msg "No profile given on command line"
     | Some s -> Printf.eprintf "Profile '%s' given on command line" s);
-    (match Globals.rawRoots() with
+    (match !rawRoots with
       [] -> Util.msg "No roots given on command line"
     | [root1;root2] ->
         Printf.eprintf "Roots '%s' and '%s' given on command line"
@@ -678,7 +685,7 @@ let uiInit
       None ->
         let dirString = Os.unisonDir in
         let profiles_exist = (Files.ls dirString "*.prf")<>[] in
-        let clroots_given = (Globals.rawRoots() <> []) in
+        let clroots_given = !rawRoots <> [] in
         let n =
           if profiles_exist && not(clroots_given) then begin
             (* Unison has been used before: at least one profile exists.

@@ -91,7 +91,8 @@ type replicaContent =
   { typ : Fileinfo.typ;
     status : status;
     desc : Props.t;
-    ui : updateItem }
+    ui : updateItem;
+    size : int * Uutil.Filesize.t }
 
 type direction =
     Conflict

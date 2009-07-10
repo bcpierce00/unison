@@ -261,8 +261,10 @@ let tryCopyMovedFile fspathTo pathTo realPathTo update desc fp ress id =
               Xferhint.insertEntry (fspathTo, pathTo) fp;
               let msg =
                 Printf.sprintf
-                 "Shortcut: copied %s from local file %s\n"
+                 "Shortcut: copied %s/%s from local file %s/%s\n"
+                 (Fspath.toPrintString fspathTo)
                  (Path.toString realPathTo)
+                 (Fspath.toPrintString candidateFspath)
                  (Path.toString candidatePath)
               in
               Some (info, msg)
@@ -664,8 +666,10 @@ let transferFileLocal connFrom
     let msg =
       Printf.sprintf
         "%s/%s has already been transferred\n"
-        (Fspath.toDebugString fspathTo) (Path.toString pathTo)
+        (Fspath.toDebugString fspathTo) (Path.toString realPathTo)
     in
+    let len = Uutil.Filesize.add (Props.length desc) (Osx.ressLength ress) in
+    Uutil.showProgress id len "alr";
     setFileinfo fspathTo pathTo realPathTo update desc;
     Lwt.return (`DONE (Success info, Some msg))
   end else
@@ -709,8 +713,19 @@ let transferFile
     match status with
       `DONE (status, msg) ->
          begin match msg with
-           Some msg -> Trace.log msg
-         | None     -> ()
+           Some msg ->
+             (* If the file was already present or transferred by copying
+                on the server, we need to update the amount of data
+                transferred so far here. *)
+             if fst rootTo <> Common.Local then begin
+               let len =
+                 Uutil.Filesize.add (Props.length desc) (Osx.ressLength ress)
+               in
+               Uutil.showProgress id len "rem"
+             end;
+             Trace.log msg
+         | None ->
+             ()
          end;
          Lwt.return status
     | `EXTERNAL useExistingTarget ->

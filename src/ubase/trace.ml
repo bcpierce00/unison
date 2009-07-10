@@ -151,8 +151,10 @@ let writeLog s =
       | `FormatStdout -> Format.printf "%s " s);
   if Prefs.read logging then begin
     let ch = getLogch() in
-    output_string ch s;
-    flush ch
+    begin try
+      output_string ch s;
+      flush ch
+    with Sys_error _ -> () end
   end
 
 (* ---------------------------------------------------------------------- *)

@@ -64,3 +64,5 @@ val useFastChecking : unit -> bool
 (* Print the archive to the current formatter (see Format) *)
 val showArchive: archive -> unit
 
+(* Compute the size of an update *)
+val updateSize : Path.t -> Common.updateItem -> int * Uutil.Filesize.t

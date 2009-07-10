@@ -366,7 +366,6 @@ let rec deleteSpuriousChildrenRec fspathTo pathTo archChildren children =
       ()
 
 let deleteSpuriousChildrenLocal (_, (fspathTo, pathTo, archChildren)) =
-List.iter (fun nm -> Format.eprintf "%s@." (Name.toString nm)) archChildren;
   deleteSpuriousChildrenRec
     fspathTo pathTo archChildren
     (List.sort Name.compare (Os.childrenOf fspathTo pathTo));
