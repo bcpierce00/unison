@@ -4,7 +4,7 @@
 val reconcileAll :
      ?allowPartial:bool         (* whether we allow partial synchronization
                                    of directories (default to false) *)
-  -> Common.updateItem list Common.oneperpath
+  -> (Path.t * Common.updateItem * Path.t * Common.updateItem) list
                                 (* one updateItem per replica, per path *)
   -> Common.reconItem list      (* List of updates that need propagated *)
      * bool                     (* Any file updated equally on all roots*)

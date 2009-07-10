@@ -346,11 +346,11 @@ Callback.register "unisonInit2" unisonInit2;;
 
 let unisonRiToDetails ri =
   match ri.whatHappened with
-    Some (Util.Failed s) -> (Path.toString ri.ri.path) ^ "\n" ^ s
-  | _ -> (Path.toString ri.ri.path) ^ "\n" ^ (Uicommon.details2string ri.ri "  ");;
+    Some (Util.Failed s) -> (Path.toString ri.ri.path1) ^ "\n" ^ s
+  | _ -> (Path.toString ri.ri.path1) ^ "\n" ^ (Uicommon.details2string ri.ri "  ");;
 Callback.register "unisonRiToDetails" unisonRiToDetails;;
 
-let unisonRiToPath ri = Path.toString ri.ri.path;;
+let unisonRiToPath ri = Path.toString ri.ri.path1;;
 Callback.register "unisonRiToPath" unisonRiToPath;;
 
 let rcToString rc =
@@ -460,7 +460,6 @@ Callback.register "canDiff" canDiff;;
 (* from Uicommon *)
 (* precondition: uc = File (Updates(_, ..) on both sides *)
 let showDiffs ri printer errprinter id =
-  let p = ri.path in
   match ri.replicas with
     Problem _ ->
       errprinter
@@ -471,7 +470,7 @@ let showDiffs ri printer errprinter id =
       if filesAreDifferent status1 status2 then
         (let (root1,root2) = Globals.roots() in
          begin
-           try Files.diff root1 p ui1 root2 p ui2 printer id
+           try Files.diff root1 ri.path1 ui1 root2 ri.path2 ui2 printer id
            with Util.Transient e -> errprinter e
          end)
   | Different _ ->
@@ -560,8 +559,8 @@ let do_unisonSynchronize () =
           (fun l si ->
              l + (match si.whatHappened with Some(Util.Failed(_)) -> 1 | _ -> 0))
           0 !theState in
-      if count = 0 then "" else
-        Printf.sprintf "%d failure%s" count (if count=1 then "" else "s") in
+      if count = 0 then [] else
+        [Printf.sprintf "%d failure%s" count (if count=1 then "" else "s")] in
     let partials =
       let count =
         Array.fold_left
@@ -574,19 +573,19 @@ let do_unisonSynchronize () =
                  | _ ->
                      0)
           0 !theState in
-      if count = 0 then "" else
-        Printf.sprintf "%d partially transferred" count in
+      if count = 0 then [] else
+        [Printf.sprintf "%d partially transferred" count] in
     let skipped =
       let count =
         Array.fold_left
           (fun l si ->
              l + (if problematic si.ri then 1 else 0))
           0 !theState in
-      if count = 0 then "" else
-        Printf.sprintf "%d skipped" count in
+      if count = 0 then [] else
+        [Printf.sprintf "%d skipped" count] in
     Trace.status
       (Printf.sprintf "Synchronization complete         %s"
-         (String.concat ", " [failures; partials; skipped]));
+         (String.concat ", " (failures @ partials @ skipped)));
     initGlobalProgress Uutil.Filesize.dummy;
   end;;
 external syncComplete : unit -> unit = "syncComplete";;
@@ -620,7 +619,7 @@ let unisonUpdateForIgnore i =
   let num = ref(-1) in
   let newI = ref None in
   (* FIX: we should actually test whether any prefix is now ignored *)
-  let keep s = not (Globals.shouldIgnore s.ri.path) in
+  let keep s = not (Globals.shouldIgnore s.ri.path1) in
   for j = 0 to (Array.length !theState - 1) do
     let s = !theState.(j) in
     if keep s then begin

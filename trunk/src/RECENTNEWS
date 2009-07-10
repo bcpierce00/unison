@@ -1,5 +1,18 @@
 CHANGES FROM VERSION 2.36.-27
 
+* Fixed bug with case insensitive mode on a case sensitive filesystem:
+  - if file "a/a" is created on one replica and directory "A" is
+    created on the other, the file failed to be synchronized the first
+    time Unison is run afterwards, as Unison uses the wrong path "a/a"
+    (if Unison is run again, the directories are in the archive, so
+     the right path is used);
+  - if file "a" appears on one replica and file "A" appears on the
+    other with a different contents, Unison was unable to synchronized
+    them.
+
+-------------------------------
+CHANGES FROM VERSION 2.36.-27
+
 * Accurate computation of the amount of data to transfer
 * Accurate update of the amount of data transferred, including:
   - when transferring by copying on the remote host

@@ -309,13 +309,13 @@ let action2niceString action =
 let reconItem2stringList oldPath theRI =
   match theRI.replicas with
     Problem s ->
-      ("        ", AError, "        ", displayPath oldPath theRI.path)
+      ("        ", AError, "        ", displayPath oldPath theRI.path1)
   | Different diff ->
       let partial = diff.errors1 <> [] || diff.errors2 <> [] in
       (replicaContent2shortString diff.rc1,
        direction2action partial diff.direction,
        replicaContent2shortString diff.rc2,
-       displayPath oldPath theRI.path)
+       displayPath oldPath theRI.path1)
 
 let reconItem2string oldPath theRI status =
   let (r1, action, r2, path) = reconItem2stringList oldPath theRI in
@@ -329,7 +329,6 @@ let exn2string = function
 
 (* precondition: uc = File (Updates(_, ..) on both sides *)
 let showDiffs ri printer errprinter id =
-  let p = ri.path in
   match ri.replicas with
     Problem _ ->
       errprinter
@@ -337,7 +336,7 @@ let showDiffs ri printer errprinter id =
   | Different {rc1 = {typ = `FILE; ui = ui1}; rc2 = {typ = `FILE; ui = ui2}} ->
       let (root1,root2) = Globals.roots() in
       begin
-        try Files.diff root1 p ui1 root2 p ui2 printer id
+        try Files.diff root1 ri.path1 ui1 root2 ri.path2 ui2 printer id
         with Util.Transient e -> errprinter e
       end 
   | Different _ ->

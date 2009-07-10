@@ -117,9 +117,7 @@ type replicas =
   | Different of difference (* Replicas differ *)
 
 (* Variable name prefix: "ri" *)
-type reconItem =
-    {path : Path.t;
-     replicas : replicas}
+type reconItem = {path1 : Path.t; path2 : Path.t; replicas : replicas}
 
 val ucLength : updateContent -> Uutil.Filesize.t
 val uiLength : updateItem -> Uutil.Filesize.t

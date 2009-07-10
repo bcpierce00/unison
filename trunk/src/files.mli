@@ -68,11 +68,12 @@ val ls : System.fspath -> string -> string list
 
 val merge :
      Common.root                  (* first root *)
+  -> Path.t                       (* path to merge *)
+  -> Common.updateItem            (* differences from the archive *)
   -> Common.root                  (* second root *)
   -> Path.t                       (* path to merge *)
-  -> Uutil.File.t                 (* id for showing progress of transfer *)
   -> Common.updateItem            (* differences from the archive *)
-  -> Common.updateItem            (* ... *)
+  -> Uutil.File.t                 (* id for showing progress of transfer *)
   -> (string->string->bool)       (* function to display the (title and) result 
 				     and ask user for confirmation (when -batch 
 				     is true, the function should not ask any 

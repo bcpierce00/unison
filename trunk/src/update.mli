@@ -18,16 +18,13 @@ val storeRootsName : unit -> unit
 (* Retrieve the actual names of the roots *)
 val getRootsName : unit -> string 
 
-val findOnRoot :
-  Common.root -> Path.t list -> Common.updateItem list Lwt.t
-
 (* Structures describing dirty files/dirs (1 per path given in the -path preference) *)
 val findUpdates :
-  unit -> Common.updateItem list Common.oneperpath
+  unit -> (Path.t * Common.updateItem * Path.t * Common.updateItem) list
 
 (* Take a tree of equal update contents and update the archive accordingly. *)
 val markEqual :
-  (Name.t, Common.updateContent * Common.updateContent) Tree.t -> unit
+  (Name.t * Name.t, Common.updateContent * Common.updateContent) Tree.t -> unit
 
 (* Get and update a part of an archive (the archive remains unchanged) *)
 val updateArchive : Fspath.t -> Path.local -> Common.updateItem -> archive

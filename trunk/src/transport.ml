@@ -75,7 +75,7 @@ let logLwtNumbered (lwtDescription: string) (lwtShortDescription: string)
     (fun _ ->
       Printf.sprintf "[END] %s\n" lwtShortDescription)
 
-let doAction (fromRoot,toRoot) path fromContents toContents id =
+let doAction fromRoot fromPath fromContents toRoot toPath toContents id =
   Lwt_util.resize_region actionReg (Prefs.read maxthreads);
   (* When streaming, we can transfer many file simultaneously:
      as the contents of only one file is transferred in one direction
@@ -85,53 +85,53 @@ let doAction (fromRoot,toRoot) path fromContents toContents id =
      Prefs.read maxthreads);
   Lwt_util.run_in_region actionReg 1 (fun () ->
     if not !Trace.sendLogMsgsToStderr then
-      Trace.statusDetail (Path.toString path);
+      Trace.statusDetail (Path.toString toPath);
     Remote.Thread.unwindProtect (fun () ->
       match fromContents, toContents with
           {typ = `ABSENT}, {ui = uiTo} ->
              logLwtNumbered
-               ("Deleting " ^ Path.toString path ^
+               ("Deleting " ^ Path.toString toPath ^
                 "\n  from "^ root2string toRoot)
-               ("Deleting " ^ Path.toString path)
-               (fun () -> Files.delete fromRoot path toRoot path uiTo)
+               ("Deleting " ^ Path.toString toPath)
+               (fun () -> Files.delete fromRoot fromPath toRoot toPath uiTo)
         (* No need to transfer the whole directory/file if there were only
            property modifications on one side.  (And actually, it would be
            incorrect to transfer a directory in this case.) *)
         | {status= `Unchanged | `PropsChanged; desc= fromProps; ui= uiFrom},
           {status= `Unchanged | `PropsChanged; desc= toProps; ui = uiTo} ->
             logLwtNumbered
-              ("Copying properties for " ^ Path.toString path
+              ("Copying properties for " ^ Path.toString toPath
                ^ "\n  from " ^ root2string fromRoot ^ "\n  to " ^
                root2string toRoot)
-              ("Copying properties for " ^ Path.toString path)
+              ("Copying properties for " ^ Path.toString toPath)
               (fun () ->
                 Files.setProp
-                  fromRoot path toRoot path fromProps toProps uiFrom uiTo)
+                  fromRoot fromPath toRoot toPath fromProps toProps uiFrom uiTo)
         | {typ = `FILE; ui = uiFrom}, {typ = `FILE; ui = uiTo} ->
             logLwtNumbered
-              ("Updating file " ^ Path.toString path ^ "\n  from " ^
+              ("Updating file " ^ Path.toString toPath ^ "\n  from " ^
                root2string fromRoot ^ "\n  to " ^
                root2string toRoot)
-              ("Updating file " ^ Path.toString path)
+              ("Updating file " ^ Path.toString toPath)
               (fun () ->
                 Files.copy (`Update (fileSize uiFrom uiTo))
-                  fromRoot path uiFrom toRoot path uiTo id)
+                  fromRoot fromPath uiFrom toRoot toPath uiTo id)
         | {ui = uiFrom}, {ui = uiTo} ->
             logLwtNumbered
-              ("Copying " ^ Path.toString path ^ "\n  from " ^
+              ("Copying " ^ Path.toString toPath ^ "\n  from " ^
                root2string fromRoot ^ "\n  to " ^
                root2string toRoot)
-              ("Copying " ^ Path.toString path)
+              ("Copying " ^ Path.toString toPath)
               (fun () ->
                  Files.copy `Copy
-                   fromRoot path uiFrom toRoot path uiTo id))
+                   fromRoot fromPath uiFrom toRoot toPath uiTo id))
       (fun e -> Trace.log
           (Printf.sprintf
              "Failed: %s\n" (Util.printException e));
         return ()))
 
 let propagate root1 root2 reconItem id showMergeFn =
-  let path = reconItem.path in
+  let path = reconItem.path1 in
   match reconItem.replicas with
     Problem p ->
       Trace.log (Printf.sprintf "[ERROR] Skipping %s\n  %s\n"
@@ -144,16 +144,16 @@ let propagate root1 root2 reconItem id showMergeFn =
                        (Path.toString path));
           return ()
       | Replica1ToReplica2 ->
-          doAction (root1, root2) path rc1 rc2 id
+          doAction root1 reconItem.path1 rc1 root2 reconItem.path2 rc2 id
       | Replica2ToReplica1 ->
-          doAction (root2, root1) path rc2 rc1 id
-      | Merge -> 
-          begin match (rc1,rc2) with
-            {typ = `FILE; ui = ui1}, {typ = `FILE; ui = ui2} ->
-              Files.merge root1 root2 path id ui1 ui2 showMergeFn;
-              return ()
-          | _ -> raise (Util.Transient "Can only merge two existing files")
-          end 
+          doAction root2 reconItem.path2 rc2 root1 reconItem.path1 rc1 id
+      | Merge ->
+          if rc1.typ <> `FILE || rc2.typ <> `FILE then
+            raise (Util.Transient "Can only merge two existing files");
+          Files.merge
+            root1 reconItem.path1 rc1.ui root2 reconItem.path2 rc2.ui id
+            showMergeFn;
+          return ()
 
 let transportItem reconItem id showMergeFn =
   let (root1,root2) = Globals.roots() in

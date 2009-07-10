@@ -1343,14 +1343,13 @@ let rec createToplevelWindow () =
 	None ->
           None
       | Some row ->
+          let path = Path.toString !theState.(row).ri.path1 in
 	  match !theState.(row).whatHappened with
 	    Some (Util.Failed _, Some det) ->
-              let path = Path.toString !theState.(row).ri.path in
               Some ("Merge execution details for file" ^
                     transcodeFilename path,
                     det)
 	  | _ ->
-              let path = Path.toString !theState.(row).ri.path in
               match !theState.(row).ri.replicas with
                 Problem err ->
                   Some ("Errors for file " ^ transcodeFilename path, err)
@@ -1451,8 +1450,8 @@ let rec createToplevelWindow () =
             None -> Uicommon.details2string !theState.(row).ri "  "
           | Some(Util.Succeeded, _) -> Uicommon.details2string !theState.(row).ri "  "
           | Some(Util.Failed(s), None) -> s
-	  | Some(Util.Failed(s), Some resultLog) -> s in 
-	let path = Path.toString !theState.(row).ri.path in
+	  | Some(Util.Failed(s), Some resultLog) -> s in
+	let path = Path.toString !theState.(row).ri.path1 in
         let txt = transcodeFilename path ^ "\n" ^ transcode details in
         let len = String.length txt in
         let txt =
@@ -1522,7 +1521,7 @@ let rec createToplevelWindow () =
     if !current=None then nextInteresting () in
 
   let columnsOf i =
-    let oldPath = if i = 0 then Path.empty else !theState.(i-1).ri.path in
+    let oldPath = if i = 0 then Path.empty else !theState.(i-1).ri.path1 in
     let status =
       match !theState.(i).ri.replicas with
         Different {direction = Conflict} | Problem _ ->
@@ -1735,7 +1734,7 @@ lst_store#set ~row ~column:c_path path;
   let ignoreAndRedisplay () =
     let lst = Array.to_list !theState in
     (* FIX: we should actually test whether any prefix is now ignored *)
-    let keep sI = not (Globals.shouldIgnore sI.ri.path) in
+    let keep sI = not (Globals.shouldIgnore sI.ri.path1) in
     begin match !current with
       None ->
         theState := Array.of_list (Safelist.filter keep lst)
@@ -1842,7 +1841,7 @@ lst_store#set ~row ~column:c_path path;
   let addRegExpByPath pathfunc =
     match !current with
       Some i ->
-        Uicommon.addIgnorePattern (pathfunc !theState.(i).ri.path);
+        Uicommon.addIgnorePattern (pathfunc !theState.(i).ri.path1);
         ignoreAndRedisplay ()
     | None ->
         () in
@@ -1994,8 +1993,9 @@ lst_store#set ~row ~column:c_path path;
             (fun l si ->
                l + (match si.whatHappened with Some(Util.Failed(_), _) -> 1 | _ -> 0))
             0 !theState in
-        if count = 0 then "" else
-          Printf.sprintf "%d failure%s" count (if count=1 then "" else "s") in
+        if count = 0 then [] else
+          [Printf.sprintf "%d failure%s" count (if count=1 then "" else "s")]
+      in
       let partials =
         let count =
           Array.fold_left
@@ -2008,19 +2008,19 @@ lst_store#set ~row ~column:c_path path;
                    | _ ->
                        0)
             0 !theState in
-        if count = 0 then "" else
-          Printf.sprintf "%d partially transferred" count in
+        if count = 0 then [] else
+          [Printf.sprintf "%d partially transferred" count] in
       let skipped =
         let count =
           Array.fold_left
             (fun l si ->
                l + (if problematic si.ri then 1 else 0))
             0 !theState in
-        if count = 0 then "" else
-          Printf.sprintf "%d skipped" count in
+        if count = 0 then [] else
+          [Printf.sprintf "%d skipped" count] in
       Trace.status
         (Printf.sprintf "Synchronization complete         %s"
-           (String.concat ", " [failures; partials; skipped]));
+           (String.concat ", " (failures @ partials @ skipped)));
       displayGlobalProgress 0.;
 
       grSet grRescan true
@@ -2378,7 +2378,7 @@ lst_store#set ~row ~column:c_path path;
              else loop (i+1) (acc) in
            let failedindices = loop 0 [] in
            let failedpaths =
-             Safelist.map (fun i -> !theState.(i).ri.path) failedindices in
+             Safelist.map (fun i -> !theState.(i).ri.path1) failedindices in
            debug (fun()-> Util.msg "Rescaning with paths = %s\n"
                     (String.concat ", " (Safelist.map
                                            (fun p -> "'"^(Path.toString p)^"'")

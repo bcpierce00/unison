@@ -140,9 +140,7 @@ type replicas =
     Problem of string       (* There was a problem during update detection *)
   | Different of difference (* Replicas differ *)
 
-type reconItem =
-    {path : Path.t;
-     replicas : replicas}
+type reconItem = {path1 : Path.t; path2 : Path.t; replicas : replicas}
 
 let ucLength = function
     File(desc,_)    -> Props.length desc
