@@ -1,5 +1,10 @@
 CHANGES FROM VERSION 2.36.-27
 
+Tiny changes
+
+-------------------------------
+CHANGES FROM VERSION 2.36.-27
+
 * Fixed bug with case insensitive mode on a case sensitive filesystem:
   - if file "a/a" is created on one replica and directory "A" is
     created on the other, the file failed to be synchronized the first

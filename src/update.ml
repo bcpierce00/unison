@@ -34,13 +34,18 @@ let debugignore = Trace.debug "ignore"
    representation does not change between unison versions.) *)
 (*FIX: Use similar_correct in props.ml next time the
   format is modified (see file props.ml for the new function) *)
-(*FIX: also change Fileinfo.stamp to drop the info.ctime component, next time the
-  format is modified *)
+(*FIX: also change Fileinfo.stamp to drop the info.ctime component, next
+  time the format is modified *)
 (*FIX: also make Jerome's suggested change about file times (see his mesg in
        unison-pending email folder). *)
 (*FIX: one should also store whether we are in case-insensitive mode
   in the archive and check the mode has not changed when the archive
   is loaded *)
+(*FIX: we could also drop the use of 8.3-style filenames on Windows, next
+  time the format is changed *)
+(* FIX: Another thing we should really consider doing is leaving a flag
+   in the archive when a file transfer fails and turning off fastcheck
+   for this file on the next sync. *)
 (*FIX: consider changing the way case-sensitivity mode is stored in
   the archive *)
 let archiveFormat = 22
