@@ -113,6 +113,7 @@ let setInt4 v =
   s
 
 let fail dataFspath dataPath doubleFspath msg =
+  debug (fun () -> Util.msg "called 'fail'");
   raise (Util.Transient
            (Format.sprintf
               "The AppleDouble Header file '%s' \

@@ -740,7 +740,9 @@ let suckOnWatcherFiles n =
 
 let synchronizePathsFromFilesystemWatcher () =
   let watcherfilename = System.fspathFromString "" in
-  (* STOPPED HERE -- need to find the program using watcherosx preference and invoke it using a redirect to get the output into a temp file... *)
+  (* STOPPED HERE -- need to find the program using watcherosx preference
+     and invoke it (on both hosts, if there are two!) using a redirect to
+     get the output into a temp file... *)
   let rec loop failedPaths = 
     let newpaths = suckOnWatcherFiles watcherfilename in
     if newpaths <> [] then

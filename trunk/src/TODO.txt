@@ -1,8 +1,8 @@
 Here we list planned and imagined improvements to Unison.  Ones that we
-regard as most important are marked with more *s.  (Unfortunately, since
-Unison is no longer under active development [though it is still heavily
-used by its original developers], the presence of a suggestion in this file
-is not promise that anybody is going to implement it!)
+regard as most important are marked with more *s.  (Note that, since Unison
+is no longer under active development [though it is still heavily used by
+its original developers], the presence of a suggestion in this file is not
+promise that anybody is going to implement it!)
 
 See the file BUGS.txt for a list of currently open bugs.
 
@@ -10,6 +10,13 @@ See the file BUGS.txt for a list of currently open bugs.
         
 * CURRENT
 * =======
+
+* Make some preferences per-host
+     - file-system type
+     - canonical name of the host
+     - fastcheck
+     - backup
+     - fs watcher command
 
 * Merge issues:
      - It would be better to ignore the exit status of the external merge
@@ -34,9 +41,6 @@ See the file BUGS.txt for a list of currently open bugs.
            its path matches 'ignore' and doesn't match 'ignorenot'
      - bulletproof, handling fatal errors and restarting completely from
        scratch if necessary
-
-* See if there are other hacks that should be propagated to 2.27 (the
-  directory transfer throttle for sure!), and Jerome's recent suggested fix
 
 * Rsync debugging
 
@@ -72,8 +76,6 @@ See the file BUGS.txt for a list of currently open bugs.
      that prevents mutation from outside the module where the preference is
      defined (by exposing it with a weak type).
 
-**** The third assertion in Remote.fill_buffer failed for me (BCP) during a transfer!
-
 **** Remaining problem with merging code: 
        - create two directories, each containing a .txt file
        - sync so they are equal
@@ -93,9 +95,6 @@ See the file BUGS.txt for a list of currently open bugs.
     make it writeable just before the rename and then make it what it should
     be just after.  But I don't feel like writing this bit of code right
     now, to handle such a corner case.  [BCP, November 2008]
-
-*** make the ETA bar show which file is actually transferring bytes at the
-    moment
 
 *** Fix the pred module to understand negation and delete XXXnot predicates
 
