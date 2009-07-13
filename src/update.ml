@@ -38,13 +38,10 @@ let debugignore = Trace.debug "ignore"
   time the format is modified *)
 (*FIX: also make Jerome's suggested change about file times (see his mesg in
        unison-pending email folder). *)
-(*FIX: one should also store whether we are in case-insensitive mode
-  in the archive and check the mode has not changed when the archive
-  is loaded *)
 (*FIX: we could also drop the use of 8.3-style filenames on Windows, next
   time the format is changed *)
-(* FIX: Another thing we should really consider doing is leaving a flag
-   in the archive when a file transfer fails and turning off fastcheck
+(* FIX: use a special stamp rather than the current hack to leave a flag
+   in the archive when a file transfer fails so as to turn off fastcheck
    for this file on the next sync. *)
 (*FIX: consider changing the way case-sensitivity mode is stored in
   the archive *)
@@ -1834,6 +1831,51 @@ let updateProps fspath path propOpt ui =
 (*                  Make sure no change has happened                     *)
 (*************************************************************************)
 
+let fastCheckMiss path desc ress oldDesc oldRess =
+  useFastChecking()
+    &&
+  Props.same_time desc oldDesc
+    &&
+  Props.length desc = Props.length oldDesc
+    &&
+  not (excelFile path)
+    &&
+  Osx.ressUnchanged oldRess ress None true
+
+let doMarkPossiblyUpdated arch =
+  match arch with
+    ArchiveFile (desc, dig, stamp, ress) ->
+      (* It would be cleaner to have a special stamp for this *)
+      ArchiveFile (desc, dig, Fileinfo.InodeStamp (-1), ress)
+  | _ ->
+      (* Should not happen, actually.  But this is hard to test... *)
+      arch
+
+let markPossiblyUpdated fspath path =
+  debug (fun() ->
+    Util.msg "markPossiblyUpdated %s %s\n"
+      (Fspath.toDebugString fspath) (Path.toString path));
+  let root = thisRootsGlobalName fspath in
+  let archive = getArchive root in
+  let archive =
+    updatePathInArchive archive fspath Path.empty path
+      (fun arch _ -> doMarkPossiblyUpdated arch) in
+  setArchiveLocal root archive
+
+let rec markPossiblyUpdatedRec fspath path ui =
+  match ui with
+    Updates (File (desc, ContentsUpdated (_, _, ress)),
+             Previous (`FILE, oldDesc, _, oldRess)) ->
+      if fastCheckMiss path desc ress oldDesc oldRess then
+        markPossiblyUpdated fspath path
+  | Updates (Dir (_, uiChildren, _, _), _) ->
+      List.iter
+        (fun (nm, uiChild) ->
+           markPossiblyUpdatedRec fspath (Path.child path nm) uiChild)
+        uiChildren
+  | _ ->
+      ()
+
 let reportUpdate warnFastCheck explanation =
   let msg =
     "Destination updated during synchronization\n" ^ explanation ^
@@ -1861,16 +1903,7 @@ let rec explainUpdate path ui =
            (Path.toString path))
   | Updates (File (desc, ContentsUpdated (_, _, ress)),
              Previous (`FILE, oldDesc, _, oldRess)) ->
-      reportUpdate
-        (useFastChecking()
-           &&
-         Props.same_time desc oldDesc
-           &&
-         Props.length desc = Props.length oldDesc
-           &&
-         not (excelFile path)
-           &&
-         Osx.ressUnchanged oldRess ress None true)
+      reportUpdate (fastCheckMiss path desc ress oldDesc oldRess)
         (Format.sprintf "The contents of file %s has been modified\n"
            (Path.toString path))
   | Updates (File (_, ContentsUpdated _), _) ->
@@ -1911,6 +1944,7 @@ let checkNoUpdates fspath pathInArchive ui =
   let archive = updateArchiveRec ui archive in
   (* ...and check that this is a good description of what's out in the world *)
   let (_, uiNew) = buildUpdateRec archive fspath localPath false in
+  markPossiblyUpdatedRec fspath pathInArchive uiNew;
   explainUpdate pathInArchive uiNew
 
 (*****************************************************************************)
@@ -1987,3 +2021,10 @@ let updateSize path ui =
   let archive = getArchive root in
   let (_, subArch) = getPathInArchive archive Path.empty path in
   updateSizeRec subArch ui
+
+(*****)
+
+(* There is a dependency loop between copy.ml and update.ml... *)
+let _ =
+Copy.excelFile := excelFile;
+Copy.markPossiblyUpdated := markPossiblyUpdated

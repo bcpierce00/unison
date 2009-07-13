@@ -364,6 +364,14 @@ struct
     Trace.showTimer timer;
     bi
 
+  (* Expected size of the [rsync_block_info] datastructure (in KiB). *)
+  (* The calculation here are for a 64 bit architecture. *)
+  (* When serialized, the datastructure takes currently 24 bytes per block. *)
+  (* In theory, 12 byte per block should be enough! *)
+  let memoryFootprint sz =
+    Int64.to_int
+      (min (Int64.div (Uutil.Filesize.toInt64 sz) 716800L) 16384L)
+    * 72
 
   (*** DECOMPRESSION ***)
 

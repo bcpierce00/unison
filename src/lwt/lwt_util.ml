@@ -66,7 +66,7 @@ let resize_region reg sz = reg.size <- sz
 
 let leave_region reg sz =
    try
-     if reg.count > reg.size then raise Queue.Empty;
+     if reg.count - sz >= reg.size then raise Queue.Empty;
      let (w, sz') = Queue.take reg.waiters in
      reg.count <- reg.count - sz + sz';
      Lwt.wakeup w ()

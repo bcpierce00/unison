@@ -77,6 +77,9 @@ module Rsync :
     (* Built from the old file by the destination computer *)
     type rsync_block_info
 
+    (* Expected size of the [rsync_block_info] datastructure (in KiB). *)
+    val memoryFootprint : Uutil.Filesize.t -> int
+
     (* Compute block informations from the old file *)
     val rsyncPreprocess :
 	   in_channel            (* old file descriptor *)

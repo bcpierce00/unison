@@ -36,16 +36,18 @@ let fileSize uiFrom uiTo =
       assert false
 
 let maxthreads =
-  Prefs.createInt "maxthreads" 20
+  Prefs.createInt "maxthreads" 0
     "!maximum number of simultaneous file transfers"
-    ("This preference controls how much concurrency is allowed during"
-     ^ " the transport phase.  Normally, it should be set reasonably high "
-     ^ "(default is 20) to maximize performance, but when Unison is used "
-     ^ "over a low-bandwidth link it may be helpful to set it lower (e.g. "
-     ^ "to 1) so that Unison doesn't soak up all the available bandwidth."
-    )
+    ("This preference controls how much concurrency is allowed during \
+      the transport phase.  Normally, it should be set reasonably high \
+      to maximize performance, but when Unison is used over a \
+      low-bandwidth link it may be helpful to set it lower (e.g. \
+      to 1) so that Unison doesn't soak up all the available bandwidth. \
+      The default is the special value 0, which mean 20 threads \
+      when file content streaming is desactivated and 1000 threads \
+      when it is activated.")
 
-let actionReg = Lwt_util.make_region (Prefs.read maxthreads)
+let actionReg = Lwt_util.make_region 50
 
 (* Logging for a thread: write a message before and a message after the
    execution of the thread. *)
@@ -76,13 +78,16 @@ let logLwtNumbered (lwtDescription: string) (lwtShortDescription: string)
       Printf.sprintf "[END] %s\n" lwtShortDescription)
 
 let doAction fromRoot fromPath fromContents toRoot toPath toContents id =
-  Lwt_util.resize_region actionReg (Prefs.read maxthreads);
   (* When streaming, we can transfer many file simultaneously:
      as the contents of only one file is transferred in one direction
      at any time, little ressource is consumed this way. *)
-  Lwt_util.resize_region Files.copyReg
-    (if Prefs.read Remote.streamingActivated then 4000 else
-     Prefs.read maxthreads);
+  let limit =
+    let n = Prefs.read maxthreads in
+    if n > 0 then n else
+    if Prefs.read Remote.streamingActivated then 1000 else 20
+  in
+  Lwt_util.resize_region actionReg limit;
+  Lwt_util.resize_region Files.copyReg limit;
   Lwt_util.run_in_region actionReg 1 (fun () ->
     if not !Trace.sendLogMsgsToStderr then
       Trace.statusDetail (Path.toString toPath);
