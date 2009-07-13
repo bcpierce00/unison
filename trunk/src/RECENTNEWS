@@ -1,5 +1,16 @@
 CHANGES FROM VERSION 2.36.-27
 
+* When a file transfer fails, turn off fastcheck for this file on the
+  next sync.
+* Limit the number of simultaneous transfer using rsync
+  (as the rsync algorithm can use a large amount of memory when
+   processing huge files)
+* Raise the number of concurrent threads, as there is not much reason
+  to leave it low anymore.
+
+-------------------------------
+CHANGES FROM VERSION 2.36.-27
+
 * Clean-up in remote.ml
 * Dead-lock free flow control mechanism
 

@@ -2047,6 +2047,15 @@ lst_store#set ~row ~column:c_path path;
        ~callback:(fun () ->
                     getLock synchronize) ());
 
+  (* Does not quite work: too slow, and Files.copy must be modifed to
+     support an interruption without error. *)
+  (*
+  ignore (actionBar#insert_button ~text:"Stop"
+            ~icon:((GMisc.image ~stock:`STOP ())#coerce)
+            ~tooltip:"Exit Unison"
+            ~callback:Abort.all ());
+  *)
+
   (*********************************************************************
     Rescan button
    *********************************************************************)

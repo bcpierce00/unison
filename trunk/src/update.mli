@@ -38,6 +38,9 @@ val updateProps :
 (* Check that no updates has taken place in a given place of the filesystem *)
 val checkNoUpdates : Fspath.t -> Path.local -> Common.updateItem -> unit
 
+(* Turn off fastcheck for the given file on the next sync. *)
+val markPossiblyUpdated : Fspath.t -> Path.local -> unit
+
 (* Save to disk the archive updates *)
 val commitUpdates : unit -> unit
 

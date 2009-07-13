@@ -42,6 +42,11 @@ let lwt_protect f g =
 
 (****)
 
+(* From update.ml *)
+(* (there is a dependency loop between copy.ml and update.ml...) *)
+let excelFile = ref (fun _ -> false)
+let markPossiblyUpdated = ref (fun _ _ -> ())
+
 (* Check whether the source file has been modified during synchronization *)
 let checkContentsChangeLocal
       fspathFrom pathFrom archDesc archDig archStamp archRess paranoid =
@@ -55,9 +60,7 @@ let checkContentsChangeLocal
   let dataClearlyUnchanged =
     not clearlyModified
     && Props.same_time info.Fileinfo.desc archDesc
-(*FIX: should export from update.ml?
-    && not (excelFile path)
-*)
+    && not (!excelFile pathFrom)
     && match archStamp with
          Some (Fileinfo.InodeStamp inode) -> info.Fileinfo.inode = inode
        | Some (Fileinfo.CtimeStamp ctime) -> true
@@ -71,13 +74,15 @@ let checkContentsChangeLocal
   if dataClearlyUnchanged && ressClearlyUnchanged then begin
     if paranoid then begin
       let newDig = Os.fingerprint fspathFrom pathFrom info in
-      if archDig <> newDig then
+      if archDig <> newDig then begin
+        !markPossiblyUpdated fspathFrom pathFrom;
         raise (Util.Transient (Printf.sprintf
           "The source file %s\n\
            has been modified but the fast update detection mechanism\n\
            failed to detect it.  Try running once with the fastcheck\n\
            option set to 'no'."
           (Fspath.toPrintString (Fspath.concat fspathFrom pathFrom))))
+      end
     end
   end else if
     clearlyModified
@@ -403,6 +408,12 @@ let destinationFd fspath path kind len outfd id =
   | Some fd ->
       fd
 
+let rsyncReg = Lwt_util.make_region (40 * 1024)
+let rsyncThrottle useRsync sz f =
+  if not useRsync then f () else
+  let l = Transfer.Rsync.memoryFootprint sz in
+  Lwt_util.run_in_region rsyncReg l f
+
 let transferFileContents
       connFrom fspathFrom pathFrom fspathTo pathTo realPathTo update
       fileKind srcFileSize id =
@@ -412,19 +423,26 @@ let transferFileContents
   let infd = ref None in
   let showProgress count =
     Uutil.showProgress id (Uutil.Filesize.ofInt count) "r" in
-  let (bi, decompr) =
+
+  let destFileSize =
     match update with
-      `Update (destFileDataSize, destFileRessSize)
-          when Prefs.read rsyncActivated
-                 &&
-               let destFileSize =
-                 match fileKind with
-                   `DATA -> destFileDataSize
-                 | `RESS -> destFileRessSize
-               in
-               Transfer.Rsync.aboveRsyncThreshold destFileSize
-                 &&
-               Transfer.Rsync.aboveRsyncThreshold srcFileSize ->
+      `Copy ->
+        Uutil.Filesize.zero
+    | `Update (destFileDataSize, destFileRessSize) ->
+        match fileKind with
+            `DATA -> destFileDataSize
+          | `RESS -> destFileRessSize
+  in
+  let useRsync =
+    Prefs.read rsyncActivated
+      &&
+    Transfer.Rsync.aboveRsyncThreshold destFileSize
+      &&
+    Transfer.Rsync.aboveRsyncThreshold srcFileSize
+  in
+  rsyncThrottle useRsync destFileSize (fun () ->
+    let (bi, decompr) =
+      if useRsync then
         Util.convertUnixErrorsToTransient
           "preprocessing file"
           (fun () ->
@@ -444,7 +462,7 @@ let transferFileContents
                 Transfer.Rsync.rsyncDecompress ifd fd showProgress ti
               in
               if eof then begin close_out fd; outfd := None end))
-    | _ ->
+      else
         (None,
          (* Simple generic decompressor *)
          fun ti ->
@@ -452,23 +470,23 @@ let transferFileContents
            destinationFd fspathTo pathTo fileKind srcFileSize outfd id in
          let eof = Transfer.receive fd showProgress ti in
          if eof then begin close_out fd; outfd := None end)
-  in
-  let file_id = Remote.newMsgId () in
-  Lwt.catch
-    (fun () ->
-       decompressor := Remote.MsgIdMap.add file_id decompr !decompressor;
-       compressRemotely connFrom
-         (bi, fspathFrom, pathFrom, fileKind, srcFileSize, id, file_id)
-         >>= fun () ->
-       decompressor :=
-         Remote.MsgIdMap.remove file_id !decompressor; (* For GC *)
-       close_all infd outfd;
-       Lwt.return ())
-    (fun e ->
-       decompressor :=
-         Remote.MsgIdMap.remove file_id !decompressor; (* For GC *)
-       close_all_no_error infd outfd;
-       Lwt.fail e)
+    in
+    let file_id = Remote.newMsgId () in
+    Lwt.catch
+      (fun () ->
+         decompressor := Remote.MsgIdMap.add file_id decompr !decompressor;
+         compressRemotely connFrom
+           (bi, fspathFrom, pathFrom, fileKind, srcFileSize, id, file_id)
+           >>= fun () ->
+         decompressor :=
+           Remote.MsgIdMap.remove file_id !decompressor; (* For GC *)
+         close_all infd outfd;
+         Lwt.return ())
+      (fun e ->
+         decompressor :=
+           Remote.MsgIdMap.remove file_id !decompressor; (* For GC *)
+         close_all_no_error infd outfd;
+         Lwt.fail e))
 
 (****)
 
@@ -739,8 +757,6 @@ let transferFile
     f ()
   else
     let bufSz = bufferSize (max (Props.length desc) (Osx.ressLength ress)) in
-    (* This must be on the client: any lock on the server side may result
-       in a deadlock under windows *)
     Lwt_util.run_in_region transferFileReg bufSz f
 
 (****)
