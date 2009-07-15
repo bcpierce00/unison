@@ -10,5 +10,7 @@ val compare : t -> t -> int
 val eq : t -> t -> bool
 val hash : t -> int
 
+val normalize : t -> t
+
 val badEncoding : t -> bool
 val badFile : t -> bool

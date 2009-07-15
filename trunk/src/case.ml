@@ -138,6 +138,7 @@ let sensitiveOps = object
   method normalizePattern s = s
   method caseInsensitiveMatch = false
   method normalizeMatchedString s = s
+  method normalizeFilename s = s
   method badEncoding s = false
 end
 
@@ -149,6 +150,7 @@ let insensitiveOps = object
   method normalizePattern s = s
   method caseInsensitiveMatch = true
   method normalizeMatchedString s = s
+  method normalizeFilename s = s
   method badEncoding s = false
 end
 
@@ -160,6 +162,7 @@ let unicodeInsensitiveOps = object
   method normalizePattern p = Unicode.normalize p
   method caseInsensitiveMatch = false
   method normalizeMatchedString s = Unicode.normalize s
+  method normalizeFilename s = Unicode.compose s
   method badEncoding s = not (Unicode.check_utf_8 s)
 end
 

@@ -396,6 +396,19 @@ let copy
   (* Calculate target paths *)
   setupTargetPaths rootTo pathTo
      >>= fun (workingDir, realPathTo, tempPathTo, localPathTo) ->
+  (* When in Unicode case-insensitive mode, we want to create files
+     with NFC normal-form filenames. *)
+  let realPathTo =
+    match update with
+      `Update _ ->
+        realPathTo
+    | `Copy ->
+        match Path.deconstructRev realPathTo with
+          None ->
+            assert false
+        | Some (name, parentPath) ->
+            Path.child parentPath (Name.normalize name)
+  in
   (* Calculate source path *)
   Update.translatePath rootFrom pathFrom >>= fun localPathFrom ->
   let errors = ref [] in
@@ -445,9 +458,10 @@ let copy
              let childThreads =
                Update.NameMap.mapi
                  (fun name child ->
+                    let nameTo = Name.normalize name in
                     copyRec (Path.child pFrom name)
-                            (Path.child pTo name)
-                            (Path.child realPTo name)
+                            (Path.child pTo nameTo)
+                            (Path.child realPTo nameTo)
                             child)
                  children
              in

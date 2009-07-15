@@ -1,5 +1,21 @@
 CHANGES FROM VERSION 2.36.-27
 
+* GTK UI: disabled scrolling to the first unfinished item during transport.
+  It goes way too fast when lot of small files are synchronized, and it
+  makes it impossible to browse the file list during transport.
+* Fixed computation of the amount of data to transfer: property updates
+  should count for zero.
+* Mac GUI: use Unicode.protect to ensure that all string displayed are
+  encoded in UTF-8.
+* In Unicode case-insensitive mode, use filenames in NFC normal form
+  when tranferring files
+* Added a property list at the end of the archive file.  This is a
+  better way to extend the format than the hack currently used to
+  store the case-sensitivity mode.
+
+-------------------------------
+CHANGES FROM VERSION 2.36.-27
+
 * When a file transfer fails, turn off fastcheck for this file on the
   next sync.
 * Limit the number of simultaneous transfer using rsync

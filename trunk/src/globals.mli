@@ -73,6 +73,8 @@ val confirmBigDeletes : bool Prefs.t
 (* Predicates on paths *)
 val shouldIgnore : 'a Path.path -> bool
 val shouldMerge : 'a Path.path -> bool
+val ignorePred : Pred.t
+val ignorenotPred : Pred.t
 
 (* Be careful calling this to add new patterns to be ignored: Its value does NOT persist
    when a new profile is loaded, so it has to be called again whenever this happens. *)

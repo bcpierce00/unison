@@ -45,6 +45,7 @@ let debugignore = Trace.debug "ignore"
    for this file on the next sync. *)
 (*FIX: consider changing the way case-sensitivity mode is stored in
   the archive *)
+(*FIX: we should use only one Marshal.from_channel *)
 let archiveFormat = 22
 
 module NameMap = MyMap.Make (Name)
@@ -326,7 +327,7 @@ let verboseArchiveName thisRoot =
    and roots (second line) match skip the third line (time stamp), and read
    in the archive *)
 let loadArchiveLocal fspath (thisRoot: string) :
-    (archive * int * string) option =
+    (archive * int * string * Proplist.t) option =
   debug (fun() ->
     Util.msg "Loading archive from %s\n" (System.fspathToDebugString fspath));
   Util.convertUnixErrorsToFatal "loading archive" (fun () ->
@@ -360,8 +361,15 @@ let loadArchiveLocal fspath (thisRoot: string) :
         try
           let ((archive, hash, magic) : archive * int * string) =
             Marshal.from_channel c in
+          let properties =
+            try
+              ignore (input_char c); (* Marker *)
+              Marshal.from_channel c
+            with End_of_file ->
+              Proplist.empty
+          in
           close_in c;
-          Some (archive, hash, magic)
+          Some (archive, hash, magic, properties)
         with Failure s -> raise (Util.Fatal (Printf.sprintf
            "Archive file seems damaged (%s): \
             throw away archives on both machines and try again" s))
@@ -372,7 +380,7 @@ let loadArchiveLocal fspath (thisRoot: string) :
       None))
 
 (* Inverse to loadArchiveLocal *)
-let storeArchiveLocal fspath thisRoot archive hash magic =
+let storeArchiveLocal fspath thisRoot archive hash magic properties =
  debug (fun() ->
     Util.msg "Saving archive in %s\n" (System.fspathToDebugString fspath));
  Util.convertUnixErrorsToFatal "saving archive" (fun () ->
@@ -389,6 +397,9 @@ let storeArchiveLocal fspath thisRoot archive hash magic =
                       (Util.time2string (Util.time()))
                       ((Case.ops())#modeDesc));
    Marshal.to_channel c (archive, hash, magic) [Marshal.No_sharing];
+   output_char c '\000'; (* Marker that indicates that the archive
+                            is followed by a property list *)
+   Marshal.to_channel c properties [Marshal.No_sharing];
    close_out c)
 
 (* Remove the archieve under the root path [fspath] with archiveVersion [v] *)
@@ -481,6 +492,17 @@ let setArchiveLocal (thisRoot: string) (archive: archive) =
   (* Also this: *)
   debug (fun () -> Printf.eprintf "Setting archive for %s\n" thisRoot);
   Hashtbl.replace archiveCache thisRoot archive
+
+(* archiveCache: map(rootGlobalName, property list) *)
+let archivePropCache = Hashtbl.create 7
+
+(* Retrieve an archive property list from the cache *)
+let getArchiveProps (thisRoot: string): Proplist.t =
+  Hashtbl.find archivePropCache thisRoot
+
+(* Update the property list cache. *)
+let setArchivePropsLocal (thisRoot: string) (props: Proplist.t) =
+  Hashtbl.replace archivePropCache thisRoot props
 
 let fileUnchanged oldInfo newInfo =
   oldInfo.Fileinfo.typ = `FILE && newInfo.Fileinfo.typ = `FILE
@@ -575,10 +597,11 @@ let loadArchiveOnRoot: Common.root -> bool -> (int * string) option Lwt.t =
              Lwt.return (Some (0, ""))
            else begin
              match loadArchiveLocal arcFspath thisRoot with
-               Some (arch, hash, magic) ->
+               Some (arch, hash, magic, properties) ->
                  let info' = Fileinfo.get' arcFspath in
                  if fileUnchanged info info' then begin
                    setArchiveLocal thisRoot arch;
+                   setArchivePropsLocal thisRoot properties;
                    Hashtbl.replace archiveInfoCache thisRoot info;
                    Lwt.return (Some (hash, magic))
                  end else
@@ -590,14 +613,16 @@ let loadArchiveOnRoot: Common.root -> bool -> (int * string) option Lwt.t =
            end
        end else begin
          match loadArchiveLocal arcFspath thisRoot with
-           Some (arch, hash, magic) ->
+           Some (arch, hash, magic, properties) ->
              setArchiveLocal thisRoot arch;
+             setArchivePropsLocal thisRoot properties;
              let info = Fileinfo.get' arcFspath in
              Hashtbl.replace archiveInfoCache thisRoot info;
              Lwt.return (Some (hash, magic))
          | None ->
              (* No archive found *)
              setArchiveLocal thisRoot NoArchive;
+             setArchivePropsLocal thisRoot Proplist.empty;
              Hashtbl.remove archiveInfoCache thisRoot;
              Lwt.return (Some (0, ""))
        end)
@@ -1281,8 +1306,8 @@ let curChildren = ref (NameMap.fold (fun nm _ rem -> (nm, `Ok) :: rem) archChi [
             Error
               ("Two or more files on a case-sensitive system have names \
                 identical except for case.  They cannot be synchronized to a \
-                case-insensitive file system.  (" ^
-               Path.toString path' ^ ")")
+                case-insensitive file system.  (File '" ^
+               Path.toString path' ^ "')")
           in
           updates := (nm, uiChild) :: !updates;
           archive
@@ -1495,6 +1520,32 @@ let rec buildUpdate archive fspath fullpath here path =
           (ArchiveDir (desc, NameMap.add name' arch otherChildren),
            updates)
 
+(* All the predicates that may change the set of files scanned during
+   update detection *)
+let updatePredicates =
+  [("immutable", immutable); ("immutablenot", immutablenot);
+   ("ignore", Globals.ignorePred); ("ignorenot", Globals.ignorenotPred);
+   ("follow", Path.followPred)]
+
+let predKey : (string * string list) list Proplist.key =
+  Proplist.register "update predicates"
+
+let checkNoUpdatePredicateChange thisRoot =
+  let props = getArchiveProps thisRoot in
+  let oldPreds = try Proplist.find predKey props with Not_found -> [] in
+  let newPreds =
+    List.map (fun (nm, p) -> (nm, Pred.extern p)) updatePredicates in
+(*
+List.iter
+  (fun (nm, l) ->
+     Format.eprintf "%s@." nm;
+     List.iter (fun s -> Format.eprintf "  %s@." s) l)
+newPreds;
+Format.eprintf "==> %b@." (oldPreds = newPreds);
+*)
+  setArchivePropsLocal thisRoot (Proplist.add predKey newPreds props);
+  oldPreds = newPreds
+
 (* for the given path, find the archive and compute the list of update
    items; as a side effect, update the local archive w.r.t. time-stamps for
    unchanged files *)
@@ -1509,6 +1560,7 @@ let findLocal fspath pathList: Common.updateItem list =
      deleted.  --BCP 2006 *)
   let (arcName,thisRoot) = archiveName fspath MainArch in
   let archive = getArchive thisRoot in
+  let _ = checkNoUpdatePredicateChange thisRoot in
   let (archive, updates) =
     Safelist.fold_right
       (fun path (arch, upd) ->
@@ -1590,8 +1642,9 @@ let prepareCommitLocal (fspath, magic) =
      Format.print_flush();
    **)
   let archiveHash = checkArchive true [] archive 0 in
+  let props = getArchiveProps root in
   storeArchiveLocal
-    (Os.fileInUnisonDir newName) root archive archiveHash magic;
+    (Os.fileInUnisonDir newName) root archive archiveHash magic props;
   Lwt.return (Some archiveHash)
 
 let prepareCommitOnRoot

@@ -228,7 +228,7 @@ let confirmBigDeletes =
 
 let () = Prefs.alias confirmBigDeletes "confirmbigdeletes"
 
-let ignore =
+let ignorePred =
   Pred.create "ignore"
     ("Including the preference \\texttt{-ignore \\ARG{pathspec}} causes Unison to "
      ^ "completely ignore paths that match \\ARG{pathspec} (as well as their "
@@ -238,7 +238,7 @@ let ignore =
      ^ "details on ignoring paths is found in"
      ^ " \\sectionref{ignore}{Ignoring Paths}.")
     
-let ignorenot =
+let ignorenotPred =
   Pred.create "ignorenot"
     ("This preference overrides the preference \\texttt{ignore}. 
       It gives a list of patterns 
@@ -260,12 +260,12 @@ let ignorenot =
     
 let shouldIgnore p =
   let p = Path.toString p in
-  (Pred.test ignore p) && not (Pred.test ignorenot p) 
+  (Pred.test ignorePred p) && not (Pred.test ignorenotPred p) 
 
 let addRegexpToIgnore re =
-  let oldRE = Pred.extern ignore in
+  let oldRE = Pred.extern ignorePred in
   let newRE = re::oldRE in
-  Pred.intern ignore newRE
+  Pred.intern ignorePred newRE
 
 let merge = 
   Pred.create "merge" ~advanced:true

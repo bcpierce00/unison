@@ -34,6 +34,7 @@ val compare : t -> t -> int
 val hash : local -> int
 
 val followLink : local -> bool
+val followPred : Pred.t
 
 val magic : t -> local
 val magic' : local -> t

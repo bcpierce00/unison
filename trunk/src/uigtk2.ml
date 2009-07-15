@@ -1429,6 +1429,7 @@ let rec createToplevelWindow () =
       adj#set_value (min v (upper -. adj#page_size));
     end in
 
+(*
   let makeFirstUnfinishedVisible pRiInFocus =
     let im = Array.length !theState in
     let rec find i =
@@ -1438,6 +1439,7 @@ let rec createToplevelWindow () =
       | _ -> find (i+1) in
     find 0
   in
+*)
 
   let updateDetails () =
     begin match !current with
@@ -1650,6 +1652,8 @@ lst_store#set ~row ~column:c_path path;
   let totalBytesToTransfer = ref Uutil.Filesize.zero in
   let totalBytesTransferred = ref Uutil.Filesize.zero in
 
+  let t0 = ref 0. in
+  let t1 = ref 0. in
   let lastFrac = ref 0. in
   let displayGlobalProgress v =
     if v = 0. || abs_float (v -. !lastFrac) > 1. then begin
@@ -1657,10 +1661,18 @@ lst_store#set ~row ~column:c_path path;
       progressBar#set_fraction (max 0. (min 1. (v /. 100.)))
     end;
 (*
-    if v > 0.5 then
-      progressBar#set_text (Util.percent2string v)
-    else
-      progressBar#set_text "";
+    let t = Unix.gettimeofday () in
+    if t -. !t1 >= 1. then begin
+      t1 := t;
+      let remTime =
+        if v <= 0. then ""
+        else if v >= 100. then "00:00 ETA"
+        else
+          let t = truncate ((!t1 -. !t0) *. (100. -. v) /. v +. 0.5) in
+          Format.sprintf "%02d:%02d ETA" (t / 60) (t mod 60)
+      in
+      progressBar#set_text remTime
+    end
 *)
   in
 
@@ -1677,6 +1689,7 @@ lst_store#set ~row ~column:c_path path;
   let initGlobalProgress b =
     totalBytesToTransfer := b;
     totalBytesTransferred := Uutil.Filesize.zero;
+    t0 := Unix.gettimeofday (); t1 := !t0;
     displayGlobalProgress 0.
   in
 
@@ -1963,11 +1976,16 @@ lst_store#set ~row ~column:c_path path;
                         showProgress (Uutil.File.ofLine i) rem "done";
                       theSI.whatHappened <- Some (res, !textDetailed);
                   fastRedisplay i;
+(* JV (7/09): It does not seem that useful to me to scroll the display
+   to make the first unfinished item visible.  The scrolling is way
+   too fast, and it makes it impossible to browse the list. *)
+(*
                   sync_action :=
                     Some
                       (fun () ->
                          makeFirstUnfinishedVisible pRiThisRound;
                          sync_action := None);
+*)
                   gtk_sync false;
                   return ())
             | Some _ ->
@@ -2160,7 +2178,8 @@ lst_store#set ~row ~column:c_path path;
           item.bytesToTransfer <- len;
           initGlobalProgress len;
           Uicommon.showDiffs item.ri
-            (fun title text -> messageBox ~title (transcode text))
+            (fun title text ->
+               messageBox ~title:(transcode title) (transcode text))
             Trace.status (Uutil.File.ofLine i);
           displayGlobalProgress 0.;
           fastRedisplay i)
