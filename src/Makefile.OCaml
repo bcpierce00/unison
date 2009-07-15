@@ -198,7 +198,7 @@ OCAMLOBJS += \
           \
           ubase/projectInfo.cmo ubase/myMap.cmo ubase/safelist.cmo \
           ubase/uprintf.cmo ubase/util.cmo ubase/uarg.cmo \
-          ubase/prefs.cmo ubase/trace.cmo \
+          ubase/prefs.cmo ubase/trace.cmo ubase/proplist.cmo \
           \
           lwt/pqueue.cmo lwt/lwt.cmo lwt/lwt_util.cmo lwt/lwt_unix.cmo \
           \

@@ -137,13 +137,3 @@ COSMETIC
 Interactively adding an ignore pattern for src will not make
   src/RECENTNEWS immediately disappear (as it does not directly match
   the pattern)...
-
-[Mar 2002] When transferring by copying, copies on the remote side are
-  not taken into account by the progress meter.
-
-progress bar calculation is not quite right -- e.g. dir sizes are not
-  always accurate?
-  [One needs to consider simultaneously the archive and the update to
-   compute the size a directory (consider a directory with some
-   updates deep inside]
-  [also, Diff has an effect on the progress bar!]

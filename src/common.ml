@@ -168,7 +168,10 @@ let rcLength rc rc' =
 
 let riLength ri =
   match ri.replicas with
-    Different {rc1 = rc1; rc2 = rc2; direction = dir} ->
+    Different {rc1 = {status= `Unchanged | `PropsChanged};
+               rc2 = {status= `Unchanged | `PropsChanged}} ->
+      Uutil.Filesize.zero (* No contents propagated *)
+  | Different {rc1 = rc1; rc2 = rc2; direction = dir} ->
       begin match dir with
         Replica1ToReplica2 -> rcLength rc1 rc2
       | Replica2ToReplica1 -> rcLength rc2 rc1

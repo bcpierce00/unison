@@ -39,6 +39,8 @@ let fromString s =
 
 let hash n = (Case.ops())#hash n
 
+let normalize n = (Case.ops())#normalizeFilename n
+
 (****)
 
 let badEncoding s = (Case.ops())#badEncoding s

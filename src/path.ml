@@ -194,7 +194,7 @@ let addPrefixToFinalName path prefix =
 let hash p = Hashtbl.hash p
 
 (* Pref controlling whether symlinks are followed. *)
-let follow = Pred.create "follow"
+let followPred = Pred.create "follow"
     ("Including the preference \\texttt{-follow \\ARG{pathspec}} causes Unison to \
       treat symbolic links matching \\ARG{pathspec} as `invisible' and \
       behave as if the object pointed to by the link had appeared literally \
@@ -205,7 +205,7 @@ let follow = Pred.create "follow"
 
 let followLink path =
      (Util.osType = `Unix || Util.isCygwin)
-  && Pred.test follow (toString path)
+  && Pred.test followPred (toString path)
 
 let magic p = p
 let magic' p = p

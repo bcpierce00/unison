@@ -44,8 +44,6 @@ See the file BUGS.txt for a list of currently open bugs.
 
 * Rsync debugging
 
-     - R can't run with debugging (even in 2.13) -- Alan cannot reproduce
-
      - when using socket mode under windows, upon completion of the first
        external rsync call, the connection to the server is dropped (the
        server gets an EOF and closes the connection; the client sees a
@@ -232,12 +230,6 @@ should strip symbols from binary files in 'make exportnative'
     to respond to the prompts in the textual ui. is that explained 
     somewhere? a few typos i noticed: "with t fast", "nison", "off of".
 
-** what happens when we ssh through loopback and sync the same
-   directory?
-   ===> Needs to be thought about.  In particular, what is the name of the
-        archive in this case?  Could they ever be exactly the same?
-   ===> Try it and see.
-
 
 * SMALL FUNCTIONALITY IMPROVEMENTS
 * ================================
@@ -245,10 +237,6 @@ should strip symbols from binary files in 'make exportnative'
 **** Please let me say
        root = ~/bla
      instead of requiring me to give an absolute path to my home dir.
-
-**** The archive should indicate whether it is case-dependant or not.
-     (This is important for correctness -- if the case-insensitive flag is
-     set differently on different runs, things can get very confused!)
 
 *** [Marcus Sundman, 2008] Unison can't propagate changes in read-only
     folders. The correct way to do it is to temporarily add write
@@ -341,17 +329,6 @@ should strip symbols from binary files in 'make exportnative'
     because Unison won't take more than one connection at a time.)  I can
     tolerate it, but the window could be eliminated entirely by allowing socket
     connections to require a nonce.
-
-** Would be nice to transfer directories "incrementally" rather than
-   atomically (i.e., if Unison is interrupted during the transfer of a
-   directory, the partially-transferred directory should persist).  Is
-   this allowed by the specification?  (If so, then it should just become
-   the default behavior.)
-   ===> BCP and William Lovas have discussed how to do this, but it is
-        not all that straightforward.
-
-** we should reload the current preference file (if it's changed, at least)
-   when we restart
 
 ** An idea for the interface to the external merge functionality:
   created a general mechanism for invoking external functionality...
@@ -450,6 +427,7 @@ should strip symbols from binary files in 'make exportnative'
   time=true, you get a zillion conflicts...
      ==> This is probably a good idea, but I'm a little scared of all the
          messages we'd get from upgrading users
+     ==> Also, "make" can get confused when the 'time' option is set
 
 * Maybe we should write debugging and tracing information to stdout
   instead of stderr?
@@ -512,6 +490,7 @@ Update checking over NFS might be *much* faster if we use only relative
 
 On one server (Saul), Unison seems to use HUGE amounts of memory (250Mb
   resident), while on my laptop it's much less.  WTF?
+  ==> Is that real memory or virtual memory?
 
 [Ben Wong, Aug 2002] Why not make unison fall back to addversionno if it
   would otherwise bomb out with an incorrect version number? That way I
@@ -601,12 +580,6 @@ For safety...
     how many files are to be deleted/changed/created plus how many bytes
     to be transferred, and a warning signal (display in red or something)
     if these exceed the current setting of maxdelete.
-
-Might be nice to provide an option that says "if you're propagating a
-  newly created directory and something goes wrong with something inside
-  it, just ignore the file that failed and keep going with the rest of
-  the directory."  [We probably don't want to continue in all cases (for
-  instance, when the disk is full)]
 
 Would be nice to be able to run unison in a special mode like this
     unison -relocate //old-host1//path1 //old-host2//path2 \
@@ -816,7 +789,7 @@ I'm watching it sync a very large file that I don't want anyway, and I'm in
   [Perdita Stevens, Perdita.Stevens@dcs.ed.ac.uk, Mar 14 2002]
   ===> It's not trivial (involves some subtle stuff about our RPC
        implementation and the single-thread nature of the GUI), but might
-       not be impossible either. 
+       not be impossible either.
 
 "Quit" during synchronization should abort all current operations (so
   that temporary files are deleted) before exiting.

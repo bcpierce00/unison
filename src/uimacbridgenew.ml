@@ -19,7 +19,7 @@ type stateItem = { mutable ri : reconItem;
                    mutable statusMessage : string option };;
 let theState = ref [| |];;
 
-let unisonDirectory() = System.fspathToPrintString Os.unisonDir
+let unisonDirectory() = System.fspathToString Os.unisonDir
 ;;
 Callback.register "unisonDirectory" unisonDirectory;;
 
@@ -56,6 +56,7 @@ external bridgeThreadWait : int -> unit = "bridgeThreadWait";;
 (* Defined in MyController.m, used to redisplay the table
    when the status for a row changes *)
 external displayStatus : string -> unit = "displayStatus";;
+let displayStatus s = displayStatus (Unicode.protect s);;
 
 (*
 	Called to create callback threads which wait on the C side for callbacks.
@@ -345,12 +346,16 @@ let unisonInit2 () =
 Callback.register "unisonInit2" unisonInit2;;
 
 let unisonRiToDetails ri =
-  match ri.whatHappened with
-    Some (Util.Failed s) -> (Path.toString ri.ri.path1) ^ "\n" ^ s
-  | _ -> (Path.toString ri.ri.path1) ^ "\n" ^ (Uicommon.details2string ri.ri "  ");;
+  Unicode.protect
+    (match ri.whatHappened with
+       Some (Util.Failed s) ->
+         Path.toString ri.ri.path1 ^ "\n" ^ s
+     | _ ->
+         Path.toString ri.ri.path1 ^ "\n" ^
+         Uicommon.details2string ri.ri "  ");;
 Callback.register "unisonRiToDetails" unisonRiToDetails;;
 
-let unisonRiToPath ri = Path.toString ri.ri.path1;;
+let unisonRiToPath ri = Unicode.protect (Path.toString ri.ri.path1);;
 Callback.register "unisonRiToPath" unisonRiToPath;;
 
 let rcToString rc =
@@ -372,6 +377,8 @@ let unisonRiToRight ri =
 Callback.register "unisonRiToRight" unisonRiToRight;;
 
 let unisonRiToFileSize ri =
+  (*FIX: will not work with files and directory larger than 1 GiB on
+    32bit machines! *)
   Uutil.Filesize.toInt (riLength ri.ri);;
 Callback.register "unisonRiToFileSize" unisonRiToFileSize;;
 
@@ -420,7 +427,7 @@ Callback.register "unisonRiForceNewer" unisonRiForceNewer;;
 let unisonRiToProgress ri =
   match (ri.statusMessage, ri.whatHappened,ri.ri.replicas) with
     (None,None,_) -> ""
-  | (Some s,None,_) -> s
+  | (Some s,None,_) -> Unicode.protect s
   | (_,_,Different {direction = Conflict}) -> ""
   | (_,_,Problem _) -> ""
   | (_,Some Util.Succeeded,_) -> "done"
@@ -428,6 +435,8 @@ let unisonRiToProgress ri =
 Callback.register "unisonRiToProgress" unisonRiToProgress;;
 
 let unisonRiToBytesTransferred ri =
+  (*FIX: will not work when transferring more than 1 GiB on 32bit
+    machines! *)
   Uutil.Filesize.toInt ri.bytesTransferred;;
 Callback.register "unisonRiToBytesTransferred" unisonRiToBytesTransferred;;
 
@@ -436,6 +445,9 @@ Callback.register "unisonRiToBytesTransferred" unisonRiToBytesTransferred;;
 (* Defined in MyController.m, used to show diffs *)
 external displayDiff : string -> string -> unit = "displayDiff";;
 external displayDiffErr : string -> unit = "displayDiffErr";;
+let displayDiff title text =
+  displayDiff (Unicode.protect title) (Unicode.protect text);;
+let displayDiffErr err = displayDiffErr (Unicode.protect err)
 
 (* If only properties have changed, we can't diff or merge.
    'Can't diff' is produced (uicommon.ml) if diff is attemped
@@ -648,10 +660,10 @@ let roots2niceStrings length = function
  | _ -> assert false  (* BOGUS? *);;
 let unisonFirstRootString() =
   let replica1, replica2 = roots2niceStrings 32 (Globals.roots()) in
-  replica1;;
+  Unicode.protect replica1;;
 let unisonSecondRootString() =
   let replica1, replica2 = roots2niceStrings 32 (Globals.roots()) in
-  replica2;;
+  Unicode.protect replica2;;
 Callback.register "unisonFirstRootString" unisonFirstRootString;;
 Callback.register "unisonSecondRootString" unisonSecondRootString;;
 
@@ -698,5 +710,6 @@ let unisonExnInfo e =
   | Unix.Unix_error(ue,s1,s2) ->
       Printf.sprintf "Unix error(%s,%s,%s)" (Unix.error_message ue) s1 s2
   | _ -> Printexc.to_string e;;
-Callback.register "unisonExnInfo" unisonExnInfo;;
+Callback.register "unisonExnInfo"
+  (fun e -> Unicode.protect (unisonExnInfo e));;
 
