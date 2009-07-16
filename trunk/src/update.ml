@@ -1316,7 +1316,8 @@ let getChildren fspath path =
    whether the directory is now empty *)
 let rec buildUpdateChildren
     fspath path (archChi: archive NameMap.t) unchangedChildren fastCheckInfos
-    : archive NameMap.t option * (Name.t * Common.updateItem) list * bool
+    : archive NameMap.t option * (Name.t * Common.updateItem) list *
+      bool * bool
     =
   showStatusDir path;
   let skip =
@@ -1334,7 +1335,7 @@ let rec buildUpdateChildren
              | _ ->
                  ())
           archChi;
-      (None, [], false)
+      (None, [], false, false)
     end else begin
       let updates = ref [] in
       let archUpdated = ref false in
@@ -1352,16 +1353,18 @@ let rec buildUpdateChildren
       let newChi = NameMap.mapi handleChild archChi in
       (* The Recon module relies on the updates to be sorted *)
       ((if !archUpdated then Some newChi else None),
-       Safelist.rev !updates, false)
+       Safelist.rev !updates, false, false)
     end
   end else
   let curChildren = ref (getChildren fspath path) in
   let emptied = not (NameMap.is_empty archChi) && !curChildren = [] in
+  let hasIgnoredChildren = ref false in
   let updates = ref [] in
   let archUpdated = ref false in
   let handleChild nm archive status =
     let path' = Path.child path nm in
     if Globals.shouldIgnore path' then begin
+      hasIgnoredChildren := true;
       debugignore (fun()->Util.msg "buildUpdateChildren: ignoring path %s\n"
                             (Path.toString path'));
       archive
@@ -1440,7 +1443,7 @@ let rec buildUpdateChildren
     !curChildren;
   (* The Recon module relies on the updates to be sorted *)
   ((if !archUpdated then Some newChi else None),
-   Safelist.rev !updates, emptied)
+   Safelist.rev !updates, emptied, !hasIgnoredChildren)
 
 and buildUpdateRec archive currfspath path fastCheckInfos =
   try
@@ -1497,10 +1500,20 @@ and buildUpdateRec archive currfspath path fastCheckInfos =
             (PropsUpdated, info.Fileinfo.desc) in
         let unchanged =
           dirContentsClearlyUnchanged info archDesc fastCheckInfos in
-        let (newChildren, childUpdates, emptied) =
+        let (newChildren, childUpdates, emptied, hasIgnoredChildren) =
           buildUpdateChildren
             currfspath path prevChildren unchanged fastCheckInfos in
         let (archDesc, updated) =
+          (* If the archive contain ignored children, we cannot use it to
+             skip reading the directory contents from the filesystem.
+             Actually, we could check for ignored children in the archive,
+             but this has a significant cost.  We could mark directories
+             with ignored children, and only perform the checks for them,
+             but that does not seem worthwhile, are directories with
+             ignored children are expected to be rare in the archive.
+             (These are files or directories which used not to be
+             ignored and are now ignored.) *)
+          if hasIgnoredChildren then (archDesc, true) else
           directoryCheckContentUnchanged
             currfspath path info archDesc childUpdates fastCheckInfos in
         (begin match newChildren with
@@ -1517,7 +1530,7 @@ and buildUpdateRec archive currfspath path fastCheckInfos =
            NoUpdates)
     | (`DIRECTORY, _) ->
         debug (fun() -> Util.msg "  buildUpdate -> New directory\n");
-        let (newChildren, childUpdates, _) =
+        let (newChildren, childUpdates, _, _) =
           buildUpdateChildren
             currfspath path NameMap.empty false fastCheckInfos in
         (None,

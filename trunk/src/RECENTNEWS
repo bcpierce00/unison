@@ -1,5 +1,15 @@
 CHANGES FROM VERSION 2.36.-27
 
+* Fixed small bug in new update detection optimization:
+  do not perform the optimization for directories with ignored
+  children in the archive.  Indeed, we cannot rely on the archive in
+  this case instead of reading the directory contents from the
+  filesystem (systematically pruning the ignored children from the
+  archive is too costly).
+
+-------------------------------
+CHANGES FROM VERSION 2.36.-27
+
 * Experimental update detection optimization:
   do not read the contents of unchanged directories
 * MyMap.map and MyMap.mapi now iterate in increasing order
