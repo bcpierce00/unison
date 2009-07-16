@@ -44,6 +44,7 @@ module type FILESIZE = sig
   val dummy : t
   val add : t -> t -> t
   val sub : t -> t -> t
+  val ofFloat : float -> t
   val toFloat : t -> float
   val toString : t -> string
   val ofInt : int -> t
@@ -57,10 +58,11 @@ end
 
 module Filesize : FILESIZE = struct
   type t = int64
-  let zero = Int64.zero
-  let dummy = Int64.minus_one
+  let zero = 0L
+  let dummy = -1L
   let add = Int64.add
   let sub = Int64.sub
+  let ofFloat = Int64.of_float
   let toFloat = Int64.to_float
   let toString = Int64.to_string
   let ofInt x = Int64.of_int x

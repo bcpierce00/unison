@@ -1,5 +1,13 @@
 CHANGES FROM VERSION 2.36.-27
 
+* Experimental update detection optimization:
+  do not read the contents of unchanged directories
+* MyMap.map and MyMap.mapi now iterate in increasing order
+  (rather than in an unspecified way)
+
+-------------------------------
+CHANGES FROM VERSION 2.36.-27
+
 * GTK UI: disabled scrolling to the first unfinished item during transport.
   It goes way too fast when lot of small files are synchronized, and it
   makes it impossible to browse the file list during transport.
