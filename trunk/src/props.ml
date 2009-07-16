@@ -761,3 +761,28 @@ let setTime p t = {p with time = Time.replace p.time t}
 let perms p = Perm.extract p.perm
 
 let syncModtimes = Time.sync
+
+(* ------------------------------------------------------------------------- *)
+(*                          Directory change stamps                          *)
+(* ------------------------------------------------------------------------- *)
+
+(* We are reusing the directory length to store a flag indicating that
+   the directory is unchanged *)
+
+type dirChangedStamp = Uutil.Filesize.t
+
+let freshDirStamp () =
+  let t =
+    (Unix.gettimeofday () +. sqrt 2. *. float (Unix.getpid ())) *. 1000.
+  in
+  Uutil.Filesize.ofFloat t
+
+let changedDirStamp = Uutil.Filesize.zero
+
+let setDirChangeFlag p stamp inode =
+  let stamp = Uutil.Filesize.add stamp (Uutil.Filesize.ofInt inode) in
+  (setLength p stamp, length p <> stamp)
+
+let dirMarkedUnchanged p stamp inode =
+  let stamp = Uutil.Filesize.add stamp (Uutil.Filesize.ofInt inode) in
+  stamp <> changedDirStamp && length p = stamp
