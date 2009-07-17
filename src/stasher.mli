@@ -5,9 +5,12 @@
 (* This module maintains backups for general purpose and *)
 (* as archives for mergeable files. *)
 
-(* Make a backup copy of a file, if needed; if the third parameter is `AndRemove,
-   then the file is either backed up by renaming or deleted if no backup is needed. *)
-val backup: Fspath.t -> Path.local -> [`AndRemove | `ByCopying] -> unit
+(* Make a backup copy of a file, if needed; if the third parameter is
+   `AndRemove, then the file is either backed up by renaming or
+   deleted if no backup is needed. *)
+val backup:
+  Fspath.t -> Path.local ->
+  [`AndRemove | `ByCopying] -> Update.archive -> unit
 
 (* Stashes of current versions (so that we have archives when needed for merging) *)
 val stashCurrentVersion:

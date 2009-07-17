@@ -27,8 +27,3 @@ val localFile :
  -> Uutil.Filesize.t     (* fork length *)
  -> Uutil.File.t option  (* file's index in UI (for progress bars), as appropriate *)
  -> unit
-
-(* From update.ml *)
-(* (there is a dependency loop between copy.ml and update.ml...) *)
-val excelFile : (Path.local -> bool) ref
-val markPossiblyUpdated : (Fspath.t -> Path.local -> unit) ref

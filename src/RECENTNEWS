@@ -1,5 +1,11 @@
 CHANGES FROM VERSION 2.36.-27
 
+* Performance improvement in Xferhint module.
+  Update this cache more accurately during transport.
+
+-------------------------------
+CHANGES FROM VERSION 2.36.-27
+
 * Correction to previous fix: do not perform the optimization for
   directories with ignored children *in the archive*. (The previous
   fix was also rejecting directories with ignored children on disk,

@@ -9,10 +9,13 @@
 
 val xferbycopying: bool Prefs.t
 
-(* Suggest a file that's likely to have a given fingerprint *)
-val lookup: Os.fullfingerprint -> (Fspath.t * Path.local) option
+type handle
 
-(* Add, delete, and rename entries *)
-val insertEntry: Fspath.t * Path.local -> Os.fullfingerprint -> unit
-val deleteEntry: Fspath.t * Path.local -> unit
-val renameEntry: Fspath.t * Path.local -> Fspath.t * Path.local -> unit
+(* Suggest a file that's likely to have a given fingerprint *)
+val lookup: Os.fullfingerprint -> (Fspath.t * Path.local * handle) option
+
+(* Add a file *)
+val insertEntry: Fspath.t -> Path.local -> Os.fullfingerprint -> unit
+
+(* Delete an entry *)
+val deleteEntry: handle -> unit

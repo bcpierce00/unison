@@ -1223,7 +1223,7 @@ let checkContentsChange
     Osx.ressUnchanged archRess info.Fileinfo.osX.Osx.ressInfo
       None dataClearlyUnchanged in
   if dataClearlyUnchanged && ressClearlyUnchanged then begin
-    Xferhint.insertEntry (currfspath, path) archDig;
+    Xferhint.insertEntry currfspath path archDig;
     None, checkPropChange info archive archDesc
   end else begin
     debugverbose (fun() -> Util.msg "  Double-check possibly updated file\n");
@@ -1231,7 +1231,7 @@ let checkContentsChange
     let (info, newDigest) =
       Os.safeFingerprint currfspath path info
         (if dataClearlyUnchanged then Some archDig else None) in
-    Xferhint.insertEntry (currfspath, path) newDigest;
+    Xferhint.insertEntry currfspath path newDigest;
     debug (fun() -> Util.msg "  archive digest = %s   current digest = %s\n"
              (Os.fullfingerprint_to_string archDig)
              (Os.fullfingerprint_to_string newDigest));
@@ -1239,7 +1239,6 @@ let checkContentsChange
       let newprops = Props.setTime archDesc (Props.time info.Fileinfo.desc) in
       let newarch =
         ArchiveFile
-
           (newprops, archDig, Fileinfo.stamp info, Fileinfo.ressStamp info) in
       debugverbose (fun() ->
         Util.msg "  Contents match: update archive with new time...%f\n" 
@@ -1330,8 +1329,8 @@ let rec buildUpdateChildren
         NameMap.iter
           (fun nm archive ->
              match archive with
-               ArchiveFile (archDesc, archDig, archStamp, archRess) ->
-                 Xferhint.insertEntry (fspath, Path.child path nm) archDig
+               ArchiveFile (_, archDig, _, _) ->
+                 Xferhint.insertEntry fspath (Path.child path nm) archDig
              | _ ->
                  ())
           archChi;
@@ -1374,8 +1373,8 @@ let rec buildUpdateChildren
         `Ok | `Abs ->
           if skip && archive <> NoArchive && status <> `Abs then begin
             begin match archive with
-              ArchiveFile (archDesc, archDig, archStamp, archRess) ->
-                Xferhint.insertEntry (fspath, path') archDig 
+              ArchiveFile (_, archDig, _, _) ->
+                Xferhint.insertEntry fspath path' archDig
             | _ ->
                 ()
             end;
@@ -1469,7 +1468,7 @@ and buildUpdateRec archive currfspath path fastCheckInfos =
         begin
           showStatusAddLength info;
           let (info, dig) = Os.safeFingerprint currfspath path info None in
-          Xferhint.insertEntry (currfspath, path) dig;
+          Xferhint.insertEntry currfspath path dig;
           Updates (File (info.Fileinfo.desc,
                          ContentsUpdated (dig, Fileinfo.stamp info,
                                           Fileinfo.ressStamp info)),
@@ -1909,6 +1908,10 @@ let updateArchive fspath path ui =
   let (_, subArch) = getPathInArchive archive Path.empty path in
   updateArchiveRec ui (stripArchive path subArch)
 
+(* (For breaking the dependency loop between update.ml and stasher.ml...) *)
+let stashCurrentVersion = ref (fun _ _ -> ())
+let setStasherFun f = stashCurrentVersion := f
+
 (* This function is called for files changed only in identical ways.
    It only updates the archives and perhaps makes backups. *)
 let markEqualLocal fspath paths =
@@ -1922,7 +1925,7 @@ let markEqualLocal fspath paths =
        let arch =
          updatePathInArchive !archive fspath Path.empty path
            (fun archive localPath ->
-              Stasher.stashCurrentVersion fspath localPath None;
+              !stashCurrentVersion fspath localPath;
               updateArchiveRec (Updates (uc, New)) archive)
        in
        archive := arch);
@@ -2136,7 +2139,8 @@ let checkNoUpdates fspath pathInArchive ui =
   in
   let (_, uiNew) = buildUpdateRec archive fspath localPath fastCheckInfos in
   markPossiblyUpdatedRec fspath pathInArchive uiNew;
-  explainUpdate pathInArchive uiNew
+  explainUpdate pathInArchive uiNew;
+  archive
 
 (*****************************************************************************)
 (*                                UPDATE SIZE                                *)
@@ -2213,9 +2217,16 @@ let updateSize path ui =
   let (_, subArch) = getPathInArchive archive Path.empty path in
   updateSizeRec subArch ui
 
-(*****)
+(*****************************************************************************)
+(*                                MISC                                       *)
+(*****************************************************************************)
 
-(* There is a dependency loop between copy.ml and update.ml... *)
-let _ =
-Copy.excelFile := excelFile;
-Copy.markPossiblyUpdated := markPossiblyUpdated
+let rec iterFiles fspath path arch f =
+  match arch with
+    ArchiveDir (_, children) ->
+      NameMap.iter
+        (fun nm arch -> iterFiles fspath (Path.child path nm) arch f) children
+  | ArchiveFile (desc, fp, stamp, ress) ->
+      f fspath path fp
+  | _ ->
+      ()
