@@ -1,5 +1,13 @@
 CHANGES FROM VERSION 2.36.-27
 
+* Correction to previous fix: do not perform the optimization for
+  directories with ignored children *in the archive*. (The previous
+  fix was also rejecting directories with ignored children on disk,
+  which is way too conservative.)
+
+-------------------------------
+CHANGES FROM VERSION 2.36.-27
+
 * Fixed small bug in new update detection optimization:
   do not perform the optimization for directories with ignored
   children in the archive.  Indeed, we cannot rely on the archive in
