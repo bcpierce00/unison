@@ -36,13 +36,6 @@ let includeInTempNames s =
     if s = "" then tempFileSuffixFixed
     else "." ^ s ^ tempFileSuffixFixed
 
-let xferDelete = ref (fun (fp,p) -> ())
-let xferRename = ref (fun (fp,p) (ftp,tp) -> ())
-
-let initializeXferFunctions del ren =
-  xferDelete := del;
-  xferRename := ren
-      
 (*****************************************************************************)
 (*                      QUERYING THE FILESYSTEM                              *)
 (*****************************************************************************)
@@ -158,7 +151,6 @@ and delete fspath path =
           Safelist.iter
             (fun child -> delete fspath (Path.child path child))
             (allChildrenOf fspath path);
-	  (!xferDelete) (fspath, path);
           Fs.rmdir absolutePath
       | `FILE ->
           if Util.osType <> `Unix then begin
@@ -166,7 +158,6 @@ and delete fspath path =
               Fs.chmod absolutePath 0o600;
             with Unix.Unix_error _ -> ()
           end;
-	  (!xferDelete) (fspath, path);
           Fs.unlink absolutePath;
           if Prefs.read Osx.rsrc then begin
             let pathDouble = Fspath.appleDouble absolutePath in
@@ -189,7 +180,6 @@ let rename fname sourcefspath sourcepath targetfspath targetpath =
   Util.convertUnixErrorsToTransient ("renaming " ^ source' ^ " to " ^ target')
     (fun () ->
       debug (fun() -> Util.msg "rename %s to %s\n" source' target');
-      (!xferRename) (sourcefspath, sourcepath) (targetfspath, targetpath);
       Fs.rename source target;
       if Prefs.read Osx.rsrc then begin
         let sourceDouble = Fspath.appleDouble source in
@@ -277,6 +267,12 @@ let reasonForFingerprintMismatch (digdata,digress) (digdata',digress') =
   else "both file contents and resource fork"
 
 let fullfingerprint_dummy = (Fingerprint.dummy,Fingerprint.dummy)
+
+let fullfingerprintHash (fp, rfp) =
+  Fingerprint.hash fp + 31 * Fingerprint.hash rfp
+
+let fullfingerprintEqual (fp, rfp) (fp', rfp') =
+  Fingerprint.equal fp fp' && Fingerprint.equal rfp rfp'
 
 (*****************************************************************************)
 (*                           UNISON DIRECTORY                                *)

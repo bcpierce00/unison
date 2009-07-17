@@ -360,7 +360,7 @@ let backupPath fspath path =
 
 (*------------------------------------------------------------------------------------*)
 	  
-let backup fspath path (finalDisposition : [`AndRemove | `ByCopying]) =
+let backup fspath path (finalDisposition : [`AndRemove | `ByCopying]) arch =
   debug (fun () -> Util.msg
       "backup: %s / %s\n"
       (Fspath.toDebugString fspath)
@@ -409,14 +409,17 @@ let backup fspath path (finalDisposition : [`AndRemove | `ByCopying]) =
             debug (fun () -> Util.msg "  Finished copying; deleting %s / %s\n"
               (Fspath.toDebugString fspath) (Path.toString path));
             disposeIfNeeded() in
-          if finalDisposition = `AndRemove then
+          begin if finalDisposition = `AndRemove then
             try
+              (*FIX: this does the wrong thing with followed symbolic links!*)
               Os.rename "backup" workingDir realPath backRoot backPath
             with Util.Transient _ ->
               debug (fun () -> Util.msg "Rename failed -- copying instead\n");
               byCopying()
           else
             byCopying()
+          end;
+          Update.iterFiles backRoot backPath arch Xferhint.insertEntry
       end else begin
 	debug (fun () -> Util.msg "Path %s / %s does not need to be backed up\n"
 	    (Fspath.toDebugString fspath)
@@ -462,7 +465,10 @@ let rec stashCurrentVersion fspath path sourcePathOpt =
                 (Osx.ressLength stat.Fileinfo.osX.Osx.ressInfo)
                 None
           end)
-      
+
+let _ =
+Update.setStasherFun (fun fspath path -> stashCurrentVersion fspath path None)
+
 (*------------------------------------------------------------------------------------*)    
     
 (* This function tries to find a backup of a recent version of the file at location

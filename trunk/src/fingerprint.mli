@@ -14,3 +14,6 @@ val toString : t -> string
 (* This dummy fingerprint is guaranteed small and distinct from all
    other fingerprints *)
 val dummy : t
+
+val hash : t -> int
+val equal : t -> t -> bool

@@ -79,8 +79,8 @@ let deleteLocal (fspathTo, (pathTo, ui)) =
   let localPathTo = Update.translatePathLocal fspathTo pathTo in
   (* Make sure the target is unchanged first *)
   (* (There is an unavoidable race condition here.) *)
-  Update.checkNoUpdates fspathTo localPathTo ui;
-  Stasher.backup fspathTo localPathTo `AndRemove;
+  let prevArch = Update.checkNoUpdates fspathTo localPathTo ui in
+  Stasher.backup fspathTo localPathTo `AndRemove prevArch;
   (* Archive update must be done last *)
   Update.replaceArchiveLocal fspathTo localPathTo Update.NoArchive;
   Lwt.return ()
@@ -177,7 +177,7 @@ let makeSymlink =
 
 (* ------------------------------------------------------------ *)
 
-let performRename fspathTo localPathTo workingDir pathFrom pathTo =
+let performRename fspathTo localPathTo workingDir pathFrom pathTo prevArch =
   debug (fun () -> Util.msg "Renaming %s to %s in %s; root is %s\n"
       (Path.toString pathFrom)
       (Path.toString pathTo)
@@ -221,7 +221,7 @@ let performRename fspathTo localPathTo workingDir pathFrom pathTo =
 
         debug (fun() ->
           Util.msg "moving %s to %s\n" (Fspath.toDebugString target) temp');
-        Stasher.backup fspathTo localPathTo `ByCopying;
+        Stasher.backup fspathTo localPathTo `ByCopying prevArch;
         writeCommitLog source target temp';
         Util.finalize (fun() ->
           (* If the first rename fails, the log can be removed: the
@@ -245,7 +245,7 @@ let performRename fspathTo localPathTo workingDir pathFrom pathTo =
         Os.delete temp Path.empty
       end else begin
         debug (fun() -> Util.msg "rename: moveFirst=false\n");
-        Stasher.backup fspathTo localPathTo `ByCopying;
+        Stasher.backup fspathTo localPathTo `ByCopying prevArch;
         Os.rename "renameLocal(3)" source Path.empty target Path.empty;
         debug (fun() ->
 	  if filetypeFrom = `FILE then
@@ -271,11 +271,13 @@ let renameLocal
       (fspathTo, (localPathTo, workingDir, pathFrom, pathTo, ui, archOpt)) =
   (* Make sure the target is unchanged, then do the rename.
      (Note that there is an unavoidable race condition here...) *)
-  Update.checkNoUpdates fspathTo localPathTo ui;
-  performRename fspathTo localPathTo workingDir pathFrom pathTo;
-  (* Archive update must be done last *)
+  let prevArch = Update.checkNoUpdates fspathTo localPathTo ui in
+  performRename fspathTo localPathTo workingDir pathFrom pathTo prevArch;
   begin match archOpt with
     Some archTo -> Stasher.stashCurrentVersion fspathTo localPathTo None;
+                   Update.iterFiles fspathTo localPathTo archTo
+                     Xferhint.insertEntry;
+                   (* Archive update must be done last *)
                    Update.replaceArchiveLocal fspathTo localPathTo archTo
   | None        -> ()
   end;
@@ -283,7 +285,7 @@ let renameLocal
 
 let renameOnHost = Remote.registerRootCmd "rename" renameLocal
 
-let rename root pathInArchive localPath workingDir pathOld pathNew ui archOpt =
+let rename root localPath workingDir pathOld pathNew ui archOpt =
   debug (fun() ->
     Util.msg "rename(root=%s, pathOld=%s, pathNew=%s)\n"
       (root2string root)
@@ -518,7 +520,7 @@ let copy
   else begin
     (* Rename the files to their final location and then update the
        archive on the destination replica *)
-    rename rootTo pathTo localPathTo workingDir tempPathTo realPathTo uiTo
+    rename rootTo localPathTo workingDir tempPathTo realPathTo uiTo
       (Some archTo) >>= fun () ->
     (* Update the archive on the source replica
        FIX: we could reuse localArch if rootFrom is the same as rootLocal *)
@@ -701,7 +703,7 @@ let copyBack fspathFrom pathFrom rootTo pathTo propsTo uiTo id =
   Copy.file
     (Local, fspathFrom) pathFrom rootTo workingDirForCopy tempPathTo realPathTo
     `Copy newprops fp None stamp id >>= fun info ->
-  rename rootTo pathTo localPathTo workingDirForCopy tempPathTo realPathTo
+  rename rootTo localPathTo workingDirForCopy tempPathTo realPathTo
     uiTo None)
     
 let keeptempfilesaftermerge =   

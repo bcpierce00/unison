@@ -31,6 +31,8 @@ type fullfingerprint
 val fullfingerprint_to_string : fullfingerprint -> string
 val reasonForFingerprintMismatch : fullfingerprint -> fullfingerprint -> string
 val fullfingerprint_dummy : fullfingerprint
+val fullfingerprintHash : fullfingerprint -> int
+val fullfingerprintEqual : fullfingerprint -> fullfingerprint -> bool
 
 (* Use this function if the file may change during fingerprinting *)
 val safeFingerprint :
@@ -47,10 +49,3 @@ val fingerprint :
 (* Versions of system calls that will restart when interrupted by
    signal handling *)
 val accept : Unix.file_descr -> (Unix.file_descr * Unix.sockaddr)
-
-(* Called during program initialization to resolve a circular dependency
-   between this module and Xferhints *)
-val initializeXferFunctions : 
-    (Fspath.t * Path.local -> unit) -> 
-    ((Fspath.t * Path.local) -> (Fspath.t * Path.local) -> unit) ->
-    unit

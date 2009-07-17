@@ -42,11 +42,6 @@ let lwt_protect f g =
 
 (****)
 
-(* From update.ml *)
-(* (there is a dependency loop between copy.ml and update.ml...) *)
-let excelFile = ref (fun _ -> false)
-let markPossiblyUpdated = ref (fun _ _ -> ())
-
 (* Check whether the source file has been modified during synchronization *)
 let checkContentsChangeLocal
       fspathFrom pathFrom archDesc archDig archStamp archRess paranoid =
@@ -60,7 +55,7 @@ let checkContentsChangeLocal
   let dataClearlyUnchanged =
     not clearlyModified
     && Props.same_time info.Fileinfo.desc archDesc
-    && not (!excelFile pathFrom)
+    && not (Update.excelFile pathFrom)
     && match archStamp with
          Some (Fileinfo.InodeStamp inode) -> info.Fileinfo.inode = inode
        | Some (Fileinfo.CtimeStamp ctime) -> true
@@ -75,7 +70,7 @@ let checkContentsChangeLocal
     if paranoid then begin
       let newDig = Os.fingerprint fspathFrom pathFrom info in
       if archDig <> newDig then begin
-        !markPossiblyUpdated fspathFrom pathFrom;
+        Update.markPossiblyUpdated fspathFrom pathFrom;
         raise (Util.Transient (Printf.sprintf
           "The source file %s\n\
            has been modified but the fast update detection mechanism\n\
@@ -248,14 +243,22 @@ let tryCopyMovedFile fspathTo pathTo realPathTo update desc fp ress id =
     match Xferhint.lookup fp with
       None ->
         None
-    | Some (candidateFspath, candidatePath) ->
+    | Some (candidateFspath, candidatePath, hintHandle) ->
         debug (fun () ->
           Util.msg
             "tryCopyMovedFile: found match at %s,%s. Try local copying\n"
             (Fspath.toDebugString candidateFspath)
             (Path.toString candidatePath));
         try
-          if Os.exists candidateFspath candidatePath then begin
+          (* If candidateFspath is the replica root, the argument
+             [true] is correct.  Otherwise, we don't expect to point
+             to a symlink, and therefore we still get the correct
+             result. *)
+          let info = Fileinfo.get true candidateFspath candidatePath in
+          if
+            info.Fileinfo.typ <> `ABSENT &&
+            Props.length info.Fileinfo.desc = Props.length desc
+          then begin
             localFile
               candidateFspath candidatePath fspathTo pathTo realPathTo
               update desc (Osx.ressLength ress) (Some id);
@@ -263,7 +266,6 @@ let tryCopyMovedFile fspathTo pathTo realPathTo update desc fp ress id =
               fileIsTransferred fspathTo pathTo desc fp ress in
             if isTransferred then begin
               debug (fun () -> Util.msg "tryCopyMoveFile: success.\n");
-              Xferhint.insertEntry (fspathTo, pathTo) fp;
               let msg =
                 Printf.sprintf
                  "Shortcut: copied %s/%s from local file %s/%s\n"
@@ -277,15 +279,14 @@ let tryCopyMovedFile fspathTo pathTo realPathTo update desc fp ress id =
               debug (fun () ->
                 Util.msg "tryCopyMoveFile: candidate file %s modified!\n"
                   (Path.toString candidatePath));
-              Xferhint.deleteEntry (candidateFspath, candidatePath);
-              Os.delete fspathTo pathTo;
+              Xferhint.deleteEntry hintHandle;
               None
             end
           end else begin
             debug (fun () ->
               Util.msg "tryCopyMoveFile: candidate file %s disappeared!\n"
                 (Path.toString candidatePath));
-            Xferhint.deleteEntry (candidateFspath, candidatePath);
+            Xferhint.deleteEntry hintHandle;
             None
           end
         with
@@ -294,8 +295,7 @@ let tryCopyMovedFile fspathTo pathTo realPathTo update desc fp ress id =
               Util.msg
                 "tryCopyMovedFile: local copy from %s didn't work [%s]"
                 (Path.toString candidatePath) s);
-            Xferhint.deleteEntry (candidateFspath, candidatePath);
-            Os.delete fspathTo pathTo;
+            Xferhint.deleteEntry hintHandle;
             None)
 
 (****)
@@ -627,7 +627,10 @@ let finishExternalTransferLocal connFrom
           (Path.toString pathTo)));
   transferRessourceForkAndSetFileinfo
     connFrom fspathFrom pathFrom fspathTo pathTo realPathTo
-    update desc fp ress id
+    update desc fp ress id >>= fun res ->
+  Xferhint.insertEntry fspathTo pathTo fp;
+  Lwt.return res
+
 
 let finishExternalTransferOnRoot =
   Remote.registerRootCmdWithConnection
@@ -689,6 +692,7 @@ let transferFileLocal connFrom
     let len = Uutil.Filesize.add (Props.length desc) (Osx.ressLength ress) in
     Uutil.showProgress id len "alr";
     setFileinfo fspathTo pathTo realPathTo update desc;
+    Xferhint.insertEntry fspathTo pathTo fp;
     Lwt.return (`DONE (Success info, Some msg))
   end else
    match
@@ -696,6 +700,7 @@ let transferFileLocal connFrom
    with
      Some (info, msg) ->
        (* Transfer was performed by copying *)
+       Xferhint.insertEntry fspathTo pathTo fp;
        Lwt.return (`DONE (Success info, Some msg))
    | None ->
        if shouldUseExternalCopyprog update desc then
@@ -704,6 +709,7 @@ let transferFileLocal connFrom
          reallyTransferFile
            connFrom fspathFrom pathFrom fspathTo pathTo realPathTo
            update desc fp ress id >>= fun status ->
+         Xferhint.insertEntry fspathTo pathTo fp;
          Lwt.return (`DONE (status, None))
        end
 

@@ -79,3 +79,14 @@ let toString md5 =
 let string = Digest.string
 
 let dummy = ""
+
+let hash d =
+  if d == dummy then
+    1234577
+  else begin
+    Char.code (String.unsafe_get d 0) +
+    (Char.code (String.unsafe_get d 1) lsl 8) +
+    (Char.code (String.unsafe_get d 2) lsl 16)
+  end
+
+let equal (d : string) d' = d = d'
