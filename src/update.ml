@@ -1364,7 +1364,7 @@ let rec buildUpdateChildren
   let handleChild nm archive status =
     let path' = Path.child path nm in
     if Globals.shouldIgnore path' then begin
-      hasIgnoredChildren := true;
+      hasIgnoredChildren := !hasIgnoredChildren || (archive <> NoArchive);
       debugignore (fun()->Util.msg "buildUpdateChildren: ignoring path %s\n"
                             (Path.toString path'));
       archive
