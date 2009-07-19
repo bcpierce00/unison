@@ -26,9 +26,11 @@ val copy :
   -> Common.root                (* from what root *)
   -> Path.t                     (* from what path *)
   -> Common.updateItem          (* source updates *)
+  -> Props.t list               (* properties of parent directories *)
   -> Common.root                (* to what root *)
   -> Path.t                     (* to what path *)
   -> Common.updateItem          (* dest. updates *)
+  -> Props.t list               (* properties of parent directories *)
   -> Uutil.File.t               (* id for showing progress of transfer *)
   -> unit Lwt.t
 

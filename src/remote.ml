@@ -270,7 +270,6 @@ let allowWrites q =
      to the requests to be processed *)
   Lwt.ignore_result (Lwt_unix.yield () >>= fun () -> popOutputQueues q)
 
-
 let disableFlowControl q =
   q.flowControl <- false;
   if not q.canWrite then allowWrites q
@@ -315,6 +314,7 @@ let maybeFlush receiver pendingFlush q buf =
              flushBuffer buf
            end else
              flushBuffer buf) >>= fun () ->
+      assert (not (q.flowControl && q.canWrite));
       (* Restart the reader thread if needed *)
       match !receiver with
         None   -> Lwt.return ()
@@ -894,6 +894,10 @@ let registerStreamCmd
 	(fun e -> ping conn id >>= fun () -> Lwt.fail e)
     end
 
+let commandAvailable =
+  registerRootCmd "commandAvailable"
+    (fun (_, cmdName) -> Lwt.return (Util.StringMap.mem cmdName !serverCmds))
+
 (****************************************************************************
                      BUILDING CONNECTIONS TO THE SERVER
  ****************************************************************************)
@@ -933,6 +937,16 @@ let rec checkHeader conn buffer pos len =
    Both hosts must use non-blocking I/O (otherwise a dead-lock is
    possible with ssh).
 *)
+let halfduplex =
+  Prefs.createBool "halfduplex" false
+    "!force half-duplex communication with the server"
+    "When this flag is set to {\\tt true}, Unison network communication \
+     is forced to be half duplex (the client and the server never \
+     simultaneously emit data).  If you experience unstabilities with \
+     your network link, this may help.  The communication is always \
+     half-duplex when synchronizing with a Windows machine due to a \
+     limitation of Unison current implementation that could result \
+     in a deadlock."
 
 let negociateFlowControlLocal conn () =
   if not needFlowControl then disableFlowControl conn.outputQueue;
@@ -942,14 +956,14 @@ let negociateFlowControlRemote =
   registerServerCmd "negociateFlowControl" negociateFlowControlLocal
 
 let negociateFlowControl conn =
-  if not needFlowControl then
-    negociateFlowControlRemote conn () >>= (fun needed ->
-    if not needed then
-      negociateFlowControlLocal conn () >>= (fun _ -> Lwt.return ())
-    else
-      Lwt.return ())
-  else
-    Lwt.return ()
+  (* Flow control negociation can be done asynchronously. *)
+  if not (needFlowControl || Prefs.read halfduplex) then
+    Lwt.ignore_result
+      (negociateFlowControlRemote conn () >>= fun needed ->
+       if not needed then
+         negociateFlowControlLocal conn ()
+       else
+         Lwt.return true)
 
 (****)
 
@@ -960,8 +974,7 @@ let initConnection in_ch out_ch =
   checkHeader
     conn (Bytearray.create 1) 0 (String.length connectionHeader) >>= (fun () ->
   Lwt.ignore_result (receive conn);
-  (* Flow control negociation can be done asynchronously. *)
-  Lwt.ignore_result (negociateFlowControl conn);
+  negociateFlowControl conn;
   Lwt.return conn)
 
 let inetAddr host =

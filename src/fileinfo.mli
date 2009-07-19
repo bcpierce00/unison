@@ -23,3 +23,7 @@ val ressStamp : t -> Osx.ressStamp
 
 (* Check whether a file is unchanged *)
 val unchanged : Fspath.t -> Path.local -> t -> (t * bool * bool)
+
+(****)
+
+val init : bool -> unit

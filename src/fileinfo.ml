@@ -18,6 +18,28 @@
 
 let debugV = Util.debug "fileinfo+"
 
+let allowSymlinks =
+  Prefs.createString "links" "default"
+    "allow the synchronization of symbolic links (true/false/default)"
+    ("When set to {\\tt true}, this flag causes Unison to synchronize \
+      symbolic links.  When the flag is set to {\\tt false}, symbolic \
+      links will result in an error during update detection.  \
+      Ordinarily, when the flag is set to {\\tt default}, symbolic \
+      links are synchronized except when one of the hosts is running \
+      Windows.  In rare circumstances it is useful to set the flag \
+      manually (e.g. when running Unison on a Unix system with a FAT \
+      [Windows] volume mounted).")
+
+let symlinksAllowed =
+  Prefs.createBool "links-aux" true
+    "*Pseudo-preference for internal use only" ""
+
+let init b =
+  Prefs.set symlinksAllowed
+    (Prefs.read allowSymlinks = "yes" ||
+     Prefs.read allowSymlinks = "true" ||
+     (Prefs.read allowSymlinks = "default" && not b))
+
 type typ = [ `ABSENT | `FILE | `DIRECTORY | `SYMLINK ]
 
 let type2string = function
@@ -58,7 +80,14 @@ let get fromRoot fspath path =
            match stats.Unix.LargeFile.st_kind with
              Unix.S_REG -> `FILE
            | Unix.S_DIR -> `DIRECTORY
-           | Unix.S_LNK -> `SYMLINK
+           | Unix.S_LNK ->
+               if not fromRoot || Prefs.read symlinksAllowed then
+                 `SYMLINK
+               else
+                 raise
+                   (Util.Transient
+                      (Format.sprintf "path %s is a symbolic link"
+                         (Fspath.toPrintString (Fspath.concat fspath path))))
            | _ ->
                raise (Util.Transient
                         ("path " ^
@@ -121,15 +150,16 @@ type stamp =
       probably not use any stamp under Windows. *)
 
 let pretendLocalOSIsWin32 =
-  Prefs.createBool "pretendwin" false
+  Prefs.createBool "ignoreinodenumbers" false
     "!Use creation times for detecting updates"
-    ("When set to true, this preference makes Unison use Windows-style "
-  ^ "fast update detection (using file creation times as "
-  ^ "``pseudo-inode-numbers''), even when running on a Unix system.  This "
-  ^ "switch should be used with care, as it is less safe than the standard "
-  ^ "update detection method, but it can be useful for synchronizing VFAT "
-  ^ "filesystems (which do not support inode numbers) mounted on Unix "
-  ^ "systems.  The {\\tt fastcheck} option should also be set to true.")
+    ("When set to true, this preference makes Unison not take advantage \
+      of inode numbers during fast update detection even when running \
+      on a Unix system.  This switch should be used with care, as it \
+      is less safe than the standard update detection method, but it \
+      can be useful for synchronizing VFAT filesystems (which do not \
+      support inode numbers) mounted on Unix systems.  \
+      The {\\tt fastcheck} option should also be set to true.")
+let _ = Prefs.alias pretendLocalOSIsWin32 "pretendwin"
 
 let stamp info =
        (* Was "CtimeStamp info.ctime", but this is bogus: Windows

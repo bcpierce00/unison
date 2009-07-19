@@ -56,30 +56,33 @@ let resetToDefaults () = Safelist.iter (fun f -> f()) !resetters
 (* created, a dumper (marshaler) and a loader (parser) are added to the list *)
 (* kept here...                                                              *)
 
-type dumpedPrefs = (string * string) list
+type dumpedPrefs = (string * bool * string) list
 
-let dumpers = ref ([] : (string * (unit->string)) list)
+let dumpers = ref ([] : (string * bool * (unit->string)) list)
 let loaders = ref (Util.StringMap.empty : (string->unit) Util.StringMap.t)
 
-let adddumper name f =
-  dumpers := (name,f) :: !dumpers
+let adddumper name optional f =
+  dumpers := (name,optional,f) :: !dumpers
 
 let addloader name f =
   loaders := Util.StringMap.add name f !loaders
 
-let dump () = Safelist.map (fun (name,f) -> (name, f())) !dumpers
-  
+let dump () = Safelist.map (fun (name, opt, f) -> (name, opt, f())) !dumpers
+
 let load d =
-  begin
-    Safelist.iter
-      (fun (name, dumpedval) ->
-        let loaderfn =
-          try Util.StringMap.find name !loaders
-          with Not_found -> raise (Util.Fatal
-            ("Preference "^name^" not found: inconsistent Unison versions??"))
-        in loaderfn dumpedval)
-      d
-  end
+  Safelist.iter
+    (fun (name, opt, dumpedval) ->
+       match
+         try Some (Util.StringMap.find name !loaders) with Not_found -> None
+       with
+         Some loaderfn ->
+           loaderfn dumpedval
+       | None ->
+           if not opt then
+             raise (Util.Fatal
+                      ("Preference "^name^" not found: \
+                        inconsistent Unison versions??")))
+    d
 
 (* For debugging *)
 let dumpPrefsToStderr() =
@@ -117,42 +120,42 @@ let registerPref name pspec doc fulldoc =
     raise (Util.Fatal ("Preference " ^ name ^ " registered twice"));
   prefs := Util.StringMap.add name (doc, pspec, fulldoc) !prefs
 
-let createPrefInternal name default doc fulldoc printer parsefn =
+let createPrefInternal name local default doc fulldoc printer parsefn =
   let newCell = rawPref (default, [name]) in
   registerPref name (parsefn newCell) doc fulldoc;
-  adddumper name (fun () -> Marshal.to_string !newCell []);
+  adddumper name local (fun () -> Marshal.to_string !newCell []);
   addprinter name (fun () -> printer (fst !newCell));
   addresetter (fun () -> newCell := (default, [name]));
   addloader name (fun s -> newCell := Marshal.from_string s 0);
   newCell
 
-let create name default doc fulldoc intern printer =
-  createPrefInternal name default doc fulldoc printer
+let create name ?(local=false) default doc fulldoc intern printer =
+  createPrefInternal name local default doc fulldoc printer
     (fun cell -> Uarg.String (fun s -> set cell (intern (fst !cell) s)))
 
-let createBool name default doc fulldoc =
+let createBool name ?(local=false) default doc fulldoc =
   let doc = if default then doc ^ " (default true)" else doc in
-  createPrefInternal name default doc fulldoc
+  createPrefInternal name local default doc fulldoc
     (fun v -> [if v then "true" else "false"])
     (fun cell -> Uarg.Bool (fun b -> set cell b))
 
-let createInt name default doc fulldoc =
-  createPrefInternal name default doc fulldoc
-    (fun v -> [string_of_int v])  
+let createInt name ?(local=false) default doc fulldoc =
+  createPrefInternal name local default doc fulldoc
+    (fun v -> [string_of_int v])
     (fun cell -> Uarg.Int (fun i -> set cell i))
 
-let createString name default doc fulldoc =
-  createPrefInternal name default doc fulldoc 
+let createString name ?(local=false) default doc fulldoc =
+  createPrefInternal name local default doc fulldoc
     (fun v -> [v])
     (fun cell -> Uarg.String (fun s -> set cell s))
 
-let createFspath name default doc fulldoc =
-  createPrefInternal name default doc fulldoc 
+let createFspath name ?(local=false) default doc fulldoc =
+  createPrefInternal name local default doc fulldoc
     (fun v -> [System.fspathToString v])
     (fun cell -> Uarg.String (fun s -> set cell (System.fspathFromString s)))
 
-let createStringList name doc fulldoc =
-  createPrefInternal name [] doc fulldoc
+let createStringList name ?(local=false) doc fulldoc =
+  createPrefInternal name local [] doc fulldoc
     (fun v -> v)
     (fun cell -> Uarg.String (fun s -> set cell (s::(fst !cell))))
 

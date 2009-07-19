@@ -94,8 +94,7 @@ type token =
   | EOF
 
 (* Size of a block *)
-let blockSize = 700
-let blockSize64 = Int64.of_int blockSize
+let minBlockSize = 700
 
 let maxQueueSize = 65500
 let maxQueueSizeFS = Uutil.Filesize.ofInt maxQueueSize
@@ -105,15 +104,8 @@ type tokenQueue =
                                  (* some informations about the
                                     previous token *)
     mutable pos : int;           (* head of the queue *)
-    mutable prog : int }         (* the size of the data they represent *)
-
-(* Size of the data a token represents for the destination host,
-   to keep track of the propagation progress *)
-let tokenProg t =
-  match t with
-    STRING (s, pos, len) -> String.length s
-  | BLOCK n              -> blockSize
-  | EOF                  -> 0
+    mutable prog : int;          (* the size of the data they represent *)
+    mutable bSize : int }        (* block size *)
 
 let encodeInt3 s pos i =
   assert (i >= 0 && i < 256 * 256 * 256);
@@ -199,7 +191,7 @@ let pushBlock q id transmit pos =
   encodeInt3 q.data (q.pos + 1) pos;
   encodeInt1 q.data (q.pos + 4) 1;
   q.pos <- q.pos + 5;
-  q.prog <- q.prog + blockSize;
+  q.prog <- q.prog + q.bSize;
   q.previous <- `Block (pos + 1);
   return ())
 
@@ -209,7 +201,7 @@ let growBlock q id transmit pos =
   assert (decodeInt3 q.data (q.pos - 4) + count = pos);
   assert (count < 255);
   encodeInt1 q.data (q.pos - 1) (count + 1);
-  q.prog <- q.prog + blockSize;
+  q.prog <- q.prog + q.bSize;
   q.previous <- if count = 254 then `None else `Block (pos + 1);
   return ()
 
@@ -229,7 +221,7 @@ let queueToken q id transmit token =
   | BLOCK pos, _ ->
       pushBlock q id transmit pos
 
-let makeQueue length =
+let makeQueue length blockSize =
   { data =
       (* We need to make sure here that the size of the queue is not
          larger than 65538
@@ -237,7 +229,8 @@ let makeQueue length =
       Bytearray.create
         (if length > maxQueueSizeFS then maxQueueSize else
          Uutil.Filesize.toInt length + 10);
-    pos = 0; previous = `None; prog = 0 }
+    pos = 0; previous = `None; prog = 0;
+    bSize = blockSize }
 
 (*************************************************************************)
 (* GENERIC TRANSMISSION                                                  *)
@@ -252,7 +245,7 @@ let send infd length showProgress transmit =
   let bufSz = 8192 in
   let bufSzFS = Uutil.Filesize.ofInt 8192 in
   let buf = String.create bufSz in
-  let q = makeQueue length in
+  let q = makeQueue length 0 in
   let rec sendSlice length =
     let count =
       reallyRead infd buf 0
@@ -303,75 +296,116 @@ struct
 
   (* It is impossible to use rsync when the file size is smaller than
      the size of a block *)
-  let blockSizeFs = Uutil.Filesize.ofInt blockSize
-  let aboveRsyncThreshold sz = sz >= blockSizeFs
+  let minBlockSizeFs = Uutil.Filesize.ofInt minBlockSize
+  let aboveRsyncThreshold sz = sz > minBlockSizeFs
 
   (* The type of the info that will be sent to the source host *)
-  type rsync_block_info = (Checksum.t * Digest.t) list
-
+  type rsync_block_info =
+    { blockSize : int;
+      blockCount : int;
+      checksumSize : int;
+      weakChecksum :
+        (int32, Bigarray.int32_elt, Bigarray.c_layout) Bigarray.Array1.t;
+      strongChecksum : Bytearray.t }
 
   (*** PREPROCESS ***)
 
-  (* Preprocess buffer size *)
-  let preproBufSize = 8192
+  (* Worst case probability of a failure *)
+  let logProba = -27. (* One time in 100 millions *)
+  (* Strength of the weak checksum
+     (how many bit of the weak checksum we can rely on) *)
+  let weakLen = 27.
+  (* This is what rsync uses:
+       let logProba = -10.
+       let weakLen = 31.
+     This would save almost 3 bytes per block, but one need to be able
+     to recover from an rsync error.
+  *)
+  (* Block size *)
+  let computeBlockSize l = truncate (max 700. (min (sqrt l) 131072.))
+  (* Size of each strong checksum *)
+  let checksumSize bs sl dl =
+    let bits =
+      -. logProba -. weakLen +. log (sl *. dl /. float bs) /. log 2. in
+    max 2 (min 16 (truncate ((bits +. 7.99) /. 8.)))
+
+  let sizes srcLength dstLength =
+    let blockSize = computeBlockSize (Uutil.Filesize.toFloat dstLength) in
+    let blockCount =
+      let count =
+        Int64.div (Uutil.Filesize.toInt64 dstLength) (Int64.of_int blockSize)
+      in
+      Int64.to_int (min 16777216L count)
+    in
+    let csSize =
+      checksumSize blockSize
+        (Uutil.Filesize.toFloat srcLength)(Uutil.Filesize.toFloat dstLength)
+    in
+    (blockSize, blockCount, csSize)
 
   (* Incrementally build arg by executing f on successive blocks (of size
      'blockSize') of the input stream (pointed by 'infd').
      The procedure uses a buffer of size 'bufferSize' to load the input,
      and eventually handles the buffer update. *)
-  let blockIter infd f arg maxCount =
+  let blockIter infd f blockSize maxCount =
     let bufferSize = 8192 + blockSize in
     let buffer = String.create bufferSize in
-    let rec iter count arg offset length =
-      if count = maxCount then arg else begin
+    let rec iter count offset length =
+      if count = maxCount then
+        count
+      else begin
         let newOffset = offset + blockSize in
-        if newOffset <= length then
-          iter (count + 1) (f buffer offset arg) newOffset length
-        else if offset > 0 then begin
+        if newOffset <= length then begin
+          f count buffer offset;
+          iter (count + 1) newOffset length
+        end else if offset > 0 then begin
           let chunkSize = length - offset in
           String.blit buffer offset buffer 0 chunkSize;
-          iter count arg 0 chunkSize
+          iter count 0 chunkSize
         end else begin
           let l = input infd buffer length (bufferSize - length) in
           if l = 0 then
-            arg
+            count
           else
-            iter count arg 0 (length + l)
+            iter count 0 (length + l)
         end
       end
     in
-    iter 0 arg 0 0
+    iter 0 0 0
 
   (* Given a block size, get blocks from the old file and compute a
      checksum and a fingerprint for each one. *)
-  let rsyncPreprocess infd =
+  let rsyncPreprocess infd srcLength dstLength =
     debug (fun() -> Util.msg "preprocessing\n");
-    debugLog (fun() -> Util.msg "block size = %d bytes\n" blockSize);
+    let (blockSize, blockCount, csSize) = sizes srcLength dstLength in
+    debugLog (fun() ->
+      Util.msg "block size = %d bytes; block count = %d; \
+                strong checksum size = %d\n" blockSize blockCount csSize);
     let timer = Trace.startTimer "Preprocessing old file" in
-    let addBlock buf offset rev_bi =
-      let cs = Checksum.substring buf offset blockSize in
-      let fp =   Digest.substring buf offset blockSize in
-      (cs, fp) :: rev_bi
+    let weakCs =
+      Bigarray.Array1.create Bigarray.int32 Bigarray.c_layout blockCount in
+    let strongCs = Bytearray.create (blockCount * csSize) in
+    let addBlock i buf offset =
+      weakCs.{i} <- Int32.of_int (Checksum.substring buf offset blockSize);
+      Bytearray.blit_from_string
+        (Digest.substring buf offset blockSize) 0 strongCs (i * csSize) csSize
     in
     (* Make sure we are at the beginning of the file
        (important for AppleDouble files *)
     LargeFile.seek_in infd 0L;
     (* Limit the number of block so that there is no overflow in
        encodeInt3 *)
-    let rev_bi = blockIter infd addBlock [] (256*256*256) in
-    let bi = Safelist.rev rev_bi in
-    debugLog (fun() -> Util.msg "%d blocks\n" (Safelist.length bi));
+    let count = blockIter infd addBlock blockSize (256*256*256) in
+    debugLog (fun() -> Util.msg "%d blocks\n" count);
     Trace.showTimer timer;
-    bi
+    ({ blockSize = blockSize; blockCount = count; checksumSize = csSize;
+       weakChecksum = weakCs; strongChecksum = strongCs },
+     blockSize)
 
   (* Expected size of the [rsync_block_info] datastructure (in KiB). *)
-  (* The calculation here are for a 64 bit architecture. *)
-  (* When serialized, the datastructure takes currently 24 bytes per block. *)
-  (* In theory, 12 byte per block should be enough! *)
-  let memoryFootprint sz =
-    Int64.to_int
-      (min (Int64.div (Uutil.Filesize.toInt64 sz) 716800L) 16384L)
-    * 72
+  let memoryFootprint srcLength dstLength =
+    let (blockSize, blockCount, csSize) = sizes srcLength dstLength in
+    blockCount * (csSize + 4)
 
   (*** DECOMPRESSION ***)
 
@@ -380,7 +414,7 @@ struct
 
   (* For each transfer instruction, either output a string or copy one or
      several blocks from the old file. *)
-  let rsyncDecompress infd outfd showProgress (data, pos, len) =
+  let rsyncDecompress blockSize infd outfd showProgress (data, pos, len) =
     let decomprBuf = String.create decomprBufSize in
     let progress = ref 0 in
     let rec copy length =
@@ -393,7 +427,7 @@ struct
         reallyWrite outfd decomprBuf 0 length
     in
     let copyBlocks n k =
-      LargeFile.seek_in infd (Int64.mul n blockSize64);
+      LargeFile.seek_in infd (Int64.mul n (Int64.of_int blockSize));
       let length = k * blockSize in
       copy length;
       progress := !progress + length
@@ -435,42 +469,33 @@ struct
   (* Maximum number of entries in the hash table.
      MUST be a power of 2 !
      Typical values are around an average 2 * fileSize / blockSize. *)
-  let hashTableMaxLength = 64 * 1024
+  let hashTableMaxLength = 2048 * 1024
+
+  let rec upperPowerOfTwo n n2 =
+    if (n2 >= n) || (n2 = hashTableMaxLength) then
+      n2
+    else
+      upperPowerOfTwo n (2 * n2)
 
   let hash checksum = checksum
 
   (* Compute the hash table length as a function of the number of blocks *)
   let hashTableLength signatures =
-    let rec upperPowerOfTwo n n2 =
-      if (n2 >= n) || (n2 = hashTableMaxLength) then
-        n2
-      else
-        upperPowerOfTwo n (2 * n2)
-    in
-    2 * (upperPowerOfTwo (Safelist.length signatures) 32)
+    2 * (upperPowerOfTwo signatures.blockCount 32)
 
   (* Hash the block signatures into the hash table *)
   let hashSig hashTableLength signatures =
     let hashTable = Array.make hashTableLength [] in
-    let rec addList k l =
-      match l with
-        [] ->
-          ()
-      | (cs, fp) :: r ->
-          (* Negative 31-bits integers are sign-extended when
-             unmarshalled on a 64-bit architecture, so we
-             truncate them back to 31 bits. *)
-          let cs = cs land 0x7fffffff in
-          let h = (hash cs) land (hashTableLength - 1) in
-          hashTable.(h) <- (k, cs, fp)::(hashTable.(h));
-          addList (k + 1) r
-    in
-    addList 0 signatures;
+    for k = 0 to signatures.blockCount - 1 do
+      let cs = Int32.to_int signatures.weakChecksum.{k} land 0x7fffffff in
+      let h = (hash cs) land (hashTableLength - 1) in
+      hashTable.(h) <- (k, cs) :: hashTable.(h)
+    done;
     hashTable
 
   (* Given a key, retrieve the corresponding entry in the table *)
   let findEntry hashTable hashTableLength checksum :
-      (int * Checksum.t * Digest.t) list =
+      (int * Checksum.t) list =
     hashTable.((hash checksum) land (hashTableLength - 1))
 
   (* Log the values of the parameters associated with the hash table *)
@@ -527,12 +552,14 @@ struct
 
   (* Compression buffer size *)
   (* MUST be >= 2 * blockSize *)
-  let comprBufSize = 8192
-  let comprBufSizeFS = Uutil.Filesize.ofInt 8192
+  let minComprBufSize = 8192
 
   (* Compress the file using the algorithm described in the header *)
   let rsyncCompress sigs infd srcLength showProgress transmit =
     debug (fun() -> Util.msg "compressing\n");
+    let blockSize = sigs.blockSize in
+    let comprBufSize = (2 * blockSize + 8191) land (-8192) in
+    let comprBufSizeFS = Uutil.Filesize.ofInt comprBufSize in
     debugLog (fun() -> Util.msg
         "compression buffer size = %d bytes\n" comprBufSize);
     debugLog (fun() -> Util.msg "block size = %d bytes\n" blockSize);
@@ -564,7 +591,7 @@ struct
 *)
 
     (* Enable token buffering *)
-    let tokenQueue = makeQueue srcLength in
+    let tokenQueue = makeQueue srcLength blockSize in
     let flushTokenQueue () =
       flushQueue tokenQueue showProgress transmit true in
     let transmit token = queueToken tokenQueue showProgress transmit token in
@@ -573,6 +600,17 @@ struct
     let hashTableLength = ref (hashTableLength sigs) in
     let blockTable = hashSig !hashTableLength sigs in
     logHash blockTable !hashTableLength;
+
+    let rec fingerprintMatchRec checksums pos fp i =
+      let i = i - 1 in
+      i < 0 ||
+      (String.unsafe_get fp i = checksums.{pos + i} &&
+       fingerprintMatchRec checksums pos fp i)
+    in
+    let fingerprintMatch k fp =
+      fingerprintMatchRec sigs.strongChecksum (k * sigs.checksumSize)
+        fp sigs.checksumSize
+    in
 
     (* Create the compression buffer *)
     let comprBuf = String.create comprBufSize in
@@ -661,12 +699,12 @@ struct
       match entry, fingerprint with
       | [], _ ->
           -1
-      | (k, cs, fp) :: tl, None
+      | (k, cs) :: tl, None
         when cs = checksum ->
           let fingerprint = Digest.substring comprBuf offset blockSize in
           findBlock offset checksum entry (Some fingerprint)
-      | (k, cs, fp) :: tl, Some fingerprint
-        when (cs = checksum) && (fp = fingerprint) ->
+      | (k, cs) :: tl, Some fingerprint
+        when cs = checksum && fingerprintMatch k fingerprint ->
           k
       | _ :: tl, _ ->
           findBlock offset checksum tl fingerprint

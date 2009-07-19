@@ -32,6 +32,12 @@ val registerRootCmd :
      -> 'a                         (*    additional arguments *)
      -> 'b Lwt.t)                  (*    -> (suspended) result *)
 
+(* Test whether a command exits on some root *)
+val commandAvailable :
+  Common.root ->                   (* root *)
+  string ->                        (* command name *)
+  bool Lwt.t
+
 (* Enter "server mode", reading and processing commands from a remote
    client process until killed *)
 val beAServer : unit -> unit

@@ -112,9 +112,10 @@ type status =
 type replicaContent =
   { typ : Fileinfo.typ;
     status : status;
-    desc : Props.t;
+    desc : Props.t;                (* Properties (for the UI) *)
     ui : updateItem;
-    size : int * Uutil.Filesize.t }
+    size : int * Uutil.Filesize.t; (* Number of items and size *)
+    props : Props.t list }         (* Parent properties *)
 
 type direction =
     Conflict

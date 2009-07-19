@@ -36,5 +36,5 @@ val hash : local -> int
 val followLink : local -> bool
 val followPred : Pred.t
 
-val magic : t -> local
-val magic' : local -> t
+val forceLocal : t -> local
+val makeGlobal : local -> t
