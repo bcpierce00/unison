@@ -20,7 +20,8 @@ val getRootsName : unit -> string
 
 (* Structures describing dirty files/dirs (1 per path given in the -path preference) *)
 val findUpdates :
-  unit -> (Path.t * Common.updateItem * Path.t * Common.updateItem) list
+  unit -> ((Path.local * Common.updateItem * Props.t list) *
+           (Path.local * Common.updateItem * Props.t list)) list
 
 (* Take a tree of equal update contents and update the archive accordingly. *)
 val markEqual :

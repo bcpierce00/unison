@@ -259,7 +259,7 @@ class scrolled_text
     GBin.scrolled_window ?packing ~show:false
       ~hpolicy:`NEVER ~vpolicy:`AUTOMATIC ()
   in
-  let text = GText.view ?editable ?wrap_mode:(Some `WORD) ~packing:sw#add () in
+  let text = GText.view ?editable ~wrap_mode:`WORD ~packing:sw#add () in
   object
     inherit GObj.widget_full sw#as_widget
     method text = text
@@ -382,7 +382,19 @@ class stats width height =
     val values = Array.make width 0.
     val mutable active = false
 
-    method activate a = active <- a
+    method redraw () =
+      scale := min_scale;
+      while !maxim > !scale do
+        scale := !scale *. 1.5
+      done;
+      pixmap#set_foreground `WHITE;
+      pixmap#rectangle ~filled:true ~x:0 ~y:0 ~width ~height ();
+      pixmap#set_foreground `BLACK;
+      for i = 0 to width - 1 do
+        self#rect i values.(max 0 (i - 1)) values.(i)
+      done
+
+    method activate a = active <- a; if a then self#redraw ()
 
     method scale h = truncate ((float height) *. h /. !scale)
 
@@ -416,18 +428,9 @@ class stats width height =
       if active then begin
         let need_resize =
           !maxim > !scale || (!maxim > min_scale && !maxim < !scale /. 1.5) in
-        if need_resize then begin
-          scale := min_scale;
-          while !maxim > !scale do
-            scale := !scale *. 1.5
-          done;
-          pixmap#set_foreground `WHITE;
-          pixmap#rectangle ~filled:true ~x:0 ~y:0 ~width ~height ();
-          pixmap#set_foreground `BLACK;
-          for i = 0 to width - 1 do
-            self#rect i values.(max 0 (i - 1)) values.(i)
-          done
-        end else begin
+        if need_resize then
+          self#redraw ()
+        else begin
           pixmap#put_pixmap ~x:0 ~y:0 ~xsrc:1 (pixmap#pixmap);
           pixmap#set_foreground `WHITE;
           pixmap#rectangle
@@ -440,6 +443,25 @@ class stats width height =
 
 let clientWritten = ref 0.
 let serverWritten = ref 0.
+let emitRate2 = ref 0.
+let receiveRate2 = ref 0.
+
+let rate2str v =
+  if v > 9.9e3 then begin
+    if v > 9.9e6 then
+      Format.sprintf "%1.0f MiB/s" (v /. 1e6)
+    else if v > 999e3 then
+      Format.sprintf "%1.1f MiB/s" (v /. 1e6)
+    else
+      Format.sprintf "%1.0f KiB/s" (v /. 1e3)
+  end else begin
+    if v > 990. then
+      Format.sprintf "%1.1f KiB/s" (v /. 1e3)
+    else if v > 99. then
+      Format.sprintf "%1.2f KiB/s" (v /. 1e3)
+    else
+      " "
+  end
 
 let statistics () =
   let title = "Statistics" in
@@ -487,10 +509,26 @@ let statistics () =
 
   let emittedBytes = ref 0. in
   let emitRate = ref 0. in
-  let emitRate2 = ref 0. in
   let receivedBytes = ref 0. in
   let receiveRate = ref 0. in
-  let receiveRate2 = ref 0. in
+
+  let stopCounter = ref 0 in
+
+  let updateTable () =
+    let kib2str v = Format.sprintf "%.0f B" v in
+    lst#set_cell ~text:(rate2str !receiveRate2) 0 1;
+    lst#set_cell ~text:(rate2str !emitRate2) 0 2;
+    lst#set_cell ~text:
+      (rate2str (!receiveRate2 +. !emitRate2)) 0 3;
+    lst#set_cell ~text:(kib2str !receivedBytes) 1 1;
+    lst#set_cell ~text:(kib2str !emittedBytes) 1 2;
+    lst#set_cell ~text:
+      (kib2str (!receivedBytes +. !emittedBytes)) 1 3;
+    lst#set_cell ~text:(kib2str !clientWritten) 2 1;
+    lst#set_cell ~text:(kib2str !serverWritten) 2 2;
+    lst#set_cell ~text:
+      (kib2str (!clientWritten +. !serverWritten)) 2 3
+  in
   let timeout _ =
     emitRate :=
       a *. !emitRate +.
@@ -508,41 +546,25 @@ let statistics () =
     reception#push !receiveRate;
     emittedBytes := !Remote.emittedBytes;
     receivedBytes := !Remote.receivedBytes;
-    let kib2str v = Format.sprintf "%.0f B" v in
-    let rate2str v =
-      if v > 9.9e3 then begin
-        if v > 9.9e6 then
-          Format.sprintf "%4.0f MiB/s" (v /. 1e6)
-        else if v > 999e3 then
-          Format.sprintf "%4.1f MiB/s" (v /. 1e6)
-        else
-          Format.sprintf "%4.0f KiB/s" (v /. 1e3)
-      end else begin
-        if v > 990. then
-          Format.sprintf "%4.1f KiB/s" (v /. 1e3)
-        else if v > 99. then
-          Format.sprintf "%4.2f KiB/s" (v /. 1e3)
-        else
-          "          "
-      end
-    in
-    lst#set_cell ~text:(rate2str !receiveRate2) 0 1;
-    lst#set_cell ~text:(rate2str !emitRate2) 0 2;
-    lst#set_cell ~text:
-      (rate2str (!receiveRate2 +. !emitRate2)) 0 3;
-    lst#set_cell ~text:(kib2str !receivedBytes) 1 1;
-    lst#set_cell ~text:(kib2str !emittedBytes) 1 2;
-    lst#set_cell ~text:
-      (kib2str (!receivedBytes +. !emittedBytes)) 1 3;
-    lst#set_cell ~text:(kib2str !clientWritten) 2 1;
-    lst#set_cell ~text:(kib2str !serverWritten) 2 2;
-    lst#set_cell ~text:
-      (kib2str (!clientWritten +. !serverWritten)) 2 3;
-    true
+    if !stopCounter > 0 then decr stopCounter;
+    if !stopCounter = 0 then begin
+      emitRate2 := 0.; receiveRate2 := 0.;
+    end;
+    updateTable ();
+    !stopCounter <> 0
   in
-  ignore (GMain.Timeout.add ~ms:(truncate (delay *. 1000.)) ~callback:timeout);
-
-  t
+  let startStats () =
+    if !stopCounter = 0 then begin
+      emittedBytes := !Remote.emittedBytes;
+      receivedBytes := !Remote.receivedBytes;
+      stopCounter := -1;
+      ignore (GMain.Timeout.add ~ms:(truncate (delay *. 1000.))
+                ~callback:timeout)
+    end else
+      stopCounter := -1
+  in
+  let stopStats () = stopCounter := 10 in
+  (t, startStats, stopStats)
 
 (****)
 
@@ -617,13 +639,13 @@ let getFirstRoot() =
   let contCommand() =
     result := Some(fileE#text);
     t#destroy () in
+  let quitButton = GButton.button ~stock:`QUIT ~packing:f3#add () in
+  ignore (quitButton#connect#clicked
+            ~callback:(fun () -> result := None; t#destroy()));
   let contButton = GButton.button ~stock:`OK ~packing:f3#add () in
   ignore (contButton#connect#clicked ~callback:contCommand);
   ignore (fileE#connect#activate ~callback:contCommand);
   contButton#grab_default ();
-  let quitButton = GButton.button ~stock:`QUIT ~packing:f3#add () in
-  ignore (quitButton#connect#clicked
-            ~callback:(fun () -> result := None; t#destroy()));
   t#show ();
   ignore (t#connect#destroy ~callback:GMain.Main.quit);
   GMain.Main.main ();
@@ -746,14 +768,14 @@ let getSecondRoot () =
       okBox ~title:"Error" ~typ:`ERROR
         ~message:"Something's wrong with the values you entered, try again" in
   let f3 = t#action_area in
+  let quitButton =
+    GButton.button ~stock:`QUIT ~packing:f3#add () in
+  ignore (quitButton#connect#clicked ~callback:safeExit);
   let contButton =
     GButton.button ~stock:`OK ~packing:f3#add () in
   ignore (contButton#connect#clicked ~callback:contCommand);
   contButton#grab_default ();
   ignore (fileE#connect#activate ~callback:contCommand);
-  let quitButton =
-    GButton.button ~stock:`QUIT ~packing:f3#add () in
-  ignore (quitButton#connect#clicked ~callback:safeExit);
 
   t#show ();
   ignore (t#connect#destroy ~callback:GMain.Main.quit);
@@ -827,7 +849,7 @@ let provideProfileKey filename k profile info =
         ("Error scanning profile "^ System.fspathToPrintString filename ^":\n"
          ^ "Value of 'key' preference must be a single digit (0-9), "
          ^ "not " ^ k))
-  with int_of_string -> raise (Util.Fatal
+  with Failure "int_of_string" -> raise (Util.Fatal
     ("Error scanning profile "^ System.fspathToPrintString filename ^":\n"
      ^ "Value of 'key' preference must be a single digit (0-9), "
      ^ "not " ^ k))
@@ -969,12 +991,12 @@ let getProfile () =
           close_out ch;
           fillLst profile;
           exit () in
-    let okButton = GButton.button ~stock:`OK ~packing:f3#add () in
-    ignore (okButton#connect#clicked ~callback:okCommand);
-    okButton#grab_default ();
     let cancelButton =
       GButton.button ~stock:`CANCEL ~packing:f3#add () in
     ignore (cancelButton#connect#clicked ~callback:exit);
+    let okButton = GButton.button ~stock:`OK ~packing:f3#add () in
+    ignore (okButton#connect#clicked ~callback:okCommand);
+    okButton#grab_default ();
 
     t#show ();
     grabFocus t;
@@ -1189,7 +1211,7 @@ let rec createToplevelWindow () =
    Statistic window
    *******************************************************************)
 
-  let stat_win = statistics () in
+  let (statWin, startStats, stopStats) = statistics () in
 
   (*******************************************************************
    Groups of things that are sensitive to interaction at the same time
@@ -1375,11 +1397,12 @@ let rec createToplevelWindow () =
     | Some (title, details) -> messageBox ~title (transcode details)
   in
 
+  let detailsWindowSW =
+    GBin.scrolled_window ~packing:(toplevelVBox#pack ~expand:false)
+        ~shadow_type:`IN ~hpolicy:`NEVER ~vpolicy:`AUTOMATIC ()
+  in
   let detailsWindow =
-    let sw =
-      GBin.scrolled_window ~packing:(toplevelVBox#pack ~expand:false)
-        ~shadow_type:`IN ~hpolicy:`AUTOMATIC ~vpolicy:`AUTOMATIC () in
-    GText.view ~editable:false ~wrap_mode:`NONE ~packing:sw#add ()
+    GText.view ~editable:false ~wrap_mode:`NONE ~packing:detailsWindowSW#add ()
   in
   detailsWindow#misc#modify_font (Lazy.force fontMonospaceMediumPango);
   detailsWindow#misc#set_size_chars ~height:3 ~width:112 ();
@@ -1447,18 +1470,20 @@ let rec createToplevelWindow () =
         detailsWindow#buffer#set_text ""
     | Some row ->
         makeRowVisible row;
-        let details =
+        let (formated, details) =
           match !theState.(row).whatHappened with
-            None -> Uicommon.details2string !theState.(row).ri "  "
-          | Some(Util.Succeeded, _) -> Uicommon.details2string !theState.(row).ri "  "
-          | Some(Util.Failed(s), None) -> s
-	  | Some(Util.Failed(s), Some resultLog) -> s in
+            None | Some(Util.Succeeded, _) ->
+               (true, Uicommon.details2string !theState.(row).ri "  ")
+          | Some(Util.Failed(s), _) ->
+               (false, s)
+        in
 	let path = Path.toString !theState.(row).ri.path1 in
         let txt = transcodeFilename path ^ "\n" ^ transcode details in
         let len = String.length txt in
         let txt =
           if txt.[len - 1] = '\n' then String.sub txt 0 (len - 1) else txt in
-        detailsWindow#buffer#set_text txt
+        detailsWindow#buffer#set_text txt;
+        detailsWindow#set_wrap_mode (if formated then `NONE else `WORD)
     end;
     (* Display text *)
     updateButtons () in
@@ -1471,6 +1496,8 @@ let rec createToplevelWindow () =
 
   let progressBar =
     GRange.progress_bar ~packing:(statusHBox#pack ~expand:false) () in
+
+  progressBar#misc#set_size_chars ~height:1 ~width:25 ();
   progressBar#set_pulse_step 0.02;
   let progressBarPulse = ref false in
 
@@ -1655,25 +1682,41 @@ lst_store#set ~row ~column:c_path path;
   let t0 = ref 0. in
   let t1 = ref 0. in
   let lastFrac = ref 0. in
+  let oldWritten = ref 0. in
+  let writeRate = ref 0. in
   let displayGlobalProgress v =
     if v = 0. || abs_float (v -. !lastFrac) > 1. then begin
       lastFrac := v;
       progressBar#set_fraction (max 0. (min 1. (v /. 100.)))
     end;
-(*
-    let t = Unix.gettimeofday () in
-    if t -. !t1 >= 1. then begin
-      t1 := t;
-      let remTime =
-        if v <= 0. then ""
-        else if v >= 100. then "00:00 ETA"
-        else
+    if v < 0.001 then
+      progressBar#set_text " "
+    else begin
+      let t = Unix.gettimeofday () in
+      let delta = t -. !t1 in
+      if delta >= 0.5 then begin
+        t1 := t;
+        let remTime =
+          if v >= 100. then "00:00 remaining" else
           let t = truncate ((!t1 -. !t0) *. (100. -. v) /. v +. 0.5) in
-          Format.sprintf "%02d:%02d ETA" (t / 60) (t mod 60)
-      in
-      progressBar#set_text remTime
+          Format.sprintf "%02d:%02d remaining" (t / 60) (t mod 60)
+        in
+        let written = !clientWritten +. !serverWritten in
+        let b = 0.64 ** delta in
+        writeRate :=
+          b *. !writeRate +.
+          (1. -. b) *. (written -. !oldWritten) /. delta;
+        oldWritten := written;
+        let rate = !writeRate (*!emitRate2 +. !receiveRate2*) in
+        let txt =
+          if rate > 99. then
+            Format.sprintf "%s  (%s)" remTime (rate2str rate)
+          else
+            remTime
+        in
+        progressBar#set_text txt
+      end
     end
-*)
   in
 
   let showGlobalProgress b =
@@ -1690,6 +1733,7 @@ lst_store#set ~row ~column:c_path path;
     totalBytesToTransfer := b;
     totalBytesTransferred := Uutil.Filesize.zero;
     t0 := Unix.gettimeofday (); t1 := !t0;
+    writeRate := 0.; oldWritten := !clientWritten +. !serverWritten;
     displayGlobalProgress 0.
   in
 
@@ -1784,6 +1828,7 @@ lst_store#set ~row ~column:c_path path;
 
   let detectUpdatesAndReconcile () =
     grDisactivateAll ();
+    startStats ();
 
     mainWindow#clear();
     detailsWindow#buffer#set_text "";
@@ -1824,6 +1869,7 @@ lst_store#set ~row ~column:c_path path;
     current := None;
     displayMain();
     progressBarPulse := false; sync_action := None; displayGlobalProgress 0.;
+    stopStats ();
     grSet grGo (Array.length !theState > 0);
     grSet grRescan true;
     if Prefs.read Globals.confirmBigDeletes then begin
@@ -1995,6 +2041,7 @@ lst_store#set ~row ~column:c_path path;
         end else
           actions
       in
+      startStats ();
       Lwt_unix.run
         (let actions = loop 0 [] (fun ri -> not (Common.isDeletion ri)) in
          Lwt_util.join actions);
@@ -2004,6 +2051,7 @@ lst_store#set ~row ~column:c_path path;
       Transport.logFinish ();
       Trace.showTimer t;
       commitUpdates ();
+      stopStats ();
 
       let failures =
         let count =
@@ -2088,7 +2136,7 @@ lst_store#set ~row ~column:c_path path;
   let reloadProfile () =
     match !Prefs.profileName with
       None -> ()
-    | Some(n) -> loadProfile n in
+    | Some(n) -> grDisactivateAll (); loadProfile n in
 
   let detectCmdName = "Rescan" in
   let detectCmd () =
@@ -2177,10 +2225,12 @@ lst_store#set ~row ~column:c_path path;
           item.bytesTransferred <- Uutil.Filesize.zero;
           item.bytesToTransfer <- len;
           initGlobalProgress len;
+          startStats ();
           Uicommon.showDiffs item.ri
             (fun title text ->
                messageBox ~title:(transcode title) (transcode text))
             Trace.status (Uutil.File.ofLine i);
+          stopStats ();
           displayGlobalProgress 0.;
           fastRedisplay i)
     | None ->
@@ -2453,7 +2503,7 @@ lst_store#set ~row ~column:c_path path;
 
   ignore (fileMenu#add_separator ());
   ignore (fileMenu#add_item
-            ~callback:(fun _ -> stat_win#show ()) "Statistics");
+            ~callback:(fun _ -> statWin#show ()) "Statistics");
 
   ignore (fileMenu#add_separator ());
   ignore (fileMenu#add_image_item
@@ -2539,9 +2589,11 @@ let start _ =
     createToplevelWindow();
 
     (* Display the ui *)
+(*JV: not useful, as Unison does not handle any signal
     ignore (GMain.Timeout.add 500 (fun _ -> true));
               (* Hack: this allows signals such as SIGINT to be
                  handled even when Gtk is waiting for events *)
+*)
     GMain.Main.main ()
   with
     Util.Transient(s) | Util.Fatal(s) -> fatalError s

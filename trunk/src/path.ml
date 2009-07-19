@@ -207,5 +207,5 @@ let followLink path =
      (Util.osType = `Unix || Util.isCygwin)
   && Pred.test followPred (toString path)
 
-let magic p = p
-let magic' p = p
+let forceLocal p = p
+let makeGlobal p = p

@@ -1400,15 +1400,15 @@ let rec buildUpdateChildren
           archive
       | `BadEnc ->
           let uiChild =
-            Error ("The file name is not encoded in Unicode ("
-                   ^ Path.toString path' ^ ")")
+            Error ("The file name is not encoded in Unicode.  (File '"
+                   ^ Path.toString path' ^ "')")
           in
           updates := (nm, uiChild) :: !updates;
           archive
       | `BadName ->
           let uiChild =
-            Error ("The name of this Unix file is not allowed in Windows ("
-                   ^ Path.toString path' ^ ")")
+            Error ("The name of this Unix file is not allowed under Windows.  \
+                    (File '" ^ Path.toString path' ^ "')")
           in
           updates := (nm, uiChild) :: !updates;
           archive
@@ -1541,7 +1541,10 @@ and buildUpdateRec archive currfspath path fastCheckInfos =
 (* Compute the updates for [path] against archive.  Also returns an
    archive, which is the old archive with time stamps updated
    appropriately (i.e., for those files whose contents remain
-   unchanged). *)
+   unchanged).  The filenames are also updated to match the filesystem
+   contents.  The directory permissions along the path are also
+   collected, in case we need to build the directory hierarchy
+   on one side. *)
 let rec buildUpdate archive fspath fullpath here path dirStamp =
   match Path.deconstruct path with
     None ->
@@ -1557,9 +1560,10 @@ let rec buildUpdate archive fspath fullpath here path dirStamp =
          None      -> archive
        | Some arch -> arch
        end,
-       ui)
+       ui, here, [])
   | Some(name, path') ->
-      if not (isDir fspath here) then
+      let info = Fileinfo.get true fspath here in
+      if info.Fileinfo.typ <> `DIRECTORY && info.Fileinfo.typ <> `ABSENT then
         let error =
           if Path.isEmpty here then
             Printf.sprintf
@@ -1572,65 +1576,66 @@ let rec buildUpdate archive fspath fullpath here path dirStamp =
                the replicas"
               (Path.toString fullpath) (Path.toString here)
         in
-        (* FIX: We have to fail here (and in other error cases below)
-           rather than report an error for this path, which would be
-           more user friendly.  Indeed, the archive is otherwise
-           modified in inconsistent way when the failure occurs only
-           on one replica (see at the end of this function).
-           A better solution should be not to put the archives in a
-           different state, but this is a lot more work. *)
-        raise (Util.Transient error)
-(*      (archive, Error error) *)
+        (archive, Error error, translatePathLocal fspath fullpath, [])
       else
-      let children = getChildren fspath here in
       let (name', status) =
-        try
-          Safelist.find (fun (name', _) -> Name.eq name name') children
-        with Not_found ->
+        if info.Fileinfo.typ = `ABSENT then
           (name, checkFilename name)
+        else
+          let children = getChildren fspath here in
+          try
+            Safelist.find (fun (name', _) -> Name.eq name name') children
+          with Not_found ->
+            (name, checkFilename name)
       in
       match status with
-       | `BadEnc ->
+      | `BadEnc ->
           raise (Util.Transient
-                   ("The path " ^ Path.toString fullpath ^
-                    " is not encoded in Unicode"))
-       | `BadName ->
+            (Format.sprintf
+               "The filename %s in path %s is not encoded in Unicode"
+               (Name.toString name) (Path.toString fullpath)))
+      | `BadName ->
           raise (Util.Transient
-                   ("The path " ^ Path.toString fullpath ^
-                    " is not allowed in Windows"))
+            (Format.sprintf
+               "The filename %s in path %s is not allowed under Windows"
+               (Name.toString name) (Path.toString fullpath)))
       | `Dup ->
           raise (Util.Transient
-            ("The path " ^ Path.toString fullpath ^
-             " is ambiguous (i.e., the name of this path or one of its "
-             ^ "ancestors is the same, modulo capitalization, as another "
-             ^ "path in a case-sensitive filesystem, and you are "
-             ^ "synchronizing this filesystem with a case-insensitive "
-             ^ "filesystem.  ")) 
+            (Format.sprintf
+               "The path %s is ambiguous at filename %s (i.e., the name \
+                of this path is the same, modulo capitalization, as \
+                another path in a case-sensitive filesystem, and you are \
+                synchronizing this filesystem with a case-insensitive \
+                filesystem."
+                      (Path.toString fullpath) (Name.toString name)))
       | `Ok ->
-          let (desc, child, otherChildren) =
-            match archive with
-              ArchiveDir (desc, children) ->
-                begin try
-                  let child = NameMap.find name children in
-                  (desc, child, NameMap.remove name children)
-                with Not_found ->
-                  (desc, NoArchive, children)
-                end
-            | _ ->
-                (Props.dummy, NoArchive, NameMap.empty)
-          in
-          let (arch, updates) =
-            buildUpdate
-              child fspath fullpath (Path.child here name') path' dirStamp
-          in
-          (* We need to put a directory in the archive here for path
-             translation.  This is fine because we check that there
-             really is a directory on both replica.
-             Note that we may also put NoArchive deep inside an
-             archive...
-          *)
-          (ArchiveDir (desc, NameMap.add name' arch otherChildren),
-           updates)
+          match archive with
+            ArchiveDir (desc, children) ->
+              let archChild =
+                try NameMap.find name children with Not_found -> NoArchive in
+              let otherChildren = NameMap.remove name children in
+              let (arch, updates, localPath, props) =
+                buildUpdate
+                  archChild fspath fullpath (Path.child here name') path'
+                  dirStamp
+              in
+              let children =
+                if arch = NoArchive then otherChildren else
+                NameMap.add name' arch otherChildren
+              in
+              (ArchiveDir (desc, children), updates, localPath,
+               if info.Fileinfo.typ = `ABSENT then [] else
+               info.Fileinfo.desc :: props)
+          | _ ->
+              let (arch, updates, localPath, props) =
+                buildUpdate
+                  NoArchive fspath fullpath (Path.child here name') path'
+                  dirStamp
+              in
+              assert (arch = NoArchive);
+              (archive, updates, localPath,
+               if info.Fileinfo.typ = `ABSENT then [] else
+               info.Fileinfo.desc :: props)
 
 (* All the predicates that may change the set of files scanned during
    update detection *)
@@ -1675,7 +1680,8 @@ Format.eprintf "==> %b@." (oldPreds = newPreds);
 (* for the given path, find the archive and compute the list of update
    items; as a side effect, update the local archive w.r.t. time-stamps for
    unchanged files *)
-let findLocal fspath pathList: Common.updateItem list =
+let findLocal fspath pathList:
+      (Path.local * Common.updateItem * Props.t list) list =
   debug (fun() -> Util.msg "findLocal %s\n" (Fspath.toDebugString fspath));
   addHashToTempNames fspath;
   (* Maybe we should remember the device number where the root lives at 
@@ -1694,12 +1700,12 @@ let t1 = Unix.gettimeofday () in
     Safelist.fold_right
       (fun path (arch, upd) ->
          if Globals.shouldIgnore path then
-           (arch, NoUpdates :: upd)
+           (arch, (translatePathLocal fspath path, NoUpdates, []) :: upd)
          else
-           let (arch', ui) =
+           let (arch', ui, localPath, props) =
              buildUpdate arch fspath path Path.empty path dirStamp
            in
-           arch', ui :: upd)
+           arch', (localPath, ui, props) :: upd)
       pathList (archive, [])
   in
 (*
@@ -1732,8 +1738,7 @@ let findUpdatesOnPaths pathList =
      let t = Trace.startTimer "Collecting changes" in
      Globals.allRootsMapWithWaitingAction (fun r ->
        debug (fun() -> Util.msg "findOnRoot %s\n" (root2string r));
-       findOnRoot r pathList >>= fun updates ->
-       Lwt.return (List.combine pathList updates))
+       findOnRoot r pathList)
        (fun (host, _) ->
          begin match host with
            Remote _ -> Uutil.showUpdateStatus "";
@@ -1746,8 +1751,8 @@ let findUpdatesOnPaths pathList =
        Safelist.map
          (fun r ->
             match r with
-              [(p1, u1); (p2, u2)] -> (p1,u1,p2,u2)
-            | _                    -> assert false)
+              [i1; i2] -> (i1, i2)
+            | _        -> assert false)
          (Safelist.transpose updates)
      in
      Trace.status "";
@@ -2230,3 +2235,9 @@ let rec iterFiles fspath path arch f =
       f fspath path fp
   | _ ->
       ()
+
+(* Hook for filesystem auto-detection (not implemented yet) *)
+let inspectFilesystem =
+  Remote.registerRootCmd
+    "inspectFilesystem"
+    (fun _ -> Lwt.return Proplist.empty)

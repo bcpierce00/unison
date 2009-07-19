@@ -1,3 +1,56 @@
+CHANGES FROM VERSION 2.37.1
+
+* Bumped version number: incompatible protocol changes
+
+* Create parent directories (with correct permissions) during
+  transport for paths which point to non-existent locations in the
+  destination replica.
+* Keep track of which file contents are being transferred, and delay
+  the transfer of a file when another file with the same contents is
+  currently being transferred.  This way, the second transfer can be
+  skipped and replaced by a local copy.
+* Changes to the implementation of the rsync algorithm:
+  - use longer blocks for large files (the size of a block is the
+    square root of the size of the file for large files);
+  - transmit less checksum information per block (we still have less
+    than one chance in a hundred million of transferring a file
+    incorrectly, and Unison will catch any transfer error when
+    fingerprinting the whole file)
+  - avoid transfer overhead (which was 4 bytes per block)
+  For a 1G file, the first optimization saves a factor 50 on the
+  amount of data transferred from the target to the source (blocks
+  are 32768 bytes rather than just 700 bytes).  The two other
+  optimizations save another factor of 2 (from 24 bytes per block
+  down to 10).
+
+* New "links" preference.  When set to false, Unison will report an
+  error on symlinks during update detection.  (This is the default
+  when one host is running Windows but not Cygwin.)  This is better
+  than failing during propagation.
+* Added a preference "halfduplex" to force half-duplex communication
+  with the server.  This may be useful on unreliable links (as a more
+  efficient alternative to "maxthreads = 1").
+* Renamed preference "pretendwin" to "ignoreinodenumbers" (an alias is
+  kept for backwards compatibility).
+* GTK UI: display estimated remaining time and transfer rate on the
+  progress bar
+* GTK UI: some polishing; in particular:
+  - stop statistics window updates when idle (save power on laptops)
+  - some ok and cancel buttons were in the wrong order
+
+* Added some support for making it easier to extend Unison without
+  breaking backwards compatibility.
+  - Possibility to mark a preference as local.  Such a preference is
+    propagated if possible but will not result in an error if it is
+    not found server-side.  This make it possible to add new
+    functionalities client-side without breaking compatibility.
+  - Added a function [Remove.commandAvailable] which tests whether a
+    command is available on a given root.
+* Removed hack in findUpdates that would update the archive in a
+  visible way for the sake of path translation: it is no longer
+  needed.
+
+-------------------------------
 CHANGES FROM VERSION 2.36.-27
 
 * Performance improvement in Xferhint module.

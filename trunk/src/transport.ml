@@ -120,8 +120,8 @@ let doAction fromRoot fromPath fromContents toRoot toPath toContents id =
               ("Updating file " ^ Path.toString toPath)
               (fun () ->
                 Files.copy (`Update (fileSize uiFrom uiTo))
-                  fromRoot fromPath uiFrom toRoot toPath uiTo id)
-        | {ui = uiFrom}, {ui = uiTo} ->
+                  fromRoot fromPath uiFrom [] toRoot toPath uiTo [] id)
+        | {ui = uiFrom; props = propsFrom}, {ui = uiTo; props = propsTo} ->
             logLwtNumbered
               ("Copying " ^ Path.toString toPath ^ "\n  from " ^
                root2string fromRoot ^ "\n  to " ^
@@ -129,7 +129,8 @@ let doAction fromRoot fromPath fromContents toRoot toPath toContents id =
               ("Copying " ^ Path.toString toPath)
               (fun () ->
                  Files.copy `Copy
-                   fromRoot fromPath uiFrom toRoot toPath uiTo id))
+                   fromRoot fromPath uiFrom propsFrom
+                   toRoot toPath uiTo propsTo id))
       (fun e -> Trace.log
           (Printf.sprintf
              "Failed: %s\n" (Util.printException e));

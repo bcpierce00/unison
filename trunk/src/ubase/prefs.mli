@@ -13,6 +13,7 @@ val name : 'a t -> string list
 (* accumulates a list of values.                                             *)
 val createBool :
         string              (* preference name *)
+     -> ?local:bool             (* whether it is local to the client *)
      -> bool                (* initial value *)
      -> string              (* documentation string *)
      -> string              (* full (tex) documentation string *)
@@ -20,6 +21,7 @@ val createBool :
   
 val createInt :
         string              (* preference name *)
+     -> ?local:bool             (* whether it is local to the client *)
      -> int                 (* initial value *)
      -> string              (* documentation string *)
      -> string              (* full (tex) documentation string *)
@@ -27,6 +29,7 @@ val createInt :
   
 val createString :
         string              (* preference name *)
+     -> ?local:bool             (* whether it is local to the client *)
      -> string              (* initial value *)
      -> string              (* documentation string *)
      -> string              (* full (tex) documentation string *)
@@ -34,6 +37,7 @@ val createString :
   
 val createFspath :
         string              (* preference name *)
+     -> ?local:bool             (* whether it is local to the client *)
      -> System.fspath       (* initial value *)
      -> string              (* documentation string *)
      -> string              (* full (tex) documentation string *)
@@ -41,6 +45,7 @@ val createFspath :
   
 val createStringList :
         string              (* preference name *)
+     -> ?local:bool             (* whether it is local to the client *)
      -> string              (* documentation string *)
      -> string              (* full (tex) documentation string *)
      -> string list t       (*   -> new preference value *)
@@ -51,6 +56,7 @@ exception IllegalValue of string
 (* IllegalValue if it is passed a string it cannot deal with.                *)
 val create :
         string                  (* preference name *)
+     -> ?local:bool             (* whether it is local to the client *)
      -> 'a                      (* initial value *)
      -> string                  (* documentation string *)
      -> string                  (* full (tex) documentation string *)

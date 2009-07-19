@@ -261,11 +261,11 @@ Callback.register "unisonInit2" unisonInit2;;
 
 let unisonRiToDetails ri =
   match ri.whatHappened with
-    Some (Util.Failed s) -> (Path.toString ri.ri.path) ^ "\n" ^ s
-  | _ -> (Path.toString ri.ri.path) ^ "\n" ^ (Uicommon.details2string ri.ri "  ");;
+    Some (Util.Failed s) -> (Path.toString ri.ri.path1) ^ "\n" ^ s
+  | _ -> (Path.toString ri.ri.path1) ^ "\n" ^ (Uicommon.details2string ri.ri "  ");;
 Callback.register "unisonRiToDetails" unisonRiToDetails;;
 
-let unisonRiToPath ri = Path.toString ri.ri.path;;
+let unisonRiToPath ri = Path.toString ri.ri.path1;;
 Callback.register "unisonRiToPath" unisonRiToPath;;
 
 let rcToString rc =
@@ -410,11 +410,11 @@ let unisonSynchronize () =
 Callback.register "unisonSynchronize" unisonSynchronize;;
 
 let unisonIgnorePath si =
-  Uicommon.addIgnorePattern (Uicommon.ignorePath si.ri.path);;
+  Uicommon.addIgnorePattern (Uicommon.ignorePath si.ri.path1);;
 let unisonIgnoreExt si =
-  Uicommon.addIgnorePattern (Uicommon.ignoreExt si.ri.path);;
+  Uicommon.addIgnorePattern (Uicommon.ignoreExt si.ri.path1);;
 let unisonIgnoreName si =
-  Uicommon.addIgnorePattern (Uicommon.ignoreName si.ri.path);;
+  Uicommon.addIgnorePattern (Uicommon.ignoreName si.ri.path1);;
 Callback.register "unisonIgnorePath" unisonIgnorePath;;
 Callback.register "unisonIgnoreExt"  unisonIgnoreExt;;
 Callback.register "unisonIgnoreName" unisonIgnoreName;;
@@ -428,7 +428,7 @@ let unisonUpdateForIgnore i =
   let num = ref(-1) in
   let newI = ref None in
   (* FIX: we should actually test whether any prefix is now ignored *)
-  let keep s = not (Globals.shouldIgnore s.ri.path) in
+  let keep s = not (Globals.shouldIgnore s.ri.path1) in
   for j = 0 to (Array.length !theState - 1) do
     let s = !theState.(j) in
     if keep s then begin

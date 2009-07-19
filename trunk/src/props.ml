@@ -146,7 +146,9 @@ let toString =
        else
          off
      in
-     bit 0o1000 "" ""  "t" ^
+     bit 0o4000 "" "-"  "S" ^
+     bit 0o2000 "" "-"  "s" ^
+     bit 0o1000 "?" ""  "t" ^
      bit 0o0400 "?" "-" "r" ^
      bit 0o0200 "?" "-" "w" ^
      bit 0o0100 "?" "-" "x" ^
@@ -169,7 +171,9 @@ let syncedPartsToString =
        else
          off
      in
-     bit 0o1000 "" ""  "t" ^
+     bit 0o4000 "" "-"  "S" ^
+     bit 0o2000 "" "-"  "s" ^
+     bit 0o1000 "?" ""  "t" ^
      bit 0o0400 "?" "-" "r" ^
      bit 0o0200 "?" "-" "w" ^
      bit 0o0100 "?" "-" "x" ^

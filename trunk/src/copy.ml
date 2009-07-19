@@ -409,9 +409,9 @@ let destinationFd fspath path kind len outfd id =
       fd
 
 let rsyncReg = Lwt_util.make_region (40 * 1024)
-let rsyncThrottle useRsync sz f =
+let rsyncThrottle useRsync srcFileSize destFileSize f =
   if not useRsync then f () else
-  let l = Transfer.Rsync.memoryFootprint sz in
+  let l = Transfer.Rsync.memoryFootprint srcFileSize destFileSize in
   Lwt_util.run_in_region rsyncReg l f
 
 let transferFileContents
@@ -440,15 +440,17 @@ let transferFileContents
       &&
     Transfer.Rsync.aboveRsyncThreshold srcFileSize
   in
-  rsyncThrottle useRsync destFileSize (fun () ->
+  rsyncThrottle useRsync srcFileSize destFileSize (fun () ->
     let (bi, decompr) =
       if useRsync then
         Util.convertUnixErrorsToTransient
           "preprocessing file"
           (fun () ->
              let ifd = openFileIn fspathTo realPathTo fileKind in
-             let bi =
-               protect (fun () -> Transfer.Rsync.rsyncPreprocess ifd)
+             let (bi, blockSize) =
+               protect
+                 (fun () -> Transfer.Rsync.rsyncPreprocess
+                              ifd srcFileSize destFileSize)
                  (fun () -> close_in_noerr ifd)
              in
              infd := Some ifd;
@@ -459,7 +461,7 @@ let transferFileContents
                 destinationFd
                   fspathTo pathTo fileKind srcFileSize outfd id in
               let eof =
-                Transfer.Rsync.rsyncDecompress ifd fd showProgress ti
+                Transfer.Rsync.rsyncDecompress blockSize ifd fd showProgress ti
               in
               if eof then begin close_out fd; outfd := None end))
       else
@@ -520,6 +522,48 @@ let reallyTransferFile
   transferRessourceForkAndSetFileinfo
     connFrom fspathFrom pathFrom fspathTo pathTo realPathTo
     update desc fp ress id
+
+(****)
+
+let filesBeingTransferred = Hashtbl.create 17
+
+let wakeupNextTransfer fp =
+  match
+    try
+      Some (Queue.take (Hashtbl.find filesBeingTransferred fp))
+    with Queue.Empty ->
+      None
+  with
+    None ->
+      Hashtbl.remove filesBeingTransferred fp
+  | Some next ->
+      Lwt.wakeup next ()
+
+let executeTransfer fp f =
+  Lwt.try_bind f
+    (fun res -> wakeupNextTransfer fp; Lwt.return res)
+    (fun e -> wakeupNextTransfer fp; Lwt.fail e)
+
+(* Keep track of which file contents are being transferred, and delay
+   the transfer of a file with the same contents as another file being
+   currently transferred.  This way, the second transfer can be
+   skipped and replaced by a local copy. *)
+let rec registerFileTransfer pathTo fp f =
+  if not (Prefs.read Xferhint.xferbycopying) then f () else
+  match
+    try Some (Hashtbl.find filesBeingTransferred fp) with Not_found -> None
+  with
+    None ->
+      let q = Queue.create () in
+      Hashtbl.add filesBeingTransferred fp q;
+      executeTransfer fp f
+  | Some q ->
+      debug (fun () -> Util.msg "delaying tranfer of file %s\n"
+               (Path.toString pathTo));
+      let res = Lwt.wait () in
+      Queue.push res q;
+      res >>= fun () ->
+      executeTransfer fp f
 
 (****)
 
@@ -631,7 +675,6 @@ let finishExternalTransferLocal connFrom
   Xferhint.insertEntry fspathTo pathTo fp;
   Lwt.return res
 
-
 let finishExternalTransferOnRoot =
   Remote.registerRootCmdWithConnection
     "finishExternalTransfer" finishExternalTransferLocal
@@ -676,6 +719,8 @@ let transferFileUsingExternalCopyprog
     (snd rootFrom, pathFrom, fspathTo, pathTo, realPathTo,
      update, desc, fp, ress, id)
 
+(****)
+
 let transferFileLocal connFrom
       (fspathFrom, pathFrom, fspathTo, pathTo, realPathTo,
        update, desc, fp, ress, id) =
@@ -695,23 +740,25 @@ let transferFileLocal connFrom
     Xferhint.insertEntry fspathTo pathTo fp;
     Lwt.return (`DONE (Success info, Some msg))
   end else
-   match
-     tryCopyMovedFile fspathTo pathTo realPathTo update desc fp ress id
-   with
-     Some (info, msg) ->
-       (* Transfer was performed by copying *)
-       Xferhint.insertEntry fspathTo pathTo fp;
-       Lwt.return (`DONE (Success info, Some msg))
-   | None ->
-       if shouldUseExternalCopyprog update desc then
-         Lwt.return (`EXTERNAL (prepareExternalTransfer fspathTo pathTo))
-       else begin
-         reallyTransferFile
-           connFrom fspathFrom pathFrom fspathTo pathTo realPathTo
-           update desc fp ress id >>= fun status ->
-         Xferhint.insertEntry fspathTo pathTo fp;
-         Lwt.return (`DONE (status, None))
-       end
+    registerFileTransfer pathTo fp
+      (fun () ->
+         match
+           tryCopyMovedFile fspathTo pathTo realPathTo update desc fp ress id
+         with
+           Some (info, msg) ->
+             (* Transfer was performed by copying *)
+             Xferhint.insertEntry fspathTo pathTo fp;
+             Lwt.return (`DONE (Success info, Some msg))
+         | None ->
+             if shouldUseExternalCopyprog update desc then
+               Lwt.return (`EXTERNAL (prepareExternalTransfer fspathTo pathTo))
+             else begin
+               reallyTransferFile
+                 connFrom fspathFrom pathFrom fspathTo pathTo realPathTo
+                 update desc fp ress id >>= fun status ->
+               Xferhint.insertEntry fspathTo pathTo fp;
+               Lwt.return (`DONE (status, None))
+             end)
 
 let transferFileOnRoot =
   Remote.registerRootCmdWithConnection "transferFile" transferFileLocal

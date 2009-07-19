@@ -441,7 +441,7 @@ let debug = Trace.debug "startup"
 let architecture =
   Remote.registerRootCmd
     "architecture"
-    (fun (_,()) -> return (Util.osType = `Win32, Osx.isMacOSX))
+    (fun (_,()) -> return (Util.osType = `Win32, Osx.isMacOSX, Util.isCygwin))
 
 (* During startup the client determines the case sensitivity of each root.
    If any root is case insensitive, all roots must know this -- it's
@@ -452,16 +452,19 @@ let architecture =
 let checkCaseSensitivity () =
   Globals.allRootsMap (fun r -> architecture r ()) >>= (fun archs ->
   let someHostIsRunningWindows =
-    Safelist.exists (fun (isWin, _) -> isWin) archs in
+    Safelist.exists (fun (isWin, _, _) -> isWin) archs in
   let allHostsAreRunningWindows =
-    Safelist.for_all (fun (isWin, _) -> isWin) archs in
+    Safelist.for_all (fun (isWin, _, _) -> isWin) archs in
+  let someHostIsRunningBareWindows =
+    Safelist.exists (fun (isWin, _, isCyg) -> isWin && not isCyg) archs in
   let someHostRunningOsX =
-    Safelist.exists (fun (_, isOSX) -> isOSX) archs in
+    Safelist.exists (fun (_, isOSX, _) -> isOSX) archs in
   let someHostIsCaseInsensitive =
     someHostIsRunningWindows || someHostRunningOsX in
   Case.init someHostIsCaseInsensitive;
   Props.init someHostIsRunningWindows;
   Osx.init someHostRunningOsX;
+  Fileinfo.init someHostIsRunningBareWindows;
   Prefs.set Globals.someHostIsRunningWindows someHostIsRunningWindows;
   Prefs.set Globals.allHostsAreRunningWindows allHostsAreRunningWindows;
   return ())

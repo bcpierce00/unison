@@ -319,6 +319,36 @@ let setupTargetPathsLocal (fspath, path) =
 let setupTargetPaths =
   Remote.registerRootCmd "setupTargetPaths" setupTargetPathsLocal
 
+let rec createDirectories fspath localPath props =
+  match props with
+    [] ->
+      ()
+  | desc :: rem ->
+      match Path.deconstructRev localPath with
+        None ->
+          assert false
+      | Some (_, parentPath) ->
+          createDirectories fspath parentPath rem;
+          try
+            let absolutePath = Fspath.concat fspath parentPath in
+             Fs.mkdir absolutePath (Props.perms desc)
+            (* The directory may have already been created
+               if there are several paths with the same prefix *)
+          with Unix.Unix_error (Unix.EEXIST, _, _) -> ()
+
+let setupTargetPathsAndCreateParentDirectoryLocal (fspath, (path, props)) =
+  let localPath = Update.translatePathLocal fspath path in
+  Util.convertUnixErrorsToTransient
+    "creating parent directories"
+    (fun () -> createDirectories fspath localPath props);
+  let (workingDir,realPath) = Fspath.findWorkingDir fspath localPath in
+  let tempPath = Os.tempPath ~fresh:false workingDir realPath in
+  Lwt.return (workingDir, realPath, tempPath, localPath)
+
+let setupTargetPathsAndCreateParentDirectory =
+  Remote.registerRootCmd "setupTargetPathsAndCreateParentDirectory"
+    setupTargetPathsAndCreateParentDirectoryLocal
+
 (* ------------------------------------------------------------ *)
 
 let updateSourceArchiveLocal (fspathFrom, (localPathFrom, uiFrom, errPaths)) =
@@ -376,6 +406,15 @@ let deleteSpuriousChildrenLocal (_, (fspathTo, pathTo, archChildren)) =
 let deleteSpuriousChildren =
   Remote.registerRootCmd "deleteSpuriousChildren" deleteSpuriousChildrenLocal
 
+let rec normalizePropsRec propsFrom propsTo =
+  match propsFrom, propsTo with
+    d :: r, d' :: r' -> normalizePropsRec r r'
+  | _, []            -> propsFrom
+  | [], _ :: _       -> assert false
+
+let normalizeProps propsFrom propsTo =
+  normalizePropsRec (Safelist.rev propsFrom) (Safelist.rev propsTo)
+
 (* ------------------------------------------------------------ *)
 
 let copyReg = Lwt_util.make_region 50
@@ -385,10 +424,13 @@ let copy
       rootFrom pathFrom   (* copy from here... *)
       uiFrom              (* (and then check that this updateItem still
                              describes the current state of the src replica) *)
+      propsFrom           (* the properties of the parent directories, in
+                             case we need to propagate them *)
       rootTo pathTo       (* ...to here *)
       uiTo                (* (but, before committing the copy, check that
                              this updateItem still describes the current
                              state of the target replica) *)
+      propsTo             (* the properties of the parent directories *)
       id =                (* for progress display *)
   debug (fun() ->
     Util.msg
@@ -396,7 +438,8 @@ let copy
       (root2string rootFrom) (Path.toString pathFrom)
       (root2string rootTo) (Path.toString pathTo));
   (* Calculate target paths *)
-  setupTargetPaths rootTo pathTo
+  setupTargetPathsAndCreateParentDirectory rootTo
+    (pathTo, normalizeProps propsFrom propsTo)
      >>= fun (workingDir, realPathTo, tempPathTo, localPathTo) ->
   (* When in Unicode case-insensitive mode, we want to create files
      with NFC normal-form filenames. *)

@@ -162,7 +162,7 @@ let paths =
 
 (* FIX: this does weird things in case-insensitive mode... *)
 let globPath lr p =
-  let p = Path.magic p in
+  let p = Path.forceLocal p in
   debug (fun() ->
     Util.msg "Checking path '%s' for expansions\n"
       (Path.toDebugString p) );
@@ -175,10 +175,10 @@ let globPath lr p =
                   (Path.toString p)
                   "but first root (after canonizing) is non-local"))
       | Some lrfspath -> 
-          Safelist.map (fun c -> Path.magic' (Path.child parent c))
+          Safelist.map (fun c -> Path.makeGlobal (Path.child parent c))
             (Os.childrenOf lrfspath parent)
       end 
-  | _ -> [Path.magic' p]
+  | _ -> [Path.makeGlobal p]
 
 let expandWildcardPaths() =
   let lr =
