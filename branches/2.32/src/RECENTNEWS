@@ -1,3 +1,16 @@
+CHANGES FROM VERSION 2.32.52
+
+* GTK UI: Unison now take into account the arguments given (including
+  roots if they are given this way) on the command line when rescanning.
+* Truncate temporary filename to remain under system limits.
+* Fix include directive failure when the line ends by CRLF
+  (the CR was not removed)
+* Ignore errors when writing to the log file
+* Do not print the "Connected" message when the preference "silent" is set.
+* Print a warning when running "unison -ui graphic" with a text-only
+  build of Unison
+
+-------------------------------
 CHANGES FROM VERSION 2.32.44
 
 * Describe recent changes in changelog

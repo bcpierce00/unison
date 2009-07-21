@@ -2019,6 +2019,19 @@ lst_store#set ~row ~column:c_path path;
   (*********************************************************************
     Restart button
    *********************************************************************)
+  let loadProfile p =
+    debug (fun()-> Util.msg "Loading profile %s..." p);
+    Uicommon.initPrefs p displayWaitMessage getFirstRoot getSecondRoot
+      termInteract;
+    displayNewProfileLabel p;
+    setMainWindowColumnHeaders()
+  in
+
+  let reloadProfile () =
+    match !Prefs.profileName with
+      None -> ()
+    | Some(n) -> loadProfile n in
+
   let detectCmdName = "Restart" in
   let detectCmd () =
     getLock detectUpdatesAndReconcile;
@@ -2031,7 +2044,7 @@ lst_store#set ~row ~column:c_path path;
     (actionBar#insert_button ~text:detectCmdName
        ~icon:((GMisc.image ~stock:`REFRESH ())#coerce)
        ~tooltip:"Check for updates"
-       ~callback: detectCmd ());
+       ~callback: (fun () -> reloadProfile(); detectCmd ()) ());
 
   (*********************************************************************
     Buttons for <--, M, -->, Skip
@@ -2273,19 +2286,6 @@ lst_store#set ~row ~column:c_path path;
   (*********************************************************************
     Synchronization menu
    *********************************************************************)
-
-  let loadProfile p =
-    debug (fun()-> Util.msg "Loading profile %s..." p);
-    Uicommon.initPrefs p displayWaitMessage getFirstRoot getSecondRoot
-      termInteract;
-    displayNewProfileLabel p;
-    setMainWindowColumnHeaders()
-  in
-
-  let reloadProfile () =
-    match !Prefs.profileName with
-      None -> ()
-    | Some(n) -> loadProfile n in
 
   grAdd grGo
     (fileMenu#add_image_item ~key:GdkKeysyms._g

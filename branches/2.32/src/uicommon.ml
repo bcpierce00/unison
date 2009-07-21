@@ -472,11 +472,15 @@ let promptForRoots getFirstRoot getSecondRoot =
    we ignore the command line *)
 let firstTime = ref(true)
 
+(* Roots given on the command line *)
+let rawRoots = ref []
+
 (* BCP: WARNING: Some of the code from here is duplicated in uimacbridge...! *)
 let initPrefs ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
               ~termInteract =
   (* Restore prefs to their default values, if necessary *)
   if not !firstTime then Prefs.resetToDefaults();
+  Globals.setRawRoots !rawRoots;
 
   (* Tell the preferences module the name of the profile *)
   Prefs.profileName := Some(profileName);
@@ -505,7 +509,8 @@ let initPrefs ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
   end;
 
   (* Parse the command line.  This will override settings from the profile. *)
-  if !firstTime then begin
+  (* JV (6/09): always reparse the command line *)
+  if true (*!firstTime*) then begin
     debug (fun() -> Util.msg "about to parse command line");
     Prefs.parseCmdLine usageMsg;
   end;
@@ -633,9 +638,9 @@ let uiInit
       match Util.StringMap.find "rest" args with
         [] -> ()
       | [profile] -> clprofile := Some profile
-      | [root1;root2] -> Globals.setRawRoots [root1;root2]
+      | [root1;root2] -> rawRoots := [root1;root2]
       | [root1;root2;profile] ->
-          Globals.setRawRoots [root1;root2];
+          rawRoots := [root1;root2];
           clprofile := Some profile
       | _ ->
           (reportError(Printf.sprintf
@@ -653,7 +658,7 @@ let uiInit
     (match !clprofile with
       None -> Util.msg "No profile given on command line"
     | Some s -> Printf.eprintf "Profile '%s' given on command line" s);
-    (match Globals.rawRoots() with
+    (match !rawRoots with
       [] -> Util.msg "No roots given on command line"
     | [root1;root2] ->
         Printf.eprintf "Roots '%s' and '%s' given on command line"
@@ -665,7 +670,7 @@ let uiInit
       None ->
         let dirString = Fspath.toString Os.unisonDir in
         let profiles_exist = (Files.ls dirString "*.prf")<>[] in
-        let clroots_given = (Globals.rawRoots() <> []) in
+        let clroots_given = !rawRoots <> [] in
         let n =
           if profiles_exist && not(clroots_given) then begin
             (* Unison has been used before: at least one profile exists.
