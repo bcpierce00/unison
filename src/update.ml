@@ -1150,6 +1150,11 @@ let dirContentsClearlyUnchanged info archDesc fastCheckInfos =
   Props.dirMarkedUnchanged archDesc fastCheckInfos.dirStamp inode
     &&
   Props.same_time info.Fileinfo.desc archDesc
+    &&
+  (* Check the date is meaningful: the root directory of a FAT
+     filesystem does not have modification time, so the time returned
+     by [stat] is usually way in the past. *)
+  Props.time archDesc >= 631152000. (* Jan 1, 1990 *)
 
 (* Check whether a file's permissions have not changed *)
 let isPropUnchanged info archiveDesc =
@@ -1551,7 +1556,10 @@ let rec buildUpdate archive fspath fullpath here path dirStamp =
       showStatus here;
       let fastCheckInfos =
         { fastCheck = useFastChecking ();
-          dirFastCheck = useFastChecking ();
+          (* Directory optimization is disabled under Windows,
+             as Windows does not update directory modification times
+             on FAT filesystems. *)
+          dirFastCheck = useFastChecking () && Util.osType = `Unix;
           dirStamp = dirStamp }
       in
       let (arch, ui) =

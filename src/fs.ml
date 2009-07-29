@@ -74,7 +74,7 @@ let digestFile f =
   close_in ic;
   d
 
-let canSetTime f =
-  System.canSetTime (Util.osType <> `Win32) (Fspath.toString f)
+let canSetTime f = System.canSetTime (Fspath.toString f)
+let hasInodeNumbers () = System.hasInodeNumbers ()
 
 let setUnicodeEncoding = System.setUnicodeEncoding

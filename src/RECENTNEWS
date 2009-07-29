@@ -1,5 +1,15 @@
 CHANGES FROM VERSION 2.37.1
 
+* Disabled the new directory fast check optimization under Windows, as
+  Windows does not update the directory modification time when a
+  directory contents changes on a FAT filesystem.
+* Use inode numbers in fast check mode when using the Windows Unicode
+  API or Cygwin
+* Do not print the "Connected [...]" message when both replicas are local
+
+-------------------------------
+CHANGES FROM VERSION 2.37.1
+
 * Bumped version number: incompatible protocol changes
 
 * Create parent directories (with correct permissions) during

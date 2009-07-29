@@ -320,6 +320,8 @@ struct
        let weakLen = 31.
      This would save almost 3 bytes per block, but one need to be able
      to recover from an rsync error.
+     (We would have to take into account that our weak checksum is
+      only 31 bits.)
   *)
   (* Block size *)
   let computeBlockSize l = truncate (max 700. (min (sqrt l) 131072.))

@@ -34,10 +34,20 @@ let recent_ocaml =
     (fun maj min -> (maj = 3 && min >= 11) || maj > 3)
 
 (*
-   Flow-control mechanism (only active under windows).
+   Flow-control mechanism (only active under Windows).
    Only one side is allowed to send messages at any given time.
    Once it has finished sending messages, a special message is sent
    meaning that the destination is now allowed to send messages.
+
+   Threads behave in a very controlled way: they only perform possibly
+   blocking I/Os through the remote module, and never call
+   Lwt_unix.yield.  This mean that when one side gives up its right to
+   write, we know that no longer how much we wait, it would not have
+   any thing to write.  This ensures that there will be no deadlock.
+   A more robust protocol would be to give up write permission
+   whenever idle (not just after having sent at least one message).
+   But then, there is the risk that the two sides exchange spurious
+   messages.
 *)
 let needFlowControl = windowsHack
 let readOrWrite = needFlowControl && not recent_ocaml

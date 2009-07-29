@@ -582,7 +582,9 @@ let initPrefs ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
 
   Update.storeRootsName ();
 
-  if not (Prefs.read contactquietly || Prefs.read Trace.terse) then
+  if
+    numRemote > 0 && not (Prefs.read contactquietly || Prefs.read Trace.terse)
+  then
     Util.msg "Connected [%s]\n"
       (Util.replacesubstring (Update.getRootsName()) ", " " -> ");
 

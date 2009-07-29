@@ -1652,7 +1652,7 @@ lst_store#set ~row ~column:c_path path;
 
   let redisplay i =
     let (r1, action, r2, status, path) = columnsOf i in
-    mainWindow#freeze ();
+    (*mainWindow#freeze ();*)
     mainWindow#set_cell ~text:r1     i 0;
     displayArrow i i action;
     mainWindow#set_cell ~text:r2     i 2;
@@ -1662,7 +1662,7 @@ lst_store#set ~row ~column:c_path path;
       mainWindow#set_cell
         ~text:(transcodeFilename path ^
                "       [failed: click on this line for details]") i 4;
-    mainWindow#thaw ();
+    (*mainWindow#thaw ();*)
     if !current = Some i then updateDetails ();
     updateButtons () in
 

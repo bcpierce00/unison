@@ -23,7 +23,7 @@ osx.cmi: uutil.cmi ubase/prefs.cmi path.cmi fspath.cmi fingerprint.cmi
 path.cmi: pred.cmi name.cmi 
 pred.cmi: 
 props.cmi: uutil.cmi ubase/prefs.cmi path.cmi osx.cmi fspath.cmi 
-recon.cmi: path.cmi common.cmi 
+recon.cmi: props.cmi path.cmi common.cmi 
 remote.cmi: ubase/prefs.cmi lwt/lwt.cmi fspath.cmi common.cmi clroot.cmi \
     bytearray.cmi 
 sortri.cmi: common.cmi 
@@ -44,8 +44,7 @@ unicode.cmi:
 update.cmi: uutil.cmi tree.cmi props.cmi path.cmi osx.cmi os.cmi name.cmi \
     lwt/lwt.cmi fspath.cmi fileinfo.cmi common.cmi 
 uutil.cmi: 
-xferhint.cmi: props.cmi ubase/prefs.cmi path.cmi osx.cmi os.cmi fspath.cmi \
-    fileinfo.cmi 
+xferhint.cmi: ubase/prefs.cmi path.cmi os.cmi fspath.cmi 
 abort.cmo: uutil.cmi ubase/util.cmi ubase/trace.cmi ubase/prefs.cmi abort.cmi 
 abort.cmx: uutil.cmx ubase/util.cmx ubase/trace.cmx ubase/prefs.cmx abort.cmi 
 bytearray.cmo: bytearray.cmi 
@@ -94,8 +93,8 @@ fileutil.cmo: fileutil.cmi
 fileutil.cmx: fileutil.cmi 
 fingerprint.cmo: uutil.cmi ubase/util.cmi fspath.cmi fs.cmi fingerprint.cmi 
 fingerprint.cmx: uutil.cmx ubase/util.cmx fspath.cmx fs.cmx fingerprint.cmi 
-fs.cmo: ubase/util.cmi fspath.cmi fs.cmi 
-fs.cmx: ubase/util.cmx fspath.cmx fs.cmi 
+fs.cmo: fspath.cmi fs.cmi 
+fs.cmx: fspath.cmx fs.cmi 
 fspath.cmo: uutil.cmi ubase/util.cmi system.cmi ubase/rx.cmi path.cmi \
     name.cmi fileutil.cmi fspath.cmi 
 fspath.cmx: uutil.cmx ubase/util.cmx system.cmx ubase/rx.cmx path.cmx \

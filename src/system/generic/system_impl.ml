@@ -19,13 +19,5 @@ module System = System_generic
 module Fs = struct
   include System_generic
 
-  let canSetTime win f =
-    not win ||
-    try
-      Unix.access f [Unix.W_OK];
-      true
-    with
-      Unix.Unix_error _ -> false
-
   let setUnicodeEncoding _ = ()
 end
