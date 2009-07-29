@@ -149,7 +149,7 @@ type stamp =
       fastcheck expects ctime to be preserved by renaming.  Thus, we should
       probably not use any stamp under Windows. *)
 
-let pretendLocalOSIsWin32 =
+let ignoreInodeNumbers =
   Prefs.createBool "ignoreinodenumbers" false
     "!Use creation times for detecting updates"
     ("When set to true, this preference makes Unison not take advantage \
@@ -159,15 +159,13 @@ let pretendLocalOSIsWin32 =
       can be useful for synchronizing VFAT filesystems (which do not \
       support inode numbers) mounted on Unix systems.  \
       The {\\tt fastcheck} option should also be set to true.")
-let _ = Prefs.alias pretendLocalOSIsWin32 "pretendwin"
+let _ = Prefs.alias ignoreInodeNumbers "pretendwin"
 
 let stamp info =
        (* Was "CtimeStamp info.ctime", but this is bogus: Windows
           ctimes are not reliable. *)
-  if Prefs.read pretendLocalOSIsWin32 then CtimeStamp 0.0 else
-  match Util.osType with
-    `Unix  -> InodeStamp info.inode
-  | `Win32 -> CtimeStamp 0.0
+  if Prefs.read ignoreInodeNumbers then CtimeStamp 0.0 else
+  if Fs.hasInodeNumbers () then InodeStamp info.inode else CtimeStamp 0.0
 
 let ressStamp info = Osx.stamp info.osX
 

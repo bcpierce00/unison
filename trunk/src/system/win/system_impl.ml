@@ -18,9 +18,6 @@
 module System = System_win
 
 module Fs = struct
-  (* The new implementation of utimes does not have the limitation of
-     the standard one *)
-  let canSetTime win f = true
 
   let unicode = ref false
 
@@ -60,4 +57,7 @@ module Fs = struct
   let getcwd v = c1 W.getcwd G.getcwd v
   let chdir v = c1 W.chdir G.chdir v
   let readlink v = c1 W.readlink G.readlink v
+
+  let canSetTime v = c1 W.canSetTime G.canSetTime v
+  let hasInodeNumbers v = c1 W.hasInodeNumbers G.hasInodeNumbers v
 end

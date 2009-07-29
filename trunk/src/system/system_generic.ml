@@ -71,3 +71,19 @@ let open_process_full cmd = Unix.open_process_full cmd (Unix.environment ())
 let close_process_in = Unix.close_process_in
 let close_process_out = Unix.close_process_out
 let close_process_full = Unix.close_process_full
+
+(****)
+
+let isNotWindows = Sys.os_type <> "Win32"
+
+let canSetTime f =
+  isNotWindows ||
+  try
+    Unix.access f [Unix.W_OK];
+    true
+  with
+    Unix.Unix_error _ -> false
+
+(* Note that Cygwin provides some kind of inode numbers, but we only
+   have access to the lower 32 bits on 32bit systems... *)
+let hasInodeNumbers () = isNotWindows

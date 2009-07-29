@@ -281,8 +281,11 @@ CAMLprim value win_stat(value path, value wpath)
 
   v = caml_alloc (12, 0);
   Store_field (v, 0, Val_int (info.dwVolumeSerialNumber));
+  /* The ocaml code truncates inode numbers to 31 bits.  We hash the
+     low and high parts in order to lose as little information as
+     possible. */
   Store_field
-    (v, 1, Val_int (MAKEDWORDLONG(info.nFileIndexLow,info.nFileIndexHigh)));
+    (v, 1, Val_int (MAKEDWORDLONG(info.nFileIndexLow,info.nFileIndexHigh)+155825701*((DWORDLONG)info.nFileIndexHigh)));
   Store_field
     (v, 2, Val_int (info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY
 		    ? 1: 0));
@@ -292,7 +295,7 @@ CAMLprim value win_stat(value path, value wpath)
   if (!(info.dwFileAttributes & FILE_ATTRIBUTE_READONLY))
     mode |= 0000222;
   Store_field (v, 3, Val_int(mode));
-  Store_field (v, 4, Val_int (1));
+  Store_field (v, 4, Val_int (info.nNumberOfLinks));
   Store_field (v, 5, Val_int (0));
   Store_field (v, 6, Val_int (0));
   Store_field (v, 7, Val_int (0));

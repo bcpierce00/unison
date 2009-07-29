@@ -279,3 +279,12 @@ let close_process_full (inchan, outchan, errchan) =
                  (Process_full(inchan, outchan, errchan)) in
   close_in inchan; close_out outchan; close_in errchan;
   snd(Unix.waitpid [] pid)
+
+(****)
+
+(* The new implementation of utimes does not have the limitation of
+   the standard one *)
+let canSetTime f = true
+
+(* We provide some kind of inode numbers *)
+let hasInodeNumbers () = true

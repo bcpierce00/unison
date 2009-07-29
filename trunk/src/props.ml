@@ -227,7 +227,7 @@ let check fspath path stats (fp, mask) =
             (Fspath.toPrintString (Fspath.concat fspath path))
             (syncedPartsToString (fp, mask))
             (syncedPartsToString (fp', mask))
-            (mask land (lnot (fp lxor fp')))))
+            ((Prefs.read permMask) land (lnot (fp lxor fp')))))
 
 let init someHostIsRunningWindows =
   let mask = if someHostIsRunningWindows then wind_mask else unix_mask in
