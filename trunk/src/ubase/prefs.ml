@@ -271,10 +271,20 @@ let rec readAFile filename : (string * int * string * string) list =
     try System.open_in_bin (profilePathname filename)
     with Sys_error _ ->
       raise(Util.Fatal(Printf.sprintf "Preference file %s not found" filename)) in
+  let bom = "\xef\xbb\xbf" in (* BOM: UTF-8 byte-order mark *)
   let rec loop lines =
     match (try Some(input_line chan) with End_of_file -> None) with
       None -> close_in chan; parseLines filename lines
-    | Some(theLine) -> loop (theLine::lines) in
+    | Some(theLine) ->
+        let theLine =
+          (* A lot of Windows tools start a UTF-8 encoded file by a
+             byte-order mark.  We skip it. *)
+          if lines = [] && Util.startswith theLine bom then
+            String.sub theLine 3 (String.length theLine - 3)
+          else
+            theLine
+        in
+        loop (theLine::lines) in
   loop []
 
 (* Takes a list of strings in reverse order and yields a list of "parsed lines"

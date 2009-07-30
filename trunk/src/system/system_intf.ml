@@ -85,4 +85,9 @@ val close_process_out : out_channel -> Unix.process_status
 val close_process_full :
   in_channel * out_channel * in_channel -> Unix.process_status
 
+type terminalStateFunctions =
+  { defaultTerminal : unit -> unit; rawTerminal : unit -> unit;
+    startReading : unit -> unit; stopReading : unit -> unit }
+val terminalStateFunctions : unit -> terminalStateFunctions
+
 end

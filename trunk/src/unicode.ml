@@ -934,7 +934,11 @@ let normalize s =
   try
     let s' = norm s 0 l s' 0 in order s'; s'
   with Invalid ->
-    s
+    (* We need a comparison function which is coherent (transitive)
+       also with non-unicode strings.  The optimization below assumes
+       a case-insensitive comparison on ASCII characters, thus we
+       translate the string to lowercase *)
+    String.lowercase s
 
 (****)
 

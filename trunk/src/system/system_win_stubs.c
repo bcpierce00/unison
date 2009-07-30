@@ -511,3 +511,64 @@ CAMLprim value w_create_process(value * argv, int argn)
   return w_create_process_native(argv[0], argv[1], argv[2],
 				 argv[3], argv[4], argv[5]);
 }
+
+/****/
+
+static HANDLE conin = INVALID_HANDLE_VALUE;
+
+static void init_conin ()
+{
+  if (conin == INVALID_HANDLE_VALUE) {
+    conin = CreateFile ("CONIN$", GENERIC_READ | GENERIC_WRITE,
+			FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
+			OPEN_EXISTING, 0, 0);
+    if (conin == INVALID_HANDLE_VALUE) {
+      win32_maperr (GetLastError ());
+      uerror("init_conin", Nothing);
+    }
+  }
+}
+
+CAMLprim value win_get_console_mode (value unit)
+{
+  DWORD mode;
+  BOOL res;
+
+  init_conin ();
+
+  res = GetConsoleMode (conin, &mode);
+  if (res == 0) {
+    win32_maperr (GetLastError ());
+    uerror("get_console_mode", Nothing);
+  }
+
+  return (Val_int (mode));
+}
+
+CAMLprim value win_set_console_mode (value mode)
+{
+  BOOL res;
+
+  init_conin ();
+
+  res = SetConsoleMode (conin, Int_val(mode));
+  if (res == 0) {
+    win32_maperr (GetLastError ());
+    uerror("set_console_mode", Nothing);
+  }
+  return (Val_unit);
+}
+
+CAMLprim value win_get_console_output_cp (value unit) {
+  return (Val_int (GetConsoleOutputCP ()));
+}
+
+CAMLprim value win_set_console_output_cp (value cp) {
+  BOOL res;
+  res = SetConsoleOutputCP (Int_val (cp));
+  if (res == 0) {
+    win32_maperr (GetLastError ());
+    uerror("set_console_cp", Nothing);
+  }
+  return (Val_unit);
+}
