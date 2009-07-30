@@ -87,3 +87,23 @@ let canSetTime f =
 (* Note that Cygwin provides some kind of inode numbers, but we only
    have access to the lower 32 bits on 32bit systems... *)
 let hasInodeNumbers () = isNotWindows
+
+(****)
+
+type terminalStateFunctions =
+  { defaultTerminal : unit -> unit; rawTerminal : unit -> unit;
+    startReading : unit -> unit; stopReading : unit -> unit }
+
+let terminalStateFunctions () =
+  let oldState = Unix.tcgetattr Unix.stdin in
+  { defaultTerminal =
+      (fun () -> Unix.tcsetattr Unix.stdin Unix.TCSANOW oldState);
+    rawTerminal =
+      (fun () ->
+         let newState =
+           { oldState with Unix.c_icanon = false; Unix.c_echo = false;
+                           Unix.c_vmin = 1 }
+         in
+         Unix.tcsetattr Unix.stdin Unix.TCSANOW newState);
+    startReading = (fun () -> ());
+    stopReading = (fun () -> ()) }

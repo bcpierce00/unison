@@ -1,3 +1,18 @@
+CHANGES FROM VERSION 2.37.5
+
+* Windows text UI: now put the console into UTF-8 output mode.  This
+  is the right thing to do when in Unicode mode, and is no worse than
+  what we had previously otherwise (the console use some esoteric
+  encoding by default).  This only works when using a Unicode font
+  instead of the default raster font.
+* Windows text UI: put the terminal into raw mode
+* Incorrect paths ("path" directive) now result in an error update
+  item rather than a fatal error.
+* Ignore any BOM (byte-order mark) character at the beginning of
+  profile files (this character is produced by many tools under
+  Windows)
+
+-------------------------------
 CHANGES FROM VERSION 2.37.1
 
 * Disabled the new directory fast check optimization under Windows, as

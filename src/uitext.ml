@@ -25,12 +25,7 @@ let debug = Trace.debug "ui"
 
 let dumbtty =
   Prefs.createBool "dumbtty"
-    (match Util.osType with
-        `Unix ->
-          (try (System.getenv "EMACS" <> "") with
-           Not_found -> false)
-      | _ ->
-          true)
+    (try System.getenv "EMACS" <> "" with Not_found -> false)
     "!do not change terminal settings in text UI"
     ("When set to \\verb|true|, this flag makes the text mode user "
      ^ "interface avoid trying to change any of the terminal settings.  "
@@ -54,42 +49,41 @@ let silent =
 
 let cbreakMode = ref None
 
+(* FIX: this may also work with Cygwin, but someone needs to try it... *)
+let supportSignals = Util.osType = `Unix (*|| Util.isCygwin*)
+
 let rawTerminal () =
   match !cbreakMode with
-    None -> ()
-  | Some state ->
-      let newstate =
-        { state with Unix.c_icanon = false; Unix.c_echo = false;
-          Unix.c_vmin = 1 }
-      in
-      Unix.tcsetattr Unix.stdin Unix.TCSANOW newstate
+    None      -> ()
+  | Some funs -> funs.System.rawTerminal ()
 
 let defaultTerminal () =
   match !cbreakMode with
-    None       -> ()
-  | Some state ->
-      Unix.tcsetattr Unix.stdin Unix.TCSANOW state
-
+    None      -> ()
+  | Some funs -> funs.System.defaultTerminal ()
+ 
 let restoreTerminal() =
-  if Util.osType = `Unix && not (Prefs.read dumbtty) then
+  if supportSignals && not (Prefs.read dumbtty) then
     Sys.set_signal Sys.sigcont Sys.Signal_default;
   defaultTerminal ();
   cbreakMode := None
 
 let setupTerminal() =
-  if Util.osType = `Unix && not (Prefs.read dumbtty) then
+  if not (Prefs.read dumbtty) then
     try
-      cbreakMode := Some (Unix.tcgetattr Unix.stdin);
+      cbreakMode := Some (System.terminalStateFunctions ());
       let suspend _ =
         defaultTerminal ();
         Sys.set_signal Sys.sigtstp Sys.Signal_default;
         Unix.kill (Unix.getpid ()) Sys.sigtstp
       in
       let resume _ =
-        Sys.set_signal Sys.sigtstp (Sys.Signal_handle suspend);
+        if supportSignals then
+          Sys.set_signal Sys.sigtstp (Sys.Signal_handle suspend);
         rawTerminal ()
       in
-      Sys.set_signal Sys.sigcont (Sys.Signal_handle resume);
+      if supportSignals then
+        Sys.set_signal Sys.sigcont (Sys.Signal_handle resume);
       resume ()
     with Unix.Unix_error _ ->
       restoreTerminal ()
@@ -109,14 +103,27 @@ let displayWhenInteractive message =
   if not (Prefs.read Globals.batch) then alwaysDisplay message
 
 let getInput () =
-  if  !cbreakMode = None then
-    let l = input_line stdin in
-    if l="" then "" else String.sub l 0 1
-  else
-    let c = input_char stdin in
-    let c = if c='\n' then "" else String.make 1 c in
-    display c;
-    c
+  match !cbreakMode with
+    None ->
+      let l = input_line stdin in
+      if l="" then "" else String.sub l 0 1
+  | Some funs ->
+      let input_char () =
+        (* We cannot used buffered I/Os under Windows, as character
+           '\r' is not passed through (probably due to the code that
+           turns \r\n into \n) *)
+        let s = String.create 1 in
+        let n = Unix.read Unix.stdin s 0 1 in
+        if n = 0 then raise End_of_file;
+        if s.[0] = '\003' then raise Sys.Break;
+        s.[0]
+      in
+      funs.System.startReading ();
+      let c = input_char () in
+      funs.System.stopReading ();
+      let c = if c='\n' || c = '\r' then "" else String.make 1 c in
+      display c;
+      c
 
 let newLine () =
   if !cbreakMode <> None then display "\n"

@@ -287,4 +287,33 @@ let close_process_full (inchan, outchan, errchan) =
 let canSetTime f = true
 
 (* We provide some kind of inode numbers *)
+(* However, these inode numbers are not usable on FAT filesystems, as
+   renaming a file "b" over a file "a" does not change the inode
+   number of "a". *)
 let hasInodeNumbers () = true
+
+(****)
+
+external getConsoleMode : unit -> int = "win_get_console_mode"
+external setConsoleMode : int -> unit = "win_set_console_mode"
+external getConsoleOutputCP : unit -> int = "win_get_console_output_cp"
+external setConsoleOutputCP : int -> unit = "win_set_console_output_cp"
+
+type terminalStateFunctions =
+  { defaultTerminal : unit -> unit; rawTerminal : unit -> unit;
+    startReading : unit -> unit; stopReading : unit -> unit }
+
+let terminalStateFunctions () =
+  let oldstate = getConsoleMode () in
+  let oldcp = getConsoleOutputCP () in
+  (* Ctrl-C does not interrupt a call to ReadFile when
+     ENABLE_LINE_INPUT is not set, so we handle Ctr-C
+     as a character when reading from the console.
+     We still want Ctrl-C to generate an exception when not reading
+     from the console in order to be able to interrupt Unison at any
+     time.  *)
+  { defaultTerminal = (fun () -> setConsoleMode oldstate;
+			         setConsoleOutputCP oldcp);
+    rawTerminal = (fun () -> setConsoleMode 0x19; setConsoleOutputCP 65001);
+    startReading = (fun () -> setConsoleMode 0x18);
+    stopReading = (fun () -> setConsoleMode 0x19) }

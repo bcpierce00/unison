@@ -1598,24 +1598,30 @@ let rec buildUpdate archive fspath fullpath here path dirStamp =
       in
       match status with
       | `BadEnc ->
-          raise (Util.Transient
-            (Format.sprintf
-               "The filename %s in path %s is not encoded in Unicode"
-               (Name.toString name) (Path.toString fullpath)))
+          let error =
+            Format.sprintf
+              "The filename %s in path %s is not encoded in Unicode"
+              (Name.toString name) (Path.toString fullpath)
+          in
+          (archive, Error error, translatePathLocal fspath fullpath, [])
       | `BadName ->
-          raise (Util.Transient
-            (Format.sprintf
-               "The filename %s in path %s is not allowed under Windows"
-               (Name.toString name) (Path.toString fullpath)))
+          let error =
+            Format.sprintf
+              "The filename %s in path %s is not allowed under Windows"
+              (Name.toString name) (Path.toString fullpath)
+          in
+          (archive, Error error, translatePathLocal fspath fullpath, [])
       | `Dup ->
-          raise (Util.Transient
-            (Format.sprintf
-               "The path %s is ambiguous at filename %s (i.e., the name \
-                of this path is the same, modulo capitalization, as \
-                another path in a case-sensitive filesystem, and you are \
-                synchronizing this filesystem with a case-insensitive \
-                filesystem."
-                      (Path.toString fullpath) (Name.toString name)))
+          let error =
+            Format.sprintf
+              "The path %s is ambiguous at filename %s (i.e., the name \
+               of this path is the same, modulo capitalization, as \
+               another path in a case-sensitive filesystem, and you are \
+               synchronizing this filesystem with a case-insensitive \
+               filesystem."
+              (Path.toString fullpath) (Name.toString name)
+          in
+          (archive, Error error, translatePathLocal fspath fullpath, [])
       | `Ok ->
           match archive with
             ArchiveDir (desc, children) ->
