@@ -37,17 +37,8 @@ let nocase_eq a b = (0 = (nocase_cmp a b))
 (*                        PRE-BUILT MAP AND SET MODULES                      *)
 (*****************************************************************************)
 
-module StringMap =
-  Map.Make(struct
-    type t = string
-    let compare = compare
-  end)
-
-module StringSet =
-  Set.Make(struct
-    type t = string
-    let compare = compare
-  end)
+module StringMap = Map.Make (String)
+module StringSet = Set.Make (String)
 
 let stringSetFromList l =
   Safelist.fold_right StringSet.add l StringSet.empty

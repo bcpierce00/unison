@@ -1,5 +1,19 @@
 CHANGES FROM VERSION 2.37.5
 
+* GTK UI:
+  - pop up a summary window when the replicas are not fully
+    synchronized after transport
+  - always show the main window
+  - put a white border around pixmaps (arrows, ...) for better
+    contrast
+  - allow simultaneous selection of several items
+  - several other small tweaks...
+* Improved arguments to the external program used for copying large
+  files
+
+-------------------------------
+CHANGES FROM VERSION 2.37.5
+
 * Windows text UI: now put the console into UTF-8 output mode.  This
   is the right thing to do when in Unicode mode, and is no worse than
   what we had previously otherwise (the console use some esoteric
