@@ -55,6 +55,7 @@ let mainWindowHeight =
     ("Used to set the height (in lines) of the main window in the graphical "
      ^ "user interface.")
 
+(*FIX: remove this option... *)
 let reuseToplevelWindows =
   Prefs.createBool "reusewindows" false
     "*reuse top-level windows instead of making new ones" ""
@@ -551,7 +552,7 @@ let initPrefs ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
 
   (* The following step contacts the server, so warn the user it could take
      some time *)
-  if !firstTime && (not (Prefs.read contactquietly || Prefs.read Trace.terse)) then 
+  if not (Prefs.read contactquietly || Prefs.read Trace.terse) then
     displayWaitMessage();
 
   (* Canonize the names of the roots, sort them (with local roots first),
