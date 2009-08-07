@@ -1,5 +1,11 @@
 CHANGES FROM VERSION 2.37.5
 
+* Transfer by rsync algorithm: fix the hashtable size limit to be
+  below the maximum length of an array.
+
+-------------------------------
+CHANGES FROM VERSION 2.37.5
+
 * GTK UI:
   - pop up a summary window when the replicas are not fully
     synchronized after transport

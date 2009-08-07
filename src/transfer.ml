@@ -468,10 +468,10 @@ struct
 
   (*** CUSTOM HASH TABLE ***)
 
-  (* Maximum number of entries in the hash table.
+  (* Half the maximum number of entries in the hash table.
      MUST be a power of 2 !
      Typical values are around an average 2 * fileSize / blockSize. *)
-  let hashTableMaxLength = 2048 * 1024
+  let hashTableMaxLength = 1024 * 1024
 
   let rec upperPowerOfTwo n n2 =
     if (n2 >= n) || (n2 = hashTableMaxLength) then
