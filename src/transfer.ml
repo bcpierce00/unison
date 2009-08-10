@@ -96,8 +96,10 @@ type token =
 (* Size of a block *)
 let minBlockSize = 700
 
-let maxQueueSize = 65500
-let maxQueueSizeFS = Uutil.Filesize.ofInt maxQueueSize
+(* This should at most 65535+3 bytes, as we are using this size to
+   ensure that string token lengths will fit in 2 bytes. *)
+let queueSize = 65500
+let queueSizeFS = Uutil.Filesize.ofInt queueSize
 type tokenQueue =
   { mutable data : Bytearray.t;  (* the queued tokens *)
     mutable previous : [`Str of int | `Block of int | `None];
@@ -146,32 +148,28 @@ let flushQueue q showProgress transmit cond =
 
 let pushEOF q showProgress transmit =
   flushQueue q showProgress transmit
-    (q.pos + 1 > Bytearray.length q.data) >>= (fun () ->
+    (q.pos + 1 > queueSize) >>= (fun () ->
   q.data.{q.pos} <- 'E';
   q.pos <- q.pos + 1;
   q.previous <- `None;
   return ())
 
-let pushString q id transmit s pos len =
-  flushQueue q id transmit (q.pos + len + 3 > Bytearray.length q.data)
-    >>= (fun () ->
-  if q.pos + 3 + len > Bytearray.length q.data then begin
-    (* The file is longer than expected, so the string does not fit in
-       the buffer *)
-    assert (q.pos = 0);
-    q.data <- Bytearray.create maxQueueSize
-  end;
+let rec pushString q id transmit s pos len =
+  flushQueue q id transmit (q.pos + len + 3 > queueSize) >>= fun () ->
+  let l = min len (queueSize - q.pos - 3) in
   q.data.{q.pos} <- 'S';
-  encodeInt2 q.data (q.pos + 1) len;
-  assert (q.pos + 3 + len <= Bytearray.length q.data);
-  Bytearray.blit_from_string s pos q.data (q.pos + 3) len;
-  q.pos <- q.pos + len + 3;
-  q.prog <- q.prog + len;
-  q.previous <- `Str len;
-  return ())
+  encodeInt2 q.data (q.pos + 1) l;
+  Bytearray.blit_from_string s pos q.data (q.pos + 3) l;
+  q.pos <- q.pos + l + 3;
+  q.prog <- q.prog + l;
+  q.previous <- `Str l;
+  if l < len then
+    pushString q id transmit s (pos + l) (len - l)
+  else
+    return ()
 
-let rec growString q id transmit len' s pos len =
-  let l = min (Bytearray.length q.data - q.pos) len in
+let growString q id transmit len' s pos len =
+  let l = min (queueSize - q.pos) len in
   Bytearray.blit_from_string s pos q.data q.pos l;
   assert (q.data.{q.pos - len' - 3} = 'S');
   assert (decodeInt2 q.data (q.pos - len' - 2) = len');
@@ -186,7 +184,7 @@ let rec growString q id transmit len' s pos len =
     return ()
 
 let pushBlock q id transmit pos =
-  flushQueue q id transmit (q.pos + 5 > Bytearray.length q.data) >>= (fun () ->
+  flushQueue q id transmit (q.pos + 5 > queueSize) >>= (fun () ->
   q.data.{q.pos} <- 'B';
   encodeInt3 q.data (q.pos + 1) pos;
   encodeInt1 q.data (q.pos + 4) 1;
@@ -221,14 +219,12 @@ let queueToken q id transmit token =
   | BLOCK pos, _ ->
       pushBlock q id transmit pos
 
-let makeQueue length blockSize =
+let makeQueue blockSize =
   { data =
       (* We need to make sure here that the size of the queue is not
          larger than 65538
          (1 byte: header, 2 bytes: string size, 65535 bytes: string) *)
-      Bytearray.create
-        (if length > maxQueueSizeFS then maxQueueSize else
-         Uutil.Filesize.toInt length + 10);
+      Bytearray.create queueSize;
     pos = 0; previous = `None; prog = 0;
     bSize = blockSize }
 
@@ -245,7 +241,7 @@ let send infd length showProgress transmit =
   let bufSz = 8192 in
   let bufSzFS = Uutil.Filesize.ofInt 8192 in
   let buf = String.create bufSz in
-  let q = makeQueue length 0 in
+  let q = makeQueue 0 in
   let rec sendSlice length =
     let count =
       reallyRead infd buf 0
@@ -593,7 +589,7 @@ struct
 *)
 
     (* Enable token buffering *)
-    let tokenQueue = makeQueue srcLength blockSize in
+    let tokenQueue = makeQueue blockSize in
     let flushTokenQueue () =
       flushQueue tokenQueue showProgress transmit true in
     let transmit token = queueToken tokenQueue showProgress transmit token in
