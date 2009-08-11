@@ -978,7 +978,7 @@ let abortIfAnyMountpointsAreMissing fspath =
    timestamps have been changed without the files being actually updated. *)
 
 let fastcheck =
-  Prefs.createString "fastcheck" "default"
+  Prefs.createBoolWithDefault "fastcheck"
     "!do fast update detection (true/false/default)"
     ( "When this preference is set to \\verb|true|, \
        Unison will use the modification time and length of a file as a
@@ -1003,10 +1003,8 @@ let fastcheck =
        \\sectionref{fastcheck}{Fast Checking} for more information.")
 
 let useFastChecking () =
-      (Prefs.read fastcheck = "yes")
-   || (Prefs.read fastcheck = "true")
-   || (Prefs.read fastcheck = "default" && Util.osType = `Unix)
-   || (Prefs.read fastcheck = "auto" && Util.osType = `Unix)
+      Prefs.read fastcheck = `True
+   || (Prefs.read fastcheck = `Default && Util.osType = `Unix)
 
 let immutable = Pred.create "immutable" ~advanced:true
    ("This preference specifies paths for directories whose \

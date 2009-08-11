@@ -688,20 +688,17 @@ let uiInit
   let profileName =
     begin match !clprofile with
       None ->
-        let dirString = Os.unisonDir in
-        let profiles_exist = (Files.ls dirString "*.prf")<>[] in
         let clroots_given = !rawRoots <> [] in
         let n =
-          if profiles_exist && not(clroots_given) then begin
-            (* Unison has been used before: at least one profile exists.
-               Ask the user to choose a profile or create a new one. *)
+          if not(clroots_given) then begin
+            (* Ask the user to choose a profile or create a new one. *)
             clprofile := getProfile();
             match !clprofile with
               None -> exit 0 (* None means the user wants to quit *)
             | Some x -> x 
           end else begin
-            (* First time use, OR roots given on command line.
-               In either case, the profile should be the default. *)
+            (* Roots given on command line.
+               The profile should be the default. *)
             clprofile := Some "default";
             "default"
           end in

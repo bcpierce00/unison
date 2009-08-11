@@ -56,7 +56,7 @@ let backupnot =
      ^ "be backed up, even if the {\\tt backup} preference selects "
      ^ "them---i.e., "
      ^ "it selectively overrides {\\tt backup}.  The same caveats apply here "
-     ^ "as with {\\tt ignore} and {\tt ignorenot}.")
+     ^ "as with {\\tt ignore} and {\\tt ignorenot}.")
 
 let _ = Pred.alias backupnot "mirrornot"
     

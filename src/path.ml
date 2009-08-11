@@ -200,7 +200,7 @@ let followPred = Pred.create "follow"
       behave as if the object pointed to by the link had appeared literally \
       at this position in the replica.  See \
       \\sectionref{symlinks}{Symbolic Links} for more details. \
-      The syntax of \\ARG{pathspec>} is \
+      The syntax of \\ARG{pathspec} is \
       described in \\sectionref{pathspec}{Path Specification}.")
 
 let followLink path =

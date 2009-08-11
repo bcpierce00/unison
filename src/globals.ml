@@ -220,7 +220,7 @@ let batch =
 let confirmBigDeletes =
   Prefs.createBool "confirmbigdel" true
     "!ask about whole-replica (or path) deletes"
-    ("!When this is set to {\\tt true}, Unison will request an extra confirmation if it appears "
+    ("When this is set to {\\tt true}, Unison will request an extra confirmation if it appears "
      ^ "that the entire replica has been deleted, before propagating the change.  If the {\\tt batch} "
      ^ "flag is also set, synchronization will be aborted.  When the {\\tt path} preference is used, "
      ^ "the same confirmation will be requested for top-level paths.  (At the moment, this flag only "
@@ -254,7 +254,7 @@ let ignorenotPred =
      if some parent of a given path matches an {\\tt ignore} pattern, then 
      it will be skipped even if the path itself matches an {\\tt ignorenot}
      pattern.  In particular, putting {\\tt ignore = Path *} in your profile
-     and then using {\tt ignorenot} to select particular paths to be 
+     and then using {\\tt ignorenot} to select particular paths to be 
      synchronized will not work.  Instead, you should use the {\\tt path}
      preference to choose particular paths to synchronize.")
     

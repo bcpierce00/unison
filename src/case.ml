@@ -21,7 +21,7 @@
 (* insensitive.  This pref is set during the initial handshake if any one of *)
 (* the hosts is case insensitive.                                            *)
 let caseInsensitiveMode =
-  Prefs.createString "ignorecase" "default"
+  Prefs.createBoolWithDefault "ignorecase"
     "!identify upper/lowercase filenames (true/false/default)"
     ("When set to {\\tt true}, this flag causes Unison to treat "
      ^ "filenames as case insensitive---i.e., files in the two "
@@ -41,7 +41,7 @@ let someHostIsInsensitive =
     "*Pseudo-preference for internal use only" ""
 
 let unicode =
-  Prefs.createString "unicode" "default"
+  Prefs.createBoolWithDefault "unicode"
     "!assume Unicode encoding in case insensitive mode"
     "When set to {\\tt true}, this flag causes Unison to perform \
      case insensitive file comparisons assuming Unicode encoding"
@@ -55,8 +55,8 @@ let defaultToUnicode = false
 
 let useUnicode b =
   let pref = Prefs.read unicode in
-   pref = "yes" || pref = "true" ||
-  (defaultToUnicode && pref = "default" && b)
+  pref = `True ||
+  (defaultToUnicode && pref = `Default && b)
 
 let useUnicodeAPI () = useUnicode true
 
@@ -66,9 +66,8 @@ let useUnicodeAPI () = useUnicode true
 (* server with the rest of the prefs.                                        *)
 let init b =
   Prefs.set someHostIsInsensitive
-    (Prefs.read caseInsensitiveMode = "yes" ||
-     Prefs.read caseInsensitiveMode = "true" ||
-     (Prefs.read caseInsensitiveMode = "default" && b));
+    (Prefs.read caseInsensitiveMode = `True ||
+     (Prefs.read caseInsensitiveMode = `Default && b));
   Prefs.set unicodeEncoding (useUnicode b)
 
 (****)

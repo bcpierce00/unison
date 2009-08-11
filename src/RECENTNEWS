@@ -1,3 +1,10 @@
+CHANGES FROM VERSION 2.37.10
+
+* GTK UI:
+  - assistant for creating profiles
+  - profile editor
+
+-------------------------------
 CHANGES FROM VERSION 2.37.5
 
 * Makefile tweak: don't complain if etags is not found (I hope I got my bash syntax right...)

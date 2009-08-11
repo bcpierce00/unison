@@ -103,9 +103,42 @@ let dumpPrefsToStderr() =
 (* generate an appropriate usage message.                                    *)
 exception IllegalValue of string
 
+(* aliasMap: prefName -> prefName *)
+let aliasMap = ref (Util.StringMap.empty : string Util.StringMap.t)
+
+let canonicalName nm =
+  try Util.StringMap.find nm !aliasMap with Not_found -> nm
+
+type typ =
+  [`BOOL | `INT | `STRING | `STRING_LIST | `BOOLDEF | `CUSTOM | `UNKNOWN]
+
+(* prefType : prefName -> type *)
+let prefType = ref (Util.StringMap.empty : typ Util.StringMap.t)
+
+let typ nm = try Util.StringMap.find nm !prefType with Not_found -> `UNKNOWN
+
 (* prefs: prefName -> (doc, pspec, fulldoc)                                  *)
 let prefs =
   ref (Util.StringMap.empty : (string * Uarg.spec * string) Util.StringMap.t)
+
+let documentation nm =
+  try
+    let (doc, _, fulldoc) = Util.StringMap.find nm !prefs in
+    if doc <> "" && doc.[0] = '*' then raise Not_found;
+    let basic = doc = "" || doc.[0] <> '!' in
+    let doc =
+      if not basic then
+        String.sub doc 1 (String.length doc - 1)
+      else
+        doc
+    in
+    (doc, fulldoc, basic)
+  with Not_found ->
+    ("", "", false)
+
+let list () =
+  List.sort String.compare
+    (Util.StringMap.fold (fun nm _ l -> nm :: l) !prefType [])
 
 (* aliased pref has *-prefixed doc and empty fulldoc                         *)
 let alias pref newname =
@@ -113,16 +146,20 @@ let alias pref newname =
   (* found in the map, no need for catching exception                       *)
   let (_,pspec,_) = Util.StringMap.find (Safelist.hd (name pref)) !prefs in
   prefs := Util.StringMap.add newname ("*", pspec, "") !prefs;
+  aliasMap := Util.StringMap.add newname (Safelist.hd (name pref)) !aliasMap;
   pref := (fst !pref, newname::(snd !pref))
 
-let registerPref name pspec doc fulldoc =
+let registerPref name typ pspec doc fulldoc =
   if Util.StringMap.mem name !prefs then
     raise (Util.Fatal ("Preference " ^ name ^ " registered twice"));
-  prefs := Util.StringMap.add name (doc, pspec, fulldoc) !prefs
+  prefs := Util.StringMap.add name (doc, pspec, fulldoc) !prefs;
+  (* Ignore internal preferences *)
+  if doc = "" || doc.[0] <> '*' then
+    prefType := Util.StringMap.add name typ !prefType
 
-let createPrefInternal name local default doc fulldoc printer parsefn =
+let createPrefInternal name typ local default doc fulldoc printer parsefn =
   let newCell = rawPref (default, [name]) in
-  registerPref name (parsefn newCell) doc fulldoc;
+  registerPref name typ (parsefn newCell) doc fulldoc;
   adddumper name local (fun () -> Marshal.to_string !newCell []);
   addprinter name (fun () -> printer (fst !newCell));
   addresetter (fun () -> newCell := (default, [name]));
@@ -130,34 +167,51 @@ let createPrefInternal name local default doc fulldoc printer parsefn =
   newCell
 
 let create name ?(local=false) default doc fulldoc intern printer =
-  createPrefInternal name local default doc fulldoc printer
+  createPrefInternal name `CUSTOM local default doc fulldoc printer
     (fun cell -> Uarg.String (fun s -> set cell (intern (fst !cell) s)))
 
 let createBool name ?(local=false) default doc fulldoc =
   let doc = if default then doc ^ " (default true)" else doc in
-  createPrefInternal name local default doc fulldoc
+  createPrefInternal name `BOOL local default doc fulldoc
     (fun v -> [if v then "true" else "false"])
     (fun cell -> Uarg.Bool (fun b -> set cell b))
 
 let createInt name ?(local=false) default doc fulldoc =
-  createPrefInternal name local default doc fulldoc
+  createPrefInternal name `INT local default doc fulldoc
     (fun v -> [string_of_int v])
     (fun cell -> Uarg.Int (fun i -> set cell i))
 
 let createString name ?(local=false) default doc fulldoc =
-  createPrefInternal name local default doc fulldoc
+  createPrefInternal name `STRING local default doc fulldoc
     (fun v -> [v])
     (fun cell -> Uarg.String (fun s -> set cell s))
 
 let createFspath name ?(local=false) default doc fulldoc =
-  createPrefInternal name local default doc fulldoc
+  createPrefInternal name `STRING local default doc fulldoc
     (fun v -> [System.fspathToString v])
     (fun cell -> Uarg.String (fun s -> set cell (System.fspathFromString s)))
 
 let createStringList name ?(local=false) doc fulldoc =
-  createPrefInternal name local [] doc fulldoc
+  createPrefInternal name `STRING_LIST local [] doc fulldoc
     (fun v -> v)
     (fun cell -> Uarg.String (fun s -> set cell (s::(fst !cell))))
+
+let createBoolWithDefault name ?(local=false) doc fulldoc =
+  createPrefInternal name `BOOLDEF local `Default doc fulldoc
+    (fun v -> [match v with
+                 `True    -> "true"
+               | `False   -> "false"
+               | `Default -> "default"])
+    (fun cell ->
+       Uarg.String
+         (fun s ->
+            let v =
+              match s with
+                "yes" | "true"     -> `True
+              | "default" | "auto" -> `Default
+              | _                  -> `False
+            in
+            set cell v))
 
 (*****************************************************************************)
 (*                      Command-line parsing                                 *)

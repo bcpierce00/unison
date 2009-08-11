@@ -49,7 +49,15 @@ val createStringList :
      -> string              (* documentation string *)
      -> string              (* full (tex) documentation string *)
      -> string list t       (*   -> new preference value *)
-  
+
+val createBoolWithDefault :
+        string              (* preference name *)
+     -> ?local:bool             (* whether it is local to the client *)
+     -> string              (* documentation string *)
+     -> string              (* full (tex) documentation string *)
+     -> [`True|`False|`Default] t
+                            (*   -> new preference value *)
+
 exception IllegalValue of string
 (* A more general creation function that allows arbitrary functions for      *)
 (* interning and printing values.  The interning function should raise       *)
@@ -125,6 +133,16 @@ val dump : unit -> dumpedPrefs
 
 (* Load new values of all preferences from a string created by dump          *)
 val load : dumpedPrefs -> unit
+
+(* ------------------------------------------------------------------------- *)
+
+type typ =
+  [`BOOL | `INT | `STRING | `STRING_LIST | `BOOLDEF | `CUSTOM | `UNKNOWN]
+
+val canonicalName : string -> string
+val typ : string -> typ
+val documentation : string -> string * string * bool
+val list : unit -> string list
 
 (* ------------------------------------------------------------------------- *)
 
