@@ -166,8 +166,8 @@ else
 endif
 endif
 
-MINOSXVERSION=10.4
-XCODEFLAGS=-sdk macosx$(MINOSXVERSION)
+MINOSXVERSION=10.5
+# XCODEFLAGS=-sdk macosx$(MINOSXVERSION)
 ifeq ($(OSARCH),osx)
   CAMLFLAGS+=-ccopt -mmacosx-version-min=$(MINOSXVERSION)
 endif
@@ -176,7 +176,7 @@ endif
 # The two cases for cltool are needed because Xcode 2.1+
 # builds in build/Default/, and earlier versions use build/
 .PHONY: macexecutable
-macexecutable: $(NAME)-blob.o
+macexecutable: 
 #	sed -e's/@@VERSION@@/$(VERSION)/' $(UIMACDIR)/Info.plist.template > $(UIMACDIR)/Info.plist
 	(cd $(UIMACDIR); xcodebuild $(XCODEFLAGS) OCAMLLIBDIR="$(OCAMLLIBDIR)" SYMROOT=build)
 	if [ -e $(UIMACDIR)/build/Default ]; then \
@@ -401,9 +401,17 @@ $(NAME)$(EXEC_EXT): $(CAMLOBJS) $(COBJS)
 # files, so we have to use $(LD) to take care of COBJS.
 $(NAME)-blob.o: $(CAMLOBJS) $(COBJS)
 	@echo Linking $@
-	$(CAMLC) -output-obj -verbose $(CAMLFLAGS) -o u-b.o $(CFLAGS) $(CAMLLIBS) $(CLIBS) $(CAMLOBJS)
-	$(LD) -r -o $@ u-b.o $(COBJS)
+	$(CAMLC) -dstartup -output-obj -verbose -cclib -keep_private_externs $(CAMLFLAGS) -o u-b.o $(CFLAGS) $(CAMLLIBS) $(CLIBS) $(CAMLOBJS)
+	$(LD) -r -keep_private_externs -o $@ u-b.o $(COBJS)
 	$(RM) u-b.o
+
+
+# Original:
+# $(NAME)-blob.o: $(CAMLOBJS) $(COBJS)
+# 	@echo Linking $@
+# 	$(CAMLC) -output-obj -verbose $(CAMLFLAGS) -o u-b.o $(CFLAGS) $(CAMLLIBS) $(CLIBS) $(CAMLOBJS)
+# 	$(LD) -r -o $@ u-b.o $(COBJS)
+# 	$(RM) u-b.o
 
 %$(EXEC_EXT): %.ml
 	$(OCAMLC) -verbose -o $@ $^

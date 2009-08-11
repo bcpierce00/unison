@@ -1,5 +1,10 @@
 CHANGES FROM VERSION 2.37.5
 
+* Makefile tweak: don't complain if etags is not found (I hope I got my bash syntax right...)
+
+-------------------------------
+CHANGES FROM VERSION 2.37.5
+
 * Transfer by rsync: fixed string token length overflow due to recent
   changes in block size.
 

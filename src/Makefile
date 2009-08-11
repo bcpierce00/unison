@@ -344,7 +344,9 @@ testmerge:
 .PHONY: tags
 
 tags:
-	-$(ETAGS) *.mli */*.mli *.ml */*.ml */*.m *.c */*.c *.txt
+	-if [ -f `which $(ETAGS)` ]; then \
+	    $(ETAGS) *.mli */*.mli *.ml */*.ml */*.m *.c */*.c *.txt \
+          ; fi 
 
 all:: TAGS
 
