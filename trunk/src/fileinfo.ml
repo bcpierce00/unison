@@ -19,8 +19,8 @@
 let debugV = Util.debug "fileinfo+"
 
 let allowSymlinks =
-  Prefs.createString "links" "default"
-    "allow the synchronization of symbolic links (true/false/default)"
+  Prefs.createBoolWithDefault "links"
+    "!allow the synchronization of symbolic links (true/false/default)"
     ("When set to {\\tt true}, this flag causes Unison to synchronize \
       symbolic links.  When the flag is set to {\\tt false}, symbolic \
       links will result in an error during update detection.  \
@@ -36,9 +36,8 @@ let symlinksAllowed =
 
 let init b =
   Prefs.set symlinksAllowed
-    (Prefs.read allowSymlinks = "yes" ||
-     Prefs.read allowSymlinks = "true" ||
-     (Prefs.read allowSymlinks = "default" && not b))
+    (Prefs.read allowSymlinks = `True ||
+     (Prefs.read allowSymlinks = `Default && not b))
 
 type typ = [ `ABSENT | `FILE | `DIRECTORY | `SYMLINK ]
 

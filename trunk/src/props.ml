@@ -362,7 +362,7 @@ let sync =
     ("When this flag is set to \\verb|true|, the owner attributes "
      ^ "of the files are synchronized.  "
      ^ "Whether the owner names or the owner identifiers are synchronized"
-     ^ "depends on the preference \texttt{numerids}.")
+     ^ "depends on the preference \\texttt{numerids}.")
 
 let kind = "user"
 
@@ -382,7 +382,7 @@ let sync =
     false "synchronize group attributes"
     ("When this flag is set to \\verb|true|, the group attributes "
      ^ "of the files are synchronized.  "
-     ^ "Whether the group names or the group identifiers are synchronized"
+     ^ "Whether the group names or the group identifiers are synchronized "
      ^ "depends on the preference \\texttt{numerids}.")
 
 let kind = "group"

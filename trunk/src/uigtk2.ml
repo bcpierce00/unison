@@ -97,6 +97,22 @@ let icon =
     (Gpointer.region_of_string Pixmaps.icon_data) (GdkPixbuf.get_pixels p);
   p
 
+let leftPtrWatch =
+  lazy
+     (let bitmap =
+        Gdk.Bitmap.create_from_data
+          ~width:32 ~height:32 Pixmaps.left_ptr_watch
+      in
+      let color =
+        Gdk.Color.alloc ~colormap:(Gdk.Color.get_system_colormap ()) `BLACK in
+      Gdk.Cursor.create_from_pixmap
+        (bitmap :> Gdk.pixmap) ~mask:bitmap ~fg:color ~bg:color ~x:2 ~y:2)
+
+let make_busy w = Gdk.Window.set_cursor w#misc#window (Lazy.force leftPtrWatch)
+let make_interactive w =
+  (* HACK: setting the cursor to NULL restore the default cursor *)
+  Gdk.Window.set_cursor w#misc#window (Obj.magic Gpointer.boxed_null)
+
 (*********************************************************************
   UI state variables
  *********************************************************************)
@@ -289,13 +305,13 @@ let primaryText msg =
 (* twoBox: Display a message in a window and wait for the user
    to hit one of two buttons.  Return true if the first button is
    chosen, false if the second button is chosen. *)
-let twoBox ~parent ~title ~message ~astock ~bstock =
+let twoBox ?(kind=`DIALOG_WARNING) ~parent ~title ~astock ~bstock message =
   let t =
     GWindow.dialog ~parent ~border_width:6 ~modal:true ~no_separator:true
       ~allow_grow:false () in
   t#vbox#set_spacing 12;
   let h1 = GPack.hbox ~border_width:6 ~spacing:12 ~packing:t#vbox#pack () in
-  ignore (GMisc.image ~stock:`DIALOG_WARNING ~icon_size:`DIALOG
+  ignore (GMisc.image ~stock:kind ~icon_size:`DIALOG
             ~yalign:0. ~packing:h1#pack ());
   let v1 = GPack.vbox ~spacing:12 ~packing:h1#pack () in
   ignore (GMisc.label
@@ -322,8 +338,8 @@ let safeExit () =
     inExit := true;
     if not !busy then exit 0 else
     if twoBox ~parent:(toplevelWindow ()) ~title:"Premature exit"
-        ~message:"Unison is working, exit anyway ?"
         ~astock:`YES ~bstock:`NO
+        "Unison is working, exit anyway ?"
     then exit 0;
     inExit := false
   end
@@ -332,12 +348,12 @@ let safeExit () =
 
 (* warnBox: Display a warning message in a window and wait (unless
    we're in batch mode) for the user to hit "OK" or "Exit". *)
-let warnBox title message =
+let warnBox ~parent title message =
   let message = transcode message in
   if Prefs.read Globals.batch then begin
     (* In batch mode, just pop up a window and go ahead *)
     let t =
-      GWindow.dialog ~parent:(toplevelWindow ())
+      GWindow.dialog ~parent
         ~border_width:6 ~modal:true ~no_separator:true ~allow_grow:false () in
     t#vbox#set_spacing 12;
     let h1 = GPack.hbox ~border_width:6 ~spacing:12 ~packing:t#vbox#pack () in
@@ -354,8 +370,8 @@ let warnBox title message =
   end else begin
     inExit := true;
     let ok =
-      twoBox ~parent:(toplevelWindow ()) ~title ~message
-        ~astock:`OK ~bstock:`QUIT in
+      twoBox ~parent:(toplevelWindow ()) ~title ~astock:`OK ~bstock:`QUIT
+        message in
     if not(ok) then doExit ();
     inExit := false
   end
@@ -922,6 +938,1364 @@ let provideProfileKey filename k profile info =
 
 (* ------ *)
 
+module React = struct
+  type 'a t = { mutable state : 'a; mutable observers : ('a -> unit) list }
+
+  let make v =
+    let res = { state = v; observers = [] } in
+    let update v =
+      if res.state <> v then begin
+        res.state <- v; List.iter (fun f -> f v) res.observers
+      end
+    in
+    (res, update)
+
+  let const v = fst (make v)
+
+  let add_observer x f = x.observers <- f :: x.observers
+
+  let state x = x.state
+
+  let lift f x =
+    let (res, update) = make (f (state x)) in
+    add_observer x (fun v -> update (f v));
+    res
+
+  let lift2 f x y =
+    let (res, update) = make (f (state x) (state y)) in
+    add_observer x (fun v -> update (f v (state y)));
+    add_observer y (fun v -> update (f (state x) v));
+    res
+
+  let lift3 f x y z =
+    let (res, update) = make (f (state x) (state y) (state z)) in
+    add_observer x (fun v -> update (f v (state y) (state z)));
+    add_observer y (fun v -> update (f (state x) v (state z)));
+    add_observer z (fun v -> update (f (state x) (state y) v));
+    res
+
+  let iter f x = f (state x); add_observer x f
+
+  type 'a event = { mutable ev_observers : ('a -> unit) list }
+
+  let make_event () =
+    let res = { ev_observers = [] } in
+    let trigger v = List.iter (fun f -> f v) res.ev_observers in
+    (res, trigger)
+
+  let add_ev_observer x f = x.ev_observers <- f :: x.ev_observers
+
+  let hold v e =
+    let (res, update) = make v in
+    add_ev_observer e update;
+    res
+
+  let iter_ev f e = add_ev_observer e f
+
+  let lift_ev f e =
+    let (res, trigger) = make_event () in
+    add_ev_observer e (fun x -> trigger (f x));
+    res
+
+  module Ops = struct
+    let (>>) x f = lift f x
+    let (>|) x f = iter f x
+
+    let (>>>) x f = lift_ev f x
+    let (>>|) x f = iter_ev f x
+  end
+end
+
+module GtkReact = struct
+  let entry (e : #GEdit.entry) =
+    let (res, update) = React.make e#text in
+    ignore (e#connect#changed ~callback:(fun () -> update (e#text)));
+    res
+
+  let text_combo ((c, _) : _ GEdit.text_combo) =
+    let (res, update) = React.make c#active in
+    ignore (c#connect#changed ~callback:(fun () -> update (c#active)));
+    res
+
+  let toggle_button (b : #GButton.toggle_button) =
+    let (res, update) = React.make b#active in
+    ignore (b#connect#toggled ~callback:(fun () -> update (b#active)));
+    res
+
+  let file_chooser (c : #GFile.chooser) =
+    let (res, update) = React.make c#filename in
+    ignore (c#connect#selection_changed
+              ~callback:(fun () -> update (c#filename)));
+    res
+
+  let current_tree_view_selection (t : #GTree.view) =
+    let m =t#model in
+    List.map (fun p -> m#get_row_reference p) t#selection#get_selected_rows
+
+  let tree_view_selection_changed t =
+    let (res, trigger) = React.make_event () in
+    ignore (t#selection#connect#changed
+              ~callback:(fun () -> trigger (current_tree_view_selection t)));
+    res
+
+  let tree_view_selection t =
+    React.hold (current_tree_view_selection t) (tree_view_selection_changed t)
+
+  let label (l : #GMisc.label) x = React.iter (fun v -> l#set_text v) x
+
+  let label_underlined (l : #GMisc.label) x =
+    React.iter (fun v -> l#set_text v; l#set_use_underline true) x
+
+  let label_markup (l : #GMisc.label) x =
+    React.iter (fun v -> l#set_text v; l#set_use_markup true) x
+
+  let show w x =
+    React.iter (fun b -> if b then w#misc#show () else w#misc#hide ()) x
+  let set_sensitive w x = React.iter (fun b -> w#misc#set_sensitive b) x
+end
+
+open React.Ops
+
+(* ------ *)
+
+(* Resize an object (typically, a label with line wrapping) so that it
+   use all its available space *)
+let adjustSize (w : #GObj.widget) =
+  let notYet = ref true in
+  ignore
+    (w#misc#connect#size_allocate ~callback:(fun r ->
+       if !notYet then begin
+         notYet := false;
+         (* JV: I have no idea where the 12 comes from.  Without it,
+            a window resize may happen. *)
+         w#misc#set_size_request ~width:(max 10 (r.Gtk.width - 12)) ()
+       end))
+
+let createProfile parent =
+  let assistant = GAssistant.assistant ~modal:true () in
+  assistant#set_transient_for parent#as_window;
+  assistant#set_modal true;
+  assistant#set_title "Profile Creation";
+
+  let nonEmpty s = s <> "" in
+(*
+  let integerRe =
+    Str.regexp "\\([+-]?[0-9]+\\|0o[0-7]+\\|0x[0-9a-zA-Z]+\\)" in
+*)
+  let integerRe = Str.regexp "[0-9]+" in
+  let isInteger s =
+    Str.string_match integerRe s 0 && Str.matched_string s = s in
+
+  (* Introduction *)
+  let intro =
+    GMisc.label
+      ~xpad:12 ~ypad:12
+      ~text:"Welcome to the Unison Profile Creation Assistant.\n\n\
+             Click \"Forward\" to begin."
+    () in
+  ignore
+    (assistant#append_page
+       ~title:"Profile Creation"
+       ~page_type:`INTRO
+       ~complete:true
+      intro#as_widget);
+
+  (* Profile name and description *)
+  let description = GPack.vbox ~border_width:12 ~spacing:6 () in
+  adjustSize
+    (GMisc.label ~xalign:0. ~line_wrap:true ~justify:`LEFT
+       ~text:"Please enter the name of the profile and \
+              possibly a short description."
+       ~packing:(description#pack ~expand:false) ());
+  let tbl =
+    let al = GBin.alignment ~packing:(description#pack ~expand:false) () in
+    al#set_left_padding 12;
+    GPack.table ~rows:2 ~columns:2 ~col_spacings:12 ~row_spacings:6
+      ~packing:(al#add) () in
+  let nameEntry =
+    GEdit.entry ~activates_default:true
+      ~packing:(tbl#attach ~left:1 ~top:0 ~expand:`X) () in
+  let name = GtkReact.entry nameEntry in
+  ignore (GMisc.label ~text:"Profile _name:" ~xalign:0.
+            ~use_underline:true ~mnemonic_widget:nameEntry
+            ~packing:(tbl#attach ~left:0 ~top:0 ~expand:`NONE) ());
+  let labelEntry =
+    GEdit.entry ~activates_default:true
+       ~packing:(tbl#attach ~left:1 ~top:1 ~expand:`X) () in
+  let label = GtkReact.entry labelEntry in
+  ignore (GMisc.label ~text:"_Description:" ~xalign:0.
+            ~use_underline:true ~mnemonic_widget:labelEntry
+            ~packing:(tbl#attach ~left:0 ~top:1 ~expand:`NONE) ());
+  let existingProfileLabel =
+    GMisc.label ~xalign:1. ~packing:(description#pack ~expand:false) ()
+  in
+  adjustSize existingProfileLabel;
+  GtkReact.label_markup existingProfileLabel
+    (name >> fun s -> Format.sprintf " <i>Profile %s already exists.</i>"
+                        (escapeMarkup s));
+  let profileExists =
+    name >> fun s -> s <> "" && System.file_exists (Prefs.profilePathname s)
+  in
+  GtkReact.show existingProfileLabel profileExists;
+
+  ignore
+    (assistant#append_page
+       ~title:"Profile Description"
+       ~page_type:`CONTENT
+       description#as_widget);
+  let setPageComplete page b = assistant#set_page_complete page#as_widget b in
+  React.lift2 (&&) (name >> nonEmpty) (profileExists >> not)
+    >| setPageComplete description;
+
+  let connection = GPack.vbox ~border_width:12 ~spacing:18 () in
+  let al = GBin.alignment ~packing:(connection#pack ~expand:false) () in
+  al#set_left_padding 12;
+  let vb =
+    GPack.vbox ~spacing:6 ~packing:(al#add) () in
+  adjustSize
+    (GMisc.label ~xalign:0. ~line_wrap:true ~justify:`LEFT
+       ~text:"You can use Unison to synchronize a local directory \
+              with another local directory, or with a remote directory."
+       ~packing:(vb#pack ~expand:false) ());
+  adjustSize
+    (GMisc.label ~xalign:0. ~line_wrap:true ~justify:`LEFT
+       ~text:"Please select the kind of synchronization \
+              you want to perform."
+       ~packing:(vb#pack ~expand:false) ());
+  let tbl =
+    let al = GBin.alignment ~packing:(vb#pack ~expand:false) () in
+    al#set_left_padding 12;
+    GPack.table ~rows:2 ~columns:2 ~col_spacings:12 ~row_spacings:6
+      ~packing:(al#add) () in
+  ignore (GMisc.label ~text:"Description:" ~xalign:0. ~yalign:0.
+            ~packing:(tbl#attach ~left:0 ~top:1 ~expand:`NONE) ());
+  let kindCombo =
+    let al =
+      GBin.alignment ~xscale:0. ~xalign:0.
+        ~packing:(tbl#attach ~left:1 ~top:0) () in
+    GEdit.combo_box_text
+      ~strings:["Local"; "Using SSH"; "Using RSH";
+                "Through a plain TCP connection"]
+      ~active:0 ~packing:(al#add) ()
+  in
+  ignore (GMisc.label ~text:"Synchronization _kind:" ~xalign:0.
+            ~use_underline:true ~mnemonic_widget:(fst kindCombo)
+            ~packing:(tbl#attach ~left:0 ~top:0 ~expand:`NONE) ());
+  let kind =
+    GtkReact.text_combo kindCombo
+      >> fun i -> List.nth [`Local; `SSH; `RSH; `SOCKET] i
+  in
+  let isLocal = kind >> fun k -> k = `Local in
+  let isSSH = kind >> fun k -> k = `SSH in
+  let isSocket = kind >> fun k -> k = `SOCKET in
+  let descrLabel =
+    GMisc.label ~xalign:0. ~line_wrap:true
+       ~packing:(tbl#attach ~left:1 ~top:1 ~expand:`X) ()
+  in
+  adjustSize descrLabel;
+  GtkReact.label descrLabel
+    (kind >> fun k ->
+     match k with
+       `Local ->
+          "Local synchronization."
+     | `SSH ->
+          "This is the recommended way to synchronize \
+           with a remote machine.  A\xc2\xa0remote instance of Unison is \
+           automatically started via SSH."
+     | `RSH ->
+          "Synchronization with a remote machine by starting \
+           automatically a remote instance of Unison via RSH."
+     | `SOCKET ->
+          "Synchronization with a remote machine by connecting \
+           to an instance of Unison already listening \
+           on a specific TCP port.");
+  let vb = GPack.vbox ~spacing:6 ~packing:(connection#add) () in
+  GtkReact.show vb (isLocal >> not);
+  ignore (GMisc.label ~markup:"<b>Configuration</b>" ~xalign:0.
+            ~packing:(vb#pack ~expand:false) ());
+  let al = GBin.alignment ~packing:(vb#add) () in
+  al#set_left_padding 12;
+  let vb = GPack.vbox ~spacing:6 ~packing:(al#add) () in
+  let requirementLabel =
+    GMisc.label ~xalign:0. ~line_wrap:true
+       ~packing:(vb#pack ~expand:false) ()
+  in
+  adjustSize requirementLabel;
+  GtkReact.label requirementLabel
+    (kind >> fun k ->
+     match k with
+       `Local ->
+          ""
+     | `SSH ->
+          "There must be an SSH client installed on this machine, \
+           and Unison and an SSH server installed on the remote machine."
+     | `RSH ->
+          "There must be an RSH client installed on this machine, \
+           and Unison and an RSH server installed on the remote machine."
+     | `SOCKET ->
+          "There must be a Unison server running on the remote machine, \
+           listening on the port that you specify here.  \
+           (Use \"Unison -socket xxx\" on the remote machine to start \
+           the Unison server.)");
+  let connDescLabel =
+    GMisc.label ~xalign:0. ~line_wrap:true
+       ~packing:(vb#pack ~expand:false) ()
+  in
+  adjustSize connDescLabel;
+  GtkReact.label connDescLabel
+    (kind >> fun k ->
+     match k with
+       `Local  -> ""
+     | `SSH    -> "Please enter the host to connect to and a user name, \
+                   if different from your user name on this machine."
+     | `RSH    -> "Please enter the host to connect to and a user name, \
+                   if different from your user name on this machine."
+     | `SOCKET -> "Please enter the host and port to connect to.");
+  let tbl =
+    let al = GBin.alignment ~packing:(vb#pack ~expand:false) () in
+    al#set_left_padding 12;
+    GPack.table ~rows:2 ~columns:2 ~col_spacings:12 ~row_spacings:6
+      ~packing:(al#add) () in
+  let hostEntry =
+    GEdit.entry ~packing:(tbl#attach ~left:1 ~top:0 ~expand:`X) () in
+  let host = GtkReact.entry hostEntry in
+  ignore (GMisc.label ~text:"_Host:" ~xalign:0.
+            ~use_underline:true ~mnemonic_widget:hostEntry
+            ~packing:(tbl#attach ~left:0 ~top:0 ~expand:`NONE) ());
+  let userEntry =
+    GEdit.entry ~packing:(tbl#attach ~left:1 ~top:1 ~expand:`X) ()
+  in
+  GtkReact.show userEntry (isSocket >> not);
+  let user = GtkReact.entry userEntry in
+  GtkReact.show
+    (GMisc.label ~text:"_User:" ~xalign:0. ~yalign:0.
+       ~use_underline:true ~mnemonic_widget:userEntry
+       ~packing:(tbl#attach ~left:0 ~top:1 ~expand:`NONE) ())
+    (isSocket >> not);
+  let portEntry =
+    GEdit.entry ~packing:(tbl#attach ~left:1 ~top:1 ~expand:`X) ()
+  in
+  GtkReact.show portEntry isSocket;
+  let port = GtkReact.entry portEntry in
+  GtkReact.show
+    (GMisc.label ~text:"_Port:" ~xalign:0. ~yalign:0.
+       ~use_underline:true ~mnemonic_widget:portEntry
+       ~packing:(tbl#attach ~left:0 ~top:1 ~expand:`NONE) ())
+    isSocket;
+  let compressLabel =
+    GMisc.label ~xalign:0. ~line_wrap:true
+      ~text:"Data compression can greatly improve performance \
+             on slow connections.  However, it may slow down \
+             things on (fast) local networks."
+      ~packing:(vb#pack ~expand:false) ()
+  in
+  adjustSize compressLabel;
+  GtkReact.show compressLabel isSSH;
+  let compressButton =
+    let al = GBin.alignment ~packing:(vb#pack ~expand:false) () in
+    al#set_left_padding 12;
+    (GButton.check_button ~label:"Enable _compression" ~use_mnemonic:true
+       ~active:true ~packing:(al#add) ())
+  in
+  GtkReact.show compressButton isSSH;
+  let compress = GtkReact.toggle_button compressButton in
+(*XXX Disabled for now... *)
+(*
+  adjustSize
+    (GMisc.label ~xalign:0. ~line_wrap:true
+       ~text:"If this is possible, it is recommended that Unison \
+              attempts to connect immediately to the remote machine, \
+              so that it can perform some auto-detections."
+       ~packing:(vb#pack ~expand:false) ());
+  let connectImmediately =
+    let al = GBin.alignment ~packing:(vb#pack ~expand:false) () in
+    al#set_left_padding 12;
+    GtkReact.toggle_button
+      (GButton.check_button ~label:"Connect _immediately" ~use_mnemonic:true
+         ~active:true ~packing:(al#add) ())
+  in
+  let connectImmediately =
+    React.lift2 (&&) connectImmediately (isLocal >> not) in
+*)
+  let pageComplete =
+    React.lift2 (||) isLocal
+      (React.lift2 (&&) (host >> nonEmpty)
+          (React.lift2 (||) (isSocket >> not) (port >> isInteger)))
+  in
+  ignore
+    (assistant#append_page
+       ~title:"Connection Setup"
+       ~page_type:`CONTENT
+       connection#as_widget);
+  pageComplete >| setPageComplete connection;
+
+  (* Connection to server *)
+(*XXX Disabled for now... Fill in this page
+  let connectionInProgress = GMisc.label ~text:"..." () in
+  let p =
+    assistant#append_page
+      ~title:"Connecting to Server..."
+      ~page_type:`PROGRESS
+      connectionInProgress#as_widget
+  in
+  ignore
+    (assistant#connect#prepare (fun () ->
+       if assistant#current_page = p then begin
+         if React.state connectImmediately then begin
+           (* XXXX start connection... *)
+           assistant#set_page_complete connectionInProgress#as_widget true
+         end else
+           assistant#set_current_page (p + 1)
+       end));
+*)
+
+  (* Directory selection *)
+  let directorySelection = GPack.vbox ~border_width:12 ~spacing:6 () in
+  adjustSize
+    (GMisc.label ~xalign:0. ~line_wrap:true ~justify:`LEFT
+       ~text:"Please select the two directories that you want to synchronize."
+       ~packing:(directorySelection#pack ~expand:false) ());
+  let secondDirLabel1 =
+    GMisc.label ~xalign:0. ~line_wrap:true ~justify:`LEFT
+      ~text:"The second directory is relative to your home \
+             directory on the remote machine."
+      ~packing:(directorySelection#pack ~expand:false) ()
+  in
+  adjustSize secondDirLabel1;
+  GtkReact.show secondDirLabel1 ((React.lift2 (||) isLocal isSocket) >> not);
+  let secondDirLabel2 =
+    GMisc.label ~xalign:0. ~line_wrap:true ~justify:`LEFT
+      ~text:"The second directory is relative to \
+             the working directory of the Unison server \
+             running on the remote machine."
+      ~packing:(directorySelection#pack ~expand:false) ()
+  in
+  adjustSize secondDirLabel2;
+  GtkReact.show secondDirLabel2 isSocket;
+  let tbl =
+    let al =
+      GBin.alignment ~packing:(directorySelection#pack ~expand:false) () in
+    al#set_left_padding 12;
+    GPack.table ~rows:2 ~columns:2 ~col_spacings:12 ~row_spacings:6
+      ~packing:(al#add) () in
+(*XXX Should focus on this button when becomes visible... *)
+  let firstDirButton =
+    GFile.chooser_button ~action:`SELECT_FOLDER ~title:"First Directory"
+       ~packing:(tbl#attach ~left:1 ~top:0 ~expand:`X) ()
+  in
+  isLocal >| (fun b -> firstDirButton#set_title
+                         (if b then "First Directory" else "Local Directory"));
+  GtkReact.label_underlined
+    (GMisc.label ~xalign:0.
+       ~mnemonic_widget:firstDirButton
+       ~packing:(tbl#attach ~left:0 ~top:0 ~expand:`NONE) ())
+    (isLocal >> fun b ->
+       if b then "_First directory:" else "_Local directory:");
+  let noneToEmpty o = match o with None -> "" | Some s -> s in
+  let firstDir = GtkReact.file_chooser firstDirButton >> noneToEmpty in
+  let secondDirButton =
+    GFile.chooser_button ~action:`SELECT_FOLDER ~title:"Second Directory"
+       ~packing:(tbl#attach ~left:1 ~top:1 ~expand:`X) () in
+  let secondDirLabel =
+    GMisc.label ~xalign:0.
+      ~text:"Se_cond directory:"
+      ~use_underline:true ~mnemonic_widget:secondDirButton
+      ~packing:(tbl#attach ~left:0 ~top:1 ~expand:`NONE) () in
+  GtkReact.show secondDirButton isLocal;
+  GtkReact.show secondDirLabel isLocal;
+  let remoteDirEdit =
+    GEdit.entry ~packing:(tbl#attach ~left:1 ~top:1 ~expand:`X) ()
+  in
+  let remoteDirLabel =
+    GMisc.label ~xalign:0.
+      ~text:"_Remote directory:"
+      ~use_underline:true ~mnemonic_widget:remoteDirEdit
+      ~packing:(tbl#attach ~left:0 ~top:1 ~expand:`NONE) ()
+  in
+  GtkReact.show remoteDirEdit (isLocal >> not);
+  GtkReact.show remoteDirLabel (isLocal >> not);
+  let secondDir =
+    React.lift3 (fun b l r -> if b then l else r) isLocal
+      (GtkReact.file_chooser secondDirButton >> noneToEmpty)
+      (GtkReact.entry remoteDirEdit)
+  in
+  ignore
+    (assistant#append_page
+       ~title:"Directory Selection"
+       ~page_type:`CONTENT
+       directorySelection#as_widget);
+  React.lift2 (||) (isLocal >> not) (React.lift2 (<>) firstDir secondDir)
+    >| setPageComplete directorySelection;
+
+  (* Specific options *)
+  let options = GPack.vbox ~border_width:18 ~spacing:12 () in
+  (* Do we need to set specific options for FAT partitions?
+     If under Windows, then all the options are set properly, except for
+     ignoreinodenumbers in case one replica is on a FAT partition on a
+     remote non-Windows machine.  As this is unlikely, we do not
+     handle this case. *)
+  let fat =
+    if Util.osType = `Win32 then
+      React.const false
+    else begin
+      let vb =
+        GPack.vbox ~spacing:6 ~packing:(options#pack ~expand:false) () in
+      let fatLabel =
+        GMisc.label ~xalign:0. ~line_wrap:true ~justify:`LEFT
+          ~text:"Select the following option if one of your \
+                 directory is on a FAT partition.  This is typically \
+                 the case for a USB key."
+          ~packing:(vb#pack ~expand:false) ()
+      in
+      adjustSize fatLabel;
+      let fatButton =
+        let al = GBin.alignment ~packing:(vb#pack ~expand:false) () in
+        al#set_left_padding 12;
+        (GButton.check_button
+           ~label:"Synchronization involving a _FAT partition"
+           ~use_mnemonic:true ~active:false ~packing:(al#add) ())
+      in
+      GtkReact.toggle_button fatButton
+    end
+  in
+  (* Fastcheck is safe except on FAT partitions and on Windows when
+     not in Unicode mode where there is a very slight chance of
+     missing an update when a file is moved onto another with the same
+     modification time.  Nowadays, FAT is rarely used on working
+     partitions.  In most cases, we should be in Unicode mode.
+     Thus, it seems sensible to always enable fastcheck. *)
+  let fastcheck = isLocal >> not >> (fun b -> b || Util.osType = `Win32) in
+  (* Unicode mode can be problematic when the source machine is under
+     Windows and the remote machine is not, as Unison may have already
+     been used using the legacy Latin 1 encoding.  Cygwin (stable)
+     also does not handle Unicode at the moment. *)
+  let vb = GPack.vbox ~spacing:6 ~packing:(options#pack ~expand:false) () in
+  let askUnicode =
+    isLocal >> not >> fun b -> (b || Util.isCygwin) && Util.osType = `Win32 in
+  GtkReact.show vb askUnicode;
+  adjustSize
+    (GMisc.label ~xalign:0. ~line_wrap:true ~justify:`LEFT
+       ~text:"When synchronizing in case insensitive mode, \
+              Unison has to make some assumptions regarding \
+              filename encoding.  If ensure, use Unicode."
+       ~packing:(vb#pack ~expand:false) ());
+  let vb =
+    let al = GBin.alignment
+      ~xscale:0. ~xalign:0. ~packing:(vb#pack ~expand:false) () in
+    al#set_left_padding 12;
+    GPack.vbox ~spacing:0 ~packing:(al#add) ()
+  in
+  ignore
+    (GMisc.label ~xalign:0. ~text:"Filename encoding:"
+       ~packing:(vb#pack ~expand:false) ());
+  let hb =
+    let al = GBin.alignment
+      ~xscale:0. ~xalign:0. ~packing:(vb#pack ~expand:false) () in
+    al#set_left_padding 12;
+    GPack.button_box `VERTICAL ~layout:`START
+      ~spacing:0 ~packing:(al#add) ()
+  in
+  let unicodeButton =
+    GButton.radio_button ~label:"_Unicode" ~use_mnemonic:true ~active:true
+      ~packing:(hb#add) ()
+  in
+  ignore
+    (GButton.radio_button ~label:"_Latin 1" ~use_mnemonic:true
+       ~group:unicodeButton#group ~packing:(hb#add) ());
+  let unicode =
+    React.lift2 (||) (askUnicode >> not) (GtkReact.toggle_button unicodeButton)
+  in
+  ignore
+    (assistant#append_page
+       ~title:"Specific Options" ~complete:true
+       ~page_type:`CONTENT
+       options#as_widget);
+
+  let conclusion =
+    GMisc.label
+      ~xpad:12 ~ypad:12
+      ~text:"You have now finished filling in the profile.\n\n\
+             Click \"Apply\" to create it."
+    () in
+  ignore
+    (assistant#append_page
+       ~title:"Done" ~complete:true
+       ~page_type:`CONFIRM
+       conclusion#as_widget);
+
+  let profileName = ref None in
+  let saveProfile () =
+    let filename = Prefs.profilePathname (React.state name) in
+    begin try
+      let ch =
+        System.open_out_gen [Open_wronly; Open_creat; Open_excl] 0o600 filename
+      in
+      Printf.fprintf ch "# Unison preferences\n";
+      let label = React.state label in
+      if label <> "" then Printf.fprintf ch "label = %s\n" label;
+      Printf.fprintf ch "root = %s\n" (React.state firstDir);
+      let secondDir = React.state secondDir in
+      let host = React.state host in
+      let user = match React.state user with "" -> None | u -> Some u in
+      let secondRoot =
+        match React.state kind with
+          `Local  -> Clroot.ConnectLocal (Some secondDir)
+        | `SSH    -> Clroot.ConnectByShell
+                       ("ssh", host, user, None, Some secondDir)
+        | `RSH    -> Clroot.ConnectByShell
+                       ("rsh", host, user, None, Some secondDir)
+        | `SOCKET -> Clroot.ConnectBySocket
+                       (host, React.state port, Some secondDir)
+      in
+      Printf.fprintf ch "root = %s\n" (Clroot.clroot2string secondRoot);
+      if React.state compress && React.state kind = `SSH then
+        Printf.fprintf ch "sshargs = -C\n";
+      if React.state fastcheck then
+        Printf.fprintf ch "fastcheck = true\n";
+      if React.state unicode then
+        Printf.fprintf ch "unicode = true\n";
+      if React.state fat then begin
+        Printf.fprintf ch "ignorecase = true\n";
+        Printf.fprintf ch "ignoreinodenumbers = true\n";
+        Printf.fprintf ch "links = false\n";
+        Printf.fprintf ch "perms = 0o200\n"
+      end;
+      close_out ch;
+      profileName := Some (React.state name)
+    with Sys_error _ as e ->
+      okBox ~parent:assistant ~typ:`ERROR ~title:"Could not save profile"
+        ~message:(Uicommon.exn2string e)
+    end;
+    assistant#destroy ();
+  in
+  ignore (assistant#connect#close ~callback:saveProfile);
+  ignore (assistant#connect#destroy ~callback:GMain.Main.quit);
+  ignore (assistant#connect#cancel ~callback:assistant#destroy);
+  assistant#show ();
+  GMain.Main.main ();
+  !profileName
+
+(* ------ *)
+
+let nameOfType t =
+  match t with
+    `BOOL        -> "boolean"
+  | `BOOLDEF     -> "boolean"
+  | `INT         -> "integer"
+  | `STRING      -> "text"
+  | `STRING_LIST -> "text list"
+  | `CUSTOM      -> "custom"
+  | `UNKNOWN     -> "unknown"
+
+let defaultValue t =
+  match t with
+    `BOOL        -> ["true"]
+  | `BOOLDEF     -> ["true"]
+  | `INT         -> ["0"]
+  | `STRING      -> [""]
+  | `STRING_LIST -> []
+  | `CUSTOM      -> []
+  | `UNKNOWN     -> []
+
+let editPreference parent nm ty vl =
+  let t =
+    GWindow.dialog ~parent ~border_width:12
+      ~no_separator:true ~title:"Edit the Preference"
+      ~modal:true () in
+  let vb = t#vbox in
+  vb#set_spacing 6;
+
+  let isList =
+    match ty with
+      `STRING_LIST | `CUSTOM | `UNKNOWN -> true
+    | _ -> false
+  in
+  let columns = if isList then 5 else 4 in
+  let rows = if isList then 3 else 2 in
+  let tbl =
+    GPack.table ~rows ~columns ~col_spacings:12 ~row_spacings:6
+      ~packing:(vb#pack ~expand:false) () in
+  ignore (GMisc.label ~text:"Preference:" ~xalign:0.
+            ~packing:(tbl#attach ~left:0 ~top:0 ~expand:`NONE) ());
+  ignore (GMisc.label ~text:"Description:" ~xalign:0.
+            ~packing:(tbl#attach ~left:0 ~top:1 ~expand:`NONE) ());
+  ignore (GMisc.label ~text:"Type:" ~xalign:0.
+            ~packing:(tbl#attach ~left:0 ~top:2 ~expand:`NONE) ());
+  ignore (GMisc.label ~text:(Unicode.protect nm) ~xalign:0. ~selectable:true ()
+            ~packing:(tbl#attach ~left:1 ~top:0 ~expand:`X));
+  let (doc, _, _) = Prefs.documentation nm in
+  ignore (GMisc.label ~text:doc ~xalign:0. ~selectable:true ()
+            ~packing:(tbl#attach ~left:1 ~top:1 ~expand:`X));
+  ignore (GMisc.label ~text:(nameOfType ty) ~xalign:0. ~selectable:true ()
+            ~packing:(tbl#attach ~left:1 ~top:2 ~expand:`X));
+  let newValue =
+    if isList then begin
+      let valueLabel =
+        GMisc.label ~text:"V_alue:" ~use_underline:true ~xalign:0. ~yalign:0.
+          ~packing:(tbl#attach ~left:0 ~top:3 ~expand:`NONE) ()
+      in
+      let cols = new GTree.column_list in
+      let c_value = cols#add Gobject.Data.string in
+      let c_ml = cols#add Gobject.Data.caml in
+      let lst_store = GTree.list_store cols in
+      let lst =
+        let sw =
+          GBin.scrolled_window ~packing:(tbl#attach ~left:1 ~top:3 ~expand:`X)
+            ~shadow_type:`IN ~height:200 ~width:400
+            ~hpolicy:`AUTOMATIC ~vpolicy:`AUTOMATIC () in
+        GTree.view ~model:lst_store ~headers_visible:false
+          ~reorderable:true ~packing:sw#add () in
+      valueLabel#set_mnemonic_widget (Some (lst :> GObj.widget));
+      let column =
+        GTree.view_column
+          ~renderer:(GTree.cell_renderer_text [], ["text", c_value]) ()
+      in
+      ignore (lst#append_column column);
+      let vb =
+        GPack.button_box
+          `VERTICAL ~layout:`START ~spacing:6
+          ~packing:(tbl#attach ~left:2 ~top:3 ~expand:`NONE) ()
+      in
+      let selection = GtkReact.tree_view_selection lst in
+      let hasSel = selection >> fun l -> l <> [] in
+      let addB =
+        GButton.button ~stock:`ADD ~packing:(vb#pack ~expand:false) () in
+      let removeB =
+        GButton.button ~stock:`REMOVE ~packing:(vb#pack ~expand:false) () in
+      let editB =
+        GButton.button ~stock:`EDIT ~packing:(vb#pack ~expand:false) () in
+      let upB =
+        GButton.button ~stock:`GO_UP ~packing:(vb#pack ~expand:false) () in
+      let downB =
+        GButton.button ~stock:`GO_DOWN ~packing:(vb#pack ~expand:false) () in
+      List.iter (fun b -> b#set_xalign 0.) [addB; removeB; editB; upB; downB];
+      GtkReact.set_sensitive removeB hasSel;
+      let editLabel =
+        GMisc.label ~text:"Edited _item:"
+          ~use_underline:true ~xalign:0.
+          ~packing:(tbl#attach ~left:0 ~top:4 ~expand:`NONE) ()
+      in
+      let editEntry =
+        GEdit.entry ~packing:(tbl#attach ~left:1 ~top:4 ~expand:`X) () in
+      editLabel#set_mnemonic_widget (Some (editEntry :> GObj.widget));
+      let edit = GtkReact.entry editEntry in
+      let edited =
+        React.lift2
+          (fun l txt ->
+             match l with
+               [rf] -> lst_store#get ~row:rf#iter ~column:c_ml <> txt
+             | _    -> false)
+          selection edit
+      in
+      GtkReact.set_sensitive editB edited;
+      let selectionChange = GtkReact.tree_view_selection_changed lst in
+      selectionChange >>| (fun s ->
+        match s with
+          [rf] -> editEntry#set_text
+                    (lst_store#get ~row:rf#iter ~column:c_value)
+        | _    -> ());
+      let add () =
+        let txt = editEntry#text in
+        let row = lst_store#append () in
+        lst_store#set ~row ~column:c_value txt;
+        lst_store#set ~row ~column:c_ml txt;
+        lst#selection#select_iter row;
+        lst#scroll_to_cell (lst_store#get_path row) column
+      in
+      ignore (addB#connect#clicked ~callback:add);
+      ignore (editEntry#connect#activate ~callback:add);
+      let remove () =
+        match React.state selection with
+          [rf] -> let i = rf#iter in
+                  if lst_store#iter_next i then
+                    lst#selection#select_iter i
+                  else begin
+                    let p = rf#path in
+                    if GTree.Path.prev p then
+                      lst#selection#select_path p
+                  end;
+                  ignore (lst_store#remove rf#iter)
+        | _    -> ()
+      in
+      ignore (removeB#connect#clicked ~callback:remove);
+      let edit () =
+        match React.state selection with
+          [rf] -> let row = rf#iter in
+                  let txt = editEntry#text in
+                  lst_store#set ~row ~column:c_value txt;
+                  lst_store#set ~row ~column:c_ml txt
+        | _    -> ()
+      in
+      ignore (editB#connect#clicked ~callback:edit);
+      let updateUpDown l =
+        let (upS, downS) =
+          match l with
+              [rf] -> (GTree.Path.prev rf#path, lst_store#iter_next rf#iter)
+          | _      -> (false, false)
+        in
+        upB#misc#set_sensitive upS;
+        downB#misc#set_sensitive downS
+      in
+      selectionChange >>| updateUpDown;
+      ignore (lst_store#connect#after#row_deleted
+                ~callback:(fun _ -> updateUpDown (React.state selection)));
+      let go_up () =
+        match React.state selection with
+          [rf] -> let p = rf#path in
+                  if GTree.Path.prev p then begin
+                    let i = rf#iter in
+                    let i' = lst_store#get_iter p in
+                    ignore (lst_store#swap i i');
+                    lst#scroll_to_cell (lst_store#get_path i) column
+                  end;
+                  updateUpDown (React.state selection)
+        | _    -> ()
+      in
+      ignore (upB#connect#clicked ~callback:go_up);
+      let go_down () =
+        match React.state selection with
+          [rf] -> let i = rf#iter in
+                  if lst_store#iter_next i then begin
+                    let i' = rf#iter in
+                    ignore (lst_store#swap i i');
+                    lst#scroll_to_cell (lst_store#get_path i') column
+                  end;
+                  updateUpDown (React.state selection)
+        | _    -> ()
+      in
+      ignore (downB#connect#clicked ~callback:go_down);
+      List.iter
+        (fun v ->
+           let row = lst_store#append () in
+           lst_store#set ~row ~column:c_value (Unicode.protect v);
+           lst_store#set ~row ~column:c_ml v)
+        vl;
+     (fun () ->
+        let l = ref [] in
+        lst_store#foreach
+          (fun _ row -> l := lst_store#get ~row ~column:c_ml :: !l; false);
+        List.rev !l)
+    end else begin
+      let v = List.hd vl in
+      begin match ty with
+        `BOOL | `BOOLDEF ->
+          let hb =
+            GPack.button_box `HORIZONTAL ~layout:`START
+              ~packing:(tbl#attach ~left:1 ~top:3 ~expand:`X) ()
+          in
+          let isTrue = v = "true" || v = "yes" in
+          let trueB =
+            GButton.radio_button ~label:"_True" ~use_mnemonic:true
+              ~active:isTrue ~packing:(hb#add) ()
+          in
+          ignore
+            (GButton.radio_button ~label:"_False" ~use_mnemonic:true
+               ~group:trueB#group ~active:(not isTrue) ~packing:(hb#add) ());
+           ignore
+             (GMisc.label ~text:"Value:" ~xalign:0.
+                ~packing:(tbl#attach ~left:0 ~top:3 ~expand:`NONE) ());
+          (fun () -> [if trueB#active then "true" else "false"])
+      | `INT | `STRING ->
+           let valueEntry =
+             GEdit.entry ~text:(List.hd vl) ~width_chars: 40
+               ~activates_default:true
+               ~packing:(tbl#attach ~left:1 ~top:3 ~expand:`X) ()
+           in
+           ignore
+             (GMisc.label ~text:"V_alue:" ~use_underline:true ~xalign:0.
+                ~mnemonic_widget:valueEntry
+                ~packing:(tbl#attach ~left:0 ~top:3 ~expand:`NONE) ());
+           (fun () -> [valueEntry#text])
+      | `STRING_LIST | `CUSTOM | `UNKNOWN ->
+           assert false
+      end
+    end
+  in
+
+  let ok = ref false in
+  let cancelCommand () = t#destroy () in
+  let cancelButton =
+    GButton.button ~stock:`CANCEL ~packing:t#action_area#add () in
+  ignore (cancelButton#connect#clicked ~callback:cancelCommand);
+  let okCommand _ = ok := true; t#destroy () in
+  let okButton =
+    GButton.button ~stock:`OK ~packing:t#action_area#add () in
+  ignore (okButton#connect#clicked ~callback:okCommand);
+  okButton#grab_default ();
+  ignore (t#connect#destroy ~callback:GMain.Main.quit);
+  t#show ();
+  GMain.Main.main ();
+  if !ok then Some (newValue ()) else None
+
+
+let markupRe = Str.regexp "<\\([a-z]+\\)>\\|</\\([a-z]+\\)>\\|&\\([a-z]+\\);"
+let entities =
+  [("amp", "&"); ("lt", "<"); ("gt", ">"); ("quot", "\""); ("apos", "'")]
+
+let rec insertMarkupRec tags (t : #GText.view) s i tl =
+  try
+    let j = Str.search_forward markupRe s i in
+    if j > i then
+      t#buffer#insert ~tags:(List.flatten tl) (String.sub s i (j - i));
+    let tag = try Some (Str.matched_group 1 s) with Not_found -> None in
+    match tag with
+      Some tag ->
+        insertMarkupRec tags t s (Str.group_end 0)
+          ((try [List.assoc tag tags] with Not_found -> []) :: tl)
+    | None ->
+        let entity = try Some (Str.matched_group 3 s) with Not_found -> None in
+        match entity with
+          None ->
+            insertMarkupRec tags t s (Str.group_end 0) (List.tl tl)
+        | Some ent ->
+            begin try
+              t#buffer#insert ~tags:(List.flatten tl) (List.assoc ent entities)
+            with Not_found -> () end;
+            insertMarkupRec tags t s (Str.group_end 0) tl
+  with Not_found ->
+    let j = String.length s in
+    if j > i then
+      t#buffer#insert ~tags:(List.flatten tl) (String.sub s i (j - i))
+
+let insertMarkup tags t s =
+  t#buffer#set_text ""; insertMarkupRec tags t s 0 []
+
+let documentPreference ~compact ~packing =
+  let vb = GPack.vbox ~spacing:6 ~packing () in
+  ignore (GMisc.label ~markup:"<b>Documentation</b>" ~xalign:0.
+            ~packing:(vb#pack ~expand:false) ());
+  let al = GBin.alignment ~packing:(vb#pack ~expand:true ~fill:true) () in
+  al#set_left_padding 12;
+  let columns = if compact then 3 else 2 in
+  let tbl =
+    GPack.table ~rows:2 ~columns ~col_spacings:12 ~row_spacings:6
+      ~packing:(al#add) () in
+  tbl#misc#set_sensitive false;
+  ignore (GMisc.label ~text:"Short description:" ~xalign:0.
+            ~packing:(tbl#attach ~left:0 ~top:0 ~expand:`NONE) ());
+  ignore (GMisc.label ~text:"Long description:" ~xalign:0. ~yalign:0.
+            ~packing:(tbl#attach ~left:0 ~top:1 ~expand:`NONE) ());
+  let shortDescr =
+    GMisc.label ~packing:(tbl#attach ~left:1 ~top:0 ~expand:`X)
+      ~xalign:0. ~selectable:true () in
+  let longDescr =
+    let sw =
+      if compact then
+        GBin.scrolled_window ~height:128 ~width:640
+          ~packing:(tbl#attach ~left:0 ~top:2 ~right:2 ~expand:`BOTH)
+          ~shadow_type:`IN ~hpolicy:`AUTOMATIC ~vpolicy:`AUTOMATIC ()
+      else
+        GBin.scrolled_window ~height:128 ~width:640
+          ~packing:(tbl#attach ~left:1 ~top:1 ~expand:`BOTH)
+          ~shadow_type:`IN ~hpolicy:`AUTOMATIC ~vpolicy:`AUTOMATIC ()
+    in
+    GText.view ~editable:false ~packing:sw#add ~wrap_mode:`WORD ()
+  in
+  let (>>>) x f = f x in
+  let newlineRe = Str.regexp "\n *" in
+  let styleRe = Str.regexp "{\\\\\\([a-z]+\\) \\([^{}]*\\)}" in
+  let verbRe = Str.regexp "\\\\verb|\\([^|]*\\)|" in
+  let argRe = Str.regexp "\\\\ARG{\\([^{}]*\\)}" in
+  let textttRe = Str.regexp "\\\\texttt{\\([^{}]*\\)}" in
+  let emphRe = Str.regexp "\\\\emph{\\([^{}]*\\)}" in
+  let sectionRe = Str.regexp "\\\\sectionref{\\([^{}]*\\)}{\\([^{}]*\\)}" in
+  let emdash = Str.regexp_string "---" in
+  let parRe = Str.regexp "\\\\par *" in
+  let underRe = Str.regexp "\\\\_ *" in
+  let dollarRe = Str.regexp "\\\\\\$ *" in
+  let formatDoc doc =
+    doc >>>
+    Str.global_replace newlineRe " " >>>
+    escapeMarkup >>>
+    Str.global_substitute styleRe
+      (fun s ->
+         try
+           let tag =
+             match Str.matched_group 1 s with
+               "em" -> "i"
+             | "tt" -> "tt"
+             | _ -> raise Exit
+           in
+           Format.sprintf "<%s>%s</%s>" tag (Str.matched_group 2 s) tag
+         with Exit ->
+           Str.matched_group 0 s) >>>
+    Str.global_replace verbRe "<tt>\\1</tt>" >>>
+    Str.global_replace argRe "<tt>\\1</tt>" >>>
+    Str.global_replace textttRe "<tt>\\1</tt>" >>>
+    Str.global_replace emphRe "<i>\\1</i>" >>>
+    Str.global_replace sectionRe "Section '\\2'" >>>
+    Str.global_replace emdash "\xe2\x80\x94" >>>
+    Str.global_replace parRe "\n" >>>
+    Str.global_replace underRe "_" >>>
+    Str.global_replace dollarRe "_"
+  in
+  let tags =
+    let create = longDescr#buffer#create_tag in
+    [("i", create [`FONT_DESC (Lazy.force fontItalic)]);
+     ("tt", create [`FONT_DESC (Lazy.force fontMonospace)])]
+  in
+  fun nm ->
+    let (short, long, _) =
+      match nm with
+        Some nm ->
+          tbl#misc#set_sensitive true;
+          Prefs.documentation nm
+      | _ ->
+          tbl#misc#set_sensitive false;
+          ("", "", false)
+    in
+    shortDescr#set_text (String.capitalize short);
+    insertMarkup tags longDescr (formatDoc long)
+(*    longDescr#buffer#set_text (formatDoc long)*)
+
+let addPreference parent =
+  let t =
+    GWindow.dialog ~parent ~border_width:12
+      ~no_separator:true ~title:"Add a Preference"
+      ~modal:true () in
+  let vb = t#vbox in
+(*  vb#set_spacing 18;*)
+  let paned = GPack.paned `VERTICAL ~packing:vb#add () in
+
+  let lvb = GPack.vbox ~spacing:6 ~packing:paned#pack1 () in
+  let preferenceLabel =
+    GMisc.label
+      ~text:"_Preferences:" ~use_underline:true
+      ~xalign:0. ~packing:(lvb#pack ~expand:false) ()
+  in
+  let cols = new GTree.column_list in
+  let c_name = cols#add Gobject.Data.string in
+  let basic_store = GTree.list_store cols in
+  let full_store = GTree.list_store cols in
+  let lst =
+    let sw =
+      GBin.scrolled_window ~packing:(lvb#pack ~expand:true)
+        ~shadow_type:`IN ~height:200 ~width:400
+        ~hpolicy:`AUTOMATIC ~vpolicy:`AUTOMATIC () in
+    GTree.view ~headers_visible:false ~packing:sw#add () in
+  preferenceLabel#set_mnemonic_widget (Some (lst :> GObj.widget));
+  ignore (lst#append_column
+    (GTree.view_column
+       ~renderer:(GTree.cell_renderer_text [], ["text", c_name]) ()));
+  let hiddenPrefs =
+    ["auto"; "doc"; "silent"; "terse"; "testserver"; "version"] in
+  let insert (store : #GTree.list_store) all =
+    List.iter
+      (fun nm ->
+         if
+           all ||
+           (let (_, _, basic) = Prefs.documentation nm in basic &&
+            not (List.mem nm hiddenPrefs))
+         then begin
+           let row = store#append () in
+           store#set ~row ~column:c_name nm
+         end)
+      (Prefs.list ())
+  in
+  insert basic_store false;
+  insert full_store true;
+
+  let showAll =
+    GtkReact.toggle_button
+      (GButton.check_button ~label:"_Show all preferences"
+         ~use_mnemonic:true ~active:false ~packing:(lvb#pack ~expand:false) ())
+  in
+  showAll >|
+    (fun b ->
+       lst#set_model
+         (Some (if b then full_store else basic_store :> GTree.model)));
+
+  let selection = GtkReact.tree_view_selection lst in
+  let updateDoc = documentPreference ~compact:true ~packing:paned#pack2 in
+  selection >|
+    (fun l ->
+       let nm =
+         match l with
+           [rf] ->
+             let row = rf#iter in
+             let store =
+               if React.state showAll then full_store else basic_store in
+             Some (store#get ~row ~column:c_name)
+         | _ ->
+             None
+       in
+       updateDoc nm);
+
+  let cancelCommand () = t#destroy () in
+  let cancelButton =
+    GButton.button ~stock:`CANCEL ~packing:t#action_area#add () in
+  ignore (cancelButton#connect#clicked ~callback:cancelCommand);
+  ignore (t#event#connect#delete ~callback:(fun _ -> cancelCommand (); true));
+  let ok = ref false in
+  let addCommand _ = ok := true; t#destroy () in
+  let addButton =
+    GButton.button ~stock:`ADD ~packing:t#action_area#add () in
+  ignore (addButton#connect#clicked ~callback:addCommand);
+  GtkReact.set_sensitive addButton (selection >> fun l -> l <> []);
+  ignore (lst#connect#row_activated ~callback:(fun _ _ -> addCommand ()));
+  addButton#grab_default ();
+
+  ignore (t#connect#destroy ~callback:GMain.Main.quit);
+  t#show ();
+  GMain.Main.main ();
+  if not !ok then None else
+    match React.state selection with
+      [rf] ->
+        let row = rf#iter in
+        let store =
+          if React.state showAll then full_store else basic_store in
+        Some (store#get ~row ~column:c_name)
+    | _ ->
+        None
+
+let editProfile parent name =
+  let t =
+    GWindow.dialog ~parent ~border_width:12
+      ~no_separator:true ~title:(Format.sprintf "%s - Profile Editor" name)
+      ~modal:true () in
+  let vb = t#vbox in
+(*  t#vbox#set_spacing 18;*)
+  let paned = GPack.paned `VERTICAL ~packing:vb#add () in
+
+  let lvb = GPack.vbox ~spacing:6 ~packing:paned#pack1 () in
+  let preferenceLabel =
+    GMisc.label
+      ~text:"_Preferences:" ~use_underline:true
+      ~xalign:0. ~packing:(lvb#pack ~expand:false) ()
+  in
+  let hb = GPack.hbox ~spacing:12 ~packing:(lvb#add) () in
+  let cols = new GTree.column_list in
+  let c_name = cols#add Gobject.Data.string in
+  let c_type = cols#add Gobject.Data.string in
+  let c_value = cols#add Gobject.Data.string in
+  let c_ml = cols#add Gobject.Data.caml in
+  let lst_store = GTree.list_store cols in
+  let lst_sorted_store = GTree.model_sort lst_store in
+  lst_sorted_store#set_sort_column_id 0 `ASCENDING;
+  let lst =
+    let sw =
+      GBin.scrolled_window ~packing:(hb#pack ~expand:true)
+        ~shadow_type:`IN ~height:300 ~width:600
+        ~hpolicy:`AUTOMATIC ~vpolicy:`AUTOMATIC () in
+    GTree.view ~model:lst_sorted_store ~packing:sw#add
+      ~headers_clickable:true () in
+  preferenceLabel#set_mnemonic_widget (Some (lst :> GObj.widget));
+  let vc_name =
+    GTree.view_column
+      ~title:"Name"
+      ~renderer:(GTree.cell_renderer_text [], ["text", c_name]) () in
+  vc_name#set_sort_column_id 0;
+  ignore (lst#append_column vc_name);
+  ignore (lst#append_column
+    (GTree.view_column
+       ~title:"Type"
+       ~renderer:(GTree.cell_renderer_text [], ["text", c_type]) ()));
+  ignore (lst#append_column
+    (GTree.view_column
+       ~title:"Value"
+       ~renderer:(GTree.cell_renderer_text [], ["text", c_value]) ()));
+  let vb =
+    GPack.button_box
+      `VERTICAL ~layout:`START ~spacing:6 ~packing:(hb#pack ~expand:false) ()
+  in
+  let selection = GtkReact.tree_view_selection lst in
+  let hasSel = selection >> fun l -> l <> [] in
+  let addB =
+    GButton.button ~stock:`ADD ~packing:(vb#pack ~expand:false) () in
+  let editB =
+    GButton.button ~stock:`EDIT ~packing:(vb#pack ~expand:false) () in
+  let deleteB =
+    GButton.button ~stock:`DELETE ~packing:(vb#pack ~expand:false) () in
+  List.iter (fun b -> b#set_xalign 0.) [addB; editB; deleteB];
+  GtkReact.set_sensitive editB hasSel;
+  GtkReact.set_sensitive deleteB hasSel;
+
+  let (modified, setModified) = React.make false in
+  let formatValue vl = Unicode.protect (String.concat ", " vl) in
+  let deletePref () =
+    match React.state selection with
+      [rf] ->
+        let row = lst_sorted_store#convert_iter_to_child_iter rf#iter in
+        let (nm, ty, vl) = lst_store#get ~row ~column:c_ml in
+        if
+          twoBox ~kind:`DIALOG_QUESTION ~parent:t ~title:"Preference Deletion"
+            ~bstock:`CANCEL ~astock:`DELETE
+            (Format.sprintf "Do you really want to delete preference %s?"
+               (Unicode.protect nm))
+        then begin
+          ignore (lst_store#remove row);
+          setModified true
+        end
+    | _ ->
+        ()
+  in
+  let editPref path =
+    let row =
+      lst_sorted_store#convert_iter_to_child_iter
+        (lst_sorted_store#get_iter path) in
+    let (nm, ty, vl) = lst_store#get ~row ~column:c_ml in
+    match editPreference t nm ty vl with
+      Some [] ->
+        deletePref ()
+    | Some vl' when vl <> vl' ->
+        lst_store#set ~row ~column:c_ml (nm, ty, vl');
+        lst_store#set ~row ~column:c_value (formatValue vl');
+        setModified true
+    | _ ->
+        ()
+  in
+  let add () =
+    match addPreference t with
+      None ->
+        ()
+    | Some nm ->
+        let existing = ref false in
+        lst_store#foreach
+          (fun path row ->
+             let (nm', _, _) = lst_store#get ~row ~column:c_ml in
+             if nm = nm' then begin
+               existing := true; editPref path; true
+             end else
+               false);
+        if not !existing then begin
+          let ty = Prefs.typ nm in
+          match editPreference parent nm ty (defaultValue ty) with
+            Some vl when vl <> [] ->
+              let row = lst_store#append () in
+              lst_store#set ~row ~column:c_name (Unicode.protect nm);
+              lst_store#set ~row ~column:c_type (nameOfType ty);
+              lst_store#set ~row ~column:c_ml (nm, ty, vl);
+              lst_store#set ~row ~column:c_value (formatValue vl);
+              setModified true
+          | _ ->
+              ()
+        end
+  in
+  ignore (addB#connect#clicked ~callback:add);
+  ignore (editB#connect#clicked
+            ~callback:(fun () ->
+                         match React.state selection with
+                           [p] -> editPref p#path
+                         | _   -> ()));
+  ignore (deleteB#connect#clicked ~callback:deletePref);
+
+  let updateDoc = documentPreference ~compact:true ~packing:paned#pack2 in
+  selection >|
+    (fun l ->
+       let nm =
+         match l with
+           [rf] ->
+             let row = rf#iter in
+             Some (lst_sorted_store#get ~row ~column:c_name)
+         | _ ->
+             None
+       in
+       updateDoc nm);
+  ignore (lst#connect#row_activated ~callback:(fun path _ -> editPref path));
+
+  let group l =
+    let rec groupRec l k vl l' =
+      match l with
+        (k', v) :: r ->
+          if k = k' then
+            groupRec r k (v :: vl) l'
+          else
+            groupRec r k' [v] ((k, vl) :: l')
+      | [] ->
+          Safelist.fold_left
+            (fun acc (k, l) -> (k, List.rev l) :: acc) [] ((k, vl) :: l')
+    in
+    match l with
+      (k, v) :: r -> groupRec r k [v] []
+    | []          -> []
+  in
+  let lastOne l = [List.hd (Safelist.rev l)] in
+  let normalizeValue t vl =
+    match t with
+      `BOOL | `INT | `STRING            -> lastOne vl
+    | `STRING_LIST | `CUSTOM | `UNKNOWN -> vl
+    | `BOOLDEF ->
+         let l = lastOne vl in
+         if l = ["default"] || l = ["auto"] then [] else l
+  in
+  let (>>>) x f = f x in
+  Prefs.readAFile name
+  >>> List.map (fun (_, _, nm, v) -> Prefs.canonicalName nm, v)
+  >>> List.stable_sort (fun (nm, _) (nm', _) -> compare nm nm')
+  >>> group
+  >>> List.iter
+        (fun (nm, vl) ->
+           let nm = Prefs.canonicalName nm in
+           let ty = Prefs.typ nm in
+           let vl = normalizeValue ty vl in
+           if vl <> [] then begin
+             let row = lst_store#append () in
+             lst_store#set ~row ~column:c_name (Unicode.protect nm);
+             lst_store#set ~row ~column:c_type (nameOfType ty);
+             lst_store#set ~row ~column:c_value (formatValue vl);
+             lst_store#set ~row ~column:c_ml (nm, ty, vl)
+           end);
+
+  let applyCommand _ =
+    if React.state modified then begin
+      let filename = Prefs.profilePathname name in
+      try
+        let ch =
+          System.open_out_gen [Open_wronly; Open_creat; Open_trunc] 0o600
+            filename
+        in
+  (*XXX Should trim whitespaces and check for '\n' at some point  *)
+        Printf.fprintf ch "# Unison preferences\n";
+        lst_store#foreach
+          (fun path row ->
+             let (nm, _, vl) = lst_store#get ~row ~column:c_ml in
+             List.iter (fun v -> Printf.fprintf ch "%s = %s\n" nm v) vl;
+             false);
+        close_out ch;
+        setModified false
+      with Sys_error _ as e ->
+        okBox ~parent:t ~typ:`ERROR ~title:"Could not save profile"
+          ~message:(Uicommon.exn2string e)
+    end
+  in
+  let applyButton =
+    GButton.button ~stock:`APPLY ~packing:t#action_area#add () in
+  ignore (applyButton#connect#clicked ~callback:applyCommand);
+  GtkReact.set_sensitive applyButton modified;
+  let cancelCommand () = t#destroy () in
+  let cancelButton =
+    GButton.button ~stock:`CANCEL ~packing:t#action_area#add () in
+  ignore (cancelButton#connect#clicked ~callback:cancelCommand);
+  ignore (t#event#connect#delete ~callback:(fun _ -> cancelCommand (); true));
+  let okCommand _ = applyCommand (); t#destroy () in
+  let okButton =
+    GButton.button ~stock:`OK ~packing:t#action_area#add () in
+  ignore (okButton#connect#clicked ~callback:okCommand);
+  okButton#grab_default ();
+(*
+List.iter
+  (fun (nm, _, long) ->
+     try
+       let long = formatDoc long in
+       ignore (Str.search_forward (Str.regexp_string "\\") long 0);
+       Format.eprintf "%s %s@." nm long
+     with Not_found -> ())
+(Prefs.listVisiblePrefs ());
+*)
+
+(*
+TODO:
+  - Extra tabs for common preferences
+    (should keep track of any change, or blacklist some preferences)
+  - Add, modify, delete
+  - Keep track of whether there is any change (apply button)
+*)
+  ignore (t#connect#destroy ~callback:GMain.Main.quit);
+  t#show ();
+  GMain.Main.main ()
+
+(* ------ *)
+
 let profilesAndRoots = ref []
 
 let scanProfiles () =
@@ -950,163 +2324,174 @@ let scanProfiles () =
           (Files.ls Os.unisonDir "*.prf")))
 
 let getProfile quit =
-  (* The selected profile *)
-  let result = ref None in
+  let ok = ref false in
 
   (* Build the dialog *)
   let t =
-    GWindow.dialog ~parent:(toplevelWindow ())
-       ~title:"Profiles" ~modal:true ~width:400 () in
+    GWindow.dialog ~parent:(toplevelWindow ()) ~border_width:12
+      ~no_separator:true ~title:"Profile Selection"
+      ~modal:true () in
+  t#set_default_width 550;
 
-  let cancelCommand _ = t#destroy (); result := None in
-  let cancelButton = GButton.button ~stock:(if quit then `QUIT else `CANCEL)
+  let cancelCommand _ = t#destroy () in
+  let cancelButton =
+    GButton.button ~stock:(if quit then `QUIT else `CANCEL)
       ~packing:t#action_area#add () in
   ignore (cancelButton#connect#clicked ~callback:cancelCommand);
   ignore (t#event#connect#delete ~callback:(fun _ -> cancelCommand (); true));
   cancelButton#misc#set_can_default true;
 
-  let okCommand() = t#destroy () in
+  let okCommand() = ok := true; t#destroy () in
   let okButton =
-    GButton.button ~stock:`OK ~packing:t#action_area#add () in
+    GButton.button ~stock:`OPEN ~packing:t#action_area#add () in
   ignore (okButton#connect#clicked ~callback:okCommand);
   okButton#misc#set_sensitive false;
   okButton#grab_default ();
 
   let vb = t#vbox in
+  t#vbox#set_spacing 18;
 
-  ignore (GMisc.label
-            ~text:"Select an existing profile or create a new one"
-            ~xpad:2 ~ypad:5 ~packing:(vb#pack ~expand:false) ());
+  let al = GBin.alignment ~packing:(vb#add) () in
+  al#set_left_padding 12;
 
+  let lvb = GPack.vbox ~spacing:6 ~packing:(al#add) () in
+  let selectLabel =
+    GMisc.label
+      ~text:"Select a _profile:" ~use_underline:true
+      ~xalign:0. ~packing:(lvb#pack ~expand:false) ()
+  in
+  let hb = GPack.hbox ~spacing:12 ~packing:(lvb#add) () in
   let sw =
-    GBin.scrolled_window ~packing:(vb#pack ~expand:true) ~height:200
-      ~hpolicy:`AUTOMATIC ~vpolicy:`AUTOMATIC () in
-  let lst = GList.clist_poly ~selection_mode:`BROWSE ~packing:(sw#add) () in
-  let selRow = ref 0 in
+    GBin.scrolled_window ~packing:(hb#pack ~expand:true) ~height:200
+      ~shadow_type:`IN ~hpolicy:`AUTOMATIC ~vpolicy:`AUTOMATIC () in
+  let cols = new GTree.column_list in
+  let c_name = cols#add Gobject.Data.string in
+  let c_label = cols#add Gobject.Data.string in
+  let c_ml = cols#add Gobject.Data.caml in
+  let lst_store = GTree.list_store cols in
+  let lst = GTree.view ~model:lst_store ~packing:sw#add () in
+  selectLabel#set_mnemonic_widget (Some (lst :> GObj.widget));
+  let vc_name =
+    GTree.view_column
+       ~title:"Profile"
+       ~renderer:(GTree.cell_renderer_text [], ["text", c_name]) ()
+  in
+  ignore (lst#append_column vc_name);
+  ignore (lst#append_column
+    (GTree.view_column
+       ~title:"Description"
+       ~renderer:(GTree.cell_renderer_text [], ["text", c_label]) ()));
+
+  let vb = GPack.vbox ~spacing:6 ~packing:(vb#pack ~expand:false) () in
+  ignore (GMisc.label ~markup:"<b>Summary</b>" ~xalign:0.
+            ~packing:(vb#pack ~expand:false) ());
+  let al = GBin.alignment ~packing:(vb#pack ~expand:false) () in
+  al#set_left_padding 12;
+  let tbl =
+    GPack.table ~rows:2 ~columns:2 ~col_spacings:12 ~row_spacings:6
+      ~packing:(al#add) () in
+  tbl#misc#set_sensitive false;
+  ignore (GMisc.label ~text:"First root:" ~xalign:0.
+            ~packing:(tbl#attach ~left:0 ~top:0 ~expand:`NONE) ());
+  ignore (GMisc.label ~text:"Second root:" ~xalign:0.
+            ~packing:(tbl#attach ~left:0 ~top:1 ~expand:`NONE) ());
+  let root1 =
+    GMisc.label ~packing:(tbl#attach ~left:1 ~top:0 ~expand:`X)
+      ~xalign:0. ~selectable:true () in
+  let root2 =
+    GMisc.label ~packing:(tbl#attach ~left:1 ~top:1 ~expand:`X)
+      ~xalign:0. ~selectable:true () in
+
   let fillLst default =
     scanProfiles();
-    lst#freeze ();
-    lst#clear ();
-    let i = ref 0 in (* FIX: Work around a lablgtk bug *)
+    lst_store#clear ();
     Safelist.iter
       (fun (profile, info) ->
          let labeltext =
-           match info.label with None -> "" | Some(l) -> " ("^l^")" in
-         let s = profile ^ labeltext in
-         ignore (lst#append [s]);
-         if profile = default then selRow := !i;
-         lst#set_row_data !i (profile, info);
-         incr i)
-      (Safelist.sort (fun (p, _) (p', _) -> compare p p') !profilesAndRoots);
-    let r = lst#rows in
-    let p = if r < 2 then 0. else float !selRow /. float (r - 1) in
-    lst#scroll_vertical `JUMP p;
-    lst#thaw () in
-  let tbl =
-    GPack.table ~rows:2 ~columns:2 ~packing:(vb#pack ~expand:true) () in
-  tbl#misc#set_sensitive false;
-  ignore (GMisc.label ~text:"Root 1:" ~xpad:2
-            ~packing:(tbl#attach ~left:0 ~top:0 ~expand:`NONE) ());
-  ignore (GMisc.label ~text:"Root 2:" ~xpad:2
-            ~packing:(tbl#attach ~left:0 ~top:1 ~expand:`NONE) ());
-  let root1 =
-    GEdit.entry ~packing:(tbl#attach ~left:1 ~top:0 ~expand:`X)
-      ~editable:false () in
-  let root2 =
-    GEdit.entry ~packing:(tbl#attach ~left:1 ~top:1 ~expand:`X)
-      ~editable:false () in
-  root1#misc#set_can_focus false;
-  root2#misc#set_can_focus false;
-  let hb =
-    GPack.hbox ~border_width:2 ~spacing:2 ~packing:(vb#pack ~expand:false) ()
+           match info.label with None -> "" | Some l -> l in
+         let row = lst_store#append () in
+         lst_store#set ~row ~column:c_name (Unicode.protect profile);
+         lst_store#set ~row ~column:c_label (Unicode.protect labeltext);
+         lst_store#set ~row ~column:c_ml (profile, info);
+         if Some profile = default then begin
+           lst#selection#select_iter row;
+           lst#scroll_to_cell (lst_store#get_path row) vc_name
+         end)
+      (Safelist.sort (fun (p, _) (p', _) -> compare p p') !profilesAndRoots)
   in
-  let nw =
-    GButton.button ~label:"Create new profile"
-      ~packing:(hb#pack ~expand:false) () in
-  ignore (nw#connect#clicked ~callback:(fun () ->
-    let t =
-      GWindow.dialog ~title:"New profile" ~modal:true ()
-    in
-    let vb = GPack.vbox ~border_width:4 ~packing:t#vbox#add () in
-    let f = GPack.vbox ~packing:(vb#pack ~expand:true ~padding:4) () in
-    let f0 = GPack.hbox ~spacing:4 ~packing:f#add () in
-    ignore (GMisc.label ~text:"Profile name:"
-              ~packing:(f0#pack ~expand:false) ());
-    let prof = GEdit.entry ~packing:f0#add () in
-    prof#misc#grab_focus ();
+  let selection = GtkReact.tree_view_selection lst in
+  let hasSel = selection >> fun l -> l <> [] in
+  let selInfo =
+    selection >> fun l ->
+      match l with
+        [rf] -> Some (lst_store#get ~row:rf#iter ~column:c_ml, rf)
+      | _    -> None
+  in
+  selInfo >|
+    (fun info ->
+       match info with
+         Some ((profile, info), _) ->
+           begin match info.roots with
+             [r1; r2] -> root1#set_text (Unicode.protect r1);
+                         root2#set_text (Unicode.protect r2);
+                         tbl#misc#set_sensitive true
+           | _        -> root1#set_text ""; root2#set_text "";
+                         tbl#misc#set_sensitive false
+           end
+       | None ->
+           root1#set_text ""; root2#set_text "";
+           tbl#misc#set_sensitive false);
+  GtkReact.set_sensitive okButton hasSel;
 
-    let exit () = t#destroy (); GMain.Main.quit () in
-    ignore (t#event#connect#delete ~callback:(fun _ -> exit (); true));
+  let vb =
+    GPack.button_box
+      `VERTICAL ~layout:`START ~spacing:6 ~packing:(hb#pack ~expand:false) ()
+  in
+  let addButton =
+    GButton.button ~stock:`ADD ~packing:(vb#pack ~expand:false) () in
+  ignore (addButton#connect#clicked
+     ~callback:(fun () ->
+                  match createProfile t with
+                    Some p -> fillLst (Some p) | None -> ()));
+  let editButton =
+    GButton.button ~stock:`EDIT ~packing:(vb#pack ~expand:false) () in
+  ignore (editButton#connect#clicked
+            ~callback:(fun () -> match React.state selInfo with
+                                   None             -> ()
+                                 | Some ((p, _), _) -> editProfile t p));
+  GtkReact.set_sensitive editButton hasSel;
+  let deleteProfile () =
+    match React.state selInfo with
+      Some ((profile, _), rf) ->
+       if
+         twoBox ~kind:`DIALOG_QUESTION ~parent:t ~title:"Profile Deletion"
+           ~bstock:`CANCEL ~astock:`DELETE
+           (Format.sprintf "Do you really want to delete profile %s?"
+              (transcode profile))
+       then begin
+         try
+           System.unlink (Prefs.profilePathname profile);
+           ignore (lst_store#remove rf#iter)
+         with Unix.Unix_error _ -> ()
+       end
+    | None ->
+       ()
+  in
+  let deleteButton =
+    GButton.button ~stock:`DELETE ~packing:(vb#pack ~expand:false) () in
+  ignore (deleteButton#connect#clicked ~callback:deleteProfile);
+  GtkReact.set_sensitive deleteButton hasSel;
+  List.iter (fun b -> b#set_xalign 0.) [addButton; editButton; deleteButton];
 
-    let f3 = t#action_area in
-    let okCommand () =
-      let profile = prof#text in
-      if profile <> "" then
-        let filename = Prefs.profilePathname profile in
-        if System.file_exists filename then
-          okBox
-            ~parent:t
-            ~title:"Error" ~typ:`ERROR
-            ~message:("Profile \""
-                      ^ (transcodeFilename profile)
-                      ^ "\" already exists!\nPlease select another name.")
-        else
-          (* Make an empty file *)
-          let ch =
-            System.open_out_gen
-              [Open_wronly; Open_creat; Open_excl] 0o600 filename in
-          close_out ch;
-          fillLst profile;
-          exit () in
-    let cancelButton =
-      GButton.button ~stock:`CANCEL ~packing:f3#add () in
-    ignore (cancelButton#connect#clicked ~callback:exit);
-    let okButton = GButton.button ~stock:`OK ~packing:f3#add () in
-    ignore (okButton#connect#clicked ~callback:okCommand);
-    okButton#grab_default ();
-
-    t#show ();
-    GMain.Main.main ()));
-
-  ignore (lst#connect#unselect_row ~callback:(fun ~row:_ ~column:_ ~event:_ ->
-    root1#set_text ""; root2#set_text "";
-    result := None;
-    tbl#misc#set_sensitive false;
-    okButton#misc#set_sensitive false));
-
-  let select_row i =
-    (* Inserting the first row triggers the signal, even before the row
-       data is set. So, we need to catch the corresponding exception *)
-    (try
-      let (profile, info) = lst#get_row_data i in
-      result := Some profile;
-      begin match info.roots with
-        [r1; r2] -> root1#set_text (Unicode.protect r1);
-                    root2#set_text (Unicode.protect r2);
-                    tbl#misc#set_sensitive true
-      | _        -> root1#set_text ""; root2#set_text "";
-                    tbl#misc#set_sensitive false
-      end;
-      okButton#misc#set_sensitive true
-    with Gpointer.Null -> ()) in
-
-  ignore (lst#connect#select_row
-            ~callback:(fun ~row:i ~column:_ ~event:_ -> select_row i));
-
-  ignore (lst#event#connect#button_press ~callback:(fun ev ->
-    match GdkEvent.get_type ev with
-      `TWO_BUTTON_PRESS ->
-        okCommand ();
-        true
-    | _ ->
-        false));
-  fillLst "default";
-  select_row !selRow;
+  ignore (lst#connect#row_activated ~callback:(fun _ _ -> okCommand ()));
+  fillLst None;
   lst#misc#grab_focus ();
   ignore (t#connect#destroy ~callback:GMain.Main.quit);
   t#show ();
   GMain.Main.main ();
-  !result
+  match React.state selInfo with
+    Some ((p, _), _) when !ok -> Some p
+  | _                         -> None
 
 (* ------ *)
 
@@ -1178,7 +2563,7 @@ let twoBoxAdvanced
       ~allow_grow:false () in
   t#vbox#set_spacing 12;
   let h1 = GPack.hbox ~border_width:6 ~spacing:12 ~packing:t#vbox#pack () in
-  ignore (GMisc.image ~stock:`DIALOG_WARNING ~icon_size:`DIALOG
+  ignore (GMisc.image ~stock:`DIALOG_QUESTION ~icon_size:`DIALOG
             ~yalign:0. ~packing:h1#pack ());
   let v1 = GPack.vbox ~spacing:12 ~packing:h1#pack () in
   ignore (GMisc.label
@@ -1235,7 +2620,9 @@ let summaryBox ~parent ~title ~message ~f =
                              TOP-LEVEL WINDOW
  **********************************************************************)
 
-let displayWaitMessage () = Trace.status (Uicommon.contactingServerMsg ())
+let displayWaitMessage () =
+  make_busy (toplevelWindow ());
+  Trace.status (Uicommon.contactingServerMsg ())
 
 (* ------ *)
 
@@ -1352,7 +2739,7 @@ let createToplevelWindow () =
         ~height:(Prefs.read Uicommon.mainWindowHeight * 12)
         ~hpolicy:`AUTOMATIC ~vpolicy:`AUTOMATIC () in
     GList.clist ~columns:5 ~titles_show:true
-      ~selection_mode:(*`BROWSE*)`MULTIPLE ~packing:sw#add () in
+      ~selection_mode:`MULTIPLE ~packing:sw#add () in
 (*
   let cols = new GTree.column_list in
   let c_replica1 = cols#add Gobject.Data.string in
@@ -1413,16 +2800,16 @@ let createToplevelWindow () =
   let showDetCommand () =
     let details =
       match currentRow () with
-	None ->
+        None ->
           None
       | Some row ->
           let path = Path.toString !theState.(row).ri.path1 in
-	  match !theState.(row).whatHappened with
-	    Some (Util.Failed _, Some det) ->
+          match !theState.(row).whatHappened with
+            Some (Util.Failed _, Some det) ->
               Some ("Merge execution details for file" ^
                     transcodeFilename path,
                     det)
-	  | _ ->
+          | _ ->
               match !theState.(row).ri.replicas with
                 Problem err ->
                   Some ("Errors for file " ^ transcodeFilename path, err)
@@ -1541,7 +2928,7 @@ let createToplevelWindow () =
               | Different _ ->
                   (true, Uicommon.details2string !theState.(row).ri "  ")
         in
-	let path = Path.toString !theState.(row).ri.path1 in
+        let path = Path.toString !theState.(row).ri.path1 in
         detailsWindow#buffer#set_text "";
         detailsWindow#buffer#insert ~tags:[detailsWindowPath]
           (transcodeFilename path);
@@ -1941,6 +3328,7 @@ lst_store#set ~row ~column:c_path path;
 
   let clearMainWindow () =
     grDisactivateAll ();
+    make_busy toplevelWindow;
     mainWindow#clear();
     detailsWindow#buffer#set_text ""
   in
@@ -1987,6 +3375,7 @@ lst_store#set ~row ~column:c_path path;
     stopStats ();
     grSet grGo (Array.length !theState > 0);
     grSet grRescan true;
+    make_interactive toplevelWindow;
     if Prefs.read Globals.confirmBigDeletes then begin
       if dangerousPaths <> [] then begin
         Prefs.set Globals.batch false;
@@ -2077,6 +3466,7 @@ lst_store#set ~row ~column:c_path path;
       Trace.status "Nothing to synchronize"
     else begin
       grDisactivateAll ();
+      make_busy toplevelWindow;
 
       Trace.status "Propagating changes";
       Transport.logStart ();
@@ -2097,7 +3487,7 @@ lst_store#set ~row ~column:c_path path;
       let rec loop i actions pRiThisRound =
         if i < im then begin
           let theSI = !theState.(i) in
-	  let textDetailed = ref None in
+          let textDetailed = ref None in
           let action =
             match theSI.whatHappened with
               None ->
@@ -2108,19 +3498,19 @@ lst_store#set ~row ~column:c_path path;
                            Transport.transportItem
                              theSI.ri (Uutil.File.ofLine i)
                              (fun title text -> 
-			       textDetailed := (Some text);
+                               textDetailed := (Some text);
                                if Prefs.read Uicommon.confirmmerge then
-				 twoBoxAdvanced
+                                 twoBoxAdvanced
                                    ~parent:toplevelWindow
-				   ~title:title
-				   ~message:("Do you want to commit the changes to"
-					     ^ " the replicas ?")
-				   ~longtext:text
-				   ~advLabel:"View details..."
-				   ~astock:`YES
-				   ~bstock:`NO
+                                   ~title:title
+                                   ~message:("Do you want to commit the changes to"
+                                             ^ " the replicas ?")
+                                   ~longtext:text
+                                   ~advLabel:"View details..."
+                                   ~astock:`YES
+                                   ~bstock:`NO
                                else 
-				 true)
+                                 true)
                            >>= (fun () ->
                              return Util.Succeeded))
                          (fun e ->
@@ -2234,6 +3624,7 @@ lst_store#set ~row ~column:c_path path;
       displayGlobalProgress 0.;
 
       grSet grRescan true;
+      make_interactive toplevelWindow;
 
       if failureCount + partialCount + skippedCount > 0 then begin
         let format n item sing plur =
@@ -2779,7 +4170,8 @@ let start _ =
     (* Initialize the GTK library *)
     ignore (GMain.Main.init ());
 
-    Util.warnPrinter := Some (warnBox "Warning");
+    Util.warnPrinter :=
+      Some (fun msg -> warnBox ~parent:(toplevelWindow ()) "Warning" msg);
 
     GtkSignal.user_handler :=
       (fun exn ->

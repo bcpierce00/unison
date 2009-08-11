@@ -601,7 +601,7 @@ let copythreshold =
      ^ "for more information.")
 
 let copyquoterem =
-  Prefs.createString "copyquoterem" "default"
+  Prefs.createBoolWithDefault "copyquoterem"
     "!add quotes to remote file name for copyprog (true/false/default)"
     ("When set to {\\tt true}, this flag causes Unison to add an extra layer "
      ^ "of quotes to the remote path passed to the external copy program. "
@@ -690,8 +690,8 @@ let transferFileUsingExternalCopyprog
     else
       Prefs.read copyprog
   in
-  let extraquotes = Prefs.read copyquoterem = "true"
-                 || (  Prefs.read copyquoterem = "default"
+  let extraquotes = Prefs.read copyquoterem = `True
+                 || (  Prefs.read copyquoterem = `Default
                     && Util.findsubstring "rsync" prog <> None) in
   let addquotes root s =
     match root with

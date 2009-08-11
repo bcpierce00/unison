@@ -26,7 +26,7 @@ let isMacOSX = isMacOSXPred ()
 (****)
 
 let rsrcSync =
-  Prefs.createString "rsrc" "default"
+  Prefs.createBoolWithDefault "rsrc"
     "!synchronize resource forks (true/false/default)"
     "When set to {\\tt true}, this flag causes Unison to synchronize \
      resource forks and HFS meta-data.  On filesystems that do not \
@@ -45,9 +45,8 @@ let rsrc =
 
 let init b =
   Prefs.set rsrc
-    (Prefs.read rsrcSync = "yes" ||
-     Prefs.read rsrcSync = "true" ||
-     (Prefs.read rsrcSync = "default" && b))
+    (Prefs.read rsrcSync = `True ||
+     (Prefs.read rsrcSync = `Default && b))
 
 (****)
 
