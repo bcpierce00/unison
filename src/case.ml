@@ -54,7 +54,7 @@ let unicodeEncoding =
 let defaultToUnicode = false
 
 let useUnicode b =
-  let pref = Prefs.read unicode in
+  let pref = Prefs.readBoolWithDefault unicode in
   pref = `True ||
   (defaultToUnicode && pref = `Default && b)
 
@@ -66,8 +66,8 @@ let useUnicodeAPI () = useUnicode true
 (* server with the rest of the prefs.                                        *)
 let init b =
   Prefs.set someHostIsInsensitive
-    (Prefs.read caseInsensitiveMode = `True ||
-     (Prefs.read caseInsensitiveMode = `Default && b));
+    (Prefs.readBoolWithDefault caseInsensitiveMode = `True ||
+     (Prefs.readBoolWithDefault caseInsensitiveMode = `Default && b));
   Prefs.set unicodeEncoding (useUnicode b)
 
 (****)

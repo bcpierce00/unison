@@ -197,7 +197,8 @@ let createStringList name ?(local=false) doc fulldoc =
     (fun cell -> Uarg.String (fun s -> set cell (s::(fst !cell))))
 
 let createBoolWithDefault name ?(local=false) doc fulldoc =
-  createPrefInternal name `BOOLDEF local `Default doc fulldoc
+  createPrefInternal name `BOOLDEF local "default" doc fulldoc
+(*
     (fun v -> [match v with
                  `True    -> "true"
                | `False   -> "false"
@@ -212,6 +213,14 @@ let createBoolWithDefault name ?(local=false) doc fulldoc =
               | _                  -> `False
             in
             set cell v))
+*)
+    (fun v -> [v]) (fun cell -> Uarg.String (fun s -> set cell s))
+
+let readBoolWithDefault p =
+  match read p with
+    "yes" | "true"     -> `True
+  | "default" | "auto" -> `Default
+  | _                  -> `False
 
 (*****************************************************************************)
 (*                      Command-line parsing                                 *)

@@ -1,3 +1,9 @@
+CHANGES FROM VERSION 2.37.11
+
+* Fixed incompatible protocol change introduced in last commit
+  (the type of some preferences was changed)
+
+-------------------------------
 CHANGES FROM VERSION 2.37.10
 
 * GTK UI:

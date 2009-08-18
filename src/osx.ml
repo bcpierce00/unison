@@ -45,8 +45,8 @@ let rsrc =
 
 let init b =
   Prefs.set rsrc
-    (Prefs.read rsrcSync = `True ||
-     (Prefs.read rsrcSync = `Default && b))
+    (Prefs.readBoolWithDefault rsrcSync = `True ||
+     (Prefs.readBoolWithDefault rsrcSync = `Default && b))
 
 (****)
 

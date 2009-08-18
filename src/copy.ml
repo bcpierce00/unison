@@ -690,8 +690,8 @@ let transferFileUsingExternalCopyprog
     else
       Prefs.read copyprog
   in
-  let extraquotes = Prefs.read copyquoterem = `True
-                 || (  Prefs.read copyquoterem = `Default
+  let extraquotes = Prefs.readBoolWithDefault copyquoterem = `True
+                 || (  Prefs.readBoolWithDefault copyquoterem = `Default
                     && Util.findsubstring "rsync" prog <> None) in
   let addquotes root s =
     match root with
