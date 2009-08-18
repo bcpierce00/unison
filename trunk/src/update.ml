@@ -1003,8 +1003,8 @@ let fastcheck =
        \\sectionref{fastcheck}{Fast Checking} for more information.")
 
 let useFastChecking () =
-      Prefs.read fastcheck = `True
-   || (Prefs.read fastcheck = `Default && Util.osType = `Unix)
+      Prefs.readBoolWithDefault fastcheck = `True
+   || (Prefs.readBoolWithDefault fastcheck = `Default && Util.osType = `Unix)
 
 let immutable = Pred.create "immutable" ~advanced:true
    ("This preference specifies paths for directories whose \
