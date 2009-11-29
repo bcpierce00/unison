@@ -62,23 +62,30 @@ static NSSize ZeroSize;
 	return self;
 }
 
-- (void)dealloc
-{
-	[_icon release];
-	[_statusString release];
-	[super dealloc];
-}
+// BCP: Removed (11/09) per Onne Gorter
+// - (void)dealloc
+// {
+// 	[_icon release];
+// 	[_statusString release];
+// 	[super dealloc];
+// }
 
 - (void)setStatusString:(NSString *)string
 {
-	[_statusString autorelease];
-	_statusString = [string retain];
+  // BCP: Removed (11/09) per Onne Gorter
+  //	[_statusString autorelease];
+  //	_statusString = [string retain];
+  // Added:
+	_statusString = string;
 }
 
 - (void)setIcon:(NSImage *)image
 {
-	[_icon autorelease];
-	_icon = [image retain];
+  // BCP: Removed (11/09) per Onne Gorter
+  //	[_icon autorelease];
+  //	_icon = [image retain];
+  // Added:
+	_icon = image;
 }
 
 - (void)setIsActive:(BOOL)yn

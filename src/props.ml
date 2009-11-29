@@ -215,7 +215,7 @@ let get stats _ = (stats.Unix.LargeFile.st_perm, Prefs.read permMask)
 
 let check fspath path stats (fp, mask) =
   let fp' = stats.Unix.LargeFile.st_perm in
-  if fp land mask <> fp' land mask then
+  if (not (Prefs.read dontChmod)) && (fp land mask <> fp' land mask) then
     raise
       (Util.Transient
          (Format.sprintf

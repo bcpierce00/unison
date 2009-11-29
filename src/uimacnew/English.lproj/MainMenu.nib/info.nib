@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>IBFramework Version</key>
-	<string>670</string>
+	<string>677</string>
 	<key>IBLastKnownRelativeProjectPath</key>
 	<string>../uimacnew.xcodeproj</string>
 	<key>IBOldestOS</key>
@@ -11,15 +11,15 @@
 	<key>IBOpenObjects</key>
 	<array>
 		<integer>402</integer>
-		<integer>198</integer>
 		<integer>423</integer>
 		<integer>29</integer>
-		<integer>197</integer>
-		<integer>307</integer>
 		<integer>21</integer>
+		<integer>307</integer>
+		<integer>197</integer>
+		<integer>198</integer>
 	</array>
 	<key>IBSystem Version</key>
-	<string>9E17</string>
+	<string>9L30</string>
 	<key>targetFramework</key>
 	<string>IBCocoaFramework</string>
 </dict>

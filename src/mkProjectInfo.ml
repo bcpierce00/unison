@@ -5,8 +5,8 @@
 
 let projectName = "unison"
 let majorVersion = 2
-let minorVersion = 37
-let pointVersionOrigin = 377 (* Revision that corresponds to point version 0 *)
+let minorVersion = 38
+let pointVersionOrigin = 388 (* Revision that corresponds to point version 0 *)
 
 (* Documentation:
    This is a program to construct a version of the form Major.Minor.Point,
@@ -86,4 +86,5 @@ else (* Determining the pointVersionOrigin in bzr is kind of tricky:
 Printf.printf "MAJORVERSION=%d.%d\n" majorVersion minorVersion;;
 Printf.printf "VERSION=%d.%d.%d\n" majorVersion minorVersion pointVersion;;
 Printf.printf "NAME=%s\n" projectName;;
+
 
