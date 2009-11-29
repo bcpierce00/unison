@@ -634,34 +634,47 @@ let dumpArchives =
      ^ "on each host, containing a text summary of the archive, immediately "
      ^ "after loading it.")
 
+let ignoreArchives =
+  Prefs.createBool "ignorearchives" false
+    "!ignore existing archive files"
+    ("When this preference is set, Unison will ignore any existing "
+     ^ "archive files and behave as though it were being run for the first "
+     ^ "time on these replicas.  It is "
+     ^ "not a good idea to set this option in a profile: it is intended for "
+     ^ "command-line use.")
+
 (* For all roots (local or remote), load the archive and cache *)
 let loadArchives (optimistic: bool) : bool Lwt.t =
-  Globals.allRootsMap (fun r -> loadArchiveOnRoot r optimistic)
-     >>= (fun checksums ->
-  let identicals = archivesIdentical checksums in
-  if not (optimistic || identicals) then
-    raise (Util.Fatal(
-	"Internal error: On-disk archives are not identical.\n"
-      ^ "\n"
-      ^ "This can happen when both machines have the same hostname.\n"
-      ^ "\n"
-      ^ "If this is not the case and you get this message repeatedly, please:\n"
-      ^ "  a) Send a bug report to unison-users@yahoogroups.com (you may need"
-      ^ "     to join the group before you will be allowed to post).\n"
-      ^ "  b) Move the archive files on each machine to some other directory\n"
-      ^ "     (in case they may be useful for debugging).\n"
-      ^ "     The archive files on this machine are in the directory\n"
-      ^ (Printf.sprintf "       %s\n"
-           (System.fspathToPrintString Os.unisonDir))
-      ^ "     and have names of the form\n"
-      ^ "       arXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n"
-      ^ "     where the X's are a hexidecimal number .\n"
-      ^ "  c) Run unison again to synchronize from scratch.\n"));
-  checkArchiveCaseSensitivity checksums >>= fun () ->
-  if Prefs.read dumpArchives then 
-    Globals.allRootsMap (fun r -> dumpArchiveOnRoot r ())
-     >>= (fun _ -> Lwt.return identicals)
-  else Lwt.return identicals)
+  if Prefs.read ignoreArchives then begin
+    Lwt.return false
+  end else  begin
+    Globals.allRootsMap (fun r -> loadArchiveOnRoot r optimistic)
+       >>= (fun checksums ->
+    let identicals = archivesIdentical checksums in
+    if not (optimistic || identicals) then
+      raise (Util.Fatal(
+          "Internal error: On-disk archives are not identical.\n"
+        ^ "\n"
+        ^ "This can happen when both machines have the same hostname.\n"
+        ^ "\n"
+        ^ "If this is not the case and you get this message repeatedly, please:\n"
+        ^ "  a) Send a bug report to unison-users@yahoogroups.com (you may need"
+        ^ "     to join the group before you will be allowed to post).\n"
+        ^ "  b) Move the archive files on each machine to some other directory\n"
+        ^ "     (in case they may be useful for debugging).\n"
+        ^ "     The archive files on this machine are in the directory\n"
+        ^ (Printf.sprintf "       %s\n"
+             (System.fspathToPrintString Os.unisonDir))
+        ^ "     and have names of the form\n"
+        ^ "       arXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n"
+        ^ "     where the X's are a hexidecimal number .\n"
+        ^ "  c) Run unison again to synchronize from scratch.\n"));
+    checkArchiveCaseSensitivity checksums >>= fun () ->
+    if Prefs.read dumpArchives then 
+      Globals.allRootsMap (fun r -> dumpArchiveOnRoot r ())
+       >>= (fun _ -> Lwt.return identicals)
+    else Lwt.return identicals)
+  end
 
 
 (*****************************************************************************)
@@ -785,6 +798,39 @@ let forall = Safelist.for_all (fun x -> x)
 let exists = Safelist.exists (fun x -> x)
 
 let doArchiveCrashRecovery () =
+  let noArchives() = 
+    foundArchives := false;
+    let expectedRoots =
+      String.concat "\n\t" (Safelist.map root2string (Globals.rootsList ())) in
+     Util.warn
+     ("No archive files were found for these roots, whose canonical names are:\n\t"
+     ^ expectedRoots ^ "\nThis can happen either\n"
+     ^ "because this is the first time you have synchronized these roots, \n"
+     ^ "or because you have upgraded Unison to a new version with a different\n"
+     ^ "archive format.  \n\n"
+     ^ "Update detection may take a while on this run if the replicas are \n"
+     ^ "large.\n\n"
+     ^ "Unison will assume that the 'last synchronized state' of both replicas\n"
+     ^ "was completely empty.  This means that any files that are different\n"
+     ^ "will be reported as conflicts, and any files that exist only on one\n"
+     ^ "replica will be judged as new and propagated to the other replica.\n"
+     ^ "If the two replicas are identical, then no changes will be reported.\n\n"
+     ^ "If you see this message repeatedly, it may be because one of your machines\n"
+     ^ "is getting its address from DHCP, which is causing its host name to change\n"
+     ^ "between synchronizations.  See the documentation for the UNISONLOCALHOSTNAME\n"
+     ^ "environment variable for advice on how to correct this.\n"
+     ^ "\n"
+     ^ "Donations to the Unison project are gratefully accepted: \n"
+     ^ "http://www.cis.upenn.edu/~bcpierce/unison\n"
+     ^ "\n"
+     (* ^ "\nThe expected archive names were:\n" ^ expectedNames *) );
+    Lwt.return () in
+
+  (* See if we've been asked to ignore the archives *)
+  if Prefs.read ignoreArchives then
+    noArchives()
+  else
+
   (* Check which hosts have copies of the old/new archive *)
   Globals.allRootsMap (fun r -> archivesExistOnRoot r ()) >>= (fun exl ->
   let oldnamesExist,newnamesExist =
@@ -835,34 +881,10 @@ let doArchiveCrashRecovery () =
               "The archive file is missing on some hosts.";
               "For safety, the remaining copies should be deleted."]
              @ whatToDo @
-             ["Please delete archive files as appropriate and try again."]))))
+             ["Please delete archive files as appropriate and try again\n";
+             "or invoke Unison with -ignorearchives flag."]))))
   else begin
-    foundArchives := false;
-    let expectedRoots =
-      String.concat "\n\t" (Safelist.map root2string (Globals.rootsList ())) in
-     Util.warn
-     ("No archive files were found for these roots, whose canonical names are:\n\t"
-     ^ expectedRoots ^ "\nThis can happen either\n"
-     ^ "because this is the first time you have synchronized these roots, \n"
-     ^ "or because you have upgraded Unison to a new version with a different\n"
-     ^ "archive format.  \n\n"
-     ^ "Update detection may take a while on this run if the replicas are \n"
-     ^ "large.\n\n"
-     ^ "Unison will assume that the 'last synchronized state' of both replicas\n"
-     ^ "was completely empty.  This means that any files that are different\n"
-     ^ "will be reported as conflicts, and any files that exist only on one\n"
-     ^ "replica will be judged as new and propagated to the other replica.\n"
-     ^ "If the two replicas are identical, then no changes will be reported.\n\n"
-     ^ "If you see this message repeatedly, it may be because one of your machines\n"
-     ^ "is getting its address from DHCP, which is causing its host name to change\n"
-     ^ "between synchronizations.  See the documentation for the UNISONLOCALHOSTNAME\n"
-     ^ "environment variable for advice on how to correct this.\n"
-     ^ "\n"
-     ^ "Donations to the Unison project are gratefully accepted: \n"
-     ^ "http://www.cis.upenn.edu/~bcpierce/unison\n"
-     ^ "\n"
-     (* ^ "\nThe expected archive names were:\n" ^ expectedNames *) );
-    Lwt.return ()
+    noArchives()
   end))
 
 (*************************************************************************

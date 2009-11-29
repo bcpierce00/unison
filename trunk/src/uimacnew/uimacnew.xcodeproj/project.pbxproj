@@ -581,7 +581,7 @@
 					"-lunix",
 					"-lthreadsnat",
 					"-lstr",
-                                        "-lbigarray",
+					"-lbigarray",
 					"-lasmrun",
 				);
 				PREBINDING = NO;
@@ -618,7 +618,7 @@
 					"-lunix",
 					"-lthreadsnat",
 					"-lstr",
-                                        "-lbigarray",
+					"-lbigarray",
 					"-lasmrun",
 				);
 				PREBINDING = NO;
@@ -652,7 +652,7 @@
 					"-lunix",
 					"-lthreadsnat",
 					"-lstr",
-                                        "-lbigarray",
+					"-lbigarray",
 					"-lasmrun",
 				);
 				PREBINDING = NO;

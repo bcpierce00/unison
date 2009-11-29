@@ -29,6 +29,10 @@ static int unset = 0;
 static int dontAsk = 1;
 static int doAsk = 2;
 
+// BCP (11/09): Added per Onne Gorter:
+// if user closes main window, terminate app, instead of keeping an empty app around with no window
+- (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)theApplication { return YES; }
+
 - (id)init
 {
     if (([super init])) {

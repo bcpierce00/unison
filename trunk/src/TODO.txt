@@ -102,11 +102,17 @@ See the file BUGS.txt for a list of currently open bugs.
 
 *** See if we can get rid of some Osx.XXX stuff (e.g. ressLength!?)
 
+*** Overlapping paths
+    If one -path argument is a prefix of another, the same files will get
+    scanned twice, found to need transferring twice, and transferred twice, but
+    the first transfer messes up the second.  The fix would be to throw
+    away -path arguments that are suffixes of other ones.
+
 *** Add the following to the Problems FAQ:
 
-  --- In unison-hackers@y..., "Matt Swift" <swift@a...> wrote:
-  > I just posted a msg to cygwin@c... detailing some very strange 
-  > behavior of chmod when a file's owner is also the file's group.  It 
+  --- In unison-hackers@y..., "Matt Swift" <swift@a...> wrote: > I just
+  posted a msg to cygwin@c... detailing some very strange > behavior of
+  chmod when a file's owner is also the file's group.  It
 
   I was right about the crucial circumstances of owner = group.  Moral:
   do not let user=group under Cygwin.  I know it causes a problem when

@@ -1,3 +1,17 @@
+CHANGES FROM VERSION 2.38.0
+
+* Small doc tweak in tutorial
+
+* Add preference to ignore existing archives (to avoid forcing users
+  to delete them manually, in situations where one archive has gotten
+  deleted or corrupted).
+
+* Small patch to property setting code suggested by Ulrich Gernkow.
+
+* Apply patch to fix some crashes in the OSX GUI, thanks to Onne Gorter.
+
+
+-------------------------------
 CHANGES FROM VERSION 2.37.11
 
 * Fixed incompatible protocol change introduced in last commit
