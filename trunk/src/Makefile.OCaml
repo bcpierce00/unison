@@ -59,8 +59,9 @@ OCAMLLIBDIR=$(shell ocamlc -v | tail -n -1 | sed -e 's/.* //g' | sed -e 's/\\/\/
 #     UISTYLE=text
 #     UISTYLE=gtk
 #     UISTYLE=gtk2
-#     UISTYLE=mac     (old and limited, but working)
-#     UISTYLE=macnew  (spiffy, but not yet extensively tested)
+#     UISTYLE=mac       (old and limited, but working)
+#     UISTYLE=macnew    (spiffier)
+#     UISTYLE=macnew09  (even spiffier, but not yet extensively tested)
 #
 # This should be set to an appropriate value automatically, depending
 # on whether the lablgtk library is available
@@ -162,7 +163,12 @@ ifeq ($(UISTYLE),macnew)
   buildexecutable:: macexecutable
   UIMACDIR=uimacnew
 else
+ifeq ($(UISTYLE),macnew09)
+  buildexecutable:: macexecutable
+  UIMACDIR=uimacnew09
+else
   buildexecutable:: $(NAME)$(EXEC_EXT)
+endif
 endif
 endif
 
@@ -235,6 +241,14 @@ endif
 
 ## New Mac UI
 ifeq ($(UISTYLE),macnew)
+  OCAMLOBJS+=uimacbridgenew.cmo
+  THREADS=true
+  OCAMLLIBS+=threads.cma
+  INCLFLAGS+=-thread 
+endif
+
+## New Mac UI, 2009 version
+ifeq ($(UISTYLE),macnew09)
   OCAMLOBJS+=uimacbridgenew.cmo
   THREADS=true
   OCAMLLIBS+=threads.cma

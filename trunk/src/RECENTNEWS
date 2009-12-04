@@ -1,5 +1,11 @@
 CHANGES FROM VERSION 2.38.0
 
+* Incorporated new version of OSX GUI with numerous improvements and
+  bugfixes by Markus Gross.  (Not compiling yet on my machine, though.)
+
+-------------------------------
+CHANGES FROM VERSION 2.38.0
+
 * Small doc tweak in tutorial
 
 * Add preference to ignore existing archives (to avoid forcing users
