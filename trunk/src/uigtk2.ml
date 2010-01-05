@@ -108,10 +108,13 @@ let leftPtrWatch =
       Gdk.Cursor.create_from_pixmap
         (bitmap :> Gdk.pixmap) ~mask:bitmap ~fg:color ~bg:color ~x:2 ~y:2)
 
-let make_busy w = Gdk.Window.set_cursor w#misc#window (Lazy.force leftPtrWatch)
+let make_busy w =
+  if Util.osType <> `Win32 then
+    Gdk.Window.set_cursor w#misc#window (Lazy.force leftPtrWatch)
 let make_interactive w =
-  (* HACK: setting the cursor to NULL restore the default cursor *)
-  Gdk.Window.set_cursor w#misc#window (Obj.magic Gpointer.boxed_null)
+  if Util.osType <> `Win32 then
+    (* HACK: setting the cursor to NULL restore the default cursor *)
+    Gdk.Window.set_cursor w#misc#window (Obj.magic Gpointer.boxed_null)
 
 (*********************************************************************
   UI state variables
@@ -1467,8 +1470,8 @@ let createProfile parent =
   let fastcheck = isLocal >> not >> (fun b -> b || Util.osType = `Win32) in
   (* Unicode mode can be problematic when the source machine is under
      Windows and the remote machine is not, as Unison may have already
-     been used using the legacy Latin 1 encoding.  Cygwin (stable)
-     also does not handle Unicode at the moment. *)
+     been used using the legacy Latin 1 encoding.  Cygwin also did not
+     handle Unicode before version 1.7. *)
   let vb = GPack.vbox ~spacing:6 ~packing:(options#pack ~expand:false) () in
   let askUnicode =
     isLocal >> not >> fun b -> (b || Util.isCygwin) && Util.osType = `Win32 in
@@ -1505,11 +1508,18 @@ let createProfile parent =
   let unicode =
     React.lift2 (||) (askUnicode >> not) (GtkReact.toggle_button unicodeButton)
   in
+  let p =
+    assistant#append_page
+      ~title:"Specific Options" ~complete:true
+      ~page_type:`CONTENT
+      options#as_widget
+  in
   ignore
-    (assistant#append_page
-       ~title:"Specific Options" ~complete:true
-       ~page_type:`CONTENT
-       options#as_widget);
+    (assistant#connect#prepare (fun () ->
+       if assistant#current_page = p &&
+          not (Util.osType <> `Win32 || React.state askUnicode)
+       then
+         assistant#set_current_page (p + 1)));
 
   let conclusion =
     GMisc.label
@@ -2954,7 +2964,7 @@ let createToplevelWindow () =
   let progressBar =
     GRange.progress_bar ~packing:(statusHBox#pack ~expand:false) () in
 
-  progressBar#misc#set_size_chars ~height:1 ~width:25 ();
+  progressBar#misc#set_size_chars ~height:1 ~width:28 ();
   progressBar#set_pulse_step 0.02;
   let progressBarPulse = ref false in
 

@@ -489,7 +489,7 @@ let diff t t' = if similar t t' then NotSynced (extract t') else t'
 let toString t = Util.time2string (extract t)
 
 let syncedPartsToString t = match t with
-  Synced _    -> toString t
+  Synced _    -> Format.sprintf "%s (%f)" (toString t) (extract t)
 | NotSynced _ -> ""
 
 (* FIX: Probably there should be a check here that prevents us from ever     *)
