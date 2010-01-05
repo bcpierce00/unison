@@ -408,6 +408,16 @@ let destinationFd fspath path kind len outfd id =
   | Some fd ->
       fd
 
+(* Lazy opening of the reference file (for rsync algorithm) *)
+let referenceFd fspath path kind infd =
+  match !infd with
+    None ->
+      let fd = openFileIn fspath path kind in
+      infd := Some fd;
+      fd
+  | Some fd ->
+      fd
+
 let rsyncReg = Lwt_util.make_region (40 * 1024)
 let rsyncThrottle useRsync srcFileSize destFileSize f =
   if not useRsync then f () else
@@ -417,8 +427,9 @@ let rsyncThrottle useRsync srcFileSize destFileSize f =
 let transferFileContents
       connFrom fspathFrom pathFrom fspathTo pathTo realPathTo update
       fileKind srcFileSize id =
-  (* We delay the opening of the file so that there are not too many
-     temporary files remaining after a crash *)
+  (* We delay the opening of the files so that there are not too many
+     temporary files remaining after a crash, and that they are not
+     too many files simultaneously opened. *)
   let outfd = ref None in
   let infd = ref None in
   let showProgress count =
@@ -446,24 +457,25 @@ let transferFileContents
         Util.convertUnixErrorsToTransient
           "preprocessing file"
           (fun () ->
-             let ifd = openFileIn fspathTo realPathTo fileKind in
+             let ifd = referenceFd fspathTo realPathTo fileKind infd in
              let (bi, blockSize) =
                protect
                  (fun () -> Transfer.Rsync.rsyncPreprocess
                               ifd srcFileSize destFileSize)
                  (fun () -> close_in_noerr ifd)
              in
-             infd := Some ifd;
+             close_all infd outfd;
              (Some bi,
               (* Rsync decompressor *)
               fun ti ->
+              let ifd = referenceFd fspathTo realPathTo fileKind infd in
               let fd =
                 destinationFd
                   fspathTo pathTo fileKind srcFileSize outfd id in
               let eof =
                 Transfer.Rsync.rsyncDecompress blockSize ifd fd showProgress ti
               in
-              if eof then begin close_out fd; outfd := None end))
+              if eof then close_all infd outfd))
       else
         (None,
          (* Simple generic decompressor *)
@@ -471,7 +483,7 @@ let transferFileContents
          let fd =
            destinationFd fspathTo pathTo fileKind srcFileSize outfd id in
          let eof = Transfer.receive fd showProgress ti in
-         if eof then begin close_out fd; outfd := None end)
+         if eof then close_all infd outfd)
     in
     let file_id = Remote.newMsgId () in
     Lwt.catch
@@ -483,6 +495,7 @@ let transferFileContents
          decompressor :=
            Remote.MsgIdMap.remove file_id !decompressor; (* For GC *)
          close_all infd outfd;
+           (* JV: FIX: the file descriptors are already closed... *)
          Lwt.return ())
       (fun e ->
          decompressor :=

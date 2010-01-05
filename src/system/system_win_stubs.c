@@ -281,6 +281,10 @@ CAMLprim value win_stat(value path, value wpath)
 
   v = caml_alloc (12, 0);
   Store_field (v, 0, Val_int (info.dwVolumeSerialNumber));
+
+  // Apparently, we cannot trust the inode number to be stable when
+  // nFileIndexHigh is 0.
+  if (info.nFileIndexHigh == 0) info.nFileIndexLow = 0;
   /* The ocaml code truncates inode numbers to 31 bits.  We hash the
      low and high parts in order to lose as little information as
      possible. */

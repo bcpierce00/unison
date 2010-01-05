@@ -901,7 +901,7 @@ let registerStreamCmd
            Lwt_util.run_in_region streamReg 1
              (fun () -> sender (fun v -> client conn id v)))
         (fun v -> ping conn id >>= fun () -> Lwt.return v)
-	(fun e -> ping conn id >>= fun () -> Lwt.fail e)
+        (fun e -> ping conn id >>= fun () -> Lwt.fail e)
     end
 
 let commandAvailable =
@@ -991,29 +991,88 @@ let inetAddr host =
   let targetHostEntry = Unix.gethostbyname host in
   targetHostEntry.Unix.h_addr_list.(0)
 
+let rec findFirst f l =
+  match l with
+    []     -> None
+  | x :: r -> match f x with
+                None        -> findFirst f r
+              | Some _ as v -> v
+
+let buildSocket host port kind =
+  let attemptCreation ai =
+    try
+      let socket =
+        Unix.socket ai.Unix.ai_family ai.Unix.ai_socktype ai.Unix.ai_protocol
+      in
+      try
+        begin match kind with
+          `Connect ->
+            (* Connect to the remote host *)
+            Unix.connect socket ai.Unix.ai_addr
+        | `Bind ->
+            (* Allow reuse of local addresses for bind *)
+            Unix.setsockopt socket Unix.SO_REUSEADDR true;
+            (* Bind the socket to portnum on the local host *)
+            Unix.bind socket ai.Unix.ai_addr;
+            (* Start listening, allow up to 1 pending request *)
+            Unix.listen socket 1
+        end;
+        Some socket
+      with Unix.Unix_error _ as e ->
+        Unix.close socket;
+        raise e
+    with Unix.Unix_error (error, _, _) ->
+      begin match error with
+        Unix.EAFNOSUPPORT | Unix.EPROTONOSUPPORT | Unix.EINVAL ->
+          ()
+      | _           ->
+          let msg =
+            match kind with
+              `Connect ->
+                Printf.sprintf "Can't connect to server (%s:%s): %s"
+                  host port (Unix.error_message error)
+            | `Bind ->
+                Printf.sprintf
+                  "Can't bind socket to port %s at address [%s]: %s\n"
+                  port
+                  (match ai.Unix.ai_addr with
+                     Unix.ADDR_INET (addr, _) -> Unix.string_of_inet_addr addr
+                   | _                        -> assert false)
+                  (Unix.error_message error)
+          in
+          Util.warn msg
+      end;
+      None
+  in
+  let options =
+    match kind with
+      `Connect -> [ Unix.AI_SOCKTYPE Unix.SOCK_STREAM ]
+    | `Bind    -> [ Unix.AI_SOCKTYPE Unix.SOCK_STREAM ; Unix.AI_PASSIVE ]
+  in
+  match
+    findFirst attemptCreation (Unix.getaddrinfo host port options)
+  with
+    Some socket ->
+      socket
+  | None ->
+      let msg =
+        match kind with
+          `Connect ->
+             Printf.sprintf
+               "Can't find the IP address of the server (%s:%s)" host port
+        | `Bind ->
+             if host = "" then
+               Printf.sprintf "Can't bind socket to port %s" port
+             else
+               Printf.sprintf "Can't bind socket to port %s on host %s"
+                 port host
+      in
+      raise (Util.Fatal msg)
+
 let buildSocketConnection host port =
   Util.convertUnixErrorsToFatal "canonizeRoot" (fun () ->
-    let rec loop = function
-      [] ->
-        raise (Util.Fatal
-                 (Printf.sprintf
-                    "Can't find the IP address of the server (%s:%s)" host
-		    port))
-    | ai::r ->
-      (* create a socket to talk to the remote host *)
-      let socket = Unix.socket ai.Unix.ai_family ai.Unix.ai_socktype ai.Unix.ai_protocol in
-      begin try
-        Unix.connect socket ai.Unix.ai_addr;
-        initConnection socket socket
-      with
-        Unix.Unix_error (error, _, reason) ->
-          (if error != Unix.EAFNOSUPPORT then
-            Util.warn
-              (Printf.sprintf
-                    "Can't connect to server (%s:%s): %s" host port reason);
-           loop r)
-    end
-    in loop (Unix.getaddrinfo host port [ Unix.AI_SOCKTYPE Unix.SOCK_STREAM ]))
+    let socket = buildSocket host port `Connect in
+    initConnection socket socket)
 
 let buildShellConnection shell host userOpt portOpt rootName termInteract =
   let remoteCmd =
@@ -1359,38 +1418,7 @@ let waitOnPort hostOpt port =
       let host = match hostOpt with
         Some host -> host
       | None -> "" in
-      let rec loop = function
-        [] -> raise (Util.Fatal
-		       (if host = "" then
-                        Printf.sprintf "Can't bind socket to port %s" port
-                        else
-                        Printf.sprintf "Can't bind socket to port %s on host %s" port host))
-      | ai::r ->
-        (* Open a socket to listen for queries *)
-        let socket = Unix.socket ai.Unix.ai_family ai.Unix.ai_socktype
-	  ai.Unix.ai_protocol in
-	begin try
-          (* Allow reuse of local addresses for bind *)
-          Unix.setsockopt socket Unix.SO_REUSEADDR true;
-          (* Bind the socket to portnum on the local host *)
-	  Unix.bind socket ai.Unix.ai_addr;
-          (* Start listening, allow up to 1 pending request *)
-          Unix.listen socket 1;
-	  socket
-	with
-	  Unix.Unix_error (error, _, reason) ->
-            (if error != Unix.EAFNOSUPPORT then
-               Util.msg
-                 "Can't bind socket to port %s at address [%s]: %s\n"
-                 port
-                 (match ai.Unix.ai_addr with
-                    Unix.ADDR_INET (addr, _) -> Unix.string_of_inet_addr addr
-                  | _                        -> assert false)
-                 (Unix.error_message error);
-	     loop r)
-	end in
-      let listening = loop (Unix.getaddrinfo host port [ Unix.AI_SOCKTYPE
-        Unix.SOCK_STREAM ; Unix.AI_PASSIVE ]) in
+      let listening = buildSocket host port `Bind in
       Util.msg "server started\n";
       while
         (* Accept a connection *)

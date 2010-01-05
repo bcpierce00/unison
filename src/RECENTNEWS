@@ -1,5 +1,21 @@
 CHANGES FROM VERSION 2.38.0
 
+* GTK UI:
+  - revert to the previous action pixmaps
+  - made the progress bar slightly larger
+* MacOS GUI:
+  - use darker grey arrows (patch contributed by Eric Y. Kow)
+* Make STATIC=true kind of work again (though it is not possible to
+  make completely statically linked binaries with the glibc library)
+* Windows: added support for long UNC paths
+* Do not keep many files simultaneously opened anymore when the rsync
+  algorithm is in use
+* IPV6: properly deal with Unix errors, so that Unison correctly fall
+  backs to IPV4 if the kernel does not support IPV6
+
+-------------------------------
+CHANGES FROM VERSION 2.38.0
+
 * Incorporated new version of OSX GUI with numerous improvements and
   bugfixes by Markus Gross.  (Not compiling yet on my machine, though.)
 

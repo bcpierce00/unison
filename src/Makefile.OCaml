@@ -292,7 +292,7 @@ endif
 ### Static build setup
 
 ifeq ($(STATIC), true)
-  STATICLIBS+=-cclib -static
+  CFLAGS+=-cclib -static
 endif
 
 ####################################################################
@@ -409,7 +409,7 @@ win32rc/unison.res.lib: win32rc/unison.res
 
 $(NAME)$(EXEC_EXT): $(CAMLOBJS) $(COBJS)
 	@echo Linking $@
-	$(CAMLC) -verbose $(CAMLFLAGS) -o $@ $(CFLAGS) $(CAMLLIBS) $(CLIBS) $^
+	$(CAMLC) -verbose $(CAMLFLAGS) -o $@ $(CFLAGS) $(CAMLLIBS) $^ $(CLIBS)
 
 # Unfortunately -output-obj does not put .o files into the output, only .cmx
 # files, so we have to use $(LD) to take care of COBJS.

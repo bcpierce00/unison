@@ -824,8 +824,7 @@ static NSColor *_veryLightGreyColor = nil;
 {
 	if (!_parentImages) {
 		_parentImages = [[NSMutableDictionary alloc] init];
-		_veryLightGreyColor = [[NSColor colorWithCalibratedRed:0.9 green:0.9 blue:0.9 alpha:1.0] retain];
-		// [NSColor lightGrayColor]
+		_veryLightGreyColor = [[NSColor colorWithCalibratedRed:0.7 green:0.7 blue:0.7 alpha:1.0] retain];
 	}
 	NSImage *baseImage = [super direction];
 	NSImage *parentImage = [_parentImages objectForKey:baseImage];
