@@ -37,3 +37,6 @@ val freshDirStamp : unit -> dirChangedStamp
 val changedDirStamp : dirChangedStamp
 val setDirChangeFlag : t -> dirChangedStamp -> int -> t * bool
 val dirMarkedUnchanged : t -> dirChangedStamp -> int -> bool
+
+val validatePrefs: unit -> unit
+  

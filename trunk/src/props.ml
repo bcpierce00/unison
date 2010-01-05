@@ -45,6 +45,7 @@ module Perm : sig
   val dirDefault : t
   val extract : t -> int
   val check : Fspath.t -> Path.local -> Unix.LargeFile.stats -> t -> unit
+  val validatePrefs : unit -> unit
 end = struct
 
 (* We introduce a type, Perm.t, that holds a file's permissions along with   *)
@@ -188,10 +189,14 @@ let dontChmod =
   Prefs.createBool "dontchmod" 
   false
   "!When set, never use the chmod system call"
-  ("By default, Unison uses the 'chmod' system call to set the permission bits"
+  (  "By default, Unison uses the 'chmod' system call to set the permission bits"
   ^ " of files after it has copied them.  But in some circumstances (and under "
   ^ " some operating systems), the chmod call always fails.  Setting this "
   ^ " preference completely prevents Unison from ever calling chmod.")
+
+let validatePrefs () =
+  if Prefs.read dontChmod && (Prefs.read permMask <> 0) then raise (Util.Fatal
+    "If the 'dontchmod' preference is set, the 'perms' preference should be 0")  
 
 let set fspath path kind (fp, mask) =
   (* BCP: removed "|| kind <> `Update" on 10/2005, but reinserted it on 11/2008.
@@ -215,7 +220,7 @@ let get stats _ = (stats.Unix.LargeFile.st_perm, Prefs.read permMask)
 
 let check fspath path stats (fp, mask) =
   let fp' = stats.Unix.LargeFile.st_perm in
-  if (not (Prefs.read dontChmod)) && (fp land mask <> fp' land mask) then
+  if fp land mask <> fp' land mask then
     raise
       (Util.Transient
          (Format.sprintf
@@ -765,6 +770,8 @@ let setTime p t = {p with time = Time.replace p.time t}
 let perms p = Perm.extract p.perm
 
 let syncModtimes = Time.sync
+
+let validatePrefs = Perm.validatePrefs
 
 (* ------------------------------------------------------------------------- *)
 (*                          Directory change stamps                          *)

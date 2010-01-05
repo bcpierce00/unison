@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 42;
+	objectVersion = 45;
 	objects = {
 
 /* Begin PBXAggregateTarget section */
@@ -105,6 +105,15 @@
 			files = (
 				DE931F6210C3D78F00BD4167 /* Growl.framework in CopyFiles */,
 				DE82ADDB10C31BBC0093B61F /* BWToolkitFramework.framework in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BB6E50CF10CAA57600E23F8A /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 7;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -371,6 +380,7 @@
 				69C625E90664EC3300B3C46A /* Sources */,
 				69C625F10664EC3300B3C46A /* Frameworks */,
 				2A3C3F3709922AA600E404E9 /* CopyFiles */,
+				BB6E50CF10CAA57600E23F8A /* CopyFiles */,
 			);
 			buildRules = (
 			);
@@ -389,7 +399,7 @@
 		29B97313FDCFA39411CA2CEA /* Project object */ = {
 			isa = PBXProject;
 			buildConfigurationList = 2A3C3F2C0992245300E404E9 /* Build configuration list for PBXProject "uimacnew" */;
-			compatibilityVersion = "Xcode 2.4";
+			compatibilityVersion = "Xcode 3.1";
 			hasScannedForEncodings = 1;
 			mainGroup = 29B97314FDCFA39411CA2CEA /* uimac */;
 			projectDirPath = "";
@@ -686,7 +696,7 @@
 			buildSettings = {
 				FRAMEWORK_SEARCH_PATHS = "Frameworks/**";
 				LIBRARY_SEARCH_PATHS = "";
-				SDKROOT = /Developer/SDKs/MacOSX10.5.sdk;
+				SDKROOT = macosx10.5;
 				USER_HEADER_SEARCH_PATHS = $OCAMLLIBDIR;
 			};
 			name = Development;
@@ -697,7 +707,7 @@
 			buildSettings = {
 				FRAMEWORK_SEARCH_PATHS = "Frameworks/**";
 				LIBRARY_SEARCH_PATHS = "";
-				SDKROOT = /Developer/SDKs/MacOSX10.5.sdk;
+				SDKROOT = macosx10.5;
 				USER_HEADER_SEARCH_PATHS = $OCAMLLIBDIR;
 			};
 			name = Deployment;
@@ -708,7 +718,7 @@
 			buildSettings = {
 				FRAMEWORK_SEARCH_PATHS = "Frameworks/**";
 				LIBRARY_SEARCH_PATHS = "";
-				SDKROOT = /Developer/SDKs/MacOSX10.5.sdk;
+				SDKROOT = macosx10.5;
 				USER_HEADER_SEARCH_PATHS = $OCAMLLIBDIR;
 			};
 			name = Default;

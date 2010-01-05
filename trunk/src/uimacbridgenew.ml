@@ -280,7 +280,7 @@ let do_unisonInit2 () =
   Recon.checkThatPreferredRootIsValid();
 
   Lwt_unix.run
-    (Uicommon.checkCaseSensitivity () >>=
+    (Uicommon.validateAndFixupPrefs () >>=
      Globals.propagatePrefs);
 
   (* Initializes some backups stuff according to the preferences just loaded from the profile.
