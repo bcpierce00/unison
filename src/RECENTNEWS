@@ -1,5 +1,11 @@
 CHANGES FROM VERSION 2.38.0
 
+* Roll back a previous "fix" for a permission-setting issue and
+  introduce a better one (as suggested by Jerome)
+
+-------------------------------
+CHANGES FROM VERSION 2.38.0
+
 * GTK UI:
   - revert to the previous action pixmaps
   - made the progress bar slightly larger

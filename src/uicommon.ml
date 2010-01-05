@@ -446,11 +446,10 @@ let architecture =
 
 (* During startup the client determines the case sensitivity of each root.
    If any root is case insensitive, all roots must know this -- it's
-   propagated in a pref. *)
-(* FIX: this does more than check case sensitivity, it also detects
-   HFS (needed for resource forks) and Windows (needed for permissions)...
-   needs a new name *)
-let checkCaseSensitivity () =
+   propagated in a pref.  Also, detects HFS (needed for resource forks) and
+   Windows (needed for permissions) and does some sanity checking. *) 
+let validateAndFixupPrefs () =
+  Props.validatePrefs();
   Globals.allRootsMap (fun r -> architecture r ()) >>= (fun archs ->
   let someHostIsRunningWindows =
     Safelist.exists (fun (isWin, _, _) -> isWin) archs in
@@ -606,7 +605,7 @@ let initPrefs ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
   Recon.checkThatPreferredRootIsValid();
   
   Lwt_unix.run
-    (checkCaseSensitivity () >>=
+    (validateAndFixupPrefs () >>=
      Globals.propagatePrefs);
 
   (* Initializes some backups stuff according to the preferences just loaded from the profile.

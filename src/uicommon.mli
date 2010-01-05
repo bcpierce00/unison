@@ -106,7 +106,7 @@ val initPrefs :
   termInteract:(string -> string -> string) option ->
   unit
 
-val checkCaseSensitivity : unit -> unit Lwt.t
+val validateAndFixupPrefs : unit -> unit Lwt.t
 
 (* Exit codes *)
 val perfectExit: int   (* when everything's okay *)
