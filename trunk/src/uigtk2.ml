@@ -2926,7 +2926,7 @@ let createToplevelWindow () =
       None ->
         detailsWindow#buffer#set_text ""
     | Some row ->
-        makeRowVisible row;
+(*        makeRowVisible row;*)
         let (formated, details) =
           match !theState.(row).whatHappened with
           | Some(Util.Failed(s), _) ->
@@ -3010,6 +3010,7 @@ let createToplevelWindow () =
       mainWindow#unselect_all ();
       mainWindow#select i 0;
       delayUpdates := false;
+      makeRowVisible i;
       updateDetails ()
     end
   in
@@ -4117,10 +4118,13 @@ lst_store#set ~row ~column:c_path path;
             ~callback:(fun _ -> statWin#show ()) "Show _Statistics");
 
   ignore (fileMenu#add_separator ());
-  ignore (fileMenu#add_image_item
-            ~key:GdkKeysyms._q ~callback:safeExit
-            ~image:((GMisc.image ~stock:`QUIT ~icon_size:`MENU ())#coerce)
-            "_Quit");
+  let quit =
+    fileMenu#add_image_item
+      ~key:GdkKeysyms._q ~callback:safeExit
+      ~image:((GMisc.image ~stock:`QUIT ~icon_size:`MENU ())#coerce)
+      "_Quit"
+  in
+  quit#add_accelerator ~group:accel_group ~modi:[`CONTROL] GdkKeysyms._q;
 
   (*********************************************************************
     Expert menu

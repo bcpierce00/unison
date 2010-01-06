@@ -1,5 +1,13 @@
 CHANGES FROM VERSION 2.38.5
 
+* GTK UI:
+  - do not reposition the file list when updating the detail view
+    anymore
+  - added Ctrl+Q as a shortcut for quitting besides just the key Q
+
+-------------------------------
+CHANGES FROM VERSION 2.38.5
+
 * Implemented an on-disk file fingerprint cache to speed-up update
   detection after a crash: this way, Unison does not have do recompute
   all the file fingerprints from scratch.
