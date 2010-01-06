@@ -64,9 +64,6 @@ val translatePathLocal : Fspath.t -> Path.t -> Path.local
 (* Are we checking fast, or carefully? *)
 val useFastChecking : unit -> bool
 
-(* Is that a file for which fast checking is disabled? *)
-val excelFile : Path.local -> bool
-
 (* Print the archive to the current formatter (see Format) *)
 val showArchive: archive -> unit
 

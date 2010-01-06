@@ -1,3 +1,10 @@
+CHANGES FROM VERSION 2.38.5
+
+* Implemented an on-disk file fingerprint cache to speed-up update
+  detection after a crash: this way, Unison does not have do recompute
+  all the file fingerprints from scratch.
+
+-------------------------------
 CHANGES FROM VERSION 2.38.0
 
 * Roll back a previous "fix" for a permission-setting issue and

@@ -165,7 +165,7 @@ let thisRootsGlobalName (fspath: Fspath.t): string =
 (* ----- *)
 
 (* The status of an archive *)
-type archiveVersion = MainArch | NewArch | ScratchArch | Lock
+type archiveVersion = MainArch | NewArch | ScratchArch | Lock | FPCache
 
 let showArchiveName =
   Prefs.createBool "showarchive" false
@@ -201,7 +201,8 @@ let addHashToTempNames fspath = Os.includeInTempNames (archiveHash fspath)
 let archiveName fspath (v: archiveVersion): string * string =
   let n = archiveHash fspath in
   let temp = match v with
-    MainArch -> "ar" | NewArch -> "tm" | ScratchArch -> "sc" | Lock -> "lk"
+    MainArch -> "ar" | NewArch -> "tm" | ScratchArch -> "sc"
+  | Lock     -> "lk" | FPCache   -> "fp"
   in
   (Printf.sprintf "%s%s" temp n,
    thisRootsGlobalName fspath)
@@ -1191,13 +1192,6 @@ let checkPropChange info archive archDesc =
              oldInfoOf archive)
   end
 
-(* HACK: we disable fastcheck for Excel (and MPP) files on Windows, as Excel
-   sometimes modifies a file without updating the time stamp. *)
-let excelFile path =
-  let s = Path.toString path in
-     Util.endswith s ".xls"
-  || Util.endswith s ".mpp"
-
 (* Check whether a file has changed has changed, by comparing its digest and
    properties against [archDesc], [archDig], and [archStamp].
    Returns a pair (optArch, ui) where [optArch] is *not* None when the file remains
@@ -1226,27 +1220,10 @@ let checkContentsChange
              (Uutil.Filesize.toString  (Props.length info.Fileinfo.desc));
            Util.msg "\n");
   let dataClearlyUnchanged =
-    fastCheck
-      &&
-    Props.same_time info.Fileinfo.desc archDesc
-      &&
-    Props.length info.Fileinfo.desc = Props.length archDesc
-      &&
-    not (excelFile path)
-      &&
-    match archStamp with
-      Fileinfo.InodeStamp inode ->
-        info.Fileinfo.inode = inode
-    | Fileinfo.CtimeStamp ctime ->
-        (* BCP [Apr 07]: This doesn't work -- ctimes are unreliable
-                         under windows.  :-(  
-           info.Fileinfo.ctime = ctime *)
-        true in
+    Fpcache.dataClearlyUnchanged fastCheck path info archDesc archStamp in
   let ressClearlyUnchanged =
-    fastCheck
-      &&
-    Osx.ressUnchanged archRess info.Fileinfo.osX.Osx.ressInfo
-      None dataClearlyUnchanged in
+    Fpcache.ressClearlyUnchanged fastCheck info archRess dataClearlyUnchanged
+  in
   if dataClearlyUnchanged && ressClearlyUnchanged then begin
     Xferhint.insertEntry currfspath path archDig;
     None, checkPropChange info archive archDesc
@@ -1254,7 +1231,7 @@ let checkContentsChange
     debugverbose (fun() -> Util.msg "  Double-check possibly updated file\n");
     showStatusAddLength info;
     let (info, newDigest) =
-      Os.safeFingerprint currfspath path info
+      Fpcache.fingerprint fastCheck currfspath path info
         (if dataClearlyUnchanged then Some archDig else None) in
     Xferhint.insertEntry currfspath path newDigest;
     debug (fun() -> Util.msg "  archive digest = %s   current digest = %s\n"
@@ -1492,7 +1469,9 @@ and buildUpdateRec archive currfspath path fastCheckInfos =
         None,
         begin
           showStatusAddLength info;
-          let (info, dig) = Os.safeFingerprint currfspath path info None in
+          let (info, dig) =
+            Fpcache.fingerprint
+              fastCheckInfos.fastCheck currfspath path info None in
           Xferhint.insertEntry currfspath path dig;
           Updates (File (info.Fileinfo.desc,
                          ContentsUpdated (dig, Fileinfo.stamp info,
@@ -1582,8 +1561,12 @@ let rec buildUpdate archive fspath fullpath here path dirStamp =
           dirFastCheck = useFastChecking () && Util.osType = `Unix;
           dirStamp = dirStamp }
       in
+      let (cacheFilename, _) = archiveName fspath FPCache in
+      let cacheFile = Os.fileInUnisonDir cacheFilename in
+      Fpcache.init fastCheckInfos.fastCheck cacheFile;
       let (arch, ui) =
         buildUpdateRec archive fspath here fastCheckInfos in
+      Fpcache.finish ();
       (begin match arch with
          None      -> archive
        | Some arch -> arch
@@ -2067,7 +2050,7 @@ let fastCheckMiss path desc ress oldDesc oldRess =
     &&
   Props.length desc = Props.length oldDesc
     &&
-  not (excelFile path)
+  not (Fpcache.excelFile path)
     &&
   Osx.ressUnchanged oldRess ress None true
 

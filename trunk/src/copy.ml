@@ -55,7 +55,7 @@ let checkContentsChangeLocal
   let dataClearlyUnchanged =
     not clearlyModified
     && Props.same_time info.Fileinfo.desc archDesc
-    && not (Update.excelFile pathFrom)
+    && not (Fpcache.excelFile pathFrom)
     && match archStamp with
          Some (Fileinfo.InodeStamp inode) -> info.Fileinfo.inode = inode
        | Some (Fileinfo.CtimeStamp ctime) -> true
