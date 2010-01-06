@@ -31,6 +31,7 @@ val addSuffixToFinalName : local -> string -> local
 val addPrefixToFinalName : local -> string -> local
 
 val compare : t -> t -> int
+val equal : local -> local -> bool
 val hash : local -> int
 
 val followLink : local -> bool
