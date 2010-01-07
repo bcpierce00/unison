@@ -131,6 +131,8 @@ let init fastCheck fspath =
   finish ();
   if fastCheck then begin
     begin try
+      debug (fun () -> Util.msg "opening cache file %s for input\n"
+                         (System.fspathToDebugString fspath));
       let ic = System.open_in_bin fspath in
       begin try
         let header = input_line ic in
@@ -243,8 +245,9 @@ let fingerprint fastCheck currfspath path info optDig =
                          (Path.toDebugString path));
       res
     with Not_found ->
-      debug (fun () -> Util.msg "cache miss for path %s\n"
-                         (Path.toDebugString path));
+      if fastCheck then
+        debug (fun () -> Util.msg "cache miss for path %s\n"
+                           (Path.toDebugString path));
       Os.safeFingerprint currfspath path info optDig
   in
   save path res;
