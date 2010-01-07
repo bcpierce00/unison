@@ -55,19 +55,6 @@ let mainWindowHeight =
     ("Used to set the height (in lines) of the main window in the graphical "
      ^ "user interface.")
 
-(*FIX: remove this option... *)
-let reuseToplevelWindows =
-  Prefs.createBool "reusewindows" false
-    "*reuse top-level windows instead of making new ones" ""
-(* Not sure if this should actually be made available to users...
-    ("When true, causes the graphical interface to re-use top-level windows "
-     ^ "(e.g., the small window that says ``Connecting...'') rather than "
-     ^ "destroying them and creating fresh ones.  ") 
-*)
-(* For convenience: *)
-let _ = Prefs.alias reuseToplevelWindows "rw"
-
-
 let expert =
   Prefs.createBool "expert" false
     "*Enable some developers-only functionality in the UI" ""

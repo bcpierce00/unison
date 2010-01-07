@@ -19,9 +19,6 @@ val auto : bool Prefs.t
 (* User preference: How tall to make the main window in the GTK ui *)
 val mainWindowHeight : int Prefs.t
 
-(* User preference: Should we reuse top-level windows as much as possible? *)
-val reuseToplevelWindows : bool Prefs.t
-
 (* User preference: Expert mode *)
 val expert : bool Prefs.t
 

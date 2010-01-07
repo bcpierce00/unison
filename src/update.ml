@@ -276,37 +276,44 @@ let (archiveNameOnRoot
           System.file_exists (Os.fileInUnisonDir name)))
 
 let checkArchiveCaseSensitivity l =
+  let error curMode archMode =
+          (* We cannot compute the archive name locally as it
+             currently depends on the os type *)
+    Globals.allRootsMap
+      (fun r -> archiveNameOnRoot r MainArch) >>= fun names ->
+    let l =
+      List.map
+        (fun (name, host, _) ->
+           Format.sprintf "    archive %s on host %s" name host)
+        names
+    in
+    Lwt.fail
+      (Util.Fatal
+         (String.concat "\n"
+            ("Warning: incompatible case sensitivity settings." ::
+              Format.sprintf "Unison is currently in %s mode," curMode ::
+              Format.sprintf
+                "while the archives were created in %s mode." archMode ::
+              "You should either change Unison's setup or delete " ::
+              "the following archives from the .unison directories:" ::
+              l @
+              ["Then, try again."])))
+  in
   match l with
-    Some (_, magic) :: _ ->
+    Some (_, magic) :: _ when magic <> "" ->
       begin try
         let archMode = String.sub magic 0 (String.index magic '\000') in
         let curMode = (Case.ops ())#modeDesc in
-        if curMode <> archMode then begin
-          (* We cannot compute the archive name locally as it
-             currently depends on the os type *)
-          Globals.allRootsMap
-            (fun r -> archiveNameOnRoot r MainArch) >>= fun names ->
-          let l =
-            List.map
-              (fun (name, host, _) ->
-                 Format.sprintf "    archive %s on host %s" name host)
-              names
-          in
-          Lwt.fail
-            (Util.Fatal
-               (String.concat "\n"
-                  ("Warning: incompatible case sensitivity settings." ::
-                    Format.sprintf "Unison is currently in %s mode," curMode ::
-                    Format.sprintf
-                      "while the archives assume %s mode." archMode ::
-                    "You should either change Unison's setup " ::
-                    "or delete the following archives:" ::
-                    l @
-                    ["Then, try again."])))
-        end else
+        if curMode <> archMode then
+          error curMode archMode
+        else
           Lwt.return ()
       with Not_found ->
-        Lwt.return ()
+        if (Case.ops ())#mode = Case.UnicodeInsensitive then begin
+          let curMode = (Case.ops ())#modeDesc in
+          error curMode "some non-Unicode"
+        end else
+          Lwt.return ()
       end
   | _ ->
       Lwt.return ()
@@ -1026,8 +1033,8 @@ let fastcheck =
        \\sectionref{fastcheck}{Fast Checking} for more information.")
 
 let useFastChecking () =
-      Prefs.readBoolWithDefault fastcheck = `True
-   || (Prefs.readBoolWithDefault fastcheck = `Default && Util.osType = `Unix)
+      Prefs.read fastcheck = `True
+   || (Prefs.read fastcheck = `Default (*&& Util.osType = `Unix*))
 
 let immutable = Pred.create "immutable" ~advanced:true
    ("This preference specifies paths for directories whose \

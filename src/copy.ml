@@ -117,6 +117,44 @@ let fileIsTransferred fspathTo pathTo desc fp ress =
    let fp' = Os.fingerprint fspathTo pathTo info in
    fp' = fp)
 
+(* We slice the files in 1GB chunks because that's the limit for
+   Fingerprint.subfile on 32 bit architectures *)
+let fingerprintLimit = Uutil.Filesize.ofInt64 1072693248L
+
+let rec fingerprintPrefix fspath path offset len accu =
+  if len = Uutil.Filesize.zero then accu else begin
+    let l = min len fingerprintLimit in
+    let fp = Fingerprint.subfile (Fspath.concat fspath path) offset l in
+    fingerprintPrefix fspath path
+      (Int64.add offset (Uutil.Filesize.toInt64 l)) (Uutil.Filesize.sub len l)
+      (fp :: accu)
+  end
+
+let fingerprintPrefixRemotely =
+  Remote.registerServerCmd
+    "fingerprintSubfile"
+    (fun _ (fspath, path, len) ->
+       Lwt.return (fingerprintPrefix fspath path 0L len []))
+
+let appendThreshold = Uutil.Filesize.ofInt (1024 * 1024)
+
+let validFilePrefix connFrom fspathFrom pathFrom fspathTo pathTo info desc =
+  let len = Props.length info.Fileinfo.desc in
+  if
+    info.Fileinfo.typ = `FILE &&
+    len >= appendThreshold && len < Props.length desc
+  then begin
+    Lwt.try_bind
+      (fun () ->
+         fingerprintPrefixRemotely connFrom (fspathFrom, pathFrom, len))
+      (fun fpFrom ->
+         let fpTo = fingerprintPrefix fspathTo pathTo 0L len [] in
+         Lwt.return (if fpFrom = fpTo then Some len else None))
+      (fun _ ->
+         Lwt.return None)
+  end else
+    Lwt.return None
+
 type transferStatus =
     Success of Fileinfo.t
   | Failure of string
@@ -163,8 +201,14 @@ let removeOldTempFile fspathTo pathTo =
 
 let openFileIn fspath path kind =
   match kind with
-    `DATA -> Fs.open_in_bin (Fspath.concat fspath path)
-  | `RESS -> Osx.openRessIn fspath path
+    `DATA ->
+      Fs.open_in_bin (Fspath.concat fspath path)
+  | `DATA_APPEND len ->
+      let ch = Fs.open_in_bin (Fspath.concat fspath path) in
+      LargeFile.seek_in ch (Uutil.Filesize.toInt64 len);
+      ch
+  | `RESS ->
+      Osx.openRessIn fspath path
 
 let openFileOut fspath path kind len =
   match kind with
@@ -189,6 +233,13 @@ let openFileOut fspath path kind len =
           in
           Unix.out_channel_of_descr fd
       end
+  | `DATA_APPEND len ->
+      let fullpath = Fspath.concat fspath path in
+      let perm = 0o600 in
+      let ch = Fs.open_out_gen [Open_wronly; Open_binary] perm fullpath in
+      Fs.chmod fullpath perm;
+      LargeFile.seek_out ch (Uutil.Filesize.toInt64 len);
+      ch
   | `RESS ->
       Osx.openRessOut fspath path len
 
@@ -336,6 +387,11 @@ let streamTransferInstruction =
     "processTransferInstruction" marshalTransferInstruction
     processTransferInstruction
 
+let showPrefixProgress id kind =
+  match kind with
+    `DATA_APPEND len -> Uutil.showProgress id len "r"
+  | _                -> ()
+
 let compress conn
      (biOpt, fspathFrom, pathFrom, fileKind, sizeFrom, id, file_id) =
   Lwt.catch
@@ -344,10 +400,11 @@ let compress conn
          (fun processTransferInstructionRemotely ->
             (* We abort the file transfer on error if it has not
                already started *)
-            if fileKind = `DATA then Abort.check id;
+            if fileKind <> `RESS then Abort.check id;
             let infd = openFileIn fspathFrom pathFrom fileKind in
             lwt_protect
               (fun () ->
+                 showPrefixProgress id fileKind;
                  let showProgress count =
                    Uutil.showProgress id (Uutil.Filesize.ofInt count) "r" in
                  let compr =
@@ -401,8 +458,9 @@ let destinationFd fspath path kind len outfd id =
     None    ->
       (* We abort the file transfer on error if it has not
          already started *)
-      if kind = `DATA then Abort.check id;
+      if kind <> `RESS then Abort.check id;
       let fd = openFileOut fspath path kind len in
+      showPrefixProgress id kind;
       outfd := Some fd;
       fd
   | Some fd ->
@@ -441,7 +499,7 @@ let transferFileContents
         Uutil.Filesize.zero
     | `Update (destFileDataSize, destFileRessSize) ->
         match fileKind with
-            `DATA -> destFileDataSize
+            `DATA | `DATA_APPEND _ -> destFileDataSize
           | `RESS -> destFileRessSize
   in
   let useRsync =
@@ -522,16 +580,27 @@ let transferRessourceForkAndSetFileinfo
 
 let reallyTransferFile
       connFrom fspathFrom pathFrom fspathTo pathTo realPathTo
-      update desc fp ress id =
+      update desc fp ress id tempInfo =
   debug (fun() -> Util.msg "reallyTransferFile(%s,%s) -> (%s,%s,%s,%s)\n"
       (Fspath.toDebugString fspathFrom) (Path.toString pathFrom)
       (Fspath.toDebugString fspathTo) (Path.toString pathTo)
       (Path.toString realPathTo) (Props.toString desc));
-  removeOldTempFile fspathTo pathTo;
+  validFilePrefix connFrom fspathFrom pathFrom fspathTo pathTo tempInfo desc
+    >>= fun prefixLen ->
+  begin match prefixLen with
+    None ->
+      removeOldTempFile fspathTo pathTo
+  | Some len ->
+      debug
+        (fun() ->
+           Util.msg "Keeping %s bytes previously transferred for file %s\n"
+             (Uutil.Filesize.toString len) (Path.toString pathFrom))
+  end;
   (* Data fork *)
   transferFileContents
     connFrom fspathFrom pathFrom fspathTo pathTo realPathTo update
-    `DATA (Props.length desc) id >>= fun () ->
+    (match prefixLen with None -> `DATA | Some l -> `DATA_APPEND l)
+    (Props.length desc) id >>= fun () ->
   transferRessourceForkAndSetFileinfo
     connFrom fspathFrom pathFrom fspathTo pathTo realPathTo
     update desc fp ress id
@@ -703,8 +772,8 @@ let transferFileUsingExternalCopyprog
     else
       Prefs.read copyprog
   in
-  let extraquotes = Prefs.readBoolWithDefault copyquoterem = `True
-                 || (  Prefs.readBoolWithDefault copyquoterem = `Default
+  let extraquotes = Prefs.read copyquoterem = `True
+                 || (  Prefs.read copyquoterem = `Default
                     && Util.findsubstring "rsync" prog <> None) in
   let addquotes root s =
     match root with
@@ -738,7 +807,8 @@ let transferFileUsingExternalCopyprog
 let transferFileLocal connFrom
       (fspathFrom, pathFrom, fspathTo, pathTo, realPathTo,
        update, desc, fp, ress, id) =
-  let (info, isTransferred) = fileIsTransferred fspathTo pathTo desc fp ress in
+  let (tempInfo, isTransferred) =
+    fileIsTransferred fspathTo pathTo desc fp ress in
   if isTransferred then begin
     (* File is already fully transferred (from some interrupted
        previous transfer). *)
@@ -752,7 +822,7 @@ let transferFileLocal connFrom
     Uutil.showProgress id len "alr";
     setFileinfo fspathTo pathTo realPathTo update desc;
     Xferhint.insertEntry fspathTo pathTo fp;
-    Lwt.return (`DONE (Success info, Some msg))
+    Lwt.return (`DONE (Success tempInfo, Some msg))
   end else
     registerFileTransfer pathTo fp
       (fun () ->
@@ -769,7 +839,7 @@ let transferFileLocal connFrom
              else begin
                reallyTransferFile
                  connFrom fspathFrom pathFrom fspathTo pathTo realPathTo
-                 update desc fp ress id >>= fun status ->
+                 update desc fp ress id tempInfo >>= fun status ->
                Xferhint.insertEntry fspathTo pathTo fp;
                Lwt.return (`DONE (status, None))
              end)

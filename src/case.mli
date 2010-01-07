@@ -4,7 +4,7 @@
 val unicodeEncoding : bool Prefs.t
 val useUnicodeAPI : unit -> bool
 
-type mode
+type mode = Sensitive | Insensitive | UnicodeInsensitive
 
 val ops : unit ->
   < mode : mode; modeDesc : string;       (* Current mode *)
