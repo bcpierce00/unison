@@ -1467,14 +1467,16 @@ let createProfile parent =
      modification time.  Nowadays, FAT is rarely used on working
      partitions.  In most cases, we should be in Unicode mode.
      Thus, it seems sensible to always enable fastcheck. *)
+(*
   let fastcheck = isLocal >> not >> (fun b -> b || Util.osType = `Win32) in
+*)
   (* Unicode mode can be problematic when the source machine is under
      Windows and the remote machine is not, as Unison may have already
      been used using the legacy Latin 1 encoding.  Cygwin also did not
      handle Unicode before version 1.7. *)
   let vb = GPack.vbox ~spacing:6 ~packing:(options#pack ~expand:false) () in
-  let askUnicode =
-    isLocal >> not >> fun b -> (b || Util.isCygwin) && Util.osType = `Win32 in
+  let askUnicode = React.const false in
+(* isLocal >> not >> fun b -> (b || Util.isCygwin) && Util.osType = `Win32 in*)
   GtkReact.show vb askUnicode;
   adjustSize
     (GMisc.label ~xalign:0. ~line_wrap:true ~justify:`LEFT
@@ -1505,9 +1507,11 @@ let createProfile parent =
   ignore
     (GButton.radio_button ~label:"_Latin 1" ~use_mnemonic:true
        ~group:unicodeButton#group ~packing:(hb#add) ());
+(*
   let unicode =
     React.lift2 (||) (askUnicode >> not) (GtkReact.toggle_button unicodeButton)
   in
+*)
   let p =
     assistant#append_page
       ~title:"Specific Options" ~complete:true
@@ -1560,12 +1564,15 @@ let createProfile parent =
       Printf.fprintf ch "root = %s\n" (Clroot.clroot2string secondRoot);
       if React.state compress && React.state kind = `SSH then
         Printf.fprintf ch "sshargs = -C\n";
+(*
       if React.state fastcheck then
         Printf.fprintf ch "fastcheck = true\n";
       if React.state unicode then
         Printf.fprintf ch "unicode = true\n";
+*)
       if React.state fat then begin
         Printf.fprintf ch "ignorecase = true\n";
+        Printf.fprintf ch "unicode = true\n";
         Printf.fprintf ch "ignoreinodenumbers = true\n";
         Printf.fprintf ch "links = false\n";
         Printf.fprintf ch "perms = 0o200\n"
@@ -2467,8 +2474,10 @@ let getProfile quit =
     GButton.button ~stock:`EDIT ~packing:(vb#pack ~expand:false) () in
   ignore (editButton#connect#clicked
             ~callback:(fun () -> match React.state selInfo with
-                                   None             -> ()
-                                 | Some ((p, _), _) -> editProfile t p));
+                                   None ->
+                                     ()
+                                 | Some ((p, _), _) ->
+                                     editProfile t p; fillLst (Some p)));
   GtkReact.set_sensitive editButton hasSel;
   let deleteProfile () =
     match React.state selInfo with
@@ -2994,12 +3003,14 @@ let createToplevelWindow () =
   let delayUpdates = ref false in
   let hasFocus = ref false in
 
-  let select i =
+  let select i scroll =
     if !hasFocus then begin
       (* If we have the focus, we move the focus row directely *)
-      let r = mainWindow#rows in
-      let p = if r < 2 then 0. else (float i +. 0.5) /. float (r - 1) in
-      mainWindow#scroll_vertical `JUMP (min p 1.);
+      if scroll then begin
+        let r = mainWindow#rows in
+        let p = if r < 2 then 0. else (float i +. 0.5) /. float (r - 1) in
+        mainWindow#scroll_vertical `JUMP (min p 1.)
+      end;
       if IntSet.is_empty !current then mainWindow#select i 0
     end else begin
       (* If we don't have the focus, we just move the selection.
@@ -3010,7 +3021,7 @@ let createToplevelWindow () =
       mainWindow#unselect_all ();
       mainWindow#select i 0;
       delayUpdates := false;
-      makeRowVisible i;
+      if scroll then makeRowVisible i;
       updateDetails ()
     end
   in
@@ -3021,7 +3032,7 @@ let createToplevelWindow () =
             otherwise the focus row is not drawn correctly. *)
          ignore (GMain.Idle.add (fun () ->
            begin match currentRow () with
-             Some i -> select i
+             Some i -> select i false
            | None -> ()
            end;
            false));
@@ -3046,7 +3057,7 @@ let createToplevelWindow () =
         match !theState.(i).ri.replicas with
           Different {direction = dir}
               when not (Prefs.read Uicommon.auto) || dir = Conflict ->
-            select i
+            select i true
         | _ ->
             loop (i + 1) in
     loop start in
@@ -3149,7 +3160,7 @@ lst_store#set ~row ~column:c_path path;
              (match savedCurrent with None->"None" | Some(i) -> string_of_int i));
     begin match savedCurrent with
       None     -> selectSomethingIfPossible ()
-    | Some idx -> select idx
+    | Some idx -> select idx true
     end;
     mainWindow#thaw ();
     updateDetails ();  (* Do we need this line? *)

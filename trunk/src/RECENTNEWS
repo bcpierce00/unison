@@ -1,3 +1,23 @@
+CHANGES FROM VERSION 2.39.0
+
+* Bumped version number: incompatible protocol changes
+
+* Resume copy of partially transferred files.
+* Unicode mode is now the default when one of the hosts is under
+  Windows or MacOS.  This may make upgrades a bit more painful (the
+  archives cannot be reused), but this is a much saner default.
+* Fastcheck is now the default under Windows.  People mostly use NTFS
+  nowadays and the Unicode API provides an equivalent to inode numbers
+  for this filesystem.
+* Unison now fails if in unicode case-insensitive mode but the archive
+  mode is not known (this means that we are upgrading from an older
+  version which did not support this mode)
+* Changed the type of trivalued preferences (true/false/default) to an
+  enumerated type
+* Removed the "reusewindows" preference, which was not used anymore.
+* GTK UI: do not reposition the file list on focus change
+
+-------------------------------
 CHANGES FROM VERSION 2.38.5
 
 * Fix the fingerprint cache so that it works also with multiple paths

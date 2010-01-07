@@ -25,7 +25,7 @@ let maxerrors =
     "This preference controls after how many errors Unison aborts a \
      directory transfer.  Setting it to a large number allows Unison \
      to transfer most of a directory even when some files fail to be \
-     copied.  The default is 1.  If the preference is set to high, \
+     copied.  The default is 1.  If the preference is set too high, \
      Unison may take a long time to abort in case of repeated \
      failures (for instance, when the disk is full)."
 

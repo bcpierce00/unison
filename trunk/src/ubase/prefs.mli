@@ -4,8 +4,6 @@
 type 'a t
 
 val read : 'a t -> 'a
-(*FIX: remove this function and change the type of the preferences instead*)
-val readBoolWithDefault : string t -> [ `Default | `False | `True ]
 val set : 'a t -> 'a -> unit
 val name : 'a t -> string list
 
@@ -57,7 +55,7 @@ val createBoolWithDefault :
      -> ?local:bool             (* whether it is local to the client *)
      -> string              (* documentation string *)
      -> string              (* full (tex) documentation string *)
-     -> string t
+     -> [`True|`False|`Default] t
                             (*   -> new preference value *)
 
 exception IllegalValue of string

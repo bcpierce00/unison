@@ -36,8 +36,8 @@ let symlinksAllowed =
 
 let init b =
   Prefs.set symlinksAllowed
-    (Prefs.readBoolWithDefault allowSymlinks = `True ||
-     (Prefs.readBoolWithDefault allowSymlinks = `Default && not b))
+    (Prefs.read allowSymlinks = `True ||
+     (Prefs.read allowSymlinks = `Default && not b))
 
 type typ = [ `ABSENT | `FILE | `DIRECTORY | `SYMLINK ]
 
