@@ -1,5 +1,10 @@
 CHANGES FROM VERSION 2.38.5
 
+* Fix the fingerprint cache so that it works also with multiple paths
+
+-------------------------------
+CHANGES FROM VERSION 2.38.5
+
 * GTK UI:
   - do not reposition the file list when updating the detail view
     anymore

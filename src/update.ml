@@ -1549,24 +1549,12 @@ and buildUpdateRec archive currfspath path fastCheckInfos =
    contents.  The directory permissions along the path are also
    collected, in case we need to build the directory hierarchy
    on one side. *)
-let rec buildUpdate archive fspath fullpath here path dirStamp =
+let rec buildUpdate archive fspath fullpath here path dirStamp fastCheckInfos =
   match Path.deconstruct path with
     None ->
       showStatus here;
-      let fastCheckInfos =
-        { fastCheck = useFastChecking ();
-          (* Directory optimization is disabled under Windows,
-             as Windows does not update directory modification times
-             on FAT filesystems. *)
-          dirFastCheck = useFastChecking () && Util.osType = `Unix;
-          dirStamp = dirStamp }
-      in
-      let (cacheFilename, _) = archiveName fspath FPCache in
-      let cacheFile = Os.fileInUnisonDir cacheFilename in
-      Fpcache.init fastCheckInfos.fastCheck cacheFile;
       let (arch, ui) =
         buildUpdateRec archive fspath here fastCheckInfos in
-      Fpcache.finish ();
       (begin match arch with
          None      -> archive
        | Some arch -> arch
@@ -1634,7 +1622,7 @@ let rec buildUpdate archive fspath fullpath here path dirStamp =
               let (arch, updates, localPath, props) =
                 buildUpdate
                   archChild fspath fullpath (Path.child here name') path'
-                  dirStamp
+                  dirStamp fastCheckInfos
               in
               let children =
                 if arch = NoArchive then otherChildren else
@@ -1647,7 +1635,7 @@ let rec buildUpdate archive fspath fullpath here path dirStamp =
               let (arch, updates, localPath, props) =
                 buildUpdate
                   NoArchive fspath fullpath (Path.child here name') path'
-                  dirStamp
+                  dirStamp fastCheckInfos
               in
               assert (arch = NoArchive);
               (archive, updates, localPath,
@@ -1713,6 +1701,17 @@ let findLocal fspath pathList:
 (*
 let t1 = Unix.gettimeofday () in
 *)
+  let fastCheckInfos =
+    { fastCheck = useFastChecking ();
+      (* Directory optimization is disabled under Windows,
+         as Windows does not update directory modification times
+         on FAT filesystems. *)
+      dirFastCheck = useFastChecking () && Util.osType = `Unix;
+      dirStamp = dirStamp }
+  in
+  let (cacheFilename, _) = archiveName fspath FPCache in
+  let cacheFile = Os.fileInUnisonDir cacheFilename in
+  Fpcache.init fastCheckInfos.fastCheck cacheFile;
   let (archive, updates) =
     Safelist.fold_right
       (fun path (arch, upd) ->
@@ -1720,11 +1719,13 @@ let t1 = Unix.gettimeofday () in
            (arch, (translatePathLocal fspath path, NoUpdates, []) :: upd)
          else
            let (arch', ui, localPath, props) =
-             buildUpdate arch fspath path Path.empty path dirStamp
+             buildUpdate
+               arch fspath path Path.empty path dirStamp fastCheckInfos
            in
            arch', (localPath, ui, props) :: upd)
       pathList (archive, [])
   in
+  Fpcache.finish ();
 (*
 let t2 = Unix.gettimeofday () in
 Format.eprintf "Update detection: %f@." (t2 -. t1);
