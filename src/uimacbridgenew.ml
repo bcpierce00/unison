@@ -76,6 +76,22 @@ let callbackThreadCreate() =
 ;;
 Callback.register "callbackThreadCreate" callbackThreadCreate;;
 
+(* Defined in MyController.m; display the error message and exit *)
+external displayFatalError : string -> unit = "fatalError";;
+
+let fatalError message =
+  Trace.log (message ^ "\n");
+  displayFatalError message
+
+let doInOtherThread f =
+  Thread.create
+    (fun () ->
+       try
+         f ()
+       with
+         Util.Transient s | Util.Fatal s -> fatalError s
+       | exn -> fatalError (Uicommon.exn2string exn))
+
 (* Defined in MyController.m, used to redisplay the table
    when the status for a row changes *)
 external reloadTable : int -> unit = "reloadTable";;
@@ -225,11 +241,10 @@ external unisonInit1Complete : Remote.preconnection option -> unit = "unisonInit
 
 (* Do this in another thread and return immedidately to free up main thread in cocoa *)
 let unisonInit1 profileName =
-	let doIt () =
-		let r =  do_unisonInit1 profileName in 
-		unisonInit1Complete r;
-	in
-	Thread.create doIt();
+  doInOtherThread
+    (fun () ->
+       let r = do_unisonInit1 profileName in
+       unisonInit1Complete r)
 ;;
 Callback.register "unisonInit1" unisonInit1;;
 Callback.register "openConnectionPrompt" Remote.openConnectionPrompt;;
@@ -337,11 +352,10 @@ external unisonInit2Complete : stateItem array -> unit = "unisonInit2Complete";;
 
 (* Do this in another thread and return immedidately to free up main thread in cocoa *)
 let unisonInit2 () =
-	let doIt () =
-		let r =  do_unisonInit2 () in 
-		unisonInit2Complete r;
-	in
-	Thread.create doIt();
+  doInOtherThread
+    (fun () ->
+       let r = do_unisonInit2 () in
+       unisonInit2Complete r)
 ;;
 Callback.register "unisonInit2" unisonInit2;;
 
@@ -377,7 +391,7 @@ let unisonRiToRight ri =
 Callback.register "unisonRiToRight" unisonRiToRight;;
 
 let unisonRiToFileSize ri =
-  (*FIX: will not work with files and directory larger than 1 GiB on
+  (*FIX: will not work with files and directories larger than 1 GiB on
     32bit machines! *)
   Uutil.Filesize.toInt (riLength ri.ri);;
 Callback.register "unisonRiToFileSize" unisonRiToFileSize;;
@@ -604,11 +618,10 @@ external syncComplete : unit -> unit = "syncComplete";;
 
 (* Do this in another thread and return immedidately to free up main thread in cocoa *)
 let unisonSynchronize () =
-	let doIt () =
-		do_unisonSynchronize ();
-		syncComplete ();
-	in 
-	Thread.create doIt();
+  doInOtherThread
+    (fun () ->
+       do_unisonSynchronize ();
+       syncComplete ())
 ;;
 Callback.register "unisonSynchronize" unisonSynchronize;;
 

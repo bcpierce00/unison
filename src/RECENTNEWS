@@ -1,5 +1,11 @@
 CHANGES FROM VERSION 2.39.0
 
+* MacOS GUI:
+  - improved exception handling (untested code, might not even compile)
+
+-------------------------------
+CHANGES FROM VERSION 2.39.0
+
 * Bumped version number: incompatible protocol changes
 
 * Resume copy of partially transferred files.
