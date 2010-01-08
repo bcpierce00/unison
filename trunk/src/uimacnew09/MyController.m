@@ -1081,6 +1081,20 @@ CAMLprim value displayDiffErr(value s)
     return toolbarHeight;
 }
 
+CAMLprim value fatalError(value s)
+{
+	NSString *str = [[NSString alloc] initWithUTF8String:String_val(s)];
+
+        [me performSelectorOnMainThread:@selector(fatalError:) withObject:str waitUntilDone:FALSE];
+	[str release];
+    return Val_unit;
+}
+
+- (void)fatalError:(NSString *)msg {
+        NSRunAlertPanel(@"Fatal error", msg, @"Exit", nil, nil);
+        exit(1);
+}
+
 @end
 
 @implementation NSString (_UnisonUtil)
