@@ -275,6 +275,22 @@ let (archiveNameOnRoot
           Os.myCanonicalHostName,
           System.file_exists (Os.fileInUnisonDir name)))
 
+let compatibleCaseMode magic =
+  if magic = "" then `YES else
+  try
+    let archMode = String.sub magic 0 (String.index magic '\000') in
+    let curMode = (Case.ops ())#modeDesc in
+    if curMode <> archMode then
+      `NO (curMode, archMode)
+    else
+      `YES
+  with Not_found ->
+    if (Case.ops ())#mode = Case.UnicodeInsensitive then
+      let curMode = (Case.ops ())#modeDesc in
+      `NO (curMode, "some non-Unicode")
+    else
+      `YES
+
 let checkArchiveCaseSensitivity l =
   let error curMode archMode =
           (* We cannot compute the archive name locally as it
@@ -294,26 +310,17 @@ let checkArchiveCaseSensitivity l =
               Format.sprintf "Unison is currently in %s mode," curMode ::
               Format.sprintf
                 "while the archives were created in %s mode." archMode ::
-              "You should either change Unison's setup or delete " ::
+              "You should either change Unison's setup or delete" ::
               "the following archives from the .unison directories:" ::
               l @
-              ["Then, try again."])))
+              ["(or invoke Unison once with -ignorearchives flag).";
+               "Then, try again."])))
   in
   match l with
-    Some (_, magic) :: _ when magic <> "" ->
-      begin try
-        let archMode = String.sub magic 0 (String.index magic '\000') in
-        let curMode = (Case.ops ())#modeDesc in
-        if curMode <> archMode then
-          error curMode archMode
-        else
-          Lwt.return ()
-      with Not_found ->
-        if (Case.ops ())#mode = Case.UnicodeInsensitive then begin
-          let curMode = (Case.ops ())#modeDesc in
-          error curMode "some non-Unicode"
-        end else
-          Lwt.return ()
+    Some (_, magic) :: _ ->
+      begin match compatibleCaseMode magic with
+        `NO (curMode, archMode) -> error curMode archMode
+      | `YES                    -> Lwt.return ()
       end
   | _ ->
       Lwt.return ()
@@ -575,6 +582,45 @@ let dumpArchiveOnRoot : Common.root -> unit -> unit Lwt.t =
 (*                         Loading archives                              *)
 (*************************************************************************)
 
+let ignoreArchives =
+  Prefs.createBool "ignorearchives" false
+    "!ignore existing archive files"
+    ("When this preference is set, Unison will ignore any existing "
+     ^ "archive files and behave as though it were being run for the first "
+     ^ "time on these replicas.  It is "
+     ^ "not a good idea to set this option in a profile: it is intended for "
+     ^ "command-line use.")
+
+let rec populateCacheFromArchive path arch =
+  match arch with
+    ArchiveDir (_, children) ->
+      NameMap.iter
+        (fun nm ch -> populateCacheFromArchive (Path.child path nm) ch)
+        children
+  | ArchiveFile (desc, dig, stamp, ress) ->
+      Fpcache.save path (desc, dig, stamp, ress)
+  | ArchiveSymlink _ | NoArchive ->
+      ()
+
+let setArchiveData thisRoot fspath (arch, hash, magic, properties) info =
+  setArchiveLocal thisRoot arch;
+  setArchivePropsLocal thisRoot properties;
+  Hashtbl.replace archiveInfoCache thisRoot info;
+  if compatibleCaseMode magic <> `YES then begin
+    let (cacheFilename, _) = archiveName fspath FPCache in
+    let cacheFile = Os.fileInUnisonDir cacheFilename in
+    Fpcache.init true cacheFile;
+    populateCacheFromArchive Path.empty arch;
+    Fpcache.finish ()
+  end;
+  Lwt.return (Some (hash, magic))
+
+let clearArchiveData thisRoot =
+  setArchiveLocal thisRoot NoArchive;
+  setArchivePropsLocal thisRoot Proplist.empty;
+  Hashtbl.remove archiveInfoCache thisRoot;
+  Lwt.return (Some (0, ""))
+
 (* Load (main) root archive and cache it on the given server *)
 let loadArchiveOnRoot: Common.root -> bool -> (int * string) option Lwt.t =
   Remote.registerRootCmd
@@ -582,7 +628,10 @@ let loadArchiveOnRoot: Common.root -> bool -> (int * string) option Lwt.t =
     (fun (fspath, optimistic) ->
        let (arcName,thisRoot) = archiveName fspath MainArch in
        let arcFspath = Os.fileInUnisonDir arcName in
-       if optimistic then begin
+
+       if Prefs.read ignoreArchives then
+         clearArchiveData thisRoot
+       else if optimistic then begin
          let (newArcName, _) = archiveName fspath NewArch in
          if
            (* If the archive is not in a stable state, we need to
@@ -605,14 +654,11 @@ let loadArchiveOnRoot: Common.root -> bool -> (int * string) option Lwt.t =
              Lwt.return (Some (0, ""))
            else begin
              match loadArchiveLocal arcFspath thisRoot with
-               Some (arch, hash, magic, properties) ->
+               Some archData ->
                  let info' = Fileinfo.get' arcFspath in
-                 if fileUnchanged info info' then begin
-                   setArchiveLocal thisRoot arch;
-                   setArchivePropsLocal thisRoot properties;
-                   Hashtbl.replace archiveInfoCache thisRoot info;
-                   Lwt.return (Some (hash, magic))
-                 end else
+                 if fileUnchanged info info' then
+                   setArchiveData thisRoot fspath archData info
+                 else
                    (* The archive was modified during loading.  We fail. *)
                    Lwt.return None
              | None ->
@@ -621,18 +667,11 @@ let loadArchiveOnRoot: Common.root -> bool -> (int * string) option Lwt.t =
            end
        end else begin
          match loadArchiveLocal arcFspath thisRoot with
-           Some (arch, hash, magic, properties) ->
-             setArchiveLocal thisRoot arch;
-             setArchivePropsLocal thisRoot properties;
-             let info = Fileinfo.get' arcFspath in
-             Hashtbl.replace archiveInfoCache thisRoot info;
-             Lwt.return (Some (hash, magic))
+           Some archData ->
+             setArchiveData thisRoot fspath archData (Fileinfo.get' arcFspath)
          | None ->
              (* No archive found *)
-             setArchiveLocal thisRoot NoArchive;
-             setArchivePropsLocal thisRoot Proplist.empty;
-             Hashtbl.remove archiveInfoCache thisRoot;
-             Lwt.return (Some (0, ""))
+             clearArchiveData thisRoot
        end)
 
 let dumpArchives =
@@ -642,47 +681,34 @@ let dumpArchives =
      ^ "on each host, containing a text summary of the archive, immediately "
      ^ "after loading it.")
 
-let ignoreArchives =
-  Prefs.createBool "ignorearchives" false
-    "!ignore existing archive files"
-    ("When this preference is set, Unison will ignore any existing "
-     ^ "archive files and behave as though it were being run for the first "
-     ^ "time on these replicas.  It is "
-     ^ "not a good idea to set this option in a profile: it is intended for "
-     ^ "command-line use.")
-
 (* For all roots (local or remote), load the archive and cache *)
 let loadArchives (optimistic: bool) : bool Lwt.t =
-  if Prefs.read ignoreArchives then begin
-    Lwt.return false
-  end else  begin
-    Globals.allRootsMap (fun r -> loadArchiveOnRoot r optimistic)
-       >>= (fun checksums ->
-    let identicals = archivesIdentical checksums in
-    if not (optimistic || identicals) then
-      raise (Util.Fatal(
-          "Internal error: On-disk archives are not identical.\n"
-        ^ "\n"
-        ^ "This can happen when both machines have the same hostname.\n"
-        ^ "\n"
-        ^ "If this is not the case and you get this message repeatedly, please:\n"
-        ^ "  a) Send a bug report to unison-users@yahoogroups.com (you may need"
-        ^ "     to join the group before you will be allowed to post).\n"
-        ^ "  b) Move the archive files on each machine to some other directory\n"
-        ^ "     (in case they may be useful for debugging).\n"
-        ^ "     The archive files on this machine are in the directory\n"
-        ^ (Printf.sprintf "       %s\n"
-             (System.fspathToPrintString Os.unisonDir))
-        ^ "     and have names of the form\n"
-        ^ "       arXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n"
-        ^ "     where the X's are a hexidecimal number .\n"
-        ^ "  c) Run unison again to synchronize from scratch.\n"));
-    checkArchiveCaseSensitivity checksums >>= fun () ->
-    if Prefs.read dumpArchives then 
-      Globals.allRootsMap (fun r -> dumpArchiveOnRoot r ())
-       >>= (fun _ -> Lwt.return identicals)
-    else Lwt.return identicals)
-  end
+  Globals.allRootsMap (fun r -> loadArchiveOnRoot r optimistic)
+     >>= (fun checksums ->
+  let identicals = archivesIdentical checksums in
+  if not (optimistic || identicals) then
+    raise (Util.Fatal(
+        "Internal error: On-disk archives are not identical.\n"
+      ^ "\n"
+      ^ "This can happen when both machines have the same hostname.\n"
+      ^ "\n"
+      ^ "If this is not the case and you get this message repeatedly, please:\n"
+      ^ "  a) Send a bug report to unison-users@yahoogroups.com (you may need"
+      ^ "     to join the group before you will be allowed to post).\n"
+      ^ "  b) Move the archive files on each machine to some other directory\n"
+      ^ "     (in case they may be useful for debugging).\n"
+      ^ "     The archive files on this machine are in the directory\n"
+      ^ (Printf.sprintf "       %s\n"
+           (System.fspathToPrintString Os.unisonDir))
+      ^ "     and have names of the form\n"
+      ^ "       arXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n"
+      ^ "     where the X's are a hexidecimal number .\n"
+      ^ "  c) Run unison again to synchronize from scratch.\n"));
+  checkArchiveCaseSensitivity checksums >>= fun () ->
+  if Prefs.read dumpArchives then
+    Globals.allRootsMap (fun r -> dumpArchiveOnRoot r ())
+     >>= (fun _ -> Lwt.return identicals)
+  else Lwt.return identicals)
 
 
 (*****************************************************************************)
@@ -806,39 +832,6 @@ let forall = Safelist.for_all (fun x -> x)
 let exists = Safelist.exists (fun x -> x)
 
 let doArchiveCrashRecovery () =
-  let noArchives() = 
-    foundArchives := false;
-    let expectedRoots =
-      String.concat "\n\t" (Safelist.map root2string (Globals.rootsList ())) in
-     Util.warn
-     ("No archive files were found for these roots, whose canonical names are:\n\t"
-     ^ expectedRoots ^ "\nThis can happen either\n"
-     ^ "because this is the first time you have synchronized these roots, \n"
-     ^ "or because you have upgraded Unison to a new version with a different\n"
-     ^ "archive format.  \n\n"
-     ^ "Update detection may take a while on this run if the replicas are \n"
-     ^ "large.\n\n"
-     ^ "Unison will assume that the 'last synchronized state' of both replicas\n"
-     ^ "was completely empty.  This means that any files that are different\n"
-     ^ "will be reported as conflicts, and any files that exist only on one\n"
-     ^ "replica will be judged as new and propagated to the other replica.\n"
-     ^ "If the two replicas are identical, then no changes will be reported.\n\n"
-     ^ "If you see this message repeatedly, it may be because one of your machines\n"
-     ^ "is getting its address from DHCP, which is causing its host name to change\n"
-     ^ "between synchronizations.  See the documentation for the UNISONLOCALHOSTNAME\n"
-     ^ "environment variable for advice on how to correct this.\n"
-     ^ "\n"
-     ^ "Donations to the Unison project are gratefully accepted: \n"
-     ^ "http://www.cis.upenn.edu/~bcpierce/unison\n"
-     ^ "\n"
-     (* ^ "\nThe expected archive names were:\n" ^ expectedNames *) );
-    Lwt.return () in
-
-  (* See if we've been asked to ignore the archives *)
-  if Prefs.read ignoreArchives then
-    noArchives()
-  else
-
   (* Check which hosts have copies of the old/new archive *)
   Globals.allRootsMap (fun r -> archivesExistOnRoot r ()) >>= (fun exl ->
   let oldnamesExist,newnamesExist =
@@ -892,7 +885,32 @@ let doArchiveCrashRecovery () =
              ["Please delete archive files as appropriate and try again\n";
              "or invoke Unison with -ignorearchives flag."]))))
   else begin
-    noArchives()
+    foundArchives := false;
+    let expectedRoots =
+      String.concat "\n\t" (Safelist.map root2string (Globals.rootsList ())) in
+     Util.warn
+     ("No archive files were found for these roots, whose canonical names are:\n\t"
+     ^ expectedRoots ^ "\nThis can happen either\n"
+     ^ "because this is the first time you have synchronized these roots, \n"
+     ^ "or because you have upgraded Unison to a new version with a different\n"
+     ^ "archive format.  \n\n"
+     ^ "Update detection may take a while on this run if the replicas are \n"
+     ^ "large.\n\n"
+     ^ "Unison will assume that the 'last synchronized state' of both replicas\n"
+     ^ "was completely empty.  This means that any files that are different\n"
+     ^ "will be reported as conflicts, and any files that exist only on one\n"
+     ^ "replica will be judged as new and propagated to the other replica.\n"
+     ^ "If the two replicas are identical, then no changes will be reported.\n\n"
+     ^ "If you see this message repeatedly, it may be because one of your machines\n"
+     ^ "is getting its address from DHCP, which is causing its host name to change\n"
+     ^ "between synchronizations.  See the documentation for the UNISONLOCALHOSTNAME\n"
+     ^ "environment variable for advice on how to correct this.\n"
+     ^ "\n"
+     ^ "Donations to the Unison project are gratefully accepted: \n"
+     ^ "http://www.cis.upenn.edu/~bcpierce/unison\n"
+     ^ "\n"
+     (* ^ "\nThe expected archive names were:\n" ^ expectedNames *) );
+    Lwt.return ()
   end))
 
 (*************************************************************************
@@ -1185,18 +1203,16 @@ let dirContentsClearlyUnchanged info archDesc fastCheckInfos =
   Props.time archDesc >= 631152000. (* Jan 1, 1990 *)
 
 (* Check whether a file's permissions have not changed *)
-let isPropUnchanged info archiveDesc =
-  Props.similar info.Fileinfo.desc archiveDesc
+let isPropUnchanged desc archiveDesc = Props.similar desc archiveDesc
 
 (* Handle file permission change *)
-let checkPropChange info archive archDesc =
-  if isPropUnchanged info archDesc then begin
+let checkPropChange desc archive archDesc =
+  if isPropUnchanged desc archDesc then begin
     debugverbose (fun() -> Util.msg "  Unchanged file\n");
     NoUpdates
   end else begin
     debug (fun() -> Util.msg "  File permissions updated\n");
-    Updates (File (info.Fileinfo.desc, ContentsSame),
-             oldInfoOf archive)
+    Updates (File (desc, ContentsSame), oldInfoOf archive)
   end
 
 (* Check whether a file has changed has changed, by comparing its digest and
@@ -1233,11 +1249,11 @@ let checkContentsChange
   in
   if dataClearlyUnchanged && ressClearlyUnchanged then begin
     Xferhint.insertEntry currfspath path archDig;
-    None, checkPropChange info archive archDesc
+    None, checkPropChange info.Fileinfo.desc archive archDesc
   end else begin
     debugverbose (fun() -> Util.msg "  Double-check possibly updated file\n");
     showStatusAddLength info;
-    let (info, newDigest) =
+    let (newDesc, newDigest, newStamp, newRess) =
       Fpcache.fingerprint fastCheck currfspath path info
         (if dataClearlyUnchanged then Some archDig else None) in
     Xferhint.insertEntry currfspath path newDigest;
@@ -1245,20 +1261,16 @@ let checkContentsChange
              (Os.fullfingerprint_to_string archDig)
              (Os.fullfingerprint_to_string newDigest));
     if archDig = newDigest then begin
-      let newprops = Props.setTime archDesc (Props.time info.Fileinfo.desc) in
-      let newarch =
-        ArchiveFile
-          (newprops, archDig, Fileinfo.stamp info, Fileinfo.ressStamp info) in
+      let newprops = Props.setTime archDesc (Props.time newDesc) in
+      let newarch = ArchiveFile (newprops, archDig, newStamp, newRess) in
       debugverbose (fun() ->
-        Util.msg "  Contents match: update archive with new time...%f\n" 
-                   (Props.time newprops));      
-      Some newarch, checkPropChange info archive archDesc
+        Util.msg "  Contents match: update archive with new time...%f\n"
+                   (Props.time newprops));
+      Some newarch, checkPropChange newDesc archive archDesc
     end else begin
       debug (fun() -> Util.msg "  Updated file\n");
       None,
-      Updates (File (info.Fileinfo.desc,
-                     ContentsUpdated (newDigest, Fileinfo.stamp info,
-                                      Fileinfo.ressStamp info)),
+      Updates (File (newDesc, ContentsUpdated (newDigest, newStamp, newRess)),
                oldInfoOf archive)
     end
   end
@@ -1476,13 +1488,11 @@ and buildUpdateRec archive currfspath path fastCheckInfos =
         None,
         begin
           showStatusAddLength info;
-          let (info, dig) =
+          let (desc, dig, stamp, ress) =
             Fpcache.fingerprint
               fastCheckInfos.fastCheck currfspath path info None in
           Xferhint.insertEntry currfspath path dig;
-          Updates (File (info.Fileinfo.desc,
-                         ContentsUpdated (dig, Fileinfo.stamp info,
-                                          Fileinfo.ressStamp info)),
+          Updates (File (desc, ContentsUpdated (dig, stamp, ress)),
                    oldInfoOf archive)
         end
     (* --- *)
@@ -1504,7 +1514,7 @@ and buildUpdateRec archive currfspath path fastCheckInfos =
     | (`DIRECTORY, ArchiveDir (archDesc, prevChildren)) ->
         debugverbose (fun() -> Util.msg "  buildUpdate -> Directory\n");
         let (permchange, desc) =
-          if isPropUnchanged info archDesc then
+          if isPropUnchanged info.Fileinfo.desc archDesc then
             (PropsSame, archDesc)
           else
             (PropsUpdated, info.Fileinfo.desc) in

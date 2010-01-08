@@ -1,5 +1,14 @@
 CHANGES FROM VERSION 2.39.0
 
+* The "ignorearchives" preference now works.
+* When Unison detects that the archive case-sensitivity mode
+  does not match the current settings, it populates the fingerprint
+  cache using the archive contents.  This way, changing the
+  case-sensitivity mode should be reasonably fast.
+
+-------------------------------
+CHANGES FROM VERSION 2.39.0
+
 * MacOS GUI:
   - improved exception handling (untested code, might not even compile)
 
