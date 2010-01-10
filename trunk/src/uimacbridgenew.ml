@@ -91,6 +91,7 @@ let doInOtherThread f =
        with
          Util.Transient s | Util.Fatal s -> fatalError s
        | exn -> fatalError (Uicommon.exn2string exn))
+    ()
 
 (* Defined in MyController.m, used to redisplay the table
    when the status for a row changes *)

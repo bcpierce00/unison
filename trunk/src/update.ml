@@ -693,7 +693,7 @@ let loadArchives (optimistic: bool) : bool Lwt.t =
       ^ "This can happen when both machines have the same hostname.\n"
       ^ "\n"
       ^ "If this is not the case and you get this message repeatedly, please:\n"
-      ^ "  a) Send a bug report to unison-users@yahoogroups.com (you may need"
+      ^ "  a) Send a bug report to unison-users@yahoogroups.com (you may need\n"
       ^ "     to join the group before you will be allowed to post).\n"
       ^ "  b) Move the archive files on each machine to some other directory\n"
       ^ "     (in case they may be useful for debugging).\n"

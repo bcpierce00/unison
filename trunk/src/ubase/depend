@@ -16,12 +16,5 @@ uprintf.cmo: uprintf.cmi
 uprintf.cmx: uprintf.cmi 
 util.cmo: uprintf.cmi safelist.cmi util.cmi 
 util.cmx: uprintf.cmx safelist.cmx util.cmi 
-myMap.cmi: 
 prefs.cmi: util.cmi 
-proplist.cmi: 
-rx.cmi: 
-safelist.cmi: 
 trace.cmi: prefs.cmi 
-uarg.cmi: 
-uprintf.cmi: 
-util.cmi: 
