@@ -6,7 +6,7 @@
 (* as archives for mergeable files. *)
 
 (* Make a backup copy of a file, if needed; if the third parameter is
-   `AndRemove, then the file is either backed up by renaming or
+   `AndRemove, then the file is either backed up by renaming or else
    deleted if no backup is needed. *)
 val backup:
   Fspath.t -> Path.local ->

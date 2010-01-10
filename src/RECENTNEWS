@@ -1,5 +1,14 @@
 CHANGES FROM VERSION 2.39.0
 
+* Back out some minimal support we'd added for checking out Unison sources via Bazaar.
+
+* Small fix for OSX GUI
+
+
+
+-------------------------------
+CHANGES FROM VERSION 2.39.0
+
 * The "ignorearchives" preference now works.
 * When Unison detects that the archive case-sensitivity mode
   does not match the current settings, it populates the fingerprint
