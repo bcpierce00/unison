@@ -22,6 +22,8 @@ http://www.codeproject.com/KB/cpp/unicode_console_output.aspx?display=Print
 
 *)
 
+module M (P : sig val useLongUNCPaths : bool end) = struct
+
 type fspath = string
 
 let fspathFromString f = f
@@ -43,7 +45,9 @@ let fixPath f =
 let winRootRx = Rx.rx "[a-zA-Z]:[/\\].*"
 let winUncRx = Rx.rx "[/\\][/\\][^/\\]+[/\\][^/\\]+[/\\].*"
 let extendedPath f =
-  if Rx.match_string winRootRx f then
+  if not P.useLongUNCPaths then
+    f
+  else if Rx.match_string winRootRx f then
     fixPath ("\\\\?\\" ^ f)
   else if Rx.match_string winUncRx f then
     fixPath ("\\\\?\\UNC" ^ String.sub f 1 (String.length f - 1))
@@ -318,3 +322,5 @@ let terminalStateFunctions () =
     rawTerminal = (fun () -> setConsoleMode 0x19; setConsoleOutputCP 65001);
     startReading = (fun () -> setConsoleMode 0x18);
     stopReading = (fun () -> setConsoleMode 0x19) }
+
+end

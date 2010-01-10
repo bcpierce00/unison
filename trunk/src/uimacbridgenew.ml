@@ -392,9 +392,7 @@ let unisonRiToRight ri =
 Callback.register "unisonRiToRight" unisonRiToRight;;
 
 let unisonRiToFileSize ri =
-  (*FIX: will not work with files and directories larger than 1 GiB on
-    32bit machines! *)
-  Uutil.Filesize.toInt (riLength ri.ri);;
+  Uutil.Filesize.toFloat (riLength ri.ri);;
 Callback.register "unisonRiToFileSize" unisonRiToFileSize;;
 
 let unisonRiToFileType ri =
@@ -450,9 +448,7 @@ let unisonRiToProgress ri =
 Callback.register "unisonRiToProgress" unisonRiToProgress;;
 
 let unisonRiToBytesTransferred ri =
-  (*FIX: will not work when transferring more than 1 GiB on 32bit
-    machines! *)
-  Uutil.Filesize.toInt ri.bytesTransferred;;
+  Uutil.Filesize.toFloat ri.bytesTransferred;;
 Callback.register "unisonRiToBytesTransferred" unisonRiToBytesTransferred;;
 
 (* --------------------------------------------------- *)

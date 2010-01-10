@@ -292,14 +292,7 @@ let unisonDir =
       genericName
 
 (* build a fspath representing an archive child path whose name is given     *)
-let fileInUnisonDir str =
-  begin try
-    ignore (Name.fromString str)
-  with Invalid_argument _ ->
-    raise (Util.Transient
-             ("Ill-formed name of file in UNISON directory: "^str))
-  end;
-  System.fspathConcat unisonDir str
+let fileInUnisonDir str = System.fspathConcat unisonDir str
 
 (* Make sure archive directory exists                                        *)
 let createUnisonDir() =
@@ -316,9 +309,9 @@ let createUnisonDir() =
 (*****************************************************************************)
 
 (* Truncate a filename to at most [l] bytes, making sure of not
-   truncating an UTF-8 character *)
+   truncating an UTF-8 character.  Assumption: [String.length s > l] *)
 let rec truncate_filename s l =
-  if l >= 0 && Char.code s.[l] land 0xC0 = 0x80 then
+  if l > 0 && Char.code s.[l] land 0xC0 = 0x80 then
     truncate_filename s (l - 1)
   else
     String.sub s 0 l

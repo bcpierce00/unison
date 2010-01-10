@@ -12,8 +12,8 @@
     BOOL selected;
     NSImage *direction;
     NSString *directionSortString;
-	int fileSize;
-	int bytesTransferred;
+    double fileSize;
+    double bytesTransferred;
     BOOL resolved;
 }
 - (BOOL)selected;
@@ -24,10 +24,10 @@
 - (NSString *)right;
 - (NSImage *)direction;
 - (NSImage *)fileIcon;
-- (int)fileCount;
-- (int)fileSize;
+- (long)fileCount;
+- (double)fileSize;
 - (NSString *)fileSizeString;
-- (int)bytesTransferred;
+- (double)bytesTransferred;
 - (NSString *)bytesTransferredString;
 - (void)setDirection:(char *)d;
 - (void) doAction:(unichar)action;
@@ -64,15 +64,15 @@
     NSString *progress;
     NSString *details;
     OCamlValue *ri; // an ocaml Common.reconItem
-    int index; // index in Ri list
+    long index; // index in Ri list
 }
-- initWithRiAndIndex:(OCamlValue *)v index:(int)i;
+- initWithRiAndIndex:(OCamlValue *)v index:(long)i;
 @end
 
 @interface ParentReconItem : ReconItem
 {
 	NSMutableArray *_children;
-	int fileCount;
+	long fileCount;
 }
 - (void)addChild:(ReconItem *)item nested:(BOOL)useNesting;
 - (void)sortUsingDescriptors:(NSArray *)sortDescriptors;

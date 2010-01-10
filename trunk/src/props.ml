@@ -614,7 +614,8 @@ let zeroes = "\000\000\000\000\000\000\000\000"
 
 let toString t =
   match t with
-    Some s when s.[0] = 'F' && String.sub (s ^ zeroes) 1 8 <> zeroes ->
+    Some s when String.length s > 0 && s.[0] = 'F' &&
+                String.sub (s ^ zeroes) 1 8 <> zeroes ->
       let s = s ^ zeroes in
       " " ^ String.escaped (String.sub s 1 4) ^
       " " ^ String.escaped (String.sub s 5 4)

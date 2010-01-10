@@ -395,7 +395,7 @@ CAMLprim value unisonInit1Complete(value v)
 {
     // FIX: some prompts don't ask for password, need to look at it
     NSLog(@"Got the prompt: '%@'",prompt);
-    if ((int)ocamlCall("iS", "unisonPasswordMsg", prompt)) {
+    if ((long)ocamlCall("iS", "unisonPasswordMsg", prompt)) {
         [passwordPrompt setStringValue:@"Please enter your password"];
         [NSApp beginSheet:passwordWindow
             modalForWindow:mainWindow
@@ -404,7 +404,7 @@ CAMLprim value unisonInit1Complete(value v)
             contextInfo:nil];
         return;
     }
-    if ((int)ocamlCall("iS", "unisonPassphraseMsg", prompt)) {
+    if ((long)ocamlCall("iS", "unisonPassphraseMsg", prompt)) {
         [passwordPrompt setStringValue:@"Please enter your passphrase"];
         [NSApp beginSheet:passwordWindow
             modalForWindow:mainWindow
@@ -413,7 +413,7 @@ CAMLprim value unisonInit1Complete(value v)
             contextInfo:nil];
         return;
     }
-    if ((int)ocamlCall("iS", "unisonAuthenticityMsg", prompt)) {
+    if ((long)ocamlCall("iS", "unisonAuthenticityMsg", prompt)) {
         int i = NSRunAlertPanel(@"New host",prompt,@"Yes",@"No",nil);
         if (i == NSAlertDefaultReturn) {
 			ocamlCall("x@s", "openConnectionReply", preconn, "yes");
@@ -649,9 +649,9 @@ static NSDictionary *_SmallGreyAttributes = nil;
 		[(ImageAndTextCell*)cell setImage:[item fileIcon]];
 		
 		// For parents, format the file count into the text
-		int fileCount = [item fileCount];
+		long fileCount = [item fileCount];
 		if (fileCount > 1) {
-			NSString *countString = [NSString stringWithFormat:@"  (%i files)", fileCount];
+			NSString *countString = [NSString stringWithFormat:@"  (%ld files)", fileCount];
 			NSString *fullString = [(NSString *)[cell objectValue] stringByAppendingString:countString];
 			NSMutableAttributedString *as = [[NSMutableAttributedString alloc] initWithString:fullString];
 
@@ -716,7 +716,7 @@ static NSDictionary *_SmallGreyAttributes = nil;
 {
     [reconItems release];
     reconItems = [[NSMutableArray alloc] init];
-	int i, n =[caml_reconItems count];
+	long i, n =[caml_reconItems count];
     for (i=0; i<n; i++) {
 		LeafReconItem *item = [[LeafReconItem alloc] initWithRiAndIndex:(id)[caml_reconItems getField:i withType:'@'] index:i];
         [reconItems addObject:item];
@@ -805,7 +805,7 @@ static NSDictionary *_SmallGreyAttributes = nil;
 
 - (id)updateForIgnore:(id)item
 {
-    int j = (int)ocamlCall("ii", "unisonUpdateForIgnore", [reconItems indexOfObjectIdenticalTo:item]);
+    long j = (long)ocamlCall("ii", "unisonUpdateForIgnore", [reconItems indexOfObjectIdenticalTo:item]);
 	NSLog(@"Updating for ignore...");
     [self updateReconItems:(OCamlValue *)ocamlCall("@", "unisonState")];
     return [reconItems objectAtIndex:j];

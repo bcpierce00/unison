@@ -12,6 +12,9 @@
 @class ReconTableView, MyController;
 
 @interface UnisonToolbar : NSToolbar
+#if (MAC_OS_X_VERSION_MAX_ALLOWED >= 1060)
+  <NSToolbarDelegate>
+#endif
 {
 	ReconTableView*  tableView;
 	MyController*    myController;

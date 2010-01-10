@@ -987,10 +987,6 @@ let initConnection in_ch out_ch =
   negociateFlowControl conn;
   Lwt.return conn)
 
-let inetAddr host =
-  let targetHostEntry = Unix.gethostbyname host in
-  targetHostEntry.Unix.h_addr_list.(0)
-
 let rec findFirst f l =
   match l with
     []     -> None

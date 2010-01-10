@@ -24,14 +24,14 @@
 	Args/return values are converted to/from C/OCaml according to the
 	supplied type signture string.  Type codes are:
 		x	- void (for return type)
-		i	- int
+		i	- long
 		s	- char *
 		S	- NSString *
+                N       - NSNumber *
 		@	- OCamlValue (see below)
-		v	- unwrapped OCaml value (deprecated -- unsafe!)
 		
 	Examples:
-		int count = (int)ocamlCall("iS", "lengthOfString", @"Some String");
+		long count = (long)ocamlCall("iS", "lengthOfString", @"Some String");
 		
 		(void)ocamlCall("x", "someVoidOCamlFunction");
 		
@@ -42,17 +42,17 @@ extern void *ocamlCall(const char *argTypes, ...);
 
 // Wrapper/proxy for unconverted OCaml values
 @interface OCamlValue : NSObject {
-	int _v;
+	long _v;
 }
-- initWithValue:(int)v;
+- initWithValue:(long)v;
 
-- (void *)getField:(int)i withType:(char)t;
+- (void *)getField:(long)i withType:(char)t;
 	// get value by position.  See ocamlCall for list of type conversion codes
 	
-- (int)count;
+- (long)count;
 	// count of items in array
 	
-- (int)value;
+- (long)value;
 	// returns Ocaml value directly -- not safe to use except in direct callback from OCaml
 	// (i.e. in the OCaml thread)
 @end

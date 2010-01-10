@@ -15,7 +15,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 *)
 
-module System = System_win
+module System = System_win.M (struct let useLongUNCPaths = false end)
 
 module Fs = struct
 
@@ -28,7 +28,7 @@ module Fs = struct
   let c3 f1 f2 v1 v2 v3 = if !unicode then f1 v1 v2 v3 else f2 v1 v2 v3
 
   module G = System_generic
-  module W = System_win
+  module W = System_win.M (struct let useLongUNCPaths = true end)
 
   type fspath = string
 

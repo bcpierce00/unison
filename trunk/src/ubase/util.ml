@@ -383,6 +383,7 @@ let removeTrailingCR s =
   if l = 0 || s.[l - 1] <> '\r' then s else
   String.sub s 0 (l - 1)
 
+(* FIX: quadratic! *)
 let rec trimWhitespace s =
   let l = String.length s in
   if l=0 then s

@@ -1,5 +1,21 @@
 CHANGES FROM VERSION 2.39.0
 
+* Mac GUIs (NEED TESTING):
+  - use doubles rather than ints for file sizes to prevent overflows
+  - should now be 64 bit clean (the Growl framework is not up to date,
+    though)
+  - fixes from uimacnew09 copied back to uimacnew
+  - made the bridge between Objective C and Ocaml code GC friendly
+    (it was allocating ML values and putting them in an array which
+    was not registered with the GC)
+* Windows: only use long UNC path for accessing replicas (as '..' is
+  not handled with this format of paths, but can be useful)
+* Bumped fingerprint cache magic number (the format was changed in
+  revision 398)
+
+-------------------------------
+CHANGES FROM VERSION 2.39.0
+
 * Back out some minimal support we'd added for checking out Unison sources via Bazaar.
 
 * Small fix for OSX GUI

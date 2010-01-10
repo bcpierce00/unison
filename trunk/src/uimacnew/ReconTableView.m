@@ -11,12 +11,16 @@
 #import "MyController.h"
 
 @implementation NSOutlineView (_UnisonExtras)
+
 - (NSArray *)selectedObjects
 {
 	NSMutableArray *result = [NSMutableArray array];
-	NSEnumerator *e = [self selectedRowEnumerator];
-    NSNumber *n;
-    while (n = [e nextObject]) [result addObject:[self itemAtRow:[n intValue]]]; 
+  NSIndexSet *set = [self selectedRowIndexes];
+  NSUInteger index = [set firstIndex];
+  while (index != NSNotFound) {
+    [result addObject:[self itemAtRow:index]];
+    index = [set indexGreaterThanIndex: index];
+  }
 	return result;
 }
 
@@ -136,8 +140,9 @@
 		last = item;
     }
     if (last) { // something was selected
-        last = [[self dataSource] updateForIgnore:last];
-        [self selectRow:[self rowForItem:last] byExtendingSelection:NO];
+        MyController* controller = (MyController*) [self dataSource];
+        last = [controller updateForIgnore:last];
+        [self selectRowIndexes:[NSIndexSet indexSetWithIndex:[self rowForItem:last]] byExtendingSelection:NO];
         [self reloadData];
     }
 }
@@ -171,7 +176,7 @@
 		int nextRow = [self rowForItem:last] + 1;
         if (numSelected == 1 && [self numberOfRows] > nextRow && c!='d') {
             // Move to next row, unless already at last row, or if more than one row selected
-            [self selectRow:nextRow byExtendingSelection:NO];
+            [self selectRowIndexes:[NSIndexSet indexSetWithIndex:nextRow] byExtendingSelection:NO];
             [self scrollRowToVisible:nextRow];
         }
         [self reloadData];
@@ -206,12 +211,13 @@
 - (IBAction)selectConflicts:(id)sender
 {
     [self deselectAll:self];
-    NSMutableArray *reconItems = [[self dataSource] reconItems];
+    MyController* controller = (MyController*) [self dataSource];
+    NSMutableArray *reconItems = [controller reconItems];
     int i = 0;
     for (; i < [reconItems count]; i++) {
 		ReconItem *item = [reconItems objectAtIndex:i]; 
         if ([item isConflict])
-            [self selectRow:[self rowForItem:item] byExtendingSelection:YES];
+            [self selectRowIndexes:[NSIndexSet indexSetWithIndex:[self rowForItem:item]] byExtendingSelection:YES];
     }
 }
 
