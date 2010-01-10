@@ -95,7 +95,10 @@ const char **the_argv;
 	// NSLog(@"*** caml_init complete!");
 }
 
-- (BOOL)exceptionHandler:(NSExceptionHandler *)sender shouldLogException:(NSException *)exception mask:(unsigned int)aMask
+#if MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_5
+typedef unsigned int NSUInteger;
+#endif
+- (BOOL)exceptionHandler:(NSExceptionHandler *)sender shouldLogException:(NSException *)exception mask:(NSUInteger)aMask
 {
 	// if (![[exception name] isEqual:@"OCamlException"]) return YES;
 	
@@ -121,7 +124,7 @@ typedef struct  {
 
 	// Field access
 	value *valueP;
-	int fieldIndex;
+	long fieldIndex;
 	char fieldType;
 	
 	// Return values
@@ -139,9 +142,11 @@ static CallState *_RetState = NULL;
 
 // Our OCaml callback server thread -- waits for call then makes them
 // Called from thread spawned from OCaml
-CAMLprim value bridgeThreadWait(int ignore)
+CAMLprim value bridgeThreadWait(value ignore)
 {
-	value args[10];
+        CAMLparam0();
+        CAMLlocal1 (args);
+        args = caml_alloc_tuple(3);
 	
 	// NSLog(@"*** bridgeThreadWait init!  (%d) Taking lock...", pthread_self());
 	while (TRUE) {
@@ -168,6 +173,7 @@ CAMLprim value bridgeThreadWait(int ignore)
 		char retType = 'v';
 		value e = Val_unit;
 		if (cs->opCode == SafeCall) {
+                        int i;
 			char *fname = va_arg(cs->args, char *);
 			value *f = caml_named_value(fname);
 			// varargs with C-based args -- convert them to OCaml values based on type code string
@@ -179,33 +185,31 @@ CAMLprim value bridgeThreadWait(int ignore)
 				switch (*p) {
 					case 's':
 						str = va_arg(cs->args, const char *);
-						args[argCount] = caml_copy_string(str);
+						Store_field (args, argCount, caml_copy_string(str));
 						break;
 					case 'S':
 						str = [va_arg(cs->args, NSString *) UTF8String];
-						args[argCount] = caml_copy_string(str);
-						break;
-					case 'n':
-						// leak?
-						args[argCount] = *caml_named_value(va_arg(cs->args, char *));
+						Store_field (args, argCount, caml_copy_string(str));
 						break;
 					case 'i':
-						args[argCount] = Val_int(va_arg(cs->args, int));
-						break;
-					case 'v':
-						args[argCount] = va_arg(cs->args, value);
+                                                Store_field (args, argCount, Val_long(va_arg(cs->args, long)));
 						break;
 					case '@':
-						args[argCount] = [va_arg(cs->args, OCamlValue *) value];
+                                                Store_field (args, argCount, [va_arg(cs->args, OCamlValue *) value]);
+						break;
+                                        default:
+                                                NSCAssert1(0, @"Unknown input type '%c'", *p);
 						break;
 				}
 				argCount++;
+                                NSCAssert(argCount <= 3, @"More than 3 arguments");
 			}
 			// Call OCaml -- TODO: add support for > 3 args
-			if (argCount == 3) e = caml_callback3_exn(*f,args[0],args[1],args[2]);
-			else if (argCount == 2) e = caml_callback2_exn(*f,args[0],args[1]);
-			else if (argCount == 1) e = caml_callback_exn(*f,args[0]);
+			if (argCount == 3) e = caml_callback3_exn(*f,Field(args,0),Field(args,1),Field(args,2));
+			else if (argCount == 2) e = caml_callback2_exn(*f,Field(args,0),Field(args,1));
+			else if (argCount == 1) e = caml_callback_exn(*f,Field(args,0));
 			else e = caml_callback_exn(*f,Val_unit);			
+                        for (i = 0; i < argCount; i++) Store_field (args, i, Val_unit);
 		} else if (cs->opCode == OldCall) {
 			// old style (unsafe) version where OCaml values were passed directly from C thread
 			if (cs->argCount == 3) e = caml_callback3_exn(cs->call,cs->a1,cs->a2,cs->a3);
@@ -213,8 +217,8 @@ CAMLprim value bridgeThreadWait(int ignore)
 			else e = caml_callback_exn(cs->call,cs->a1);
 			retType = 'v';
 		} else if (cs->opCode == FieldAccess) {
-			int index = cs->fieldIndex;
-			e = (index == -1) ? Val_int(Wosize_val(*cs->valueP)) : Field(*cs->valueP, cs->fieldIndex);
+			long index = cs->fieldIndex;
+			e = (index == -1) ? Val_long(Wosize_val(*cs->valueP)) : Field(*cs->valueP, index);
 			retType = cs->fieldType;
 		}
 		
@@ -223,30 +227,38 @@ CAMLprim value bridgeThreadWait(int ignore)
 		cs->ret = e; // OCaml return type -- unsafe...
 		if (!Is_exception_result(e)) {
 			switch (retType) {
-				case 's':
-					*((char **)&cs->retV) = (e == Val_unit) ? NULL : String_val(e);
-					break;
 				case 'S':
 					*((NSString **)&cs->retV) = (e == Val_unit) ? NULL : [[NSString alloc] initWithUTF8String:String_val(e)];
+					cs->_autorelease = TRUE;
+					break;
+				case 'N':
+                                        if (Is_long (e)) {
+					        *((NSNumber **)&cs->retV) = [[NSNumber alloc] initWithLong:Long_val(e)];
+                                        } else {
+					        *((NSNumber **)&cs->retV) = [[NSNumber alloc] initWithDouble:Double_val(e)];
+                                        }
 					cs->_autorelease = TRUE;
 					break;
 				case '@':
 					*((NSObject **)&cs->retV) = (e == Val_unit) ? NULL : [[OCamlValue alloc] initWithValue:e];
 					cs->_autorelease = TRUE;
 					break;
-				case 'v':
-					*((value *)&cs->retV) = e;
-					break;
 				case 'i':
-					*((int *)&cs->retV) = Int_val(e);
+					*((long *)&cs->retV) = Long_val(e);
 					break;
+				case 'x':
+                                        break;
+                                default:
+                                        NSCAssert1(0, @"Unknown return type '%c'", retType);
+                                        break;
 			}
 		}
 
 		if (Is_exception_result(e)) {
 			// get exception string -- it will get thrown back in the calling thread
 		    value *f = caml_named_value("unisonExnInfo");
-			cs->exception = String_val(caml_callback(*f,Extract_exception(e)));
+                    // We leak memory here...
+                    cs->exception = strdup(String_val(caml_callback(*f,Extract_exception(e))));
 		}
 		
  	    [pool release];
@@ -260,7 +272,7 @@ CAMLprim value bridgeThreadWait(int ignore)
 		pthread_mutex_unlock(&global_res_lock);
 	}
 	// Never get here...
-    return Val_unit;
+        CAMLreturn (Val_unit);
 }
 
 void *_passCall(CallState *cs)
@@ -292,20 +304,18 @@ void *_passCall(CallState *cs)
 
 void *ocamlCall(const char *argTypes, ...)
 {
-	va_list ap;
-	va_start(ap, argTypes);
 	CallState cs;
 	cs.opCode = SafeCall;
 	cs.exception = NULL;
 	cs.argTypes = argTypes;
-	cs.args = ap;
+	va_start(cs.args, argTypes);
 	void * res = _passCall(&cs);
 	
-	va_end(ap);
+	va_end(cs.args);
 	return res;
 }
 
-void *getField(value *vP, int index, char type)
+void *getField(value *vP, long index, char type)
 {
 	CallState cs;
 	cs.opCode = FieldAccess;
@@ -318,7 +328,7 @@ void *getField(value *vP, int index, char type)
 
 @implementation OCamlValue
 
-- initWithValue:(int)v
+- initWithValue:(long)v
 {
 	[super init];
 	_v = v;
@@ -326,17 +336,17 @@ void *getField(value *vP, int index, char type)
 	return self;
 }
 
-- (int)count
+- (long)count
 {
-	return (int)getField((value *)&_v, -1, 'i');
+        return (long)getField((value *) &_v, -1, 'i');
 }
 
-- (void *)getField:(int)i withType:(char)t
+- (void *)getField:(long)i withType:(char)t
 {
-	return getField((value *)&_v, i, t);
+        return getField((value *)&_v, i, t);
 }
 
-- (int)value 
+- (long)value
 {
 	// Unsafe to use!
 	return _v;

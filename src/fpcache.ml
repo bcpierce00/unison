@@ -59,7 +59,7 @@ let decompress st i path =
 let compress state path =
   let s = state.last in
   let p = Path.toString path in
-  let l = String.length s in
+  let l = min (String.length p) (String.length s) in
   let i = ref 0 in
   while !i < l && p.[!i] = s.[!i] do incr i done;
   state.last <- p;
@@ -126,7 +126,7 @@ let finish () =
                closeOut st
   | None    -> ()
 
-let magic = "Unison fingerprint cache format 1"
+let magic = "Unison fingerprint cache format 2"
 
 let init fastCheck fspath =
   finish ();

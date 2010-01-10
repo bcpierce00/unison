@@ -9,8 +9,8 @@
 	[super init];
 	selected = NO; // NB only used/updated during sorts. Not a 
 				   // reliable indicator of whether item is selected
-	fileSize = -1;
-	bytesTransferred = -1;
+	fileSize = -1.;
+	bytesTransferred = -1.;
 	return self;
 }
 
@@ -129,30 +129,29 @@ static NSMutableDictionary *_ChangeIconsByType = nil;
 }
 
 
-- (int)computeFileSize
+- (double)computeFileSize
 {
-	return 0;
+	return 0.;
 }
 
-- (int)bytesTransferred
+- (double)bytesTransferred
 {
-	return 0;
+	return 0.;
 }
 
-- (int)fileCount
+- (long)fileCount
 {
 	return 1;
 }
 
-- (int)fileSize
+- (double)fileSize
 {
-	if (fileSize == -1) fileSize = [self computeFileSize];
+	if (fileSize == -1.) fileSize = [self computeFileSize];
 	return fileSize;
 }
 
-- (NSString *)formatFileSize:(int)intSize
+- (NSString *)formatFileSize:(double)size
 {
-	float size = (float)intSize;
 	if (size == 0) return @"--";
 	if (size < 1024) return @"< 1KB"; // return [NSString stringWithFormat:@"%i bytes", size];
 	size /= 1024;
@@ -175,8 +174,8 @@ static NSMutableDictionary *_ChangeIconsByType = nil;
 
 - (NSNumber *)percentTransferred
 {
-	int size = [self computeFileSize];
-	return (size > 0) ? [NSNumber numberWithFloat:(((float)[self bytesTransferred]) / (float)size) * 100.0]
+	double size = [self computeFileSize];
+	return (size > 0) ? [NSNumber numberWithDouble:([self bytesTransferred] / (size) * 100.0)]
 					  : nil;
 }
 
@@ -379,8 +378,8 @@ static NSMutableDictionary *_iconsByExtension = nil;
 
 - (BOOL)transferInProgress
 {
-	int soFar = [self bytesTransferred];
-	return (soFar > 0) && (soFar != [self fileSize]);
+	double soFar = [self bytesTransferred];
+	return (soFar > 0) && (soFar < [self fileSize]);
 }
 
 - (void)resetProgress
@@ -390,7 +389,7 @@ static NSMutableDictionary *_iconsByExtension = nil;
 - (NSString *)progressString
 {
 	NSString *progress = [self progress];
-	if ([progress length] == 0 || [progress hasSuffix:@"%"])
+	if ([progress length] == 0. || [progress hasSuffix:@"%"])
 		progress = [self transferInProgress] ? [self bytesTransferredString] : @"";
 	else if ([progress isEqual:@"done"]) progress = @"";
 	return progress;
@@ -443,7 +442,7 @@ static NSMutableDictionary *_iconsByExtension = nil;
 // --- Leaf items -- actually corresponding to ReconItems in OCaml
 @implementation LeafReconItem
 
-- initWithRiAndIndex:(OCamlValue *)v index:(int)i
+- initWithRiAndIndex:(OCamlValue *)v index:(long)i
 {
     [super init];
     ri = [v retain];
@@ -482,17 +481,17 @@ static NSMutableDictionary *_iconsByExtension = nil;
 	return right;
 }
 
-- (int)computeFileSize
+- (double)computeFileSize
 {
-	return (int)ocamlCall("i@", "unisonRiToFileSize", ri);
+  return [(NSNumber *)ocamlCall("N@", "unisonRiToFileSize", ri) doubleValue];
 }
 
-- (int)bytesTransferred
+- (double)bytesTransferred
 {
-	if (bytesTransferred == -1) {
+	if (bytesTransferred == -1.) {
 		// need to force to fileSize if done, otherwise may not match up to 100%
 		bytesTransferred = ([[self progress] isEqual:@"done"]) ? [self fileSize]
-			: (int)ocamlCall("i@", "unisonRiToBytesTransferred", ri);
+                  : [(NSNumber*)ocamlCall("N@", "unisonRiToBytesTransferred", ri) doubleValue];
 	}
 	return bytesTransferred;
 }
@@ -535,7 +534,7 @@ static NSMutableDictionary *_iconsByExtension = nil;
 {
     // Get rid of the memoized progress because we expect it to change
 	[self willChange];
-	bytesTransferred = -1;
+	bytesTransferred = -1.;
     [progress release];
 	
 	// Force update now so we get the result while the OCaml thread is available
@@ -559,12 +558,12 @@ static NSMutableDictionary *_iconsByExtension = nil;
 
 - (BOOL)isConflict
 {
-	return ((int)ocamlCall("i@", "unisonRiIsConflict", ri) ? YES : NO);
+	return ((long)ocamlCall("i@", "unisonRiIsConflict", ri) ? YES : NO);
 }
 
 - (BOOL)changedFromDefault
 {
-	return ((int)ocamlCall("i@", "changedFromDefault", ri) ? YES : NO);
+	return ((long)ocamlCall("i@", "changedFromDefault", ri) ? YES : NO);
 }
 
 - (void)revertDirection
@@ -575,7 +574,7 @@ static NSMutableDictionary *_iconsByExtension = nil;
 
 - (BOOL)canDiff
 {
-	return ((int)ocamlCall("i@", "canDiff", ri) ? YES : NO);
+	return ((long)ocamlCall("i@", "canDiff", ri) ? YES : NO);
 }
 
 - (void)showDiffs
@@ -715,7 +714,7 @@ static NSMutableDictionary *_iconsByExtension = nil;
 	// [directionSortString autorelease]; 
 	direction = nil;
 	directionSortString = nil;
-	bytesTransferred = -1;
+	bytesTransferred = -1.;
 	// fileSize = -1;
     // resolved = NO;
 
@@ -748,7 +747,7 @@ static NSMutableDictionary *_iconsByExtension = nil;
 }
 
 // Rollup methods
-- (int)fileCount
+- (long)fileCount
 {
 	if (fileCount == 0) {
 		int i = [_children count];
@@ -760,9 +759,9 @@ static NSMutableDictionary *_iconsByExtension = nil;
 	return fileCount;
 }
 
-- (int)computeFileSize
+- (double)computeFileSize
 {
-	int size = 0;
+	double size = 0;
 	int i = [_children count];
 	while (i--) {
 		ReconItem *child = [_children objectAtIndex:i];
@@ -771,10 +770,10 @@ static NSMutableDictionary *_iconsByExtension = nil;
 	return size;
 }
 
-- (int)bytesTransferred
+- (double)bytesTransferred
 {
-	if (bytesTransferred == -1) {
-		bytesTransferred = 0;
+	if (bytesTransferred == -1.) {
+		bytesTransferred = 0.;
 		int i = [_children count];
 		while (i--) {
 			ReconItem *child = [_children objectAtIndex:i];

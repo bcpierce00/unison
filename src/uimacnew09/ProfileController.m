@@ -13,7 +13,11 @@ NSString *unisonDirectory()
 - (void)initProfiles
 {
     NSString *directory = unisonDirectory();
+#if MAC_OS_X_VERSION_MIN_REQUIRED < MAC_OS_X_VERSION_10_5
+    NSArray *files = [[NSFileManager defaultManager] directoryContentsAtPath:directory];
+#else
     NSArray *files = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:directory error:nil];
+#endif
     unsigned int count = [files count];
     unsigned int i,j;
     

@@ -11,7 +11,7 @@
 
 int main(int argc, const char *argv[])
 {
-  id pool = [[NSAutoreleasePool alloc] init];
+  NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
   int i;
     
   /* When you click-start or use the open command, the program is invoked with
@@ -35,17 +35,13 @@ int main(int argc, const char *argv[])
         !strcmp(argv[i],"-server") ||
         !strcmp(argv[i],"-socket") ||
         !strcmp(argv[i],"-ui")) {
-      /* We install an autorelease pool here because there might be callbacks
-       from ocaml to objc code */
 			NSLog(@"Calling nonGuiStartup");
-      NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
 			@try {
 				ocamlCall("x", "unisonNonGuiStartup");
 			} @catch (NSException *ex) {
 				NSLog(@"Uncaught exception: %@", [ex reason]);
 				exit(1);
 			}
-      [pool release];
       /* If we get here without exiting first, the non GUI startup detected a
        -ui graphic or command-line profile, and we should in fact start the GUI. */
     }

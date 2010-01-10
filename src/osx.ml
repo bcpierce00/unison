@@ -206,7 +206,7 @@ let noTypeCreator = String.make 10 '\000'
 (* Remove trailing zeroes *)
 let trim s =
   let rec trim_rec s pos =
-    if s.[pos - 1] = '\000' then
+    if pos > 0 && s.[pos - 1] = '\000' then
       trim_rec s (pos - 1)
     else
       String.sub s 0 pos
