@@ -313,6 +313,15 @@ let exn2string = function
     Sys.Break      -> "Terminated!"
   | Util.Fatal(s)  -> Printf.sprintf "Fatal error: %s" s
   | Util.Transient(s) -> Printf.sprintf "Error: %s" s
+  | Unix.Unix_error (err, fun_name, arg) ->
+      Printf.sprintf "Uncaught unix error: %s failed%s: %s%s"
+        fun_name
+        (if String.length arg > 0 then Format.sprintf " on \"%s\"" arg else "")
+        (Unix.error_message err)
+        (match err with
+           Unix.EUNKNOWNERR n -> Format.sprintf " (code %d)" n
+         | _                  -> "")
+  | Invalid_argument s -> Printf.sprintf "Invalid argument: %s" s
   | other -> Printf.sprintf "Uncaught exception %s" (Printexc.to_string other)
 
 (* precondition: uc = File (Updates(_, ..) on both sides *)
@@ -464,7 +473,7 @@ let promptForRoots getFirstRoot getSecondRoot =
   let r2 = match getSecondRoot() with None -> exit 0 | Some r -> r in
   (* Remember them for this run, ordering them so that the first
      will come out on the left in the UI *)
-  Globals.setRawRoots [r2;r1];
+  Globals.setRawRoots [r1; r2];
   (* Save them in the current profile *)
   ignore (Prefs.add "root" r1);
   ignore (Prefs.add "root" r2)
@@ -477,14 +486,14 @@ let promptForRoots getFirstRoot getSecondRoot =
 let firstTime = ref(true)
 
 (* Roots given on the command line *)
-let rawRoots = ref []
+let cmdLineRawRoots = ref []
 
 (* BCP: WARNING: Some of the code from here is duplicated in uimacbridge...! *)
 let initPrefs ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
               ~termInteract =
   (* Restore prefs to their default values, if necessary *)
   if not !firstTime then Prefs.resetToDefaults();
-  Globals.setRawRoots !rawRoots;
+  Globals.setRawRoots !cmdLineRawRoots;
 
   (* Tell the preferences module the name of the profile *)
   Prefs.profileName := Some(profileName);
@@ -644,9 +653,9 @@ let uiInit
       match Util.StringMap.find "rest" args with
         [] -> ()
       | [profile] -> clprofile := Some profile
-      | [root1;root2] -> rawRoots := [root1;root2]
-      | [root1;root2;profile] ->
-          rawRoots := [root1;root2];
+      | [root2;root1] -> cmdLineRawRoots := [root1;root2]
+      | [root2;root1;profile] ->
+          cmdLineRawRoots := [root1;root2];
           clprofile := Some profile
       | _ ->
           (reportError(Printf.sprintf
@@ -664,7 +673,7 @@ let uiInit
     (match !clprofile with
       None -> Util.msg "No profile given on command line"
     | Some s -> Printf.eprintf "Profile '%s' given on command line" s);
-    (match !rawRoots with
+    (match !cmdLineRawRoots with
       [] -> Util.msg "No roots given on command line"
     | [root1;root2] ->
         Printf.eprintf "Roots '%s' and '%s' given on command line"
@@ -674,7 +683,7 @@ let uiInit
   let profileName =
     begin match !clprofile with
       None ->
-        let clroots_given = !rawRoots <> [] in
+        let clroots_given = !cmdLineRawRoots <> [] in
         let n =
           if not(clroots_given) then begin
             (* Ask the user to choose a profile or create a new one. *)

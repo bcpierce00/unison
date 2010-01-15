@@ -693,6 +693,12 @@ let copyquoterem =
      ^ "added if the value of {\\tt copyprog} contains the string "
      ^ "{\\tt rsync}.")
 
+let copymax =
+  Prefs.createInt "copymax" ~local:true 1
+    "!maximum number of simultaneous copyprog transfers"
+    ("A number indicating how many instances of the external copying utility \
+      Unison is allowed to run simultaneously (default to 1).")
+
 let formatConnectionInfo root =
   match root with
     Common.Local, _ -> ""
@@ -762,6 +768,8 @@ let finishExternalTransferOnRoot =
   Remote.registerRootCmdWithConnection
     "finishExternalTransfer" finishExternalTransferLocal
 
+let copyprogReg = Lwt_util.make_region 1
+
 let transferFileUsingExternalCopyprog
              rootFrom pathFrom rootTo fspathTo pathTo realPathTo
              update desc fp ress id useExistingTarget =
@@ -791,7 +799,9 @@ let transferFileUsingExternalCopyprog
              ^ (Uutil.quotes fromSpec) ^ " "
              ^ (Uutil.quotes toSpec) in
   Trace.log (Printf.sprintf "%s\n" cmd);
-  let _,log = External.runExternalProgram cmd in
+  Lwt_util.resize_region copyprogReg (Prefs.read copymax);
+  Lwt_util.run_in_region copyprogReg 1
+    (fun () -> External.runExternalProgram cmd) >>= fun (_, log) ->
   debug (fun() ->
            let l = Util.trimWhitespace log in
            Util.msg "transferFileUsingExternalCopyprog %s: returned...\n%s%s"

@@ -125,7 +125,11 @@ let encodeException m kind e =
     Unix.Unix_error(err,fnname,param) ->
       let s =   "Error in " ^ m ^ ":\n"
               ^ (Unix.error_message err)
-              ^ " [" ^ fnname ^ "(" ^ param ^ ")]" in
+              ^ " [" ^ fnname ^ "(" ^ param ^ ")]%s" ^
+              (match err with
+                 Unix.EUNKNOWNERR n -> Format.sprintf " (code %d)" n
+               | _                  -> "")
+      in
       debug "exn"
         (fun() -> msg "Converting a Unix error to %s:\n%s\n" kindStr s);
       reraise s

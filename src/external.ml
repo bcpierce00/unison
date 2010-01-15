@@ -74,8 +74,8 @@ let runExternalProgram cmd =
          "\n\n" ^ Util.process_status_to_string returnValue
        else
          "") in
-    (returnValue,mergeResultLog) 
-  end else Lwt_unix.run (
+    Lwt.return (returnValue,mergeResultLog) 
+  end else
     let (out, ipt, err) as desc = System.open_process_full cmd in
     let out = Lwt_unix.intern_in_channel out in
     let err = Lwt_unix.intern_in_channel err in
@@ -94,4 +94,4 @@ let runExternalProgram cmd =
          then ""
          else "\n\n" ^ Util.process_status_to_string returnValue)))
       (* Stop typechechecker from complaining about non-exhaustive pattern above *)
-      | _ -> assert false))
+      | _ -> assert false)

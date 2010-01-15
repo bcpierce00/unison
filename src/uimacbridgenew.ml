@@ -150,8 +150,8 @@ let unisonInit0() =
       match Util.StringMap.find "rest" args with
         [] -> ()
       | [profile] -> clprofile := Some profile
-      | [root1;root2] -> Globals.setRawRoots [root1;root2]
-      | [root1;root2;profile] ->
+      | [root2;root1] -> Globals.setRawRoots [root1;root2]
+      | [root2;root1;profile] ->
           Globals.setRawRoots [root1;root2];
           clprofile := Some profile
       | _ ->

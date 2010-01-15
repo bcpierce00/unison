@@ -195,7 +195,7 @@ let hash p = Hashtbl.hash p
 let equal (p1 : local) (p2 : local) = p1 = p2
 
 (* Pref controlling whether symlinks are followed. *)
-let followPred = Pred.create "follow"
+let followPred = Pred.create ~advanced:true "follow"
     ("Including the preference \\texttt{-follow \\ARG{pathspec}} causes Unison to \
       treat symbolic links matching \\ARG{pathspec} as `invisible' and \
       behave as if the object pointed to by the link had appeared literally \

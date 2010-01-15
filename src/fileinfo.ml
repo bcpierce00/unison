@@ -150,14 +150,13 @@ type stamp =
 
 let ignoreInodeNumbers =
   Prefs.createBool "ignoreinodenumbers" false
-    "!Use creation times for detecting updates"
+    "!ignore inode number changes when detecting updates"
     ("When set to true, this preference makes Unison not take advantage \
-      of inode numbers during fast update detection even when running \
-      on a Unix system.  This switch should be used with care, as it \
+      of inode numbers during fast update detection. \
+      This switch should be used with care, as it \
       is less safe than the standard update detection method, but it \
       can be useful for synchronizing VFAT filesystems (which do not \
-      support inode numbers) mounted on Unix systems.  \
-      The {\\tt fastcheck} option should also be set to true.")
+      support inode numbers) mounted on Unix systems.")
 let _ = Prefs.alias ignoreInodeNumbers "pretendwin"
 
 let stamp info =

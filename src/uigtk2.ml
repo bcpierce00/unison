@@ -3768,9 +3768,14 @@ lst_store#set ~row ~column:c_path path;
   in
 
   let reloadProfile () =
-    match !Prefs.profileName with
-      None -> ()
-    | Some(n) -> clearMainWindow (); loadProfile n true in
+    let n =
+      match !Prefs.profileName with
+        None   -> assert false
+      | Some n -> n
+    in
+    clearMainWindow ();
+    if not (Prefs.profileUnchanged ()) then loadProfile n true
+  in
 
   let detectCmd () =
     getLock detectUpdatesAndReconcile;
@@ -4026,7 +4031,7 @@ lst_store#set ~row ~column:c_path path;
          ~callback:(fun () ->
             doAction (fun ri _ ->
                         Recon.setDirection ri `Older `Prefer))
-         "Resolve conflicts in favor of least recently modified");
+         "Resolve Conflicts in Favor of Least Recently Modified");
     ignore (actionMenu#add_separator ());
     grAdd grAction
       (actionMenu#add_item

@@ -94,7 +94,8 @@ let catchIoErrors th =
          Unix.Unix_error(Unix.ECONNRESET, _, _)
        | Unix.Unix_error(Unix.EPIPE, _, _)
          (* Windows may also return the following errors... *)
-       | Unix.Unix_error(Unix.EINVAL, _, _) ->
+       | Unix.Unix_error(Unix.EINVAL, _, _)
+       | Unix.Unix_error(Unix.EUNKNOWNERR (-64), _, _) ->
          (* Client has closed its end of the connection *)
            lostConnection ()
        | _ ->
