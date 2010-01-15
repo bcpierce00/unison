@@ -30,16 +30,28 @@ val run : 'a Lwt.t -> 'a
    this library, you must first turn them into non-blocking mode
    using [Unix.set_nonblock]. *)
 
-val read : Unix.file_descr -> string -> int -> int -> int Lwt.t
-val write : Unix.file_descr -> string -> int -> int -> int Lwt.t
-val pipe : unit -> (Unix.file_descr * Unix.file_descr) Lwt.t
+type file_descr
+
+val of_unix_file_descr : Unix.file_descr -> file_descr
+
+val read : file_descr -> string -> int -> int -> int Lwt.t
+val write : file_descr -> string -> int -> int -> int Lwt.t
+val wait_read : file_descr -> unit Lwt.t
+val wait_write : file_descr -> unit Lwt.t
+val pipe_in : unit -> file_descr * Unix.file_descr
+val pipe_out : unit -> Unix.file_descr * file_descr
 val socket :
-  Unix.socket_domain -> Unix.socket_type -> int -> Unix.file_descr Lwt.t
+  Unix.socket_domain -> Unix.socket_type -> int -> file_descr
 val socketpair :
   Unix.socket_domain -> Unix.socket_type -> int ->
-  (Unix.file_descr * Unix.file_descr) Lwt.t
-val accept : Unix.file_descr -> (Unix.file_descr * Unix.sockaddr) Lwt.t
-val connect : Unix.file_descr -> Unix.sockaddr -> unit Lwt.t
+  (file_descr * file_descr) Lwt.t
+val bind : file_descr -> Unix.sockaddr -> unit
+val setsockopt : file_descr -> Unix.socket_bool_option -> bool -> unit
+val accept : file_descr -> (file_descr * Unix.sockaddr) Lwt.t
+val connect : file_descr -> Unix.sockaddr -> unit Lwt.t
+val listen : file_descr -> int -> unit
+val close : file_descr -> unit
+val set_close_on_exec : file_descr -> unit
 
 val wait : unit -> (int * Unix.process_status) Lwt.t
 val waitpid : Unix.wait_flag list -> int -> (int * Unix.process_status) Lwt.t

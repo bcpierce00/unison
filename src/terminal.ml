@@ -209,41 +209,36 @@ let create_session cmd args new_stdin new_stdout new_stderr =
           end
       | childPid ->
           Unix.close slaveFd;
-          (Some masterFd, childPid)
+          (Some (Lwt_unix.of_unix_file_descr masterFd), childPid)
       end
 
-let rec select a b c d =
-  try Unix.select a b c d
-  with Unix.Unix_error(Unix.EINTR,_,_) -> select a b c d
+let (>>=) = Lwt.bind
 
 (* Wait until there is input. If there is terminal input s,
    return Some s. Otherwise, return None. *)
 let rec termInput fdTerm fdInput =
-  let (ready,_,_) = select [fdTerm;fdInput] [] [] (-1.0) in
-  if not(Safelist.exists (fun x -> x=fdTerm) ready) then None else
-  (* there's input waiting on the terminal *)
-  (* read a line of input *)
-  let msg =
-    let n = 1024 in (* Assume length of input from terminal < n *)
-    let s = String.create n in
-    let howmany =
-      let rec loop() =
-        try Unix.read fdTerm s 0 n
-        with Unix.Unix_error(Unix.EINTR,_,_) -> loop() in
-      loop() in
-    if howmany <= 0 then "" else
-    String.sub s 0 howmany in
-  let len = String.length msg in
-  if len = 0 then None (* the terminal has been closed *)
-  else if len = 2 && msg.[0] = '\r' && msg.[1] = '\n' then
-    termInput fdTerm fdInput
-  else Some msg
-
-let (>>=) = Lwt.bind
+  let buf = String.create 10000 in
+  let rec readPrompt () =
+    Lwt_unix.read fdTerm buf 0 10000 >>= fun len ->
+    if len = 0 then
+      (* The remote end is dead *)
+      Lwt.return None
+    else
+      let query = String.sub buf 0 len in
+      if query = "\r\n" then
+        readPrompt ()
+      else
+        Lwt.return (Some query)
+  in
+  let connectionEstablished () =
+    Lwt_unix.wait_read fdInput >>= fun () -> Lwt.return None
+  in
+  Lwt_unix.run
+    (Lwt.choose
+       [readPrompt (); connectionEstablished ()])
 
 (* Read messages from the terminal and use the callback to get an answer *)
 let handlePasswordRequests fdTerm callback =
-  Unix.set_nonblock fdTerm;
   let buf = String.create 10000 in
   let rec loop () =
     Lwt_unix.read fdTerm buf 0 10000 >>= (fun len ->

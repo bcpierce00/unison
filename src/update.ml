@@ -1065,10 +1065,11 @@ let immutable = Pred.create "immutable" ~advanced:true
 let immutablenot = Pred.create "immutablenot" ~advanced:true
    ("This preference overrides {\\tt immutable}.")
 
-type fastCheckInfos =
+type scanInfo =
   { fastCheck : bool;
     dirFastCheck : bool;
-    dirStamp : Props.dirChangedStamp }
+    dirStamp : Props.dirChangedStamp;
+    showStatus : bool }
 
 (** Status display **)
 
@@ -1083,8 +1084,7 @@ let t0 = ref 0.
    finished its own update detection and can receive and acknowledge
    the status display message -- thus effectively serializing the client 
    and server! *)
-let showStatusAddLength info =
-  if not !Trace.runningasserver then begin
+let showStatusAddLength scanInfo info =
     let len1 = Props.length info.Fileinfo.desc in
     let len2 = Osx.ressLength info.Fileinfo.osX.Osx.ressInfo in
     if len1 >= bigFileLengthFS || len2 >= bigFileLengthFS then
@@ -1093,21 +1093,18 @@ let showStatusAddLength info =
       fileLength :=
         min bigFileLength
          (!fileLength + Uutil.Filesize.toInt len1 + Uutil.Filesize.toInt len2)
-  end
 
-let showStatus path =
-  if not !Trace.runningasserver then begin
+let showStatus scanInfo path =
     fileLength := !fileLength + smallFileLength;
     if !fileLength >= bigFileLength then begin
       fileLength := 0;
       let t = Unix.gettimeofday () in
       if t -. !t0 > 0.05 then begin
-        Uutil.showUpdateStatus (Path.toString path);
-(*Trace.statusDetail ("scanning... " ^ Path.toString path);*)
+        if scanInfo.showStatus then
+          Uutil.showUpdateStatus (Path.toString path);
         t0 := t
       end
     end
-  end
 
 let showStatusDir path = ()
 
@@ -1158,7 +1155,7 @@ let rec noChildChange childUpdates =
 (* Check whether the directory contents is different from what is in
    the archive *)
 let directoryCheckContentUnchanged
-      currfspath path info archDesc childUpdates fastCheckInfos =
+      currfspath path info archDesc childUpdates scanInfo =
   if
     noChildChange childUpdates
       &&
@@ -1169,7 +1166,7 @@ let directoryCheckContentUnchanged
     let (archDesc, updated) =
       let inode =
         match Fileinfo.stamp info with Fileinfo.InodeStamp i -> i | _ -> 0 in
-      Props.setDirChangeFlag archDesc fastCheckInfos.dirStamp inode in
+      Props.setDirChangeFlag archDesc scanInfo.dirStamp inode in
     let updated =
       updated || not (Props.same_time info.Fileinfo.desc archDesc) in
     if updated then
@@ -1188,12 +1185,12 @@ let directoryCheckContentUnchanged
   end
 
 (* Check whether the list of children of a directory is clearly unchanged *)
-let dirContentsClearlyUnchanged info archDesc fastCheckInfos =
-  fastCheckInfos.dirFastCheck
+let dirContentsClearlyUnchanged info archDesc scanInfo =
+  scanInfo.dirFastCheck
     &&
   let inode =
    match Fileinfo.stamp info with Fileinfo.InodeStamp i -> i | _ -> 0 in
-  Props.dirMarkedUnchanged archDesc fastCheckInfos.dirStamp inode
+  Props.dirMarkedUnchanged archDesc scanInfo.dirStamp inode
     &&
   Props.same_time info.Fileinfo.desc archDesc
     &&
@@ -1222,7 +1219,7 @@ let checkPropChange desc archive archDesc =
    series functions to compute the _old_ archive with updated time stamp
    (thus, there will no false update the next time) *)
 let checkContentsChange
-      currfspath path info archive archDesc archDig archStamp archRess fastCheck
+      currfspath path info archive archDesc archDig archStamp archRess scanInfo
    : archive option * Common.updateItem
    =
   debug (fun () ->
@@ -1242,6 +1239,7 @@ let checkContentsChange
              (Uutil.Filesize.toString (Props.length archDesc))
              (Uutil.Filesize.toString  (Props.length info.Fileinfo.desc));
            Util.msg "\n");
+  let fastCheck = scanInfo.fastCheck in
   let dataClearlyUnchanged =
     Fpcache.dataClearlyUnchanged fastCheck path info archDesc archStamp in
   let ressClearlyUnchanged =
@@ -1252,7 +1250,7 @@ let checkContentsChange
     None, checkPropChange info.Fileinfo.desc archive archDesc
   end else begin
     debugverbose (fun() -> Util.msg "  Double-check possibly updated file\n");
-    showStatusAddLength info;
+    showStatusAddLength scanInfo info;
     let (newDesc, newDigest, newStamp, newRess) =
       Fpcache.fingerprint fastCheck currfspath path info
         (if dataClearlyUnchanged then Some archDig else None) in
@@ -1335,7 +1333,7 @@ let getChildren fspath path =
    remain unchanged, the second a named list of updates; also returns
    whether the directory is now empty *)
 let rec buildUpdateChildren
-    fspath path (archChi: archive NameMap.t) unchangedChildren fastCheckInfos
+    fspath path (archChi: archive NameMap.t) unchangedChildren scanInfo
     : archive NameMap.t option * (Name.t * Common.updateItem) list *
       bool * bool
     =
@@ -1361,9 +1359,9 @@ let rec buildUpdateChildren
       let archUpdated = ref false in
       let handleChild nm archive =
         let path' = Path.child path nm in
-        showStatus path';
+        showStatus scanInfo path';
         let (arch,uiChild) =
-          buildUpdateRec archive fspath path' fastCheckInfos in
+          buildUpdateRec archive fspath path' scanInfo in
         if uiChild <> NoUpdates then
           updates := (nm, uiChild) :: !updates;
         match arch with
@@ -1389,7 +1387,7 @@ let rec buildUpdateChildren
                             (Path.toString path'));
       archive
     end else begin
-      showStatus path';
+      showStatus scanInfo path';
       match status with
         `Ok | `Abs ->
           if skip && archive <> NoArchive && status <> `Abs then begin
@@ -1402,7 +1400,7 @@ let rec buildUpdateChildren
             archive
           end else begin
             let (arch,uiChild) =
-              buildUpdateRec archive fspath path' fastCheckInfos in
+              buildUpdateRec archive fspath path' scanInfo in
             if uiChild <> NoUpdates then
               updates := (nm, uiChild) :: !updates;
             match arch with
@@ -1465,7 +1463,7 @@ let rec buildUpdateChildren
   ((if !archUpdated then Some newChi else None),
    Safelist.rev !updates, emptied, !hasIgnoredChildren)
 
-and buildUpdateRec archive currfspath path fastCheckInfos =
+and buildUpdateRec archive currfspath path scanInfo =
   try
     debug (fun() ->
       Util.msg "buildUpdate: %s\n"
@@ -1482,15 +1480,15 @@ and buildUpdateRec archive currfspath path fastCheckInfos =
     | (`FILE, ArchiveFile (archDesc, archDig, archStamp, archRess)) ->
         checkContentsChange
           currfspath path info archive
-          archDesc archDig archStamp archRess fastCheckInfos.fastCheck
+          archDesc archDig archStamp archRess scanInfo
     | (`FILE, _) ->
         debug (fun() -> Util.msg "  buildUpdate -> Updated file\n");
         None,
         begin
-          showStatusAddLength info;
+          showStatusAddLength scanInfo info;
           let (desc, dig, stamp, ress) =
             Fpcache.fingerprint
-              fastCheckInfos.fastCheck currfspath path info None in
+              scanInfo.fastCheck currfspath path info None in
           Xferhint.insertEntry currfspath path dig;
           Updates (File (desc, ContentsUpdated (dig, stamp, ress)),
                    oldInfoOf archive)
@@ -1519,10 +1517,10 @@ and buildUpdateRec archive currfspath path fastCheckInfos =
           else
             (PropsUpdated, info.Fileinfo.desc) in
         let unchanged =
-          dirContentsClearlyUnchanged info archDesc fastCheckInfos in
+          dirContentsClearlyUnchanged info archDesc scanInfo in
         let (newChildren, childUpdates, emptied, hasIgnoredChildren) =
           buildUpdateChildren
-            currfspath path prevChildren unchanged fastCheckInfos in
+            currfspath path prevChildren unchanged scanInfo in
         let (archDesc, updated) =
           (* If the archive contain ignored children, we cannot use it to
              skip reading the directory contents from the filesystem.
@@ -1535,7 +1533,7 @@ and buildUpdateRec archive currfspath path fastCheckInfos =
              ignored and are now ignored.) *)
           if hasIgnoredChildren then (archDesc, true) else
           directoryCheckContentUnchanged
-            currfspath path info archDesc childUpdates fastCheckInfos in
+            currfspath path info archDesc childUpdates scanInfo in
         (begin match newChildren with
            Some ch ->
              Some (ArchiveDir (archDesc, ch))
@@ -1552,7 +1550,7 @@ and buildUpdateRec archive currfspath path fastCheckInfos =
         debug (fun() -> Util.msg "  buildUpdate -> New directory\n");
         let (newChildren, childUpdates, _, _) =
           buildUpdateChildren
-            currfspath path NameMap.empty false fastCheckInfos in
+            currfspath path NameMap.empty false scanInfo in
         (None,
          Updates (Dir (info.Fileinfo.desc, childUpdates, PropsUpdated, false),
                   oldInfoOf archive))
@@ -1566,12 +1564,12 @@ and buildUpdateRec archive currfspath path fastCheckInfos =
    contents.  The directory permissions along the path are also
    collected, in case we need to build the directory hierarchy
    on one side. *)
-let rec buildUpdate archive fspath fullpath here path dirStamp fastCheckInfos =
+let rec buildUpdate archive fspath fullpath here path dirStamp scanInfo =
   match Path.deconstruct path with
     None ->
-      showStatus here;
+      showStatus scanInfo here;
       let (arch, ui) =
-        buildUpdateRec archive fspath here fastCheckInfos in
+        buildUpdateRec archive fspath here scanInfo in
       (begin match arch with
          None      -> archive
        | Some arch -> arch
@@ -1639,7 +1637,7 @@ let rec buildUpdate archive fspath fullpath here path dirStamp fastCheckInfos =
               let (arch, updates, localPath, props) =
                 buildUpdate
                   archChild fspath fullpath (Path.child here name') path'
-                  dirStamp fastCheckInfos
+                  dirStamp scanInfo
               in
               let children =
                 if arch = NoArchive then otherChildren else
@@ -1652,7 +1650,7 @@ let rec buildUpdate archive fspath fullpath here path dirStamp fastCheckInfos =
               let (arch, updates, localPath, props) =
                 buildUpdate
                   NoArchive fspath fullpath (Path.child here name') path'
-                  dirStamp fastCheckInfos
+                  dirStamp scanInfo
               in
               assert (arch = NoArchive);
               (archive, updates, localPath,
@@ -1718,17 +1716,18 @@ let findLocal fspath pathList:
 (*
 let t1 = Unix.gettimeofday () in
 *)
-  let fastCheckInfos =
+  let scanInfo =
     { fastCheck = useFastChecking ();
       (* Directory optimization is disabled under Windows,
          as Windows does not update directory modification times
          on FAT filesystems. *)
       dirFastCheck = useFastChecking () && Util.osType = `Unix;
-      dirStamp = dirStamp }
+      dirStamp = dirStamp;
+      showStatus = not !Trace.runningasserver }
   in
   let (cacheFilename, _) = archiveName fspath FPCache in
   let cacheFile = Os.fileInUnisonDir cacheFilename in
-  Fpcache.init fastCheckInfos.fastCheck cacheFile;
+  Fpcache.init scanInfo.fastCheck cacheFile;
   let (archive, updates) =
     Safelist.fold_right
       (fun path (arch, upd) ->
@@ -1737,7 +1736,7 @@ let t1 = Unix.gettimeofday () in
          else
            let (arch', ui, localPath, props) =
              buildUpdate
-               arch fspath path Path.empty path dirStamp fastCheckInfos
+               arch fspath path Path.empty path dirStamp scanInfo
            in
            arch', (localPath, ui, props) :: upd)
       pathList (archive, [])
@@ -2173,11 +2172,12 @@ let checkNoUpdates fspath pathInArchive ui =
      state of the replica... *)
   let archive = updateArchiveRec ui archive in
   (* ...and check that this is a good description of what's out in the world *)
-  let fastCheckInfos =
+  let scanInfo =
     { fastCheck = false; dirFastCheck = false;
-      dirStamp = Props.changedDirStamp }
+      dirStamp = Props.changedDirStamp;
+      showStatus = false }
   in
-  let (_, uiNew) = buildUpdateRec archive fspath localPath fastCheckInfos in
+  let (_, uiNew) = buildUpdateRec archive fspath localPath scanInfo in
   markPossiblyUpdatedRec fspath pathInArchive uiNew;
   explainUpdate pathInArchive uiNew;
   archive

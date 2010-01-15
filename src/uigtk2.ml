@@ -1996,11 +1996,13 @@ let addPreference parent =
        ~renderer:(GTree.cell_renderer_text [], ["text", c_name]) ()));
   let hiddenPrefs =
     ["auto"; "doc"; "silent"; "terse"; "testserver"; "version"] in
+  let shownPrefs =
+    ["label"; "key"] in
   let insert (store : #GTree.list_store) all =
     List.iter
       (fun nm ->
          if
-           all ||
+           all || List.mem nm shownPrefs ||
            (let (_, _, basic) = Prefs.documentation nm in basic &&
             not (List.mem nm hiddenPrefs))
          then begin
@@ -2379,7 +2381,7 @@ let getProfile quit =
   in
   let hb = GPack.hbox ~spacing:12 ~packing:(lvb#add) () in
   let sw =
-    GBin.scrolled_window ~packing:(hb#pack ~expand:true) ~height:200
+    GBin.scrolled_window ~packing:(hb#pack ~expand:true) ~height:300
       ~shadow_type:`IN ~hpolicy:`AUTOMATIC ~vpolicy:`AUTOMATIC () in
   let cols = new GTree.column_list in
   let c_name = cols#add Gobject.Data.string in
@@ -2612,7 +2614,7 @@ let twoBoxAdvanced
 let summaryBox ~parent ~title ~message ~f =
   let t =
     GWindow.dialog ~parent ~border_width:6 ~modal:true ~no_separator:true
-      ~allow_grow:false () in
+      ~allow_grow:false ~focus_on_map:false () in
   t#vbox#set_spacing 12;
   let h1 = GPack.hbox ~border_width:6 ~spacing:12 ~packing:t#vbox#pack () in
   ignore (GMisc.image ~stock:`DIALOG_INFO ~icon_size:`DIALOG
@@ -2752,13 +2754,21 @@ let createToplevelWindow () =
   (*********************************************************************
     Create the main window
    *********************************************************************)
-  let mainWindow =
-    let sw =
+  let mainWindowSW =
       GBin.scrolled_window ~packing:(toplevelVBox#pack ~expand:true)
-        ~height:(Prefs.read Uicommon.mainWindowHeight * 12)
-        ~hpolicy:`AUTOMATIC ~vpolicy:`AUTOMATIC () in
+        ~hpolicy:`AUTOMATIC ~vpolicy:`AUTOMATIC ()
+  in
+  let sizeMainWindow () =
+    let ctx = mainWindowSW#misc#pango_context in
+    let metrics = ctx#get_metrics () in
+    let h = GPango.to_pixels (metrics#ascent+metrics#descent) in
+    mainWindowSW#misc#set_size_request
+      ~height:((h + 1) * (Prefs.read Uicommon.mainWindowHeight + 1) + 10) ()
+  in
+  let mainWindow =
     GList.clist ~columns:5 ~titles_show:true
-      ~selection_mode:`MULTIPLE ~packing:sw#add () in
+      ~selection_mode:`MULTIPLE ~packing:mainWindowSW#add ()
+  in
 (*
   let cols = new GTree.column_list in
   let c_replica1 = cols#add Gobject.Data.string in
@@ -2808,7 +2818,8 @@ let createToplevelWindow () =
            ~title_active:false ~auto_resize:true ~title:data i)
       [| " " ^ Unicode.protect (String.sub s  0 12) ^ " "; "  Action  ";
          " " ^ Unicode.protect (String.sub s 15 12) ^ " "; "  Status  ";
-         " Path" |]
+         " Path" |];
+    sizeMainWindow ()
   in
   setMainWindowColumnHeaders "                                  ";
 
@@ -3749,6 +3760,7 @@ lst_store#set ~row ~column:c_path path;
 
   let loadProfile p reload =
     debug (fun()-> Util.msg "Loading profile %s..." p);
+    Trace.status "Loading profile";
     Uicommon.initPrefs p
       (fun () -> if not reload then displayWaitMessage ())
       getFirstRoot getSecondRoot termInteract;
@@ -3787,7 +3799,23 @@ lst_store#set ~row ~column:c_path path;
         ()
     end
   in
+  let updateCurrent () =
+    let n = mainWindow#rows in
+    (* This has quadratic complexity, thus we only do it when
+       the list is not too long... *)
+    if n < 300 then begin
+      current := IntSet.empty;
+      for i = 0 to n -1 do
+        if mainWindow#get_row_state i = `SELECTED then
+          current := IntSet.add i !current
+      done
+    end
+  in
   let doAction f =
+    (* FIX: when the window does not have the focus, we are not notified
+       immediately from changes to the list of selected items.  So, we
+       update our view of the current selection here. *)
+    updateCurrent ();
     match currentRow () with
       Some i ->
         doActionOnRow f i;
@@ -3823,12 +3851,10 @@ lst_store#set ~row ~column:c_path path;
        ~callback:leftAction ());
 (*  actionBar#insert_space ();*)
   grAdd grAction
-    (actionBar#insert_button
-(*       ~icon:((GMisc.pixmap mergeLogoBlack())#coerce)*)
-       ~icon:((GMisc.image ~stock:`ADD ())#coerce)
-       ~text:"Merge"
-       ~tooltip:"Merge selected files"
-       ~callback:mergeAction ());
+    (actionBar#insert_button ~text:"Skip"
+       ~icon:((GMisc.image ~stock:`NO ())#coerce)
+       ~tooltip:"Skip selected items"
+       ~callback:questionAction ());
 (*  actionBar#insert_space ();*)
   grAdd grAction
     (actionBar#insert_button
@@ -3840,10 +3866,12 @@ lst_store#set ~row ~column:c_path path;
        ~callback:rightAction ());
 (*  actionBar#insert_space ();*)
   grAdd grAction
-    (actionBar#insert_button ~text:"Skip"
-       ~icon:((GMisc.image ~stock:`NO ())#coerce)
-       ~tooltip:"Skip selected items"
-       ~callback:questionAction ());
+    (actionBar#insert_button
+(*       ~icon:((GMisc.pixmap mergeLogoBlack())#coerce)*)
+       ~icon:((GMisc.image ~stock:`ADD ())#coerce)
+       ~text:"Merge"
+       ~tooltip:"Merge selected files"
+       ~callback:mergeAction ());
 
   (*********************************************************************
     Diff / merge buttons
