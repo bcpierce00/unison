@@ -1,3 +1,14 @@
+CHANGES FROM VERSION 2.39.4
+
+* GTK UI:
+  - take into account the "height" preference again
+  - the internal list of selected reconciler item was not always in
+    sync with what was displayed (GTK bug?); workaround implemented
+* Do not display "Looking for change" messages during propagation
+  (when checking the targe is unchanged) but only during update detection
+* Now use an opaque datatype for file descriptors in Lwt
+
+-------------------------------
 CHANGES FROM VERSION 2.39.0
 
 * Mac GUIs (NEED TESTING):

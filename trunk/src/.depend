@@ -32,7 +32,7 @@ sortri.cmi: common.cmi
 stasher.cmi: update.cmi ubase/prefs.cmi path.cmi os.cmi fspath.cmi 
 strings.cmi: 
 system.cmi: system/system_intf.cmo 
-terminal.cmi: 
+terminal.cmi: lwt/lwt_unix.cmi 
 test.cmi: 
 transfer.cmi: uutil.cmi lwt/lwt.cmi bytearray.cmi 
 transport.cmi: uutil.cmi lwt/lwt.cmi common.cmi 
@@ -113,6 +113,8 @@ globals.cmo: ubase/util.cmi ubase/trace.cmi ubase/safelist.cmi remote.cmi \
 globals.cmx: ubase/util.cmx ubase/trace.cmx ubase/safelist.cmx remote.cmx \
     ubase/prefs.cmx pred.cmx path.cmx os.cmx name.cmx lwt/lwt_util.cmx \
     lwt/lwt_unix.cmx lwt/lwt.cmx common.cmx clroot.cmx globals.cmi 
+library_info.cmo: 
+library_info.cmx: 
 linkgtk.cmo: uigtk.cmi main.cmo 
 linkgtk.cmx: uigtk.cmx main.cmx 
 linkgtk2.cmo: uigtk2.cmi main.cmo 
@@ -185,10 +187,10 @@ strings.cmo: strings.cmi
 strings.cmx: strings.cmi 
 system.cmo: system.cmi 
 system.cmx: system.cmi 
-terminal.cmo: system.cmi ubase/safelist.cmi ubase/rx.cmi lwt/lwt_unix.cmi \
-    lwt/lwt.cmi terminal.cmi 
-terminal.cmx: system.cmx ubase/safelist.cmx ubase/rx.cmx lwt/lwt_unix.cmx \
-    lwt/lwt.cmx terminal.cmi 
+terminal.cmo: system.cmi ubase/rx.cmi lwt/lwt_unix.cmi lwt/lwt.cmi \
+    terminal.cmi 
+terminal.cmx: system.cmx ubase/rx.cmx lwt/lwt_unix.cmx lwt/lwt.cmx \
+    terminal.cmi 
 test.cmo: uutil.cmi ubase/util.cmi update.cmi uicommon.cmi transport.cmi \
     ubase/trace.cmi stasher.cmi ubase/safelist.cmi remote.cmi recon.cmi \
     ubase/prefs.cmi path.cmi os.cmi lwt/lwt_util.cmi lwt/lwt_unix.cmi \

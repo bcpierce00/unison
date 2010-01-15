@@ -57,6 +57,10 @@ let rec restart_threads imax now =
   | _ ->
       ()
 
+type file_descr = Unix.file_descr
+
+let of_unix_file_descr fd = if not windows_hack then Unix.set_nonblock fd; fd
+
 let inputs = ref []
 let outputs = ref []
 let wait_children = ref []
@@ -225,18 +229,32 @@ let write ch buf pos len =
   | e ->
       Lwt.fail e
 
+(*
 let pipe () =
-  let (out_fd, in_fd) as fd_pair = Unix.pipe() in
+  let (in_fd, out_fd) as fd_pair = Unix.pipe() in
   if not windows_hack then begin
     Unix.set_nonblock in_fd;
     Unix.set_nonblock out_fd
   end;
-  Lwt.return fd_pair
+  fd_pair
+*)
+
+let pipe_in () =
+  let (in_fd, out_fd) as fd_pair = Unix.pipe() in
+  if not windows_hack then
+    Unix.set_nonblock in_fd;
+  fd_pair
+
+let pipe_out () =
+  let (in_fd, out_fd) as fd_pair = Unix.pipe() in
+  if not windows_hack then
+    Unix.set_nonblock out_fd;
+  fd_pair
 
 let socket dom typ proto =
   let s = Unix.socket dom typ proto in
   if not windows_hack then Unix.set_nonblock s;
-  Lwt.return s
+  s
 
 let socketpair dom typ proto =
   let (s1, s2) as spair = Unix.socketpair dom typ proto in
@@ -244,6 +262,12 @@ let socketpair dom typ proto =
     Unix.set_nonblock s1; Unix.set_nonblock s2
   end;
   Lwt.return spair
+
+let bind = Unix.bind
+let setsockopt = Unix.setsockopt
+let listen = Unix.listen
+let close = Unix.close
+let set_close_on_exec = Unix.set_close_on_exec
 
 let accept ch =
   let res = Lwt.wait () in
@@ -398,29 +422,29 @@ let open_proc cmd proc input output toclose =
   | id -> Hashtbl.add popen_processes proc id
 
 let open_process_in cmd =
-  Lwt.bind (pipe ()) (fun (in_read, in_write) ->
+  let (in_read, in_write) = pipe_in () in
   let inchan = Unix.in_channel_of_descr in_read in
   open_proc cmd (Process_in inchan) Unix.stdin in_write [in_read];
   Unix.close in_write;
-  Lwt.return inchan)
+  Lwt.return inchan
 
 let open_process_out cmd =
-  Lwt.bind (pipe ()) (fun (out_read, out_write) ->
+  let (out_read, out_write) = pipe_out () in
   let outchan = Unix.out_channel_of_descr out_write in
   open_proc cmd (Process_out outchan) out_read Unix.stdout [out_write];
   Unix.close out_read;
-  Lwt.return outchan)
+  Lwt.return outchan
 
 let open_process cmd =
-  Lwt.bind (pipe ()) (fun (in_read, in_write) ->
-  Lwt.bind (pipe ()) (fun (out_read, out_write) ->
+  let (in_read, in_write) = pipe_in () in
+  let (out_read, out_write) = pipe_out () in
   let inchan = Unix.in_channel_of_descr in_read in
   let outchan = Unix.out_channel_of_descr out_write in
   open_proc cmd (Process(inchan, outchan)) out_read in_write
                                            [in_read; out_write];
   Unix.close out_read;
   Unix.close in_write;
-  Lwt.return (inchan, outchan)))
+  Lwt.return (inchan, outchan)
 
 (* FIX: Subprocesses that use /dev/tty to print things on the terminal
    will NOT have this output captured and returned to the caller of this
@@ -430,7 +454,7 @@ let open_process cmd =
    principle, by writing a little C code that opens /dev/tty and then uses
    the TIOCNOTTY ioctl control to detach the terminal. *)
 
-let open_proc_full cmd env proc output input error toclose =
+let open_proc_full cmd env proc input output error toclose =
   match Unix.fork () with
      0 -> Unix.dup2 input Unix.stdin; Unix.close input;
           Unix.dup2 output Unix.stdout; Unix.close output;
@@ -440,18 +464,18 @@ let open_proc_full cmd env proc output input error toclose =
   | id -> Hashtbl.add popen_processes proc id
 
 let open_process_full cmd env =
-  Lwt.bind (pipe ()) (fun (in_read, in_write) ->
-  Lwt.bind (pipe ()) (fun (out_read, out_write) ->
-  Lwt.bind (pipe ()) (fun (err_read, err_write) ->
-  let inchan = Unix.out_channel_of_descr in_write in
-  let outchan = Unix.in_channel_of_descr out_read in
+  let (in_read, in_write) = pipe_in () in
+  let (out_read, out_write) = pipe_out () in
+  let (err_read, err_write) = pipe_in () in
+  let inchan = Unix.in_channel_of_descr in_read in
+  let outchan = Unix.out_channel_of_descr out_write in
   let errchan = Unix.in_channel_of_descr err_read in
-  open_proc_full cmd env (Process_full(outchan, inchan, errchan))
-                 out_write in_read err_write [in_write; out_read; err_read];
-  Unix.close out_write;
-  Unix.close in_read;
+  open_proc_full cmd env (Process_full(inchan, outchan, errchan))
+                 out_read in_write err_write [in_write; out_read; err_read];
+  Unix.close out_read;
+  Unix.close in_write;
   Unix.close err_write;
-  Lwt.return (outchan, inchan, errchan))))
+  Lwt.return (inchan, outchan, errchan)
 
 let find_proc_id fun_name proc =
   try

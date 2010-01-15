@@ -50,7 +50,7 @@ let auto =
 (* This has to be here rather than in uigtk.ml, because it is part of what
    gets sent to the server at startup *)
 let mainWindowHeight =
-  Prefs.createInt "height" 20
+  Prefs.createInt "height" 15
     "!height (in lines) of main window in graphical interface"
     ("Used to set the height (in lines) of the main window in the graphical "
      ^ "user interface.")

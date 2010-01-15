@@ -42,8 +42,8 @@ let recent_ocaml =
    Threads behave in a very controlled way: they only perform possibly
    blocking I/Os through the remote module, and never call
    Lwt_unix.yield.  This mean that when one side gives up its right to
-   write, we know that no longer how much we wait, it would not have
-   any thing to write.  This ensures that there will be no deadlock.
+   write, we know that no matter how long we wait, it will not have
+   anything to write.  This ensures that there is no deadlock.
    A more robust protocol would be to give up write permission
    whenever idle (not just after having sent at least one message).
    But then, there is the risk that the two sides exchange spurious
@@ -110,7 +110,7 @@ let emittedBytes = ref 0.
 (* I/O buffers *)
 
 type ioBuffer =
-  { channel : Unix.file_descr;
+  { channel : Lwt_unix.file_descr;
     buffer : string;
     mutable length : int }
 
@@ -368,10 +368,6 @@ let dumpUrgent conn l =
 
 (* Initialize the connection *)
 let setupIO isServer inCh outCh =
-  if not windowsHack then begin
-    Unix.set_nonblock inCh;
-    Unix.set_nonblock outCh
-  end;
   makeConnection isServer inCh outCh
 
 (* XXX *)
@@ -989,67 +985,81 @@ let initConnection in_ch out_ch =
 
 let rec findFirst f l =
   match l with
-    []     -> None
-  | x :: r -> match f x with
+    []     -> Lwt.return None
+  | x :: r -> f x >>= fun v ->
+              match v with
                 None        -> findFirst f r
-              | Some _ as v -> v
+              | Some _ as v -> Lwt.return v
 
 let buildSocket host port kind =
   let attemptCreation ai =
-    try
-      let socket =
-        Unix.socket ai.Unix.ai_family ai.Unix.ai_socktype ai.Unix.ai_protocol
-      in
-      try
-        begin match kind with
-          `Connect ->
-            (* Connect to the remote host *)
-            Unix.connect socket ai.Unix.ai_addr
-        | `Bind ->
-            (* Allow reuse of local addresses for bind *)
-            Unix.setsockopt socket Unix.SO_REUSEADDR true;
-            (* Bind the socket to portnum on the local host *)
-            Unix.bind socket ai.Unix.ai_addr;
-            (* Start listening, allow up to 1 pending request *)
-            Unix.listen socket 1
-        end;
-        Some socket
-      with Unix.Unix_error _ as e ->
-        Unix.close socket;
-        raise e
-    with Unix.Unix_error (error, _, _) ->
-      begin match error with
-        Unix.EAFNOSUPPORT | Unix.EPROTONOSUPPORT | Unix.EINVAL ->
-          ()
-      | _           ->
-          let msg =
-            match kind with
-              `Connect ->
-                Printf.sprintf "Can't connect to server (%s:%s): %s"
-                  host port (Unix.error_message error)
-            | `Bind ->
-                Printf.sprintf
-                  "Can't bind socket to port %s at address [%s]: %s\n"
-                  port
-                  (match ai.Unix.ai_addr with
-                     Unix.ADDR_INET (addr, _) -> Unix.string_of_inet_addr addr
-                   | _                        -> assert false)
-                  (Unix.error_message error)
-          in
-          Util.warn msg
-      end;
-      None
+    Lwt.catch
+      (fun () ->
+         let socket =
+           Lwt_unix.socket
+             ai.Unix.ai_family ai.Unix.ai_socktype ai.Unix.ai_protocol
+         in
+         Lwt.catch
+           (fun () ->
+              begin match kind with
+                `Connect ->
+                  (* Connect (synchronously) to the remote host *)
+                  Lwt_unix.connect socket ai.Unix.ai_addr
+              | `Bind ->
+                  (* Allow reuse of local addresses for bind *)
+                  Lwt_unix.setsockopt socket Unix.SO_REUSEADDR true;
+                  (* Bind the socket to portnum on the local host *)
+                  Lwt_unix.bind socket ai.Unix.ai_addr;
+                  (* Start listening, allow up to 1 pending request *)
+                  Lwt_unix.listen socket 1;
+                  Lwt.return ()
+              end >>= fun () ->
+              Lwt.return (Some socket))
+           (fun e ->
+              match e with
+                Unix.Unix_error _ ->
+                  Lwt_unix.close socket;
+                  Lwt.fail e
+              | _ ->
+                  Lwt.fail e))
+      (fun e ->
+         match e with
+           Unix.Unix_error (error, _, _) ->
+             begin match error with
+               Unix.EAFNOSUPPORT | Unix.EPROTONOSUPPORT | Unix.EINVAL ->
+                 ()
+             | _  ->
+                 let msg =
+                   match kind with
+                     `Connect ->
+                       Printf.sprintf "Can't connect to server (%s:%s): %s"
+                         host port (Unix.error_message error)
+                   | `Bind ->
+                       Printf.sprintf
+                         "Can't bind socket to port %s at address [%s]: %s\n"
+                         port
+                         (match ai.Unix.ai_addr with
+                            Unix.ADDR_INET (addr, _) ->
+                              Unix.string_of_inet_addr addr
+                          | _ ->
+                              assert false)
+                         (Unix.error_message error)
+                 in
+                 Util.warn msg
+              end;
+              Lwt.return None
+         | _ ->
+             Lwt.fail e)
   in
   let options =
     match kind with
       `Connect -> [ Unix.AI_SOCKTYPE Unix.SOCK_STREAM ]
     | `Bind    -> [ Unix.AI_SOCKTYPE Unix.SOCK_STREAM ; Unix.AI_PASSIVE ]
   in
-  match
-    findFirst attemptCreation (Unix.getaddrinfo host port options)
-  with
+  findFirst attemptCreation (Unix.getaddrinfo host port options) >>= fun res ->
+  match res with
     Some socket ->
-      socket
+      Lwt.return socket
   | None ->
       let msg =
         match kind with
@@ -1063,12 +1073,11 @@ let buildSocket host port kind =
                Printf.sprintf "Can't bind socket to port %s on host %s"
                  port host
       in
-      raise (Util.Fatal msg)
+      Lwt.fail (Util.Fatal msg)
 
 let buildSocketConnection host port =
-  Util.convertUnixErrorsToFatal "canonizeRoot" (fun () ->
-    let socket = buildSocket host port `Connect in
-    initConnection socket socket)
+  buildSocket host port `Connect >>= fun socket ->
+  initConnection socket socket
 
 let buildShellConnection shell host userOpt portOpt rootName termInteract =
   let remoteCmd =
@@ -1109,13 +1118,13 @@ let buildShellConnection shell host userOpt portOpt rootName termInteract =
     Safelist.concat
       (Safelist.map (fun s -> Util.splitIntoWords s ' ') preargs) in
   let argsarray = Array.of_list args in
-  let (i1,o1) = Unix.pipe() in
-  let (i2,o2) = Unix.pipe() in
+  let (i1,o1) = Lwt_unix.pipe_out () in
+  let (i2,o2) = Lwt_unix.pipe_in () in
   (* We need to make sure that there is only one reader and one
      writer by pipe, so that, when one side of the connection
      dies, the other side receives an EOF or a SIGPIPE. *)
-  Unix.set_close_on_exec i2;
-  Unix.set_close_on_exec o1;
+  Lwt_unix.set_close_on_exec i2;
+  Lwt_unix.set_close_on_exec o1;
   (* We add CYGWIN=binmode to the environment before calling
      ssh because the cygwin implementation on Windows sometimes
      puts the pipe in text mode (which does end of line
@@ -1212,11 +1221,11 @@ let canonizeRoot rootName clroot termInteract =
    terminal interaction might be required (for ssh password) *)
 type preconnection =
      (Unix.file_descr
-     * Unix.file_descr
-     * Unix.file_descr
+     * Lwt_unix.file_descr
+     * Lwt_unix.file_descr
      * Unix.file_descr
      * string option
-     * Unix.file_descr option
+     * Lwt_unix.file_descr option
      * Clroot.clroot
      * int)
 let openConnectionStart clroot =
@@ -1293,13 +1302,13 @@ let openConnectionStart clroot =
             Safelist.concat
               (Safelist.map (fun s -> Util.splitIntoWords s ' ') preargs) in
           let argsarray = Array.of_list args in
-          let (i1,o1) = Unix.pipe() in
-          let (i2,o2) = Unix.pipe() in
+          let (i1,o1) = Lwt_unix.pipe_out() in
+          let (i2,o2) = Lwt_unix.pipe_in() in
           (* We need to make sure that there is only one reader and one
              writer by pipe, so that, when one side of the connection
              dies, the other side receives an EOF or a SIGPIPE. *)
-          Unix.set_close_on_exec i2;
-          Unix.set_close_on_exec o1;
+          Lwt_unix.set_close_on_exec i2;
+          Lwt_unix.set_close_on_exec o1;
           (* We add CYGWIN=binmode to the environment before calling
              ssh because the cygwin implementation on Windows sometimes
              puts the pipe in text mode (which does end of line
@@ -1325,8 +1334,9 @@ let openConnectionPrompt = function
 let openConnectionReply = function
     (i1,i2,o1,o2,s,Some fdTerm,clroot,pid) ->
     (fun response ->
-      (* FIX: should loop on write, watch for EINTR, etc. *)
-      ignore(Unix.write fdTerm (response ^ "\n") 0 (String.length response + 1)))
+      (* FIX: should loop until everything is written... *)
+      ignore (Lwt_unix.run (Lwt_unix.write fdTerm (response ^ "\n") 0
+                              (String.length response + 1))))
   | _ -> (fun _ -> ())
 
 let openConnectionEnd (i1,i2,o1,o2,s,_,clroot,pid) =
@@ -1344,11 +1354,12 @@ let openConnectionEnd (i1,i2,o1,o2,s,_,clroot,pid) =
 let openConnectionCancel (i1,i2,o1,o2,s,fdopt,clroot,pid) =
       try Unix.kill pid Sys.sigkill with Unix.Unix_error _ -> ();
       try Unix.close i1 with Unix.Unix_error _ -> ();
-      try Unix.close i2 with Unix.Unix_error _ -> ();
-      try Unix.close o1 with Unix.Unix_error _ -> ();
+      try Lwt_unix.close i2 with Unix.Unix_error _ -> ();
+      try Lwt_unix.close o1 with Unix.Unix_error _ -> ();
       try Unix.close o2 with Unix.Unix_error _ -> ();
       match fdopt with
-       None -> () | Some fd -> (try Unix.close fd with Unix.Unix_error _ -> ())
+        None    -> ()
+      | Some fd -> (try Lwt_unix.close fd with Unix.Unix_error _ -> ())
 
 (****************************************************************************)
 (*                     SERVER-MODE COMMAND PROCESSING LOOP                  *)
@@ -1372,9 +1383,9 @@ let commandLoop in_ch out_ch =
   (* Send header indicating to the client that it has successfully
      connected to the server *)
   let conn = setupIO true in_ch out_ch in
-  try
-    Lwt_unix.run
-      (dump conn [(Bytearray.of_string connectionHeader, 0,
+  Lwt.catch
+    (fun e ->
+       dump conn [(Bytearray.of_string connectionHeader, 0,
                    String.length connectionHeader)]
          >>= (fun () ->
        (* Set the local warning printer to make an RPC to the client and
@@ -1385,9 +1396,13 @@ let commandLoop in_ch out_ch =
          Some (fun str -> Lwt_unix.run (forwardMsgToClient conn str));
        receive conn >>=
        Lwt.wait))
-(*    debug (fun () -> Util.msg "Should never happen\n") *)
-  with Util.Fatal "Lost connection with the server" ->
-    debug (fun () -> Util.msg "Connection closed by the client\n")
+    (fun e ->
+       match e with
+         Util.Fatal "Lost connection with the server" ->
+           debug (fun () -> Util.msg "Connection closed by the client\n");
+           Lwt.return ()
+       | _ ->
+           Lwt.fail e)
 
 let killServer =
   Prefs.createBool "killserver" false
@@ -1408,23 +1423,25 @@ let _ = Prefs.alias killServer "killServer"
    for a request. Each request is processed by commandLoop. When a
    session finishes, the server waits for another request. *)
 let waitOnPort hostOpt port =
-  Util.convertUnixErrorsToFatal
-    "waiting on port"
+  Util.convertUnixErrorsToFatal "waiting on port"
     (fun () ->
-      let host = match hostOpt with
-        Some host -> host
-      | None -> "" in
-      let listening = buildSocket host port `Bind in
-      Util.msg "server started\n";
-      while
-        (* Accept a connection *)
-        let (connected,_) = Os.accept listening in
-        Unix.setsockopt connected Unix.SO_KEEPALIVE true;
-        commandLoop connected connected;
-        (* The client has closed its end of the connection *)
-        begin try Unix.close connected with Unix.Unix_error _ -> () end;
-        not (Prefs.read killServer)
-      do () done)
+       Lwt_unix.run
+         (let host = match hostOpt with
+            Some host -> host
+          | None -> "" in
+          buildSocket host port `Bind >>= fun listening ->
+          Util.msg "server started\n";
+          let rec handleClients () =
+            (* Accept a connection *)
+            Lwt_unix.accept listening >>= fun (connected,_) ->
+            Lwt_unix.setsockopt connected Unix.SO_KEEPALIVE true;
+            commandLoop connected connected >>= fun () ->
+            (* The client has closed its end of the connection *)
+            begin try Lwt_unix.close connected with Unix.Unix_error _ -> () end;
+            if Prefs.read killServer then Lwt.return () else
+            handleClients ()
+          in
+          handleClients ()))
 
 let beAServer () =
   begin try
@@ -1437,4 +1454,7 @@ let beAServer () =
       "Environment variable HOME unbound: \
        executing server in current directory\n"
   end;
-  commandLoop Unix.stdin Unix.stdout
+  Lwt_unix.run
+    (commandLoop
+       (Lwt_unix.of_unix_file_descr Unix.stdin)
+       (Lwt_unix.of_unix_file_descr Unix.stdout))

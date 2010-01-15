@@ -45,7 +45,3 @@ val fingerprint :
   Fspath.t -> Path.local -> (* coordinates of file to fingerprint *)
   Fileinfo.t ->             (* old fileinfo *)
   fullfingerprint           (* current fingerprint *)
-
-(* Versions of system calls that will restart when interrupted by
-   signal handling *)
-val accept : Unix.file_descr -> (Unix.file_descr * Unix.sockaddr)

@@ -342,19 +342,3 @@ let genTempPath fresh fspath path prefix suffix =
 
 let tempPath ?(fresh=true) fspath path =
   genTempPath fresh fspath path tempFilePrefix !tempFileSuffix
-
-(*****************************************************************************)
-(*                     INTERRUPTED SYSTEM CALLS                              *)
-(*****************************************************************************)
-(* Needed because in lwt/lwt_unix.ml we set a signal handler for SIG_CHLD,
-   which means that slow system calls can be interrupted to handle
-   SIG_CHLD.  We want to restart these system calls.  It would be much
-   better to do this using SA_RESTART, however, ocaml's Unix module does
-   not support this, probably because it isn't nicely portable. *)
-let accept fd =
-   let rec loop () =
-     try Unix.accept fd
-     with Unix.Unix_error(Unix.EINTR,_,_) -> loop() in
-   loop()
-
-
