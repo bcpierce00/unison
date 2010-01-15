@@ -1,3 +1,9 @@
+CHANGES FROM VERSION 2.39.6
+
+* Implemented 'partial' versions of 'noupdate', 'nodeletion' and 'nocreation'
+* Check sooner (before connecting to another machine) that the roots
+  given as argument to all these preference are well-formed
+-------------------------------
 CHANGES FROM VERSION 2.39.4
 
 * New preferences "noupdate=root", "nodeletion=root", "nocreation=root"

@@ -153,6 +153,9 @@ let unisonInit1 profileName =
   Trace.debug "" (fun() -> Prefs.dumpPrefsToStderr() );
 
   (* FIX: if no roots, ask the user *)
+
+  Recon.checkThatPreferredRootIsValid();
+
   let localRoots,remoteRoots =
     Safelist.partition
       (function Clroot.ConnectLocal _ -> true | _ -> false)
@@ -206,8 +209,6 @@ let unisonInit2 () =
          (Globals.rootsInCanonicalOrder());
        Printf.eprintf "\n"
     );
-
-  Recon.checkThatPreferredRootIsValid();
 
   Lwt_unix.run
     (Uicommon.validateAndFixupPrefs () >>=
