@@ -524,9 +524,11 @@ let fileUnchanged oldInfo newInfo =
     &&
   Props.same_time oldInfo.Fileinfo.desc newInfo.Fileinfo.desc
     &&
+  Props.length oldInfo.Fileinfo.desc = Props.length newInfo.Fileinfo.desc
+    &&
   match Fileinfo.stamp oldInfo, Fileinfo.stamp newInfo with
     Fileinfo.InodeStamp in1, Fileinfo.InodeStamp in2 -> in1 = in2
-  | Fileinfo.CtimeStamp t1,  Fileinfo.CtimeStamp t2  -> t1  = t2
+  | Fileinfo.CtimeStamp _,   Fileinfo.CtimeStamp _   -> true
   | _                                                -> false
 
 let archiveUnchanged fspath newInfo =
@@ -1042,10 +1044,8 @@ let fastcheck =
        this switch under Windows most of the time and occasionally \
        run Unison once with {\\tt fastcheck} set to \
        \\verb|false|, if you are \
-       worried that Unison may have overlooked an update.  The default \
-       value of the preference is \\verb|auto|, which causes Unison to \
-       use fast checking on Unix replicas (where it is safe) and slow \
-       checking on  Windows replicas.  For backward compatibility, \
+       worried that Unison may have overlooked an update. \
+       For backward compatibility, \
        \\verb|yes|, \\verb|no|, and \\verb|default| can be used in place \
        of \\verb|true|, \\verb|false|, and \\verb|auto|.  See \
        \\sectionref{fastcheck}{Fast Checking} for more information.")
@@ -1055,7 +1055,7 @@ let useFastChecking () =
    || (Prefs.read fastcheck = `Default (*&& Util.osType = `Unix*))
 
 let immutable = Pred.create "immutable" ~advanced:true
-   ("This preference specifies paths for directories whose \
+  ("This preference specifies paths for directories whose \
      immediate children are all immutable files --- i.e., once a file has been \
      created, its contents never changes.  When scanning for updates, \
      Unison does not check whether these files have been modified; \
@@ -1063,13 +1063,13 @@ let immutable = Pred.create "immutable" ~advanced:true
      directories).")
 
 let immutablenot = Pred.create "immutablenot" ~advanced:true
-   ("This preference overrides {\\tt immutable}.")
+  ("This preference overrides {\\tt immutable}.")
 
 type scanInfo =
-  { fastCheck : bool;
-    dirFastCheck : bool;
-    dirStamp : Props.dirChangedStamp;
-    showStatus : bool }
+    { fastCheck : bool;
+      dirFastCheck : bool;
+      dirStamp : Props.dirChangedStamp;
+      showStatus : bool }
 
 (** Status display **)
 
@@ -1085,26 +1085,26 @@ let t0 = ref 0.
    the status display message -- thus effectively serializing the client 
    and server! *)
 let showStatusAddLength scanInfo info =
-    let len1 = Props.length info.Fileinfo.desc in
-    let len2 = Osx.ressLength info.Fileinfo.osX.Osx.ressInfo in
+  let len1 = Props.length info.Fileinfo.desc in
+  let len2 = Osx.ressLength info.Fileinfo.osX.Osx.ressInfo in
     if len1 >= bigFileLengthFS || len2 >= bigFileLengthFS then
       fileLength := bigFileLength
     else
       fileLength :=
         min bigFileLength
-         (!fileLength + Uutil.Filesize.toInt len1 + Uutil.Filesize.toInt len2)
+          (!fileLength + Uutil.Filesize.toInt len1 + Uutil.Filesize.toInt len2)
 
 let showStatus scanInfo path =
-    fileLength := !fileLength + smallFileLength;
-    if !fileLength >= bigFileLength then begin
-      fileLength := 0;
-      let t = Unix.gettimeofday () in
+  fileLength := !fileLength + smallFileLength;
+  if !fileLength >= bigFileLength then begin
+    fileLength := 0;
+    let t = Unix.gettimeofday () in
       if t -. !t0 > 0.05 then begin
         if scanInfo.showStatus then
           Uutil.showUpdateStatus (Path.toString path);
         t0 := t
       end
-    end
+  end
 
 let showStatusDir path = ()
 
@@ -1114,11 +1114,11 @@ let showStatusDir path = ()
    they are scanned -- but this seems worse: it prints far too much stuff.
    So I'm going to revert to the old version. *)
 (*
-let showStatus path = ()
-let showStatusAddLength info = ()
-let showStatusDir path =
+  let showStatus path = ()
+  let showStatusAddLength info = ()
+  let showStatusDir path =
   if not !Trace.runningasserver then begin
-        Trace.statusDetail ("scanning... " ^ Path.toString path);
+  Trace.statusDetail ("scanning... " ^ Path.toString path);
   end
 *)
 

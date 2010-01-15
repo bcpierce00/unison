@@ -16,6 +16,7 @@ let rawPref default = ref default
 (* ------------------------------------------------------------------------- *)
 
 let profileName = ref None
+let profileFiles = ref []
 
 let profilePathname n =
   let f = Util.fileInUnisonDir n in
@@ -26,6 +27,18 @@ let thePrefsFile () =
   match !profileName with
     None -> raise (Util.Transient("No preference file has been specified"))
   | Some(n) -> profilePathname n
+
+let profileUnchanged () =
+  List.for_all
+    (fun (path, info) ->
+       try
+         let newInfo = System.stat path in
+         newInfo.Unix.LargeFile.st_kind = Unix.S_REG &&
+         info.Unix.LargeFile.st_mtime = newInfo.Unix.LargeFile.st_mtime &&
+         info.Unix.LargeFile.st_size = newInfo.Unix.LargeFile.st_size
+       with Unix.Unix_error _ ->
+         false)
+    !profileFiles
 
 (* ------------------------------------------------------------------------- *)
 
@@ -46,8 +59,9 @@ let resetters = ref []
 
 let addresetter f = resetters := f :: !resetters
 
-let resetToDefaults () = Safelist.iter (fun f -> f()) !resetters
-  
+let resetToDefaults () =
+  Safelist.iter (fun f -> f()) !resetters; profileFiles := []
+
 (* ------------------------------------------------------------------------- *)
 
 (* When the server starts up, we need to ship it the current state of all    *)
@@ -322,9 +336,13 @@ let string2int name string =
    in the same order as in the file. *)
 let rec readAFile filename : (string * int * string * string) list =
   let chan =
-    try System.open_in_bin (profilePathname filename)
-    with Sys_error _ ->
-      raise(Util.Fatal(Printf.sprintf "Preference file %s not found" filename)) in
+    try
+      let path = profilePathname filename in
+        profileFiles := (path, System.stat path) :: !profileFiles;
+        System.open_in_bin path
+    with Unix.Unix_error _ | Sys_error _ ->
+      raise(Util.Fatal(Printf.sprintf "Preference file %s not found" filename))
+  in
   let bom = "\xef\xbb\xbf" in (* BOM: UTF-8 byte-order mark *)
   let rec loop lines =
     match (try Some(input_line chan) with End_of_file -> None) with

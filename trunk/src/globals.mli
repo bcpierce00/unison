@@ -8,6 +8,7 @@
 (* line                                                                      *)
 val rawRoots : unit -> string list
 val setRawRoots : string list -> unit
+val rawRootPair : unit -> string * string
 
 (* Parse and canonize roots from their raw names                             *)
 val installRoots : (string -> string -> string) option -> unit Lwt.t

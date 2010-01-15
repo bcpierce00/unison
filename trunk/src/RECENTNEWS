@@ -1,5 +1,16 @@
 CHANGES FROM VERSION 2.39.4
 
+* New preferences "noupdate=root", "nodeletion=root", "nocreation=root"
+  that prevent Unison from performing files updates, deletions or
+  creations on the given root.
+* GTK UI: do not reload the preference file before a new update
+  detection if it is unchanged
+* Limit the number of simultaneous external copy program
+  ("copymax" preference)
+
+-------------------------------
+CHANGES FROM VERSION 2.39.4
+
 * GTK UI:
   - take into account the "height" preference again
   - the internal list of selected reconciler item was not always in

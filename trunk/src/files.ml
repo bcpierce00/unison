@@ -580,7 +580,7 @@ let (>>=) = Lwt.bind
 
 let diffCmd =
   Prefs.createString "diff" "diff -u CURRENT2 CURRENT1"
-    "!command for showing differences between files"
+    "!set command for showing differences between files"
     ("This preference can be used to control the name and command-line "
      ^ "arguments of the system "
      ^ "utility used to generate displays of file differences.  The default "
@@ -873,7 +873,8 @@ let merge root1 path1 ui1 root2 path2 ui2 id showMergeFn =
           (Fspath.quotes (Fspath.concat workingDirForMerge newarch)) in
       Trace.log (Printf.sprintf "Merge command: %s\n" cmd);
       
-      let returnValue, mergeResultLog = External.runExternalProgram cmd in
+      let returnValue, mergeResultLog =
+        Lwt_unix.run (External.runExternalProgram cmd) in
       
       Trace.log (Printf.sprintf "Merge result (%s):\n%s\n"
                    (showStatus returnValue) mergeResultLog);

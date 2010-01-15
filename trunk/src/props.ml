@@ -188,7 +188,7 @@ let syncedPartsToString =
 let dontChmod =
   Prefs.createBool "dontchmod" 
   false
-  "!When set, never use the chmod system call"
+  "!when set, never use the chmod system call"
   (  "By default, Unison uses the 'chmod' system call to set the permission bits"
   ^ " of files after it has copied them.  But in some circumstances (and under "
   ^ " some operating systems), the chmod call always fails.  Setting this "
@@ -544,7 +544,7 @@ let set fspath path kind t =
              let cmd = "/usr/local/bin/sudo -u root /usr/bin/touch -m -a -t "
                        ^ tstr ^ " " ^ Fspath.quotes abspath in
              Util.msg "Running external program to set utimes:\n  %s\n" cmd;
-             let (r,_) = External.runExternalProgram cmd in
+             let (r,_) = Lwt_unix.run (External.runExternalProgram cmd) in
              if r<>(Unix.WEXITED 0) then raise (Util.Transient "External time-setting command failed")
            end else
              Fs.utimes abspath v v)

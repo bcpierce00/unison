@@ -40,14 +40,13 @@ let rawroots =
      ^ "that, if Unison is invoked later with a slightly different name "
      ^ "for the same root, it will be able to locate the correct archives.")
 
-let setRawRoots l =
-  Prefs.set rawroots l
+let setRawRoots l = Prefs.set rawroots (Safelist.rev l)
 
-let rawRoots () = Prefs.read rawroots
+let rawRoots () = Safelist.rev (Prefs.read rawroots)
 
-let rootsInitialName () =
+let rawRootPair () =
   match rawRoots () with
-    [r2; r1] -> (r1, r2)
+    [r1; r2] -> (r1, r2)
   | _        -> assert false
 
 let theroots = ref []
@@ -67,7 +66,7 @@ let installRoots termInteract =
        cont >>= (fun l ->
        return (r' :: l))))
     roots (return []) >>= (fun roots' ->
-  theroots := Safelist.rev roots';
+  theroots := roots';
   return ())
 
 (* Alternate interface, should replace old interface eventually *)
@@ -76,8 +75,8 @@ let installRoots2 () =
   let roots = rawRoots () in
   theroots :=
     Safelist.map Remote.canonize ((Safelist.map Clroot.parseRoot) roots);
-  theroots := Safelist.rev !theroots (* Not sure why this is needed... *)
-  
+  theroots := !theroots
+
 let roots () =
   match !theroots with
     [root1;root2] -> (root1,root2)

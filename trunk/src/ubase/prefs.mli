@@ -104,6 +104,9 @@ val profileName : string option ref
 (* Calculate the full pathname of a preference file                          *)
 val profilePathname : string -> System.fspath
 
+(* Check whether the profile file is unchanged                               *)
+val profileUnchanged : unit -> bool
+
 (* Add a new preference to the file on disk (the result is a diagnostic      *)
 (* message that can be displayed to the user to verify where the new pref    *)
 (* went)                                                                     *)

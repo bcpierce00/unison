@@ -68,9 +68,7 @@ let root2direction root =
   if      root="older" then `Older
   else if root="newer" then `Newer
   else
-    let roots = Safelist.rev (Globals.rawRoots()) in
-    let r1 = Safelist.nth roots 0 in
-    let r2 = Safelist.nth roots 1 in
+    let (r1, r2) = Globals.rawRootPair () in
     debug (fun() ->
        Printf.eprintf "root2direction called to choose %s from %s and %s\n"
          root r1 r2);
@@ -82,7 +80,7 @@ let root2direction root =
 
 let forceRoot: string Prefs.t =
   Prefs.createString "force" ""
-    "force changes from this replica to the other"
+    "!force changes from this replica to the other"
     ("Including the preference \\texttt{-force \\ARG{root}} causes Unison to "
      ^ "resolve all differences (even non-conflicting changes) in favor of "
      ^ "\\ARG{root}.  "
@@ -114,7 +112,7 @@ let forceRootPartial: Pred.t =
 
 let preferRoot: string Prefs.t =
   Prefs.createString "prefer" ""
-    "choose this replica's version for conflicting changes"
+    "!choose this replica's version for conflicting changes"
     ("Including the preference \\texttt{-prefer \\ARG{root}} causes Unison always to "
      ^ "resolve conflicts in favor of \\ARG{root}, rather than asking for "
      ^ "guidance from the user.  (The syntax of \\ARG{root} is the same as "
@@ -158,6 +156,71 @@ let lookupPreferredRootPartial p =
   else
     ("",`Prefer)
 
+let actionKind fromRc toRc =
+  let fromTyp = fromRc.typ in
+  let toTyp = toRc.typ in
+  if fromTyp = toTyp then `UPDATE else
+  if toTyp = `ABSENT then `CREATION else
+  `DELETION
+
+type prefs = { noDeletion : bool; noUpdate: bool; noCreation : bool }
+
+let shouldCancel rc1 rc2 prefs =
+  match actionKind rc1 rc2 with
+    `UPDATE   -> prefs.noUpdate
+  | `DELETION -> prefs.noUpdate || prefs.noDeletion
+  | `CREATION -> prefs.noCreation
+
+let filterRi prefs1 prefs2 ri =
+  match ri.replicas with
+    Problem _ ->
+      ()
+  | Different diff ->
+      if
+        match diff.direction with
+          Replica1ToReplica2 -> shouldCancel diff.rc1 diff.rc2 prefs2
+        | Replica2ToReplica1 -> shouldCancel diff.rc2 diff.rc1 prefs1
+        | Conflict | Merge   -> false
+      then
+        diff.direction <- Conflict
+
+let noDeletion =
+  Prefs.createStringList "nodeletion" ~local:true
+    "prevent file deletions on one replica"
+    ("Including the preference \\texttt{-nodeletion \\ARG{root}} prevents \
+      Unison from performing any file deletion on root \\ARG{root}.\n\
+      This preference can be included twice, once for each root, if you \
+      want to prevent any creation.")
+
+let noUpdate =
+  Prefs.createStringList "noupdate" ~local:true
+    "prevent file updates and deletions on one replica"
+    ("Including the preference \\texttt{-noupdate \\ARG{root}} prevents \
+      Unison from performing any file update or deletion on root \
+      \\ARG{root}.\n\
+      This preference can be included twice, once for each root, if you \
+      want to prevent any update.")
+
+let noCreation =
+  Prefs.createStringList "nocreation" ~local:true
+    "prevent file creations on one replica"
+    ("Including the preference \\texttt{-nocreation \\ARG{root}} prevents \
+      Unison from performing any file creation on root \\ARG{root}.\n\
+      This preference can be included twice, once for each root, if you \
+      want to prevent any creation.")
+
+let filterRis ris =
+  let (root1, root2) = Globals.rawRootPair () in
+  let getPref root pref = List.mem root (Prefs.read pref) in
+  let getPrefs root =
+    { noDeletion = getPref root noDeletion;
+      noUpdate = getPref root noUpdate;
+      noCreation = getPref root noCreation }
+  in
+  let prefs1 = getPrefs root1 in
+  let prefs2 = getPrefs root2 in
+  Safelist.iter (fun ri -> filterRi prefs1 prefs2 ri) ris
+
 (* Use the current values of the '-prefer <ROOT>' and '-force <ROOT>'        *)
 (* preferences to override the reconciler's choices                          *)
 let overrideReconcilerChoices ris =
@@ -171,13 +234,12 @@ let overrideReconcilerChoices ris =
                    if rootp<>"" then begin
                      let dir = root2direction rootp in
                        setDirection ri dir forcep
-                   end) ris
+                   end) ris;
+  filterRis ris
 
 (* Look up the preferred root and verify that it is OK (this is called at    *)
 (* the beginning of the run, so that we don't have to wait to hear about     *)
 (* errors                                                                    *)
-(* This should also check for the partial version, but this needs a way to   *)
-(* extract the associated values from a Pred.t                               *)
 let checkThatPreferredRootIsValid () =
   let test_root predname = function
     | "" -> ()
@@ -190,7 +252,23 @@ let checkThatPreferredRootIsValid () =
   let (root,pred) = lookupPreferredRoot() in
   if root<>"" then test_root (match pred with `Force -> "force" | `Prefer -> "prefer") root;
   Safelist.iter (test_root "forcepartial") (Pred.extern_associated_strings forceRootPartial);
-  Safelist.iter (test_root "preferpartial") (Pred.extern_associated_strings preferRootPartial)
+  Safelist.iter (test_root "preferpartial") (Pred.extern_associated_strings preferRootPartial);
+  let checkPref pref prefName =
+    try
+      let root =
+        List.find (fun r -> not (List.mem r (Globals.rawRoots ())))
+          (Prefs.read pref)
+      in
+      let (r1, r2) = Globals.rawRootPair () in
+      raise (Util.Fatal (Printf.sprintf
+        "%s (given as argument to '%s' preference)\n\
+         is not one of the current roots:\n  %s\n  %s" root prefName r1 r2))
+    with Not_found ->
+      ()
+  in
+  checkPref noDeletion "nodeletion";
+  checkPref noUpdate   "noupdate";
+  checkPref noCreation "nocreation"
 
 (* ------------------------------------------------------------------------- *)
 (*                    Main Reconciliation stuff                              *)
