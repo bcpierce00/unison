@@ -60,11 +60,11 @@ STATIC=false
 # NAME, VERSION, and MAJORVERSION, automatically generated
 -include Makefile.ProjectInfo
 
-Makefile.ProjectInfo: mkProjectInfo $(wildcard ../.bzr/branch/last-revision)
-	./mkProjectInfo > $@
+Makefile.ProjectInfo: mkProjectInfo.ml $(wildcard ../.bzr/branch/last-revision)
+	ocaml str.cma unix.cma ./mkProjectInfo.ml > $@
 
-mkProjectInfo: mkProjectInfo.ml
-	ocamlc -o $@ unix.cma str.cma $^
+#mkProjectInfo: mkProjectInfo.ml
+#	ocamlc -o $@ unix.cma str.cma $^
 
 clean::
 	$(RM) mkProjectInfo

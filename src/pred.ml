@@ -88,9 +88,9 @@ let compile_pattern clause =
     end in
   (compiled, v)
 
-let create name ?(advanced=false) fulldoc =
+let create name ?(local=false) ?(advanced=false) fulldoc =
   let pref = 
-    Prefs.create name []
+    Prefs.create name ~local []
       ((if advanced then "!" else "")
        ^ "add a pattern to the " ^ name ^ " list")
       fulldoc
@@ -111,15 +111,17 @@ let recompile mode p =
   let pref = Prefs.read p.pref in
   let compiledList = Safelist.map compile_pattern (Safelist.append p.default pref) in
   let compiled = Rx.alt (Safelist.map fst compiledList) in
+  let handleCase rx =
+    if (Case.ops())#caseInsensitiveMatch then Rx.case_insensitive rx
+    else rx
+  in
   let strings = Safelist.filterMap
                   (fun (rx,vo) ->
                      match vo with
                        None -> None
-                     | Some v -> Some (rx,v))
+                     | Some v -> Some (handleCase rx,v))
                   compiledList in
-  p.compiled <-
-    if (Case.ops())#caseInsensitiveMatch then Rx.case_insensitive compiled
-    else compiled;
+  p.compiled <- handleCase compiled;
   p.associated_strings <- strings;
   p.last_pref <- pref;
   p.last_def <- p.default;
@@ -160,3 +162,9 @@ let assoc p s =
   recompile_if_needed p;
   let s = (Case.ops())#normalizeMatchedString s in
   snd (Safelist.find (fun (rx,v) -> Rx.match_string rx s) p.associated_strings)
+
+let assoc_all p s =
+  recompile_if_needed p;
+  let s = (Case.ops())#normalizeMatchedString s in
+  Safelist.map snd
+    (Safelist.filter (fun (rx,v) -> Rx.match_string rx s) p.associated_strings)

@@ -96,7 +96,7 @@ let forceRoot: string Prefs.t =
 
 let forceRootPartial: Pred.t =
   Pred.create "forcepartial" ~advanced:true
-    ("Including the preference \\texttt{forcepartial \\ARG{PATHSPEC} -> \\ARG{root}} causes Unison to "
+    ("Including the preference \\texttt{forcepartial = \\ARG{PATHSPEC} -> \\ARG{root}} causes Unison to "
      ^ "resolve all differences (even non-conflicting changes) in favor of "
      ^ "\\ARG{root} for the files in \\ARG{PATHSPEC} (see \\sectionref{pathspec}{Path Specification} "
      ^ "for more information).  "
@@ -124,7 +124,7 @@ let preferRoot: string Prefs.t =
 
 let preferRootPartial: Pred.t =
   Pred.create "preferpartial" ~advanced:true
-    ("Including the preference \\texttt{preferpartial \\ARG{PATHSPEC} -> \\ARG{root}} "
+    ("Including the preference \\texttt{preferpartial = \\ARG{PATHSPEC} -> \\ARG{root}} "
      ^ "causes Unison always to "
      ^ "resolve conflicts in favor of \\ARG{root}, rather than asking for "
      ^ "guidance from the user, for the files in \\ARG{PATHSPEC} (see "
@@ -156,39 +156,11 @@ let lookupPreferredRootPartial p =
   else
     ("",`Prefer)
 
-let actionKind fromRc toRc =
-  let fromTyp = fromRc.typ in
-  let toTyp = toRc.typ in
-  if fromTyp = toTyp then `UPDATE else
-  if toTyp = `ABSENT then `CREATION else
-  `DELETION
-
-type prefs = { noDeletion : bool; noUpdate: bool; noCreation : bool }
-
-let shouldCancel rc1 rc2 prefs =
-  match actionKind rc1 rc2 with
-    `UPDATE   -> prefs.noUpdate
-  | `DELETION -> prefs.noUpdate || prefs.noDeletion
-  | `CREATION -> prefs.noCreation
-
-let filterRi prefs1 prefs2 ri =
-  match ri.replicas with
-    Problem _ ->
-      ()
-  | Different diff ->
-      if
-        match diff.direction with
-          Replica1ToReplica2 -> shouldCancel diff.rc1 diff.rc2 prefs2
-        | Replica2ToReplica1 -> shouldCancel diff.rc2 diff.rc1 prefs1
-        | Conflict | Merge   -> false
-      then
-        diff.direction <- Conflict
-
 let noDeletion =
   Prefs.createStringList "nodeletion" ~local:true
     "prevent file deletions on one replica"
     ("Including the preference \\texttt{-nodeletion \\ARG{root}} prevents \
-      Unison from performing any file deletion on root \\ARG{root}.\n\
+      Unison from performing any file deletion on root \\ARG{root}.\n\n\
       This preference can be included twice, once for each root, if you \
       want to prevent any creation.")
 
@@ -197,7 +169,7 @@ let noUpdate =
     "prevent file updates and deletions on one replica"
     ("Including the preference \\texttt{-noupdate \\ARG{root}} prevents \
       Unison from performing any file update or deletion on root \
-      \\ARG{root}.\n\
+      \\ARG{root}.\n\n\
       This preference can be included twice, once for each root, if you \
       want to prevent any update.")
 
@@ -205,21 +177,83 @@ let noCreation =
   Prefs.createStringList "nocreation" ~local:true
     "prevent file creations on one replica"
     ("Including the preference \\texttt{-nocreation \\ARG{root}} prevents \
-      Unison from performing any file creation on root \\ARG{root}.\n\
+      Unison from performing any file creation on root \\ARG{root}.\n\n\
       This preference can be included twice, once for each root, if you \
       want to prevent any creation.")
 
+let noDeletionPartial =
+  Pred.create "nodeletionpartial" ~local:true ~advanced:true
+    ("Including the preference \
+      \\texttt{nodeletionpartial = \\ARG{PATHSPEC} -> \\ARG{root}} prevents \
+      Unison from performing any file deletion in \\ARG{PATHSPEC} \
+      on root \\ARG{root} (see \\sectionref{pathspec}{Path Specification} \
+      for more information).")
+
+let noUpdatePartial =
+  Pred.create "noupdatepartial" ~local:true ~advanced:true
+    ("Including the preference \
+      \\texttt{noupdatepartial = \\ARG{PATHSPEC} -> \\ARG{root}} prevents \
+      Unison from performing any file update or deletion in \
+      \\ARG{PATHSPEC} on root \\ARG{root} (see \
+      \\sectionref{pathspec}{Path Specification} for more information).")
+
+let noCreationPartial =
+  Pred.create "nocreationpartial" ~local:true ~advanced:true
+    ("Including the preference \
+      \\texttt{nocreationpartial = \\ARG{PATHSPEC} ->  \\ARG{root}} prevents \
+      Unison from performing any file creation in \\ARG{PATHSPEC} \
+      on root \\ARG{root} (see \\sectionref{pathspec}{Path Specification} \
+      for more information).")
+
+let partialCancelPref actionKind =
+  match actionKind with
+    `DELETION -> noDeletionPartial
+  | `UPDATE   -> noUpdatePartial
+  | `CREATION -> noCreationPartial
+
+let cancelPref actionKind =
+  match actionKind with
+    `DELETION -> noDeletion
+  | `UPDATE   -> noUpdate
+  | `CREATION -> noCreation
+
+let actionKind fromRc toRc =
+  let fromTyp = fromRc.typ in
+  let toTyp = toRc.typ in
+  if fromTyp = toTyp then `UPDATE else
+  if toTyp = `ABSENT then `CREATION else
+  `DELETION
+
+let shouldCancel path rc1 rc2 root2 =
+  let test kind =
+    List.mem root2 (Prefs.read (cancelPref kind))
+      ||
+    List.mem root2 (Pred.assoc_all (partialCancelPref kind) path)
+  in
+  match actionKind rc1 rc2 with
+    `UPDATE   -> test `UPDATE
+  | `DELETION -> test `UPDATE || test `DELETION
+  | `CREATION -> test `CREATION
+
+let filterRi root1 root2 ri =
+  match ri.replicas with
+    Problem _ ->
+      ()
+  | Different diff ->
+      if
+        match diff.direction with
+          Replica1ToReplica2 ->
+            shouldCancel (Path.toString ri.path1) diff.rc1 diff.rc2 root2
+        | Replica2ToReplica1 ->
+            shouldCancel (Path.toString ri.path1) diff.rc2 diff.rc1 root1
+        | Conflict | Merge ->
+            false
+      then
+        diff.direction <- Conflict
+
 let filterRis ris =
   let (root1, root2) = Globals.rawRootPair () in
-  let getPref root pref = List.mem root (Prefs.read pref) in
-  let getPrefs root =
-    { noDeletion = getPref root noDeletion;
-      noUpdate = getPref root noUpdate;
-      noCreation = getPref root noCreation }
-  in
-  let prefs1 = getPrefs root1 in
-  let prefs2 = getPrefs root2 in
-  Safelist.iter (fun ri -> filterRi prefs1 prefs2 ri) ris
+  Safelist.iter (fun ri -> filterRi root1 root2 ri) ris
 
 (* Use the current values of the '-prefer <ROOT>' and '-force <ROOT>'        *)
 (* preferences to override the reconciler's choices                          *)
@@ -253,11 +287,11 @@ let checkThatPreferredRootIsValid () =
   if root<>"" then test_root (match pred with `Force -> "force" | `Prefer -> "prefer") root;
   Safelist.iter (test_root "forcepartial") (Pred.extern_associated_strings forceRootPartial);
   Safelist.iter (test_root "preferpartial") (Pred.extern_associated_strings preferRootPartial);
-  let checkPref pref prefName =
+  let checkPref extract (pref, prefName) =
     try
       let root =
         List.find (fun r -> not (List.mem r (Globals.rawRoots ())))
-          (Prefs.read pref)
+          (extract pref)
       in
       let (r1, r2) = Globals.rawRootPair () in
       raise (Util.Fatal (Printf.sprintf
@@ -266,9 +300,12 @@ let checkThatPreferredRootIsValid () =
     with Not_found ->
       ()
   in
-  checkPref noDeletion "nodeletion";
-  checkPref noUpdate   "noupdate";
-  checkPref noCreation "nocreation"
+  List.iter (checkPref Prefs.read)
+    [noDeletion, "nodeletion"; noUpdate, "noupdate"; noCreation, "nocreation"];
+  List.iter (checkPref Pred.extern_associated_strings)
+    [noDeletionPartial, "nodeletionpartial";
+     noUpdatePartial, "noupdatepartial";
+     noCreationPartial, "nocreationpartial"]
 
 (* ------------------------------------------------------------------------- *)
 (*                    Main Reconciliation stuff                              *)

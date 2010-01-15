@@ -545,6 +545,8 @@ let initPrefs ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
     promptForRoots getFirstRoot getSecondRoot;
   end;
 
+  Recon.checkThatPreferredRootIsValid();
+
   (* The following step contacts the server, so warn the user it could take
      some time *)
   if not (Prefs.read contactquietly || Prefs.read Trace.terse) then
@@ -597,8 +599,6 @@ let initPrefs ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
                         Printf.eprintf "       %s\n" (root2string r))
          (Globals.rootsInCanonicalOrder());
        Printf.eprintf "\n");
-
-  Recon.checkThatPreferredRootIsValid();
   
   Lwt_unix.run
     (validateAndFixupPrefs () >>=

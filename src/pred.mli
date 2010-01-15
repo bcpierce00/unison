@@ -30,7 +30,7 @@ type t
 
 (* Create a new predicate and register it with the preference module.  The first
    arg is the name of the predicate; the second is full (latex) documentation. *)
-val create : string -> ?advanced:bool -> string -> t  
+val create : string -> ?local:bool -> ?advanced:bool -> string -> t  
 
 (* Check whether a given path matches one of the default or current patterns *)
 val test : t -> string -> bool
@@ -38,6 +38,9 @@ val test : t -> string -> bool
 (* Return the associated string for the first matching pattern.  Raise Not_found
    if no pattern with an associated string matches. *)
 val assoc : t -> string -> string
+
+(* Return all strings associated to a matching pattern. *)
+val assoc_all : t -> string -> string list
 
 (* Add list of default patterns to the existing list.  (These patterns are
    remembered even when the associated preference is cleared). *)
