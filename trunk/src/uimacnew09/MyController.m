@@ -93,7 +93,7 @@ static MyController *me; // needed by reloadTable and displayStatus, below
   [[tableView tableColumnWithIdentifier:@"path"] setDataCell:[[[ImageAndTextCell alloc] init] autorelease]];
   
 	// Custom progress cell
-	ProgressCell *progressCell = [[ProgressCell alloc] init];
+	ProgressCell *progressCell = [[[ProgressCell alloc] init] autorelease];
 	[[tableView tableColumnWithIdentifier:@"percentTransferred"] setDataCell:progressCell];
 	
   /* Set up the version string in the about box.  We use a custom

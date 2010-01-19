@@ -814,7 +814,8 @@ let start interface =
     Uicommon.uiInit
       (fun s -> Util.msg "%s\n%s\n" Uicommon.shortUsageMsg s; exit 1)
       (fun s -> Util.msg "%s" Uicommon.shortUsageMsg; exit 1)
-      (fun () -> if Prefs.read silent then Prefs.set Trace.terse true;
+      (fun () -> setWarnPrinter();
+                 if Prefs.read silent then Prefs.set Trace.terse true;
                  if not (Prefs.read silent)
                  then Util.msg "%s\n" (Uicommon.contactingServerMsg())) 
       (fun () -> Some "default")

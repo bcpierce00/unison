@@ -15,6 +15,11 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 *)
 
+(*
+See
+http://www.opensource.apple.com/source/copyfile/copyfile-42/copyfile.c
+*)
+
 let debug = Trace.debug "osx"
 
 (****)

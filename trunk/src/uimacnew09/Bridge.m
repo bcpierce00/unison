@@ -38,7 +38,7 @@
 
 pthread_mutex_t init_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t init_cond = PTHREAD_COND_INITIALIZER;
-static BOOL doneInit = false;
+static BOOL doneInit = NO;
 
 pthread_mutex_t global_call_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t global_call_cond = PTHREAD_COND_INITIALIZER;

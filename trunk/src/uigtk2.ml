@@ -3672,6 +3672,8 @@ lst_store#set ~row ~column:c_path path;
           format skippedCount "skipped item" "" "s"
         in
         let message =
+          (if failureCount = 0 then "The synchronization was successful.\n\n"
+           else "") ^
           "The replicas are not fully synchronized.\nThere was" ^
           begin match infos with
             [] -> assert false
