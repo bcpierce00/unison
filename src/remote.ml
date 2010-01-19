@@ -33,6 +33,10 @@ let recent_ocaml =
   Scanf.sscanf Sys.ocaml_version "%d.%d"
     (fun maj min -> (maj = 3 && min >= 11) || maj > 3)
 
+let _ =
+  if Sys.os_type = "Unix" then
+    ignore(Sys.set_signal Sys.sigpipe Sys.Signal_ignore)
+
 (*
    Flow-control mechanism (only active under Windows).
    Only one side is allowed to send messages at any given time.
@@ -95,7 +99,10 @@ let catchIoErrors th =
        | Unix.Unix_error(Unix.EPIPE, _, _)
          (* Windows may also return the following errors... *)
        | Unix.Unix_error(Unix.EINVAL, _, _)
-       | Unix.Unix_error(Unix.EUNKNOWNERR (-64), _, _) ->
+       | Unix.Unix_error(Unix.EUNKNOWNERR (-64), _, _)
+                         (* ERROR_NETNAME_DELETED *)
+       | Unix.Unix_error(Unix.EUNKNOWNERR (-233), _, _) ->
+                         (* ERROR_PIPE_NOT_CONNECTED *)
          (* Client has closed its end of the connection *)
            lostConnection ()
        | _ ->
@@ -113,14 +120,16 @@ let emittedBytes = ref 0.
 type ioBuffer =
   { channel : Lwt_unix.file_descr;
     buffer : string;
-    mutable length : int }
+    mutable length : int;
+    mutable opened : bool }
 
 let bufferSize = 16384
 (* No point in making this larger, as the Ocaml Unix library uses a
    buffer of this size *)
 
 let makeBuffer ch =
-  { channel = ch; buffer = String.create bufferSize; length = 0 }
+  { channel = ch; buffer = String.create bufferSize;
+    length = 0; opened = true }
 
 (****)
 
@@ -176,7 +185,11 @@ let peekWithoutBlocking conn =
 let rec sendOutput conn =
   catchIoErrors
     (fun () ->
-       Lwt_unix.write conn.channel conn.buffer 0 conn.length >>= fun len ->
+       begin if conn.opened then
+         Lwt_unix.write conn.channel conn.buffer 0 conn.length
+       else
+         Lwt.return conn.length
+       end >>= fun len ->
        debugV (fun() ->
          Util.msg "dump: %s\n"
            (String.escaped (String.sub conn.buffer 0 len)));
@@ -236,10 +249,6 @@ type outputQueue =
 
 let rec performOutputRec q (kind, action, res) =
   action () >>= fun () ->
-  if kind = Last then begin
-    assert (q.canWrite);
-    if q.flowControl then q.canWrite <- false
-  end;
   Lwt.wakeup res ();
   popOutputQueues q
 
@@ -321,6 +330,7 @@ let maybeFlush receiver pendingFlush q buf =
         (fun () ->
            if q.flowControl then begin
              debugE (fun() -> Util.msg "Sending write token\n");
+             q.canWrite <- false;
              fillBuffer buf [encodeInt 0] >>= fun () ->
              flushBuffer buf
            end else
@@ -975,8 +985,6 @@ let negociateFlowControl conn =
 (****)
 
 let initConnection in_ch out_ch =
-  if not windowsHack then
-    ignore(Sys.set_signal Sys.sigpipe Sys.Signal_ignore);
   let conn = setupIO false in_ch out_ch in
   checkHeader
     conn (Bytearray.create 1) 0 (String.length connectionHeader) >>= (fun () ->
@@ -991,6 +999,13 @@ let rec findFirst f l =
               match v with
                 None        -> findFirst f r
               | Some _ as v -> Lwt.return v
+
+let printAddr host addr =
+  match addr with
+    Unix.ADDR_UNIX s ->
+      assert false
+  | Unix.ADDR_INET (s, p) ->
+      Format.sprintf "%s[%s]:%d" host (Unix.string_of_inet_addr s) p
 
 let buildSocket host port kind =
   let attemptCreation ai =
@@ -1033,8 +1048,9 @@ let buildSocket host port kind =
                  let msg =
                    match kind with
                      `Connect ->
-                       Printf.sprintf "Can't connect to server (%s:%s): %s"
-                         host port (Unix.error_message error)
+                       Printf.sprintf "Can't connect to server %s: %s\n"
+                         (printAddr host ai.Unix.ai_addr)
+                         (Unix.error_message error)
                    | `Bind ->
                        Printf.sprintf
                          "Can't bind socket to port %s at address [%s]: %s\n"
@@ -1066,7 +1082,7 @@ let buildSocket host port kind =
         match kind with
           `Connect ->
              Printf.sprintf
-               "Can't find the IP address of the server (%s:%s)" host port
+               "Failed to connect to the server on host %s:%s" host port
         | `Bind ->
              if host = "" then
                Printf.sprintf "Can't bind socket to port %s" port
@@ -1401,7 +1417,17 @@ let commandLoop in_ch out_ch =
        match e with
          Util.Fatal "Lost connection with the server" ->
            debug (fun () -> Util.msg "Connection closed by the client\n");
-           Lwt.return ()
+           (* We prevents new writes and wait for any current write to
+              terminate.  As we don't have a good way to wait for the
+              writer to terminate, we just yield a bit. *)
+           let rec wait n =
+             if n = 0 then Lwt.return () else begin
+               Lwt_unix.yield () >>= fun () ->
+               wait (n - 1)
+             end
+           in
+           conn.outputBuffer.opened <- false;
+           wait 10
        | _ ->
            Lwt.fail e)
 
@@ -1426,23 +1452,27 @@ let _ = Prefs.alias killServer "killServer"
 let waitOnPort hostOpt port =
   Util.convertUnixErrorsToFatal "waiting on port"
     (fun () ->
-       Lwt_unix.run
-         (let host = match hostOpt with
-            Some host -> host
-          | None -> "" in
-          buildSocket host port `Bind >>= fun listening ->
-          Util.msg "server started\n";
-          let rec handleClients () =
-            (* Accept a connection *)
-            Lwt_unix.accept listening >>= fun (connected,_) ->
-            Lwt_unix.setsockopt connected Unix.SO_KEEPALIVE true;
-            commandLoop connected connected >>= fun () ->
-            (* The client has closed its end of the connection *)
-            begin try Lwt_unix.close connected with Unix.Unix_error _ -> () end;
-            if Prefs.read killServer then Lwt.return () else
-            handleClients ()
-          in
-          handleClients ()))
+       let host =
+         match hostOpt with
+           Some host -> host
+         | None      -> ""
+       in
+       let listening = Lwt_unix.run (buildSocket host port `Bind) in
+       Util.msg "server started\n";
+       let rec handleClients () =
+         let (connected, _) =
+           Lwt_unix.run (Lwt_unix.accept listening)
+         in
+         Lwt_unix.setsockopt connected Unix.SO_KEEPALIVE true;
+         begin try
+           (* Accept a connection *)
+           Lwt_unix.run (commandLoop connected connected)
+         with Util.Fatal "Lost connection with the server" -> () end;
+         (* The client has closed its end of the connection *)
+         begin try Lwt_unix.close connected with Unix.Unix_error _ -> () end;
+         if not (Prefs.read killServer) then handleClients ()
+       in
+       handleClients ())
 
 let beAServer () =
   begin try

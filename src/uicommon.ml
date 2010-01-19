@@ -350,13 +350,13 @@ let dangerousPathMsg dangerousPaths =
   if dangerousPaths = [Path.empty] then
     "The root of one of the replicas has been completely emptied.\n\
      Unison may delete everything in the other replica.  (Set the \n\
-     'confirmbigdel' preference to false to disable this check.)"
+     'confirmbigdel' preference to false to disable this check.)\n"
   else
     Printf.sprintf
       "The following paths have been completely emptied in one replica:\n  \
        %s\n\
        Unison may delete everything below these paths in the other replica.\n
-       (Set the 'confirmbigdel' preference to false to disable this check.)"
+       (Set the 'confirmbigdel' preference to false to disable this check.)\n"
       (String.concat "\n  "
          (Safelist.map (fun p -> "'" ^ (Path.toString p) ^ "'")
             dangerousPaths))

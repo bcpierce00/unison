@@ -1,5 +1,13 @@
 CHANGES FROM VERSION 2.39.6
 
+* Made a server waiting on a socket more resilient to unexpected
+  lost connections from the client.
+* Fixed possible race condition in half-duplex communication mode.
+* Minor other changes...
+
+-------------------------------
+CHANGES FROM VERSION 2.39.6
+
 * Implemented 'partial' versions of 'noupdate', 'nodeletion' and 'nocreation'
 * Check sooner (before connecting to another machine) that the roots
   given as argument to all these preference are well-formed
