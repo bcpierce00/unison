@@ -5,6 +5,11 @@
 ####################################################################
 ### Try to automatically guess OS
 
+ifeq (${OSCOMP},cross) # Cross-compilation under Linux
+  OSARCH=win32gnuc
+  PATH := /usr/i586-mingw32msvc/bin:$(PATH)
+endif
+
 ifeq (${OSCOMP},cygwingnuc) # Define this if compiling with Cygwin GNU C
   OSARCH=win32gnuc
   ETAGS=/bin/etags
@@ -86,7 +91,7 @@ buildexecutable::
 
 INCLFLAGS=-I lwt -I ubase -I system
 CAMLFLAGS+=$(INCLFLAGS)
-CAMLFLAGS+=-I system/$(SYSTEM)
+CAMLFLAGS+=-I system/$(SYSTEM) -I lwt/$(SYSTEM)
 
 ifeq ($(OSARCH),win32)
   # Win32 system
@@ -100,7 +105,7 @@ ifeq ($(OSARCH),win32)
 #    issue."
 #  CLIBS+=-cclib win32rc/unison.res
 #  STATICLIBS+=-cclib win32rc/unison.res
-  COBJS+=system/system_win_stubs$(OBJ_EXT)
+  COBJS+=system/system_win_stubs$(OBJ_EXT) lwt/lwt_unix_stubs$(OBJ_EXT)
   WINOBJS=system/system_win.cmo
   SYSTEM=win
   CLIBS+=-cclib "-link win32rc/unison.res"
@@ -113,7 +118,7 @@ else
   ifeq ($(OSARCH),win32gnuc)
     CWD=.
     EXEC_EXT=.exe
-    COBJS+=system/system_win_stubs$(OBJ_EXT)
+    COBJS+=system/system_win_stubs$(OBJ_EXT) lwt/lwt_unix_stubs$(OBJ_EXT)
     WINOBJS=system/system_win.cmo
     SYSTEM=win
     CLIBS+=-cclib win32rc/unison.res.lib
@@ -206,7 +211,8 @@ OCAMLOBJS += \
           ubase/uprintf.cmo ubase/util.cmo ubase/uarg.cmo \
           ubase/prefs.cmo ubase/trace.cmo ubase/proplist.cmo \
           \
-          lwt/pqueue.cmo lwt/lwt.cmo lwt/lwt_util.cmo lwt/lwt_unix.cmo \
+          lwt/pqueue.cmo lwt/lwt.cmo lwt/lwt_util.cmo \
+          lwt/$(SYSTEM)/lwt_unix_impl.cmo lwt/lwt_unix.cmo \
           \
           case.cmo pred.cmo uutil.cmo \
           fileutil.cmo name.cmo path.cmo fspath.cmo fs.cmo fingerprint.cmo \
@@ -303,6 +309,8 @@ include .depend
 # Additional dependencied depending on the system
 system.cmo fspath.cmo fs.cmo: system/$(SYSTEM)/system_impl.cmo
 system.cmx fspath.cmx fs.cmx: system/$(SYSTEM)/system_impl.cmx
+lwt/lwt_unix.cmo: lwt/$(SYSTEM)/lwt_unix_impl.cmo
+lwt/lwt_unix.cmx: lwt/$(SYSTEM)/lwt_unix_impl.cmx
 
 ifeq ($(OSARCH), OpenBSD)
   ifeq ($(shell echo type ocamldot | ksh), file)

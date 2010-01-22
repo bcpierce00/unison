@@ -7,7 +7,7 @@ common.cmi: uutil.cmi props.cmi path.cmi osx.cmi os.cmi name.cmi fspath.cmi \
     fileinfo.cmi 
 copy.cmi: uutil.cmi props.cmi path.cmi osx.cmi os.cmi lwt/lwt.cmi fspath.cmi \
     fileinfo.cmi common.cmi 
-external.cmi: 
+external.cmi: lwt/lwt.cmi 
 fileinfo.cmi: system.cmi props.cmi path.cmi osx.cmi fspath.cmi 
 files.cmi: uutil.cmi system.cmi props.cmi path.cmi lwt/lwt_util.cmi \
     lwt/lwt.cmi common.cmi 
@@ -154,9 +154,9 @@ pred.cmo: ubase/util.cmi ubase/safelist.cmi ubase/rx.cmi ubase/prefs.cmi \
 pred.cmx: ubase/util.cmx ubase/safelist.cmx ubase/rx.cmx ubase/prefs.cmx \
     case.cmx pred.cmi 
 props.cmo: uutil.cmi ubase/util.cmi ubase/prefs.cmi path.cmi osx.cmi \
-    fspath.cmi fs.cmi external.cmi props.cmi 
+    lwt/lwt_unix.cmi fspath.cmi fs.cmi external.cmi props.cmi 
 props.cmx: uutil.cmx ubase/util.cmx ubase/prefs.cmx path.cmx osx.cmx \
-    fspath.cmx fs.cmx external.cmx props.cmi 
+    lwt/lwt_unix.cmx fspath.cmx fs.cmx external.cmx props.cmi 
 recon.cmo: ubase/util.cmi update.cmi tree.cmi ubase/trace.cmi sortri.cmi \
     ubase/safelist.cmi props.cmi ubase/prefs.cmi pred.cmi path.cmi name.cmi \
     globals.cmi fileinfo.cmi common.cmi recon.cmi 
@@ -295,8 +295,8 @@ xferhint.cmx: ubase/util.cmx ubase/trace.cmx ubase/prefs.cmx path.cmx os.cmx \
     fspath.cmx xferhint.cmi 
 lwt/lwt.cmo: lwt/lwt.cmi 
 lwt/lwt.cmx: lwt/lwt.cmi 
-lwt/lwt_unix.cmo: lwt/pqueue.cmi lwt/lwt.cmi lwt/lwt_unix.cmi 
-lwt/lwt_unix.cmx: lwt/pqueue.cmx lwt/lwt.cmx lwt/lwt_unix.cmi 
+lwt/lwt_unix.cmo: lwt/lwt_unix.cmi 
+lwt/lwt_unix.cmx: lwt/lwt_unix.cmi 
 lwt/lwt_util.cmo: lwt/lwt.cmi lwt/lwt_util.cmi 
 lwt/lwt_util.cmx: lwt/lwt.cmx lwt/lwt_util.cmi 
 lwt/pqueue.cmo: lwt/pqueue.cmi 
@@ -350,6 +350,10 @@ lwt/example/editor.cmo: lwt/lwt_unix.cmi
 lwt/example/editor.cmx: lwt/lwt_unix.cmx 
 lwt/example/relay.cmo: lwt/lwt_unix.cmi lwt/lwt.cmi 
 lwt/example/relay.cmx: lwt/lwt_unix.cmx lwt/lwt.cmx 
+lwt/generic/lwt_unix_impl.cmo: lwt/pqueue.cmi lwt/lwt.cmi 
+lwt/generic/lwt_unix_impl.cmx: lwt/pqueue.cmx lwt/lwt.cmx 
+lwt/win/lwt_unix_impl.cmo: lwt/pqueue.cmi lwt/lwt.cmi 
+lwt/win/lwt_unix_impl.cmx: lwt/pqueue.cmx lwt/lwt.cmx 
 system/generic/system_impl.cmo: system/system_generic.cmo 
 system/generic/system_impl.cmx: system/system_generic.cmx 
 system/win/system_impl.cmo: system/system_win.cmo system/system_generic.cmo 

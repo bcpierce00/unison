@@ -42,9 +42,6 @@ val pipe_in : unit -> file_descr * Unix.file_descr
 val pipe_out : unit -> Unix.file_descr * file_descr
 val socket :
   Unix.socket_domain -> Unix.socket_type -> int -> file_descr
-val socketpair :
-  Unix.socket_domain -> Unix.socket_type -> int ->
-  (file_descr * file_descr) Lwt.t
 val bind : file_descr -> Unix.sockaddr -> unit
 val setsockopt : file_descr -> Unix.socket_bool_option -> bool -> unit
 val accept : file_descr -> (file_descr * Unix.sockaddr) Lwt.t
@@ -53,32 +50,7 @@ val listen : file_descr -> int -> unit
 val close : file_descr -> unit
 val set_close_on_exec : file_descr -> unit
 
-val wait : unit -> (int * Unix.process_status) Lwt.t
-val waitpid : Unix.wait_flag list -> int -> (int * Unix.process_status) Lwt.t
-
-val system : string -> Unix.process_status Lwt.t
-
 type lwt_in_channel
-type lwt_out_channel
 
 val intern_in_channel : in_channel -> lwt_in_channel
-val intern_out_channel : out_channel -> lwt_out_channel
-
-val input_char : lwt_in_channel -> char Lwt.t
 val input_line : lwt_in_channel -> string Lwt.t
-val input : lwt_in_channel -> string -> int -> int -> int Lwt.t
-val really_input : lwt_in_channel -> string -> int -> int -> unit Lwt.t
-
-val open_process_in: string -> lwt_in_channel Lwt.t
-val open_process_out: string -> lwt_out_channel Lwt.t
-val open_process: string -> (lwt_in_channel * lwt_out_channel) Lwt.t
-val open_process_full:
-  string -> string array ->
-  (lwt_in_channel * lwt_out_channel * lwt_in_channel) Lwt.t
-val close_process_in: lwt_in_channel -> Unix.process_status Lwt.t
-val close_process_out: lwt_out_channel -> Unix.process_status Lwt.t
-val close_process:
-  lwt_in_channel * lwt_out_channel -> Unix.process_status Lwt.t
-val close_process_full:
-  lwt_in_channel * lwt_out_channel * lwt_in_channel ->
-  Unix.process_status Lwt.t

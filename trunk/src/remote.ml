@@ -28,10 +28,9 @@ let debugT = Trace.debug "remote+"
    But that resulted in huge amounts of output from '-debug all'.
 *)
 
-let windowsHack = Sys.os_type <> "Unix"
-let recent_ocaml =
-  Scanf.sscanf Sys.ocaml_version "%d.%d"
-    (fun maj min -> (maj = 3 && min >= 11) || maj > 3)
+let _ =
+  if Sys.os_type = "Unix" then
+    ignore(Sys.set_signal Sys.sigpipe Sys.Signal_ignore)
 
 let _ =
   if Sys.os_type = "Unix" then
@@ -53,8 +52,6 @@ let _ =
    But then, there is the risk that the two sides exchange spurious
    messages.
 *)
-let needFlowControl = windowsHack
-let readOrWrite = needFlowControl && not recent_ocaml
 
 (****)
 
@@ -307,10 +304,9 @@ let makeOutputQueue isServer flush =
 type connection =
   { inputBuffer : ioBuffer;
     outputBuffer : ioBuffer;
-    outputQueue : outputQueue;
-    receiver :  (unit -> unit Lwt.t) option ref }
+    outputQueue : outputQueue }
 
-let maybeFlush receiver pendingFlush q buf =
+let maybeFlush pendingFlush q buf =
   (* We return immediately if a flush is already scheduled, or if the
      output buffer is already empty. *)
   (* If we are doing flow control and we can write, we need to send
@@ -335,25 +331,19 @@ let maybeFlush receiver pendingFlush q buf =
              flushBuffer buf
            end else
              flushBuffer buf) >>= fun () ->
-      assert (not (q.flowControl && q.canWrite));
-      (* Restart the reader thread if needed *)
-      match !receiver with
-        None   -> Lwt.return ()
-      | Some f -> f ()
+      Lwt.return ()
     end else
       Lwt.return ()
   end
 
 let makeConnection isServer inCh outCh =
   let pendingFlush = ref false in
-  let receiver = ref None in
   let outputBuffer = makeBuffer outCh in
-    { inputBuffer = makeBuffer inCh;
-      outputBuffer = outputBuffer;
-      outputQueue =
-        makeOutputQueue isServer
-          (fun q -> maybeFlush receiver pendingFlush q outputBuffer);
-      receiver = receiver }
+  { inputBuffer = makeBuffer inCh;
+    outputBuffer = outputBuffer;
+    outputQueue =
+      makeOutputQueue isServer
+        (fun q -> maybeFlush pendingFlush q outputBuffer) }
 
 (* Send message [l] *)
 let dump conn l =
@@ -694,9 +684,7 @@ let find_receiver id =
 (* Receiving thread: read a message and dispatch it to the right
    thread or create a new thread to process requests. *)
 let rec receive conn =
-  if readOrWrite && conn.outputQueue.canWrite then begin
-    conn.receiver := Some (fun () -> receive conn); Lwt.return ()
-  end else begin
+  begin
     debugE (fun () -> Util.msg "Waiting for next message\n");
     (* Get the message ID *)
     let id = Bytearray.create intSize in
@@ -966,15 +954,15 @@ let halfduplex =
      in a deadlock."
 
 let negociateFlowControlLocal conn () =
-  if not needFlowControl then disableFlowControl conn.outputQueue;
-  Lwt.return needFlowControl
+  disableFlowControl conn.outputQueue;
+  Lwt.return false
 
 let negociateFlowControlRemote =
   registerServerCmd "negociateFlowControl" negociateFlowControlLocal
 
 let negociateFlowControl conn =
   (* Flow control negociation can be done asynchronously. *)
-  if not (needFlowControl || Prefs.read halfduplex) then
+  if not (Prefs.read halfduplex) then
     Lwt.ignore_result
       (negociateFlowControlRemote conn () >>= fun needed ->
        if not needed then
