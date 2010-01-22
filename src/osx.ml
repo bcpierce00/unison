@@ -514,6 +514,7 @@ let openRessOut fspath path length =
         output_string outch "\000\000\014\176"; (* length *)
         output_string outch "\000\000\000\002"; (* Resource fork *)
         output_string outch "\000\000\014\226"; (* offset *)
+(* FIX: should check for overflow! *)
         output_string outch (setInt4 (Uutil.Filesize.toInt64 length));
                                                 (* length *)
         output_string outch (emptyFinderInfo ());

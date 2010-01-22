@@ -34,7 +34,7 @@ once: postproc$(EXEC_EXT) $(STRINGS) docs$(EXEC_EXT)
 	@echo HEVEAPATH = $(HEVEAPATH)
 	@(if [ ! -f prefs.tmp ]; then $(MAKE) prefs.tmp; fi)
 	@(if [ ! -f prefsdocs.tmp ]; then $(MAKE) prefsdocs.tmp; fi)
-ifdef HEVEA
+ifeq ($(HEVEA),true)
 	printf '$(TEXDIRECTIVES)\\textversiontrue\\draftfalse' \
            > texdirectives.tex
 	latex unison-manual.tex
@@ -90,4 +90,4 @@ clean::
 	../src/mkProjectInfo > $@
 
 ../src/mkProjectInfo: ../src/mkProjectInfo.ml
-	ocamlc -o $@ $^
+	ocamlc str.cma -o $@ $^

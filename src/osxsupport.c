@@ -33,12 +33,12 @@ CAMLprim value getFileInfos (value path, value need_size) {
   CAMLlocal3(res, fInfo, length);
   int retcode;
   struct attrlist attrList;
-  unsigned long options = 0;
+  unsigned long options = FSOPT_REPORT_FULLSIZE;
   struct {
-    unsigned long length;
-    char          finderInfo [32];
-    off_t         rsrcLength;
-  } attrBuf;
+    u_int32_t length;
+    char      finderInfo [32];
+    off_t     rsrcLength;
+  } __attribute__ ((packed)) attrBuf;
 
   attrList.bitmapcount = ATTR_BIT_MAP_COUNT;
   attrList.reserved = 0;
@@ -58,10 +58,10 @@ CAMLprim value getFileInfos (value path, value need_size) {
 
   if (Bool_val (need_size)) {
     if (attrBuf.length != sizeof attrBuf)
-      unix_error (EOPNOTSUPP, "getattrlist", path);
+      unix_error (EINVAL, "getattrlist", path);
   } else {
-    if (attrBuf.length < sizeof (unsigned long) + 32)
-      unix_error (EOPNOTSUPP, "getattrlist", path);
+    if (attrBuf.length != sizeof (u_int32_t) + 32)
+      unix_error (EINVAL, "getattrlist", path);
   }
 
   fInfo = alloc_string (32);
@@ -92,9 +92,9 @@ CAMLprim value setFileInfos (value path, value fInfo) {
   struct attrlist attrList;
   unsigned long options = 0;
   struct {
-    unsigned long length;
-    char          finderInfo [32];
-  } attrBuf;
+    u_int32_t length;
+    char      finderInfo [32];
+  } __attribute__ ((packed))  attrBuf;
 
   attrList.bitmapcount = ATTR_BIT_MAP_COUNT;
   attrList.reserved = 0;
