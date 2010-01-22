@@ -1,5 +1,10 @@
 CHANGES FROM VERSION 2.39.6
 
+* Fixed "assertion failed" error introduced in last commit...
+
+-------------------------------
+CHANGES FROM VERSION 2.39.6
+
 * Fixed bug which made Unison ignore finder information and resource
   fork when compiled to 64bit on Mac OSX.
 * Use asynchronous I/O under Windows

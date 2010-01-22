@@ -81,10 +81,11 @@ let string = Digest.string
 let dummy = ""
 
 let hash d =
-  if d == dummy then
+  let l = String.length d in
+  if l = 0 then
     1234577
   else begin
-    assert (String.length d >= 3);
+    assert (l >= 3);
     Char.code (String.unsafe_get d 0) +
     (Char.code (String.unsafe_get d 1) lsl 8) +
     (Char.code (String.unsafe_get d 2) lsl 16)
