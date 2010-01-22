@@ -506,7 +506,7 @@ let transferFile
 (****)
 
 let copyprog =
-  Prefs.createString "copyprog" "rsync --inplace --compress"
+  Prefs.createString "copyprog" "rsync --partial --inplace --compress"
     "!external program for copying large files"
     ("A string giving the name of an "
      ^ "external program that can be used to copy large files efficiently  "
@@ -515,7 +515,7 @@ let copyprog =
      ^ "options---most users should not need to change it.")
 
 let copyprogrest =
-  Prefs.createString "copyprogrest" "rsync --partial --inplace --compress"
+  Prefs.createString "copyprogrest" "rsync --partial --append-verify --compress"
     "!variant of copyprog for resuming partial transfers"
     ("A variant of {\\tt copyprog} that names an external program "
      ^ "that should be used to continue the transfer of a large file "
