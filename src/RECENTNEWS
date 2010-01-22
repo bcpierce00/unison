@@ -1,3 +1,13 @@
+CHANGES FROM VERSION 2.32.66
+
+Fixes to the stable release:
+* Fixed bug which made Unison ignore finder information and resource
+  fork when compiled to 64bit on Mac OSX.
+* IPV6, socket mode: properly deal with Unix errors, so that Unison
+  correctly falls back to IPV4 if the kernel does not support IPV6
+* copyprog: use better rsync options
+
+-------------------------------
 CHANGES FROM VERSION 2.32.52
 
 * GTK UI: Unison now take into account the arguments given (including
