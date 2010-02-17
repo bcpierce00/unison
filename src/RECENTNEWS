@@ -1,3 +1,9 @@
+CHANGES FROM VERSION 2.39.12
+
+* Mac OS: fixed rsync bug which could result in an "index out of bounds"
+  error when transferring resource forks.
+
+-------------------------------
 CHANGES FROM VERSION 2.39.6
 
 * Fixed "assertion failed" error introduced in last commit...

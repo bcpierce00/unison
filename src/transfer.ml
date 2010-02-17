@@ -391,9 +391,10 @@ struct
     (* Make sure we are at the beginning of the file
        (important for AppleDouble files *)
     LargeFile.seek_in infd 0L;
-    (* Limit the number of block so that there is no overflow in
-       encodeInt3 *)
-    let count = blockIter infd addBlock blockSize (256*256*256) in
+    let count =
+      (* Limit the number of blocks so that there is no overflow in
+         encodeInt3 *)
+      blockIter infd addBlock blockSize (min blockCount (256*256*256)) in
     debugLog (fun() -> Util.msg "%d blocks\n" count);
     Trace.showTimer timer;
     ({ blockSize = blockSize; blockCount = count; checksumSize = csSize;
