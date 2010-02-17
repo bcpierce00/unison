@@ -1,3 +1,17 @@
+CHANGES FROM VERSION 2.40.1
+
+* Bumped version number: incompatible protocol changes
+
+* Ignore one-second differences when synchronizing modification time.
+  (Technically, this is an incompatible archive format change, but it
+   is backward compatible.  To trigger a problem, a user would have to
+   synchronize modification times on a filesystem with a two-second
+   granularity and then downgrade to a previous version of Unison,
+   which does not work well in such a case.  Thus, it does not
+   seem worthwhile to increment the archive format number, which would
+   impact all users.)
+
+-------------------------------
 CHANGES FROM VERSION 2.39.12
 
 * Mac OS: fixed rsync bug which could result in an "index out of bounds"

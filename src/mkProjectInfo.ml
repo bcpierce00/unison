@@ -5,8 +5,8 @@
 
 let projectName = "unison"
 let majorVersion = 2
-let minorVersion = 39
-let pointVersionOrigin = 396 (* Revision that corresponds to point version 0 *)
+let minorVersion = 40
+let pointVersionOrigin = 409 (* Revision that corresponds to point version 0 *)
 
 (* Documentation:
    This is a program to construct a version of the form Major.Minor.Point,
@@ -42,7 +42,7 @@ let pointVersionOrigin = 396 (* Revision that corresponds to point version 0 *)
 (* ---------------------------------------------------------------------- *)
 (* You shouldn't need to edit below. *)
 
-let revisionString = "$Rev: 402$";;
+let revisionString = "$Rev: 410$";;
 
 (* extract a substring using a regular expression *)
 let extract_str re str =
@@ -96,6 +96,7 @@ let pointVersion =
 Printf.printf "MAJORVERSION=%d.%d\n" majorVersion minorVersion;;
 Printf.printf "VERSION=%d.%d.%d\n" majorVersion minorVersion pointVersion;;
 Printf.printf "NAME=%s\n" projectName;;
+
 
 
 

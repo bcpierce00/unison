@@ -157,7 +157,7 @@ let lookupPreferredRootPartial p =
     ("",`Prefer)
 
 let noDeletion =
-  Prefs.createStringList "nodeletion" ~local:true
+  Prefs.createStringList "nodeletion"
     "prevent file deletions on one replica"
     ("Including the preference \\texttt{-nodeletion \\ARG{root}} prevents \
       Unison from performing any file deletion on root \\ARG{root}.\n\n\
@@ -165,7 +165,7 @@ let noDeletion =
       want to prevent any creation.")
 
 let noUpdate =
-  Prefs.createStringList "noupdate" ~local:true
+  Prefs.createStringList "noupdate"
     "prevent file updates and deletions on one replica"
     ("Including the preference \\texttt{-noupdate \\ARG{root}} prevents \
       Unison from performing any file update or deletion on root \
@@ -174,7 +174,7 @@ let noUpdate =
       want to prevent any update.")
 
 let noCreation =
-  Prefs.createStringList "nocreation" ~local:true
+  Prefs.createStringList "nocreation"
     "prevent file creations on one replica"
     ("Including the preference \\texttt{-nocreation \\ARG{root}} prevents \
       Unison from performing any file creation on root \\ARG{root}.\n\n\
@@ -182,7 +182,7 @@ let noCreation =
       want to prevent any creation.")
 
 let noDeletionPartial =
-  Pred.create "nodeletionpartial" ~local:true ~advanced:true
+  Pred.create "nodeletionpartial" ~advanced:true
     ("Including the preference \
       \\texttt{nodeletionpartial = \\ARG{PATHSPEC} -> \\ARG{root}} prevents \
       Unison from performing any file deletion in \\ARG{PATHSPEC} \
@@ -190,7 +190,7 @@ let noDeletionPartial =
       for more information).")
 
 let noUpdatePartial =
-  Pred.create "noupdatepartial" ~local:true ~advanced:true
+  Pred.create "noupdatepartial" ~advanced:true
     ("Including the preference \
       \\texttt{noupdatepartial = \\ARG{PATHSPEC} -> \\ARG{root}} prevents \
       Unison from performing any file update or deletion in \
@@ -198,7 +198,7 @@ let noUpdatePartial =
       \\sectionref{pathspec}{Path Specification} for more information).")
 
 let noCreationPartial =
-  Pred.create "nocreationpartial" ~local:true ~advanced:true
+  Pred.create "nocreationpartial" ~advanced:true
     ("Including the preference \
       \\texttt{nocreationpartial = \\ARG{PATHSPEC} ->  \\ARG{root}} prevents \
       Unison from performing any file creation in \\ARG{PATHSPEC} \

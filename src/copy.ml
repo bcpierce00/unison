@@ -425,7 +425,8 @@ let compress conn
     (fun e ->
        (* We cannot wrap the code above with the handler below,
           as the code is executed asynchronously. *)
-       Util.convertUnixErrorsToTransient "rsync sender" (fun () -> raise e))
+       Util.convertUnixErrorsToTransient "transferring file contents"
+         (fun () -> raise e))
 
 let compressRemotely = Remote.registerServerCmd "compress" compress
 
@@ -694,7 +695,7 @@ let copyquoterem =
      ^ "{\\tt rsync}.")
 
 let copymax =
-  Prefs.createInt "copymax" ~local:true 1
+  Prefs.createInt "copymax" 1
     "!maximum number of simultaneous copyprog transfers"
     ("A number indicating how many instances of the external copying utility \
       Unison is allowed to run simultaneously (default to 1).")

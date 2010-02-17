@@ -435,33 +435,24 @@ let moduloOneHour t =
   let v = Int64.rem t oneHour in
   if v >= Int64.zero then v else Int64.add v oneHour
 
-let hash t h =
-  Uutil.hash2
-    (match t with
-       Synced f    -> Hashtbl.hash (moduloOneHour (approximate f))
-     | NotSynced _ -> 0)
-    h
-
-let similar t t' =
-  not (Prefs.read sync)
-    ||
-  match t, t' with
-    Synced v, Synced v'      ->
-      let delta = Int64.sub (approximate v) (approximate v') in
-      delta = Int64.zero || delta = oneHour || delta = minusOneHour
-  | NotSynced _, NotSynced _ ->
-      true
-  | _                        ->
-      false
-
 (* Accept one hour differences and one second differences *)
 let possible_deltas =
   [ -3601L; 3601L; -3600L; 3600L; -3599L; 3599L; -1L; 1L; 0L ]
 
-(* FIX: this is the right similar function (dates are approximated
-   on FAT filesystems upward under Windows, downward under Linux).
-   The hash function needs to be updated as well *)
-let similar_correct t t' =
+let hash t h =
+  Uutil.hash2
+    (match t with
+       Synced _    -> 1 (* As we are ignoring one-second differences,
+                           we cannot provide a more accurate hash. *)
+     | NotSynced _ -> 0)
+    h
+
+(* Times have a two-second granularity on FAT filesystems.  They are
+   approximated upward under Windows, downward under Linux...
+   Ignoring one-second changes also makes Unison more robust when
+   dealing with systems with sub-second granularity (we have no control
+   on how this is may be rounded). *)
+let similar t t' =
   not (Prefs.read sync)
     ||
   match t, t' with
@@ -564,7 +555,7 @@ let check fspath path stats t =
       ()
   | Synced v ->
       let t' = Synced (stats.Unix.LargeFile.st_mtime) in
-      if not (similar_correct t t') then
+      if not (similar t t') then
         raise
           (Util.Transient
              (Format.sprintf
