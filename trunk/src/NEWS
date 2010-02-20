@@ -1,13 +1,129 @@
 
-Changes in Version 2.32.1
+Changes in Version 2.40.1
+
+   Changes since 2.31:
+     * Small user interface changes
+          + Small change to text UI "scanning..." messages, to print just
+            directories (hopefully making it clearer that individual
+            files are not necessarily being fingerprinted).
+     * Minor fixes and improvements:
+          + Ignore one hour differences when deciding whether a file may
+            have been updated. This avoids slow update detection after
+            daylight saving time changes under Windows. This makes Unison
+            slightly more likely to miss an update, but it should be safe
+            enough.
+          + Fix a small bug that was affecting mainly windows users. We
+            need to commit the archives at the end of the sync even if
+            there are no updates to propagate because some files (in
+            fact, if we've just switched to DST on windows, a LOT of
+            files) might have new modtimes in the archive. (Changed the
+            text UI only. It's less clear where to change the GUI.)
+          + Don't delete the temp file when a transfer fails due to a
+            fingerprint mismatch (so that we can have a look and see
+            why!) We've also added more debugging code togive more
+            informative error messages when we encounter the dreaded and
+            longstanding "assert failed during file transfer" bug
+
+   Changes since 2.27:
+     * If Unison is interrupted during a directory transfer, it will now
+       leave the partially transferred directory intact in a temporary
+       location. (This maintains the invariant that new files/directories
+       are transferred either completely or not at all.) The next time
+       Unison is run, it will continue filling in this temporary
+       directory, skipping transferring files that it finds are already
+       there.
+     * We've added experimental support for invoking an external file
+       transfer tool for whole-file copies instead of Unison's built-in
+       transfer protocol. Three new preferences have been added:
+          + copyprog is a string giving the name (and command-line
+            switches, if needed) of an external program that can be used
+            to copy large files efficiently. By default, rsync is
+            invoked, but other tools such as scp can be used instead by
+            changing the value of this preference. (Although this is not
+            its primary purpose, rsync is actually a pretty fast way of
+            copying files that don't already exist on the receiving
+            host.) For files that do already exist on (but that have been
+            changed in one replica), Unison will always use its built-in
+            implementation of the rsync algorithm.
+          + Added a "copyprogrest" preference, so that we can give
+            different command lines for invoking the external copy
+            utility depending on whether a partially transferred file
+            already exists or not. (Rsync doesn't seem to care about
+            this, but other utilities may.)
+          + copythreshold is an integer (-1 by default), indicating above
+            what filesize (in megabytes) Unison should use the external
+            copying utility specified by copyprog. Specifying 0 will
+            cause ALL copies to use the external program; a negative
+            number will prevent any files from using it. (Default is -1.)
+       Thanks to Alan Schmitt for a huge amount of hacking and to an
+       anonymous sponsor for suggesting and underwriting this extension.
+     * Small improvements:
+          + Added a new preference, dontchmod. By default, Unison uses
+            the chmod system call to set the permission bits of files
+            after it has copied them. But in some circumstances (and
+            under some operating systems), the chmod call always fails.
+            Setting this preference completely prevents Unison from ever
+            calling chmod.
+          + Don't ignore files that look like backup files if the
+            backuplocation preference is set to central
+          + Shortened the names of several preferences. The old names are
+            also still supported, for backwards compatibility, but they
+            do not appear in the documentation.
+          + Lots of little documentation tidying. (In particular,
+            preferences are separated into Basic and Advanced! This
+            should hopefully make Unison a little more approachable for
+            new users.
+          + Unison can sometimes fail to transfer a file, giving the
+            unhelpful message "Destination updated during
+            synchronization" even though the file has not been changed.
+            This can be caused by programs that change either the file's
+            contents or the file's extended attributes without changing
+            its modification time. It's not clear what is the best fix
+            for this - it is not Unison's fault, but it makes Unison's
+            behavior puzzling - but at least Unison can be more helpful
+            about suggesting a workaround (running once with fastcheck
+            set to false). The failure message has been changed to give
+            this advice.
+          + Further improvements to the OS X GUI (thanks to Alan Schmitt
+            and Craig Federighi).
+     * Very preliminary support for triggering Unison from an external
+       filesystem-watching utility. The current implementation is very
+       simple, not efficient, and almost completely untested--not ready
+       for real users. But if someone wants to help improve it (e.g., by
+       writing a filesystem watcher for your favorite OS), please make
+       yourself known!
+       On the Unison side, the new behavior is very simple:
+          + use the text UI
+          + start Unison with the command-line flag "-repeat FOO", where
+            FOO is name of a file where Unison should look for
+            notifications of changes
+          + when it starts up, Unison will read the whole contents of
+            this file (on both hosts), which should be a
+            newline-separated list of paths (relative to the root of the
+            synchronization) and synchronize just these paths, as if it
+            had been started with the "-path=xxx" option for each one of
+            them
+          + when it finishes, it will sleep for a few seconds and then
+            examine the watchfile again; if anything has been added, it
+            will read the new paths, synchronize them, and go back to
+            sleep
+          + that's it!
+       To use this to drive Unison "incrementally," just start it in this
+       mode and start up a tool (on each host) to watch for new changes
+       to the filesystem and append the appropriate paths to the
+       watchfile. Hopefully such tools should not be too hard to write.
+     * Bug fixes:
+          + Fixed a bug that was causing new files to be created with
+            permissions 0x600 instead of using a reasonable default (like
+            0x644), if the 'perms' flag was set to 0. (Bug reported by
+            Ben Crowell.)
+          + Follow maxthreads preference when transferring directories.
 
    Changes since 2.17:
      * Major rewrite and cleanup of the whole Mac OS X graphical user
        interface by Craig Federighi. Thanks, Craig!!!
      * Small fix to ctime (non-)handling in update detection under
        windows with fastcheck.
-
-   Changes since 2.17:
      * Several small fixes to the GTK2 UI to make it work better under
        Windows [thanks to Karl M for these].
      * The backup functionality has been completely rewritten. The
@@ -433,13 +549,10 @@ Changes in Version 2.32.1
      * Fixed potential deadlock when synchronizing between Windows and
        Unix
      * Small improvements:
-          + If neither the
-            tt USERPROFILE nor the
-            tt HOME environment variables are set, then Unison will put
-            its temporary commit log (called
-            tt DANGER.README) into the directory named by the
-            tt UNISON environment variable, if any; otherwise it will use
-            tt C:.
+          + If neither the USERPROFILE nor the HOME environment variables
+            are set, then Unison will put its temporary commit log
+            (called DANGER.README) into the directory named by the UNISON
+            environment variable, if any; otherwise it will use C:.
           + alternative set of values for fastcheck: yes = true; no =
             false; default = auto.
           + -silent implies -contactquietly
@@ -486,9 +599,8 @@ Changes in Version 2.32.1
           + Paths that are not synchronized because of conflicts or
             errors during update detection are now noted in the log file.
           + [END] messages in log now use a briefer format
-          + Changed the text UI startup sequence so that
-            tt ./unison -ui text will use the default profile instead of
-            failing.
+          + Changed the text UI startup sequence so that ./unison -ui
+            text will use the default profile instead of failing.
           + Made some improvements to the error messages.
           + Added some debugging messages to remote.ml.
 
