@@ -1,0 +1,207 @@
+
+Installation
+
+   Unison is designed to be easy to install. The following sequence of
+   steps should get you a fully working installation in a few minutes.
+   (If you run into trouble, you may find the suggestions in the section
+   ``FAQ'' helpful.)
+
+   Unison can be used with either of two user interfaces:
+    1. a simple textual interface, suitable for dumb terminals (and
+       running from scripts), and
+    2. a more sophisticated grapical interface, based on Gtk.
+
+   You will need to install a copy of Unison on every machine that you
+   want to synchronize. However, you only need the version with a
+   graphical user interface (if you want a GUI at all) on the machine
+   where you're actually going to display the interface (the CLIENT
+   machine). Other machines that you synchronize with can get along just
+   fine with the textual version.
+
+  Downloading Unison
+
+   If a pre-built binary of Unison is available for the client machine's
+   architecture, just download it and put it somewhere in your search
+   path (if you're going to invoke it from the command line) or on your
+   desktop (if you'll be click-starting it).
+
+   The executable file for the graphical version (with a name including
+   gtkui) actually provides both interfaces: the graphical one appears by
+   default, while the textual interface can be selected by including -ui
+   text on the command line. The textui executable provides just the
+   textual interface.
+
+   If you don't see a pre-built executable for your architecture, you'll
+   need to build it yourself. See the section ``Building Unison'' .
+   (There are also a small number of ``contributed ports'' to other
+   architectures that are not maintained by us. See the section
+   ``Contributed Ports'' to check what's available.)
+
+   Check to make sure that what you have downloaded is really executable.
+   Either click-start it, or type "unison -version" at the command line.
+
+   Unison can be used in several different modes: with different
+   directories on a single machine, with a remote machine over a direct
+   socket connection, with a remote machine using rsh (on Unix systems),
+   or with a remote Unix system (from either a Unix or a Windows client)
+   using ssh for authentication and secure transfer. If you intend to use
+   the last option, you may need to install ssh; see the section
+   ``Installing Ssh'' .
+
+  Running Unison
+
+   Once you've got Unison installed on at least one system, read the
+   section ``Tutorial'' of the user manual (or type "unison -doc
+   tutorial") for instructions on how to get started.
+
+  Upgrading
+
+   Upgrading to a new version of Unison should be as simple as throwing
+   away the old binary and installing the new one.
+
+   Before upgrading, it is a good idea to use the old version to make
+   sure all your replicas are completely synchronized. A new version of
+   Unison will sometimes introduce a different format for the archive
+   files used to remember information about the previous state of the
+   replicas. In this case, the old archive will be ignored (not deleted
+   --- if you roll back to the previous version of Unison, you will find
+   the old archives intact), which means that any differences between the
+   replicas will show up as conflicts and need to be resolved manually.
+
+  Contributed Ports
+
+   A few people have offered to maintain pre-built executables, easy
+   installation scripts, etc., for particular architectures. They are not
+   maintained by us and are not guaranteed to work, be kept up to date
+   with our latest releases, etc., but you may find them useful. Here's
+   what's available at the moment:
+
+     * Dan Pelleg (mailto:daniel+upenn@pelleg.org) has ported unison to
+       FreeBSD. This means that any FreeBSD user with an up-to-date
+       ``ports'' collection can install unison by doing: cd
+       /usr/ports/net/unison; make && make install. (Make sure your
+       ``ports'' collection is fully up to date before doing this, to
+       ensure that you get the most recent Unison version that has been
+       compiled for FreeBSD.)
+       FreeBSD binaries can also be obtained directly from
+
+     http://www.freebsd.org/cgi/ports.cgi?query=unison&stype=all.
+     * Andrew Pitts has built binaries for some versions of Unison for
+       the Linux-PPC platform. They can be found in
+       ftp://ftp.cl.cam.ac.uk/papers/amp12/unison/.
+     * Robert McQueen (mailto:robot101@debian.org) maintains a Debian
+       package for Unison. The homepage is located at
+
+     http://packages.debian.org/testing/non-us/unison.html.
+     * Chris Cocosco (mailto:crisco+unison@bic.mni.mcgill.ca) provides
+       binaries for Unison under SGI IRIX (6.5). They can be found in
+
+     www.bic.mni.mcgill.ca/users/crisco/unison.irix/.
+
+  Building Unison from Scratch
+
+   If a pre-built image is not available, you will need to compile it
+   from scratch; the sources are available from the same place as the
+   binaries.
+
+   In principle, Unison should work on any platform to which OCaml has
+   been ported and on which the Unix module is fully implemented. In
+   particular, it has been tested on many flavors of Windows (98, NT,
+   2000) and Unix (Solaris, Linux, FreeBSD), and on both 32- and 64-bit
+   architectures. Unison partly works on Mac OSX (see the section ``FAQ''
+   for caveats); it does not work on earlier MacOS systems.
+
+    Unix
+
+   You'll need the Objective Caml compiler (version 3.04 or later[1]1),
+   which is available from its official site http://caml.inria.fr.
+   Building and installing OCaml on Unix systems is very straightforward;
+   follow the instructions in the distribution. You'll probably want to
+   build the native-code compiler in addition to the bytecode compiler,
+   but this is not absolutely necessary. (Quick start: on many systems,
+   the following sequence of commands will get you a working and
+   installed compiler: first do make world opt, then su to root, then do
+   make install.)
+
+   You'll also need the GNU make utility, standard on many Unix systems.
+   (Type "make --version" to check that you've got the GNU version.)
+
+   Once you've got OCaml installed, grab a copy of the Unison sources,
+   unzip and untar them, change to the new "unison" directory, and type
+            make UISTYLE=text
+
+   The result should be an executable file called "unison".
+
+   Type "./unison" to make sure the program is executable. You should get
+   back a usage message.
+
+   If you want to build a graphical user interface, choose one of the
+   following:
+     * Gtk interface:
+       You will need Gtk (version 1.2 or later, available from
+       http://www.gtk.org and standard on many Unix installations).
+       You also need the get LablGtk (version 1.1.3 is known to work).
+       Grab the developers' tarball from
+
+     http://wwwfun.kurims.kyoto-u.ac.jp/soft/olabl/lablgtk.html,
+       untar it, and follow the instructions to build and install it.
+       (Quick start: make configure, then make, then make opt, then su
+       and make install.)
+       Now build unison. If your search paths are set up correctly,
+       typing
+       make UISTYLE=gtk2
+       should build a unison executable with a Gtk graphical interface.
+
+   If this step does not work, don't worry: Unison works fine with the
+   textual interface.
+
+   Put the unison executable somewhere in your search path, either by
+   adding the Unison directory to your PATH variable or by copying the
+   executable to some standard directory where executables are stored.
+
+    Windows
+
+   Although the binary distribution should work on any version of
+   Windows, some people may want to build Unison from scratch on those
+   systems too.
+
+      Bytecode version:
+
+   The simpler but slower compilation option to build a Unison executable
+   is to build a bytecode version. You need first install Windows version
+   of the OCaml compiler (version 3.04 or later, available from
+   http://caml.inria.fr). Then grab a copy of Unison sources and type
+       make UISTYLE=text NATIVE=false
+
+   to compile the bytecode. The result should be an executable file
+   called unison.exe.
+
+      Native version:
+
+   To build a more efficient, native version of Unison on Windows, you
+   can choose between two options. Both options require the OCaml
+   distribution version 3.04 as well as the Cygwin layer, which provides
+   certain GNU tools. The two options differ in the C compiler employed:
+   MS Visual C++ (MSVC) vs. Cygwin GNU C.
+
+   The tradeoff?
+     * Only the MSVC option can produce statically linked Unison
+       executable.
+     * The Cygwin GNU C option requires only free software.
+
+   The files ``INSTALL.win32-msvc'' and ``INSTALL.win32-cygwin-gnuc''
+   describe the building procedures for the respective options.
+
+    Installation Options
+
+   The Makefile in the distribution includes several switches that can be
+   used to control how Unison is built. Here are the most useful ones:
+     * Building with NATIVE=true uses the native-code OCaml compiler,
+       yielding an executable that will run quite a bit faster. We use
+       this for building distribution versions.
+     * Building with make DEBUGGING=true generates debugging symbols.
+     * Building with make STATIC=true generates a (mostly) statically
+       linked executable. We use this for building distribution versions,
+       for portability.
+
+
