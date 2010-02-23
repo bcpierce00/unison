@@ -2737,7 +2737,6 @@ let docs =
       \032           does not match the current settings, it populates the\n\
       \032           fingerprint cache using the archive contents. This way,\n\
       \032           changing the case-sensitivity mode should be reasonably fast.\n\
-      \032    * Resume copy of partially transferred files.\n\
       \032    * New preferences \"noupdate=root\", \"nodeletion=root\",\n\
       \032      \"nocreation=root\" that prevent Unison from performing files\n\
       \032      updates, deletions or creations on the given root. Also 'partial'\n\
@@ -2856,8 +2855,9 @@ let docs =
       \032         + Case sensitivity information put in the archive (in a\n\
       \032           backward compatible way) and checked when the archive is\n\
       \032           loaded\n\
-      \032         + Got rid of the 16MiB marshalling limit by marshalling to a\n\
+      \032         + Got rid of the 16mb marshalling limit by marshalling to a\n\
       \032           bigarray.\n\
+      \032         + Resume copy of partially transferred files.\n\
       \n\
       \032  Changes since 2.31:\n\
       \032    * Small user interface changes\n\

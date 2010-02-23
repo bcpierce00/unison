@@ -1,5 +1,11 @@
 CHANGES FROM VERSION 2.40.1
 
+* Update copyright string in OSX GUI
+* Make MyController a delegate of Application in OSX GUI, as 
+  suggested by Jerome.
+-------------------------------
+CHANGES FROM VERSION 2.40.1
+
 * Update documentation in preparation for beta-release
 
 -------------------------------
