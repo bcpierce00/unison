@@ -11,6 +11,8 @@ See the file BUGS.txt for a list of currently open bugs.
 * CURRENT
 * =======
 
+* Update the copyright dates in the OSX GUI
+
 * Make some preferences per-host
      - file-system type
      - canonical name of the host
