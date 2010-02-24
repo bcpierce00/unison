@@ -1,5 +1,12 @@
 CHANGES FROM VERSION 2.40.1
 
+* Fix compilation problem in mkProjectInfo
+
+
+
+-------------------------------
+CHANGES FROM VERSION 2.40.1
+
 * Adding updated frameworks
 
 
