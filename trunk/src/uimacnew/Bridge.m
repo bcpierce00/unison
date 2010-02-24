@@ -7,6 +7,12 @@
 //
 
 #import "Bridge.h"
+
+/* The following two define are a workaround for an incompatibility between
+ Ocaml 3.11.2 (and older) and the Mac OS X header files */
+#define uint64 uint64_caml
+#define int64 int64_caml
+
 #define CAML_NAME_SPACE
 #include <caml/callback.h>
 #include <caml/alloc.h>
