@@ -44,16 +44,16 @@ let pointVersionOrigin = 409 (* Revision that corresponds to point version 0 *)
 
 let revisionString = "$Rev: 410$";;
 
-(* extract a substring using a regular expression *)
-let extract_str re str =
-  let _ = Str.search_forward (Str.regexp re) str 0 in
-  Str.matched_group 1 str;;
-let extract_int re str = int_of_string (extract_str re str);;
-
 (* BCP (1/10): This bit was added to help with getting Unison via bazaar, but it
    was never used much and I'm not confident it's working.  I'll comment it out
    for now, but if it hasn't been needed or fixed in a few months, the next
    person that edits this file should delete it...
+
+  (* extract a substring using a regular expression *)
+  let extract_str re str =
+    let _ = Str.search_forward (Str.regexp re) str 0 in
+    Str.matched_group 1 str;;
+  let extract_int re str = int_of_string (extract_str re str);;
 
   (* run the bzr tool to get version information for bzr branches *)
   exception BzrException of Unix.process_status;;
@@ -96,6 +96,7 @@ let pointVersion =
 Printf.printf "MAJORVERSION=%d.%d\n" majorVersion minorVersion;;
 Printf.printf "VERSION=%d.%d.%d\n" majorVersion minorVersion pointVersion;;
 Printf.printf "NAME=%s\n" projectName;;
+
 
 
 
