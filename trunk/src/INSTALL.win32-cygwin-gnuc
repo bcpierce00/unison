@@ -1,7 +1,7 @@
 Installation notes to build Unison on Windows systems, with Cygwin GNU C
 (unison-help@cis.upenn.edu)
 
-[The following instructions were tested for Unison 2.9.1 on a Windows
+[The following instructions were tested for Unison 2.32.52 on a Windows
 XP machine running OCaml 3.08.]
 
 Since OCaml is now included in Cygwin, things have gotten pretty
@@ -16,9 +16,13 @@ simple (at least for the text user interface).
 
    - Download the desired version of the Unison source tarball 
      from the Unison home page and unpack it, or else grab the sources
-     using svn.
+     using svn. Make sure the directory path name has no space in it or
+     the OCaml compiler will get confused later.
 
-   - In the main directory, type "make"
+   - In the main directory, type "make".
+
+   - If a text-only version is desired, build with "make UISTYLE=text"
+     regardless of whether the graphics libraries are installed or not.
 
    - The result should be an executable file called "unison" (or, if
      you grabbed the whole svn repository, perhaps "src/unison").  Put this
@@ -26,6 +30,79 @@ simple (at least for the text user interface).
      need to do something about setting up ssh, etc., but that's beyond the
      scope of this document.)
 
+   - The text-only version can be run on any system that has cygwin installed:
+
+     $ cygcheck ./unison.exe 
+     C:\cygwin\tmp\unison-2.32.52\unison.exe
+       C:\cygwin\bin\cygwin1.dll
+         C:\WINDOWS\system32\ADVAPI32.DLL
+           C:\WINDOWS\system32\KERNEL32.dll
+             C:\WINDOWS\system32\ntdll.dll
+           C:\WINDOWS\system32\RPCRT4.dll
+             C:\WINDOWS\system32\Secur32.dll
+
+   - For this to build with a graphical user interface under Cygwin you
+     need obviously X windows installed, together with some other
+     not-so-common packages (from Gnome, versions 2.0 as of the time of
+     this writing):
+       libgtk2.0-devel: Multi-platform GUI toolkit (development)
+       liblgtk2: OCaml interface to GTK2
+     Installing these packages with the Cygwin setup program will force the
+     installation of a large slew of other gnome and graphics packages.
+
+   - Then build Unison with "make UISTYLE=gtk2", or just "make"
+     since by default "make" builds with a graphics interface if the
+     necessary graphics libraries are installed.
+
+   - The graphics version needs many more libraries to run and hence is a
+     lot less portable:
+
+     $ cygcheck ./unison.exe 
+     C:\cygwin\tmp\unison-2.32.52\unison.exe
+       C:\cygwin\bin\cygwin1.dll
+         C:\WINDOWS\system32\ADVAPI32.DLL
+           C:\WINDOWS\system32\KERNEL32.dll
+             C:\WINDOWS\system32\ntdll.dll
+           C:\WINDOWS\system32\RPCRT4.dll
+             C:\WINDOWS\system32\Secur32.dll
+       C:\cygwin\bin\cyggdk-x11-2.0-0.dll
+         C:\cygwin\bin\cyggdk_pixbuf-2.0-0.dll
+           C:\cygwin\bin\cyggcc_s-1.dll
+           C:\cygwin\bin\cyggio-2.0-0.dll
+             C:\cygwin\bin\cygglib-2.0-0.dll
+               C:\cygwin\bin\cygiconv-2.dll
+               C:\cygwin\bin\cygintl-8.dll
+               C:\cygwin\bin\cygpcre-0.dll
+             C:\cygwin\bin\cyggmodule-2.0-0.dll
+             C:\cygwin\bin\cyggobject-2.0-0.dll
+         C:\cygwin\bin\cygX11-6.dll
+           C:\cygwin\bin\cygxcb-1.dll
+             C:\cygwin\bin\cygXau-6.dll
+             C:\cygwin\bin\cygXdmcp-6.dll
+         C:\cygwin\bin\cygXcomposite-1.dll
+         C:\cygwin\bin\cygXcursor-1.dll
+           C:\cygwin\bin\cygXfixes-3.dll
+           C:\cygwin\bin\cygXrender-1.dll
+         C:\cygwin\bin\cygXdamage-1.dll
+         C:\cygwin\bin\cygXext-6.dll
+         C:\cygwin\bin\cygXi-6.dll
+         C:\cygwin\bin\cygXinerama-1.dll
+         C:\cygwin\bin\cygXrandr-2.dll
+         C:\cygwin\bin\cygcairo-2.dll
+           C:\cygwin\bin\cygfontconfig-1.dll
+             C:\cygwin\bin\cygexpat-1.dll
+             C:\cygwin\bin\cygfreetype-6.dll
+               C:\cygwin\bin\cygz.dll
+           C:\cygwin\bin\cygglitz-1.dll
+           C:\cygwin\bin\cygpixman-1-0.dll
+           C:\cygwin\bin\cygpng12.dll
+           C:\cygwin\bin\cygxcb-render-util-0.dll
+             C:\cygwin\bin\cygxcb-render-0.dll
+         C:\cygwin\bin\cygpango-1.0-0.dll
+         C:\cygwin\bin\cygpangocairo-1.0-0.dll
+           C:\cygwin\bin\cygpangoft2-1.0-0.dll
+       C:\cygwin\bin\cyggtk-x11-2.0-0.dll
+         C:\cygwin\bin\cygatk-1.0-0.dll
 
 -------------------------------------------------------------------------
 AN OLDER VERSION:

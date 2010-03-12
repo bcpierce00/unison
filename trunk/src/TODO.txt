@@ -194,6 +194,26 @@ See the file BUGS.txt for a list of currently open bugs.
 ** Peter Selinger has built an SHA256 implementation that should be usable
    as a drop-in replacement for MD5, if we ever need to do that
 
+* There is no way of selecting files with wildchar. I had to use
+     ignorenot = Name opt/root/.unison/*.prf
+     ignore = Name opt/root/.unison/*
+  But this is inconvinent, but the worse is that it gets complicated very 
+  fast and I cannot make it for more complicated scenarios. I would expect 
+  something like (suggestion):
+     Files = opt/root/.unison/*.prf
+
+* If a directory does not exist in one of the host, unison (for 
+  security reasons, which I like) pops up a window and Quit is the only 
+  option. I would expect a message stating mere clearly on which host and 
+  direcory and an option to create that directory. I had recently to make 
+  a lot of reinstalls and new pendrives and it took a long time to create 
+  all those dirs. Someone in the list even made a script to do the job!!!
+
+* When synchronizing FAT32, there could be an explicit command for 
+  ignoring attributes. The problem happens when one side is FAT32 but the 
+  other is not, or when mounting parameters are different.
+
+
 * BUILDING AND INSTALLING
 * =======================
 
