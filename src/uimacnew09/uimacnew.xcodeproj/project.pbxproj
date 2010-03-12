@@ -79,10 +79,10 @@
 		B5B44C1F09DF61A4000DC7AF /* table-right-green.tif in Resources */ = {isa = PBXBuildFile; fileRef = B5B44C1709DF61A4000DC7AF /* table-right-green.tif */; };
 		B5B44C2009DF61A4000DC7AF /* table-skip.tif in Resources */ = {isa = PBXBuildFile; fileRef = B5B44C1809DF61A4000DC7AF /* table-skip.tif */; };
 		B5E03B3909E38B9E0058C7B9 /* rescan.tif in Resources */ = {isa = PBXBuildFile; fileRef = B5E03B3809E38B9E0058C7B9 /* rescan.tif */; };
+		BB1ADE25114AEB1100575BFC /* BWToolkitFramework.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = BBE2BCAB11355CDD00B187F2 /* BWToolkitFramework.framework */; };
+		BB1ADE26114AEB1100575BFC /* Growl.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = BBE2BCAC11355CDD00B187F2 /* Growl.framework */; };
 		BBE2BCAD11355CDD00B187F2 /* BWToolkitFramework.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BBE2BCAB11355CDD00B187F2 /* BWToolkitFramework.framework */; };
 		BBE2BCAE11355CDD00B187F2 /* Growl.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BBE2BCAC11355CDD00B187F2 /* Growl.framework */; };
-		BBE2BCE611355CF600B187F2 /* BWToolkitFramework.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = BBE2BCAB11355CDD00B187F2 /* BWToolkitFramework.framework */; };
-		BBE2BCE711355CF600B187F2 /* Growl.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = BBE2BCAC11355CDD00B187F2 /* Growl.framework */; };
 		DE2444D610C294EA007E1546 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = DE2444D410C294EA007E1546 /* MainMenu.xib */; };
 /* End PBXBuildFile section */
 
@@ -103,8 +103,8 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				BBE2BCE611355CF600B187F2 /* BWToolkitFramework.framework in CopyFiles */,
-				BBE2BCE711355CF600B187F2 /* Growl.framework in CopyFiles */,
+				BB1ADE25114AEB1100575BFC /* BWToolkitFramework.framework in CopyFiles */,
+				BB1ADE26114AEB1100575BFC /* Growl.framework in CopyFiles */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

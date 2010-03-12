@@ -104,7 +104,7 @@ Our implementation of the
   \URL{http://samba.org/rsync/}{rsync}
   protocol was built by
   \URL{http://www.eecs.harvard.edu/\home{nr}/}{Norman Ramsey}
-  and Sylvain Gommier.  It is is based on
+  and Sylvain Gommier.  It is based on
   \URL{http://samba.anu.edu.au/\home{tridge}/}{Andrew Tridgell}'s
   \URL{http://samba.anu.edu.au/\home{tridge}/phd\_thesis.pdf}{thesis work}
   and inspired by his
@@ -203,7 +203,8 @@ Unison can be used with either of two user interfaces:
 \begin{enumerate}
 \item a simple textual interface, suitable for dumb terminals (and
 running from scripts), and 
-\item a more sophisticated grapical interface, based on Gtk2.  
+\item a more sophisticated grapical interface, based on Gtk2 (on
+       Linux/Windows) or the native UI framework (on OSX).  
 \end{enumerate}
 
 You will need to install a copy of Unison on every machine that you
@@ -282,7 +283,7 @@ Solaris, Linux, FreeBSD), and on both 32- and 64-bit architectures.
 
 \SUBSUBSECTION{Unix}{build-unix}
 
-You'll need the Objective Caml compiler (version 3.07 or later), which is
+You'll need the Objective Caml compiler (version 3.11.2 or later), which is
 available from \ONEURL{http://caml.inria.fr}.  Building and installing OCaml
 on Unix systems is very straightforward; just follow the instructions in the
 distribution.  You'll probably want to build the native-code compiler in
@@ -332,6 +333,31 @@ present and set this flag automatically.)
 Put the \verb|unison| executable somewhere in your search path, either
 by adding the Unison directory to your PATH variable or by copying the
 executable to some standard directory where executables are stored.
+
+\SUBSUBSECTION{Mac OS X}{build-osx}
+
+To build the text-only user interface, follow the instructions above for
+building on Unix systems.  You should do this first, even if you are also
+planning on building the GUI, just to make sure it works.
+
+To build the basic GUI version, you'll first need to download and install
+the XCode developer tools from Apple.  Once this is done, just type {\tt
+  make UISTYLE=macnew} in the {\tt src} directory, and if things go well you
+should get an application that you can move from {\tt
+  uimacnew/build/Default/Unison.app} to wherever you want it.
+
+There is also an experimental GUI with a somewhat smoother look and feel.
+To compile this one (once you've got the basic one working), proceed as
+follows:
+\begin{enumerate}
+\item Go to the {\tt uimacnew09} directory and double-click the file {\tt
+  BWToolkit.ibplugin}.
+\item Go back up to the {\tt src} directory and type {\tt make
+  UISTYLE=macnew09}.  
+\item You should get an application built for you at {\tt
+  uimacnew09/build/Default/Unison.app}.
+\end{enumerate}
+
 
 \SUBSUBSECTION{Windows}{build-win}
 
@@ -583,7 +609,7 @@ for installation instructions for the Windows version.
 Running
 \verb|ssh| requires some coordination between the client and server
 machines to establish that the client is allowed to invoke commands on
-the server; please refer to the or \verb|ssh| documentation
+the server; please refer to the \verb|ssh| documentation
 for information on how to set this up.  The examples in this section
 use \verb|ssh|, but you can substitute \verb|rsh| for \verb|ssh| if
 you wish.
@@ -1125,7 +1151,7 @@ Here are some things to be careful of when using Unison.
   file has not been changed.
 
   Under normal circumstances, this approximation is safe, in the sense
-  that it may sometimes detect ``false updates'' will never miss a real
+  that it may sometimes detect ``false updates'' but will never miss a real
   one.  However, it is possible to fool it, for example by using
   \verb|retouch| to change a file's modtime back to a time in the past.
   \finishlater{One user---Marcus Mottl---claimed that it could also
@@ -1154,7 +1180,7 @@ middle of detecting changes or propagating files.
 \item Unison does not understand hard links.
 
 \item It is important to be a little careful when renaming directories
-containing ``ignore''d files. 
+containing {\tt ignore}d files. 
 
 For example, suppose Unison is synchronizing directory A between the two
 machines called the ``local'' and the ``remote'' machine; suppose directory
