@@ -1,56 +1,43 @@
 CHANGES FROM VERSION 2.40.1
 
+* Silence compiler warnings on cltool.c (in OSX build)
+
+
+
+-------------------------------
+CHANGES FROM VERSION 2.40.1
+
+* Silence compiler warnings on cltool.c (in OSX build)
+
+
+
+-------------------------------
+CHANGES FROM VERSION 2.40.1
+
+* Silence compiler warnings on cltool.c (in OSX build)
+
+
+
+-------------------------------
+CHANGES FROM VERSION 2.40.1
+
+* Silence compiler warnings on cltool.c (in OSX build)
+
 * Updated the Cygwin install instructions per Uwe Mayer (thanks!)
 
 * Added interface builder files for BWToolkit framework to uimacnew09
   directory, to make the distribution self-contained, and added
   instructions for installing it to the INSTALL section of the manual.
-
--------------------------------
-CHANGES FROM VERSION 2.40.1
-
-* Updated the Cygwin install instructions per Uwe Mayer (thanks!)
-
-* Added interface builder files for BWToolkit framework to uimacnew09
-  directory, to make the distribution self-contained, and added
-  instructions for installing it to the INSTALL section of the manual.
-
--------------------------------
-CHANGES FROM VERSION 2.40.1
 
 * Fix compilation problem in mkProjectInfo
 
-
-
--------------------------------
-CHANGES FROM VERSION 2.40.1
-
 * Adding updated frameworks
 
-
--------------------------------
-CHANGES FROM VERSION 2.40.1
-
-* Removing old frameworks to make space for new ones in new OSX GUI
-
--------------------------------
-CHANGES FROM VERSION 2.40.1
-
-* Removing old frameworks to make space for new ones in new OSX GUI
-
-
--------------------------------
-CHANGES FROM VERSION 2.40.1
-
-* Removing old frameworks to make space for new ones in new OSX GUI
-
-
--------------------------------
-CHANGES FROM VERSION 2.40.1
-
 * Update copyright string in OSX GUI
+
 * Make MyController a delegate of Application in OSX GUI, as 
   suggested by Jerome.
+
 -------------------------------
 CHANGES FROM VERSION 2.40.1
 

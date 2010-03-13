@@ -34,13 +34,13 @@ int main(int argc, char **argv) {
       fprintf(stderr,"Error: can't find the Unison application using the Launch Services database.\n");
       fprintf(stderr,"Try launching Unison from the Finder, and then try this again.\n",status);
     }
-    else fprintf(stderr,"Error: can't find Unison application (%d).\n",status);
+    else fprintf(stderr,"Error: can't find Unison application (%ld).\n",status);
     exit(1);
   }
 
   status = FSRefMakePath(&fsref,(UInt8 *)buf,BUFSIZE);
   if (status) {
-    fprintf(stderr,"Error: problem building path to Unison application (%d).\n",status);
+    fprintf(stderr,"Error: problem building path to Unison application (%ld).\n",status);
     exit(1);
   }
 
