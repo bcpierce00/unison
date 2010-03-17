@@ -274,20 +274,33 @@ let (archiveNameOnRoot
           System.file_exists (Os.fileInUnisonDir name)))
 
 let compatibleCaseMode magic =
-  if magic = "" then `YES else
+  if magic = "" then `YES (* Newly created archive *) else
   try
     let archMode = String.sub magic 0 (String.index magic '\000') in
     let curMode = (Case.ops ())#modeDesc in
     if curMode <> archMode then
-      `NO (curMode, archMode)
+      `NO (archMode = Case.caseSensitiveModeDesc, curMode, archMode)
     else
       `YES
   with Not_found ->
+    (* Legacy format.  Cannot be Unicode case insensitive. *)
     if (Case.ops ())#mode = Case.UnicodeInsensitive then
       let curMode = (Case.ops ())#modeDesc in
-      `NO (curMode, "some non-Unicode")
+      `NO (false, curMode, "some non-Unicode")
     else
       `YES
+
+(* HACK: we use this as just a flag.  Should delete this when Unison minor
+   version is bumped. *)
+
+let rootCanMakeCaseSensitive
+   = Remote.registerRootCmd "canMakeCaseSensitive" (fun _ -> Lwt.return ())
+
+let didMakeCaseSensitive () =
+  Globals.allRootsMap
+    (fun r -> Remote.commandAvailable r "canMakeCaseSensitive") >>= fun l ->
+  Lwt.return (List.for_all (fun x -> x) l)
+
 
 let checkArchiveCaseSensitivity l =
   let error curMode archMode =
@@ -317,8 +330,16 @@ let checkArchiveCaseSensitivity l =
   match l with
     Some (_, magic) :: _ ->
       begin match compatibleCaseMode magic with
-        `NO (curMode, archMode) -> error curMode archMode
-      | `YES                    -> Lwt.return ()
+        `NO (conv, curMode, archMode) ->
+          begin if conv then
+            didMakeCaseSensitive ()
+          else
+            Lwt.return false
+          end >>= fun converted ->
+            if converted then Lwt.return () else
+            error curMode archMode
+      | `YES ->
+          Lwt.return ()
       end
   | _ ->
       Lwt.return ()
@@ -578,6 +599,51 @@ let dumpArchiveLocal (fspath,()) =
 let dumpArchiveOnRoot : Common.root -> unit -> unit Lwt.t =
   Remote.registerRootCmd "dumpArchive" dumpArchiveLocal
 
+(*****************************************************************************)
+(*                          ARCHIVE CASE CONVERSION                          *)
+(*****************************************************************************)
+
+(* Turn a case sensitive archive into a case insensitive archive.
+   Directory children are resorted and duplicates are removed.
+*)
+let rec makeCaseSensitiveRec arch =
+  match arch with
+    ArchiveDir (desc, children) ->
+      let dups = ref [] in
+      let children =
+        NameMap.fold
+          (fun nm ch chs ->
+             if NameMap.mem nm chs then dups := nm :: !dups;
+             NameMap.add nm (makeCaseSensitiveRec ch) chs)
+          children NameMap.empty
+      in
+      let children =
+        List.fold_left (fun chs nm -> NameMap.remove nm chs) children !dups in
+      ArchiveDir (desc, children)
+  | ArchiveFile _ | ArchiveSymlink _ | NoArchive ->
+      arch
+
+let makeCaseSensitive thisRoot =
+  setArchiveLocal thisRoot (makeCaseSensitiveRec (getArchive thisRoot))
+
+let rec populateCacheFromArchiveRec path arch =
+  match arch with
+    ArchiveDir (_, children) ->
+      NameMap.iter
+        (fun nm ch -> populateCacheFromArchiveRec (Path.child path nm) ch)
+        children
+  | ArchiveFile (desc, dig, stamp, ress) ->
+      Fpcache.save path (desc, dig, stamp, ress)
+  | ArchiveSymlink _ | NoArchive ->
+      ()
+
+let populateCacheFromArchive fspath arch =
+  let (cacheFilename, _) = archiveName fspath FPCache in
+  let cacheFile = Os.fileInUnisonDir cacheFilename in
+  Fpcache.init true cacheFile;
+  populateCacheFromArchiveRec Path.empty arch;
+  Fpcache.finish ()
+
 (*************************************************************************)
 (*                         Loading archives                              *)
 (*************************************************************************)
@@ -591,27 +657,16 @@ let ignoreArchives =
      ^ "not a good idea to set this option in a profile: it is intended for "
      ^ "command-line use.")
 
-let rec populateCacheFromArchive path arch =
-  match arch with
-    ArchiveDir (_, children) ->
-      NameMap.iter
-        (fun nm ch -> populateCacheFromArchive (Path.child path nm) ch)
-        children
-  | ArchiveFile (desc, dig, stamp, ress) ->
-      Fpcache.save path (desc, dig, stamp, ress)
-  | ArchiveSymlink _ | NoArchive ->
-      ()
-
 let setArchiveData thisRoot fspath (arch, hash, magic, properties) info =
   setArchiveLocal thisRoot arch;
   setArchivePropsLocal thisRoot properties;
   Hashtbl.replace archiveInfoCache thisRoot info;
-  if compatibleCaseMode magic <> `YES then begin
-    let (cacheFilename, _) = archiveName fspath FPCache in
-    let cacheFile = Os.fileInUnisonDir cacheFilename in
-    Fpcache.init true cacheFile;
-    populateCacheFromArchive Path.empty arch;
-    Fpcache.finish ()
+  begin match compatibleCaseMode magic with
+    `YES ->
+      ()
+  | `NO (conv, _, _) ->
+      if conv then makeCaseSensitive thisRoot;
+      populateCacheFromArchive fspath arch
   end;
   Lwt.return (Some (hash, magic))
 
@@ -629,9 +684,10 @@ let loadArchiveOnRoot: Common.root -> bool -> (int * string) option Lwt.t =
        let (arcName,thisRoot) = archiveName fspath MainArch in
        let arcFspath = Os.fileInUnisonDir arcName in
 
-       if Prefs.read ignoreArchives then
+       if Prefs.read ignoreArchives then begin
+         foundArchives := false;
          clearArchiveData thisRoot
-       else if optimistic then begin
+       end else if optimistic then begin
          let (newArcName, _) = archiveName fspath NewArch in
          if
            (* If the archive is not in a stable state, we need to

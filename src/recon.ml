@@ -276,8 +276,8 @@ let overrideReconcilerChoices ris =
 (* errors                                                                    *)
 let checkThatPreferredRootIsValid () =
   let test_root predname = function
-    | "" -> ()
-    | ("newer" | "older") as r -> 
+    | "" | "newer" -> ()
+    | "older" as r -> 
         if not (Prefs.read Props.syncModtimes) then
           raise (Util.Transient (Printf.sprintf
                                    "The '%s=%s' preference can only be used with 'times=true'"

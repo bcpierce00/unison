@@ -457,6 +457,12 @@ let validateAndFixupPrefs () =
     Safelist.exists (fun (_, isOSX, _) -> isOSX) archs in
   let someHostIsCaseInsensitive =
     someHostIsRunningWindows || someHostRunningOsX in
+  if Prefs.read Globals.fatFilesystem then begin
+    Prefs.overrideDefault Props.permMask 0o200;
+    Prefs.overrideDefault Case.caseInsensitiveMode `True;
+    Prefs.overrideDefault Fileinfo.allowSymlinks `False;
+    Prefs.overrideDefault Fileinfo.ignoreInodeNumbers true
+  end;
   Case.init someHostIsCaseInsensitive;
   Props.init someHostIsRunningWindows;
   Osx.init someHostRunningOsX;

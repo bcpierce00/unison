@@ -46,6 +46,7 @@ module Perm : sig
   val extract : t -> int
   val check : Fspath.t -> Path.local -> Unix.LargeFile.stats -> t -> unit
   val validatePrefs : unit -> unit
+  val permMask : int Prefs.t
 end = struct
 
 (* We introduce a type, Perm.t, that holds a file's permissions along with   *)
@@ -227,7 +228,9 @@ let check fspath path stats (fp, mask) =
             "Failed to set permissions of file %s to %s: \
              the permissions was set to %s instead. \
              The filesystem probably does not support all permission bits. \
-             You should probably set the \"perms\" option to 0o%o \
+             If this is a FAT filesystem, you should set the \"fat\" option \
+             to true. \
+             Otherwise, you should probably set the \"perms\" option to 0o%o \
              (or to 0 if you don't need to synchronize permissions)."
             (Fspath.toPrintString (Fspath.concat fspath path))
             (syncedPartsToString (fp, mask))
@@ -762,6 +765,7 @@ let setTime p t = {p with time = Time.replace p.time t}
 let perms p = Perm.extract p.perm
 
 let syncModtimes = Time.sync
+let permMask = Perm.permMask
 
 let validatePrefs = Perm.validatePrefs
 

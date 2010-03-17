@@ -3,15 +3,23 @@
 
 let debug = Util.debug "prefs"
 
-type 'a t = ('a * string list) ref
+type 'a t =
+  { mutable value : 'a; defaultValue : 'a; mutable names : string list;
+    mutable setInProfile : bool }
 
-let read p = fst !p
+let read p = p.value
 
-let set p v = p:=(v, snd !p)
+let set p v = p.setInProfile <- true; p.value <- v
 
-let name p = snd !p
+let overrideDefault p v = if not p.setInProfile then p.value <- v
 
-let rawPref default = ref default
+let name p = p.names
+
+let readDefault p = p.defaultValue
+
+let rawPref default name =
+  { value = default; defaultValue = default; names = [name];
+    setInProfile = false }
 
 (* ------------------------------------------------------------------------- *)
 
@@ -161,7 +169,7 @@ let alias pref newname =
   let (_,pspec,_) = Util.StringMap.find (Safelist.hd (name pref)) !prefs in
   prefs := Util.StringMap.add newname ("*", pspec, "") !prefs;
   aliasMap := Util.StringMap.add newname (Safelist.hd (name pref)) !aliasMap;
-  pref := (fst !pref, newname::(snd !pref))
+  pref.names <- newname :: pref.names
 
 let registerPref name typ pspec doc fulldoc =
   if Util.StringMap.mem name !prefs then
@@ -172,17 +180,23 @@ let registerPref name typ pspec doc fulldoc =
     prefType := Util.StringMap.add name typ !prefType
 
 let createPrefInternal name typ local default doc fulldoc printer parsefn =
-  let newCell = rawPref (default, [name]) in
+  let newCell = rawPref default name in
   registerPref name typ (parsefn newCell) doc fulldoc;
-  adddumper name local (fun () -> Marshal.to_string !newCell []);
-  addprinter name (fun () -> printer (fst !newCell));
-  addresetter (fun () -> newCell := (default, [name]));
-  addloader name (fun s -> newCell := Marshal.from_string s 0);
+  adddumper name local
+    (fun () -> Marshal.to_string (newCell.value, newCell.names) []);
+  addprinter name (fun () -> printer newCell.value);
+  addresetter
+    (fun () ->
+       newCell.setInProfile <- false; newCell.value <- newCell.defaultValue);
+  addloader name
+    (fun s ->
+       let (value, names) = Marshal.from_string s 0 in
+       newCell.value <- value);
   newCell
 
 let create name ?(local=false) default doc fulldoc intern printer =
   createPrefInternal name `CUSTOM local default doc fulldoc printer
-    (fun cell -> Uarg.String (fun s -> set cell (intern (fst !cell) s)))
+    (fun cell -> Uarg.String (fun s -> set cell (intern (read cell) s)))
 
 let createBool name ?(local=false) default doc fulldoc =
   let doc = if default then doc ^ " (default true)" else doc in
@@ -208,7 +222,7 @@ let createFspath name ?(local=false) default doc fulldoc =
 let createStringList name ?(local=false) doc fulldoc =
   createPrefInternal name `STRING_LIST local [] doc fulldoc
     (fun v -> v)
-    (fun cell -> Uarg.String (fun s -> set cell (s::(fst !cell))))
+    (fun cell -> Uarg.String (fun s -> set cell (s:: read cell)))
 
 let createBoolWithDefault name ?(local=false) doc fulldoc =
   createPrefInternal name `BOOLDEF local `Default doc fulldoc
