@@ -1,6 +1,7 @@
 (* Unison file synchronizer: src/case.mli *)
 (* Copyright 1999-2009, Benjamin C. Pierce (see COPYING for details) *)
 
+val caseInsensitiveMode : [`True|`False|`Default] Prefs.t
 val unicodeEncoding : bool Prefs.t
 val useUnicodeAPI : unit -> bool
 
@@ -25,3 +26,5 @@ val ops : unit ->
                                              the correct encoding *)
 
 val init : bool -> unit
+
+val caseSensitiveModeDesc : string

@@ -44,21 +44,20 @@ let unicode =
   Prefs.createBoolWithDefault "unicode"
     "!assume Unicode encoding in case insensitive mode"
     "When set to {\\tt true}, this flag causes Unison to perform \
-     case insensitive file comparisons assuming Unicode encoding"
+     case insensitive file comparisons assuming Unicode encoding.  \
+     This is the default.  When the flag is set to {\\tt false}, \
+     a Latin 1 encoding is assumed.  This flag has no effect when \
+     Unison runs in case sensitive mode."
 
 let unicodeEncoding =
   Prefs.createBool "unicodeEnc" false
     "*Pseudo-preference for internal use only" ""
 
-(* Whether we default to Unicode encoding on OSX and Windows *)
-let defaultToUnicode = true
-
-let useUnicode b =
+let useUnicode () =
   let pref = Prefs.read unicode in
-  pref = `True ||
-  (defaultToUnicode && pref = `Default && b)
+  pref = `True || pref = `Default
 
-let useUnicodeAPI () = useUnicode true
+let useUnicodeAPI = useUnicode
 
 (* During startup the client determines the case sensitivity of each root.   *)
 (* If any root is case insensitive, all roots must know it; we ensure this   *)
@@ -68,7 +67,7 @@ let init b =
   Prefs.set someHostIsInsensitive
     (Prefs.read caseInsensitiveMode = `True ||
      (Prefs.read caseInsensitiveMode = `Default && b));
-  Prefs.set unicodeEncoding (useUnicode b)
+  Prefs.set unicodeEncoding (useUnicode ())
 
 (****)
 
@@ -174,3 +173,5 @@ let ops () =
       insensitiveOps
   end else
     sensitiveOps
+
+let caseSensitiveModeDesc = sensitiveOps#modeDesc

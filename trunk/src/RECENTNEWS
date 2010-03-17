@@ -1,5 +1,24 @@
 CHANGES FROM VERSION 2.40.1
 
+* Added a "fat" preference that makes Unison use the right options
+  when one of the replica is on a FAT filesystem.
+* Allow "prefer/force=newer" even when not synchronizing modification
+  times.  (The reconciler will not be aware of the modification time
+  of unchanged files, so the synchronization choices of Unison can be
+  different from when "times=true", but the behavior remains sane:
+  changed files with the most recent modification time will be
+  propagated.)
+* Automatic archive conversion to case sensitive mode (useful when
+  Unison default is case sensitive and the user switches after the
+  fact to case insensitive, for instance by setting the "fat"
+  preference).
+* Make Unicode the default on all architectures (it was only the
+  default when a Mac OS X or Windows machine was involved).
+* GTK UI: added "Change Profile" toolbar button.
+
+-------------------------------
+CHANGES FROM VERSION 2.40.1
+
 * Silence compiler warnings on cltool.c (in OSX build)
 
 

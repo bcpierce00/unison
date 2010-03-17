@@ -6,6 +6,8 @@ type 'a t
 val read : 'a t -> 'a
 val set : 'a t -> 'a -> unit
 val name : 'a t -> string list
+val overrideDefault : 'a t -> 'a -> unit
+val readDefault : 'a t -> 'a
 
 (* Convenient functions for registering simple kinds of preferences.  Note   *)
 (* that createStringPref creates a preference that can only be set once,     *)

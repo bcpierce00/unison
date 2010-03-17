@@ -1570,13 +1570,7 @@ let createProfile parent =
       if React.state unicode then
         Printf.fprintf ch "unicode = true\n";
 *)
-      if React.state fat then begin
-        Printf.fprintf ch "ignorecase = true\n";
-        Printf.fprintf ch "unicode = true\n";
-        Printf.fprintf ch "ignoreinodenumbers = true\n";
-        Printf.fprintf ch "links = false\n";
-        Printf.fprintf ch "perms = 0o200\n"
-      end;
+      if React.state fat then Printf.fprintf ch "fat = true\n";
       close_out ch;
       profileName := Some (React.state name)
     with Sys_error _ as e ->
@@ -3915,13 +3909,6 @@ lst_store#set ~row ~column:c_path path;
                   ~tooltip:"Compare the two files at each replica"
                   ~callback:diffCmd ());
 
-(*  actionBar#insert_space ();*)
-(*
-  grAdd grDiff (actionBar#insert_button ~text:"Merge"
-                  ~icon:((GMisc.image ~stock:`DIALOG_QUESTION ())#coerce)
-                  ~tooltip:"Merge the two items at each replica"
-                  ~callback:mergeCmd ());
- *)
   (*********************************************************************
     Detail button
    *********************************************************************)
@@ -3931,6 +3918,20 @@ lst_store#set ~row ~column:c_path path;
                     ~tooltip:"Show detailed information about\n\
                               an item, when available"
                     ~callback:showDetCommand ());
+
+  (*********************************************************************
+    Profile change button
+   *********************************************************************)
+  actionBar#insert_space ();
+  let profileChange _ =
+    match getProfile false with
+      None   -> ()
+    | Some p -> clearMainWindow (); loadProfile p false; detectCmd ()
+  in
+  grAdd grRescan (actionBar#insert_button ~text:"Change Profile"
+                    ~icon:((GMisc.image ~stock:`OPEN ())#coerce)
+                    ~tooltip:"Select a different profile"
+                    ~callback:profileChange ());
 
   (*********************************************************************
     Keyboard commands
@@ -3983,13 +3984,6 @@ lst_store#set ~row ~column:c_path path;
     left#add_accelerator ~group:accel_group ~modi:[`SHIFT] GdkKeysyms._greater;
     left#add_accelerator ~group:accel_group GdkKeysyms._period;
 
-    let merge =
-      actionMenu#add_image_item ~key:GdkKeysyms._m ~callback:mergeAction
-        ~image:((GMisc.image ~stock:`ADD ~icon_size:`MENU ())#coerce)
-        "_Merge the Files" in
-    grAdd grAction merge;
-  (* merge#add_accelerator ~group:accel_group ~modi:[`SHIFT] GdkKeysyms._m; *)
-
     let def_descl = "Right to Left" in
     let descl =
       if init || loc1 = loc2 then def_descr else
@@ -4007,6 +4001,13 @@ lst_store#set ~row ~column:c_path path;
       (actionMenu#add_image_item ~key:GdkKeysyms._slash ~callback:questionAction
         ~image:((GMisc.image ~stock:`NO ~icon_size:`MENU ())#coerce)
         "Do _Not Propagate Changes");
+
+    let merge =
+      actionMenu#add_image_item ~key:GdkKeysyms._m ~callback:mergeAction
+        ~image:((GMisc.image ~stock:`ADD ~icon_size:`MENU ())#coerce)
+        "_Merge the Files" in
+    grAdd grAction merge;
+  (* merge#add_accelerator ~group:accel_group ~modi:[`SHIFT] GdkKeysyms._m; *)
 
     (* Override actions *)
     ignore (actionMenu#add_separator ());
