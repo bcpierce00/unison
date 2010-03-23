@@ -5,23 +5,9 @@
 
 #define WINVER 0x0500
 
-#include <wtypes.h>
-#include <winbase.h>
-#include <fcntl.h>
-#include <io.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <share.h>
-#include <errno.h>
-#include <utime.h>
-#include <wchar.h>
-#include <stddef.h>
-#include <stdlib.h>
-#include <time.h>
-#include <ctype.h>
-#include <direct.h>
-#include <stdio.h>
 #include <windows.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 
 #define NT_MAX_PATH 32768
 
@@ -60,11 +46,6 @@ static int open_access_flags[12] = {
 
 static int open_create_flags[12] = {
   0, 0, 0, 0, 0, O_CREAT, O_TRUNC, O_EXCL, 0, 0, 0, 0
-};
-
-static int open_flag_table[12] = {
-  _O_RDONLY, _O_WRONLY, _O_RDWR, 0, _O_APPEND, _O_CREAT, _O_TRUNC,
-  _O_EXCL, 0, 0, 0, 0
 };
 
 /****/
@@ -243,6 +224,8 @@ CAMLprim value win_open (value path, value wpath, value flags, value perm) {
     win32_maperr (GetLastError ());
     uerror("open", path);
   }
+
+  if (createflags & O_APPEND) SetFilePointer (h, 0, NULL, FILE_END);
 
   CAMLreturn(win_alloc_handle(h));
 }
