@@ -1,7 +1,5 @@
-#include <wtypes.h>
-#include <winbase.h>
-#include <mswsock.h>
 #include <winsock2.h>
+#include <windows.h>
 #include <errno.h>
 #include <stdio.h>
 
@@ -113,10 +111,10 @@ static void completion (long id, long len, long errCode, long action) {
   D(printf("Queueing action %s: id %ld -> len %ld / err %d (errCode %ld)\n",
            action_name[action], id, len, errno, errCode));
   if (compN + 1 > complQueueSize) {
+    completionInfo * queue;
     int n = complQueueSize * 2 + 1;
     D(printf("Resizing queue to %d\n", n));
-    completionInfo * queue =
-      (completionInfo *) GlobalAlloc(GPTR, n * sizeof(completionInfo));
+    queue = (completionInfo *) GlobalAlloc(GPTR, n * sizeof(completionInfo));
     if (complQueue != NULL)
       CopyMemory (queue, complQueue, complQueueSize * sizeof(completionInfo));
     complQueue = queue;

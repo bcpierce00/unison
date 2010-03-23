@@ -1,5 +1,15 @@
 CHANGES FROM VERSION 2.40.1
 
+* Windows: fix C includes for compilation with MSVC
+* Windows: implement somewhat the O_APPEND flag, so that appending
+  lines to a profile (ignored files, for instance) works instead of
+  overwriting the beginning of the file (the file pointer is moved to
+  the end when the file is opened, rather that each time something is
+  written, which is good enough here)
+
+-------------------------------
+CHANGES FROM VERSION 2.40.1
+
 * Added a "fat" preference that makes Unison use the right options
   when one of the replica is on a FAT filesystem.
 * Allow "prefer/force=newer" even when not synchronizing modification
