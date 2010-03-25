@@ -479,7 +479,7 @@ struct
   let hash checksum = checksum
 
   (* Compute the hash table length as a function of the number of blocks *)
-  let hashTableLength signatures =
+  let computeHashTableLength signatures =
     2 * (upperPowerOfTwo signatures.blockCount 32)
 
   (* Hash the block signatures into the hash table *)
@@ -495,7 +495,27 @@ struct
   (* Given a key, retrieve the corresponding entry in the table *)
   let findEntry hashTable hashTableLength checksum :
       (int * Checksum.t) list =
-    hashTable.((hash checksum) land (hashTableLength - 1))
+    Array.unsafe_get hashTable ((hash checksum) land (hashTableLength - 1))
+
+  let sigFilter hashTableLength signatures =
+    let len = hashTableLength lsl 2 in
+    let filter = String.make len '\000' in
+    for k = 0 to signatures.blockCount - 1 do
+      let cs = Int32.to_int signatures.weakChecksum.{k} land 0x7fffffff in
+      let h1 = cs lsr 28 in
+      assert (h1 >= 0 && h1 < 8);
+      let h2 = (cs lsr 5) land (len - 1) in
+      let mask = 1 lsl h1 in
+      filter.[h2] <- Char.chr (Char.code filter.[h2] lor mask)
+    done;
+    filter
+
+  let filterMem filter hashTableLength checksum =
+    let len = hashTableLength lsl 2 in
+    let h2 = (checksum lsr 5) land (len - 1) in
+    let h1 = checksum lsr 28 in
+    let mask = 1 lsl h1 in
+    Char.code (String.unsafe_get filter h2) land mask <> 0
 
   (* Log the values of the parameters associated with the hash table *)
   let logHash hashTable hashTableLength =
@@ -522,19 +542,20 @@ struct
   type probes = {
       mutable hitHit : int;
       mutable hitMiss : int;
+      mutable missMiss : int;
       mutable nbBlock : int;
       mutable nbString : int;
       mutable stringSize : int
     }
 
   let logMeasures pb =
-((*
     debugLog (fun() -> Util.msg
-        "hit-hit = %d, hit-miss = %d, hit rate = %d%%\n"
-        pb.hitHit pb.hitMiss
+        "hit-hit = %d, hit-miss = %d, miss-miss = %d, hit rate = %d%%\n"
+        pb.hitHit pb.hitMiss pb.missMiss
         (if pb.hitHit <> 0 then
            pb.hitHit * 100 / (pb.hitHit + pb.hitMiss)
-         else 0));
+         else 0))
+(*
     debugLog (fun() -> Util.msg
         "%d strings (%d bytes), %d blocks\n"
         pb.nbString pb.stringSize pb.nbBlock);
@@ -544,7 +565,7 @@ struct
         generic);
     debug (fun() -> Util.msg
         "compression rate = %d%%\n" ((pb.stringSize * 100) / generic))
-*))
+*)
 
 
   (*** COMPRESSION ***)
@@ -552,6 +573,17 @@ struct
   (* Compression buffer size *)
   (* MUST be >= 2 * blockSize *)
   let minComprBufSize = 8192
+
+  type compressorState =
+    { (* Rolling checksum data *)
+      mutable checksum : int;
+      mutable cksumOutgoing : char;
+      (* Buffering *)
+      mutable offset : int;
+      mutable toBeSent : int;
+      mutable length : int;
+      (* Position in file *)
+      mutable absolutePos : Uutil.Filesize.t }
 
   (* Compress the file using the algorithm described in the header *)
   let rsyncCompress sigs infd srcLength showProgress transmit =
@@ -567,7 +599,8 @@ struct
 
     (* Measures *)
     let pb =
-      { hitHit = 0; hitMiss = 0; nbBlock = 0; nbString = 0; stringSize = 0 } in
+      { hitHit = 0; hitMiss = 0; missMiss = 0;
+        nbBlock = 0; nbString = 0; stringSize = 0 } in
 (*
     let transmit tokenList =
       Safelist.iter
@@ -596,9 +629,11 @@ struct
     let transmit token = queueToken tokenQueue showProgress transmit token in
 
     (* Set up the hash table for fast checksum look-up *)
-    let hashTableLength = ref (hashTableLength sigs) in
-    let blockTable = hashSig !hashTableLength sigs in
-    logHash blockTable !hashTableLength;
+    let hashTableLength = computeHashTableLength sigs in
+    let blockTable = hashSig hashTableLength sigs in
+    logHash blockTable hashTableLength;
+
+    let filter = sigFilter hashTableLength sigs in
 
     let rec fingerprintMatchRec checksums pos fp i =
       let i = i - 1 in
@@ -623,107 +658,123 @@ struct
     in
 
     (* Set up the rolling checksum data *)
-    let checksum = ref 0 in
-    let cksumOutgoing = ref ' ' in
-    let cksumTable = ref (Checksum.init blockSize) in
+    let cksumTable = Checksum.init blockSize in
 
-    let absolutePos = ref Uutil.Filesize.zero in
+    let initialState =
+      { checksum = 0; cksumOutgoing = ' ';
+        offset = comprBufSize; toBeSent = comprBufSize; length = comprBufSize;
+        absolutePos = Uutil.Filesize.zero }
+    in
 
     (* Check the new window position and update the compression buffer
        if its end has been reached *)
-    let rec slideWindow newOffset toBeSent length miss : unit Lwt.t =
-      if newOffset + blockSize <= length then
-        computeChecksum newOffset toBeSent length miss
-      else if length = comprBufSize then begin
-        transmitString toBeSent newOffset >>= (fun () ->
-        let chunkSize = length - newOffset in
+    let rec slideWindow st miss : unit Lwt.t =
+      if st.offset + blockSize <= st.length then
+        computeChecksum st miss
+      else if st.length = comprBufSize then begin
+        transmitString st.toBeSent st.offset >>= (fun () ->
+        let chunkSize = st.length - st.offset in
         if chunkSize > 0 then begin
           assert(comprBufSize >= blockSize);
-          String.blit comprBuf newOffset comprBuf 0 chunkSize
+          String.blit comprBuf st.offset comprBuf 0 chunkSize
         end;
-        let rem = Uutil.Filesize.sub srcLength !absolutePos in
+        let rem = Uutil.Filesize.sub srcLength st.absolutePos in
         let avail = comprBufSize - chunkSize in
         let l =
           reallyRead infd comprBuf chunkSize
             (if rem > comprBufSizeFS then avail else
              min (Uutil.Filesize.toInt rem) avail)
         in
-        absolutePos :=
-          Uutil.Filesize.add !absolutePos (Uutil.Filesize.ofInt l);
-        let length = chunkSize + l in
+        st.absolutePos <-
+          Uutil.Filesize.add st.absolutePos (Uutil.Filesize.ofInt l);
+        st.offset <- 0;
+        st.toBeSent <- 0;
+        st.length <- chunkSize + l;
         debugToken (fun() -> Util.msg "updating the compression buffer\n");
-        debugToken (fun() -> Util.msg "new length = %d bytes\n" length);
-        slideWindow 0 0 length miss)
+        debugToken (fun() -> Util.msg "new length = %d bytes\n" st.length);
+        slideWindow st miss)
       end else
-        transmitString toBeSent length >>= (fun () ->
+        transmitString st.toBeSent st.length >>= (fun () ->
         transmit EOF)
 
     (* Compute the window contents checksum, in a rolling fashion if there
        was a miss *)
-    and computeChecksum newOffset toBeSent length miss =
+    and computeChecksum st miss =
+      if miss then
+        rollChecksum st
+      else begin
+        let cksum = Checksum.substring comprBuf st.offset blockSize in
+        st.checksum <- cksum;
+        st.cksumOutgoing <- String.unsafe_get comprBuf st.offset;
+        processBlock st
+      end
+
+    and rollChecksum st =
+      let ingoingChar =
+        String.unsafe_get comprBuf (st.offset + blockSize - 1) in
       let cksum =
-        if miss then
-          Checksum.roll !cksumTable !checksum !cksumOutgoing
-            (String.unsafe_get comprBuf (newOffset + blockSize - 1))
-        else
-          Checksum.substring comprBuf newOffset blockSize
-      in
-      checksum := cksum;
-      cksumOutgoing := String.unsafe_get comprBuf newOffset;
-      processBlock newOffset toBeSent length cksum
+        Checksum.roll cksumTable st.checksum st.cksumOutgoing ingoingChar in
+      st.checksum <- cksum;
+      st.cksumOutgoing <- String.unsafe_get comprBuf st.offset;
+      if filterMem filter hashTableLength cksum then
+        processBlock st
+      else
+        miss st
 
     (* Try to match the current block with one existing in the old file *)
-    and processBlock offset toBeSent length checksum =
-      if Trace.enabled "transfer+" then
-        debugV (fun() -> Util.msg
-            "processBlock offset=%d toBeSent=%d length=%d blockSize = %d\n"
-            offset toBeSent length blockSize);
-      if Trace.enabled "rsynctoken" then assert
-         (0 <= toBeSent && toBeSent <= offset && offset + blockSize <= length);
-      match findEntry blockTable !hashTableLength checksum with
-      | [] -> miss offset toBeSent length
+    and processBlock st =
+      let checksum = st.checksum in
+      match findEntry blockTable hashTableLength checksum with
+      | [] ->
+          pb.missMiss <- pb.missMiss + 1;
+          miss st
       | entry ->
-          let blockNum = findBlock offset checksum entry None in
+          let blockNum = findBlock st checksum entry None in
           if blockNum = -1 then begin
               pb.hitMiss <- pb.hitMiss + 1;
-              miss offset toBeSent length
+              miss st
           end else begin
               pb.hitHit <- pb.hitHit + 1;
-              hit offset toBeSent length blockNum
+              hit st blockNum
           end
 
     (* In the hash table entry, find nodes with the right checksum and
        match fingerprints *)
-    and findBlock offset checksum entry fingerprint =
+    and findBlock st checksum entry fingerprint =
       match entry, fingerprint with
       | [], _ ->
           -1
       | (k, cs) :: tl, None
         when cs = checksum ->
-          let fingerprint = Digest.substring comprBuf offset blockSize in
-          findBlock offset checksum entry (Some fingerprint)
+          let fingerprint = Digest.substring comprBuf st.offset blockSize in
+          findBlock st checksum entry (Some fingerprint)
       | (k, cs) :: tl, Some fingerprint
         when cs = checksum && fingerprintMatch k fingerprint ->
           k
       | _ :: tl, _ ->
-          findBlock offset checksum tl fingerprint
+          findBlock st checksum tl fingerprint
 
     (* Miss : slide the window one character ahead *)
-    and miss offset toBeSent length =
-      slideWindow (offset + 1) toBeSent length true
+    and miss st =
+      st.offset <- st.offset + 1;
+      if st.offset + blockSize <= st.length then
+        rollChecksum st
+      else
+        slideWindow st true
 
     (* Hit : send the data waiting and a BLOCK token, then slide the window
        one block ahead *)
-    and hit offset toBeSent length blockNum =
-      transmitString toBeSent offset >>= (fun () ->
-      let sent = offset in
-      let toBeSent = sent + blockSize in
+    and hit st blockNum =
+      transmitString st.toBeSent st.offset >>= (fun () ->
+      let sent = st.offset in
+      st.toBeSent <- sent + blockSize;
       transmit (BLOCK blockNum) >>= (fun () ->
-      slideWindow (offset + blockSize) toBeSent length false))
+      st.offset <- st.offset + blockSize;
+      slideWindow st false))
     in
 
     (* Initialization and termination *)
-    slideWindow comprBufSize comprBufSize comprBufSize false >>= (fun () ->
+    slideWindow initialState false >>= (fun () ->
     flushTokenQueue () >>= (fun () ->
     logMeasures pb;
     Trace.showTimer timer;

@@ -1,5 +1,16 @@
 CHANGES FROM VERSION 2.40.1
 
+* Windows: more fixes for compilation with MSVC
+* Rsync: somewhat faster compressor
+* Changed "fat" option to not use chmod, to be on the safe side
+  (perms = 0 + dontchmod = true)
+* Some preference documentation updates
+* Fail more gracefully when converting a non Unicode string to UTF-16
+  (transient error with clear error message)
+
+-------------------------------
+CHANGES FROM VERSION 2.40.1
+
 * Windows: fix C includes for compilation with MSVC
 * Windows: implement somewhat the O_APPEND flag, so that appending
   lines to a profile (ignored files, for instance) works instead of

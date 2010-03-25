@@ -97,6 +97,7 @@ ifeq ($(OSARCH),win32)
   # Win32 system
   EXEC_EXT=.exe
   OBJ_EXT=.obj
+  OUTPUT_SEL=/Fo
   CWD=.
 #  Fix suggested by Karl M, Jan 2009:
 #    "The new flexlink wrapper that OCaml 3.11 uses was gagging on the res
@@ -108,13 +109,14 @@ ifeq ($(OSARCH),win32)
   COBJS+=system/system_win_stubs$(OBJ_EXT) lwt/lwt_unix_stubs$(OBJ_EXT)
   WINOBJS=system/system_win.cmo
   SYSTEM=win
-  CLIBS+=-cclib "-link win32rc/unison.res"
-  STATICLIBS+=-cclib "-link win32rc/unison.res"
+  CLIBS+=-cclib "-link win32rc/unison.res" shell32.lib
+  STATICLIBS+=-cclib "-link win32rc/unison.res" shell32.lib
   buildexecutable::
 	@echo Building for Windows
 else
   # Unix system, or Cygwin with GNU C compiler
   OBJ_EXT=.o
+  OUTPUT_SEL="-o "
   ifeq ($(OSARCH),win32gnuc)
     CWD=.
     EXEC_EXT=.exe
@@ -413,7 +415,7 @@ win32rc/unison.res.lib: win32rc/unison.res
 
 %.o %.obj: %.c
 	@echo "$(OCAMLOPT): $< ---> $@"
-	$(CAMLC) $(CAMLFLAGS) -ccopt -o -ccopt $(CWD)/$@ -c $(CWD)/$<
+	$(CAMLC) $(CAMLFLAGS) -ccopt $(OUTPUT_SEL)$(CWD)/$@ -c $(CWD)/$<
 
 $(NAME)$(EXEC_EXT): $(CAMLOBJS) $(COBJS)
 	@echo Linking $@

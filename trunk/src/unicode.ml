@@ -1733,7 +1733,7 @@ let rec scan s i l =
     let c3 = get s (i + 3) in
     (c1 lor c2 lor c3) land 0xc0 = 0x80 &&
     let v = c lsl 18 + c1 lsl 12 + c2 lsl 6 + c3 - 0x03c82080 in
-    v >= 0x10000 && v < 0x10ffff &&
+    v >= 0x10000 && v <= 0x10ffff &&
     scan s (i + 4) l
   end
 

@@ -47,6 +47,7 @@ module Perm : sig
   val check : Fspath.t -> Path.local -> Unix.LargeFile.stats -> t -> unit
   val validatePrefs : unit -> unit
   val permMask : int Prefs.t
+  val dontChmod : bool Prefs.t
 end = struct
 
 (* We introduce a type, Perm.t, that holds a file's permissions along with   *)
@@ -84,7 +85,11 @@ let permMask =
      $0o1777$: all bits but the set-uid and set-gid bits are \
      synchronised (synchronizing theses latter bits can be a security \
      hazard).  If you want to synchronize all bits, you can set the \
-     value of this preference to $-1$."
+     value of this preference to $-1$.  If one of the replica is on \
+     a FAT [Windows] filesystem, you should consider using the \
+     {\tt fat} preference instead of this preference.  If you need \
+     Unison not to set permissions at all, set the value of this \
+     preference to $0$ and set the preference {\tt dontchmod} to {\tt true}."
 
 (* Os-specific local conventions on file permissions                         *)
 let (fileDefault, dirDefault, fileSafe, dirSafe) =
@@ -215,7 +220,18 @@ let set fspath path kind (fp, mask) =
             Util.msg "Setting permissions for %s to %s (%s)\n"
               (Fspath.toDebugString abspath) (toString (fileperm2perm fp))
               (Printf.sprintf "%o/%o" fp mask));
-        Fs.chmod abspath fp)
+        try
+          Fs.chmod abspath fp
+        with Unix.Unix_error (Unix.EOPNOTSUPP, _, _) as e ->
+          try
+            Util.convertUnixErrorsToTransient "setting permissions"
+              (fun () -> raise e)
+          with Util.Transient msg ->
+            raise (Util.Transient
+                     (msg ^
+                      ". You can use preference \"fat\",\
+                       or else set preference \"perms\" to 0 and \
+                       preference \"dontchmod\" to true to avoid this error")))
 
 let get stats _ = (stats.Unix.LargeFile.st_perm, Prefs.read permMask)
 
@@ -766,6 +782,7 @@ let perms p = Perm.extract p.perm
 
 let syncModtimes = Time.sync
 let permMask = Perm.permMask
+let dontChmod = Perm.dontChmod
 
 let validatePrefs = Perm.validatePrefs
 
