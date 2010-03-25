@@ -54,11 +54,26 @@ let extendedPath f =
   else
     f
 
+let encodingError p =
+  raise
+    (Sys_error
+       (Format.sprintf "The file path '%s' is not encoded in Unicode." p))
+
 let utf8 = Unicode.from_utf_16
-let utf16 = Unicode.to_utf_16
+let utf16 s =
+  try
+    Unicode.to_utf_16 s
+  with Unicode.Invalid ->
+    raise (Sys_error
+             (Format.sprintf "The text '%' is not encoded in Unicode" s))
 let path8 = Unicode.from_utf_16(*_filename*)
-let path16 = Unicode.to_utf_16(*_filename*)
-let epath f = path16 (extendedPath f)
+let path16 f =
+  try Unicode.to_utf_16(*_filename*) f with Unicode.Invalid -> encodingError f
+let epath f =
+  try
+    Unicode.to_utf_16(*_filename*) (extendedPath f)
+  with
+    Unicode.Invalid -> encodingError f
 
 let sys_error e =
   match e with

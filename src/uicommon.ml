@@ -458,7 +458,8 @@ let validateAndFixupPrefs () =
   let someHostIsCaseInsensitive =
     someHostIsRunningWindows || someHostRunningOsX in
   if Prefs.read Globals.fatFilesystem then begin
-    Prefs.overrideDefault Props.permMask 0o200;
+    Prefs.overrideDefault Props.permMask 0;
+    Prefs.overrideDefault Props.dontChmod true;
     Prefs.overrideDefault Case.caseInsensitiveMode `True;
     Prefs.overrideDefault Fileinfo.allowSymlinks `False;
     Prefs.overrideDefault Fileinfo.ignoreInodeNumbers true

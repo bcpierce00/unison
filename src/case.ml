@@ -30,9 +30,8 @@ let caseInsensitiveMode =
      ^ "will treat all filenames as case sensitive.  Ordinarily, when the flag is "
      ^ "set to {\\tt default}, "
      ^ "filenames are automatically taken to be case-insensitive if "
-     ^ "either host is running Windows or OSX.  In rare circumstances it is  "
-     ^ "useful to set the flag manually (e.g. when running Unison on a  "
-     ^ "Unix system with a FAT [Windows] volume mounted).")
+     ^ "either host is running Windows or OSX.  In rare circumstances it may be  "
+     ^ "useful to set the flag manually.")
 
 (* Defining this variable as a preference ensures that it will be propagated
    to the other host during initialization *)

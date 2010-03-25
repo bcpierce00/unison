@@ -26,9 +26,8 @@ let allowSymlinks =
       links will result in an error during update detection.  \
       Ordinarily, when the flag is set to {\\tt default}, symbolic \
       links are synchronized except when one of the hosts is running \
-      Windows.  In rare circumstances it is useful to set the flag \
-      manually (e.g. when running Unison on a Unix system with a FAT \
-      [Windows] volume mounted).")
+      Windows.  In rare circumstances it may be useful to set the flag \
+      manually.")
 
 let symlinksAllowed =
   Prefs.createBool "links-aux" true
@@ -155,8 +154,7 @@ let ignoreInodeNumbers =
       of inode numbers during fast update detection. \
       This switch should be used with care, as it \
       is less safe than the standard update detection method, but it \
-      can be useful for synchronizing VFAT filesystems (which do not \
-      support inode numbers) mounted on Unix systems.")
+      can be useful with filesystems which do not support inode numbers.")
 let _ = Prefs.alias ignoreInodeNumbers "pretendwin"
 
 let stamp info =
