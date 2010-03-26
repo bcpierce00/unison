@@ -1838,15 +1838,19 @@ full Posix regexps are not currently supported).
 \begin{alltt}
                  Regex \ARG{regexp}
 \end{alltt}
-For convenience, two other styles of pattern are also recognized:
+For convenience, three other styles of pattern are also recognized:
 \begin{alltt}
                  Name \ARG{name}
 \end{alltt}
-matches any path in which the last component matches \ARG{name}, while
+matches any path in which the last component matches \ARG{name},
 \begin{alltt}
                  Path \ARG{path}
 \end{alltt}
-matches exactly the path \ARG{path}.
+matches exactly the path \ARG{path}, and
+\begin{alltt}
+                 BelowPath \ARG{path}
+\end{alltt}
+matches the path \ARG{path} and any path below.
 %
 The \ARG{name} and \ARG{path} arguments of the latter forms of
 patterns are {\em not} regular expressions.  Instead, 

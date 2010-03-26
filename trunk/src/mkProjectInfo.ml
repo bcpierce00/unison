@@ -42,7 +42,7 @@ let pointVersionOrigin = 409 (* Revision that corresponds to point version 0 *)
 (* ---------------------------------------------------------------------- *)
 (* You shouldn't need to edit below. *)
 
-let revisionString = "$Rev: 410$";;
+let revisionString = "$Rev: 424$";;
 
 (* BCP (1/10): This bit was added to help with getting Unison via bazaar, but it
    was never used much and I'm not confident it's working.  I'll comment it out
@@ -96,6 +96,8 @@ let pointVersion =
 Printf.printf "MAJORVERSION=%d.%d\n" majorVersion minorVersion;;
 Printf.printf "VERSION=%d.%d.%d\n" majorVersion minorVersion pointVersion;;
 Printf.printf "NAME=%s\n" projectName;;
+
+
 
 
 

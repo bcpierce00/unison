@@ -27,6 +27,9 @@ val rootsList : unit -> Common.root list
 (* comes first                                                               *)
 val rootsInCanonicalOrder : unit -> Common.root list
 
+(* a local root *)
+val localRoot : unit -> Common.root
+
 (* Run a command on all roots                                                *)
 val allRootsIter :
   (Common.root -> unit Lwt.t) -> unit Lwt.t
