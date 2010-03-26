@@ -1,3 +1,8 @@
+CHANGES FROM VERSION 2.40.16
+
+* Fix Windows compilation bug introduced in previous commit
+
+-------------------------------
 CHANGES FROM VERSION 2.40.15
 
 * Added "BelowPath" patterns, that match a path as well as all paths below

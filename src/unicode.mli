@@ -1,6 +1,7 @@
 (* Unison file synchronizer: src/unicode.mli *)
 (* Copyright 1999-2009, Benjamin C. Pierce (see COPYING for details) *)
 
+exception Invalid
 
 (* Case-insensitive comparison.  If two strings are equal according to
    Mac OS X (Darwin, actually, but the algorithm has hopefully
