@@ -86,6 +86,8 @@ let rootsList() = !theroots
 
 let rootsInCanonicalOrder() = Common.sortRoots (!theroots)
 
+let localRoot () = List.hd (rootsInCanonicalOrder ())
+
 let reorderCanonicalListToUsersOrder l =
   if rootsList() = rootsInCanonicalOrder() then l
   else Safelist.rev l

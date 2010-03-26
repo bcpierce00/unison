@@ -187,7 +187,8 @@ let noDeletionPartial =
       \\texttt{nodeletionpartial = \\ARG{PATHSPEC} -> \\ARG{root}} prevents \
       Unison from performing any file deletion in \\ARG{PATHSPEC} \
       on root \\ARG{root} (see \\sectionref{pathspec}{Path Specification} \
-      for more information).")
+      for more information).  It is recommended to use {\\tt BelowPath} \
+      patterns when selecting a directory and all its contents.")
 
 let noUpdatePartial =
   Pred.create "noupdatepartial" ~advanced:true
@@ -195,7 +196,9 @@ let noUpdatePartial =
       \\texttt{noupdatepartial = \\ARG{PATHSPEC} -> \\ARG{root}} prevents \
       Unison from performing any file update or deletion in \
       \\ARG{PATHSPEC} on root \\ARG{root} (see \
-      \\sectionref{pathspec}{Path Specification} for more information).")
+      \\sectionref{pathspec}{Path Specification} for more information). \
+      It is recommended to use {\\tt BelowPath} \
+      patterns when selecting a directory and all its contents.")
 
 let noCreationPartial =
   Pred.create "nocreationpartial" ~advanced:true
@@ -203,7 +206,9 @@ let noCreationPartial =
       \\texttt{nocreationpartial = \\ARG{PATHSPEC} ->  \\ARG{root}} prevents \
       Unison from performing any file creation in \\ARG{PATHSPEC} \
       on root \\ARG{root} (see \\sectionref{pathspec}{Path Specification} \
-      for more information).")
+      for more information). \
+      It is recommended to use {\\tt BelowPath} \
+      patterns when selecting a directory and all its contents.")
 
 let partialCancelPref actionKind =
   match actionKind with

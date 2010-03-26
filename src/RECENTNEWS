@@ -1,3 +1,12 @@
+CHANGES FROM VERSION 2.40.15
+
+* Added "BelowPath" patterns, that match a path as well as all paths below
+  (convenient to use with no{deletion,update,creation}partial preferences)
+* Always check archive case sensivity mode before update detection,
+  even when the archive is already cached in memory, in case the
+  profile has been changed without restarting Unison.
+
+-------------------------------
 CHANGES FROM VERSION 2.40.1
 
 * Windows: more fixes for compilation with MSVC

@@ -36,7 +36,7 @@ type t =
 let error_msg s =
    Printf.sprintf "bad pattern: %s\n\
     A pattern must be introduced by one of the following keywords:\n\
- \032   Name, Path, or Regex." s
+ \032   Name, Path, BelowPath or Regex." s
 
 (* [select str [(p1, f1), ..., (pN, fN)] fO]: (roughly) *)
 (* match str with                                       *)
@@ -80,6 +80,14 @@ let compile_pattern clause =
                         ^ "'Path' patterns may not begin with a slash; "
                         ^ "only relative paths are allowed."));
             Rx.globx str);
+         ("BelowPath ", fun str ->
+            if str<>"" && str.[0] = '/' then
+              raise (Prefs.IllegalValue
+                       ("Malformed pattern: "
+                        ^ "\"" ^ p ^ "\"\n"
+                        ^ "'BelowPath' patterns may not begin with a slash; "
+                        ^ "only relative paths are allowed."));
+            Rx.seq [Rx.globx str; Rx.rx "(/.*)?"]);
          ("Regex ", Rx.rx)]
         (fun str -> raise (Prefs.IllegalValue (error_msg p)))
     with
