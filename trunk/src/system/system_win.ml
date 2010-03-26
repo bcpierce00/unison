@@ -65,7 +65,7 @@ let utf16 s =
     Unicode.to_utf_16 s
   with Unicode.Invalid ->
     raise (Sys_error
-             (Format.sprintf "The text '%' is not encoded in Unicode" s))
+             (Format.sprintf "The text '%s' is not encoded in Unicode" s))
 let path8 = Unicode.from_utf_16(*_filename*)
 let path16 f =
   try Unicode.to_utf_16(*_filename*) f with Unicode.Invalid -> encodingError f
