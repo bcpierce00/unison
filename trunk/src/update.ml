@@ -748,7 +748,7 @@ let dumpArchives =
      ^ "after loading it.")
 
 (* For all roots (local or remote), load the archive and cache *)
-let loadArchives (optimistic: bool) : bool Lwt.t =
+let loadArchives (optimistic: bool) =
   Globals.allRootsMap (fun r -> loadArchiveOnRoot r optimistic)
      >>= (fun checksums ->
   let identicals = archivesIdentical checksums in
@@ -770,11 +770,7 @@ let loadArchives (optimistic: bool) : bool Lwt.t =
       ^ "       arXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n"
       ^ "     where the X's are a hexidecimal number .\n"
       ^ "  c) Run unison again to synchronize from scratch.\n"));
-  checkArchiveCaseSensitivity checksums >>= fun () ->
-  if Prefs.read dumpArchives then
-    Globals.allRootsMap (fun r -> dumpArchiveOnRoot r ())
-     >>= (fun _ -> Lwt.return identicals)
-  else Lwt.return identicals)
+  Lwt.return (identicals, checksums))
 
 
 (*****************************************************************************)
@@ -1814,17 +1810,24 @@ let findOnRoot =
 
 let findUpdatesOnPaths pathList =
   Lwt_unix.run
-    (loadArchives true >>= (fun ok ->
-     begin if ok then Lwt.return () else begin
+    (loadArchives true >>= (fun (ok, checksums) ->
+     begin if ok then Lwt.return checksums else begin
        lockArchives () >>= (fun () ->
        Remote.Thread.unwindProtect
          (fun () ->
             doArchiveCrashRecovery () >>= (fun () ->
             loadArchives false))
          (fun _ ->
-            unlockArchives ()) >>= (fun _ ->
-       unlockArchives ()))
-     end end >>= (fun () ->
+            unlockArchives ()) >>= (fun (_, checksums) ->
+       unlockArchives () >>= fun () ->
+       Lwt.return checksums))
+     end end >>= (fun checksums ->
+     checkArchiveCaseSensitivity checksums >>= fun () ->
+     begin if Prefs.read dumpArchives then
+       Globals.allRootsIter (fun r -> dumpArchiveOnRoot r ())
+     else
+       Lwt.return ()
+     end >>= fun () ->
      let t = Trace.startTimer "Collecting changes" in
      Globals.allRootsMapWithWaitingAction (fun r ->
        debug (fun() -> Util.msg "findOnRoot %s\n" (root2string r));

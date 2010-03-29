@@ -1,5 +1,10 @@
 CHANGES FROM VERSION 2.40.16
 
+* Fix Not_found error when no archives are found (recently introduced bug).
+
+-------------------------------
+CHANGES FROM VERSION 2.40.16
+
 * Fix Windows compilation bug introduced in previous commit
 
 -------------------------------
