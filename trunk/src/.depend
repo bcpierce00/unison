@@ -8,7 +8,8 @@ common.cmi: uutil.cmi props.cmi path.cmi osx.cmi os.cmi name.cmi fspath.cmi \
 copy.cmi: uutil.cmi props.cmi path.cmi osx.cmi os.cmi lwt/lwt.cmi fspath.cmi \
     fileinfo.cmi common.cmi 
 external.cmi: lwt/lwt.cmi 
-fileinfo.cmi: system.cmi props.cmi path.cmi osx.cmi fspath.cmi 
+fileinfo.cmi: system.cmi props.cmi ubase/prefs.cmi path.cmi osx.cmi \
+    fspath.cmi 
 files.cmi: uutil.cmi system.cmi props.cmi path.cmi lwt/lwt_util.cmi \
     lwt/lwt.cmi common.cmi 
 fileutil.cmi: 
@@ -280,15 +281,15 @@ unicode_tables.cmx:
 update.cmo: xferhint.cmi uutil.cmi ubase/util.cmi tree.cmi ubase/trace.cmi \
     system.cmi ubase/safelist.cmi remote.cmi props.cmi ubase/proplist.cmi \
     ubase/prefs.cmi pred.cmi path.cmi osx.cmi os.cmi name.cmi ubase/myMap.cmi \
-    lwt/lwt_unix.cmi lwt/lwt.cmi lock.cmi globals.cmi fspath.cmi fs.cmi \
-    fpcache.cmi fingerprint.cmi fileinfo.cmi common.cmi case.cmi update.cmi 
+    lwt/lwt_unix.cmi lwt/lwt.cmi lock.cmi globals.cmi fspath.cmi fpcache.cmi \
+    fingerprint.cmi fileinfo.cmi common.cmi case.cmi update.cmi 
 update.cmx: xferhint.cmx uutil.cmx ubase/util.cmx tree.cmx ubase/trace.cmx \
     system.cmx ubase/safelist.cmx remote.cmx props.cmx ubase/proplist.cmx \
     ubase/prefs.cmx pred.cmx path.cmx osx.cmx os.cmx name.cmx ubase/myMap.cmx \
-    lwt/lwt_unix.cmx lwt/lwt.cmx lock.cmx globals.cmx fspath.cmx fs.cmx \
-    fpcache.cmx fingerprint.cmx fileinfo.cmx common.cmx case.cmx update.cmi 
-uutil.cmo: ubase/util.cmi ubase/trace.cmi ubase/projectInfo.cmo uutil.cmi 
-uutil.cmx: ubase/util.cmx ubase/trace.cmx ubase/projectInfo.cmx uutil.cmi 
+    lwt/lwt_unix.cmx lwt/lwt.cmx lock.cmx globals.cmx fspath.cmx fpcache.cmx \
+    fingerprint.cmx fileinfo.cmx common.cmx case.cmx update.cmi 
+uutil.cmo: ubase/util.cmi ubase/trace.cmi uutil.cmi 
+uutil.cmx: ubase/util.cmx ubase/trace.cmx uutil.cmi 
 xferhint.cmo: ubase/util.cmi ubase/trace.cmi ubase/prefs.cmi path.cmi os.cmi \
     fspath.cmi xferhint.cmi 
 xferhint.cmx: ubase/util.cmx ubase/trace.cmx ubase/prefs.cmx path.cmx os.cmx \
@@ -305,16 +306,14 @@ system/system_generic.cmo:
 system/system_generic.cmx: 
 system/system_intf.cmo: 
 system/system_intf.cmx: 
-system/system_win.cmo: unicode.cmi ubase/rx.cmi 
-system/system_win.cmx: unicode.cmx ubase/rx.cmx 
+system/system_win.cmo: unicode.cmi system/system_generic.cmo ubase/rx.cmi 
+system/system_win.cmx: unicode.cmx system/system_generic.cmx ubase/rx.cmx 
 ubase/myMap.cmo: ubase/myMap.cmi 
 ubase/myMap.cmx: ubase/myMap.cmi 
 ubase/prefs.cmo: ubase/util.cmi ubase/uarg.cmi system.cmi ubase/safelist.cmi \
     ubase/prefs.cmi 
 ubase/prefs.cmx: ubase/util.cmx ubase/uarg.cmx system.cmx ubase/safelist.cmx \
     ubase/prefs.cmi 
-ubase/projectInfo.cmo: 
-ubase/projectInfo.cmx: 
 ubase/proplist.cmo: ubase/util.cmi ubase/proplist.cmi 
 ubase/proplist.cmx: ubase/util.cmx ubase/proplist.cmi 
 ubase/rx.cmo: ubase/rx.cmi 

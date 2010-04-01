@@ -97,9 +97,8 @@ let argv () = Array.map utf8 (argv_impl ())
 (****)
 
 type dir_entry = Dir_empty | Dir_read of string | Dir_toread
-type dir_handle = Unix.dir_handle
-type dir_handle' =
-  { handle : int; mutable entry_read: dir_entry }
+type dir_handle = System_generic.dir_handle
+                = { readdir : unit -> string; closedir : unit -> unit }
 
 external stat_impl : string -> string -> Unix.LargeFile.stats = "win_stat"
 external rmdir_impl : string -> string -> unit = "win_rmdir"
@@ -143,28 +142,27 @@ let getcwd () =
 
 let badFileRx = Rx.rx ".*[?*].*"
 
-let ud : dir_handle' -> dir_handle = Obj.magic
-let du : dir_handle -> dir_handle' = Obj.magic
-
 let opendir d =
   if Rx.match_string badFileRx d then
     raise (Unix.Unix_error (Unix.ENOENT, "opendir", d));
-  try
-    let (first_entry, handle) = findfirst (epath (fspathConcat d "*")) in
-    ud { handle = handle; entry_read = Dir_read first_entry }
-  with End_of_file ->
-    ud { handle = 0; entry_read = Dir_empty }
-let readdir d =
-  let d = du d in
-  match d.entry_read with
-    Dir_empty -> raise End_of_file
-  | Dir_read name -> d.entry_read <- Dir_toread; path8 name
-  | Dir_toread -> path8 (findnext d.handle)
-let closedir d =
-  let d = du d in
-  match d.entry_read with
-    Dir_empty -> ()
-  | _         -> findclose d.handle
+  let (handle, entry_read) =
+    try
+      let (first_entry, handle) = findfirst (epath (fspathConcat d "*")) in
+      (handle, ref (Dir_read first_entry))
+    with End_of_file ->
+      (0, ref Dir_empty)
+  in
+  { readdir =
+      (fun () ->
+         match !entry_read with
+           Dir_empty     -> raise End_of_file
+         | Dir_read name -> entry_read := Dir_toread; path8 name
+         | Dir_toread    -> path8 (findnext handle));
+    closedir =
+      (fun () ->
+         match !entry_read with
+           Dir_empty -> ()
+         | _         -> findclose handle) }
 
 let rec conv_flags fl =
   match fl with
@@ -337,5 +335,13 @@ let terminalStateFunctions () =
     rawTerminal = (fun () -> setConsoleMode 0x19; setConsoleOutputCP 65001);
     startReading = (fun () -> setConsoleMode 0x18);
     stopReading = (fun () -> setConsoleMode 0x19) }
+
+(****)
+
+let fingerprint f =
+  let ic = open_in_bin f in
+  let d = Digest.channel ic (-1) in
+  close_in ic;
+  d
 
 end

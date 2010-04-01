@@ -1447,7 +1447,7 @@ let createProfile parent =
         GMisc.label ~xalign:0. ~line_wrap:true ~justify:`LEFT
           ~text:"Select the following option if one of your \
                  directory is on a FAT partition.  This is typically \
-                 the case for a USB key."
+                 the case for a USB stick."
           ~packing:(vb#pack ~expand:false) ()
       in
       adjustSize fatLabel;

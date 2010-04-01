@@ -61,7 +61,7 @@ let allChildrenOf fspath path =
   "scanning directory"
     (fun () ->
       let rec loop children directory =
-        let newFile = try Fs.readdir directory with End_of_file -> "" in
+        let newFile = try directory.Fs.readdir () with End_of_file -> "" in
         if newFile = "" then children else
         let newChildren =
           if newFile = "." || newFile = ".." then
@@ -85,11 +85,11 @@ let allChildrenOf fspath path =
         Some directory ->
           begin try
             let result = loop [] directory in
-            Fs.closedir directory;
+            directory.Fs.closedir ();
             result
           with Unix.Unix_error _ as e ->
             begin try
-              Fs.closedir directory
+              directory.Fs.closedir ()
             with Unix.Unix_error _ -> () end;
             raise e
           end

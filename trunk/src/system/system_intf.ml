@@ -18,7 +18,7 @@
 module type Core = sig
 
 type fspath
-type dir_handle
+type dir_handle = { readdir : unit -> string; closedir : unit -> unit }
 
 val symlink : string -> fspath -> unit
 val readlink : fspath -> string
@@ -32,8 +32,6 @@ val rename : fspath -> fspath -> unit
 val stat : fspath -> Unix.LargeFile.stats
 val lstat : fspath -> Unix.LargeFile.stats
 val opendir : fspath -> dir_handle
-val readdir : dir_handle -> string
-val closedir : dir_handle -> unit
 val openfile :
   fspath -> Unix.open_flag list -> Unix.file_perm -> Unix.file_descr
 
@@ -42,9 +40,9 @@ val openfile :
 val open_out_gen : open_flag list -> int -> fspath -> out_channel
 val open_in_bin : fspath -> in_channel
 val file_exists : fspath -> bool
+val fingerprint : fspath -> Digest.t
 
 (****)
-
 
 val canSetTime : fspath -> bool
 val hasInodeNumbers : unit -> bool
