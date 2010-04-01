@@ -1,5 +1,11 @@
 CHANGES FROM VERSION 2.40.16
 
+* Remove '.' entries in paths.; do not allow '..'.
+* Some clean-up
+
+-------------------------------
+CHANGES FROM VERSION 2.40.16
+
 * Fix Not_found error when no archives are found (recently introduced bug).
 
 -------------------------------

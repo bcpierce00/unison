@@ -675,9 +675,9 @@ let get_files_in_directory dir =
   let dirh = System.opendir dir in
   let files = ref [] in
   begin try
-    while true do files := System.readdir dirh :: !files done
+    while true do files := dirh.System.readdir () :: !files done
   with End_of_file ->
-    System.closedir dirh
+    dirh.System.closedir ()
   end;
   Sort.list (<) !files
 

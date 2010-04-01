@@ -34,7 +34,7 @@ let argv () = Sys.argv
 
 (****)
 
-type dir_handle = Unix.dir_handle
+type dir_handle = { readdir : unit -> string; closedir : unit -> unit }
 
 let stat = Unix.LargeFile.stat
 let lstat = Unix.LargeFile.lstat
@@ -49,7 +49,11 @@ let chown = Unix.chown
 let utimes = Unix.utimes
 let link = Unix.link
 let openfile = Unix.openfile
-let opendir = Unix.opendir
+let opendir f =
+  let h = Unix.opendir f in
+  { readdir = (fun () -> Unix.readdir h);
+    closedir = (fun () -> Unix.closedir h) }
+
 let readdir = Unix.readdir
 let closedir = Unix.closedir
 let readlink = Unix.readlink
@@ -107,3 +111,11 @@ let terminalStateFunctions () =
          Unix.tcsetattr Unix.stdin Unix.TCSANOW newState);
     startReading = (fun () -> ());
     stopReading = (fun () -> ()) }
+
+(****)
+
+let fingerprint f =
+  let ic = open_in_bin f in
+  let d = Digest.channel ic (-1) in
+  close_in ic;
+  d

@@ -146,6 +146,7 @@ let is_absolute s =
      loop "c:/foo" -> ["c:"; "foo"]
 *)
 let fromString str =
+  let str0 = str in
   let str = if Util.osType = `Win32 then Fileutil.backslashes2forwardslashes str else str in
   if is_absolute str then
     raise (Util.Transient
@@ -156,14 +157,25 @@ let fromString str =
     try
       let pos = String.index str pathSeparatorChar in
       let name1 = String.sub str 0 pos in
+      if name1 = ".." then
+        raise (Util.Transient
+                 (Printf.sprintf
+                    "Reference to parent directory '..' not allowed \
+                     in path '%s'" str0));
       let str_res =
         String.sub str (pos + 1) (String.length str - pos - 1) in
-      if pos = 0 then begin
+      if pos = 0 || name1 = "." then begin
         loop p str_res
       end else
         loop (child p (Name.fromString name1)) str_res
     with
-      Not_found -> child p (Name.fromString str)
+      Not_found ->
+        if str = ".." then
+          raise (Util.Transient
+                   (Printf.sprintf
+                      "Reference to parent directory '..' not allowed \
+                       in path '%s'" str0));
+        if str = "." then p else child p (Name.fromString str)
     | Invalid_argument _ ->
         raise(Invalid_argument "Path.fromString") in
   loop empty str

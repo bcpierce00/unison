@@ -703,7 +703,7 @@ let loadArchiveOnRoot: Common.root -> bool -> (int * string) option Lwt.t =
            (* If the archive is not in a stable state, we need to
               perform archive recovery.  So, the optimistic loading
               fails. *)
-           Sys.file_exists newArcName
+           System.file_exists (Os.fileInUnisonDir newArcName)
              ||
            let (lockFilename, _) = archiveName fspath Lock in
            let lockFile = Os.fileInUnisonDir lockFilename in
@@ -944,7 +944,7 @@ let doArchiveCrashRecovery () =
               "The archive file is missing on some hosts.";
               "For safety, the remaining copies should be deleted."]
              @ whatToDo @
-             ["Please delete archive files as appropriate and try again\n";
+             ["Please delete archive files as appropriate and try again";
              "or invoke Unison with -ignorearchives flag."]))))
   else begin
     foundArchives := false;

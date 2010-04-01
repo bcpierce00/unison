@@ -5,6 +5,4 @@
 
 include System_intf.Core with type fspath = Fspath.t
 
-val digestFile : Fspath.t -> string
-
 val setUnicodeEncoding : bool -> unit

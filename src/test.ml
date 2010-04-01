@@ -30,7 +30,7 @@ let rec remove_file_or_dir d =
     if s.Unix.LargeFile.st_kind = Unix.S_DIR then begin
       let handle = Fs.opendir d in
       let rec loop () =
-        let r = try Some(Fs.readdir handle) with End_of_file -> None in
+        let r = try Some(handle.Fs.readdir ()) with End_of_file -> None in
         match r with
         | Some f ->
             if f="." || f=".." then loop ()
@@ -39,7 +39,7 @@ let rec remove_file_or_dir d =
               loop ()
             end  
         | None ->
-            Fs.closedir handle;
+            handle.Fs.closedir ();
             Fs.rmdir d
       in loop ()
     end else 
@@ -88,13 +88,13 @@ let read_dir d =
   let d = Fs.opendir d in
   let rec do_read acc =
     try
-      (match (Fs.readdir d) with
+      (match (d.Fs.readdir ()) with
        | s when Safelist.mem s ignored -> do_read acc
        | f -> do_read (f :: acc))
     with End_of_file -> acc
   in
   let files = do_read [] in
-  Fs.closedir d;
+  d.Fs.closedir ();
   files
 
 let extend p file = Fspath.concat p (Path.fromString file)

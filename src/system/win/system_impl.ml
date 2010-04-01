@@ -35,7 +35,8 @@ module Fs = struct
   let fspathConcat v1 v2 = c2 W.fspathConcat G.fspathConcat v1 v2
   let fspathDirname v = c1 W.fspathDirname G.fspathDirname v
 
-  type dir_handle = Unix.dir_handle
+  type dir_handle = G.dir_handle
+                  = { readdir : unit -> string; closedir : unit -> unit }
 
   let symlink v1 v2 = c2 W.symlink G.symlink v1 v2
   let readlink v = c1 W.readlink G.readlink v
@@ -49,14 +50,13 @@ module Fs = struct
   let stat v = c1 W.stat G.stat v
   let lstat v = c1 W.lstat G.lstat v
   let opendir v = c1 W.opendir G.opendir v
-  let readdir v = c1 W.readdir G.readdir v
-  let closedir v = c1 W.closedir G.closedir v
   let openfile v1 v2 v3 = c3 W.openfile G.openfile v1 v2 v3
   let open_in_gen v1 v2 v3 = c3 W.open_in_gen G.open_in_gen v1 v2 v3
   let open_out_gen v1 v2 v3 = c3 W.open_out_gen G.open_out_gen v1 v2 v3
   let getcwd v = c1 W.getcwd G.getcwd v
   let chdir v = c1 W.chdir G.chdir v
   let readlink v = c1 W.readlink G.readlink v
+  let fingerprint v = c1 W.fingerprint G.fingerprint v
 
   let canSetTime v = c1 W.canSetTime G.canSetTime v
   let hasInodeNumbers v = c1 W.hasInodeNumbers G.hasInodeNumbers v

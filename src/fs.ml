@@ -19,6 +19,7 @@ module System = System_impl.Fs
 
 type fspath = Fspath.t
 type dir_handle = System.dir_handle
+                = { readdir : unit -> string; closedir : unit -> unit }
 
 let symlink l f = System.symlink l (Fspath.toString f)
 
@@ -44,11 +45,7 @@ let lstat f = System.lstat (Fspath.toString f)
 
 let openfile f flags perms = System.openfile (Fspath.toString f) flags perms
 
-let opendir f = System.opendir (Fspath.toString f)
-
-let readdir = System.readdir
-
-let closedir = System.closedir
+let opendir f : dir_handle = System.opendir (Fspath.toString f)
 
 let open_in_gen flags mode f =
   System.open_in_gen flags mode (Fspath.toString f)
@@ -68,11 +65,7 @@ let file_exists f =
 
 (****)
 
-let digestFile f =
-  let ic = open_in_bin f in
-  let d = Digest.channel ic (-1) in
-  close_in ic;
-  d
+let fingerprint f = System.fingerprint (Fspath.toString f)
 
 let canSetTime f = System.canSetTime (Fspath.toString f)
 let hasInodeNumbers () = System.hasInodeNumbers ()
