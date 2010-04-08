@@ -45,7 +45,7 @@ let lstat f = System.lstat (Fspath.toString f)
 
 let openfile f flags perms = System.openfile (Fspath.toString f) flags perms
 
-let opendir f : dir_handle = System.opendir (Fspath.toString f)
+let opendir f = System.opendir (Fspath.toString f)
 
 let open_in_gen flags mode f =
   System.open_in_gen flags mode (Fspath.toString f)

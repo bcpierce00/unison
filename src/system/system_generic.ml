@@ -51,7 +51,7 @@ let link = Unix.link
 let openfile = Unix.openfile
 let opendir f =
   let h = Unix.opendir f in
-  { readdir = (fun () -> Unix.readdir h);
+  { readdir =  (fun () -> Unix.readdir h);
     closedir = (fun () -> Unix.closedir h) }
 
 let readdir = Unix.readdir
