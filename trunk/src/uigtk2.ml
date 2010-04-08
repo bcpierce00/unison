@@ -3653,7 +3653,8 @@ lst_store#set ~row ~column:c_path path;
       grSet grRescan true;
       make_interactive toplevelWindow;
 
-      if failureCount + partialCount + skippedCount > 0 then begin
+      let totalCount = failureCount + partialCount + skippedCount in
+      if totalCount > 0 then begin
         let format n item sing plur =
           match n with
             0 -> []
@@ -3668,7 +3669,8 @@ lst_store#set ~row ~column:c_path path;
         let message =
           (if failureCount = 0 then "The synchronization was successful.\n\n"
            else "") ^
-          "The replicas are not fully synchronized.\nThere was" ^
+          "The replicas are not fully synchronized.\n" ^
+          (if totalCount < 2 then "There was" else "There were") ^
           begin match infos with
             [] -> assert false
           | [x] -> " " ^ x
