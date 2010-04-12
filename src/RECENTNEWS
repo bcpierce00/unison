@@ -1,5 +1,11 @@
 CHANGES FROM VERSION 2.40.16
 
+* Fixed bug in finding a different fspath suffix when a root path is a
+  suffix of the other (for instance: /foo and /archive/foo).
+
+-------------------------------
+CHANGES FROM VERSION 2.40.16
+
 * Compare filenames up to decomposition in case sensitive mode when
   one host is running MacOSX and the unicode preference is set to
   true.
