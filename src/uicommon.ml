@@ -434,6 +434,17 @@ let debug = Trace.debug "startup"
 
 (* ---- *)
 
+(*FIX: remove when Unison version > 2.40 *)
+let _ = Remote.registerRootCmd "unicodeCaseSensitive" (fun _ -> Lwt.return ())
+let supportUnicodeCaseSensitive () =
+  if Uutil.myMajorVersion > "2.40" (* The test is correct until 2.99... *) then
+    Lwt.return true
+  else begin
+    Globals.allRootsMap
+      (fun r -> Remote.commandAvailable r "unicodeCaseSensitive") >>= fun l ->
+    Lwt.return (List.for_all (fun x -> x) l)
+  end
+
 (* Determine the case sensitivity of a root (does filename FOO==foo?) *)
 let architecture =
   Remote.registerRootCmd
@@ -446,7 +457,9 @@ let architecture =
    Windows (needed for permissions) and does some sanity checking. *) 
 let validateAndFixupPrefs () =
   Props.validatePrefs();
+  let supportUnicodeCaseSensitive = supportUnicodeCaseSensitive () in
   Globals.allRootsMap (fun r -> architecture r ()) >>= (fun archs ->
+  supportUnicodeCaseSensitive >>= fun unicodeCS ->
   let someHostIsRunningWindows =
     Safelist.exists (fun (isWin, _, _) -> isWin) archs in
   let allHostsAreRunningWindows =
@@ -464,7 +477,7 @@ let validateAndFixupPrefs () =
     Prefs.overrideDefault Fileinfo.allowSymlinks `False;
     Prefs.overrideDefault Fileinfo.ignoreInodeNumbers true
   end;
-  Case.init someHostIsCaseInsensitive;
+  Case.init someHostIsCaseInsensitive (someHostRunningOsX && unicodeCS);
   Props.init someHostIsRunningWindows;
   Osx.init someHostRunningOsX;
   Fileinfo.init someHostIsRunningBareWindows;

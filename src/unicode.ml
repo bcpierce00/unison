@@ -849,7 +849,7 @@ let rec norm s i l s' j =
   if i < l then begin
     let c = get s i in
     if c < 0x80 then begin
-      set s' j (get ascii_lower c);
+      set s' j (get norm_ascii c);
       norm s (i + 1) l s' (j + 1)
     end else if c < 0xE0 then begin
       (* 80 - 7FF *)
@@ -942,6 +942,99 @@ let normalize s =
 
 (****)
 
+let rec decomp s i l s' j =
+  if i < l then begin
+    let c = get s i in
+    if c < 0x80 then begin
+      set s' j (get decomp_ascii c);
+      decomp s (i + 1) l s' (j + 1)
+    end else if c < 0xE0 then begin
+      (* 80 - 7FF *)
+      if c < 0xc2 || i + 1 >= l then raise Invalid;
+      let c1 = get s (i + 1) in
+      if c1 land 0xc0 <> 0x80 then raise Invalid;
+      let idx = get decomp_prim (c - 0xc0) in
+      let idx = idx lsl 6 + c1 - 0x80 in
+      let k = get decomp_second_high idx in
+      if k = 0 then begin
+        set s' j c;
+        set s' (j + 1) c1;
+        decomp s (i + 2) l s' (j + 2)
+      end else begin
+        let k = (k - 2) lsl 8 + get decomp_second_low idx in
+        let n = get decomp_repl k in
+        String.blit decomp_repl (k + 1) s' j n;
+        decomp s (i + 2) l s' (j + n)
+      end
+    end else if c < 0xF0 then begin
+      (* 800 - FFFF *)
+      if i + 2 >= l then raise Invalid;
+      let c1 = get s (i + 1) in
+      if c1 land 0xc0 <> 0x80 then raise Invalid;
+      let idx = c lsl 6 + c1 - 0x3880 in
+      if idx < 0x20 then raise Invalid;
+      let c2 = get s (i + 2) in
+      if c2 land 0xc0 <> 0x80 then raise Invalid;
+      let idx = get decomp_prim idx in
+      let idx = idx lsl 6 + c2 - 0x80 in
+      let k = get decomp_second_high idx in
+      if k = 0 then begin
+        set s' j c;
+        set s' (j + 1) c1;
+        set s' (j + 2) c2;
+        decomp s (i + 3) l s' (j + 3)
+      end else if k = 1 then begin
+        let v = c lsl 12 + c1 lsl 6 + c2 - (0x000E2080 + hangul_sbase) in
+        if v >= hangul_scount then begin
+          set s' j c;
+          set s' (j + 1) c1;
+          set s' (j + 2) c2;
+          decomp s (i + 3) l s' (j + 3)
+        end else begin
+          set_char_3 s' j (v / hangul_ncount + hangul_lbase);
+          set_char_3 s' (j + 3)
+            ((v mod hangul_ncount) / hangul_tcount + hangul_vbase);
+          if v mod hangul_tcount = 0 then
+            decomp s (i + 3) l s' (j + 6)
+          else begin
+            set_char_3 s' (j + 6) ((v mod hangul_tcount) + hangul_tbase);
+            decomp s (i + 3) l s' (j + 9)
+          end
+        end
+      end else begin
+        let k = (k - 2) lsl 8 + get decomp_second_low idx in
+        let n = get decomp_repl k in
+        String.blit decomp_repl (k + 1) s' j n;
+        decomp s (i + 3) l s' (j + n)
+      end
+    end else begin
+      (* 10000 - 10FFFF *)
+      if i + 3 >= l then raise Invalid;
+      let c1 = get s (i + 1) in
+      let c2 = get s (i + 2) in
+      let c3 = get s (i + 3) in
+      if (c1 lor c2 lor c3) land 0xc0 <> 0x80 then raise Invalid;
+      let v = c lsl 18 + c1 lsl 12 + c2 lsl 6 + c3 - 0x03c82080 in
+      if v < 0x10000 || v > 0x10ffff then raise Invalid;
+      set s' j c;
+      set s' (j + 1) c1;
+      set s' (j + 2) c2;
+      set s' (j + 3) c3;
+      decomp s (i + 4) l s' (j + 4)
+    end
+  end else
+    String.sub s' 0 j
+
+let decompose s =
+  let l = String.length s in
+  let s' = String.create (3 * l) in
+  try
+    let s' = decomp s 0 l s' 0 in order s'; s'
+  with Invalid ->
+    s
+
+(****)
+
 let rec compare_rec s s' i l =
   if i = l then begin
     if l < String.length s then 1 else
@@ -951,13 +1044,33 @@ let rec compare_rec s s' i l =
     let c = get s i in
     let c' = get s' i in
     if c < 0x80 && c' < 0x80 then begin
-      let v = compare (get ascii_lower c) (get ascii_lower c') in
+      let v = compare (get norm_ascii c) (get norm_ascii c') in
       if v <> 0 then v else compare_rec s s' (i + 1) l
     end else
       compare (normalize s) (normalize s')
   end
 
-let compare s s' =
+let case_insensitive_compare s s' =
+  compare_rec s s' 0 (min (String.length s) (String.length s'))
+
+(****)
+
+let rec compare_cs_rec s s' i l =
+  if i = l then begin
+    if l < String.length s then 1 else
+    if l < String.length s' then -1 else
+    0
+  end else begin
+    let c = get s i in
+    let c' = get s' i in
+    if c < 0x80 && c' < 0x80 then begin
+      let v = compare c c' in
+      if v <> 0 then v else compare_cs_rec s s' (i + 1) l
+    end else
+      compare s s'
+  end
+
+let case_sensitive_compare s s' =
   compare_rec s s' 0 (min (String.length s) (String.length s'))
 
 (****)

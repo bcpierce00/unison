@@ -1,5 +1,13 @@
 CHANGES FROM VERSION 2.40.16
 
+* Compare filenames up to decomposition in case sensitive mode when
+  one host is running MacOSX and the unicode preference is set to
+  true.
+* Fixed some non-tail recursive functions
+
+-------------------------------
+CHANGES FROM VERSION 2.40.16
+
 * GTK UI: typo
 * Fixed Makefile for compilation under Solaris
 

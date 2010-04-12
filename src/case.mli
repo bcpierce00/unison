@@ -5,7 +5,7 @@ val caseInsensitiveMode : [`True|`False|`Default] Prefs.t
 val unicodeEncoding : bool Prefs.t
 val useUnicodeAPI : unit -> bool
 
-type mode = Sensitive | Insensitive | UnicodeInsensitive
+type mode = Sensitive | Insensitive | UnicodeSensitive | UnicodeInsensitive
 
 val ops : unit ->
   < mode : mode; modeDesc : string;       (* Current mode *)
@@ -25,6 +25,6 @@ val ops : unit ->
     badEncoding : string -> bool >        (* Test whether the string uses
                                              the correct encoding *)
 
-val init : bool -> unit
+val init : bool -> bool -> unit
 
 val caseSensitiveModeDesc : string

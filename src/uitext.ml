@@ -163,14 +163,18 @@ let rec selectAction batch actions tryagain =
          actions;
        tryagainOrLoop())
     else
-      try find a actions () with Not_found ->
-        newLine ();
-        if a="" then
-          display ("No default command [type '?' for help]\n")
-        else
-          display ("Unrecognized command '" ^ String.escaped a
-                   ^ "': try again  [type '?' for help]\n");
-        tryagainOrLoop()
+      let action = try Some (find a actions) with Not_found -> None in
+      match action with
+        Some action ->
+          action ()
+      | None ->
+          newLine ();
+          if a="" then
+            display ("No default command [type '?' for help]\n")
+          else
+            display ("Unrecognized command '" ^ String.escaped a
+                     ^ "': try again  [type '?' for help]\n");
+          tryagainOrLoop()
   in
   doAction (match batch with
     None   ->
