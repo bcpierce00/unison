@@ -65,14 +65,15 @@ let differentSuffix (Fspath f1) (Fspath f2) =
       (* differ                                                              *)
       let rec loop n =
         let i1 = len1-n in
-        if i1<0 then n+1 else
+        if i1<0 then n else
         let i2 = len2-n in
-        if i2<0 then n+1 else
+        if i2<0 then n else
         if compare (String.get f1 i1) (String.get f2 i2) = 0
         then loop (n+1)
         else n in
       loop 1 in
     let suffix f len =
+      if n > len then f else
       try
         let n' = String.rindex_from f (len-n) '/' in
         String.sub f (n'+1) (len-n'-1)
