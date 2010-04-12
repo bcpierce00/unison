@@ -63,7 +63,7 @@ let useUnicode () =
 let useUnicodeAPI = useUnicode
 
 let unicodeCaseSensitive =
-  Prefs.createBool "unicodeEnc" ~local:true false
+  Prefs.createBool "unicodeCS" ~local:true false
     "*Pseudo-preference for internal use only" ""
 
 (* During startup the client determines the case sensitivity of each root.   *)

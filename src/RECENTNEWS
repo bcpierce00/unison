@@ -1,5 +1,10 @@
 CHANGES FROM VERSION 2.40.16
 
+* Fixed bug introduced in revision 429
+
+-------------------------------
+CHANGES FROM VERSION 2.40.16
+
 * Fixed bug in finding a different fspath suffix when a root path is a
   suffix of the other (for instance: /foo and /archive/foo).
 
