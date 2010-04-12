@@ -6,10 +6,17 @@ exception Invalid
 (* Case-insensitive comparison.  If two strings are equal according to
    Mac OS X (Darwin, actually, but the algorithm has hopefully
    remained unchanged) or Windows (Samba), then this function returns 0 *)
-val compare : string -> string -> int
+val case_insensitive_compare : string -> string -> int
 
 (* Corresponding normalization *)
 val normalize : string -> string
+
+(* Case-sensitive comparison (but up to decomposition). *)
+val case_sensitive_compare : string -> string -> int
+
+(* Compose Unicode strings.  This is the decomposition performed
+   by Mac OS X. *)
+val decompose : string -> string
 
 (* Compose Unicode strings.  This reverts the decomposition performed
    by Mac OS X. *)

@@ -45,8 +45,12 @@ let unicode =
     "When set to {\\tt true}, this flag causes Unison to perform \
      case insensitive file comparisons assuming Unicode encoding.  \
      This is the default.  When the flag is set to {\\tt false}, \
-     a Latin 1 encoding is assumed.  This flag has no effect when \
-     Unison runs in case sensitive mode."
+     a Latin 1 encoding is assumed.  When Unison runs in case sensitive \
+     mode, this flag only makes a difference if one host is running \
+     Windows or Mac OS X.  Under Windows, the flag selects between using \
+     the Unicode or 8bit Windows API for accessing the filesystem. \
+     Under Mac OS X, it selects whether comparing the filenames up to \
+     decomposition, or byte-for-byte."
 
 let unicodeEncoding =
   Prefs.createBool "unicodeEnc" false
@@ -58,14 +62,19 @@ let useUnicode () =
 
 let useUnicodeAPI = useUnicode
 
+let unicodeCaseSensitive =
+  Prefs.createBool "unicodeEnc" ~local:true false
+    "*Pseudo-preference for internal use only" ""
+
 (* During startup the client determines the case sensitivity of each root.   *)
 (* If any root is case insensitive, all roots must know it; we ensure this   *)
 (* by storing the information in a pref so that it is propagated to the      *)
 (* server with the rest of the prefs.                                        *)
-let init b =
+let init b someHostRunningOsX =
   Prefs.set someHostIsInsensitive
     (Prefs.read caseInsensitiveMode = `True ||
      (Prefs.read caseInsensitiveMode = `Default && b));
+  Prefs.set unicodeCaseSensitive (useUnicode () && someHostRunningOsX);
   Prefs.set unicodeEncoding (useUnicode ())
 
 (****)
@@ -116,7 +125,7 @@ let rmTrailDots s =
 
 (****)
 
-type mode = Sensitive | Insensitive | UnicodeInsensitive
+type mode = Sensitive | Insensitive | UnicodeSensitive | UnicodeInsensitive
 
 (*
 Important invariant:
@@ -151,10 +160,22 @@ let insensitiveOps = object
   method badEncoding s = false
 end
 
+let unicodeSensitiveOps = object
+  method mode = UnicodeSensitive
+  method modeDesc = "Unicode case sensitive"
+  method compare s s' = Unicode.case_sensitive_compare s s'
+  method hash s = Hashtbl.hash (Unicode.decompose s)
+  method normalizePattern p = Unicode.decompose p
+  method caseInsensitiveMatch = false
+  method normalizeMatchedString s = Unicode.decompose s
+  method normalizeFilename s = Unicode.compose s
+  method badEncoding s = not (Unicode.check_utf_8 s)
+end
+
 let unicodeInsensitiveOps = object
   method mode = UnicodeInsensitive
   method modeDesc = "Unicode case insensitive"
-  method compare s s' = Unicode.compare s s'
+  method compare s s' = Unicode.case_insensitive_compare s s'
   method hash s = Hashtbl.hash (Unicode.normalize s)
   method normalizePattern p = Unicode.normalize p
   method caseInsensitiveMatch = false
@@ -171,6 +192,9 @@ let ops () =
     else
       insensitiveOps
   end else
-    sensitiveOps
+    if Prefs.read unicodeCaseSensitive then
+      unicodeSensitiveOps
+    else
+      sensitiveOps
 
 let caseSensitiveModeDesc = sensitiveOps#modeDesc

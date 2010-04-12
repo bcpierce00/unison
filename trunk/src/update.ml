@@ -576,6 +576,7 @@ let makeCaseSensitiveOnRoot =
        makeCaseSensitive (thisRootsGlobalName fspath);
        Lwt.return ())
 
+(*FIX: remove when Unison version > 2.40 *)
 let canMakeCaseSensitive () =
   Globals.allRootsMap (fun r -> Remote.commandAvailable r "makeCaseSensitive")
     >>= fun l ->
