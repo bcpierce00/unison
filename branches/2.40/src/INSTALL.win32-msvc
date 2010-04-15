@@ -1,0 +1,512 @@
+Installation notes to build Unison on Windows systems, with Visual C++
+
+[The following instructions were tested for Unison 2.9.1 on a Windows
+2000 machine running OCaml 3.04 -- that was a long time ago, so there
+may be some discrepancies with current versions of things.  If you
+notice any, please send a correction to unison-users@yahoogroups.com.]
+
+Contents
+
+1.Setting up the Windows system
+  1.1 General requirements
+  1.2 A Unix-like layer: CygWin
+  1.3 Visual C++
+  1.4 The OCaml compiler
+2.Compiling Unison
+  2.1 Text user interface
+  2.2 Tk user interface
+  2.3 Gtk user interface
+3.Using new public versions of Tk/Gtk/LablGtk
+  3.1 Using a new version of Tcl/Tk
+  3.2 Patching a new version of Gtk
+  3.3 Patching a new version of LablGtk
+  3.4 Making patches from the public sources
+Appendix
+  A.Windows text format
+  B.'.bashrc'
+  C.Windows files and directories names
+  D.Windows icons
+
+
+
+Section 1 - Setting up the Windows system
+
+
+1.1 General requirements
+
+  We will assume your are logged in as a regular user. We will mention cases 
+when you need to be granted administrator permissions.
+
+  We will work in your home directory.
+
+  For a complete installation from scratch, you will need about 300 Mb.
+
+  CygWin, a Unix-like layer, is needed to be able to use GNU tools
+like 'bash', 'make', 'sed', 'patch', etc.
+
+  The native Win32 port of OCaml distribution version 3.04 is required.
+It itself requires Visual C++ 6.0.
+
+1.2 A Unix-like layer: CygWin
+
+  Download CygWin from 'http://www.cygwin.com/': 
+* click "install cygwin now" and follow the instruction to set up cygwin.
+  install the essential packages such as "make", "fileutil", "openssh", etc.
+  set the root directory (e.g. 'd:\cygwin')
+
+  Setup 'bash':
+* click on 'bash'.
+* enter 'export HOME=/home/<username>', make the directory, then 'cd'.
+* create a '.bashrc' in CygWin's root directory to suit your
+  needs (see Appendix B for an example).
+* check the environment variable OSTYPE with 'echo $OSTYPE'.  If the result is
+  not 'cygwin' or 'cygwin20', then add 'export OSTYPE=cygwin' to the
+  '.bashrc' file.  This variable helps the unison Makefile (project
+  file) to understand that we are compiling under Windows platform.
+
+  Remember you can access the whole Windows filesystem with a Unix
+path through '/cygdrive/<drive letter>/<path>' (e.g. '/cygdrive/c/winnt' 
+stands for 'C:\WinNT')
+
+
+1.3 Visual C++
+
+  Run the installation program from the CD with Administrator
+permissions. We only need Visual C++ and MsDN is not required.
+
+  To check out your installation, use 'bash' to enter 'cl /?'.
+
+  If something goes wrong :
+* your path must contain the Visual C++ 'bin' directory; you may have to 
+  enter something like 
+  'export PATH=$PATH:/cygdrive/progra~1/micros~1/vc98/bin'.
+* your path must contain the Visual Studio '.dll' files' directory; you may
+  have to enter something like 
+  'export PATH=$PATH:/cygdrive/progra~1/micros~1/common/msdev98/bin'.
+* the Visual C++ compiler must be able to access the headers; you may have to
+  enter something like 'export INCLUDE='C:\progra~1\micros~1\vc98\include'' 
+  (path between single quotes).
+* the Visual C++ linker must be able to access the libraries; you may have to
+  enter something like 'export LIB='C:\progra~1\micros~1\vc98\lib'' (path 
+  between single quotes).
+
+
+1.4 The OCaml compiler
+
+  Download the Native Win32 port of OCaml 3.04 from 
+'http://caml.inria.fr/ocaml/distrib.html'.  It's a self-extracting binary.
+
+  Run it with Administrator permissions (only use 8 characters-long
+names in the installation directory).
+
+  To check out your installation, use 'bash' to enter 'ocamlc -v'.
+
+  If something goes wrong :
+* your path must contain the OCaml 'bin' directory;  you may have to enter 
+  something like 'export PATH=$PATH:/cygdrive/c/ocaml/bin'.
+* 'ocamlc -v' must report the OCaml 'lib' directory; you may have to enter
+  something like "export CAMLLIB='C:\ocaml\lib'" (path between single 
+  quotes).
+
+1.5  Microsoft Macro Assembler (MASM32)
+
+Download MASM32 from http://www.masm32.com/masmdl.htm, unzip and install
+it. Add the MASM32 bin directory (e.g. C:\masm32\bin) to your Path. Test
+the assembler with
+
+  ml
+
+Your shell should answer with
+
+  Microsoft (R) Macro Assembler Version 6.14.8444
+  Copyright (C) Microsoft Corp 1981-1997.  All rights reserved.
+
+  usage: ML [ options ] filelist [ /link linkoptions]
+  Run "ML /help" or "ML /?" for more info
+
+
+Section 2 - Compiling Unison
+ 
+
+2.1 Text user interface
+
+  Unpack the Unison sources.
+
+  Using 'bash', enter 'make clean', then 'make UISTYLE=text' to compile.
+
+  If something goes wrong :
+* if 'make' reports 'missing separator', be sure the makefiles are in
+  Unix text format (see Appendix A).
+* if .depend is not provided, create one using 
+  'ocamldep *.mli *.ml > .depend'; you will have to convert this file
+  to Unix text format (see Appendix A).
+* the minor 'etags' error is reported when 'emacs' is missing; you may
+  want to install it.
+
+2.2 Gtk user interface
+
+  You need the Gtk libraries (already installed if you got the Tcl/Tk
+libraries). Get the 'guilib.tar.gz' tarball from the 'resources'
+directory of the Unison web site and unpack it in your Ocaml 'lib'
+directory. This will create a 'guilib' directory containing the
+libraries.
+
+  Now you need the LablGtk extension to OCaml. 
+  First, the Gtk development package is required. Get the
+'wingtk.patched.tar.gz' tarball from the 'resources' directory of the
+Unison web site and unpack it. This will create a 'wingtk' directory.
+
+  Now, get the 'lablgtk-1.2.3-msvc-static.tar.gz' tarball from the
+'resources' directory of the Unison web site and unpack it somewhere
+(a building location, just for the compilation).  This will create a
+'lablgtk-1.2.3-static' directory. Edit the 'config.make.nt' file to
+set up the access path to your OCaml 'lib' directory and to the
+'wingtk' directory you created in the previous step.  In
+'lablgtk-1.2.3-static/src', run 'nmake -f Makefile.nt'. If you can use
+the OCaml native-code compiler, run 'nmake -f Makefile.nt opt' too. If
+you can't, you probably need the MASM assembler, also available in the
+'resources' directory of the Unison web site.  If everything goes
+well, run 'nmake -f Makefile.nt install' to install the software.  You
+may want to remove the compilation directory 'lablgtk-1.2.3-static'.
+
+  Using 'bash' in the Unison sources directory, enter 'make clean'
+then 'make UISTYLE=gtk'.
+
+  Run 'unison.exe' with the Gtk .dll's in your search path (they can
+be found in the 'guilib' directory), unless you built with the
+NATIVE=true option.
+
+  "unison.exe" built with NATIVE=true option is statically linked.
+This means that the executable doesn't refer to Cygwin and Gtk DLLs,
+and can therefore be distributed as a standalone application.
+
+
+Section 3 - Using new public versions of Tk/Gtk/LablGtk
+
+3.1 Patching a new version of Gtk
+
+  Download the 'wingtk.patch.tar.gz' tarball from the 'resources'
+directory of the Unison web site and unpack it. Follow the
+instructions in the 'README.patch' file to download the Gtk sources,
+to patch them and to build the new static and dynamic libraries.
+
+  Important: if a patch fails for any reason, try to apply the patches on a
+             Unix system.
+
+  Copy those new libraries to your 'ocaml/lib/guilib' directory, along
+with the .dll's (dynamic version).
+
+  Using the new version of 'wingtk', recompile LablGtk (see section 2.3).
+  
+
+3.2 Patching a new version of LablGtk
+
+   Download lablgtk-1.2.3.tar.gz from the LablGtk homepage
+<http://wwwfun.kurims.kyoto-u.ac.jp/soft/olabl/lablgtk.html>.  Unpack
+it.
+
+  Download the 'lablgtk-1.2.3-msvc-static.patch.gz' from the 'resources'
+directory of the Unison web site. Apply the patch by typing: 
+  'patch < lablgtk.patch'
+above the 'lablgtk' directory.
+
+  Important: if a patch fails for any reason, try to apply the patches on a
+             Unix system.
+
+
+3.3 Making patches from the public sources
+
+  The way from public Gtk/LablGtk sources to the provided Gtk/LablGtk
+dynamic/static extension has been somehow perilous. We strongly
+recommand using the provided sources and patches as a base for your
+further enhancements.
+
+  To be exhaustive, here are the steps followed to create the provided
+sources (hoping it would help when trying to adapt a new version):  
+
+  WinGtk: 
+
+* Download the Gtk win32 sources from
+  'http://www.gimp.org/~tml/gimp/win32//downloads.html'. We need
+  'glib-src-yyyymmdd' and 'gtk+-src-yyyymmdd' where 'yyyymmdd' is the
+  release date. Version 2000/04/16 of these files was used.  
+
+* We will make new Windows Makefiles from the old ones. Here is how to
+  convert a Makefile:
+  - change all '/MD' to '/MT' to use the same windows system 
+    libraries than ocaml
+    (e.g. 'OPTIMIZE = -Ox -MD' becomes 'OPTIMIZE = -Ox -MT')
+  - turns all '.dll' targets to '.lib' ones using
+    'MKLIB = lib /nologo /out:'
+    you must remove all references to '.def' files
+    you must remove all references to other '.lib' and '.res' but 
+    you will have to provide them when linking an executable later
+    (e.g. 
+     glib-$(GLIB_VER).dll : $(glib_OBJECTS) glib.def
+	$(CC) $(CFLAGS) -LD -Feglib-$(GLIB_VER).dll $(glib_OBJECTS) \
+        user32.lib advapi32.lib wsock32.lib $(LDFLAGS) /def:glib.def
+     becomes:
+     glib-$(GLIB_VER).lib : $(glib_OBJECTS)
+	$(MKLIB)glib-$(GLIB_VER).lib $(glib_OBJECTS)
+     )
+  - remove all '-GD' compilation flags
+    (e.g.
+     .c.obj :
+	$(CC) $(CFLAGS) -GD -c -DGLIB_COMPILATION \
+        -DG_LOG_DOMAIN=g_log_domain_glib $<
+     becomes:
+     .c.obj :
+	$(CC) $(CFLAGS)     -c -DGLIB_COMPILATION \
+        -DG_LOG_DOMAIN=g_log_domain_glib $<
+     )
+  - provides the right libraries when linking executables
+    (e.g.
+     testgtk.exe : gtk-$(GTK_VER).dll testgtk.obj
+	$(CC) $(CFLAGS) testgtk.obj gtk-$(GTK_VER).lib \
+        ..\gdk\gdk-$(GTK_VER).lib $(GLIB)\glib-$(GLIB_VER).lib \
+        $(LDFLAGS)
+     becomes: 
+     testgtk.exe : gtk-$(GTK_VER).lib testgtk.obj
+	$(CC) $(CFLAGS) testgtk.obj gtk-$(GTK_VER).lib \
+        ..\gdk\gdk-$(GTK_VER).lib ..\gdk\win32\gdk-win32.lib \
+        $(GLIB)\glib-$(GLIB_VER).lib $(GLIB)\gmodule-$(GLIB_VER).lib \
+        user32.lib advapi32.lib wsock32.lib gdi32.lib imm32.lib \
+        shell32.lib ole32.lib ../gdk/win32/gdk.res $(LDFLAGS)
+     )
+
+* Convert 'glib/makefile.msc' and remove all references to the
+  'gthread' and 'pthread' directories and libraries from it (but keep
+  'gthread.obj').
+
+* Erase the 'gthread' directory.
+
+* Comment out the '#include <psapi.h>' line in
+  'glib/gmodule/gmodule-win32.c'.
+
+* You should now be able to compile the 'glib' and 'gmodule' libraries
+  by typing 'nmake -f <new makefile>'. You can test it with 'testglib'
+  and the other test programs. Remember to provide those two libraries
+  when linking programs.
+
+* In 'gtk+/config.h.win32', undefine the following variables by
+  commenting out their definition lines:
+  HAVE_WINTAB, ENABLE_NLS, HAVE_GETTEXT, HAVE_LIBINTL
+
+* Convert 'gtk+/gdk/win32/makefile.msc' and remove all references to
+  'WTKIT', 'wntab32x', 'INTL' and 'gnu-intl' from it.
+
+* In 'gtk+/gdk/win32/rc/gdk.rc', comment out ',BUILDNUMBER'.
+
+* In 'gtk+/gdk/win32/gdkcursor-win32.c', replace 'gdk_DLLInstance' by
+  'gdk_ProgInstance'.
+
+* You should now be able to compile 'gdk-win32.lib'.
+
+* Convert 'gtk+/gdk/makefile.msc' and remove all references to
+  'WTKIT', 'wntab32x', 'INTL' and 'gnu-intl' from it. Include
+  'gdk-win32.lib' as an object for the 'gdk' library.
+ 
+* You should now be able to compile the 'gdk' library. Remember to
+  provide 'win32/gdk.res' as well as the 'gdk' library when linking
+  programs.
+
+* Convert 'gtk+/gtk/makefile.msc' and remove all references to
+  'WTKIT', 'wntab32x', 'INTL', 'gnu-intl' and 'PTHREAD' from it.
+
+* Be sure to include all needed libraries in the '.exe' files' compilation
+  command lines.
+  In most case you need the following:
+  gtk-$(GTK_VER).lib ..\gdk\gdk-$(GTK_VER).lib \
+  $(GLIB)\glib-$(GLIB_VER).lib $(GLIB)\gmodule-$(GLIB_VER).lib \
+  user32.lib advapi32.lib wsock32.lib gdi32.lib imm32.lib shell32.lib \
+  ole32.lib \
+  ../gdk/win32/gdk.res
+
+* You should now be able to compile the 'gtk' library. You can test it
+  with 'testglib' and the other test programs.
+
+* With some cleaning of the Makefiles, it is also possible to build a
+  dynamic version of the libraries, along with the .dll's, so that we
+  finally obtain static/dynamic sources.
+
+* Make a patch with 'diff -Nr -C 5 <old dir> <new dir>' (you have to
+  use the GNU diffutils' 'diff'). You will apply the patch with 
+  'patch -p1 < <patch file>'.
+
+  LablGtk:
+
+* Download LablGtk from 'http://www.gtk.org' or
+  'ftp://ftp.inria.fr/lang/caml-light/bazar-ocaml/'.
+
+* You can remove all subdirectories.
+
+* Edit 'config.make.nt' to include the right Gtk libraries.
+
+* Comment out all references to 'gutter' to be found in the sources
+  with 'grep gutter *.h *.c *.mli *.ml'.
+
+* Compile with 'nmake -f Makefile.nt'. If you can use the OCaml
+  native-code compiler, run 'nmake -f Makefile.nt opt' too. If you
+  can't, you probably need the MASM assembler. It was downloaded from
+  'http://www.cs.uu.nl/wais/html/na-dir/assembly-language/x86/microsoft.html'.
+
+* Make a patch as for WinGtk.
+
+
+
+Appendix A - Windows text format
+
+Windows and Unix use different text file formats. This section
+explains how to convert a file from a format to another.
+
+A.1 Text format conversion
+  
+  In order to convert a dos text file to a unix text file, we have to
+remove all extra characters that are : 
+* carriage return or CR  or ^M (ctrl-M) or \x0d or \o13 or \r 
+* dos end-of-file or SUB or ^Z (ctrl-Z) or \x1a or \o26
+
+A.2 Conversion tools 
+
+  On a Unix-like top level (e.g any unix system or cygwin), you can use:
+
+* dos -> unix
+  - tr -d '\15\32' < dosfile.txt > unixfile.txt
+  - awk '{ sub("\r$", ""); print }' dosfile.txt > unixfile.txt
+  - perl -p -e 's/\r$//' < dosfile.txt > unixfile.txt
+
+* unix -> dos
+  - awk 'sub("$", "\r")' unixfile.txt > dosfile.txt
+  - perl -p -e 's/$/\r/' < unixfile.txt > dosfile.txt
+
+  You may want to use a short script like the following to convert
+more than one file at a time (doesn't work recursively; use at your
+own risk):
+
+  #!/bin/sh
+  echo dos2unix
+  for F in "$@"
+  do
+    echo converting "$F"
+    tr -d '\15\32' < $F > $F.tmp
+    mv -f $F.tmp $F
+  done
+
+A.3 Transmission issues
+
+  If you transfer files using 'ftp' between a Unix system and a
+Windows system, be sure to run it in binary mode to disable any
+automatic conversion. To switch to binary mode, enter 'binary' (or
+simply 'bin').
+
+
+
+Appendix B - '.bashrc'.
+
+  Copy the following '.bashrc' as a base to your own one. Be sure this
+file is in Unix text format.
+
+# .bashrc
+# gommier@saul.cis.upenn.edu
+
+export HOME=/
+export PS1="[\u@\h \w]$ "
+cd
+
+# Set up Path
+# $PATH currently contains the Windows Path converted to Unix path,
+export PATH=./:/bin:$PATH
+echo "Current path is :"
+echo $PATH
+echo " "
+
+# end
+
+
+
+Appendix C - Windows files and directories names
+
+  Here are some general rules for applications creating names for
+directories and files or processing names supplied by the user:
+
+* Use any character in the current code page for a name, but do not
+  use a path separator, a character in the range 0 through 31, or any
+  character explicitly disallowed by the file system. A name can
+  contain characters in the extended character set (128-255).
+
+* Use the backslash (\), the forward slash (/), or both to separate
+  components in a path.  No other character is acceptable as a path
+  separator. Note that UNC names must adhere to the following format:
+  \\server\share.
+
+* Use a period (.) as a directory component in a path to represent the
+  current directory.
+
+* Use two consecutive periods (..) as a directory component in a path
+  to represent the parent of the current directory.
+
+* Use a period (.) to separate the base file name from the extension
+  in a directory name or file name.
+
+* Do not use the following characters in directory names or file
+  names, because they are reserved: < > : " / \ |
+
+* Do not use device names, such as aux, con, lpt1, and prn, as file
+  names or directory names.
+
+* Process a path as a null-terminated string. The maximum length for a
+  path, including a trailing backslash, is given by MAX_PATH.
+
+* The Unicode versions of several functions permit paths that exceed
+  the MAX_PATH length if the path has the "\\?\" prefix. The "\\?\"
+  tells the function to turn off path parsing. However, each component
+  in the path cannot be more than MAX_PATH characters long. Use the
+  "\\?\" prefix with paths for local storage devices and the
+  "\\?\UNC\" prefix with paths having the Universal Naming Convention
+  (UNC) format. The "\\?\" is ignored as part of the path. For
+  example, "\\?\C:\myworld\private" is seen as "C:\myworld\private",
+  and "\\?\UNC\bill_g_1\hotstuff\coolapps" is seen as
+  "\\bill_g_1\hotstuff\coolapps".
+
+* Do not assume case sensitivity. Consider names such as OSCAR, Oscar,
+  and oscar to be the same.
+
+
+
+Appendix D - Windows icons
+
+  Here are some general informations on how to make your Windows
+program have a nice icon.
+
+* What we mean by icon is a set of bitmaps that are displayed by
+  Windows to represent your program on the desktop, on the top left
+  corner of each window, etc. For your program's binary to include an
+  icon, you will have to draw each bitmap and to store them in .bmp
+  files, then to archive them in a .ico file, then to archive that
+  icon file in a .res file along with other resources, and finally to
+  link your program with that very .res file.
+
+* Current graphic formats for icons are 16 x 16, 32 x 32 and 48 x 48
+  pixels with 16 or 256 colors. One format must always exist for
+  compatibility with all Windows versions: the 32 x 32 x 16 format.
+  Furthermore, the colors refer to the standard palette (sometimes
+  called www palette), which means you mustn't use optimized palette
+  when turning RGB colors to indexed colors. If you need subtle nuances,
+  remember you can interleave pixels of two different colors to create
+  the impression of a third, average one.
+
+* Once your bitmaps are ready, you can use the Visual C++ IDE to create
+  your .ico file. Use the resource tool bar to create a 'new icon'.
+  Open your .bmp files and simply cut and paste them into the icon
+  window. You have to select the proper device (or format) for each
+  bitmap before achieving the copy. When your icon (i.e. set of bitmaps)
+  is ready, right-click on the icon name in the resource list window to
+  export it.
+  Note: you should never trust that IDE when dealing with colors, since
+        it seems to get quickly lost between 16 or 256 colors.
+
+* To include your icon into a resource file, add a line for it into the
+  .rc script file and compile with rc to create the .res file.
+
+* Just add the .res file to the link command line to have your binary
+  include the icon.
