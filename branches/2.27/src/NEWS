@@ -1,5 +1,50 @@
 
-Changes in Version 2.27.149
+Changes in Version 2.27.157
+
+   Changes since 2.27.57:
+     * Ignore one hour differences for deciding whether a file may have
+       been updated. This avoids slow update detection after daylight
+       saving time changes under Windows. This makes it slightly more
+       likely to miss an update, but that should be safe enough.
+     * Improved Unison icon under Windows
+     * Case sensitivity information put in the archive (in a backward
+       compatible way) and checked when the archive is loaded
+     * Uses improved emulation of "select" call provided by Ocaml 3.11
+       under Windows (the GUI does not freeze as much during
+       synchronization)
+     * Upgraded to GPL version 3 and added copyright notice to
+       documentation files.
+     * Unison can sometimes fail to transfer a file, giving the unhelpful
+       message "Destination updated during synchronization" even though
+       the file has not been changed. This can be caused by programs that
+       change either the file's contents *or* the file's extended
+       attributes without changing its modification time. I'm not sure
+       what is the best fix for this - it is not Unison's fault, but it
+       makes Unison's behavior puzzling - but at least Unison can be more
+       helpful about suggesting a workaround (running once with
+       'fastcheck' set to false). The failure message has been changed to
+       give this advice.
+     * Bugfixes
+          + Fixed quotation of paths and names when writing to a
+            preference file
+          + Fixed bug resulting in slow performances when transferring a
+            file using our rsync implementation from a 64-bit
+            architecture to a 32-bit architecture.
+          + Fixed bug in Lwt_unix.run which could make it fail with a
+            Not_found exception (see [Not_found raised in
+            tryCopyMovedFile] errors)
+          + Properly deals with non-conformant AppleDouble files produced
+            by Mac OS X.
+          + Fixed bug that results in Unison missing ressource fork
+            changes
+          + Applied a patch from Karl M to make the GTK2 version build
+            with OCaml 3.11 on Windows.
+          + Added some extra debugging code to remote.ml to give more
+            informative error messages when people encounter the
+            longstanding "assert failed during file transfer" bug.
+          + Applied patch from Antoine Reilles for NetBSD compilation
+          + Resizing the update window vertically no longer moves the
+            status label. Fix contributed by Pedro Melo.
 
    Changes since 2.17:
      * Major rewrite and cleanup of the whole Mac OS X graphical user

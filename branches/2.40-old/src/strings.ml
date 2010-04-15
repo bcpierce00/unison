@@ -4314,7 +4314,7 @@ let docs =
       \n\
       References\n\
       \n\
-      \032  1. file://localhost/Users/bcpierce/current/unison/trunk/doc/temp.html#ssh-win\n\
+      \032  1. file://localhost/Users/bcpierce/current/unison/branches/2.40/doc/temp.html#ssh-win\n\
       \032  2. http://pauillac.inria.fr/~maranget/hevea/index.html\n\
       "))
 ::
