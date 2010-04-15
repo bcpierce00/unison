@@ -1,0 +1,57 @@
+Unison is a file-synchronization tool for Unix and Windows.  It allows
+two replicas of a collection of files and directories to be stored on
+different hosts (or different disks on the same host), modified
+separately, and then brought up to date by propagating the changes in
+each replica to the other.
+
+Unison 
+shares a number of features with tools such as configuration
+management packages %
+(\URL{http://www.cyclic.com/}{CVS},
+\URL{http://www.XCF.Berkeley.EDU/\home{jmacd}/prcs.html}{PRCS},
+etc.),
+%
+distributed filesystems 
+(\URL{http://www.coda.cs.cmu.edu/}{Coda}, 
+etc.),
+%
+uni-directional mirroring utilities 
+(\URL{http://samba.anu.edu.au/rsync/}{rsync}, 
+etc.),
+%
+and other synchronizers 
+(\URL{http://www.pumatech.com}{Intellisync}, 
+\URL{http://www.merl.com/reports/TR99-14/}{Reconcile},
+etc).  \finishlater{Midnight commander??}
+%
+However, there are several points where it differs:
+\begin{itemize}
+\item Unison runs on both Windows (95, 98, NT, 2k, and XP) and Unix (OSX, Solaris,
+  Linux, etc.) systems.  Moreover, Unison works {\em across}
+  platforms, allowing you to synchronize a Windows laptop with a
+  Unix server, for example.
+\item Unlike a distributed filesystem, Unison is a user-level program:
+  there is no need to modify the kernel or to have
+  superuser privileges on either host.
+\item Unlike simple mirroring or backup utilities, Unison can deal
+  with updates to both replicas of a distributed directory structure.
+  Updates that do not conflict are propagated automatically.
+  Conflicting updates are detected and displayed.
+\item Unison works between any pair of machines connected to the
+  internet, communicating over either a direct socket link or
+  tunneling over an encrypted {\tt ssh} connection.
+  It is careful with network bandwidth, and runs well over slow links
+  such as PPP connections.  Transfers of small updates to large files are
+  optimized using a compression protocol similar to rsync.
+\item Unison has a clear and precise specification\iffull, described
+below. \else. \fi
+  \item Unison is resilient to failure.  It is careful to leave the
+  replicas and its own private structures in a sensible state at all
+  times, even in case of abnormal termination or communication
+  failures.
+% \item Unison is easy to install.  Just one executable file (for each
+%   host architecture) is all you need.
+\item Unison is free; full source code is available under the GNU
+Public License.
+\end{itemize}
+

@@ -1,0 +1,1840 @@
+\begin{changesfromversion}{2.40.1}
+\item Added "BelowPath" patterns, that match a path as well as all paths below
+  (convenient to use with no{deletion,update,creation}partial preferences)
+\item Added a "fat" preference that makes Unison use the right options
+  when one of the replica is on a FAT filesystem.
+\item Allow "prefer/force=newer" even when not synchronizing modification
+  times.  (The reconciler will not be aware of the modification time
+  of unchanged files, so the synchronization choices of Unison can be
+  different from when "times=true", but the behavior remains sane:
+  changed files with the most recent modification time will be
+  propagated.)
+\item Minor fixes and improvements:
+\begin{itemize}
+\item Compare filenames up to decomposition in case sensitive mode when
+  one host is running MacOSX and the unicode preference is set to
+  true.
+\item Rsync: somewhat faster compressor
+\item Make Unicode the default on all architectures (it was only the
+  default when a Mac OS X or Windows machine was involved).
+\end{itemize}
+\end{changesfromversion}
+
+\begin{changesfromversion}{2.32}
+\item Major enhancement: Unicode support.  
+\begin{itemize}
+\item Unison should now handle unicode filenames correctly on all platforms.
+\item This functionality is controlled by a new preference {\tt unicode}.
+\item Unicode mode is now the default when one of the hosts is under
+  Windows or MacOS.  This may make upgrades a bit more painful (the
+  archives cannot be reused), but this is a much saner default.
+\end{itemize}
+\item Partial transfer of directories.  If an error occurs while
+  transferring a directory, the part transferred so far is copied into
+  place (and the archives are updated accordingly).
+  The "maxerrors" preference controls how many transfer error Unison
+  will accept before stopping the transfer of a directory (by default,
+  only one).  This makes it possible to transfer most of a directory
+  even if there are some errors.  Currently, only the first error is
+  reported by the GUIs.
+
+  Also, allow partial transfer of a directory when there was an error deep
+  inside this directory during update detection.  At the moment, this
+  is only activated with the text and GTK UIs, which have been
+  modified so that they show that the transfer is going to be partial
+  and so that they can display all errors.
+\item Improvement to the code for resuming directory transfers:
+\begin{itemize}
+\item 
+   if a file was not correctly transferred (or the source has been
+    modified since, with unchanged size), Unison performs a new
+    transfer rather than failing
+  \item spurious files are deleted (this can happen if a file is deleted
+    on the source replica before resuming the transfer; not deleting
+    the file would result in it reappearing on the target replica)
+\end{itemize}
+\item Experimental streaming protocol for transferring file contents (can
+  be disabled by setting the directive "stream" to false): file
+  contents is transfered asynchronously (without waiting for a response
+  from the destination after each chunk sent) rather than using the
+  synchronous RPC mechanism.  As a consequence:
+  \begin{itemize}
+  \item 
+   Unison now transfers the contents of a single file at a time
+    (Unison used to transfer several contents simultaneously in order
+    to hide the connection latency.)
+  \item the transfer of large files uses the full available bandwidth
+    and is not slowed done due to the connection latency anymore
+  \item we get performance improvement for small files as well by
+    scheduling many files simultaneously (as scheduling a file for
+    transfer consume little ressource: it does not mean allocating a
+    large buffer anymore)
+  \end{itemize}
+\item Changes to the internal implementation of the rsync algorithm:
+\begin{itemize}
+\item 
+  use longer blocks for large files (the size of a block is the
+    square root of the size of the file for large files);
+  \item transmit less checksum information per block (we still have less
+    than one chance in a hundred million of transferring a file
+    incorrectly, and Unison will catch any transfer error when
+    fingerprinting the whole file)
+  \item avoid transfer overhead (which was 4 bytes per block)
+\end{itemize}
+  For a 1G file, the first optimization saves a factor 50 on the
+  amount of data transferred from the target to the source (blocks
+  are 32768 bytes rather than just 700 bytes).  The two other
+  optimizations save another factor of 2 (from 24 bytes per block
+  down to 10).
+\item Implemented an on-disk file fingerprint cache to speed-up update
+  detection after a crash: this way, Unison does not have do recompute
+  all the file fingerprints from scratch.
+  \begin{itemize}
+  \item When Unison detects that the archive case-sensitivity mode
+  does not match the current settings, it populates the fingerprint
+  cache using the archive contents.  This way, changing the
+  case-sensitivity mode should be reasonably fast.
+  \end{itemize}
+\item New preferences "noupdate=root", "nodeletion=root", "nocreation=root"
+  that prevent Unison from performing files updates, deletions or
+  creations on the given root.  Also 'partial' versions of 'noupdate',
+  'nodeletion' and 'nocreation' 
+\item Limit the number of simultaneous external copy program
+  ("copymax" preference)
+\item New "links" preference.  When set to false, Unison will report an
+  error on symlinks during update detection.  (This is the default
+  when one host is running Windows but not Cygwin.)  This is better
+  than failing during propagation.
+\item Added a preference "halfduplex" to force half-duplex communication
+  with the server.  This may be useful on unreliable links (as a more
+  efficient alternative to "maxthreads = 1").
+\item Renamed preference "pretendwin" to "ignoreinodenumbers" (an alias is
+  kept for backwards compatibility).
+\item Ignore one-second differences when synchronizing modification time.
+  (Technically, this is an incompatible archive format change, but it
+   is backward compatible.  To trigger a problem, a user would have to
+   synchronize modification times on a filesystem with a two-second
+   granularity and then downgrade to a previous version of Unison,
+   which does not work well in such a case.  Thus, it does not
+   seem worthwhile to increment the archive format number, which would
+   impact all users.)
+\item Do not keep many files simultaneously opened anymore when the rsync
+  algorithm is in use.
+\item Add ``ignorearchives'' preference to ignore existing archives (to
+  avoid forcing users to delete them manually, in situations where one
+  archive has gotten   deleted or corrupted).
+\item Mac OS
+\begin{itemize}
+\item fixed rsync bug which could result in an "index out of bounds"
+  error when transferring resource forks.
+\item Fixed bug which made Unison ignore finder information and resource
+  fork when compiled to 64bit on Mac OSX.
+\item should now be 64 bit clean (the Growl framework is not up to date,
+    though)
+\item Made the bridge between Objective C and Ocaml code GC friendly
+    (it was allocating ML values and putting them in an array which
+    was not registered with the GC)
+\item use darker grey arrows (patch contributed by Eric Y. Kow)
+\end{itemize}
+\item GTK user interface
+\begin{itemize}
+\item  assistant for creating profiles
+\item profile editor
+\item pop up a summary window when the replicas are not fully
+    synchronized after transport
+\item display estimated remaining time and transfer rate on the
+  progress bar
+\item allow simultaneous selection of several items
+\item Do not reload the preference file before a new update
+  detection if it is unchanged
+\item disabled scrolling to the first unfinished item during transport.
+  It goes way too fast when lot of small files are synchronized, and it
+  makes it impossible to browse the file list during transport.
+\item take into account the "height" preference again
+\item the internal list of selected reconciler item was not always in
+    sync with what was displayed (GTK bug?); workaround implemented
+\item Do not display "Looking for change" messages during propagation
+  (when checking the targe is unchanged) but only during update detection
+\item Apply patch to fix some crashes in the OSX GUI, thanks to Onne Gorter.
+\end{itemize}
+\item Text UI
+\begin{itemize}
+\item During update detection, display status by updating a single line
+rather than generating a new line of output every so often.  Should be less
+confusing.
+\end{itemize}
+\item Windows 
+\begin{itemize}
+\item Fastcheck is now the default under Windows.  People mostly use NTFS
+  nowadays and the Unicode API provides an equivalent to inode numbers
+  for this filesystem.
+\item Only use long UNC path for accessing replicas (as '..' is
+  not handled with this format of paths, but can be useful)
+\item Windows text UI: now put the console into UTF-8 output mode.  This
+  is the right thing to do when in Unicode mode, and is no worse than
+  what we had previously otherwise (the console use some esoteric
+  encoding by default).  This only works when using a Unicode font
+  instead of the default raster font.
+\item Don't get the home directory from environment variable HOME under
+  Windows (except for Cygwin binaries): we don't want the behavior of
+  Unison to depends on whether it is run from a Cygwin shell (where
+  HOME is set) or in any other way (where HOME is usually not set).
+\end{itemize}
+\item Miscellaneous fixes and improvements
+\begin{itemize}
+\item Made a server waiting on a socket more resilient to unexpected
+  lost connections from the client.
+\item Small patch to property setting code suggested by Ulrich Gernkow.
+\item Several fixes to the change transfer functions (both the internal ones
+  and external transfers using rsync).  In particular, limit the number of
+  simultaneous transfer using an rsync
+  (as the rsync algorithm can use a large amount of memory when
+   processing huge files)
+\item Keep track of which file contents are being transferred, and delay
+  the transfer of a file when another file with the same contents is
+  currently being transferred.  This way, the second transfer can be
+  skipped and replaced by a local copy.
+\item Experimental update detection optimization:
+  do not read the contents of unchanged directories
+\item When a file transfer fails, turn off fastcheck for this file on the
+  next sync.
+\item Fixed bug with case insensitive mode on a case sensitive filesystem:
+\begin{itemize}
+\item 
+   if file "a/a" is created on one replica and directory "A" is
+    created on the other, the file failed to be synchronized the first
+    time Unison is run afterwards, as Unison uses the wrong path "a/a"
+    (if Unison is run again, the directories are in the archive, so
+     the right path is used);
+  \item if file "a" appears on one replica and file "A" appears on the
+    other with different contents, Unison was unable to synchronize
+    them.
+\end{itemize}
+\item Improved error reporting when the destination is updated during
+  synchronization: Unison now tells which file has been updated, and how.
+\item Limit the length of temporary file names
+\item Case sensitivity information put in the archive (in a backward
+  compatible way) and checked when the archive is loaded
+\item Got rid of the 16mb marshalling limit by marshalling to a bigarray.
+\item Resume copy of partially transferred files.
+\end{itemize}
+\end{changesfromversion}
+
+\begin{changesfromversion}{2.31}
+\item Small user interface changes
+\begin{itemize}
+\item Small change to text UI "scanning..." messages, to print just
+  directories (hopefully making it clearer that individual files are
+  not necessarily being fingerprinted).  
+\end{itemize}
+\item Minor fixes and improvements:
+\begin{itemize}
+\item Ignore one hour differences when deciding whether a file may have
+  been updated.  This avoids slow update detection after daylight
+  saving time changes under Windows.  This makes Unison slightly more
+  likely to miss an update, but it should be safe enough.
+\item Fix a small bug that was affecting mainly windows users.  We need to
+  commit the archives at the end of the sync even if there are no
+  updates to propagate because some files (in fact, if we've just
+  switched to DST on windows, a LOT of files) might have new modtimes
+  in the archive.  (Changed the text UI only.  It's less clear where
+  to change the GUI.)
+\item Don't delete the temp file when a transfer fails due to a
+  fingerprint mismatch (so that we can have a look and see why!)  We've also
+  added more debugging code togive more informative error messages when we
+  encounter the dreaded and longstanding "assert failed during file
+  transfer" bug
+\item Incorrect paths ("path" directive) now result in an error update
+  item rather than a fatal error.
+\item Create parent directories (with correct permissions) during
+  transport for paths which point to non-existent locations in the
+  destination replica.
+\end{itemize}
+\end{changesfromversion}
+
+\begin{changesfromversion}{2.27}
+\item If Unison is interrupted during a directory transfer, it will now
+leave the partially transferred directory intact in a temporary
+location. (This maintains the invariant that new files/directories are
+transferred either completely or not at all.)  The next time Unison is run,
+it will continue filling in this temporary directory, skipping transferring
+files that it finds are already there.
+\item We've added experimental support for invoking an external file
+transfer tool for whole-file copies instead of Unison's built-in transfer
+protocol.  Three new preferences have been added:
+\begin{itemize}
+\item {\tt copyprog} is a string giving the name (and command-line
+switches, if needed) of an external program that can be used to copy large
+files efficiently.  By default, rsync is invoked, but other tools such as
+scp can be used instead by changing the value of this preference.  (Although
+this is not its primary purpose, rsync is actually a pretty fast way of
+copying files that don't already exist on the receiving host.)  For files
+that do already exist on (but that have been changed in one replica), Unison
+will always use its built-in implementation of the rsync algorithm.
+\item Added a "copyprogrest" preference, so that we can give different
+command lines for invoking the external copy utility depending on whether a
+partially transferred file already exists or not.  (Rsync doesn't seem to
+care about this, but other utilities may.)
+\item {\tt copythreshold} is an integer (-1 by default), indicating above what
+filesize (in megabytes) Unison should use the external copying utility
+specified by copyprog.  Specifying 0 will cause ALL copies to use the
+external program; a negative number will prevent any files from using it.
+(Default is -1.)
+\end{itemize}
+Thanks to Alan Schmitt for a huge amount of hacking and to an anonymous
+sponsor for suggesting and underwriting this extension.
+\item Small improvements:
+\begin{itemize}
+\item Added a new preference, {\tt dontchmod}.  By default, Unison uses the
+{\tt chmod} system call to set the permission bits of files after it has
+copied them.  But in some circumstances (and under some operating systems),
+the chmod call always fails.  Setting this preference completely prevents
+Unison from ever calling {\tt chmod}.
+\item Don't ignore files that look like backup files if the {\tt
+  backuplocation} preference is set to {\tt central}
+\item Shortened the names of several preferences.  The old names are also
+still supported, for backwards compatibility, but they do not appear in the
+documentation.
+\item Lots of little documentation tidying.  (In particular, preferences are
+separated into Basic and Advanced!  This should hopefully make Unison a
+little more approachable for new users.
+\item Unison can sometimes fail to transfer a file, giving the unhelpful
+message "Destination updated during synchronization" even though the file
+has not been changed.  This can be caused by programs that change either the
+file's contents \emph{or} the file's extended attributes without changing
+its modification time.  It's not clear what is the best fix for this -- it
+is not Unison's fault, but it makes Unison's behavior puzzling -- but at
+least Unison can be more helpful about suggesting a workaround (running once
+with {\tt fastcheck} set to false).  The failure message has been changed to
+give this advice.
+\item Further improvements to the OS X GUI (thanks to Alan Schmitt and Craig
+Federighi).
+\end{itemize}
+\item Very preliminary support for triggering Unison from an external 
+  filesystem-watching utility.  The current implementation is very
+  simple, not efficient, and almost completely untested---not ready 
+  for real users.  But if someone wants to help improve it (e.g.,
+  by writing a filesystem watcher for your favorite OS), please make
+  yourself known!
+
+  On the Unison side, the new behavior is very simple:
+  \begin{itemize}
+  \item use the text UI 
+    \item start Unison with the command-line flag "-repeat FOO", 
+      where FOO is name of a file where Unison should look 
+      for notifications of changes
+    \item  when it starts up, Unison will read the whole contents 
+      of this file (on both hosts), which should be a 
+      newline-separated list of paths (relative to the root 
+      of the synchronization) and synchronize just these paths, 
+      as if it had been started with the "-path=xxx" option for 
+      each one of them
+    \item when it finishes, it will sleep for a few seconds and then
+      examine the watchfile again; if anything has been added, it
+      will read the new paths, synchronize them, and go back to 
+      sleep
+    \item that's it!
+  \end{itemize}
+  To use this to drive Unison "incrementally," just start it in 
+  this mode and start up a tool (on each host) to watch for
+  new changes to the filesystem and append the appropriate paths
+  to the watchfile.  Hopefully such tools should not be too hard
+  to write.
+\item Bug fixes:
+\begin{itemize}
+\item Fixed a bug that was causing new files to be created with
+  permissions 0x600 instead of using a reasonable default (like
+  0x644), if the 'perms' flag was set to 0.  (Bug reported by Ben
+  Crowell.)
+\item Follow maxthreads preference when transferring directories.
+\end{itemize}
+\end{changesfromversion}
+
+\begin{changesfromversion}{2.17}
+\item Major rewrite and cleanup of the whole Mac OS X graphical user
+interface by Craig Federighi.  Thanks, Craig!!!
+\item Small fix to ctime (non-)handling in update detection under windows
+  with fastcheck.  
+\item Several small fixes to the GTK2 UI to make it work better under
+Windows [thanks to Karl M for these].
+\item The backup functionality has been completely rewritten.  The external
+interface has not changed, but numerous bugs, irregular behaviors, and
+cross-platform inconsistencies have been corrected.
+\item The Unison project now accepts donations via PayPal.  If you'd like to
+donate, you can find a link to the donation page on the
+\URL{http://www.cis.upenn.edu/~bcpierce/unison/lists.html}{Unison home
+  page}.
+\item Some important safety improvements:
+\begin{itemize}
+\item Added a new \verb|mountpoint| preference, which can be used to specify
+a path that must exist in both replicas at the end of update detection
+(otherwise Unison aborts).  This can be used to avoid potentially dangerous
+situations when Unison is used with removable media such as external hard
+drives and compact flash cards.  
+\item The confirmation of ``big deletes'' is now controlled by a boolean preference
+  \verb|confirmbigdeletes|.  Default is true, which gives the same behavior as
+  previously.  (This functionality is at least partly superceded by the
+  \verb|mountpoint| preference, but it has been left in place in case it is
+  useful to some people.)
+  \item If Unison is asked to ``follow'' a symbolic link but there is
+  nothing at the other end of the link, it will now flag this path as an
+  error, rather than treating the symlink itself as missing or deleted.
+  This avoids a potentially dangerous situation where a followed symlink
+  points to an external filesystem that might be offline when Unison is run
+  (whereupon Unison would cheerfully delete the corresponding files in the
+  other replica!).
+\end{itemize}
+
+\item Smaller changes:
+\begin{itemize}
+\item Added \verb|forcepartial| and \verb|preferpartial| preferences, which
+behave like \verb|force| and \verb|prefer| but can be specified on a
+per-path basis. [Thanks to Alan Schmitt for this.]
+\item A bare-bones self test feature was added, which runs unison through
+  some of its paces and checks that the results are as expected.  The
+  coverage of the tests is still very limited, but the facility has already
+  been very useful in debugging the new backup functionality (especially in
+  exposing some subtle cross-platform issues).
+\item Refined debugging code so that the verbosity of individual modules
+  can be controlled separately.  Instead of just putting '-debug
+  verbose' on the command line, you can put '-debug update+', which
+  causes all the extra messages in the Update module, but not other
+  modules, to be printed.  Putting '-debug verbose' causes all modules
+  to print with maximum verbosity.
+\item Removed \verb|mergebatch| preference.  (It never seemed very useful, and
+  its semantics were confusing.)
+\item Rewrote some of the merging functionality, for better cooperation
+  with external Harmony instances.
+\item Changed the temp file prefix from \verb|.#| to \verb|.unison|.
+\item Compressed the output from the text user interface (particularly
+  when run with the \verb|-terse| flag) to make it easier to interpret the
+  results when Unison is run several times in succession from a script.
+\item Diff and merge functions now work under Windows.
+\item Changed the order of arguments to the default diff command (so that
+  the + and - annotations in diff's output are reversed).
+\item Added \verb|.mpp| files to the ``never fastcheck'' list (like
+\verb|.xls| files). 
+\end{itemize}
+
+\item Many small bugfixes, including:
+\begin{itemize}
+\item Fixed a longstanding bug regarding fastcheck and daylight saving time
+  under Windows when Unison is set up to synchronize modification times.
+  (Modification times cannot be updated in the archive in this case,
+  so we have to ignore one hour differences.)
+\item Fixed a bug that would occasionally cause the archives to be left in
+  non-identical states on the two hosts after synchronization.
+\item Fixed a bug that prevented Unison from communicating correctly between
+  32- and 64-bit architectures.
+\item On windows, file creation times are no longer used as a proxy for
+  inode numbers.  (This is unfortunate, as it makes fastcheck a little less
+  safe.  But it turns out that file creation times are not reliable 
+  under Windows: if a file is removed and a new file is created in its
+  place, the new one will sometimes be given the same creation date as the
+  old one!)
+\item Set read-only file to R/W on OSX before attempting to change other attributes.
+\item Fixed bug resulting in spurious "Aborted" errors during transport
+(thanks to Jerome Vouillon) 
+\item Enable diff if file contents have changed in one replica, but
+only properties in the other.
+\item Removed misleading documentation for 'repeat' preference.
+\item Fixed a bug in merging code where Unison could sometimes deadlock
+  with the external merge program, if the latter produced large
+  amounts of output.
+\item Workaround for a bug compiling gtk2 user interface against current versions
+  of gtk2+ libraries.  
+\item Added a better error message for "ambiguous paths".
+\item Squashed a longstanding bug that would cause file transfer to fail
+  with the message ``Failed: Error in readWrite: Is a directory.''
+\item Replaced symlinks with copies of their targets in the Growl framework in src/uimac.
+  This should make the sources easier to check out from the svn repository on WinXP
+  systems.
+\item Added a workaround (suggested by Karl M.) for the problem discussed
+  on the unison users mailing list where, on the Windows platform, the
+  server would hang when transferring files.  I conjecture that
+  the problem has to do with the RPC mechanism, which was used to
+  make a call {\em back} from the server to the client (inside the Trace.log 
+  function) so that the log message would be appended to the log file on 
+  the client.  The workaround is to dump these messages (about when
+  xferbycopying shortcuts are applied and whether they succeed) just to the
+  standard output of the Unison process, not to the log file.
+\end{itemize}
+\end{changesfromversion}
+
+\begin{changesfromversion}{2.13.0}
+\item The features for performing backups and for invoking external merge
+programs have been completely rewritten by Stephane Lescuyer (thanks,
+Stephane!).  The user-visible functionality should not change, but the
+internals have been rationalized and there are a number of new features.
+See the manual (in particular, the description of the \verb|backupXXX|
+preferences) for details.
+\item Incorporated patches for ipv6 support, contributed by Samuel Thibault.
+(Note that, due to a bug in the released OCaml 3.08.3 compiler, this code
+will not actually work with ipv6 unless compiled with the CVS version of the
+OCaml compiler, where the bug has been fixed; however, ipv4 should continue
+to work normally.)
+\item OSX interface:
+\begin{itemize}
+\item Incorporated Ben Willmore's cool new icon for the Mac UI.
+\end{itemize}
+\item Small fixes:
+\begin{itemize}
+\item Fixed off by one error in month numbers (in printed dates) reported 
+  by Bob Burger
+\end{itemize}
+\end{changesfromversion}
+
+\begin{changesfromversion}{2.12.0}
+\item New convention for release numbering: Releases will continue to be
+given numbers of the form \verb|X.Y.Z|, but, 
+from now on, just the major version number (\verb|X.Y|) will be considered
+significant when checking compatibility between client and server versions.
+The third component of the version number will be used only to identify
+``patch levels'' of releases.
+
+This change goes hand in hand with a change to the procedure for making new
+releases.  Candidate releases will initially be given ``beta release''
+status when they are announced for public consumption.  Any bugs that are
+discovered will be fixed in a separate branch of the source repository
+(without changing the major version number) and new tarballs re-released as
+needed.  When this process converges, the patched beta version will be
+dubbed stable.
+\item Warning (failure in batch mode) when one path is completely emptied.
+  This prevents Unison from deleting everything on one replica when
+  the other disappear.
+\item Fix diff bug (where no difference is shown the first time the diff
+  command is given).
+\item User interface changes:
+\begin{itemize}
+\item Improved workaround for button focus problem (GTK2 UI)
+\item Put leading zeroes in date fields
+\item More robust handling of character encodings in GTK2 UI
+\item Changed format of modification time displays, from \verb|modified at hh:mm:ss on dd MMM, yyyy|
+to \verb|modified on yyyy-mm-dd hh:mm:ss|
+\item Changed time display to include seconds (so that people on FAT
+  filesystems will not be confused when Unison tries to update a file
+  time to an odd number of seconds and the filesystem truncates it to
+  an even number!)
+\item Use the diff "-u" option by default when showing differences between files
+  (the output is more readable)
+\item In text mode, pipe the diff output to a pager if the environment
+  variable PAGER is set
+\item Bug fixes and cleanups in ssh password prompting.  Now works with
+  the GTK2 UI under Linux.  (Hopefully the Mac OS X one is not broken!)
+\item Include profile name in the GTK2 window name
+\item Added bindings ',' (same as '<') and '.' (same as '>') in the GTK2 UI
+\end{itemize}
+\item Mac GUI:
+\begin{itemize}
+\item actions like < and > scroll to the next item as necessary.
+\item Restart has a menu item and keyboard shortcut (command-R).
+\item 
+    Added a command-line tool for Mac OS X.  It can be installed from
+    the Unison menu.
+\item New icon.
+\item   Handle the "help" command-line argument properly.
+\item   Handle profiles given on the command line properly.
+\item  When a profile has been selected, the profile dialog is replaced by a
+    "connecting" message while the connection is being made.  This
+    gives better feedback.
+\item   Size of left and right columns is now large enough so that
+    "PropsChanged" is not cut off.
+\end{itemize}
+\item Minor changes:
+\begin{itemize}
+\item Disable multi-threading when both roots are local
+\item Improved error handling code.  In particular, make sure all files
+  are closed in case of a transient failure
+\item Under Windows, use \verb|$UNISON| for home directory as a last resort
+  (it was wrongly moved before \verb|$HOME| and \verb|$USERPROFILE| in
+  Unison 2.12.0)
+\item Reopen the logfile if its name changes (profile change)
+\item Double-check that permissions and modification times have been
+  properly set: there are some combination of OS and filesystem on
+  which setting them can fail in a silent way.
+\item Check for bad Windows filenames for pure Windows synchronization
+  also (not just cross architecture synchronization).
+  This way, filenames containing backslashes, which are not correctly
+  handled by unison, are rejected right away.
+\item Attempt to resolve issues with synchronizing modification times
+  of read-only files under Windows
+\item Ignore chmod failures when deleting files
+\item Ignore trailing dots in filenames in case insensitive mode
+\item Proper quoting of paths, files and extensions ignored using the UI
+\item The strings CURRENT1 and CURRENT2 are now correctly substitued when
+  they occur in the diff preference
+\item Improvements to syncing resource forks between Macs via a non-Mac system.
+\end{itemize}
+\end{changesfromversion}
+
+\begin{changesfromversion}{2.10.2}
+\item \incompatible{} Archive format has changed.  
+\item Source code availability: The Unison sources are now managed using
+  Subversion.  One nice side-effect is that anonymous checkout is now
+  possible, like this:
+\begin{verbatim}
+        svn co https://cvs.cis.upenn.edu:3690/svnroot/unison/
+\end{verbatim}
+We will also continue to export a ``developer tarball'' of the current
+(modulo one day) sources in the web export directory.  To receive commit logs
+for changes to the sources, subscribe to the \verb|unison-hackers| list
+(\ONEURL{http://www.cis.upenn.edu/~bcpierce/unison/lists.html}). 
+\item Text user interface:
+\begin{itemize}
+\item Substantial reworking of the internal logic of the text UI to make it
+a bit easier to modify.
+\item The {\tt dumbtty} flag in the text UI is automatically set to true if
+the client is running on a Unix system and the {\tt EMACS} environment
+variable is set to anything other than the empty string.
+\end{itemize}
+\item Native OS X gui:
+\begin{itemize}
+\item Added a synchronize menu item with keyboard shortcut
+\item Added a merge menu item, still needs to be debugged
+\item Fixes to compile for Panther
+\item Miscellaneous improvements and bugfixes
+\end{itemize}
+\item Small changes:
+\begin{itemize}
+\item Changed the filename checking code to apply to Windows only, instead
+  of OS X as well.
+\item Finder flags now synchronized
+\item Fallback in copy.ml for filesystem that do not support \verb|O_EXCL|
+\item  Changed buffer size for local file copy (was highly inefficient with
+  synchronous writes)
+\item Ignore chmod failure when deleting a directory
+\item  Fixed assertion failure when resolving a conflict content change /
+  permission changes in favor of the content change.
+\item Workaround for transferring large files using rsync.
+\item Use buffered I/O for files (this is the only way to open files in binary
+  mode under Cygwin).
+\item On non-Cygwin Windows systems, the UNISON environment variable is now checked first to determine 
+  where to look for Unison's archive and preference files, followed by \verb|HOME| and 
+  \verb|USERPROFILE| in that order.  On Unix and Cygwin systems, \verb|HOME| is used.
+\item Generalized \verb|diff| preference so that it can be given either as just 
+  the command name to be used for calculating diffs or else a whole command
+  line, containing the strings \verb|CURRENT1| and \verb|CURRENT2|, which will be replaced
+  by the names of the files to be diff'ed before the command is called.
+\item Recognize password prompts in some newer versions of ssh.
+\end{itemize}
+\end{changesfromversion}
+
+\begin{changesfromversion}{2.9.20}
+\item \incompatible{} Archive format has changed.  
+\item Major functionality changes:
+\begin{itemize}
+\item Major tidying and enhancement of 'merge' functionality.  The main
+  user-visible change is that the external merge program may either write
+  the merged output to a single new file, as before, or it may modify one or
+  both of its input files, or it may write {\em two} new files.  In the
+  latter cases, its modifications will be copied back into place on both the
+  local and the remote host, and (if the two files are now equal) the
+  archive will be updated appropriately.  More information can be found in
+  the user manual.  Thanks to Malo Denielou and Alan Schmitt for these
+  improvements.
+
+  Warning: the new merging functionality is not completely compatible with
+  old versions!  Check the manual for details.
+\item Files larger than 2Gb are now supported.
+\item Added preliminary (and still somewhat experimental) support for the
+  Apple OS X operating system.   
+\begin{itemize}
+\item Resource forks should be transferred correctly.  (See the manual for
+details of how this works when synchronizing HFS with non-HFS volumes.)
+Synchronization of file type and creator information is also supported.
+\item On OSX systems, the name of the directory for storing Unison's
+archives, preference files, etc., is now determined as follows:
+\begin{itemize}
+    \item if \verb+~/.unison+ exists, use it
+     \item otherwise, use \verb|~/Library/Application Support/Unison|, 
+         creating it if necessary.
+\end{itemize}
+\item A preliminary native-Cocoa user interface is under construction.  This
+still needs some work, and some users experience unpredictable crashes, so
+it is only for hackers for now.  Run make with {\tt UISTYLE=mac} to build
+this interface.
+\end{itemize}
+\end{itemize}
+
+\item Minor functionality changes:
+\begin{itemize}
+\item Added an {\tt ignorelocks} preference, which forces Unison to override left-over
+  archive locks.  (Setting this preference is dangerous!  Use it only if you
+  are positive you know what you are doing.) 
+% BCP: removed later
+% \item Running with the {\tt -timers} flag set to true will now show the total time taken
+%   to check for updates on each directory.  (This can be helpful for tidying directories to improve
+%   update detection times.)  
+\item Added a new preference {\tt assumeContentsAreImmutable}.  If a directory
+  matches one of the patterns set in this preference, then update detection
+  is skipped for files in this directory.  (The 
+  purpose is to speed update detection for cases like Mail folders, which
+  contain lots and lots of immutable files.)  Also a preference
+  {\tt assumeContentsAreImmutableNot}, which overrides the first, similarly
+  to {\tt ignorenot}.  (Later amendment: these preferences are now called
+  {\tt immutable} and {\tt immutablenot}.)
+\item The {\tt ignorecase} flag has been changed from a boolean to a three-valued
+  preference.  The default setting, called {\tt default}, checks the operating systems
+  running on the client and server and ignores filename case if either of them is
+  OSX or Windows.  Setting ignorecase to {\tt true} or {\tt false} overrides
+  this behavior.  If you have been setting {\tt ignorecase} on the command
+  line using {\tt -ignorecase=true} or {\tt -ignorecase=false}, you will
+  need to change to {\tt -ignorecase true} or {\tt -ignorecase false}.
+\item a new preference, 'repeat', for the text user interface (only).  If 'repeat' is set to
+  a number, then, after it finishes synchronizing, Unison will wait for that many seconds and
+  then start over, continuing this way until it is killed from outside.  Setting repeat to true
+  will automatically set the batch preference to true.  
+\item Excel files are now handled specially, so that the {\tt fastcheck}
+  optimization is skipped even if the {\tt fastcheck} flag is set.  (Excel
+  does some naughty things with modtimes, making this optimization
+  unreliable and leading to failures during change propagation.)
+\item The ignorecase flag has been changed from a boolean to a three-valued
+  preference.  The default setting, called 'default', checks the operating systems
+  running on the client and server and ignores filename case if either of them is
+  OSX or Windows.  Setting ignorecase to 'true' or 'false' overrides this behavior.
+\item Added a new preference, 'repeat', for the text user interface (only,
+  at the moment).  If 'repeat' is set to a number, then, after it finishes
+  synchronizing, Unison will wait for that many seconds and then start over,
+  continuing this way until it is killed from outside.  Setting repeat to
+  true will automatically set the batch preference to true.
+\item The 'rshargs' preference has been split into 'rshargs' and 'sshargs' 
+  (mainly to make the documentation clearer).  In fact, 'rshargs' is no longer
+  mentioned in the documentation at all, since pretty much everybody uses
+  ssh now anyway.
+\end{itemize}
+\item Documentation
+\begin{itemize}
+\item The web pages have been completely redesigned and reorganized.
+  (Thanks to Alan Schmitt for help with this.)
+\end{itemize}
+\item User interface improvements
+\begin{itemize}
+\item Added a GTK2 user interface, capable (among other things) of displaying filenames
+  in any locale encoding.  Kudos to Stephen Tse for contributing this code!  
+\item The text UI now prints a list of failed and skipped transfers at the end of
+  synchronization. 
+\item Restarting update detection from the graphical UI will reload the current
+  profile (which in particular will reset the -path preference, in case
+  it has been narrowed by using the ``Recheck unsynchronized items''
+  command).
+\item Several small improvements to the text user interface, including a
+  progress display.
+\end{itemize}
+\item Bug fixes (too numerous to count, actually, but here are some):
+\begin{itemize}
+\item The {\tt maxthreads} preference works now.
+\item Fixed bug where warning message about uname returning an unrecognized
+  result was preventing connection to server.  (The warning is no longer
+  printed, and all systems where 'uname' returns anything other than 'Darwin' 
+  are assumed not to be running OS X.)
+\item Fixed a problem on OS X that caused some valid file names (e.g.,
+  those including colons) to be considered invalid.
+\item Patched Path.followLink to follow links under cygwin in addition to Unix
+  (suggested by Matt Swift).
+\item Small change to the storeRootsName function, suggested by bliviero at 
+  ichips.intel.com, to fix a problem in unison with the `rootalias'
+  option, which allows you to tell unison that two roots contain the same 
+  files.  Rootalias was being applied after the hosts were 
+  sorted, so it wouldn't work properly in all cases.
+\item Incorporated a fix by Dmitry Bely for setting utimes of read-only files
+  on Win32 systems.   
+\end{itemize}
+\item Installation / portability:
+\begin{itemize}
+\item Unison now compiles with OCaml version 3.07 and later out of the box.
+\item Makefile.OCaml fixed to compile out of the box under OpenBSD.
+\item a few additional ports (e.g. OpenBSD, Zaurus/IPAQ) are now mentioned in 
+  the documentation 
+\item Unison can now be installed easily on OSX systems using the Fink
+  package manager
+\end{itemize}
+\end{changesfromversion}
+
+\begin{changesfromversion}{2.9.1}
+\item Added a preference {\tt maxthreads} that can be used to limit the
+number of simultaneous file transfers.
+\item Added a {\tt backupdir} preference, which controls where backup
+files are stored.
+\item Basic support added for OSX.  In particular, Unison now recognizes
+when one of the hosts being synchronized is running OSX and switches to
+a case-insensitive treatment of filenames (i.e., 'foo' and 'FOO' are
+considered to be the same file).
+  (OSX is not yet fully working,
+  however: in particular, files with resource forks will not be
+  synchronized correctly.)
+\item The same hash used to form the archive name is now also added to
+the names of the temp files created during file transfer.  The reason for
+this is that, during update detection, we are going to silently delete
+any old temp files that we find along the way, and we want to prevent
+ourselves from deleting temp files belonging to other instances of Unison
+that may be running in parallel, e.g. synchronizing with a different
+host.  Thanks to Ruslan Ermilov for this suggestion.
+\item Several small user interface improvements
+\item Documentation
+\begin{itemize}
+\item FAQ and bug reporting instructions have been split out as separate
+      HTML pages, accessible directly from the unison web page.
+\item Additions to FAQ, in particular suggestions about performance
+tuning. 
+\end{itemize}
+\item Makefile
+\begin{itemize}
+\item Makefile.OCaml now sets UISTYLE=text or UISTYLE=gtk automatically,
+  depending on whether it finds lablgtk installed
+\item Unison should now compile ``out of the box'' under OSX
+\end{itemize}
+\end{changesfromversion}
+
+\begin{changesfromversion}{2.8.1}
+\item Changing profile works again under Windows
+\item File movement optimization: Unison now tries to use local copy instead of
+  transfer for moved or copied files.  It is controled by a boolean option
+  ``xferbycopying''.
+\item Network statistics window (transfer rate, amount of data transferred).
+      [NB: not available in Windows-Cygwin version.]
+\item symlinks work under the cygwin version (which is dynamically linked).
+\item Fixed potential deadlock when synchronizing between Windows and
+Unix 
+\item Small improvements:
+  \begin{itemize} 
+  \item If neither the {\tt USERPROFILE} nor the {\tt HOME} environment
+    variables are set, then Unison will put its temporary commit log
+    (called {\tt DANGER.README}) into the directory named by the 
+    {\tt UNISON} environment variable, if any; otherwise it will use
+    {\tt C:}.
+  \item alternative set of values for fastcheck: yes = true; no = false;
+  default = auto.
+  \item -silent implies -contactquietly
+  \end{itemize}
+\item Source code:
+  \begin{itemize}
+  \item Code reorganization and tidying.  (Started breaking up some of the
+    basic utility modules so that the non-unison-specific stuff can be
+    made available for other projects.)
+  \item several Makefile and docs changes (for release);
+  \item further comments in ``update.ml'';
+  \item connection information is not stored in global variables anymore.
+  \end{itemize}
+\end{changesfromversion}
+
+\begin{changesfromversion}{2.7.78}
+\item Small bugfix to textual user interface under Unix (to avoid leaving
+  the terminal in a bad state where it would not echo inputs after Unison
+  exited).
+\end{changesfromversion}
+
+\begin{changesfromversion}{2.7.39}
+\item Improvements to the main web page (stable and beta version docs are
+  now both accessible).
+\item User manual revised.
+\item Added some new preferences:
+\begin{itemize}
+\item ``sshcmd'' and ``rshcmd'' for specifying paths to ssh and rsh programs.
+\item ``contactquietly'' for suppressing the ``contacting server'' message
+during Unison startup (under the graphical UI).
+\end{itemize}
+\item Bug fixes:
+\begin{itemize}
+\item Fixed small bug in UI that neglected to change the displayed column 
+  headers if loading a new profile caused the roots to change.
+\item Fixed a bug that would put the text UI into an infinite loop if it
+  encountered a conflict when run in batch mode.
+\item Added some code to try to fix the display of non-Ascii characters in 
+  filenames on Windows systems in the GTK UI.  (This code is currently 
+  untested---if you're one of the people that had reported problems with
+  display of non-ascii filenames, we'd appreciate knowing if this actually 
+  fixes things.)
+\item `\verb|-prefer/-force newer|' works properly now.  
+        (The bug was reported by Sebastian Urbaniak and Sean Fulton.)
+\end{itemize}
+\item User interface and Unison behavior:
+\begin{itemize}
+\item Renamed `Proceed' to `Go' in the graphical UI.
+\item Added exit status for the textual user interface.
+\item Paths that are not synchronized because of conflicts or errors during 
+  update detection are now noted in the log file.
+\item \verb|[END]| messages in log now use a briefer format
+\item Changed the text UI startup sequence so that
+  {\tt ./unison -ui text} will use the default profile instead of failing.
+\item Made some improvements to the error messages.
+\item Added some debugging messages to remote.ml.
+\end{itemize}
+\end{changesfromversion}
+
+\begin{changesfromversion}{2.7.7}
+\item Incorporated, once again, a multi-threaded transport sub-system.
+  It transfers several files at the same time, thereby making much
+  more effective use of available network bandwidth.  Unlike the
+  earlier attempt, this time we do not rely on the native thread
+  library of OCaml.  Instead, we implement a light-weight,
+  non-preemptive multi-thread library in OCaml directly.  This version
+  appears stable.  
+
+  Some adjustments to unison are made to accommodate the multi-threaded
+  version.  These include, in particular, changes to the
+  user interface and logging, for example:
+  \begin{itemize}
+  \item Two log entries for each transferring task, one for the
+    beginning, one for the end.
+  \item Suppressed warning messages against removing temp files left
+    by a previous unison run, because warning does not work nicely
+    under multi-threading.  The temp file names are made less likely
+    to coincide with the name of a file created by the user.  They
+    take the form \\ \verb|.#<filename>.<serial>.unison.tmp|.
+    [N.b. This was later changed to \verb|.unison.<filename>.<serial>.unison.tmp|.]
+  \end{itemize}
+\item Added a new command to the GTK user interface: pressing 'f' causes
+  Unison to start a new update detection phase, using as paths {\em just}
+  those paths that have been detected as changed and not yet marked as
+  successfully completed.  Use this command to quickly restart Unison on
+  just the set of paths still needing attention after a previous run.
+\item Made the {\tt ignorecase} preference user-visible, and changed the
+  initialization code so that it can be manually set to true, even if
+  neither host is running Windows.  (This may be useful, e.g., when using 
+  Unison running on a Unix system with a FAT volume mounted.)
+\item Small improvements and bug fixes:
+  \begin{itemize}
+  \item Errors in preference files now generate fatal errors rather than
+    warnings at startup time.  (I.e., you can't go on from them.)  Also,
+    we fixed a bug that was preventing these warnings from appearing in the
+    text UI, so some users who have been running (unsuspectingly) with 
+    garbage in their prefs files may now get error reports.
+  \item Error reporting for preference files now provides file name and
+    line number.
+  \item More intelligible message in the case of identical change to the same 
+    files: ``Nothing to do: replicas have been changed only in identical 
+    ways since last sync.''
+  \item Files with prefix '.\#' excluded when scanning for preference
+    files.
+  \item Rsync instructions are send directly instead of first
+    marshaled.
+  \item Won't try forever to get the fingerprint of a continuously changing file:
+    unison will give up after certain number of retries.
+  \item Other bug fixes, including the one reported by Peter Selinger
+    (\verb|force=older preference| not working).
+  \end{itemize}
+\item Compilation:
+  \begin{itemize}
+  \item Upgraded to the new OCaml 3.04 compiler, with the LablGtk
+    1.2.3 library (patched version used for compiling under Windows).
+  \item Added the option to compile unison on the Windows platform with
+    Cygwin GNU C compiler.  This option only supports building
+    dynamically linked unison executables.
+  \end{itemize}
+\end{changesfromversion}
+
+\begin{changesfromversion}{2.7.4}
+\item Fixed a silly (but debilitating) bug in the client startup sequence.
+\end{changesfromversion}
+
+\begin{changesfromversion}{2.7.1}
+\item Added \verb|addprefsto| preference, which (when set) controls which
+preference file new preferences (e.g. new ignore patterns) are added to.
+\item Bug fix: read the initial connection header one byte at a time, so
+that we don't block if the header is shorter than expected.  (This bug
+did not affect normal operation --- it just made it hard to tell when you
+were trying to use Unison incorrectly with an old version of the server,
+since it would hang instead of giving an error message.)
+\end{changesfromversion}
+
+\begin{changesfromversion}{2.6.59}
+\item Changed \verb|fastcheck| from a boolean to a string preference.  Its 
+  legal values are \verb|yes| (for a fast check), \verb|no| (for a safe 
+  check), or \verb|default| (for a fast check---which also happens to be 
+  safe---when running on Unix and a safe check when on Windows).  The default 
+  is \verb|default|.
+  \item Several preferences have been renamed for consistency.  All
+  preference names are now spelled out in lowercase.  For backward
+  compatibility, the old names still work, but they are not mentioned in
+  the manual any more.
+\item The temp files created by the 'diff' and 'merge' commands are now
+   named by {\em pre}pending a new prefix to the file name, rather than
+   appending a suffix.  This should avoid confusing diff/merge programs
+   that depend on the suffix  to guess the type of the file contents.
+\item We now set the keepalive option on the server socket, to make sure
+  that the server times out if the communication link is unexpectedly broken. 
+\item Bug fixes:
+\begin{itemize}
+\item When updating small files, Unison now closes the destination file.
+\item File permissions are properly updated when the file is behind a
+  followed link.
+\item Several other small fixes.
+\end{itemize}
+\end{changesfromversion}
+
+
+\begin{changesfromversion}{2.6.38}
+\item Major Windows performance improvement!  
+
+We've added a preference \verb|fastcheck| that makes Unison look only at
+a file's creation time and last-modified time to check whether it has
+changed.  This should result in a huge speedup when checking for updates
+in large replicas.
+
+  When this switch is set, Unison will use file creation times as 
+  'pseudo inode numbers' when scanning Windows replicas for updates, 
+  instead of reading the full contents of every file.  This may cause 
+  Unison to miss propagating an update if the create time, 
+  modification time, and length of the file are all unchanged by 
+  the update (this is not easy to achieve, but it can be done).  
+  However, Unison will never {\em overwrite} such an update with
+  a change from the other replica, since it 
+  always does a safe check for updates just before propagating a 
+  change.  Thus, it is reasonable to use this switch most of the time 
+  and occasionally run Unison once with {\tt fastcheck} set to false, 
+  if you are worried that Unison may have overlooked an update.
+
+  Warning: This change is has not yet been thoroughly field-tested.  If you 
+  set the \verb|fastcheck| preference, pay careful attention to what
+  Unison is doing.
+
+\item New functionality: centralized backups and merging 
+\begin{itemize}
+\item This version incorporates two pieces of major new functionality,
+   implemented by Sylvain Roy during a summer internship at Penn: a
+   {\em centralized backup} facility that keeps a full backup of
+   (selected files 
+   in) each replica, and a {\em merging} feature that allows Unison to
+   invoke an external file-merging tool to resolve conflicting changes to
+   individual files.
+ 
+\item Centralized backups:
+\begin{itemize}
+  \item Unison now maintains full backups of the last-synchronized versions
+      of (some of) the files in each replica; these function both as
+      backups in the usual sense
+      and as the ``common version'' when invoking external
+      merge programs.
+  \item The backed up files are stored in a directory ~/.unison/backup on each
+      host.  (The name of this directory can be changed by setting
+      the environment variable \verb|UNISONBACKUPDIR|.)
+  \item The predicate \verb|backup| controls which files are actually
+     backed up:
+      giving the preference '\verb|backup = Path *|' causes backing up
+      of all files.
+  \item Files are added to the backup directory whenever unison updates
+      its archive.  This means that
+      \begin{itemize}
+       \item When unison reconstructs its archive from scratch (e.g., 
+           because of an upgrade, or because the archive files have
+           been manually deleted), all files will be backed up.
+       \item Otherwise, each file will be backed up the first time unison
+           propagates an update for it.
+      \end{itemize}
+  \item The preference \verb|backupversions| controls how many previous
+      versions of each file are kept.  The default is 2 (i.e., the last 
+      synchronized version plus one backup).
+  \item For backward compatibility, the \verb|backups| preference is also
+      still supported, but \verb|backup| is now preferred.
+  \item It is OK to manually delete files from the backup directory (or to throw
+      away the directory itself).  Before unison uses any of these files for 
+      anything important, it checks that its fingerprint matches the one 
+      that it expects. 
+\end{itemize}
+
+\item Merging:
+\begin{itemize}
+  \item Both user interfaces offer a new 'merge' command, invoked by pressing
+      'm' (with a changed file selected).  
+  \item The actual merging is performed by an external program.  
+      The preferences \verb|merge| and \verb|merge2| control how this
+      program is invoked.  If a backup exists for this file (see the
+      \verb|backup| preference), then the \verb|merge| preference is used for 
+      this purpose; otherwise \verb|merge2| is used.  In both cases, the 
+      value of the preference should be a string representing the command 
+      that should be passed to a shell to invoke the 
+      merge program.  Within this string, the special substrings
+      \verb|CURRENT1|, \verb|CURRENT2|, \verb|NEW|,  and \verb|OLD| may appear
+      at any point.  Unison will substitute these as follows before invoking
+      the command:
+        \begin{itemize}
+        \item \relax\verb|CURRENT1| is replaced by the name of the local 
+        copy of the file;
+        \item \relax\verb|CURRENT2| is replaced by the name of a temporary
+        file, into which the contents of the remote copy of the file have
+        been transferred by Unison prior to performing the merge;
+        \item \relax\verb|NEW| is replaced by the name of a temporary
+        file that Unison expects to be written by the merge program when
+        it finishes, giving the desired new contents of the file; and
+        \item \relax\verb|OLD| is replaced by the name of the backed up
+        copy of the original version of the file (i.e., its state at the 
+        end of the last successful run of Unison), if one exists 
+        (applies only to \verb|merge|, not \verb|merge2|).
+        \end{itemize}
+      For example, on Unix systems setting the \verb|merge| preference to
+\begin{verbatim}
+   merge = diff3 -m CURRENT1 OLD CURRENT2 > NEW
+\end{verbatim}
+      will tell Unison to use the external \verb|diff3| program for merging.  
+
+      A large number of external merging programs are available.  For 
+      example, \verb|emacs| users may find the following convenient:
+\begin{verbatim}
+    merge2 = emacs -q --eval '(ediff-merge-files "CURRENT1" "CURRENT2" 
+               nil "NEW")' 
+    merge = emacs -q --eval '(ediff-merge-files-with-ancestor 
+               "CURRENT1" "CURRENT2" "OLD" nil "NEW")' 
+\end{verbatim}
+(These commands are displayed here on two lines to avoid running off the
+edge of the page.  In your preference file, each should be written on a
+single line.) 
+
+  \item If the external program exits without leaving any file at the
+  path \verb|NEW|, 
+      Unison considers the merge to have failed.  If the merge program writes
+      a file called \verb|NEW| but exits with a non-zero status code,
+      then Unison 
+      considers the merge to have succeeded but to have generated conflicts.
+      In this case, it attempts to invoke an external editor so that the
+      user can resolve the conflicts.  The value of the \verb|editor| 
+      preference controls what editor is invoked by Unison.  The default
+      is \verb|emacs|.
+
+  \item Please send us suggestions for other useful values of the
+       \verb|merge2| and \verb|merge| preferences -- we'd like to give several 
+       examples in the manual.
+\end{itemize}
+\end{itemize}
+
+\item Smaller changes:
+\begin{itemize}
+\item When one preference file includes another, unison no longer adds the
+  suffix '\verb|.prf|' to the included file by default.  If a file with 
+  precisely the given name exists in the .unison directory, it will be used; 
+  otherwise Unison will 
+  add \verb|.prf|, as it did before.  (This change means that included 
+  preference files can be named \verb|blah.include| instead of 
+  \verb|blah.prf|, so that unison will not offer them in its 'choose 
+  a preference file' dialog.)
+\item For Linux systems, we now offer both a statically linked and a dynamically
+  linked executable.  The static one is larger, but will probably run on more
+  systems, since it doesn't depend on the same versions of dynamically
+  linked library modules being available.
+\item Fixed the \verb|force| and \verb|prefer| preferences, which were
+  getting the propagation direction exactly backwards.
+\item Fixed a bug in the startup code that would cause unison to crash
+  when the default profile (\verb|~/.unison/default.prf|) does not exist.
+\item Fixed a bug where, on the run when a profile is first created, 
+  Unison would confusingly display the roots in reverse order in the user
+  interface.
+\end{itemize}
+
+\item For developers:
+\begin{itemize}
+\item We've added a module dependency diagram to the source distribution, in
+   \verb|src/DEPENDENCIES.ps|, to help new prospective developers with
+   navigating the code. 
+\end{itemize}
+\end{changesfromversion}
+
+\begin{changesfromversion}{2.6.11}
+\item \incompatible{} Archive format has changed.  
+
+\item \incompatible{} The startup sequence has been completely rewritten
+and greatly simplified.  The main user-visible change is that the
+\verb|defaultpath| preference has been removed.  Its effect can be
+approximated by using multiple profiles, with \verb|include| directives
+to incorporate common settings.  All uses of \verb|defaultpath| in
+existing profiles should be changed to \verb|path|.
+
+Another change in startup behavior that will affect some users is that it
+is no longer possible to specify roots {\em both} in the profile {\em
+  and} on the command line.
+
+You can achieve a similar effect, though, by breaking your profile into
+two:
+\begin{verbatim}
+  
+  default.prf = 
+      root = blah
+      root = foo
+      include common
+
+  common.prf = 
+      <everything else>
+\end{verbatim}
+Now do
+\begin{verbatim}
+  unison common root1 root2
+\end{verbatim}
+when you want to specify roots explicitly.
+
+\item The \verb|-prefer| and \verb|-force| options have been extended to
+allow users to specify that files with more recent modtimes should be
+propagated, writing either \verb|-prefer newer| or \verb|-force newer|.
+(For symmetry, Unison will also accept \verb|-prefer older| or
+\verb|-force older|.)  The \verb|-force older/newer| options can only be
+used when \verb|-times| is also set.
+
+The graphical user interface provides access to these facilities on a
+one-off basis via the \verb|Actions| menu.
+
+\item Names of roots can now be ``aliased'' to allow replicas to be
+relocated without changing the name of the archive file where Unison
+stores information between runs.  (This feature is for experts only.  See
+the ``Archive Files'' section of the manual for more information.)
+
+\item Graphical user-interface:
+\begin{itemize}
+\item A new command is provided in the Synchronization menu for
+  switching to a new profile without restarting Unison from scratch.
+\item The GUI also supports one-key shortcuts for commonly
+used profiles.  If a profile contains a preference of the form 
+%
+'\verb|key = n|', where \verb|n| is a single digit, then pressing this
+key will cause Unison to immediately switch to this profile and begin
+synchronization again from scratch.  (Any actions that may have been
+selected for a set of changes currently being displayed will be
+discarded.) 
+
+\item Each profile may include a preference '\verb|label = <string>|' giving a
+  descriptive string that described the options selected in this profile.
+  The string is listed along with the profile name in the profile selection
+  dialog, and displayed in the top-right corner of the main Unison window.
+\end{itemize}
+
+\item Minor:
+\begin{itemize}
+\item Fixed a bug that would sometimes cause the 'diff' display to order
+  the files backwards relative to the main user interface.  (Thanks
+  to Pascal Brisset for this fix.)
+\item On Unix systems, the graphical version of Unison will check the
+  \verb|DISPLAY| variable and, if it is not set, automatically fall back
+  to the textual user interface.
+\item Synchronization paths (\verb|path| preferences) are now matched
+  against the ignore preferences.  So if a path is both specified in a
+  \verb|path| preference and ignored, it will be skipped.
+\item Numerous other bugfixes and small improvements.
+\end{itemize}
+\end{changesfromversion}
+
+\begin{changesfromversion}{2.6.1}
+\item The synchronization of modification times has been disabled for
+  directories.
+
+\item Preference files may now include lines of the form
+  \verb+include <name>+, which will cause \verb+name.prf+ to be read
+  at that point.
+
+\item The synchronization of permission between Windows and Unix now
+  works properly.
+
+\item A binding \verb|CYGWIN=binmode| in now added to the environment
+  so that the Cygwin port of OpenSSH works properly in a non-Cygwin
+  context.
+
+\item The \verb|servercmd| and \verb|addversionno| preferences can now
+  be used together: \verb|-addversionno| appends an appropriate
+  \verb+-NNN+ to the server command, which is found by using the value
+  of the \verb|-servercmd| preference if there is one, or else just
+  \verb|unison|.
+
+\item Both \verb|'-pref=val'| and \verb|'-pref val'| are now allowed for
+  boolean values.  (The former can be used to set a preference to false.)
+
+\item Lot of small bugs fixed.
+\end{changesfromversion}
+
+\begin{changesfromversion}{2.5.31}
+\item The \verb|log| preference is now set to \verb|true| by default,
+  since the log file seems useful for most users.  
+\item Several miscellaneous bugfixes (most involving symlinks).
+\end{changesfromversion}
+
+\begin{changesfromversion}{2.5.25}
+\item \incompatible{} Archive format has changed (again).  
+
+\item Several significant bugs introduced in 2.5.25 have been fixed.  
+\end{changesfromversion}
+
+\begin{changesfromversion}{2.5.1}
+\item \incompatible{} Archive format has changed.  Make sure you
+synchronize your replicas before upgrading, to avoid spurious
+conflicts.  The first sync after upgrading will be slow.
+
+\item New functionality:
+\begin{itemize}
+\item Unison now synchronizes file modtimes, user-ids, and group-ids.  
+
+These new features are controlled by a set of new preferences, all of
+which are currently \verb|false| by default.  
+
+\begin{itemize}
+\item When the \verb|times| preference is set to \verb|true|, file
+modification times are propaged.  (Because the representations of time
+may not have the same granularity on both replicas, Unison may not always
+be able to make the modtimes precisely equal, but it will get them as
+close as the operating systems involved allow.)
+\item When the \verb|owner| preference is set to \verb|true|, file
+ownership information is synchronized.
+\item When the \verb|group| preference is set to \verb|true|, group 
+information is synchronized.
+\item When the \verb|numericIds| preference is set to \verb|true|, owner
+and group information is synchronized numerically.  By default, owner and
+group numbers are converted to names on each replica and these names are
+synchronized.  (The special user id 0 and the special group 0 are never
+mapped via user/group names even if this preference is not set.)
+\end{itemize}
+
+\item Added an integer-valued preference \verb|perms| that can be used to
+control the propagation of permission bits.  The value of this preference
+is a mask indicating which permission bits should be synchronized.  It is
+set by default to $0o1777$: all bits but the set-uid and set-gid bits are
+synchronised (synchronizing theses latter bits can be a security hazard).
+If you want to synchronize all bits, you can set the value of this
+preference to $-1$.
+
+\item Added a \verb|log| preference (default \verb|false|), which makes
+Unison keep a complete record of the changes it makes to the replicas.
+By default, this record is written to a file called \verb|unison.log| in
+the user's home directory (the value of the \verb|HOME| environment
+variable).  If you want it someplace else, set the \verb|logfile|
+preference to the full pathname you want Unison to use.
+
+\item Added an \verb|ignorenot| preference that maintains a set of patterns 
+  for paths that should definitely {\em not} be ignored, whether or not
+  they match an \verb|ignore| pattern.  (That is, a path will now be ignored
+  iff it matches an ignore pattern and does not match any ignorenot patterns.)
+\end{itemize}
+  
+\item User-interface improvements:
+\begin{itemize}
+\item Roots are now displayed in the user interface in the same order
+as they were given on the command line or in the preferences file.
+\item When the \verb|batch| preference is set, the graphical user interface no 
+  longer waits for user confirmation when it displays a warning message: it
+  simply pops up an advisory window with a Dismiss button at the bottom and
+  keeps on going.
+\item Added a new preference for controlling how many status messages are
+  printed during update detection: \verb|statusdepth| controls the maximum
+  depth for paths on the local machine (longer paths are not displayed, nor
+  are non-directory paths).  The value should be an integer; default is 1.  
+\item Removed the \verb|trace| and \verb|silent| preferences.  They did
+not seem very useful, and there were too many preferences for controlling
+output in various ways.
+\item The text UI now displays just the default command (the one that
+will be used if the user just types \verb|<return>|) instead of all
+available commands.  Typing \verb|?| will print the full list of
+possibilities.
+\item The function that finds the canonical hostname of the local host
+(which is used, for example, in calculating the name of the archive file
+used to remember which files have been synchronized) normally uses the
+\verb|gethostname| operating system call.  However, if the environment
+variable \verb|UNISONLOCALHOSTNAME| is set, its value will now be used
+instead.  This makes it easier to use Unison in situations where a
+machine's name changes frequently (e.g., because it is a laptop and gets
+moved around a lot).
+\item File owner and group are now displayed in the ``detail window'' at
+the bottom of the screen, when unison is configured to synchronize them.
+\end{itemize}
+
+\item For hackers:
+\begin{itemize}
+\item Updated to Jacques Garrigue's new version of \verb|lablgtk|, which
+  means we can throw away our local patched version.  
+
+  If you're compiling the GTK version of unison from sources, you'll need
+  to update your copy of lablgtk to the developers release.
+  (Warning: installing lablgtk under Windows is currently a bit
+  challenging.) 
+
+\item The TODO.txt file (in the source distribution) has been cleaned up
+and reorganized.  The list of pending tasks should be much easier to
+make sense of, for people that may want to contribute their programming
+energies.  There is also a separate file BUGS.txt for open bugs.
+\item The Tk user interface has been removed (it was not being maintained
+and no longer compiles).
+\item The \verb|debug| preference now prints quite a bit of additional
+information that should be useful for identifying sources of problems.
+\item The version number of the remote server is now checked right away 
+  during the connection setup handshake, rather than later.  (Somebody
+  sent a bug report of a server crash that turned out to come from using
+  inconsistent versions: better to check this earlier and in a way that
+  can't crash either client or server.)
+\item Unison now runs correctly on 64-bit architectures (e.g. Alpha
+linux).  We will not be distributing binaries for these architectures
+ourselves (at least for a while) but if someone would like to make them
+available, we'll be glad to provide a link to them.
+\end{itemize}
+
+\item Bug fixes:
+\begin{itemize}
+\item Pattern matching (e.g. for \verb|ignore|) is now case-insensitive
+  when Unison is in case-insensitive mode (i.e., when one of the replicas
+  is on a windows machine).
+\item Some people had trouble with mysterious failures during
+  propagation of updates, where files would be falsely reported as having
+  changed during synchronization.  This should be fixed.
+\item Numerous smaller fixes.
+\end{itemize}
+\end{changesfromversion}
+
+\begin{changesfromversion}{2.4.1}
+\item Added a number of 'sorting modes' for the user interface.  By
+default, conflicting changes are displayed at the top, and the rest of
+the entries are sorted in alphabetical order.  This behavior can be
+changed in the following ways:
+\begin{itemize}
+\item Setting  the \verb|sortnewfirst| preference to \verb|true| causes
+newly created files to be displayed before changed files.
+\item Setting \verb|sortbysize| causes files to be displayed in
+increasing order of size.
+\item Giving the preference \verb|sortfirst=<pattern>| (where
+\verb|<pattern>| is a path descriptor in the same format as 'ignore' and 'follow'
+patterns, causes paths matching this pattern to be displayed first.
+\item Similarly, giving the preference \verb|sortlast=<pattern>| 
+causes paths matching this pattern to be displayed last.
+\end{itemize}
+The sorting preferences are described in more detail in the user manual.
+The \verb|sortnewfirst| and \verb|sortbysize| flags can also be accessed
+from the 'Sort' menu in the grpahical user interface.
+
+\item Added two new preferences that can be used to change unison's
+fundamental behavior to make it more like a mirroring tool instead of
+a synchronizer.
+\begin{itemize}
+\item Giving the preference \verb|prefer| with argument \verb|<root>|
+(by adding \verb|-prefer <root>| to the command line or \verb|prefer=<root>|)
+to your profile) means that, if there is a conflict, the contents of
+\verb|<root>| 
+should be propagated to the other replica (with no questions asked).
+Non-conflicting changes are treated as usual.
+\item Giving the preference \verb|force| with argument \verb|<root>|
+will make unison resolve {\em all} differences in favor of the given
+root, even if it was the other replica that was changed.
+\end{itemize}
+These options should be used with care!  (More information is available in
+the manual.)
+
+\item Small changes:
+\begin{itemize}
+\item 
+Changed default answer to 'Yes' in all two-button dialogs in the 
+  graphical interface (this seems more intuitive).
+
+\item The \verb|rsync| preference has been removed (it was used to
+activate rsync compression for file transfers, but rsync compression is
+now enabled by default). 
+\item  In the text user interface, the arrows indicating which direction
+changes are being 
+  propagated are printed differently when the user has overridded Unison's
+  default recommendation (\verb|====>| instead of \verb|---->|).  This
+  matches the behavior of the graphical interface, which displays such
+  arrows in a different color.
+\item Carriage returns (Control-M's) are ignored at the ends of lines in
+  profiles, for Windows compatibility.
+\item All preferences are now fully documented in the user manual. 
+\end{itemize}
+\end{changesfromversion}
+
+\begin{changesfromversion}{2.3.12}
+\item \incompatible{} Archive format has changed.  Make sure you
+synchronize your replicas before upgrading, to avoid spurious
+conflicts.  The first sync after upgrading will be slow.
+
+\item New/improved functionality:
+\begin{itemize}
+\item  A new preference -sortbysize controls the order in which changes
+  are displayed to the user: when it is set to true, the smallest
+  changed files are displayed first.  (The default setting is false.) 
+\item A new preference -sortnewfirst causes newly created files to be 
+  listed before other updates in the user interface.
+\item We now allow the ssh protocol to specify a port.  
+\item Incompatible change: The unison: protocol is deprecated, and we added
+  file: and socket:.  You may have to modify your profiles in the
+  .unison directory.
+  If a replica is specified without an explicit protocol, we now
+  assume it refers to a file.  (Previously "//saul/foo" meant to use
+  SSH to connect to saul, then access the foo directory.  Now it means
+  to access saul via a remote file mechanism such as samba; the old
+  effect is now achieved by writing {\tt ssh://saul/foo}.)
+\item Changed the startup sequence for the case where roots are given but
+  no profile is given on the command line.  The new behavior is to
+  use the default profile (creating it if it does not exist), and
+  temporarily override its roots.  The manual claimed that this case
+  would work by reading no profile at all, but AFAIK this was never
+  true.
+\item In all user interfaces, files with conflicts are always listed first
+\item A new preference 'sshversion' can be used to control which version
+  of ssh should be used to connect to the server.  Legal values are 1 and 2.
+  (Default is empty, which will make unison use whatever version of ssh
+  is installed as the default 'ssh' command.)
+\item The situation when the permissions of a file was updated the same on
+  both side is now handled correctly (we used to report a spurious conflict)
+
+\end{itemize}
+
+\item Improvements for the Windows version:
+\begin{itemize}
+\item The fact that filenames are treated case-insensitively under
+Windows should now be handled correctly.  The exact behavior is described
+in the cross-platform section of the manual.
+\item It should be possible to synchronize with Windows shares, e.g.,
+  //host/drive/path.
+\item Workarounds to the bug in syncing root directories in Windows.
+The most difficult thing to fix is an ocaml bug: Unix.opendir fails on
+c: in some versions of Windows.
+\end{itemize}
+
+\item Improvements to the GTK user interface (the Tk interface is no
+longer being maintained): 
+\begin{itemize}
+\item The UI now displays actions differently (in blue) when they have been
+  explicitly changed by the user from Unison's default recommendation.
+\item More colorful appearance.
+\item The initial profile selection window works better.
+\item If any transfers failed, a message to this effect is displayed along with
+  'Synchronization complete' at the end of the transfer phase (in case they
+  may have scrolled off the top).
+\item Added a global progress meter, displaying the percentage of {\em total}
+  bytes that have been transferred so far.
+\end{itemize}
+
+\item Improvements to the text user interface:
+\begin{itemize}
+\item The file details will be displayed automatically when a
+  conflict is been detected.
+\item when a warning is generated (e.g. for a temporary
+  file left over from a previous run of unison) Unison will no longer
+  wait for a response if it is running in -batch mode.
+\item The UI now displays a short list of possible inputs each time it waits
+  for user interaction.  
+\item The UI now quits immediately (rather than looping back and starting
+  the interaction again) if the user presses 'q' when asked whether to 
+  propagate changes.
+\item Pressing 'g' in the text user interface will proceed immediately
+  with propagating updates, without asking any more questions.
+\end{itemize}
+
+\item Documentation and installation changes:
+\begin{itemize}
+\item The manual now includes a FAQ, plus sections on common problems and
+on tricks contributed by users.
+\item Both the download page and the download directory explicitly say
+what are the current stable and beta-test version numbers.
+\item The OCaml sources for the up-to-the-minute developers' version (not
+guaranteed to be stable, or even to compile, at any given time!) are now
+available from the download page.
+\item Added a subsection to the manual describing cross-platform
+  issues (case conflicts, illegal filenames)
+\end{itemize}
+
+\item Many small bug fixes and random improvements.
+
+\end{changesfromversion}
+
+\begin{changesfromversion}{2.3.1}
+\item Several bug fixes.  The most important is a bug in the rsync
+module that would occasionally cause change propagation to fail with a
+'rename' error.
+\end{changesfromversion}
+
+\begin{changesfromversion}{2.2}
+\item The multi-threaded transport system is now disabled by default.
+(It is not stable enough yet.)
+\item Various bug fixes.
+\item A new experimental feature: 
+
+  The final component of a -path argument may now be the wildcard 
+  specifier \verb|*|.  When Unison sees such a path, it expands this path on 
+  the client into into the corresponding list of paths by listing the
+  contents of that directory.  
+
+  Note that if you use wildcard paths from the command line, you will
+  probably need to use quotes or a backslash to prevent the * from
+  being interpreted by your shell.
+
+  If both roots are local, the contents of the first one will be used
+  for expanding wildcard paths.  (Nb: this is the first one {\em after} the
+  canonization step -- i.e., the one that is listed first in the user 
+  interface -- not the one listed first on the command line or in the
+  preferences file.)
+\end{changesfromversion}
+
+\begin{changesfromversion}{2.1}
+\item The transport subsystem now includes an implementation by
+Sylvain Gommier and Norman Ramsey of Tridgell and Mackerras's
+\verb|rsync| protocol.  This protocol achieves much faster 
+transfers when only a small part of a large file has been changed by
+sending just diffs.  This feature is mainly helpful for transfers over
+slow links---on fast local area networks it can actually degrade
+performance---so we have left it off by default.  Start unison with
+the \verb|-rsync| option (or put \verb|rsync=true| in your preferences
+file) to turn it on.
+
+\item ``Progress bars'' are now diplayed during remote file transfers,
+showing what percentage of each file has been transferred so far.
+
+\item The version numbering scheme has changed.  New releases will now
+      be have numbers like 2.2.30, where the second component is
+      incremented on every significant public release and the third
+      component is the ``patch level.''
+
+\item Miscellaneous improvements to the GTK-based user interface.
+\item The manual  is now available in PDF format.
+
+\item We are experimenting with using a multi-threaded transport
+subsystem to transfer several files at the same time, making
+much more effective use of available network bandwidth.  This feature
+is not completely stable yet, so by default it is disabled in the
+release version of Unison.
+
+If you want to play with the multi-threaded version, you'll need to
+recompile Unison from sources (as described in the documentation),
+setting the THREADS flag in Makefile.OCaml to true.  Make sure that
+your OCaml compiler has been installed with the \verb|-with-pthreads|
+configuration option.  (You can verify this by checking whether the
+file \verb|threads/threads.cma| in the OCaml standard library
+directory contains the string \verb|-lpthread| near the end.)
+\end{changesfromversion}
+
+\begin{changesfromversion}{1.292}
+\item Reduced memory footprint (this is especially important during
+the first run of unison, where it has to gather information about all
+the files in both repositories). 
+\item Fixed a bug that would cause the socket server under NT to fail
+  after the client exits. 
+\item Added a SHIFT modifier to the Ignore menu shortcut keys in GTK
+  interface (to avoid hitting them accidentally).  
+\end{changesfromversion}
+
+\begin{changesfromversion}{1.231}
+\item Tunneling over ssh is now supported in the Windows version.  See
+the installation section of the manual for detailed instructions.
+
+\item The transport subsystem now includes an implementation of the
+\verb|rsync| protocol, built by Sylvain Gommier and Norman Ramsey.
+This protocol achieves much faster transfers when only a small part of
+a large file has been changed by sending just diffs.  The rsync
+feature is off by default in the current version.  Use the
+\verb|-rsync| switch to turn it on.  (Nb.  We still have a lot of
+tuning to do: you may not notice much speedup yet.)
+
+\item We're experimenting with a multi-threaded transport subsystem,
+written by Jerome Vouillon.  The downloadable binaries are still
+single-threaded: if you want to try the multi-threaded version, you'll
+need to recompile from sources.  (Say \verb|make THREADS=true|.)
+Native thread support from the compiler is required.  Use the option
+\verb|-threads N| to select the maximal number of concurrent 
+threads (default is 5).  Multi-threaded
+and single-threaded clients/servers can interoperate.  
+
+\item A new GTK-based user interface is now available, thanks to
+Jacques Garrigue.  The Tk user interface still works, but we'll be
+shifting development effort to the GTK interface from now on.
+\item OCaml 3.00 is now required for compiling Unison from sources.
+The modules \verb|uitk| and \verb|myfileselect| have been changed to
+use labltk instead of camltk.  To compile the Tk interface in Windows,
+you must have ocaml-3.00 and tk8.3.  When installing tk8.3, put it in
+\verb|c:\Tcl| rather than the suggested \verb|c:\Program Files\Tcl|, 
+and be sure to install the headers and libraries (which are not 
+installed by default).
+
+\item Added a new \verb|-addversionno| switch, which causes unison to
+use \verb|unison-<currentversionnumber>| instead of just \verb|unison|
+as the remote server command.  This allows multiple versions of unison
+to coexist conveniently on the same server: whichever version is run
+on the client, the same version will be selected on the server.
+\end{changesfromversion}
+
+\begin{changesfromversion}{1.219}
+\item \incompatible{} Archive format has changed.  Make sure you
+synchronize your replicas before upgrading, to avoid spurious
+conflicts.  The first sync after upgrading will be slow.
+
+\item This version fixes several annoying bugs, including:
+\begin{itemize}
+\item Some cases where propagation of file permissions was not
+working.
+\item umask is now ignored when creating directories
+\item directories are create writable, so that a read-only directory and
+    its contents can be propagated.
+\item Handling of warnings generated by the server.
+\item Synchronizing a path whose parent is not a directory on both sides is
+now flagged as erroneous.  
+\item Fixed some bugs related to symnbolic links and nonexistant roots.
+\begin{itemize}
+\item 
+   When a change (deletion or new contents) is propagated onto a 
+     'follow'ed symlink, the file pointed to by the link is now changed.
+     (We used to change the link itself, which doesn't fit our assertion
+     that 'follow' means the link is completely invisible)
+   \item When one root did not exist, propagating the other root on top of it
+     used to fail, becuase unison could not calculate the working directory
+     into which to write changes.  This should be fixed.
+\end{itemize}
+\end{itemize}
+
+\item A human-readable timestamp has been added to Unison's archive files.
+
+\item The semantics of Path and Name regular expressions now
+correspond better. 
+
+\item Some minor improvements to the text UI (e.g. a command for going
+back to previous items)
+
+\item The organization of the export directory has changed --- should
+be easier to find / download things now.
+\end{changesfromversion}
+
+\begin{changesfromversion}{1.200}
+\item \incompatible{} Archive format has changed.  Make sure you
+synchronize your replicas before upgrading, to avoid spurious
+conflicts.  The first sync after upgrading will be slow.
+
+\item This version has not been tested extensively on Windows.
+
+\item Major internal changes designed to make unison safer to run
+at the same time as the replicas are being changed by the user.
+
+\item Internal performance improvements.  
+\end{changesfromversion}
+
+\begin{changesfromversion}{1.190}
+\item \incompatible{} Archive format has changed.  Make sure you
+synchronize your replicas before upgrading, to avoid spurious
+conflicts.  The first sync after upgrading will be slow.
+
+\item A number of internal functions have been changed to reduce the
+amount of memory allocation, especially during the first
+synchronization.  This should help power users with very big replicas.
+
+\item Reimplementation of low-level remote procedure call stuff, in
+preparation for adding rsync-like smart file transfer in a later
+release.   
+
+\item Miscellaneous bug fixes.
+\end{changesfromversion}
+
+\begin{changesfromversion}{1.180}
+\item \incompatible{} Archive format has changed.  Make sure you
+synchronize your replicas before upgrading, to avoid spurious
+conflicts.  The first sync after upgrading will be slow.
+
+\item Fixed some small bugs in the interpretation of ignore patterns. 
+
+\item Fixed some problems that were preventing the Windows version
+from working correctly when click-started.
+
+\item Fixes to treatment of file permissions under Windows, which were
+causing spurious reports of different permissions when synchronizing
+between windows and unix systems.
+
+\item Fixed one more non-tail-recursive list processing function,
+which was causing stack overflows when synchronizing very large
+replicas. 
+\end{changesfromversion}
+
+\begin{changesfromversion}{1.169}
+\item The text user interface now provides commands for ignoring
+  files. 
+\item We found and fixed some {\em more} non-tail-recursive list
+  processing functions.  Some power users have reported success with
+  very large replicas.
+\item \incompatible 
+Files ending in \verb|.tmp| are no longer ignored automatically.  If you want
+to ignore such files, put an appropriate ignore pattern in your profile.
+
+\item \incompatible{} The syntax of {\tt ignore} and {\tt follow}
+patterns has changed. Instead of putting a line of the form
+\begin{verbatim}
+                 ignore = <regexp>
+\end{verbatim}
+  in your profile ({\tt .unison/default.prf}), you should put:
+\begin{verbatim}
+                 ignore = Regexp <regexp>
+\end{verbatim}
+Moreover, two other styles of pattern are also recognized:
+\begin{verbatim}
+                 ignore = Name <name>
+\end{verbatim}
+matches any path in which one component matches \verb|<name>|, while
+\begin{verbatim}
+                 ignore = Path <path>
+\end{verbatim}
+matches exactly the path \verb|<path>|.
+
+Standard ``globbing'' conventions can be used in \verb|<name>| and
+\verb|<path>|:  
+\begin{itemize}
+\item a \verb|?| matches any single character except \verb|/|
+\item a \verb|*| matches any sequence of characters not including \verb|/|
+\item \verb|[xyz]| matches any character from the set $\{{\tt x},
+  {\tt y}, {\tt z} \}$
+\item \verb|{a,bb,ccc}| matches any one of \verb|a|, \verb|bb|, or
+  \verb|ccc|. 
+\end{itemize}
+
+See the user manual for some examples.
+\end{changesfromversion}
+
+\begin{changesfromversion}{1.146}
+\item Some users were reporting stack overflows when synchronizing
+  huge directories.  We found and fixed some non-tail-recursive list
+  processing functions, which we hope will solve the problem.  Please 
+  give it a try and let us know.
+\item Major additions to the documentation.  
+\end{changesfromversion}
+
+\begin{changesfromversion}{1.142}
+\item Major internal tidying and many small bugfixes.
+\item Major additions to the user manual.
+\item Unison can now be started with no arguments -- it will prompt
+automatically for the name of a profile file containing the roots to
+be synchronized.  This makes it possible to start the graphical UI
+from a desktop icon.
+\item Fixed a small bug where the text UI on NT was raising a 'no such
+  signal' exception.
+\end{changesfromversion}
+
+\begin{changesfromversion}{1.139}
+\item The precompiled windows binary in the last release was compiled
+with an old OCaml compiler, causing propagation of permissions not to
+work (and perhaps leading to some other strange behaviors we've heard
+reports about).  This has been corrected.  If you're using precompiled
+binaries on Windows, please upgrade.
+\item Added a \verb|-debug| command line flag, which controls debugging
+of various modules.  Say \verb|-debug XXX| to enable debug tracing for
+module \verb|XXX|, or \verb|-debug all| to turn on absolutely everything.
+\item Fixed a small bug where the text UI on NT was raising a 'no such signal'
+exception.
+\end{changesfromversion}
+
+\begin{changesfromversion}{1.111}
+\item \incompatible{} The names and formats of the preference files in
+the .unison directory have changed.  In particular:
+\begin{itemize}
+\item the file ``prefs'' should be renamed to default.prf
+\item the contents of the file ``ignore'' should be merged into
+  default.prf.  Each line of the form \verb|REGEXP| in ignore should
+  become a line of the form \verb|ignore = REGEXP| in default.prf.
+\end{itemize}
+\item Unison now handles permission bits and  symbolic links.  See the
+manual for details.
+
+\item You can now have different preference files in your .unison
+directory.  If you start unison like this
+\begin{verbatim}
+             unison profilename
+\end{verbatim}
+(i.e. with just one ``anonymous'' command-line argument), then the
+file \verb|~/.unison/profilename.prf| will be loaded instead of
+\verb|default.prf|. 
+
+\item Some improvements to terminal handling in the text user interface
+
+\item Added a switch -killServer that terminates the remote server process
+when the unison client is shutting down, even when using sockets for 
+communication.  (By default, a remote server created using ssh/rsh is 
+terminated automatically, while a socket server is left running.)
+\item When started in 'socket server' mode, unison prints 'server started' on
+  stderr when it is ready to accept connections.  
+  (This may be useful for scripts that want to tell when a socket-mode server 
+  has finished initalization.)
+\item We now make a nightly mirror of our current internal development
+  tree, in case anyone wants an up-to-the-minute version to hack
+  around with.
+\item Added a file CONTRIB with some suggestions for how to help us
+make Unison better.
+\end{changesfromversion}
+

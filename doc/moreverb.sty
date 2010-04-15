@@ -1,0 +1,191 @@
+%%
+%% This is file `moreverb.sty',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% moreverb.dtx  (with options: `moreverb')
+%% 
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{moreverb}
+        [1997/12/07 v2.2d.2
+    `more' verbatim facilities%
+                   ]
+\@ifundefined{verbatim@processline}{\RequirePackage{verbatim}}{}
+\newwrite \verbatim@out
+\def\verbatimwrite#1{%
+  \@bsphack
+  \immediate\openout \verbatim@out #1
+  \let\do\@makeother\dospecials
+  \catcode`\^^M\active \catcode`\^^I=12
+  \def\verbatim@processline{%
+    \immediate\write\verbatim@out
+      {\the\verbatim@line}}%
+  \verbatim@start}
+\def\endverbatimwrite{%
+  \immediate\closeout\verbatim@out
+  \@esphack}
+\newcount\tab@position \newcount\tab@size
+\def\verbatimtabsize{8\relax}
+\def\@xobeytab{%
+  \loop
+    \toks@\expandafter{\the\toks@\@xobeysp}%
+    \advance\tab@position-1
+  \ifnum\tab@position>0 \repeat
+}
+\begingroup
+  \catcode`\^^I=\active
+  \gdef\@vobeytabs{\catcode`\^^I\active\let^^I\@xobeytab}%
+\endgroup
+\def\verbatim@tabexpand#1{%
+  \ifx#1\@nil
+    \the\toks@
+    \expandafter\par
+  \else
+    \ifx#1\@xobeytab
+      \@xobeytab
+    \else
+      \toks@\expandafter{\the\toks@#1}%
+      \advance\tab@position\m@ne
+    \fi
+    \ifnum\tab@position=0 \tab@position\tab@size \fi
+    \expandafter\verbatim@tabexpand
+  \fi
+}
+\newcount\listing@line \listing@line=1
+\def\listing@step{1\relax}
+\def\listinglabel#1{\llap{\small\rmfamily\the#1}\hskip\listingoffset\relax}
+\def\thelisting@line{%
+  \setbox0\hbox{\listinglabel\listing@line}%
+  \@tempcnta=\listing@line
+  \divide\@tempcnta\listing@step \multiply\@tempcnta\listing@step
+  \ifnum\listing@line=\@ne
+    \unhbox0
+  \else
+    \ifnum\@tempcnta=\listing@line
+      \unhbox0
+    \else
+      \hskip\wd0
+    \fi
+  \fi}
+\providecommand\listingoffset{1.5em}
+\newcommand\listing[2][1]{%
+  \global\listing@line=#2\relax
+  \gdef\listing@step{#1\relax}
+  \listingcont}
+\def\listingcont{%
+  \tab@size=\verbatimtabsize
+  \def\verbatim@processline{\tab@position\tab@size
+    \thelisting@line \global\advance\listing@line1
+    \toks@{}%
+    \expandafter\verbatim@tabexpand\the\verbatim@line\@nil}%
+  \@verbatim\frenchspacing\@vobeyspaces\@vobeytabs\verbatim@start}
+\let\endlisting=\endtrivlist
+\let\endlistingcont=\endtrivlist
+\expandafter\newcommand\csname listing*\endcsname[2][1]{%
+  \global\listing@line=#2\relax
+  \gdef\listing@step{#1\relax}
+  \csname listingcont*\endcsname}
+\@namedef{listingcont*}{%
+  \def\verbatim@processline{%
+    \thelisting@line \global\advance\listing@line1
+    \the\verbatim@line\par}%
+  \@verbatim\verbatim@start}
+\expandafter\let\csname endlisting*\endcsname\endtrivlist
+\expandafter\let\csname endlistingcont*\endcsname\endtrivlist
+\def\listinginput{%
+   \@ifnextchar[%]
+     {\@listinginput}%
+     {\@listinginput[1]}}
+\begingroup
+  \catcode`\~=\active \lccode`\~=`\^^M \lccode`\N=`\N
+  \lowercase{\endgroup
+    \def\@listinginput[#1]#2#3{\begingroup
+      \global\listing@line=#2
+      \gdef\listing@step{#1\relax}
+      \tab@size=\verbatimtabsize
+      \def\verbatim@processline{\tab@position\tab@size
+        \thelisting@line \global\advance\listing@line1
+        \toks@{}%
+        \expandafter\verbatim@tabexpand\the\verbatim@line\@nil}%
+      \@verbatim\frenchspacing\@vobeyspaces\@vobeytabs
+      \def\verbatim@addtoline##1~{%
+        \verbatim@line\expandafter{\the\verbatim@line##1}}%
+      \openin\verbatim@in@stream=#3
+      \ifeof\verbatim@in@stream
+        \PackageWarning{moreverb}{No file #3.}%
+      \else
+        \do@verbatimtabinput
+        \closein\verbatim@in@stream
+      \fi
+      \endtrivlist\endgroup
+    \@doendpe
+  }%
+}
+\def\verbatimcmd{%
+  \PackageError{moreverb}{The verbatimcmd environment is obsolete}%
+                         {Use alltt (from the LaTeX base package
+                           alltt) in place of verbatimcmd}%
+}
+\let\endverbatimcmd\relax
+\def\boxedverbatim{%
+  \def\verbatim@processline{%
+    {\setbox0=\hbox{\the\verbatim@line}%
+    \hsize=\wd0 \the\verbatim@line\par}}%
+  \@minipagetrue%%%DPC%%%
+  \@tempswatrue%%%DPC%%%
+  \setbox0=\vbox\bgroup \verbatim
+}
+\def\endboxedverbatim{%
+  \endverbatim
+  \unskip\setbox0=\lastbox %%%DPC%%%
+  \egroup
+  \fbox{\box0}% <<<=== change here for centering,...
+}
+\newenvironment{verbatimtab}{\obeylines\@verbatimtab}{\endtrivlist}
+\newcommand\@verbatimtab[1][\verbatimtabsize]{%
+  \do@verbatimtab{#1}{%
+     \@verbatim\frenchspacing\@vobeyspaces\@vobeytabs\verbatim@start}%
+}
+\def\do@verbatimtab#1#2{%
+  \tab@size=#1
+  \def\verbatim@processline{\tab@position\tab@size
+    \toks@{}%
+    \expandafter\verbatim@tabexpand\the\verbatim@line\@nil}%
+  #2%
+}
+\def\verbatimtabinput{%
+   \@ifnextchar[%]
+     {\@verbatimtabinput}%
+     {\@verbatimtabinput[\verbatimtabsize]}}
+\begingroup
+\catcode`\~=\active \lccode`\~=`\^^M \lccode`\N=`\N
+\lowercase{\endgroup
+  \def\@verbatimtabinput[#1]#2{\begingroup
+    \do@verbatimtab{#1}{%
+      \@verbatim\frenchspacing\@vobeyspaces\@vobeytabs}%
+    \def\verbatim@addtoline##1~{%
+      \verbatim@line\expandafter{\the\verbatim@line##1}}%
+    \openin\verbatim@in@stream=#2
+    \ifeof\verbatim@in@stream
+      \PackageWarning{moreverb}{No file #2.}
+    \else
+      \@addtofilelist{#2}%
+      \do@verbatimtabinput
+      \closein\verbatim@in@stream
+    \fi
+  \endtrivlist\endgroup\@doendpe}%
+}
+\def\do@verbatimtabinput{%
+  \read\verbatim@in@stream to \verbtab@line
+  \ifeof\verbatim@in@stream
+  \else
+    \expandafter\verbatim@addtoline\verbtab@line
+    \verbatim@processline
+    \verbatim@startline
+    \expandafter\do@verbatimtabinput
+  \fi
+}
+\endinput
+%%
+%% End of file `moreverb.sty'.
