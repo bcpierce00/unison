@@ -1,0 +1,14 @@
+Installation notes to build Unison on Windows systems
+
+We provide two options for building Unison on MS Windows.  Both
+options require the Cygwin layer to be able to use a few GNU tools as
+well as the OCaml distribution version.  The options differ in the C
+compiler employed: MS Visual C++ (MSVC) vs Cygwin GNU C.
+
+Tradeoff? 
+. Only the MSVC option can produce statically linked Unison executable.  
+. The Cygwin GNU C option requires only free software.
+
+The files "INSTALL.win32-msvc" and "INSTALL.win32-cygwin-gnuc" describe
+the building procedures for the respective options.
+
