@@ -1,3 +1,0 @@
-#include <winver.h>
-
-UNISON_ICON		ICON			"U.ico"
