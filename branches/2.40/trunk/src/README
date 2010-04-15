@@ -1,0 +1,30 @@
+                        THE UNISON FILE SYNCHRONIZER
+
+                 http://www.cis.upenn.edu/~bcpierce/unison
+
+This directory is the source distribution for the unison file synchronizer.  
+
+Installation instructions are in the file INSTALL.
+
+License and copying information can be found in the file COPYING
+
+Full documentation can be found on the Unison home page.
+
+Contacts:
+  - Bug reports should be sent to unison-help@cis.upenn.edu
+  - General questions and discussion should be sent to 
+      unison-users@groups.yahoo.com 
+  - You can subscribe to this list using Yahoo's web interface
+      http://groups.yahoo.com/group/unison-users
+
+Credits:
+
+OS X Unison Icon taken from Mac4Lin (LGPL)
+     http://sourceforge.net/projects/mac4lin/
+Some icons in the OSX GUI are directly taken from Matt Ball's developer icons 
+     (Creative Commons Attribution 3.0)  
+Others are based on Matt Ball's developer icons (Creative Commons Attribution 3.0)
+     http://www.mattballdesign.com/blog/2009/11/23/developer-icons-are-back-online/
+OSX GUI elements from BWToolkit (three-clause BSD license)
+     http://www.brandonwalkin.com/bwtoolkit/
+
