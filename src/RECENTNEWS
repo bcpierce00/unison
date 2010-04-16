@@ -1,5 +1,10 @@
 CHANGES FROM VERSION 2.40.16
 
+* Fixed Unicode decomposition tables
+
+-------------------------------
+CHANGES FROM VERSION 2.40.16
+
 Move old 2.40 branch aside to make room for a new beta version with
 same major number
 -------------------------------
