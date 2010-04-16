@@ -49,7 +49,8 @@ let convert m c = try IntMap.find c m with Not_found -> [c]
 
 let convert_list m l = List.flatten (List.map (convert m) l)
 
-let compose m m' = IntMap.map (fun l -> convert_list m l) m'
+let compose m m' =
+  IntMap.fold (fun k l m -> IntMap.add k (convert_list m l) m) m' m
 
 let add m c l =
   let l = if l = [0xffff] then [0] else l in
@@ -1572,7 +1573,6 @@ let _ =
 (****)
 
 let lower_map = empty ()
-let lower_map = decompose_map
 
 let _ =
   for i = 0 to 255 do
@@ -1856,11 +1856,18 @@ let _ =
   done
 *)
 
-let print_tbl nm ch tbl =
+let print_tbl nm l ch map =
+  let tbl = build map l in
   (* ASCII *)
   Format.fprintf ch "@[<2>let %s_%s =@ @[<1>\"" nm "ascii";
   for c = 0 to 127 do
-    Format.fprintf ch "%s" (String.escaped (conv c))
+    let c' =
+      try
+        match IntMap.find c map with [c] -> c | _ -> assert false
+      with Not_found ->
+        c
+    in
+    Format.fprintf ch "%s" (String.escaped (String.make 1 (Char.chr c')))
   done;
   Format.fprintf ch "\"@]@]@.";
   (* Replacement *)
@@ -1984,10 +1991,8 @@ let _ =
   let o = open_out "unicode_tables.ml" in
   let ch = Format.formatter_of_out_channel o in
   Format.fprintf ch "(*-*-coding: utf-8;-*-*)@.";
-  Format.fprintf ch "%a" (print_tbl "norm")
-    (build normalize_map 6);
-  Format.fprintf ch "%a" (print_tbl "decomp")
-    (build !decompose_map 6);
+  Format.fprintf ch "%a" (print_tbl "norm" 6) normalize_map;
+  Format.fprintf ch "%a" (print_tbl "decomp" 6) !decompose_map;
 (*
   Format.fprintf ch "%a" (print_compose "comp_prim" "comp_snd")
     (build !compose_map 6);
