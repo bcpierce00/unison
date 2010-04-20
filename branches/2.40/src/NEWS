@@ -1,5 +1,211 @@
 
-Changes in Version 2.40.1
+Changes in Version 2.40.16
+
+   Changes since 2.40.1:
+     * Added "BelowPath" patterns, that match a path as well as all paths
+       below (convenient to use with nodeletion,update,creationpartial
+       preferences)
+     * Added a "fat" preference that makes Unison use the right options
+       when one of the replica is on a FAT filesystem.
+     * Allow "prefer/force=newer" even when not synchronizing
+       modification times. (The reconciler will not be aware of the
+       modification time of unchanged files, so the synchronization
+       choices of Unison can be different from when "times=true", but the
+       behavior remains sane: changed files with the most recent
+       modification time will be propagated.)
+     * Minor fixes and improvements:
+          + Compare filenames up to decomposition in case sensitive mode
+            when one host is running MacOSX and the unicode preference is
+            set to true.
+          + Rsync: somewhat faster compressor
+          + Make Unicode the default on all architectures (it was only
+            the default when a Mac OS X or Windows machine was involved).
+
+   Changes since 2.32:
+     * Major enhancement: Unicode support.
+          + Unison should now handle unicode filenames correctly on all
+            platforms.
+          + This functionality is controlled by a new preference unicode.
+          + Unicode mode is now the default when one of the hosts is
+            under Windows or MacOS. This may make upgrades a bit more
+            painful (the archives cannot be reused), but this is a much
+            saner default.
+     * Partial transfer of directories. If an error occurs while
+       transferring a directory, the part transferred so far is copied
+       into place (and the archives are updated accordingly). The
+       "maxerrors" preference controls how many transfer error Unison
+       will accept before stopping the transfer of a directory (by
+       default, only one). This makes it possible to transfer most of a
+       directory even if there are some errors. Currently, only the first
+       error is reported by the GUIs.
+       Also, allow partial transfer of a directory when there was an
+       error deep inside this directory during update detection. At the
+       moment, this is only activated with the text and GTK UIs, which
+       have been modified so that they show that the transfer is going to
+       be partial and so that they can display all errors.
+     * Improvement to the code for resuming directory transfers:
+          + if a file was not correctly transferred (or the source has
+            been modified since, with unchanged size), Unison performs a
+            new transfer rather than failing
+          + spurious files are deleted (this can happen if a file is
+            deleted on the source replica before resuming the transfer;
+            not deleting the file would result in it reappearing on the
+            target replica)
+     * Experimental streaming protocol for transferring file contents
+       (can be disabled by setting the directive "stream" to false): file
+       contents is transfered asynchronously (without waiting for a
+       response from the destination after each chunk sent) rather than
+       using the synchronous RPC mechanism. As a consequence:
+          + Unison now transfers the contents of a single file at a time
+            (Unison used to transfer several contents simultaneously in
+            order to hide the connection latency.)
+          + the transfer of large files uses the full available bandwidth
+            and is not slowed done due to the connection latency anymore
+          + we get performance improvement for small files as well by
+            scheduling many files simultaneously (as scheduling a file
+            for transfer consume little ressource: it does not mean
+            allocating a large buffer anymore)
+     * Changes to the internal implementation of the rsync algorithm:
+          + use longer blocks for large files (the size of a block is the
+            square root of the size of the file for large files);
+          + transmit less checksum information per block (we still have
+            less than one chance in a hundred million of transferring a
+            file incorrectly, and Unison will catch any transfer error
+            when fingerprinting the whole file)
+          + avoid transfer overhead (which was 4 bytes per block)
+       For a 1G file, the first optimization saves a factor 50 on the
+       amount of data transferred from the target to the source (blocks
+       are 32768 bytes rather than just 700 bytes). The two other
+       optimizations save another factor of 2 (from 24 bytes per block
+       down to 10).
+     * Implemented an on-disk file fingerprint cache to speed-up update
+       detection after a crash: this way, Unison does not have do
+       recompute all the file fingerprints from scratch.
+          + When Unison detects that the archive case-sensitivity mode
+            does not match the current settings, it populates the
+            fingerprint cache using the archive contents. This way,
+            changing the case-sensitivity mode should be reasonably fast.
+     * New preferences "noupdate=root", "nodeletion=root",
+       "nocreation=root" that prevent Unison from performing files
+       updates, deletions or creations on the given root. Also 'partial'
+       versions of 'noupdate', 'nodeletion' and 'nocreation'
+     * Limit the number of simultaneous external copy program ("copymax"
+       preference)
+     * New "links" preference. When set to false, Unison will report an
+       error on symlinks during update detection. (This is the default
+       when one host is running Windows but not Cygwin.) This is better
+       than failing during propagation.
+     * Added a preference "halfduplex" to force half-duplex communication
+       with the server. This may be useful on unreliable links (as a more
+       efficient alternative to "maxthreads = 1").
+     * Renamed preference "pretendwin" to "ignoreinodenumbers" (an alias
+       is kept for backwards compatibility).
+     * Ignore one-second differences when synchronizing modification
+       time. (Technically, this is an incompatible archive format change,
+       but it is backward compatible. To trigger a problem, a user would
+       have to synchronize modification times on a filesystem with a
+       two-second granularity and then downgrade to a previous version of
+       Unison, which does not work well in such a case. Thus, it does not
+       seem worthwhile to increment the archive format number, which
+       would impact all users.)
+     * Do not keep many files simultaneously opened anymore when the
+       rsync algorithm is in use.
+     * Add "ignorearchives" preference to ignore existing archives (to
+       avoid forcing users to delete them manually, in situations where
+       one archive has gotten deleted or corrupted).
+     * Mac OS
+          + fixed rsync bug which could result in an "index out of
+            bounds" error when transferring resource forks.
+          + Fixed bug which made Unison ignore finder information and
+            resource fork when compiled to 64bit on Mac OSX.
+          + should now be 64 bit clean (the Growl framework is not up to
+            date, though)
+          + Made the bridge between Objective C and Ocaml code GC
+            friendly (it was allocating ML values and putting them in an
+            array which was not registered with the GC)
+          + use darker grey arrows (patch contributed by Eric Y. Kow)
+     * GTK user interface
+          + assistant for creating profiles
+          + profile editor
+          + pop up a summary window when the replicas are not fully
+            synchronized after transport
+          + display estimated remaining time and transfer rate on the
+            progress bar
+          + allow simultaneous selection of several items
+          + Do not reload the preference file before a new update
+            detection if it is unchanged
+          + disabled scrolling to the first unfinished item during
+            transport. It goes way too fast when lot of small files are
+            synchronized, and it makes it impossible to browse the file
+            list during transport.
+          + take into account the "height" preference again
+          + the internal list of selected reconciler item was not always
+            in sync with what was displayed (GTK bug?); workaround
+            implemented
+          + Do not display "Looking for change" messages during
+            propagation (when checking the targe is unchanged) but only
+            during update detection
+          + Apply patch to fix some crashes in the OSX GUI, thanks to
+            Onne Gorter.
+     * Text UI
+          + During update detection, display status by updating a single
+            line rather than generating a new line of output every so
+            often. Should be less confusing.
+     * Windows
+          + Fastcheck is now the default under Windows. People mostly use
+            NTFS nowadays and the Unicode API provides an equivalent to
+            inode numbers for this filesystem.
+          + Only use long UNC path for accessing replicas (as '..' is not
+            handled with this format of paths, but can be useful)
+          + Windows text UI: now put the console into UTF-8 output mode.
+            This is the right thing to do when in Unicode mode, and is no
+            worse than what we had previously otherwise (the console use
+            some esoteric encoding by default). This only works when
+            using a Unicode font instead of the default raster font.
+          + Don't get the home directory from environment variable HOME
+            under Windows (except for Cygwin binaries): we don't want the
+            behavior of Unison to depends on whether it is run from a
+            Cygwin shell (where HOME is set) or in any other way (where
+            HOME is usually not set).
+     * Miscellaneous fixes and improvements
+          + Made a server waiting on a socket more resilient to
+            unexpected lost connections from the client.
+          + Small patch to property setting code suggested by Ulrich
+            Gernkow.
+          + Several fixes to the change transfer functions (both the
+            internal ones and external transfers using rsync). In
+            particular, limit the number of simultaneous transfer using
+            an rsync (as the rsync algorithm can use a large amount of
+            memory when processing huge files)
+          + Keep track of which file contents are being transferred, and
+            delay the transfer of a file when another file with the same
+            contents is currently being transferred. This way, the second
+            transfer can be skipped and replaced by a local copy.
+          + Experimental update detection optimization: do not read the
+            contents of unchanged directories
+          + When a file transfer fails, turn off fastcheck for this file
+            on the next sync.
+          + Fixed bug with case insensitive mode on a case sensitive
+            filesystem:
+               o if file "a/a" is created on one replica and directory
+                 "A" is created on the other, the file failed to be
+                 synchronized the first time Unison is run afterwards, as
+                 Unison uses the wrong path "a/a" (if Unison is run
+                 again, the directories are in the archive, so the right
+                 path is used);
+               o if file "a" appears on one replica and file "A" appears
+                 on the other with different contents, Unison was unable
+                 to synchronize them.
+          + Improved error reporting when the destination is updated
+            during synchronization: Unison now tells which file has been
+            updated, and how.
+          + Limit the length of temporary file names
+          + Case sensitivity information put in the archive (in a
+            backward compatible way) and checked when the archive is
+            loaded
+          + Got rid of the 16mb marshalling limit by marshalling to a
+            bigarray.
+          + Resume copy of partially transferred files.
 
    Changes since 2.31:
      * Small user interface changes
@@ -23,6 +229,11 @@ Changes in Version 2.40.1
             why!) We've also added more debugging code togive more
             informative error messages when we encounter the dreaded and
             longstanding "assert failed during file transfer" bug
+          + Incorrect paths ("path" directive) now result in an error
+            update item rather than a fatal error.
+          + Create parent directories (with correct permissions) during
+            transport for paths which point to non-existent locations in
+            the destination replica.
 
    Changes since 2.27:
      * If Unison is interrupted during a directory transfer, it will now
