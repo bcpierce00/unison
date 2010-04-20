@@ -4,7 +4,7 @@
 let docs =
     ("about", ("About Unison", 
      "Unison File Synchronizer\n\
-      Version 2.40.1\n\
+      Version 2.40.16\n\
       \n\
       "))
 ::
@@ -71,8 +71,8 @@ let docs =
       \032  The Mac user interface was started by Trevor Jim and enormously\n\
       \032  improved by Ben Willmore. Our implementation of the rsync\n\
       \032  (http://samba.org/rsync/) protocol was built by Norman Ramsey\n\
-      \032  (http://www.eecs.harvard.edu/~nr/) and Sylvain Gommier. It is is based\n\
-      \032  on Andrew Tridgell (http://samba.anu.edu.au/~tridge/)'s thesis work\n\
+      \032  (http://www.eecs.harvard.edu/~nr/) and Sylvain Gommier. It is based on\n\
+      \032  Andrew Tridgell (http://samba.anu.edu.au/~tridge/)'s thesis work\n\
       \032  (http://samba.anu.edu.au/~tridge/phd_thesis.pdf) and inspired by his\n\
       \032  rsync (http://samba.org/rsync/) utility. The mirroring and merging\n\
       \032  functionality was implemented by Sylvain Roy, improved by Malo\n\
@@ -183,7 +183,8 @@ let docs =
       \032  Unison can be used with either of two user interfaces:\n\
       \032   1. a simple textual interface, suitable for dumb terminals (and\n\
       \032      running from scripts), and\n\
-      \032   2. a more sophisticated grapical interface, based on Gtk2.\n\
+      \032   2. a more sophisticated grapical interface, based on Gtk2 (on\n\
+      \032      Linux/Windows) or the native UI framework (on OSX).\n\
       \n\
       \032  You will need to install a copy of Unison on every machine that you\n\
       \032  want to synchronize. However, you only need the version with a\n\
@@ -259,15 +260,15 @@ let docs =
       \n\
       Unix\n\
       \n\
-      \032  You'll need the Objective Caml compiler (version 3.07 or later), which\n\
-      \032  is available from http://caml.inria.fr. Building and installing OCaml\n\
-      \032  on Unix systems is very straightforward; just follow the instructions\n\
-      \032  in the distribution. You'll probably want to build the native-code\n\
-      \032  compiler in addition to the bytecode compiler, as Unison runs much\n\
-      \032  faster when compiled to native code, but this is not absolutely\n\
-      \032  necessary. (Quick start: on many systems, the following sequence of\n\
-      \032  commands will get you a working and installed compiler: first do make\n\
-      \032  world opt, then su to root and do make install.)\n\
+      \032  You'll need the Objective Caml compiler (version 3.11.2 or later),\n\
+      \032  which is available from http://caml.inria.fr. Building and installing\n\
+      \032  OCaml on Unix systems is very straightforward; just follow the\n\
+      \032  instructions in the distribution. You'll probably want to build the\n\
+      \032  native-code compiler in addition to the bytecode compiler, as Unison\n\
+      \032  runs much faster when compiled to native code, but this is not\n\
+      \032  absolutely necessary. (Quick start: on many systems, the following\n\
+      \032  sequence of commands will get you a working and installed compiler:\n\
+      \032  first do make world opt, then su to root and do make install.)\n\
       \n\
       \032  You'll also need the GNU make utility, standard on many Unix systems.\n\
       \032  (Type \"make -version\" to check that you've got the GNU version.)\n\
@@ -299,6 +300,27 @@ let docs =
       \032  Put the unison executable somewhere in your search path, either by\n\
       \032  adding the Unison directory to your PATH variable or by copying the\n\
       \032  executable to some standard directory where executables are stored.\n\
+      \n\
+      Mac OS X\n\
+      \n\
+      \032  To build the text-only user interface, follow the instructions above\n\
+      \032  for building on Unix systems. You should do this first, even if you\n\
+      \032  are also planning on building the GUI, just to make sure it works.\n\
+      \n\
+      \032  To build the basic GUI version, you'll first need to download and\n\
+      \032  install the XCode developer tools from Apple. Once this is done, just\n\
+      \032  type make UISTYLE=macnew in the src directory, and if things go well\n\
+      \032  you should get an application that you can move from\n\
+      \032  uimacnew/build/Default/Unison.app to wherever you want it.\n\
+      \n\
+      \032  There is also an experimental GUI with a somewhat smoother look and\n\
+      \032  feel. To compile this one (once you've got the basic one working),\n\
+      \032  proceed as follows:\n\
+      \032   1. Go to the uimacnew09 directory and double-click the file\n\
+      \032      BWToolkit.ibplugin.\n\
+      \032   2. Go back up to the src directory and type make UISTYLE=macnew09.\n\
+      \032   3. You should get an application built for you at\n\
+      \032      uimacnew09/build/Default/Unison.app.\n\
       \n\
       Windows\n\
       \n\
@@ -522,9 +544,9 @@ let docs =
       \n\
       \032  Running ssh requires some coordination between the client and server\n\
       \032  machines to establish that the client is allowed to invoke commands on\n\
-      \032  the server; please refer to the or ssh documentation for information\n\
-      \032  on how to set this up. The examples in this section use ssh, but you\n\
-      \032  can substitute rsh for ssh if you wish.\n\
+      \032  the server; please refer to the ssh documentation for information on\n\
+      \032  how to set this up. The examples in this section use ssh, but you can\n\
+      \032  substitute rsh for ssh if you wish.\n\
       \n\
       \032  First, test that we can invoke Unison on the server from the client.\n\
       \032  Typing\n\
@@ -950,9 +972,9 @@ let docs =
       \032      each file's inode number and modtime; if neither of these have\n\
       \032      changed, then it concludes that the file has not been changed.\n\
       \032      Under normal circumstances, this approximation is safe, in the\n\
-      \032      sense that it may sometimes detect \"false updates\" will never miss\n\
-      \032      a real one. However, it is possible to fool it, for example by\n\
-      \032      using retouch to change a file's modtime back to a time in the\n\
+      \032      sense that it may sometimes detect \"false updates\" but will never\n\
+      \032      miss a real one. However, it is possible to fool it, for example\n\
+      \032      by using retouch to change a file's modtime back to a time in the\n\
       \032      past.\n\
       \032    * If you synchronize between a single-user filesystem and a shared\n\
       \032      Unix server, you should pay attention to your permission bits: by\n\
@@ -971,7 +993,7 @@ let docs =
       \032      middle of detecting changes or propagating files.\n\
       \032    * Unison does not understand hard links.\n\
       \032    * It is important to be a little careful when renaming directories\n\
-      \032      containing \"ignore\"d files.\n\
+      \032      containing ignored files.\n\
       \032      For example, suppose Unison is synchronizing directory A between\n\
       \032      the two machines called the \"local\" and the \"remote\" machine;\n\
       \032      suppose directory A contains a subdirectory D; and suppose D on\n\
@@ -1121,6 +1143,7 @@ let docs =
       \032-auto              automatically accept default (nonconflicting) actions\n\
       \032-batch             batch mode: ask no questions at all\n\
       \032-doc xxx           show documentation ('-doc topics' lists topics)\n\
+      \032-fat               use appropriate options for FAT filesystems\n\
       \032-group             synchronize group attributes\n\
       \032-ignore xxx        add a pattern to the ignore list\n\
       \032-ignorenot xxx     add a pattern to the ignorenot list\n\
@@ -1419,6 +1442,17 @@ let docs =
       \032         For backward compatibility, yes, no, and default can be used in\n\
       \032         place of true, false, and auto. See the section \"Fast Checking\"\n\
       \032         for more information.\n\
+      \032  fat \n\
+      \032         When this is set to true, Unison will use appropriate options\n\
+      \032         to synchronize efficiently and without error a replica located\n\
+      \032         on a FAT filesystem on a non-Windows machine: do not\n\
+      \032         synchronize permissions (perms = 0); never use chmod ( t\n\
+      \032         dontchmod = true); treat filenames as case insensitive\n\
+      \032         (ignorecase = true); do not attempt to synchronize symbolic\n\
+      \032         links (links = false); ignore inode number changes when\n\
+      \032         detecting updates (ignoreinodenumbers = true). Any of these\n\
+      \032         change can be overridden by explicitely setting the\n\
+      \032         corresponding preference in the profile.\n\
       \032  follow xxx\n\
       \032         Including the preference -follow pathspec causes Unison to\n\
       \032         treat symbolic links matching pathspec as `invisible' and\n\
@@ -1486,16 +1520,13 @@ let docs =
       \032         filenames as case sensitive. Ordinarily, when the flag is set\n\
       \032         to default, filenames are automatically taken to be\n\
       \032         case-insensitive if either host is running Windows or OSX. In\n\
-      \032         rare circumstances it is useful to set the flag manually (e.g.\n\
-      \032         when running Unison on a Unix system with a FAT [Windows]\n\
-      \032         volume mounted).\n\
+      \032         rare circumstances it may be useful to set the flag manually.\n\
       \032  ignoreinodenumbers \n\
       \032         When set to true, this preference makes Unison not take\n\
       \032         advantage of inode numbers during fast update detection. This\n\
       \032         switch should be used with care, as it is less safe than the\n\
-      \032         standard update detection method, but it can be useful for\n\
-      \032         synchronizing VFAT filesystems (which do not support inode\n\
-      \032         numbers) mounted on Unix systems.\n\
+      \032         standard update detection method, but it can be useful with\n\
+      \032         filesystems which do not support inode numbers.\n\
       \032  ignorelocks \n\
       \032         When this preference is set, Unison will ignore any lock files\n\
       \032         that may have been left over from a previous run of Unison that\n\
@@ -1559,9 +1590,8 @@ let docs =
       \032         will result in an error during update detection. Ordinarily,\n\
       \032         when the flag is set to default, symbolic links are\n\
       \032         synchronized except when one of the hosts is running Windows.\n\
-      \032         In rare circumstances it is useful to set the flag manually\n\
-      \032         (e.g. when running Unison on a Unix system with a FAT [Windows]\n\
-      \032         volume mounted).\n\
+      \032         In rare circumstances it may be useful to set the flag\n\
+      \032         manually.\n\
       \032  log \n\
       \032         When this flag is set, Unison will log all changes to the\n\
       \032         filesystems on a file.\n\
@@ -1612,7 +1642,8 @@ let docs =
       \032         Including the preference nocreationpartial = PATHSPEC -> root\n\
       \032         prevents Unison from performing any file creation in PATHSPEC\n\
       \032         on root root (see the section \"Path Specification\" for more\n\
-      \032         information).\n\
+      \032         information). It is recommended to use BelowPath patterns when\n\
+      \032         selecting a directory and all its contents.\n\
       \032  nodeletion xxx\n\
       \032         Including the preference -nodeletion root prevents Unison from\n\
       \032         performing any file deletion on root root.\n\
@@ -1622,7 +1653,8 @@ let docs =
       \032         Including the preference nodeletionpartial = PATHSPEC -> root\n\
       \032         prevents Unison from performing any file deletion in PATHSPEC\n\
       \032         on root root (see the section \"Path Specification\" for more\n\
-      \032         information).\n\
+      \032         information). It is recommended to use BelowPath patterns when\n\
+      \032         selecting a directory and all its contents.\n\
       \032  noupdate xxx\n\
       \032         Including the preference -noupdate root prevents Unison from\n\
       \032         performing any file update or deletion on root root.\n\
@@ -1632,7 +1664,8 @@ let docs =
       \032         Including the preference noupdatepartial = PATHSPEC -> root\n\
       \032         prevents Unison from performing any file update or deletion in\n\
       \032         PATHSPEC on root root (see the section \"Path Specification\" for\n\
-      \032         more information).\n\
+      \032         more information). It is recommended to use BelowPath patterns\n\
+      \032         when selecting a directory and all its contents.\n\
       \032  numericids \n\
       \032         When this flag is set to true, groups and users are\n\
       \032         synchronized numerically, rather than by name.\n\
@@ -1656,7 +1689,11 @@ let docs =
       \032         0o1777: all bits but the set-uid and set-gid bits are\n\
       \032         synchronised (synchronizing theses latter bits can be a\n\
       \032         security hazard). If you want to synchronize all bits, you can\n\
-      \032         set the value of this preference to -1.\n\
+      \032         set the value of this preference to -1. If one of the replica\n\
+      \032         is on a FAT [Windows] filesystem, you should consider using the\n\
+      \032         t fat preference instead of this preference. If you need Unison\n\
+      \032         not to set permissions at all, set the value of this preference\n\
+      \032         to 0 and set the preference t dontchmod to t true.\n\
       \032  prefer xxx\n\
       \032         Including the preference -prefer root causes Unison always to\n\
       \032         resolve conflicts in favor of root, rather than asking for\n\
@@ -1815,7 +1852,14 @@ let docs =
       \032         binaries are all compiled with both interfaces available.)\n\
       \032  unicode xxx\n\
       \032         When set to true, this flag causes Unison to perform case\n\
-      \032         insensitive file comparisons assuming Unicode encoding\n\
+      \032         insensitive file comparisons assuming Unicode encoding. This is\n\
+      \032         the default. When the flag is set to false, a Latin 1 encoding\n\
+      \032         is assumed. When Unison runs in case sensitive mode, this flag\n\
+      \032         only makes a difference if one host is running Windows or Mac\n\
+      \032         OS X. Under Windows, the flag selects between using the Unicode\n\
+      \032         or 8bit Windows API for accessing the filesystem. Under Mac OS\n\
+      \032         X, it selects whether comparing the filenames up to\n\
+      \032         decomposition, or byte-for-byte.\n\
       \032  version \n\
       \032         Print the current version number and exit. (This option only\n\
       \032         makes sense on the command line.)\n\
@@ -2263,13 +2307,17 @@ let docs =
       \032      Regex. (The collating sequences and character classes of full\n\
       \032      Posix regexps are not currently supported).\n\
       \032                Regex regexp\n\
-      \032      For convenience, two other styles of pattern are also recognized:\n\
+      \032      For convenience, three other styles of pattern are also\n\
+      \032      recognized:\n\
       \032                Name name\n\
-      \032      matches any path in which the last component matches name, while\n\
+      \032      matches any path in which the last component matches name,\n\
       \032                Path path\n\
-      \032      matches exactly the path path. The name and path arguments of the\n\
-      \032      latter forms of patterns are not regular expressions. Instead,\n\
-      \032      standard \"globbing\" conventions can be used in name and path:\n\
+      \032      matches exactly the path path, and\n\
+      \032                BelowPath path\n\
+      \032      matches the path path and any path below. The name and path\n\
+      \032      arguments of the latter forms of patterns are not regular\n\
+      \032      expressions. Instead, standard \"globbing\" conventions can be used\n\
+      \032      in name and path:\n\
       \032         + a * matches any sequence of characters not including / (and\n\
       \032           not beginning with ., when used at the beginning of a name)\n\
       \032         + a ? matches any single character except / (and leading .)\n\
@@ -2440,7 +2488,7 @@ let docs =
       \n\
       \032  If you are using Unison with ssh, you may get some speed improvement\n\
       \032  by enabling ssh's compression feature. Do this by adding the option\n\
-      \032  \"-rshargs -C\" to the command line or \"rshargs = -C\" to your profile.\n\
+      \032  \"-sshargs -C\" to the command line or \"sshargs = -C\" to your profile.\n\
       \n\
       Making Unison Faster on Large Files\n\
       \n\
@@ -2670,8 +2718,28 @@ let docs =
       \n\
       "))
 ::
-    ("news", ("Changes in Version 2.40.1", 
-     "Changes in Version 2.40.1\n\
+    ("news", ("Changes in Version 2.40.16", 
+     "Changes in Version 2.40.16\n\
+      \n\
+      \032  Changes since 2.40.1:\n\
+      \032    * Added \"BelowPath\" patterns, that match a path as well as all paths\n\
+      \032      below (convenient to use with nodeletion,update,creationpartial\n\
+      \032      preferences)\n\
+      \032    * Added a \"fat\" preference that makes Unison use the right options\n\
+      \032      when one of the replica is on a FAT filesystem.\n\
+      \032    * Allow \"prefer/force=newer\" even when not synchronizing\n\
+      \032      modification times. (The reconciler will not be aware of the\n\
+      \032      modification time of unchanged files, so the synchronization\n\
+      \032      choices of Unison can be different from when \"times=true\", but the\n\
+      \032      behavior remains sane: changed files with the most recent\n\
+      \032      modification time will be propagated.)\n\
+      \032    * Minor fixes and improvements:\n\
+      \032         + Compare filenames up to decomposition in case sensitive mode\n\
+      \032           when one host is running MacOSX and the unicode preference is\n\
+      \032           set to true.\n\
+      \032         + Rsync: somewhat faster compressor\n\
+      \032         + Make Unicode the default on all architectures (it was only\n\
+      \032           the default when a Mac OS X or Windows machine was involved).\n\
       \n\
       \032  Changes since 2.32:\n\
       \032    * Major enhancement: Unicode support.\n\
