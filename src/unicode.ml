@@ -1071,7 +1071,7 @@ let rec compare_cs_rec s s' i l =
   end
 
 let case_sensitive_compare s s' =
-  compare_rec s s' 0 (min (String.length s) (String.length s'))
+  compare_cs_rec s s' 0 (min (String.length s) (String.length s'))
 
 (****)
 
