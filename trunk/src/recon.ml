@@ -34,21 +34,22 @@ let setDirection ri dir force =
         diff.direction <- Replica2ToReplica1
       else if dir=`Merge then begin
         if Globals.shouldMerge ri.path1 then diff.direction <- Merge
-      end else  (* dir = `Older or dir = `Newer *)
-        if rc1.status<>`Deleted && rc2.status<>`Deleted then begin
-          let comp = Props.time rc1.desc -. Props.time rc2.desc in
-          let comp = if dir=`Newer then -. comp else comp in
-          if comp = 0.0 then
-            ()
-          else if comp<0.0 then
-            diff.direction <- Replica1ToReplica2
-          else
-            diff.direction <- Replica2ToReplica1
-        end else if rc1.status=`Deleted && dir=`Newer then begin
-          diff.direction <- Replica2ToReplica1
-        end else if rc2.status=`Deleted && dir=`Newer then begin
-          diff.direction <- Replica1ToReplica2
-        end
+      end else begin  (* dir = `Older or dir = `Newer *)
+        match rc1.status, rc2.status with
+          `Deleted, _ ->
+            if default=Conflict then
+              diff.direction <- Replica2ToReplica1
+        | _, `Deleted ->
+            if default=Conflict then
+              diff.direction <- Replica1ToReplica2
+        | _ ->
+            let comp = Props.time rc1.desc -. Props.time rc2.desc in
+            let comp = if dir=`Newer then -. comp else comp in
+            if comp<0.0 then
+              diff.direction <- Replica1ToReplica2
+            else
+              diff.direction <- Replica2ToReplica1
+      end
   | _ ->
       ()
 

@@ -1,5 +1,13 @@
 CHANGES FROM VERSION 2.40.16
 
+* Fix to Unicode case sensitive mode (call the right function for
+  comparing file names).
+* "prefer = older/newer" now propagates deletions when there is no
+  conflict
+
+-------------------------------
+CHANGES FROM VERSION 2.40.16
+
 * Fixed Unicode decomposition tables
 
 -------------------------------
