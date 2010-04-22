@@ -18,6 +18,7 @@
 
 open Common
 open Lwt
+open Ugettext
 
 module Private = struct
 
@@ -2342,7 +2343,7 @@ let getProfile quit =
   (* Build the dialog *)
   let t =
     GWindow.dialog ~parent:(toplevelWindow ()) ~border_width:12
-      ~no_separator:true ~title:"Profile Selection"
+      ~no_separator:true ~title:(s_ "Profile Selection")
       ~modal:true () in
   t#set_default_width 550;
 
@@ -2727,11 +2728,11 @@ let createToplevelWindow () =
   (*********************************************************************
     Create the menus
    *********************************************************************)
-  let (fileMenu, _) = add_submenu "_Synchronization" in
-  let (actionMenu, actionItem) = add_submenu "_Actions" in
-  let (ignoreMenu, _) = add_submenu ~modi:[`SHIFT] "_Ignore" in
-  let (sortMenu, _) = add_submenu "S_ort" in
-  let (helpMenu, _) = add_submenu "_Help" in
+  let (fileMenu, _) = add_submenu (s_ "_Synchronization") in
+  let (actionMenu, actionItem) = add_submenu (s_ "_Actions") in
+  let (ignoreMenu, _) = add_submenu ~modi:[`SHIFT] (s_ "_Ignore") in
+  let (sortMenu, _) = add_submenu (s_ "S_ort") in
+  let (helpMenu, _) = add_submenu (s_ "_Help") in
 
   (*********************************************************************
     Action bar
@@ -3954,7 +3955,7 @@ lst_store#set ~row ~column:c_path path;
     Action menu
    *********************************************************************)
   let buildActionMenu init =
-    let actionMenu = replace_submenu "_Actions" actionItem in
+    let actionMenu = replace_submenu (s_ "_Actions") actionItem in
     grAdd grRescan
       (actionMenu#add_image_item
          ~callback:(fun _ -> mainWindow#select_all ())

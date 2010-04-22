@@ -1,25 +1,49 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: unison 2.37.11\n"
-"Report-Msgid-Bugs-To: sylvain@le-gall.net\n"
-"POT-Creation-Date: 2009-09-15 22:15+0000\n"
-"PO-Revision-Date: 2009-09-16 00:18+0200\n"
-"Last-Translator: Sylvain Le Gall <sylvain@le-gall.net>\n"
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2010-04-22 21:41+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
-"Content-Transfer-Encoding: \n"
-"Plural-Forms: nplurals=2; plural=n>1;\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n > 1;\n"
 
 #: ../main.ml:140
-msgid "%s version %s\\n"
-msgstr "%s version %s\\n"
+msgid "%s version %s\n"
+msgstr "%s version %s\n"
 
-#: ../uicommon.ml:102
+#: ../uicommon.ml:89
 msgid "Contacting server..."
-msgstr "Connexion avec le serveur..."
+msgstr "Contact le serveur..."
 
 #: ../main.ml:157
 msgid "Documentation topics:\n"
-msgstr "Thèmes de la documentation:\n"
+msgstr ""
+
+#: ../uigtk2.ml:2346
+msgid "Profile Selection"
+msgstr "Séléction du profil"
+
+#: ../uigtk2.ml:2734
+msgid "S_ort"
+msgstr "T_ri"
+
+#: ../uigtk2.ml:3958 ../uigtk2.ml:2732
+msgid "_Actions"
+msgstr "_Actions"
+
+#: ../uigtk2.ml:2735
+msgid "_Help"
+msgstr "A_ide"
+
+#: ../uigtk2.ml:2733
+msgid "_Ignore"
+msgstr "_Ignore"
+
+#: ../uigtk2.ml:2731
+msgid "_Synchronization"
+msgstr "_Synchronisation"
 

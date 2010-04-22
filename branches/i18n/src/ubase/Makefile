@@ -1,20 +1,22 @@
 NAME = ubase
 
 OBJECTS  = \
+  ugettext.cmo \
   safelist.cmo uprintf.cmo util.cmo uarg.cmo prefs.cmo trace.cmo rx.cmo \
   myMap.cmo
 
 OCAMLC = ocamlfind ocamlc -g 
 OCAMLOPT = ocamlfind ocamlopt 
-OCAMLDEP = ocamldep
+OCAMLDEP = ocamlfind ocamldep
 
 XOBJECTS = $(OBJECTS:cmo=cmx)
 
 ARCHIVE  = $(NAME).cma
 XARCHIVE = $(NAME).cmxa
 
-REQUIRES =
+REQUIRES = gettext-stub camlp4.macro
 PREDICATES =
+SYNTAX = -syntax camlp4o
 
 all: $(ARCHIVE) 
 opt: $(XARCHIVE)
@@ -30,16 +32,21 @@ $(XARCHIVE): $(XOBJECTS)
 
 .ml.cmo:
 	$(OCAMLC) -package "$(REQUIRES)" -predicates "$(PREDICATES)" \
+	          $(SYNTAX) \
 	          -c $<
 .mli.cmi:
 	$(OCAMLC) -package "$(REQUIRES)" -predicates "$(PREDICATES)" \
+	          $(SYNTAX) \
 	          -c $<
 .ml.cmx:
 	$(OCAMLOPT) -package "$(REQUIRES)" -predicates "$(PREDICATES)" \
+	          $(SYNTAX) \
 	          -c $<
 
 depend: *.ml *.mli
-	$(OCAMLDEP) *.ml *.mli > depend
+	$(OCAMLDEP) -package "$(REQUIRES)" \
+	          $(SYNTAX) \
+		  *.ml *.mli > depend
 include depend
 
 install: all

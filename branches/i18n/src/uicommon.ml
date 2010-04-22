@@ -18,6 +18,7 @@
 
 open Common
 open Lwt
+open Ugettext
 
 (**********************************************************************
                              UI selection
@@ -85,7 +86,7 @@ let contactquietly =
      ^ "during startup.")
 
 let contactingServerMsg () =
-  Printf.sprintf "Contacting server..." 
+  (s_ "Contacting server...")
 
 let repeat =
   Prefs.createString "repeat" ""

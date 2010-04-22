@@ -55,6 +55,8 @@
    if any more are added.
 *)
 
+open Ugettext;;
+
 let versionPrefName = "version"
 let printVersionAndExit =
   Prefs.createBool versionPrefName false "print version and exit"
@@ -135,7 +137,7 @@ let init() = begin
 
   (* Print version if requested *)
   if Util.StringMap.mem versionPrefName argv then begin
-    Printf.printf "%s version %s\n" Uutil.myName Uutil.myVersion;
+    Printf.printf (f_ "%s version %s\n") Uutil.myName Uutil.myVersion;
     exit 0
   end;
 
@@ -152,7 +154,7 @@ let init() = begin
       [] ->
         assert false
     | "topics"::_ ->
-        Printf.printf "Documentation topics:\n";
+        Printf.printf (f_ "Documentation topics:\n");
         Safelist.iter
           (fun (sn,(n,doc)) ->
             if sn<>"" then Printf.printf "   %12s %s\n" sn n)

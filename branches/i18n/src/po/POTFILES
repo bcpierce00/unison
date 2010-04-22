@@ -34,7 +34,6 @@
 ../name.ml
 ../tree.ml
 ../abort.ml
-../ugettext.ml
 ../uimacbridgenew.ml
 ../osx.ml
 ../transfer.ml
@@ -64,8 +63,8 @@
 ../system/generic/system_impl.ml
 ../fileinfo.ml
 ../update.ml
-# Char \xff ../ubase/prefs.ml
-# Char \xff ../uigtk2.ml
-# Char \xff ../pixmaps.ml
-# Char \xff ../unicode.ml
-# Invalid file ../strings.ml
+../ubase/prefs.ml
+../uigtk2.ml
+../pixmaps.ml
+../unicode.ml
+../strings.ml

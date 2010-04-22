@@ -46,6 +46,8 @@ endif
 endif
 endif
 
+ENABLE_NLS?=$(shell if ocamlfind -query gettext-stub > /dev/null; then echo true; else echo false; fi)
+
 # The OCaml lib dir is used by all versions
 # It is extracted from 'ocamlc -v' and Windows '\' separators are turned
 # to Unix '/' separators, and extraneous control-M's are deleted.
@@ -150,6 +152,7 @@ buildexecutable::
 	@echo STATIC = $(STATIC)
 	@echo OSTYPE = $(OSTYPE)
 	@echo OSARCH = $(OSARCH)
+	@echo ENABLE_NLS = $(ENABLE_NLS)
 
 ubase/projectInfo.ml: Makefile.ProjectInfo
 	echo 'let myName = "'$(NAME)'";;' > $@
@@ -209,6 +212,7 @@ OCAMLOBJS += \
           system/$(SYSTEM)/system_impl.cmo \
           system.cmo \
           \
+	  ubase/ugettext.cmo \
           ubase/projectInfo.cmo ubase/myMap.cmo ubase/safelist.cmo \
           ubase/uprintf.cmo ubase/util.cmo ubase/uarg.cmo \
           ubase/prefs.cmo ubase/trace.cmo ubase/proplist.cmo \
@@ -235,10 +239,31 @@ OCAMLLIBS+=unix.cma str.cma bigarray.cma
 COBJS+=osxsupport$(OBJ_EXT) pty$(OBJ_EXT) bytearray_stubs$(OBJ_EXT)
 
 ########################################################################
+### I18N setup 
+
+ifeq ($(ENABLE_NLS),true)
+  OCAMLLIBS+=$(filter-out unix.cma,$(shell ocamlfind query -r -a-format -predicates byte gettext-stub))
+  INCLFLAGS+=$(shell ocamlfind query -r -i-format -predicates byte gettext-stub)
+buildexecutable::
+	$(MAKE) -C po all
+doinstall: doinstallpo
+doinstallpo:
+	$(MAKE) -C po install
+.PHONY: doinstallpo
+D_NLS=-D ENABLE_NLS
+endif
+
+ubase/ugettext.cmx ubase/ugettext.cmo: CAMLFLAGS+=-pp 'camlp4o -parser macro $(D_NLS)'
+
+clean::
+	$(MAKE) -C po clean
+	-$(RM) -r _build
+
+########################################################################
 ### User Interface setup
 
 ## Text UI
-ifeq ($(UISTYLE), text)
+ifeq ($(UISTYLE),text)
   OCAMLOBJS+=linktext.cmo
 endif
 

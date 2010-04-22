@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2009-09-15 22:45+0000\n"
+"POT-Creation-Date: 2010-04-22 21:41+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,14 +18,38 @@ msgstr ""
 "Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
 
 #: ../main.ml:140
-msgid "%s version %s\\n"
+msgid "%s version %s\n"
 msgstr ""
 
-#: ../uicommon.ml:102
+#: ../uicommon.ml:89
 msgid "Contacting server..."
 msgstr ""
 
 #: ../main.ml:157
-msgid "Documentation topics:\\n"
+msgid "Documentation topics:\n"
+msgstr ""
+
+#: ../uigtk2.ml:2346
+msgid "Profile Selection"
+msgstr ""
+
+#: ../uigtk2.ml:2734
+msgid "S_ort"
+msgstr ""
+
+#: ../uigtk2.ml:3958 ../uigtk2.ml:2732
+msgid "_Actions"
+msgstr ""
+
+#: ../uigtk2.ml:2735
+msgid "_Help"
+msgstr ""
+
+#: ../uigtk2.ml:2733
+msgid "_Ignore"
+msgstr ""
+
+#: ../uigtk2.ml:2731
+msgid "_Synchronization"
 msgstr ""
 
