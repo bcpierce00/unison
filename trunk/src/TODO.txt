@@ -227,6 +227,11 @@ See the file BUGS.txt for a list of currently open bugs.
 
 should strip symbols from binary files in 'make exportnative'
 
+* [Joerg von den Hoff, 2009] OS X: make the destination directory for the CL 
+  version selectable (instead of dumping it in the middle of a systems 
+  directory :-)) something like /usr/local/bin or whatever might frequently be 
+  more suitable
+
 
 * DOCUMENTATION
 * =============
@@ -502,6 +507,14 @@ should strip symbols from binary files in 'make exportnative'
 * The -terse preference should suppress more (in fact, almost all)
   messages in the text ui.  See Dale Worley's message for a detailed
   proposal. 
+
+* [Joerg von den Hoff, 2009] I use unison (up to now) only from the command
+  line and it's used from within scripts or Makefiles. it is therefore
+  unfortunate that by default the GUI pops up and one has to use `unison -ui
+  text' to avoid this. it would seem better to have it the other way round,
+  i.e., to make the CLI the default and to require `unison -ui graphic' to
+  start up the GUI from the command line (I would argue that people using the
+  GUI regularly will start it anyway by double clicking the app)
 
 Would be nice to have the Unison log file relative to my home directory,
  like this 
