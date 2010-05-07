@@ -482,8 +482,8 @@ let addLine l =
     let ochan =
       System.open_out_gen [Open_wronly; Open_creat; Open_append] 0o600 filename
     in
-    output_string ochan l;
     output_string ochan "\n";
+    output_string ochan l;
     close_out ochan;
     resultmsg
   with
