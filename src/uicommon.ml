@@ -436,13 +436,13 @@ let debug = Trace.debug "startup"
 
 (*FIX: remove when Unison version > 2.40 *)
 let _ =
-Remote.registerRootCmd "hasUnicodeCaseSensitive" (fun _ -> Lwt.return ())
+Remote.registerRootCmd "_unicodeCaseSensitive_" (fun _ -> Lwt.return ())
 let supportUnicodeCaseSensitive () =
   if Uutil.myMajorVersion > "2.40" (* The test is correct until 2.99... *) then
     Lwt.return true
   else begin
     Globals.allRootsMap
-      (fun r -> Remote.commandAvailable r "hasUnicodeCaseSensitive")
+      (fun r -> Remote.commandAvailable r "_unicodeCaseSensitive_")
     >>= fun l ->
     Lwt.return (List.for_all (fun x -> x) l)
   end
