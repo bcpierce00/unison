@@ -1,5 +1,10 @@
 CHANGES FROM VERSION 2.40.16
 
+* One more fix to Unicode case sensitive mode
+
+-------------------------------
+CHANGES FROM VERSION 2.40.16
+
 Branch 2.40:
 * Fix to Unicode case sensitive mode (call the right function for
   comparing file names).
