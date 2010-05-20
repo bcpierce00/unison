@@ -1067,7 +1067,7 @@ let rec compare_cs_rec s s' i l =
       let v = compare c c' in
       if v <> 0 then v else compare_cs_rec s s' (i + 1) l
     end else
-      compare s s'
+      compare (decompose s) (decompose s')
   end
 
 let case_sensitive_compare s s' =
