@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/uitext.ml *)
-(* Copyright 1999-2009, Benjamin C. Pierce 
+(* Copyright 1999-2010, Benjamin C. Pierce 
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -14,7 +14,6 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 *)
-
 
 open Common
 open Lwt
@@ -697,65 +696,109 @@ let synchronizeOnce() =
     (exitStatus, failedPaths)
   end
 
-let watchinterval = 10
+(* ----------------- Filesystem watching mode ---------------- *)
+
+(* FIX: we should check that the child process has not died and restart it if so... *)
+
+let watchinterval = 5
+
+let watcherTemp r n =
+  let s = n ^ (Update.archiveHash (Fspath.canonize (Some r))) in
+  Os.fileInUnisonDir s
+  (* Fspath.toSysPath
+       (Fspath.concat r (Os.tempPath r (Path.child Path.empty (Name.fromString s)))) *)
+
+let watchercmd r =
+  (* FIX: need to include --follow and path parameters *)
+  (* FIX -- need to find the program using watcherosx preference *)
+  let root = Common.root2string r in
+  let changefile = watcherTemp root "changes" in
+  let statefile = watcherTemp root "state" in
+  let cmd = Printf.sprintf "fsmonitor.py --outfile %s --statefile %s %s\n"
+           (System.fspathToPrintString changefile)
+           (System.fspathToPrintString statefile)
+           root in
+  debug (fun() -> Util.msg "change command: %s\n" cmd);
+  (changefile,cmd)
+
+module RootMap = Map.Make (struct type t = Common.root let compare = Pervasives.compare end)
+type watcherinfo = {file: System.fspath;
+                    ch:Pervasives.in_channel option ref;
+                    chars: string ref;
+                    lines: string list ref}
+let watchers : watcherinfo RootMap.t ref = ref RootMap.empty 
 
 (* FIX; Using string concatenation to accumulate characters is
    pretty inefficient! *)
-let charsRead = ref ""
-let linesRead = ref []
-let watcherchan = ref None
+let getAvailableLinesFromWatcher wi =
+  let ch = match !(wi.ch) with Some(c) -> c | None -> assert false in 
+  let rec loop () =
+    match try Some(input_char ch) with End_of_file -> None with
+      None ->
+        let res = !(wi.lines) in
+        wi.lines := [];
+        res
+    | Some(c) ->
+        if c = '\n' then begin
+          wi.lines := !(wi.chars) :: !(wi.lines);
+          wi.chars := "";
+          loop ()
+        end else begin
+          wi.chars := (!(wi.chars)) ^ (String.make 1 c);
+          loop ()
+        end in
+    loop ()
 
-let suckOnWatcherFileLocal n =
+let suckOnWatcherFileLocal r =
   Util.convertUnixErrorsToFatal
-    ("Reading changes from watcher process in file " ^
-     System.fspathToPrintString n)
+    "Reading changes from watcher process "
     (fun () ->
-       (* The main loop, invoked from two places below *)
-       let rec loop ch =
-         match try Some(input_char ch) with End_of_file -> None with
-           None ->
-             let res = !linesRead in
-             linesRead := [];
-             res
-         | Some(c) ->
-             if c = '\n' then begin
-               linesRead := !charsRead
-                            :: !linesRead;
-               charsRead := "";
-               loop ch
-             end else begin
-               charsRead := (!charsRead) ^ (String.make 1 c);
-               loop ch
-             end in
-       (* Make sure there's a file to watch, then read from it *)
-       match !watcherchan with
-         None -> 
-           if System.file_exists n then begin
-             let ch = System.open_in_bin n in
-             watcherchan := Some(ch);
-             loop ch
-           end else []
-       | Some(ch) -> loop ch
-      )
+       (* Make sure there's a watcher running *)
+       try
+         let wi = RootMap.find r !watchers in
+         if !(wi.ch) = None then
+           (* Watcher channel not built yet *)
+           if System.file_exists wi.file then begin
+             (* Build it and go *)
+             let c = System.open_in_bin wi.file in
+             wi.ch := Some(c);
+             getAvailableLinesFromWatcher wi
+           end else begin
+             (* Wait for change file to be built *)
+             debug (fun() -> Util.msg
+               "Waiting for change file %s\n" (System.fspathToPrintString wi.file));
+             []
+           end
+         else 
+           (* Watcher running and channel built: go ahead and read *)
+           getAvailableLinesFromWatcher wi
+       with Not_found -> begin
+         (* Watcher process not running *)
+         let (changefile,cmd) = watchercmd r in
+         debug (fun() -> Util.msg "Starting watcher on root %s\n" (Common.root2string r));
+         let _ = System.open_process_in cmd in
+         let wi = {file = changefile; ch = ref None; lines = ref []; chars = ref ""} in
+         watchers := RootMap.add r wi !watchers;
+         []
+      end)
 
-let suckOnWatcherFileRoot: Common.root -> System.fspath -> (string list) Lwt.t =
+let suckOnWatcherFileRoot: Common.root -> Common.root -> (string list) Lwt.t =
   Remote.registerRootCmd
     "suckOnWatcherFile"
-    (fun (fspath, n) ->
-      Lwt.return (suckOnWatcherFileLocal n))
+    (fun (fspath, r) ->
+      Lwt.return (suckOnWatcherFileLocal r))
 
-let suckOnWatcherFiles n =
+let suckOnWatcherFiles () =
   Safelist.concat
     (Lwt_unix.run (
-      Globals.allRootsMap (fun r -> suckOnWatcherFileRoot r n)))
+      Globals.allRootsMap (fun r -> suckOnWatcherFileRoot r r)))
 
 let synchronizePathsFromFilesystemWatcher () =
-  let watcherfilename = System.fspathFromString "" in
-  (* STOPPED HERE -- need to find the program using watcherosx preference
-     and invoke it (on both hosts, if there are two!) using a redirect to
-     get the output into a temp file... *)
+  (* Make sure the confirmbigdeletes preference is turned off.  If it's on, then
+     deletions will fail because every deletion is a "big deletion"! *)
+  Prefs.set Globals.confirmBigDeletes false;
   let rec loop failedPaths = 
-    let newpaths = suckOnWatcherFiles watcherfilename in
+    let newpaths = suckOnWatcherFiles () in
     if newpaths <> [] then
       display (Printf.sprintf "Changed paths:\n  %s\n"
                  (String.concat "\n  " newpaths));
@@ -773,6 +816,8 @@ let synchronizePathsFromFilesystemWatcher () =
       loop []
     end in
   loop []
+
+(* ----------------- Repetition ---------------- *)
 
 let synchronizeUntilNoFailures () =
   let initValueOfPathsPreference = Prefs.read Globals.paths in
@@ -808,6 +853,8 @@ let rec synchronizeUntilDone () =
     Unix.sleep repeatinterval;
     synchronizeUntilDone ()
   end
+
+(* ----------------- Startup ---------------- *)
 
 let start interface =
   if interface <> Uicommon.Text then

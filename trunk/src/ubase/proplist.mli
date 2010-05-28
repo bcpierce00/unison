@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/ubase/proplist.mli *)
-(* Copyright 1999-2009, Benjamin C. Pierce (see COPYING for details) *)
+(* Copyright 1999-2010, Benjamin C. Pierce (see COPYING for details) *)
 
 type 'a key
 type t
