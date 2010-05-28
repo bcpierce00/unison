@@ -1,5 +1,27 @@
 CHANGES FROM VERSION 2.40.16
 
+* Progress on filesystem watching (see uitext.ml)
+
+* Update copyright dates, while I'm thinking about it :-)
+
+
+
+
+
+-------------------------------
+CHANGES FROM VERSION 2.40.16
+
+* Progress on filesystem watching (see uitext.ml)
+
+* Update copyright dates, while I'm thinking about it :-)
+
+
+
+
+
+-------------------------------
+CHANGES FROM VERSION 2.40.16
+
 * One more fix to Unicode case sensitive mode
 
 -------------------------------

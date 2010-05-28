@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/os.mli *)
-(* Copyright 1999-2009, Benjamin C. Pierce (see COPYING for details) *)
+(* Copyright 1999-2010, Benjamin C. Pierce (see COPYING for details) *)
 
 val myCanonicalHostName : string
 

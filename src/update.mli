@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/update.mli *)
-(* Copyright 1999-2009, Benjamin C. Pierce (see COPYING for details) *)
+(* Copyright 1999-2010, Benjamin C. Pierce (see COPYING for details) *)
 
 module NameMap : Map.S with type key = Name.t
 
@@ -77,3 +77,8 @@ val iterFiles :
 
 (* (For breaking the dependency loop between update.ml and stasher.ml...) *)
 val setStasherFun : (Fspath.t -> Path.local -> unit) -> unit
+
+(* Conjoin the canonical name of the current host and the canonical
+   presentation of the current fspath with the list of names/fspaths of
+   all the roots and the current archive format *)
+val archiveHash : Fspath.t -> string
