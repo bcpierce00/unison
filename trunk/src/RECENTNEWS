@@ -1,5 +1,14 @@
 CHANGES FROM VERSION 2.40.16
 
+* Correct a bug in the watcher startup code for remote sync
+
+
+
+
+
+-------------------------------
+CHANGES FROM VERSION 2.40.16
+
 * Unison now passes path arguments and --follow directives to
   fsmonitor.py.  This seems to work except for one small issue with
   how fsmonitor.py treats --follow directives for directories that
