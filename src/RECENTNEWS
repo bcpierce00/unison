@@ -1,5 +1,20 @@
 CHANGES FROM VERSION 2.40.16
 
+* More progress on file watching
+* Add external fsmonitor.py script to svn repo
+
+* If you want to play with the filewatching functionality, here's 
+  what you do: 
+    - add fsmonitor.py to your search path (or make a symlink to 
+      it from somewhere on your search path) on both machines that 
+      you're going to synchronize
+    - recompile the text ui ('make text') on both machines
+    - start unison with "-repeat watch" on the command line
+
+
+-------------------------------
+CHANGES FROM VERSION 2.40.16
+
 * Progress on filesystem watching (see uitext.ml)
 
 * Update copyright dates, while I'm thinking about it :-)
