@@ -612,9 +612,9 @@ let rec interactAndPropagateChanges reconItemList
     displayWhenInteractive "\nProceed with propagating updates? ";
     selectAction
       (* BCP: I find it counterintuitive that every other prompt except this one
-         would expect <CR> as a default.  But I got talked out of offering a default
-         here, because of safety considerations (too easy to press <CR> one time
-         too many). *)
+         would expect <CR> as a default.  But I got talked out of offering a
+         default here, because of safety considerations (too easy to press
+         <CR> one time too many). *)
       (if Prefs.read Globals.batch then Some "y" else None)
       [(["y";"g"],
         "Yes: proceed with updates as selected above",
@@ -696,11 +696,12 @@ let synchronizeOnce() =
     (exitStatus, failedPaths)
   end
 
+let originalValueOfPathsPreference = ref [] 
+
 (* ----------------- Filesystem watching mode ---------------- *)
 
-(* FIX: we should check that the child process has not died and restart it if so... *)
-(* FIX: also, we should trap fatal errors like losing the connection with the server
-   and restart if needed (restoring the original paths, etc.) *)
+(* FIX: we should check that the child process has not died and
+   restart it if so... *)
 
 let watchinterval = 5
 
@@ -711,10 +712,10 @@ let watcherTemp r n =
 let watchercmd r =
   (* FIX: is the quoting of --follow parameters going to work on Win32? *)
   (* FIX -- need to find the program using watcherosx preference *)
-  let root = Common.root2string r in
+  let root = Fspath.toString (snd r) in
   let changefile = watcherTemp root "changes" in
   let statefile = watcherTemp root "state" in
-  let paths = Safelist.map Path.toString (Prefs.read Globals.paths) in
+  let paths = Safelist.map Path.toString !originalValueOfPathsPreference in
   let followpaths = Pred.extern Path.followPred in
   let follow = Safelist.map (fun s -> "--follow '"^s^"'") followpaths in
   let cmd = Printf.sprintf "fsmonitor.py %s --outfile %s --statefile %s %s %s\n"
@@ -774,7 +775,8 @@ let suckOnWatcherFileLocal r =
            end else begin
              (* Wait for change file to be built *)
              debug (fun() -> Util.msg
-               "Waiting for change file %s\n" (System.fspathToPrintString wi.file));
+               "Waiting for change file %s\n"
+               (System.fspathToPrintString wi.file));
              []
            end
          else 
@@ -783,9 +785,11 @@ let suckOnWatcherFileLocal r =
        with Not_found -> begin
          (* Watcher process not running *)
          let (changefile,cmd) = watchercmd r in
-         debug (fun() -> Util.msg "Starting watcher on root %s\n" (Common.root2string r));
+         debug (fun() -> Util.msg
+                  "Starting watcher on root %s\n" (Common.root2string r));
          let _ = System.open_process_in cmd in
-         let wi = {file = changefile; ch = ref None; lines = ref []; chars = ref ""} in
+         let wi = {file = changefile; ch = ref None;
+                   lines = ref []; chars = ref ""} in
          watchers := RootMap.add r wi !watchers;
          []
       end)
@@ -828,13 +832,12 @@ let synchronizePathsFromFilesystemWatcher () =
 (* ----------------- Repetition ---------------- *)
 
 let synchronizeUntilNoFailures () =
-  let initValueOfPathsPreference = Prefs.read Globals.paths in
   let rec loop triesLeft =
     let (exitStatus,failedPaths) = synchronizeOnce() in
     if failedPaths <> [] && triesLeft <> 0 then begin
       loop (triesLeft - 1)
     end else begin
-      Prefs.set Globals.paths initValueOfPathsPreference;
+      Prefs.set Globals.paths !originalValueOfPathsPreference;
       exitStatus
     end in
   loop (Prefs.read Uicommon.retry)
@@ -857,14 +860,25 @@ let rec synchronizeUntilDone () =
     exitStatus
   else begin
     (* Do it again *)
-    Trace.status (Printf.sprintf "\nSleeping for %d seconds...\n" repeatinterval);
+    Trace.status (Printf.sprintf
+       "\nSleeping for %d seconds...\n" repeatinterval);
     Unix.sleep repeatinterval;
     synchronizeUntilDone ()
   end
 
 (* ----------------- Startup ---------------- *)
 
-let start interface =
+let handleException e =
+  restoreTerminal();
+  let msg = Uicommon.exn2string e in
+  Trace.log (msg ^ "\n");
+  if not !Trace.sendLogMsgsToStderr then begin
+    alwaysDisplay "\n";
+    alwaysDisplay msg;
+    alwaysDisplay "\n";
+  end
+
+let rec start interface =
   if interface <> Uicommon.Text then
     Util.msg "This Unison binary only provides the text GUI...\n";
   begin try
@@ -901,6 +915,10 @@ let start interface =
     setWarnPrinter();
     Trace.statusFormatter := formatStatus;
 
+    (* Save away the user's path preferences in case they are needed for
+       restarting/repeating *)
+    originalValueOfPathsPreference := Prefs.read Globals.paths;
+
     let exitStatus = synchronizeUntilDone() in
 
     (* Put the terminal back in "sane" mode, if necessary, and quit. *)
@@ -908,16 +926,22 @@ let start interface =
     exit exitStatus
 
   with
-    e ->
-      restoreTerminal();
-      let msg = Uicommon.exn2string e in
-      Trace.log (msg ^ "\n");
-      if not !Trace.sendLogMsgsToStderr then begin
-        alwaysDisplay "\n";
-        alwaysDisplay msg;
-        alwaysDisplay "\n";
-      end;
+    Sys.Break -> begin
+      (* If we've been killed, then die *)
+      handleException Sys.Break;
       exit Uicommon.fatalExit
+    end 
+  | e -> begin
+      (* If any other bad thing happened and the -repeat preference is
+         set, then restart *)
+      handleException e;
+      if Prefs.read Uicommon.repeat <> "" then begin
+        Util.msg "Restarting in 10 seconds...\n";
+        Unix.sleep 10;        
+        start interface
+      end else
+        exit Uicommon.fatalExit
+    end 
   end
 
 let defaultUi = Uicommon.Text
