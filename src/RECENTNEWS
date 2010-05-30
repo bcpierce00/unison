@@ -1,5 +1,21 @@
 CHANGES FROM VERSION 2.40.16
 
+* Unison now passes path arguments and --follow directives to
+  fsmonitor.py.  This seems to work except for one small issue with
+  how fsmonitor.py treats --follow directives for directories that
+  don't exist (or maybe this is an issue with how it treats any kind
+  of monitoring when the thing being monitored doesn't exist?).  If I
+  create a symlink to a nonexistant directory, give Unison (hence
+  fsmonitor.py) a 'follow' directive for the symlink, start unison, and
+  *then* create the directory, fsmonitor.py misses the change.
+
+
+
+
+
+-------------------------------
+CHANGES FROM VERSION 2.40.16
+
 * More progress on file watching
 * Add external fsmonitor.py script to svn repo
 

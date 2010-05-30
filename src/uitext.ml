@@ -707,31 +707,37 @@ let watchinterval = 5
 let watcherTemp r n =
   let s = n ^ (Update.archiveHash (Fspath.canonize (Some r))) in
   Os.fileInUnisonDir s
-  (* Fspath.toSysPath
-       (Fspath.concat r (Os.tempPath r (Path.child Path.empty (Name.fromString s)))) *)
 
 let watchercmd r =
-  (* FIX: need to include --follow and path parameters *)
+  (* FIX: is the quoting of --follow parameters going to work on Win32? *)
   (* FIX -- need to find the program using watcherosx preference *)
   let root = Common.root2string r in
   let changefile = watcherTemp root "changes" in
   let statefile = watcherTemp root "state" in
-  let cmd = Printf.sprintf "fsmonitor.py --outfile %s --statefile %s %s\n"
-           (System.fspathToPrintString changefile)
-           (System.fspathToPrintString statefile)
-           root in
-  debug (fun() -> Util.msg "change command: %s\n" cmd);
+  let paths = Safelist.map Path.toString (Prefs.read Globals.paths) in
+  let followpaths = Pred.extern Path.followPred in
+  let follow = Safelist.map (fun s -> "--follow '"^s^"'") followpaths in
+  let cmd = Printf.sprintf "fsmonitor.py %s --outfile %s --statefile %s %s %s\n"
+              root
+              (System.fspathToPrintString changefile)
+              (System.fspathToPrintString statefile)
+              (String.concat " " follow)
+              (String.concat " " paths) in
+  debug (fun() -> Util.msg "watchercmd = %s\n" cmd);
   (changefile,cmd)
 
-module RootMap = Map.Make (struct type t = Common.root let compare = Pervasives.compare end)
+module RootMap = Map.Make (struct type t = Common.root
+                                  let compare = Pervasives.compare
+                           end)
 type watcherinfo = {file: System.fspath;
                     ch:Pervasives.in_channel option ref;
                     chars: string ref;
                     lines: string list ref}
 let watchers : watcherinfo RootMap.t ref = ref RootMap.empty 
 
-(* FIX; Using string concatenation to accumulate characters is
-   pretty inefficient! *)
+(* FIX: Using string concatenation to accumulate characters is
+   a bit inefficient!  Not sure how much it matters in the grand scheme,
+   though... *)
 let getAvailableLinesFromWatcher wi =
   let ch = match !(wi.ch) with Some(c) -> c | None -> assert false in 
   let rec loop () =
