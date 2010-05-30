@@ -699,6 +699,8 @@ let synchronizeOnce() =
 (* ----------------- Filesystem watching mode ---------------- *)
 
 (* FIX: we should check that the child process has not died and restart it if so... *)
+(* FIX: also, we should trap fatal errors like losing the connection with the server
+   and restart if needed (restoring the original paths, etc.) *)
 
 let watchinterval = 5
 
