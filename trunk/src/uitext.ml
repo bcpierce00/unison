@@ -655,7 +655,7 @@ let checkForDangerousPath dangerousPaths =
     end 
   end
 
-let synchronizeOnce() =
+let synchronizeOnce () =
   let showStatus path =
     if path = "" then Util.set_infos "" else
     let max_len = 70 in
@@ -673,6 +673,9 @@ let synchronizeOnce() =
   if not (Prefs.read Trace.terse) && (Prefs.read Trace.debugmods = []) then
     Uutil.setUpdateStatusPrinter (Some showStatus);
 
+  debug (fun() -> Util.msg "temp: Globals.paths = %s\n"
+           (String.concat " "
+              (Safelist.map Path.toString (Prefs.read Globals.paths))));
   let updates = Update.findUpdates() in
 
   Uutil.setUpdateStatusPrinter None;
@@ -703,6 +706,9 @@ let originalValueOfPathsPreference = ref []
 (* FIX: we should check that the child process has not died and
    restart it if so... *)
 
+(* FIX: the names of the paths being watched should get included
+   in the name of the watcher's state file *)
+
 let watchinterval = 5
 
 let watcherTemp r n =
@@ -730,15 +736,27 @@ let watchercmd r =
 module RootMap = Map.Make (struct type t = Common.root
                                   let compare = Pervasives.compare
                            end)
+(* Using string concatenation to accumulate characters is
+   a bit inefficient, but it's not clear how much it matters in the
+   grand scheme of things.  Current experience suggests that this
+   implementation performs well enough. *)
 type watcherinfo = {file: System.fspath;
                     ch:Pervasives.in_channel option ref;
                     chars: string ref;
                     lines: string list ref}
 let watchers : watcherinfo RootMap.t ref = ref RootMap.empty 
 
-(* FIX: Using string concatenation to accumulate characters is
-   a bit inefficient!  Not sure how much it matters in the grand scheme,
-   though... *)
+let trim_duplicates l =
+  let rec loop l = match l with
+    [] -> l
+  | [s] -> l
+  | s1::s2::rest ->
+      if Util.startswith s1 s2 || Util.startswith s2 s1 then
+        loop (s2::rest)
+      else
+        s1 :: (loop (s2::rest)) in
+  loop (Safelist.sort String.compare l)  
+
 let getAvailableLinesFromWatcher wi =
   let ch = match !(wi.ch) with Some(c) -> c | None -> assert false in 
   let rec loop () =
@@ -746,7 +764,7 @@ let getAvailableLinesFromWatcher wi =
       None ->
         let res = !(wi.lines) in
         wi.lines := [];
-        res
+        trim_duplicates res
     | Some(c) ->
         if c = '\n' then begin
           wi.lines := !(wi.chars) :: !(wi.lines);
@@ -779,9 +797,10 @@ let suckOnWatcherFileLocal r =
                (System.fspathToPrintString wi.file));
              []
            end
-         else 
+         else begin
            (* Watcher running and channel built: go ahead and read *)
            getAvailableLinesFromWatcher wi
+         end 
        with Not_found -> begin
          (* Watcher process not running *)
          let (changefile,cmd) = watchercmd r in
@@ -805,14 +824,31 @@ let suckOnWatcherFiles () =
     (Lwt_unix.run (
       Globals.allRootsMap (fun r -> suckOnWatcherFileRoot r r)))
 
+let shouldNotIgnore p =
+  let rec test prefix rest =
+    if Globals.shouldIgnore prefix then
+      false
+    else match (Path.deconstruct rest) with
+        None -> true
+      | Some(n,rest') ->
+          test (Path.child prefix n) rest'
+    in 
+  test Path.empty (Path.fromString p) 
+
 let synchronizePathsFromFilesystemWatcher () =
-  (* Make sure the confirmbigdeletes preference is turned off.  If it's on, then
-     deletions will fail because every deletion is a "big deletion"! *)
+  (* Make sure the confirmbigdeletes preference is turned off.  If it's on,
+     then all deletions will fail because every deletion will count as
+     a "big deletion"! *)
   Prefs.set Globals.confirmBigDeletes false;
+
   let rec loop failedPaths = 
-    let newpaths = suckOnWatcherFiles () in
+    let newpathsraw = suckOnWatcherFiles () in
+    debug (fun () -> Util.msg
+      "Changed paths: %s\n" (String.concat " " newpathsraw));
+    let newpaths = Safelist.filter shouldNotIgnore newpathsraw in
     if newpaths <> [] then
-      display (Printf.sprintf "Changed paths:\n  %s\n"
+      display (Printf.sprintf "Changed paths:  %s%s\n"
+                 (if newpaths=[] then "" else "\n  ")
                  (String.concat "\n  " newpaths));
     let p = failedPaths @ (Safelist.map Path.fromString newpaths) in
     if p <> [] then begin
