@@ -1395,8 +1395,8 @@ let rec buildUpdateChildren
   showStatusDir path;
   let skip =
     Pred.test immutable (Path.toString path) &&
-    not (Pred.test immutablenot (Path.toString path))
-  in
+    not (Pred.test immutablenot (Path.toString path)) in
+
   if unchangedChildren then begin
     if skip then begin
       if Prefs.read Xferhint.xferbycopying then
@@ -1414,15 +1414,24 @@ let rec buildUpdateChildren
       let archUpdated = ref false in
       let handleChild nm archive =
         let path' = Path.child path nm in
-        showStatus scanInfo path';
-        let (arch,uiChild) =
-          buildUpdateRec archive fspath path' scanInfo in
-        if uiChild <> NoUpdates then
-          updates := (nm, uiChild) :: !updates;
-        match arch with
-          None      -> archive
-        | Some arch -> archUpdated := true; arch
-      in
+        debugverbose (fun () -> Util.msg
+          "buildUpdateChildren(handleChild): %s\n" (Path.toString path'));
+        (* BCP 6/10: Added check for ignored path, but I'm not completely
+           sure this is the right place for it: *)
+        if Globals.shouldIgnore path' then begin
+          debugignore (fun()->Util.msg "buildUpdateChildren: ignoring path %s\n"
+                                (Path.toString path'));
+          archive
+        end else begin
+          showStatus scanInfo path';
+          let (arch,uiChild) =
+            buildUpdateRec archive fspath path' scanInfo in
+          if uiChild <> NoUpdates then
+            updates := (nm, uiChild) :: !updates;
+          match arch with
+            None      -> archive
+          | Some arch -> archUpdated := true; arch
+        end in
       let newChi = NameMap.mapi handleChild archChi in
       (* The Recon module relies on the updates to be sorted *)
       ((if !archUpdated then Some newChi else None),
@@ -1521,7 +1530,7 @@ let rec buildUpdateChildren
 and buildUpdateRec archive currfspath path scanInfo =
   try
     debug (fun() ->
-      Util.msg "buildUpdate: %s\n"
+      Util.msg "buildUpdateRec: %s\n"
         (Fspath.toDebugString (Fspath.concat currfspath path)));
     let info = Fileinfo.get true currfspath path in
     match (info.Fileinfo.typ, archive) with
@@ -1582,7 +1591,7 @@ and buildUpdateRec archive currfspath path scanInfo =
              Actually, we could check for ignored children in the archive,
              but this has a significant cost.  We could mark directories
              with ignored children, and only perform the checks for them,
-             but that does not seem worthwhile, are directories with
+             but that does not seem worthwhile, as directories with
              ignored children are expected to be rare in the archive.
              (These are files or directories which used not to be
              ignored and are now ignored.) *)
@@ -1755,7 +1764,9 @@ Format.eprintf "==> %b@." (oldPreds = newPreds);
    unchanged files *)
 let findLocal fspath pathList:
       (Path.local * Common.updateItem * Props.t list) list =
-  debug (fun() -> Util.msg "findLocal %s\n" (Fspath.toDebugString fspath));
+  debug (fun() -> Util.msg
+    "findLocal %s (%s)\n" (Fspath.toDebugString fspath)
+    (String.concat " " (Safelist.map Path.toString pathList)));
   addHashToTempNames fspath;
   (* Maybe we should remember the device number where the root lives at 
      the beginning of update detection, so that we can check, below, that 

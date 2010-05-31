@@ -1,3 +1,15 @@
+CHANGES FROM VERSION 2.41.-28
+
+* Trim duplicate paths when using "-repeat watch"
+
+* Bump version number, since protocol has changed (should have done
+  this a few commits ago)
+
+
+
+
+
+-------------------------------
 CHANGES FROM VERSION 2.40.16
 
 * Correct a bug in the watcher startup code for remote sync
