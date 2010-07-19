@@ -1089,7 +1089,9 @@ let fastcheck =
        Unison will use the modification time and length of a file as a
        `pseudo inode number' \
        when scanning replicas for updates, \
-       instead of reading the full contents of every file.  Under \
+       instead of reading the full contents of every file.  (This does not \
+       apply to the very first run, when Unison will always scan \
+       all files regarless of this switch).  Under \
        Windows, this may cause Unison to miss propagating an update \
        if the modification time and length of the \
        file are both unchanged by the update.  However, Unison will never \
