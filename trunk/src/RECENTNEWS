@@ -1,3 +1,9 @@
+CHANGES FROM VERSION 2.42.-29
+
+* Small patch from Stephane Glondu to make Unison compile with Ocaml 3.12.
+
+
+-------------------------------
 CHANGES FROM VERSION 2.41.-27
 
 * Try again to fix version number

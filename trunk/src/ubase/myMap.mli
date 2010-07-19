@@ -1,6 +1,6 @@
 (*
 This file is taken from the Objective Caml standard library.
-Some functions has been added to suite Unison needs.
+Some functions have been added to suit Unison's needs.
 *)
 (***********************************************************************)
 (*                                                                     *)
