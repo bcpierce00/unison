@@ -15,7 +15,6 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 *)
 
-
 (* NOTE: IF YOU CHANGE TYPE "FINGERPRINT", THE ARCHIVE FORMAT CHANGES;       *)
 (* INCREMENT "UPDATE.ARCHIVEFORMAT"                                          *)
 type t = string
@@ -92,3 +91,9 @@ let hash d =
   end
 
 let equal (d : string) d' = d = d'
+
+let pseudo_prefix = "LEN" 
+
+let pseudo len = pseudo_prefix ^ (Uutil.Filesize.toString len)
+                                    
+let ispseudo f = Util.startswith f pseudo_prefix 

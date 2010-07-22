@@ -239,7 +239,7 @@ let fingerprint fastCheck currfspath path info optDig =
   let res =
     try
       let (oldDesc, oldDig, oldStamp, oldRess) as res =
-        PathTbl.find tbl (Path.toString path) in
+            PathTbl.find tbl (Path.toString path) in
       if
         not (clearlyUnchanged fastCheck path info oldDesc oldStamp oldRess)
       then

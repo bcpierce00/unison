@@ -1,3 +1,10 @@
+CHANGES FROM VERSION 2.43.-29
+
+* Added support for "pseudo-fingerprints", as a first step to
+  implementing super-fast initial scans, following recent discussion
+  on the unison-hackers list
+
+-------------------------------
 CHANGES FROM VERSION 2.42.-29
 
 * Small patch from Stephane Glondu to make Unison compile with Ocaml 3.12.

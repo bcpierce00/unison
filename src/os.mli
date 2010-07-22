@@ -45,3 +45,11 @@ val fingerprint :
   Fspath.t -> Path.local -> (* coordinates of file to fingerprint *)
   Fileinfo.t ->             (* old fileinfo *)
   fullfingerprint           (* current fingerprint *)
+
+val pseudoFingerprint :
+  Uutil.Filesize.t       -> (* size of file to "fingerprint" *)
+  fullfingerprint           (* pseudo-fingerprint of this file (containing just
+                               the file's length) *)
+
+val isPseudoFingerprint :
+  fullfingerprint -> bool
