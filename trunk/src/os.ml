@@ -274,6 +274,13 @@ let fullfingerprintHash (fp, rfp) =
 let fullfingerprintEqual (fp, rfp) (fp', rfp') =
   Fingerprint.equal fp fp' && Fingerprint.equal rfp rfp'
 
+let pseudoFingerprint size =
+  (Fingerprint.pseudo size, Fingerprint.dummy)
+
+let isPseudoFingerprint (fp,rfp) =
+  Fingerprint.ispseudo fp
+
+
 (*****************************************************************************)
 (*                           UNISON DIRECTORY                                *)
 (*****************************************************************************)

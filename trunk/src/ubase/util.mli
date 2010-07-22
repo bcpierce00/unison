@@ -47,7 +47,7 @@ val stringSetFromList : string list -> StringSet.t
 
 (* String manipulation *)
 val truncateString : string -> int -> string
-val startswith : string -> string -> bool
+val startswith : string -> string -> bool  (* STR,PREFIX *)
 val endswith : string -> string -> bool
 val findsubstring : string -> string -> int option
 val replacesubstring : string -> string -> string -> string (* IN,FROM,TO *)
