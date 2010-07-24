@@ -1,5 +1,11 @@
 CHANGES FROM VERSION 2.43.0
 
+* See if we can get revisionString to update automatically now...
+
+
+-------------------------------
+CHANGES FROM VERSION 2.43.0
+
 * Bump revisionString -- not sure why this isn't happening automatically.
 
 -------------------------------
