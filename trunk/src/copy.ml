@@ -67,7 +67,7 @@ let checkContentsChangeLocal
          None dataClearlyUnchanged
   in
   if dataClearlyUnchanged && ressClearlyUnchanged then begin
-    if paranoid then begin
+    if paranoid && not (Os.isPseudoFingerprint archDig) then begin
       let newDig = Os.fingerprint fspathFrom pathFrom info in
       if archDig <> newDig then begin
         Update.markPossiblyUpdated fspathFrom pathFrom;
@@ -164,7 +164,7 @@ type transferStatus =
 let paranoidCheck fspathTo pathTo realPathTo desc fp ress =
   let info = Fileinfo.get false fspathTo pathTo in
   let fp' = Os.fingerprint fspathTo pathTo info in
-  if fp' <> fp then begin
+  if fp' <> fp (* && not (Os.isPseudoFingerprint fp) *) then begin
     Lwt.return (Failure (Os.reasonForFingerprintMismatch fp fp'))
   end else
     Lwt.return (Success info)
@@ -922,7 +922,7 @@ let file rootFrom pathFrom rootTo fspathTo pathTo realPathTo
       localFile
         fspathFrom pathFrom fspathTo pathTo realPathTo
         update desc (Osx.ressLength ress) (Some id);
-      paranoidCheck fspathTo pathTo realPathTo desc fp ress
+        paranoidCheck fspathTo pathTo realPathTo desc fp ress
   | _ ->
       transferFile
         rootFrom pathFrom rootTo fspathTo pathTo realPathTo

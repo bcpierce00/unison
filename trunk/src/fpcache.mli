@@ -2,13 +2,14 @@
 (* Copyright 1999-2010, Benjamin C. Pierce (see COPYING for details) *)
 
 (* Initialize the cache *)
-val init : bool -> System.fspath -> unit
+val init : bool -> bool -> System.fspath -> unit
 
 (* Close the cache file and clear the in-memory cache *)
 val finish : unit -> unit
 
 (* Get the fingerprint of a file, possibly from the cache *)
 val fingerprint :
+  ?newfile:bool ->
   bool -> Fspath.t -> Path.local -> Fileinfo.t -> Os.fullfingerprint option ->
   Props.t * Os.fullfingerprint * Fileinfo.stamp * Osx.ressStamp
 

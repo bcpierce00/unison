@@ -19,6 +19,13 @@
 (* INCREMENT "UPDATE.ARCHIVEFORMAT"                                          *)
 type t = string
 
+let pseudo_prefix = "LEN" 
+
+let pseudo path len = pseudo_prefix ^ (Uutil.Filesize.toString len) ^ "@" ^
+                      (Path.toString path)
+                                    
+let ispseudo f = Util.startswith f pseudo_prefix 
+
 (* Assumes that (fspath, path) is a file and gives its ``digest '', that is  *)
 (* a short string of cryptographic quality representing it.                  *)
 let file fspath path =
@@ -66,14 +73,16 @@ let hexaCode theChar =
   (int2hexa first, int2hexa second)
 
 let toString md5 =
-  let length = String.length md5 in
-  let string = String.create (length * 2) in
-  for i=0 to (length - 1) do
-    let c1, c2 =  hexaCode (md5.[i]) in
-    string.[2*i] <- c1;
-    string.[2*i + 1] <- c2;
-  done;
-  string
+  if ispseudo md5 then md5 else begin
+    let length = String.length md5 in
+    let string = String.create (length * 2) in
+    for i=0 to (length - 1) do
+      let c1, c2 =  hexaCode (md5.[i]) in
+      string.[2*i] <- c1;
+      string.[2*i + 1] <- c2;
+    done;
+    string
+  end 
 
 let string = Digest.string
 
@@ -92,8 +101,3 @@ let hash d =
 
 let equal (d : string) d' = d = d'
 
-let pseudo_prefix = "LEN" 
-
-let pseudo len = pseudo_prefix ^ (Uutil.Filesize.toString len)
-                                    
-let ispseudo f = Util.startswith f pseudo_prefix 

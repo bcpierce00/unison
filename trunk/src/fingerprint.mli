@@ -21,5 +21,5 @@ val equal : t -> t -> bool
 (* A pseudo-fingerprint has the same type as a real one (so it can
    be stored in the archive, etc.), but it is computed just from the
    size of the file, ignoring the contents *)
-val pseudo : Uutil.Filesize.t -> t
+val pseudo : Path.local -> Uutil.Filesize.t -> t
 val ispseudo : t -> bool

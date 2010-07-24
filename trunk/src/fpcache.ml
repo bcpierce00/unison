@@ -128,9 +128,9 @@ let finish () =
 
 let magic = "Unison fingerprint cache format 2"
 
-let init fastCheck fspath =
+let init fastCheck ignorearchives fspath =
   finish ();
-  if fastCheck then begin
+  if fastCheck && not ignorearchives then begin
     begin try
       debug (fun () -> Util.msg "opening cache file %s for input\n"
                          (System.fspathToDebugString fspath));
@@ -235,7 +235,7 @@ let clearlyUnchanged fastCheck path newInfo oldDesc oldStamp oldRess =
   in
   du && ressClearlyUnchanged fastCheck newInfo oldRess du
 
-let fingerprint fastCheck currfspath path info optDig =
+let fingerprint ?(newfile=false) fastCheck currfspath path info optDig =
   let res =
     try
       let (oldDesc, oldDig, oldStamp, oldRess) as res =
@@ -251,7 +251,8 @@ let fingerprint fastCheck currfspath path info optDig =
       if fastCheck then
         debug (fun () -> Util.msg "cache miss for path %s\n"
                            (Path.toDebugString path));
-      let (info, dig) = Os.safeFingerprint currfspath path info optDig in
+      let (info, dig) =
+        Os.safeFingerprint ~newfile currfspath path info optDig in
       (info.Fileinfo.desc, dig, Fileinfo.stamp info, Fileinfo.ressStamp info)
   in
   save path res;

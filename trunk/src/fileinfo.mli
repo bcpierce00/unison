@@ -6,7 +6,7 @@ val type2string : typ -> string
 
 type t = { typ : typ; inode : int; desc : Props.t; osX : Osx.info}
 
-val get : bool -> Fspath.t -> Path.local -> t
+val get : bool (* fromRoot *) -> Fspath.t -> Path.local -> t
 val set : Fspath.t -> Path.local ->
           [`Set of Props.t | `Copy of Path.local | `Update of Props.t] ->
           Props.t -> unit
