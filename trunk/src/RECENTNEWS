@@ -1,3 +1,9 @@
+CHANGES FROM VERSION 2.43.6
+
+* A small fix suggested by Jerome.  Still thinking about what needs to
+  chance to get newly created files to transfer without failing.
+
+-------------------------------
 CHANGES FROM VERSION 2.43.0
 
 * See if we can get revisionString to update automatically now...
