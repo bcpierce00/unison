@@ -1,3 +1,8 @@
+CHANGES FROM VERSION 2.43.0
+
+* Bump revisionString -- not sure why this isn't happening automatically.
+
+-------------------------------
 CHANGES FROM VERSION 2.43.-30
 
 * Experimental implementation of a new "faster check" mode for update
