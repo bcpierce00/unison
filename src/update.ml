@@ -23,6 +23,15 @@ let debugverbose = Trace.debug "update+"
 let debugalias = Trace.debug "rootalias"
 let debugignore = Trace.debug "ignore"
 
+let ignoreArchives =
+  Prefs.createBool "ignorearchives" false
+    "!ignore existing archive files"
+    ("When this preference is set, Unison will ignore any existing "
+     ^ "archive files and behave as though it were being run for the first "
+     ^ "time on these replicas.  It is "
+     ^ "not a good idea to set this option in a profile: it is intended for "
+     ^ "command-line use.")
+
 (*****************************************************************************)
 (*                             ARCHIVE DATATYPE                              *)
 (*****************************************************************************)
@@ -652,22 +661,13 @@ let rec populateCacheFromArchiveRec path arch =
 let populateCacheFromArchive fspath arch =
   let (cacheFilename, _) = archiveName fspath FPCache in
   let cacheFile = Os.fileInUnisonDir cacheFilename in
-  Fpcache.init true cacheFile;
+  Fpcache.init true (Prefs.read ignoreArchives) cacheFile;
   populateCacheFromArchiveRec Path.empty arch;
   Fpcache.finish ()
 
 (*************************************************************************)
 (*                         Loading archives                              *)
 (*************************************************************************)
-
-let ignoreArchives =
-  Prefs.createBool "ignorearchives" false
-    "!ignore existing archive files"
-    ("When this preference is set, Unison will ignore any existing "
-     ^ "archive files and behave as though it were being run for the first "
-     ^ "time on these replicas.  It is "
-     ^ "not a good idea to set this option in a profile: it is intended for "
-     ^ "command-line use.")
 
 let setArchiveData thisRoot fspath (arch, hash, magic, properties) info =
   let archMode = archiveMode magic in
@@ -1547,12 +1547,12 @@ and buildUpdateRec archive currfspath path scanInfo =
           currfspath path info archive
           archDesc archDig archStamp archRess scanInfo
     | (`FILE, _) ->
-        debug (fun() -> Util.msg "  buildUpdate -> Updated file\n");
+        debug (fun() -> Util.msg "  buildUpdate -> New file\n");
         None,
         begin
           showStatusAddLength scanInfo info;
           let (desc, dig, stamp, ress) =
-            Fpcache.fingerprint
+            Fpcache.fingerprint ~newfile:true
               scanInfo.fastCheck currfspath path info None in
           Xferhint.insertEntry currfspath path dig;
           Updates (File (desc, ContentsUpdated (dig, stamp, ress)),
@@ -1792,7 +1792,7 @@ let t1 = Unix.gettimeofday () in
   in
   let (cacheFilename, _) = archiveName fspath FPCache in
   let cacheFile = Os.fileInUnisonDir cacheFilename in
-  Fpcache.init scanInfo.fastCheck cacheFile;
+  Fpcache.init scanInfo.fastCheck (Prefs.read ignoreArchives) cacheFile;
   let (archive, updates) =
     Safelist.fold_right
       (fun path (arch, upd) ->
@@ -2203,10 +2203,11 @@ let rec explainUpdate path ui =
         (Format.sprintf "The properties of file %s have been modified\n"
            (Path.toString path))
   | Updates (File (desc, ContentsUpdated (_, _, ress)),
-             Previous (`FILE, oldDesc, _, oldRess)) ->
-      reportUpdate (fastCheckMiss path desc ress oldDesc oldRess)
-        (Format.sprintf "The contents of file %s has been modified\n"
-           (Path.toString path))
+             Previous (`FILE, oldDesc, oldFp, oldRess)) ->
+      if not (Os.isPseudoFingerprint oldFp) then
+        reportUpdate (fastCheckMiss path desc ress oldDesc oldRess)
+          (Format.sprintf "The contents of file %s have been modified\n"
+             (Path.toString path))
   | Updates (File (_, ContentsUpdated _), _) ->
       reportUpdate false
         (Format.sprintf "The file %s has been created\n"
@@ -2247,8 +2248,7 @@ let checkNoUpdates fspath pathInArchive ui =
   let scanInfo =
     { fastCheck = false; dirFastCheck = false;
       dirStamp = Props.changedDirStamp;
-      showStatus = false }
-  in
+      showStatus = false } in
   let (_, uiNew) = buildUpdateRec archive fspath localPath scanInfo in
   markPossiblyUpdatedRec fspath pathInArchive uiNew;
   explainUpdate pathInArchive uiNew;

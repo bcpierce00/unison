@@ -2,7 +2,7 @@
 (* Copyright 1999-2010, Benjamin C. Pierce (see COPYING for details) *)
 
 (* This module maintains a cache that can be used to map
-   an Os.fingerprint to a (Fspath.t * Path.t) naming a file that *may*
+   an Os.fullfingerprint to a (Fspath.t * Path.t) naming a file that *may*
    (if we are lucky) have this fingerprint.  The cache is not guaranteed
    to be reliable -- the things it returns are only hints, and must be
    double-checked before they are used (to optimize file transfers). *)

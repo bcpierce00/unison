@@ -484,6 +484,9 @@ let getRecentVersion fspath path fingerprint =
     let rec aux_find i =
       let path = makeBackupName path i in
       if Os.exists dir path &&
+        (* FIX: should check that the existing file has the same size, to 
+           avoid computing the fingerprint if it is obviously going to be
+           different... *)
 	(let dig = Os.fingerprint dir path (Fileinfo.get false dir path) in 
  	 dig = fingerprint)
       then begin

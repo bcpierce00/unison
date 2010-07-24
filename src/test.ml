@@ -340,6 +340,31 @@ let test() =
     );
 
   if bothRootsLocal then 
+    runtest "fastercheckUNSAFE 1" ["fastercheckUNSAFE = true"] (fun() -> 
+      put R1 (Dir []); put R2 (Dir []); sync();
+      (* Create a file on both sides with different contents *)
+      put R1 (Dir ["x", File "foo"]); 
+      put R2 (Dir ["x", File "bar"]); sync();
+      check "1a" R1 (Dir ["x", File "foo"]);
+      check "1b" R2 (Dir ["x", File "bar"]);
+      (* Change contents on one side and see that we do NOT get a conflict (!) *)
+      put R1 (Dir ["x", File "newcontents"]); sync();
+      check "2a" R1 (Dir ["x", File "newcontents"]);
+      check "2b" R2 (Dir ["x", File "newcontents"]);
+      (* Start again *)
+      put R1 (Dir []); put R2 (Dir []); sync();
+      (* Create a file on both sides with different contents *)
+      put R1 (Dir ["x", File "foo"]); 
+      put R2 (Dir ["x", File "bar"]); sync();
+      (* Change contents without changing size and check that change is propagated *)
+      put R1 (Dir ["x", File "f00"]); sync();
+      check "3a" R1 (Dir ["x", File "f00"]);
+      check "3b" R2 (Dir ["x", File "f00"]);
+    );
+
+  raise (Util.Fatal "Skipping some tests -- remove me!\n"); 
+
+  if bothRootsLocal then 
     runtest "backups 1 (local)" ["backup = Name *"] (fun() -> 
       put R1 (Dir []); put R2 (Dir []); sync();
       (* Create a file and a directory *)
