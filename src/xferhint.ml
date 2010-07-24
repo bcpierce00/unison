@@ -56,7 +56,7 @@ let lookup fp =
     None
 
 let insertEntry fspath path fp =
-  if Prefs.read xferbycopying then begin
+  if Prefs.read xferbycopying && not (Os.isPseudoFingerprint fp) then begin
     debug (fun () ->
       Util.msg "insertEntry: fspath=%s, path=%s, fp=%s\n"
         (Fspath.toDebugString fspath)

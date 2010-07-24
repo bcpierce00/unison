@@ -351,6 +351,7 @@ let test() =
       put R1 (Dir ["x", File "newcontents"]); sync();
       check "2a" R1 (Dir ["x", File "newcontents"]);
       check "2b" R2 (Dir ["x", File "newcontents"]);
+
       (* Start again *)
       put R1 (Dir []); put R2 (Dir []); sync();
       (* Create a file on both sides with different contents *)
@@ -360,6 +361,13 @@ let test() =
       put R1 (Dir ["x", File "f00"]); sync();
       check "3a" R1 (Dir ["x", File "f00"]);
       check "3b" R2 (Dir ["x", File "f00"]);
+
+      (* Start again *)
+      put R1 (Dir []); put R2 (Dir []); sync();
+      (* Create a new file on one side only *)
+      put R1 (Dir ["x", File "foo"]); sync();
+      (* Check that change is propagated *)
+      check "4" R2 (Dir ["x", File "foo"]);
     );
 
   raise (Util.Fatal "Skipping some tests -- remove me!\n"); 
