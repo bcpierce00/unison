@@ -187,29 +187,43 @@ let unisonInit0() =
 ;;
 Callback.register "unisonInit0" unisonInit0;;
 
+(* Utility function to tell the UI whether roots were set *)
+
+let areRootsSet () = 
+  match Globals.rawRoots() with
+  | [] -> false
+  | _ -> true
+;;
+Callback.register "areRootsSet" areRootsSet;;
+
+
 (* The first time we load preferences, we also read the command line
    arguments; if we re-load prefs (because the user selected a new profile)
    we ignore the command line *)
 let firstTime = ref(true)
 
-(* After figuring out the profile name *)
+(* After figuring out the profile name. If the profileName is the empty
+   string, it means that only the roots were specified on the command
+   line *)
 let do_unisonInit1 profileName =
   (* Load the profile and command-line arguments *)
   (* Restore prefs to their default values, if necessary *)
   if not !firstTime then Prefs.resetToDefaults();
 
-  (* Tell the preferences module the name of the profile *)
-  Prefs.profileName := Some(profileName);
+  if profileName <> "" then begin
+    (* Tell the preferences module the name of the profile *)
+    Prefs.profileName := Some(profileName);
   
-  (* If the profile does not exist, create an empty one (this should only
-     happen if the profile is 'default', since otherwise we will already
-     have checked that the named one exists). *)
-   if not(System.file_exists (Prefs.profilePathname profileName)) then
-     Prefs.addComment "Unison preferences file";
+    (* If the profile does not exist, create an empty one (this should only
+       happen if the profile is 'default', since otherwise we will already
+       have checked that the named one exists). *)
+    if not(System.file_exists (Prefs.profilePathname profileName)) then
+      Prefs.addComment "Unison preferences file";
 
-  (* Load the profile *)
-  (Trace.debug "" (fun() -> Util.msg "about to load prefs");
-  Prefs.loadTheFile());
+    (* Load the profile *)
+    (Trace.debug "" (fun() -> Util.msg "about to load prefs");
+    Prefs.loadTheFile())
+  end;
 
   (* Parse the command line.  This will temporarily override
      settings from the profile. *)
