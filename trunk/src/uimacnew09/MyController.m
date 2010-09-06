@@ -108,7 +108,15 @@ static MyController *me; // needed by reloadTable and displayStatus, below
   [versionText setStringValue:ocamlCall("S", "unisonGetVersion")];
   
   /* Command-line processing */
-  OCamlValue *clprofile = (id)ocamlCall("@", "unisonInit0");
+	OCamlValue *clprofile = (id)ocamlCall("@", "unisonInit0");
+	BOOL areRootsSet = (long)ocamlCall("i@", "areRootsSet") ? YES : NO;
+	if (areRootsSet) {
+		NSLog(@"Roots are on the command line");
+	}
+	else {
+		NSLog(@"Roots are not set on the command line");
+	}
+
   
   /* Add toolbar */
   toolbar = [[[UnisonToolbar alloc] 
@@ -129,6 +137,12 @@ static MyController *me; // needed by reloadTable and displayStatus, below
     
     /* Start the connection */
     [self connect:profileName];
+  }
+  else if (areRootsSet) {
+	/* If invoked from terminal we need to bring the app to the front */
+	[NSApp activateIgnoringOtherApps:YES];
+	/* Start the connection with the empty profile name, indicating roots only */
+	[self connect:@""];
   }
   else {
     /* If invoked from terminal we need to bring the app to the front */
