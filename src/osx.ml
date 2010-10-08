@@ -291,7 +291,7 @@ let getFileInfos dataFspath dataPath typ =
                   readDoubleFromOffset
                     dataFspath dataPath doubleFspath inch ofs 32
                 with Not_found ->
-                  "")
+                  String.make 32 '\000')
                 (fun () -> close_in_noerr inch)
             in
             close_in inch;
