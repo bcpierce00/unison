@@ -163,7 +163,7 @@ let noDeletion =
     ("Including the preference \\texttt{-nodeletion \\ARG{root}} prevents \
       Unison from performing any file deletion on root \\ARG{root}.\n\n\
       This preference can be included twice, once for each root, if you \
-      want to prevent any creation.")
+      want to prevent any deletion.")
 
 let noUpdate =
   Prefs.createStringList "noupdate"

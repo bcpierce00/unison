@@ -238,15 +238,17 @@ let clearlyUnchanged fastCheck path newInfo oldDesc oldStamp oldRess =
 let fingerprint ?(newfile=false) fastCheck currfspath path info optDig =
   let res =
     try
-      let (oldDesc, oldDig, oldStamp, oldRess) as res =
-            PathTbl.find tbl (Path.toString path) in
+      let (cachedDesc, cachedDig, cachedStamp, cachedRess) =
+        PathTbl.find tbl (Path.toString path) in
       if
-        not (clearlyUnchanged fastCheck path info oldDesc oldStamp oldRess)
+        not (clearlyUnchanged
+               fastCheck path info cachedDesc cachedStamp cachedRess)
       then
         raise Not_found;
       debug (fun () -> Util.msg "cache hit for path %s\n"
                          (Path.toDebugString path));
-      res
+      (info.Fileinfo.desc, cachedDig, Fileinfo.stamp info,
+       Fileinfo.ressStamp info)
     with Not_found ->
       if fastCheck then
         debug (fun () -> Util.msg "cache miss for path %s\n"
