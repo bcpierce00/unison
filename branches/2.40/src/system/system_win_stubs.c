@@ -45,7 +45,7 @@ static int open_access_flags[12] = {
 };
 
 static int open_create_flags[12] = {
-  0, 0, 0, 0, 0, O_CREAT, O_TRUNC, O_EXCL, 0, 0, 0, 0
+  0, 0, 0, 0, O_APPEND, O_CREAT, O_TRUNC, O_EXCL, 0, 0, 0, 0
 };
 
 /****/
