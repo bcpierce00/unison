@@ -1,3 +1,12 @@
+CHANGES FROM VERSION 2.43.7
+
+* Fixed fingerprint cache: do not cache file properties
+* Fixed O_APPEND mode for open under Windows (the previous attempt in
+  revision 422 was incomplete)
+* Fixed String.sub invalid argument error when an AppleDouble file does
+  not contain a finder information field
+
+-------------------------------
 CHANGES FROM VERSION 2.43.6
 
 * A small fix suggested by Jerome.  Still thinking about what needs to
