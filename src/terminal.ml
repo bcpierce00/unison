@@ -208,7 +208,12 @@ let create_session cmd args new_stdin new_stdout new_stderr =
             exit 127
           end
       | childPid ->
-          Unix.close slaveFd;
+(*JV: FIX: we are leaking a file descriptor here.  On the other hand,
+  we do not deal gracefully with lost connections anyway. *)
+          (* Keep a file descriptor so that we do not get EIO errors
+             when the OpenSSH 5.6 child process closes the file
+             descriptor before opening /dev/tty. *)
+          (* Unix.close slaveFd; *)
           (Some (Lwt_unix.of_unix_file_descr masterFd), childPid)
       end
 
