@@ -1,5 +1,10 @@
 CHANGES FROM VERSION 2.40.16
 
+* Fixed incompatibility with OpenSSH 5.6.
+
+-------------------------------
+CHANGES FROM VERSION 2.40.16
+
 * Fixed fingerprint cache: do not cache file properties
 * Fixed O_APPEND mode for open under Windows (the previous attempt in
   revision 422 was incomplete)
