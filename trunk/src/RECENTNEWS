@@ -1,3 +1,8 @@
+CHANGES FROM VERSION 2.43.10
+
+* Fixed incompatibility with OpenSSH 5.6.
+
+-------------------------------
 CHANGES FROM VERSION 2.43.7
 
 * Fixed fingerprint cache: do not cache file properties
