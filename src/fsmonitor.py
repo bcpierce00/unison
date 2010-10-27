@@ -74,70 +74,99 @@ def update_changes_nomangle(result):
         mymesg('failed to open log file %s for writing',op.outfile)
 	
 def mangle_filename(path):
-	"""because the FSEvents system returns 'real' paths we have to figure out
+    """because the FSEvents system returns 'real' paths we have to figure out
 if they have been aliased by a symlink and a 'follow' directive in the unison
 configuration or from the command line.
 This is done here for path. The return value is the path name using symlinks
 """
-	try:
-		op.symlinks
-	except AttributeError:
-		#lets create a dictionary of symlinks that are treated transparently here
-		op.symlinks = {}
-		fl = op.follow
-		try:
-                    foll = [f.split(' ',1) for f in fl]
-		except TypeError:
-                    foll = []
-                for k,v in foll:
-			if not k=='Path':
-				mymesg('We don\'t support anything but path specifications in follow directives. Especially not %s',k)
-			else:
-				p = v.strip('{}')
-				op.symlinks[os.path.realpath(os.path.join(op.root,p))]=p
+    try:
+        op.symlinks
+    except AttributeError:
+        make_symlinks()
+    #now lets do it
+    result = path
+    for key in op.symlinks:
+        #print path, key
+        if path.startswith(key):
+            result = os.path.join(op.root,os.path.join(op.symlinks[key]+path[len(key):]))
+            #print 'Match!', result
 	
-	#now lets do it
-	result = path
-	for key in op.symlinks:
-		#print path, key
-		if path.startswith(key):
-			result = os.path.join(op.root,op.symlinks[key]+path[len(key):])
-			#print 'Match!', result
-	
-	return result
+    return result
+
+def make_symlinks():
+    #lets create a dictionary of symlinks that are treated transparently here
+    op.symlinks = {}
+    fl = op.follow
+    try:
+        foll = [f.split(' ',1) for f in fl]
+    except TypeError:
+        foll = []
+    for k,v in foll:
+        if not k=='Path':
+            mymesg('We don\'t support anything but path specifications in follow directives. Especially not %s',k)
+        else:
+            p = v.strip('{}')
+            if not p[-1]=='/':
+                p+='/'
+            op.symlinks[os.path.realpath(os.path.join(op.root,p))]=p
+    mydebug('make_symlinks: symlinks to follow %s',op.symlinks)
 			
 	
 def relpath(root,path):
-	"""returns the path relative to root (which should be absolute)
-	if it is not a path below root or if root is not absolute it returns None
-	"""
+    """returns the path relative to root (which should be absolute)
+    if it is not a path below root or if root is not absolute it returns None
+    """
 
-	if not os.path.isabs(root):
-		return None
+    if not os.path.isabs(root):
+        return None
 	
-	abspath = os.path.abspath(path)
-        mydebug('relpath: abspath(%s) = %s', path, abspath)
+    abspath = os.path.abspath(path)
+    mydebug('relpath: abspath(%s) = %s', path, abspath)
 	
-	#make sure the root and abspath both end with a '/'
-	if not root[-1]=='/':
-		root += '/'
-	if not abspath[-1]=='/':
-		abspath += '/'
+    #make sure the root and abspath both end with a '/'
+    if not root[-1]=='/':
+        root += '/'
+    if not abspath[-1]=='/':
+        abspath += '/'
 		
-        mydebug('relpath: root = %s', root)
+    mydebug('relpath: root = %s', root)
 
-	#print root, abspath
-	if not abspath[:len(root)]==root:
-		#print abspath[:len(root)], root
-		return None
-	
-	return abspath[len(root):]
+    #print root, abspath
+    if not abspath[:len(root)]==root:
+        #print abspath[:len(root)], root
+        return None
+    mydebug('relpath: relpath = %s',abspath[len(root):])
+    return abspath[len(root):]
 	
 def my_abspath(path):
 	"""expand path including shell variables and homedir 
 to the absolute path
 """
 	return os.path.abspath(os.path.expanduser(os.path.expandvars(path)))
+ 
+def update_follow(path):
+    """ tries to find a follow directive that matches path 
+    and if path refers to a symbolic link the real path of the symbolic
+    link is returned. """
+    try:
+        op.symlinks
+    except AttributeError:
+        make_symlinks()
+    rpath = relpath(op.root, path)
+    mydebug('update_follow: rpath %s', rpath)
+    result = None
+    foll = None
+    for k in op.symlinks:
+        v = op.symlinks[k]        
+        if v==rpath:
+            result = os.path.realpath(os.path.abspath(path))
+            foll = v
+            mydebug('update_follow: link %s, real %s',v,result)
+            break
+    if result:
+        op.symlinks[result] = foll
+    
+    return result, foll 
 
 def conf_parser(conffilepath, delimiter = '=', dic = {}):
 	"""parse the unison configuration file at conffilename and populate a dictionary
@@ -146,7 +175,7 @@ one (can be used to recursively call this function for include statements)."""
 	try:
 		conffile = open(conffilepath,'r')
 	except IOError:
-		mymesg('could not open configuration file at %s',conffilepath)
+		mydebug('could not open configuration file at %s',conffilepath)
 		return None
 		
 	res = dic
@@ -174,6 +203,8 @@ if sys.platform.startswith('linux'):
     import pyinotify
 
     class HandleEvents(pyinotify.ProcessEvent):
+        wm = None
+
         #def process_IN_CREATE(self, event):
         #    print "Creating:", event.pathname
 
@@ -193,20 +224,68 @@ if sys.platform.startswith('linux'):
     #        print "attributes:", event.pathname
 
         def process_default(self, event):
-            print "Default:", event
+            mydebug('process_default: event %s', event)
+# code for adding dirs is obsolete since there is the auto_add option
+#            if event.dir:
+#                if event.mask&pyinotify.IN_CREATE:
+#                    print 'create:', event.pathname , self.add_watch(event.pathname,rec=True)
+#                elif event.mask&pyinotify.IN_DELETE:
+#                    print 'remove', event.pathname, self.remove_watch(event.pathname)
+#                    pass
+#                elif event.mask&pyinotify.IN_MOVED_FROM:
+#                    print 'move from', event.pathname, self.remove_watch(event.pathname, rec=True)
+#                    pass
+#                elif event.mask&pyinotify.IN_MOVED_TO:
+#                    print 'move to', event.pathname, self.add_watch(event.pathname,rec=True)
+#                else:
+#                    pass
+            #handle creation of links that should be followed            
+            if os.path.islink(event.pathname):
+                #special handling for links
+                mydebug('process_default: link %s created/changed. Checking for follows', event.pathname)
+                p, l = update_follow(event.pathname)
+                if p:
+                    self.add_watch(p,rec=True,auto_add=True)
+                    mydebug('process_default: follow link %s to %s',l,p)
+            #TODO: should handle deletion of links that are followed (delete the respective watches)
             update_changes([event.pathname])
+
+        def remove_watch(self, pathname, **kwargs):
+            if self.watches.has_key(pathname):
+                return self.wm.rm_watch(self.watches.pop(pathname),**kwargs)
+            return None
+
+        def add_watch(self, pathname, **kwargs):
+            neww = self.wm.add_watch(pathname, self.mask, **kwargs)
+            self.watches.update(neww)
+            return neww
+
+        def init_watches(self, abspaths, follows):
+            self.watches = {}
+            for abspath in abspaths:
+                self.watches.update(self.wm.add_watch(abspath,self.mask,rec=True,auto_add=True))
+            #we have to add watches for follow statements since pyinotify does
+            #not do recursion across symlinks
+            make_symlinks()
+            for link in op.symlinks:
+                mydebug('following symbolic link %s',link)
+                if not self.watches.has_key(link):
+                    self.watches.update(self.wm.add_watch(link,self.mask,rec=True,auto_add=True))
+                                
+            mydebug('init_watches: added paths %s\n  based on paths %s\n   and follows %s',self.watches,op.abspaths, op.follow)
             
                     
     def linuxwatcher():
             p = HandleEvents()
             wm = pyinotify.WatchManager()  # Watch Manager
-            mask = pyinotify.IN_CREATE | pyinotify.IN_DELETE | pyinotify.IN_MODIFY | pyinotify.IN_ATTRIB | pyinotify.IN_MOVED_TO | pyinotify.IN_MOVED_FROM # watched events
+            p.wm = wm
+            p.mask = pyinotify.IN_CREATE | pyinotify.IN_DELETE | pyinotify.IN_MODIFY | pyinotify.IN_ATTRIB | pyinotify.IN_MOVED_TO | pyinotify.IN_MOVED_FROM # watched events
 
             notifier = pyinotify.Notifier(wm, p)
-            watches = [wm.add_watch(abspath,mask,rec=True) for abspath in op.abspaths]
-            print op.abspaths, watches
+            p.init_watches(op.abspaths, op.follow)
             notifier.loop()
-            
+
+        
 #################################################
 # END Linux specific code
 #################################################
@@ -302,6 +381,7 @@ if sys.platform == 'darwin':
                             result.extend(filelevel_approx(path))
                             
             mydebug('Dirs sent: %s',eventPaths)
+            #TODO: handle creation/deletion of links that should be followed            
             update_changes(result)
 
             try:
@@ -312,11 +392,27 @@ if sys.platform == 'darwin':
                     mymesg('failed to open status file %s', op.absstatus)
 
     def my_FSEventStreamCreate(paths):
-            if op.verbose:
-                    print 'selected paths are: %s'%paths
+            mydebug('my_FSEventStreamCreate: selected paths are: %s',paths)
 
             if op.sinceWhen == 'now':
                     op.sinceWhen = kFSEventStreamEventIdSinceNow
+                    
+            try:
+                op.symlinks
+            except AttributeError:
+                make_symlinks()
+                
+            for sl in op.symlinks:
+                #check if that path is already there
+                found=False
+                ln = op.symlinks[sl]
+                for path in paths:
+                    if relpath(op.root,path)==ln:
+                        found = True
+                        break
+                if not found:
+                    mydebug('my_FSEventStreamCreate: watch followed link %s',ln)                    
+                    paths.append(os.path.join(op.root,ln))
             
             streamRef = FSEventStreamCreate(kCFAllocatorDefault,
                                         fsevents_callback,
@@ -326,7 +422,7 @@ if sys.platform == 'darwin':
                                         float(op.latency),
                                         int(op.flags))    
             if streamRef is None:
-                    print("ERROR: FSEVentStreamCreate() => NULL")
+                    mymesg("ERROR: FSEVentStreamCreate() => NULL")
                     return None
 
             if op.verbose:
@@ -339,10 +435,10 @@ if sys.platform == 'darwin':
     def macosxwatcher():
             #since when? if it is 'now' try to read state
             if op.sinceWhen == 'now':
-                    dict = conf_parser(op.absstatus)
-                    if dict and dict.has_key('last_item'):
-                            #print dict['last_item'][-1]
-                            op.sinceWhen = dict['last_item'][-1]
+                    di = conf_parser(op.absstatus)
+                    if di and di.has_key('last_item'):
+                            #print di['last_item'][-1]
+                            op.sinceWhen = di['last_item'][-1]
                             #print op.sinceWhen
             
             streamRef = my_FSEventStreamCreate(op.abspaths)
