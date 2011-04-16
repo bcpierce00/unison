@@ -36,7 +36,6 @@ val fullfingerprintEqual : fullfingerprint -> fullfingerprint -> bool
 
 (* Use this function if the file may change during fingerprinting *)
 val safeFingerprint :
-  ?newfile:bool ->          (* true if this file is new; false by default *)
   Fspath.t -> Path.local -> (* coordinates of file to fingerprint *)
   Fileinfo.t ->             (* old fileinfo *)
   fullfingerprint option -> (* fingerprint corresponding to the old fileinfo *)
@@ -47,12 +46,11 @@ val fingerprint :
   Fileinfo.t ->             (* old fileinfo *)
   fullfingerprint           (* current fingerprint *)
 
-(* BCP: Not sure this needs to be exported
 val pseudoFingerprint :
+  Path.local             -> (* path of file to "fingerprint" *)
   Uutil.Filesize.t       -> (* size of file to "fingerprint" *)
   fullfingerprint           (* pseudo-fingerprint of this file (containing just
-                               the file's length) *)
-*)
+                               the file's length and path) *)
 
 val isPseudoFingerprint :
   fullfingerprint -> bool

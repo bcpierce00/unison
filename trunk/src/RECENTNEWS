@@ -1,4 +1,25 @@
+CHANGES FROM VERSION 2.44.0
+
+* Small patch from Stephane Glondu to make Unison compile with Ocaml 3.12.
+
+* New version of uigtk2.ml from Matt Zagrabelny that reorganizes the
+  icons in a slightly more intuitive way.
+
+* Finished implementing the "fastercheckUNSAFE" option, which can be
+  used (with care!) to achieve *much* faster update detection when all
+  the common files in the two replicas are known to be identical.  See
+  the documentation for more information.
+
+  This feature should still be considered experimental, but it's ready
+  for other people to try out.
+
+-------------------------------
 CHANGES FROM VERSION 2.43.12
+
+* Small patch from Stephane Glondu to make Unison compile with Ocaml 3.12.
+
+* New version of uigtk2.ml from Matt Zagrabelny that reorganizes the
+  icons in a slightly more intuitive way.
 
 * Incorporated new version of fsmonitor.py from Christophe Gohle
 

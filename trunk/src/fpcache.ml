@@ -235,10 +235,42 @@ let clearlyUnchanged fastCheck path newInfo oldDesc oldStamp oldRess =
   in
   du && ressClearlyUnchanged fastCheck newInfo oldRess du
 
-let fingerprint ?(newfile=false) fastCheck currfspath path info optDig =
+let fastercheckUNSAFE =
+  Prefs.createBool "fastercheckUNSAFE"
+    false "!skip computing fingerprints for new files (experts only!)"
+    (  "THIS FEATURE IS STILL EXPERIMENTAL AND SHOULD BE USED WITH EXTREME CAUTION.  "
+       ^ "\n\n"
+       ^ "When this flag is set to {\\tt true}, Unison will compute a 'pseudo-" 
+       ^ "fingerprint' the first time it sees a file (either because the file is "
+       ^ "new or because Unison is running for the first time).  This enormously "
+       ^ "speeds update detection, but it must be used with care, as it can cause "
+       ^ "Unison to miss conflicts: If "
+       ^ "a given path in the filesystem contains files on {\\em both} sides that "
+       ^ "Unison has not yet seen, and if those files have the same length but different "
+       ^ "contents, then Unison will not notice the presence of a conflict.  If, later, one "
+       ^ "of the files is changed, the changed file will be propagated, overwriting  "
+       ^ "the other.  "
+       ^ "\n\n"
+       ^ "Moreover, even when the files are initially identical, setting this flag can lead "
+       ^ "to potentially confusing behavior: "
+       ^ "if a newly created file is later touched without being modified, Unison will "
+       ^ "treat this "
+       ^ "conservatively as a potential change (since it has no record of the earlier "
+       ^ "contents) and show it as needing to be propagated to the other replica. "
+       ^ "\n\n"
+       ^ "Most users should leave this flag off -- the small time savings of not "
+       ^ "fingerprinting new files is not worth the cost in terms of safety.  However, "
+       ^ "it can be very useful for power users with huge replicas that are known to "
+       ^ "be already synchronized (e.g., because one replica is a newly created duplicate "
+       ^ "of the other, or because they have previously been synchronized with Unison but "
+       ^ "Unison's archives need to be rebuilt).  In such situations, it is recommended "
+       ^ "that this flag be set only for the initial run of Unison, so that new archives "
+       ^ "can be created quickly, and then turned off for normal use.")
+
+let fingerprint ?(newfile=false) fastCheck currfspath path info optFp =
   let res =
     try
-      let (cachedDesc, cachedDig, cachedStamp, cachedRess) =
+      let (cachedDesc, cachedFp, cachedStamp, cachedRess) =
         PathTbl.find tbl (Path.toString path) in
       if
         not (clearlyUnchanged
@@ -247,14 +279,21 @@ let fingerprint ?(newfile=false) fastCheck currfspath path info optDig =
         raise Not_found;
       debug (fun () -> Util.msg "cache hit for path %s\n"
                          (Path.toDebugString path));
-      (info.Fileinfo.desc, cachedDig, Fileinfo.stamp info,
+      (info.Fileinfo.desc, cachedFp, Fileinfo.stamp info,
        Fileinfo.ressStamp info)
     with Not_found ->
       if fastCheck then
         debug (fun () -> Util.msg "cache miss for path %s\n"
                            (Path.toDebugString path));
       let (info, dig) =
-        Os.safeFingerprint ~newfile currfspath path info optDig in
+        if Prefs.read fastercheckUNSAFE && newfile then begin
+          debug (fun()-> Util.msg "skipping initial fingerprint of %s\n"
+                            (Fspath.toDebugString (Fspath.concat currfspath path)));
+          (Fileinfo.get false currfspath path,
+           Os.pseudoFingerprint path (Props.length info.Fileinfo.desc))
+        end else begin
+          Os.safeFingerprint currfspath path info optFp
+        end in
       (info.Fileinfo.desc, dig, Fileinfo.stamp info, Fileinfo.ressStamp info)
   in
   save path res;

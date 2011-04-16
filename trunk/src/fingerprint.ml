@@ -22,7 +22,7 @@ type t = string
 let pseudo_prefix = "LEN" 
 
 let pseudo path len = pseudo_prefix ^ (Uutil.Filesize.toString len) ^ "@" ^
-                      (Path.toString path)
+                      (Digest.string (Path.toString path))
                                     
 let ispseudo f = Util.startswith f pseudo_prefix 
 

@@ -211,7 +211,7 @@ prefsdocs: all
 # For developers 
 runtest:
 	$(MAKE) NATIVE=false DEBUG=true text
-	bash ./unison test
+	./unison test
 
 repeattest:
 	$(MAKE) all NATIVE=false DEBUG=true UISTYLE=text

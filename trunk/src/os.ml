@@ -224,38 +224,6 @@ let fingerprint fspath path info =
   (Fingerprint.file fspath path,
    Osx.ressFingerprint fspath path info.Fileinfo.osX)
 
-let fastercheckUNSAFE =
-  Prefs.createBool "fastercheckUNSAFE"
-    false "!skip computing fingerprints for new files (experts only!)"
-    (  "THIS FEATURE IS STILL EXPERIMENTAL AND SHOULD BE USED WITH EXTREME CAUTION.  "
-       ^ "\n\n"
-       ^ "When this flag is set to {\\tt true}, Unison will compute a 'pseudo-" 
-       ^ "fingerprint' the first time it sees a file (either because the file is "
-       ^ "new or because Unison is running for the first time).  This enormously "
-       ^ "speeds update detection, but it must be used with care, as it can cause "
-       ^ "Unison to miss conflicts: If "
-       ^ "a given path in the filesystem contains files on {\\em both} sides that "
-       ^ "Unison has not yet seen, and if those files have the same length but different "
-       ^ "contents, then Unison will not notice the presence of a conflict.  If, later, one "
-       ^ "of the files is changed, the changed file will be propagated, overwriting  "
-       ^ "the other.  "
-       ^ "\n\n"
-       ^ "Moreover, even when the files are initially identical, setting this flag can lead "
-       ^ "to potentially confusing behavior: "
-       ^ "if a newly created file is later touched without being modified, Unison will "
-       ^ "treat this "
-       ^ "conservatively as a potential change (since it has no record of the earlier "
-       ^ "contents) and show it as needing to be propagated to the other replica. "
-       ^ "\n\n"
-       ^ "Most users should leave this flag off -- the small time savings of not "
-       ^ "fingerprinting new files is not worth the cost in terms of safety.  However, "
-       ^ "it can be very useful for power users with huge replicas that are known to "
-       ^ "be already synchronized (e.g., because one replica is a newly created duplicate "
-       ^ "of the other, or because they have previously been synchronized with Unison but "
-       ^ "Unison's archives need to be rebuilt).  In such situations, it is recommended "
-       ^ "that this flag be set only for the initial run of Unison, so that new archives "
-       ^ "can be created quickly, and then turned off for normal use.")
-
 let pseudoFingerprint path size =
   (Fingerprint.pseudo path size, Fingerprint.dummy)
 
@@ -264,14 +232,8 @@ let isPseudoFingerprint (fp,rfp) =
 
 (* FIX: not completely safe under Unix                                       *)
 (* (with networked file system such as NFS)                                  *)
-let safeFingerprint ?(newfile=false) fspath path info optDig =
-  if Prefs.read fastercheckUNSAFE && newfile then begin
-    debug (fun()-> Util.msg "skipping initial fingerprint of %s\n"
-                      (Fspath.toDebugString (Fspath.concat fspath path)));
-    let info = Fileinfo.get false fspath path in
-    (info, pseudoFingerprint path (Props.length info.Fileinfo.desc))
-  end else 
-    let rec retryLoop count info optDig optRessDig =
+let safeFingerprint fspath path info optFp =
+    let rec retryLoop count info optFp optRessFp =
       if count = 0 then
         raise (Util.Transient
                  (Printf.sprintf
@@ -279,35 +241,35 @@ let safeFingerprint ?(newfile=false) fspath path info optDig =
                      the file keeps on changing"
                     (Fspath.toPrintString (Fspath.concat fspath path))))
       else
-        let dig =
-          match optDig with
+        let fp =
+          match optFp with
             None     -> Fingerprint.file fspath path
-          | Some dig -> dig
+          | Some fp -> fp
         in
-        let ressDig =
-          match optRessDig with
+        let ressFp =
+          match optRessFp with
             None      -> Osx.ressFingerprint fspath path info.Fileinfo.osX
           | Some ress -> ress
         in
         let (info', dataUnchanged, ressUnchanged) =
           Fileinfo.unchanged fspath path info in
         if dataUnchanged && ressUnchanged then
-          (info', (dig, ressDig))
+          (info', (fp, ressFp))
         else
           retryLoop (count - 1) info'
-            (if dataUnchanged then Some dig else None)
-            (if ressUnchanged then Some ressDig else None)
+            (if dataUnchanged then Some fp else None)
+            (if ressUnchanged then Some ressFp else None)
     in
     retryLoop 10 info (* Maximum retries: 10 times *)
-      (match optDig with None -> None | Some (d, _) -> Some d)
+      (match optFp with None -> None | Some (d, _) -> Some d)
       None
 
 let fullfingerprint_to_string (fp,rfp) =
   Printf.sprintf "(%s,%s)" (Fingerprint.toString fp) (Fingerprint.toString rfp)
 
-let reasonForFingerprintMismatch (digdata,digress) (digdata',digress') =
-  if digdata = digdata' then "resource fork"
-  else if digress = digress' then "file contents"
+let reasonForFingerprintMismatch (fpdata,fpress) (fpdata',fpress') =
+  if fpdata = fpdata' then "resource fork"
+  else if fpress = fpress' then "file contents"
   else "both file contents and resource fork"
 
 let fullfingerprint_dummy = (Fingerprint.dummy,Fingerprint.dummy)
