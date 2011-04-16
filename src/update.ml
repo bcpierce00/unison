@@ -1269,13 +1269,13 @@ let checkPropChange desc archive archDesc =
   end
 
 (* Check whether a file has changed has changed, by comparing its digest and
-   properties against [archDesc], [archDig], and [archStamp].
+   properties against [archDesc], [archFp], and [archStamp].
    Returns a pair (optArch, ui) where [optArch] is *not* None when the file remains
    unchanged but time might be changed.  [optArch] is used by [buildUpdate]
    series functions to compute the _old_ archive with updated time stamp
    (thus, there will no false update the next time) *)
 let checkContentsChange
-      currfspath path info archive archDesc archDig archStamp archRess scanInfo
+      currfspath path info archive archDesc archFp archStamp archRess scanInfo
    : archive option * Common.updateItem
    =
   debug (fun () ->
@@ -1302,21 +1302,21 @@ let checkContentsChange
     Fpcache.ressClearlyUnchanged fastCheck info archRess dataClearlyUnchanged
   in
   if dataClearlyUnchanged && ressClearlyUnchanged then begin
-    Xferhint.insertEntry currfspath path archDig;
+    Xferhint.insertEntry currfspath path archFp;
     None, checkPropChange info.Fileinfo.desc archive archDesc
   end else begin
     debugverbose (fun() -> Util.msg "  Double-check possibly updated file\n");
     showStatusAddLength scanInfo info;
-    let (newDesc, newDigest, newStamp, newRess) =
+    let (newDesc, newFp, newStamp, newRess) =
       Fpcache.fingerprint fastCheck currfspath path info
-        (if dataClearlyUnchanged then Some archDig else None) in
-    Xferhint.insertEntry currfspath path newDigest;
+        (if dataClearlyUnchanged then Some archFp else None) in
+    Xferhint.insertEntry currfspath path newFp;
     debug (fun() -> Util.msg "  archive digest = %s   current digest = %s\n"
-             (Os.fullfingerprint_to_string archDig)
-             (Os.fullfingerprint_to_string newDigest));
-    if archDig = newDigest then begin
+             (Os.fullfingerprint_to_string archFp)
+             (Os.fullfingerprint_to_string newFp));
+    if archFp = newFp then begin
       let newprops = Props.setTime archDesc (Props.time newDesc) in
-      let newarch = ArchiveFile (newprops, archDig, newStamp, newRess) in
+      let newarch = ArchiveFile (newprops, archFp, newStamp, newRess) in
       debugverbose (fun() ->
         Util.msg "  Contents match: update archive with new time...%f\n"
                    (Props.time newprops));
@@ -1324,7 +1324,7 @@ let checkContentsChange
     end else begin
       debug (fun() -> Util.msg "  Updated file\n");
       None,
-      Updates (File (newDesc, ContentsUpdated (newDigest, newStamp, newRess)),
+      Updates (File (newDesc, ContentsUpdated (newFp, newStamp, newRess)),
                oldInfoOf archive)
     end
   end
@@ -1404,8 +1404,8 @@ let rec buildUpdateChildren
         NameMap.iter
           (fun nm archive ->
              match archive with
-               ArchiveFile (_, archDig, _, _) ->
-                 Xferhint.insertEntry fspath (Path.child path nm) archDig
+               ArchiveFile (_, archFp, _, _) ->
+                 Xferhint.insertEntry fspath (Path.child path nm) archFp
              | _ ->
                  ())
           archChi;
@@ -1457,8 +1457,8 @@ let rec buildUpdateChildren
         `Ok | `Abs ->
           if skip && archive <> NoArchive && status <> `Abs then begin
             begin match archive with
-              ArchiveFile (_, archDig, _, _) ->
-                Xferhint.insertEntry fspath path' archDig
+              ArchiveFile (_, archFp, _, _) ->
+                Xferhint.insertEntry fspath path' archFp
             | _ ->
                 ()
             end;
@@ -1542,20 +1542,20 @@ and buildUpdateRec archive currfspath path scanInfo =
         debug (fun() -> Util.msg "  buildUpdate -> Deleted\n");
         None, Updates (Absent, oldInfoOf archive)
     (* --- *)
-    | (`FILE, ArchiveFile (archDesc, archDig, archStamp, archRess)) ->
+    | (`FILE, ArchiveFile (archDesc, archFp, archStamp, archRess)) ->
         checkContentsChange
           currfspath path info archive
-          archDesc archDig archStamp archRess scanInfo
+          archDesc archFp archStamp archRess scanInfo
     | (`FILE, _) ->
         debug (fun() -> Util.msg "  buildUpdate -> New file\n");
         None,
         begin
           showStatusAddLength scanInfo info;
-          let (desc, dig, stamp, ress) =
+          let (desc, fp, stamp, ress) =
             Fpcache.fingerprint ~newfile:true
               scanInfo.fastCheck currfspath path info None in
-          Xferhint.insertEntry currfspath path dig;
-          Updates (File (desc, ContentsUpdated (dig, stamp, ress)),
+          Xferhint.insertEntry currfspath path fp;
+          Updates (File (desc, ContentsUpdated (fp, stamp, ress)),
                    oldInfoOf archive)
         end
     (* --- *)
@@ -1958,13 +1958,13 @@ let rec updateArchiveRec ui archive =
           NoArchive
       | File (desc, ContentsSame) ->
           begin match archive with
-            ArchiveFile (_, dig, stamp, ress) ->
-              ArchiveFile (desc, dig, stamp, ress)
+            ArchiveFile (_, fp, stamp, ress) ->
+              ArchiveFile (desc, fp, stamp, ress)
           | _ ->
               assert false
           end
-      | File (desc, ContentsUpdated (dig, stamp, ress)) ->
-          ArchiveFile (desc, dig, stamp, ress)
+      | File (desc, ContentsUpdated (fp, stamp, ress)) ->
+          ArchiveFile (desc, fp, stamp, ress)
       | Symlink l ->
           ArchiveSymlink l
       | Dir (desc, children, _, _) ->
@@ -2005,8 +2005,8 @@ let rec stripArchive path arch =
                 NoArchive -> ch
               | ar'       -> NameMap.add nm ar' ch)
            children NameMap.empty)
-  | ArchiveFile (desc, dig, stamp, ress) ->
-      ArchiveFile (Props.strip desc, dig, stamp, ress)
+  | ArchiveFile (desc, fp, stamp, ress) ->
+      ArchiveFile (Props.strip desc, fp, stamp, ress)
   | ArchiveSymlink _ | NoArchive ->
       arch
 
@@ -2088,13 +2088,13 @@ let doUpdateProps arch propOpt ui =
     match ui with
       Updates (File (desc, ContentsSame), _) ->
         begin match arch with
-          ArchiveFile (_, dig, stamp, ress) ->
-            ArchiveFile (desc, dig, stamp, ress)
+          ArchiveFile (_, fp, stamp, ress) ->
+            ArchiveFile (desc, fp, stamp, ress)
         | _ ->
             assert false
         end
-    | Updates (File (desc, ContentsUpdated (dig, stamp, ress)), _) ->
-        ArchiveFile(desc, dig, stamp, ress)
+    | Updates (File (desc, ContentsUpdated (fp, stamp, ress)), _) ->
+        ArchiveFile(desc, fp, stamp, ress)
     | Updates (Dir (desc, _, _, _), _) ->
         begin match arch with
           ArchiveDir (_, children) -> ArchiveDir (desc, children)
@@ -2108,8 +2108,8 @@ let doUpdateProps arch propOpt ui =
   match propOpt with
     Some desc' ->
       begin match newArch with
-        ArchiveFile (desc, dig, stamp, ress) ->
-          ArchiveFile (Props.override desc desc', dig, stamp, ress)
+        ArchiveFile (desc, fp, stamp, ress) ->
+          ArchiveFile (Props.override desc desc', fp, stamp, ress)
       | ArchiveDir (desc, children) ->
           ArchiveDir (Props.override desc desc', children)
       | _ ->
@@ -2145,9 +2145,9 @@ let fastCheckMiss path desc ress oldDesc oldRess =
 
 let doMarkPossiblyUpdated arch =
   match arch with
-    ArchiveFile (desc, dig, stamp, ress) ->
+    ArchiveFile (desc, fp, stamp, ress) ->
       (* It would be cleaner to have a special stamp for this *)
-      ArchiveFile (desc, dig, Fileinfo.InodeStamp (-1), ress)
+      ArchiveFile (desc, fp, Fileinfo.InodeStamp (-1), ress)
   | _ ->
       (* Should not happen, actually.  But this is hard to test... *)
       arch

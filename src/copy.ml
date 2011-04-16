@@ -42,65 +42,79 @@ let lwt_protect f g =
 
 (****)
 
-(* Check whether the source file has been modified during synchronization *)
-let checkContentsChangeLocal
-      fspathFrom pathFrom archDesc archDig archStamp archRess paranoid =
-  let info = Fileinfo.get true fspathFrom pathFrom in
-  let clearlyModified =
-    info.Fileinfo.typ <> `FILE
-    || Props.length info.Fileinfo.desc <> Props.length archDesc
-    || Osx.ressLength info.Fileinfo.osX.Osx.ressInfo <>
-       Osx.ressLength archRess
-  in
-  let dataClearlyUnchanged =
-    not clearlyModified
-    && Props.same_time info.Fileinfo.desc archDesc
-    && not (Fpcache.excelFile pathFrom)
-    && match archStamp with
-         Some (Fileinfo.InodeStamp inode) -> info.Fileinfo.inode = inode
-       | Some (Fileinfo.CtimeStamp ctime) -> true
-       | None                             -> false
-  in
-  let ressClearlyUnchanged =
-    not clearlyModified
-    && Osx.ressUnchanged archRess info.Fileinfo.osX.Osx.ressInfo
-         None dataClearlyUnchanged
-  in
-  if dataClearlyUnchanged && ressClearlyUnchanged then begin
-    if paranoid && not (Os.isPseudoFingerprint archDig) then begin
-      let newDig = Os.fingerprint fspathFrom pathFrom info in
-      if archDig <> newDig then begin
-        Update.markPossiblyUpdated fspathFrom pathFrom;
+(* If newFpOpt = Some newfp, check that the current source contents
+   matches newfp.  Otherwise, check whether the source file has been
+   modified during synchronization. *)
+let checkForChangesToSourceLocal
+      fspathFrom pathFrom archDesc archFp archStamp archRess newFpOpt paranoid =
+  (* Retrieve attributes of current source file *)
+  let sourceInfo = Fileinfo.get true fspathFrom pathFrom in
+  match newFpOpt with
+    None -> 
+      (* no newfp provided: so we need to compare the archive with the
+         current source *)
+      let clearlyChanged =
+           sourceInfo.Fileinfo.typ <> `FILE
+        || Props.length sourceInfo.Fileinfo.desc <> Props.length archDesc
+        || Osx.ressLength sourceInfo.Fileinfo.osX.Osx.ressInfo <>
+           Osx.ressLength archRess    in
+      let dataClearlyUnchanged =
+           not clearlyChanged
+        && Props.same_time sourceInfo.Fileinfo.desc archDesc
+        && not (Fpcache.excelFile pathFrom)
+        && match archStamp with
+             Some (Fileinfo.InodeStamp inode) -> sourceInfo.Fileinfo.inode = inode
+           | Some (Fileinfo.CtimeStamp ctime) -> true
+           | None                             -> false   in
+      let ressClearlyUnchanged =
+           not clearlyChanged
+        && Osx.ressUnchanged archRess sourceInfo.Fileinfo.osX.Osx.ressInfo
+                             None dataClearlyUnchanged   in
+      if dataClearlyUnchanged && ressClearlyUnchanged then begin
+        if paranoid && not (Os.isPseudoFingerprint archFp) then begin
+          let newFp = Os.fingerprint fspathFrom pathFrom sourceInfo in
+          if archFp <> newFp then begin
+            Update.markPossiblyUpdated fspathFrom pathFrom;
+            raise (Util.Transient (Printf.sprintf
+              "The source file %s\n\
+               has been modified but the fast update detection mechanism\n\
+               failed to detect it.  Try running once with the fastcheck\n\
+               option set to 'no'."
+              (Fspath.toPrintString (Fspath.concat fspathFrom pathFrom))))
+          end
+        end
+      end else if
+           clearlyChanged
+        || archFp <> Os.fingerprint fspathFrom pathFrom sourceInfo
+      then
         raise (Util.Transient (Printf.sprintf
-          "The source file %s\n\
-           has been modified but the fast update detection mechanism\n\
-           failed to detect it.  Try running once with the fastcheck\n\
-           option set to 'no'."
+          "The source file %s\nhas been modified during synchronization.  \
+           Transfer aborted."
           (Fspath.toPrintString (Fspath.concat fspathFrom pathFrom))))
-      end
-    end
-  end else if
-    clearlyModified
-    || archDig <> Os.fingerprint fspathFrom pathFrom info
-  then
-    raise (Util.Transient (Printf.sprintf
-      "The source file %s\nhas been modified during synchronization.  \
-       Transfer aborted."
-      (Fspath.toPrintString (Fspath.concat fspathFrom pathFrom))))
+  | Some newfp -> 
+      (* newfp provided means that the archive contains a pseudo-fingerprint... *)
+      assert (Os.isPseudoFingerprint archFp);
+      (* ... so we can't compare the archive with the source; instead we
+         need to compare the current source to the new fingerprint: *)
+      if newfp <> Os.fingerprint fspathFrom pathFrom sourceInfo then
+        raise (Util.Transient (Printf.sprintf
+          "Current source file %s\n not same as transferred file.  \
+           Transfer aborted."
+          (Fspath.toPrintString (Fspath.concat fspathFrom pathFrom))))
 
-let checkContentsChangeOnRoot =
+let checkForChangesToSourceOnRoot =
   Remote.registerRootCmd
-    "checkContentsChange"
+    "checkForChangesToSource"
     (fun (fspathFrom,
-          (pathFrom, archDesc, archDig, archStamp, archRess, paranoid)) ->
-      checkContentsChangeLocal
-        fspathFrom pathFrom archDesc archDig archStamp archRess paranoid;
+          (pathFrom, archDesc, archFp, archStamp, archRess, newFpOpt, paranoid)) ->
+      checkForChangesToSourceLocal
+        fspathFrom pathFrom archDesc archFp archStamp archRess newFpOpt paranoid;
       Lwt.return ())
 
-let checkContentsChange
-      root pathFrom archDesc archDig archStamp archRess paranoid =
-  checkContentsChangeOnRoot
-    root (pathFrom, archDesc, archDig, archStamp, archRess, paranoid)
+let checkForChangesToSource
+      root pathFrom archDesc archFp archStamp archRess newFpOpt paranoid =
+  checkForChangesToSourceOnRoot
+    root (pathFrom, archDesc, archFp, archStamp, archRess, newFpOpt, paranoid)
 
 (****)
 
@@ -156,18 +170,27 @@ let validFilePrefix connFrom fspathFrom pathFrom fspathTo pathTo info desc =
     Lwt.return None
 
 type transferStatus =
-    Success of Fileinfo.t
-  | Failure of string
+    TransferSucceeded of Fileinfo.t
+  | TransferNeedsDoubleCheckAgainstCurrentSource of Fileinfo.t * Os.fullfingerprint
+  | TransferFailed of string
 
-(* Paranoid check: recompute the transferred file's digest to match it
-   with the archive's *)
+(* Paranoid check: recompute the transferred file's fingerprint to match it
+   with the archive's.  If the old
+   fingerprint was a pseudo-fingerprint, we can't tell just from looking at the
+   new file and the archive information, so we return
+   TransferProbablySucceeded in this case, along with the new fingerprint
+   that we can check in checkForChangesToSource when we've
+   calculated the current source fingerprint.
+ *)
 let paranoidCheck fspathTo pathTo realPathTo desc fp ress =
   let info = Fileinfo.get false fspathTo pathTo in
   let fp' = Os.fingerprint fspathTo pathTo info in
-  if fp' <> fp (* && not (Os.isPseudoFingerprint fp) *) then begin
-    Lwt.return (Failure (Os.reasonForFingerprintMismatch fp fp'))
+  if Os.isPseudoFingerprint fp then begin
+    Lwt.return (TransferNeedsDoubleCheckAgainstCurrentSource (info,fp'))
+  end else if fp' <> fp then begin
+    Lwt.return (TransferFailed (Os.reasonForFingerprintMismatch fp fp'))
   end else
-    Lwt.return (Success info)
+    Lwt.return (TransferSucceeded info)
 
 let saveTempFileLocal (fspathTo, (pathTo, realPathTo, reason)) =
   let savepath =
@@ -833,7 +856,7 @@ let transferFileLocal connFrom
     Uutil.showProgress id len "alr";
     setFileinfo fspathTo pathTo realPathTo update desc;
     Xferhint.insertEntry fspathTo pathTo fp;
-    Lwt.return (`DONE (Success tempInfo, Some msg))
+    Lwt.return (`DONE (TransferSucceeded tempInfo, Some msg))
   end else
     registerFileTransfer pathTo fp
       (fun () ->
@@ -843,7 +866,7 @@ let transferFileLocal connFrom
            Some (info, msg) ->
              (* Transfer was performed by copying *)
              Xferhint.insertEntry fspathTo pathTo fp;
-             Lwt.return (`DONE (Success info, Some msg))
+             Lwt.return (`DONE (TransferSucceeded info, Some msg))
          | None ->
              if shouldUseExternalCopyprog update desc then
                Lwt.return (`EXTERNAL (prepareExternalTransfer fspathTo pathTo))
@@ -863,10 +886,11 @@ let transferFileOnRoot =
 let transferFileReg = Lwt_util.make_region 440
 
 let bufferSize sz =
-  min 64 ((truncate (Uutil.Filesize.toFloat sz) + 1023) / 1024)
     (* Token queue *)
-    +
-  8 (* Read buffer *)
+    min 64 ((truncate (Uutil.Filesize.toFloat sz) + 1023) / 1024) 
+  +
+   (* Read buffer *)
+   8 
 
 let transferFile
       rootFrom pathFrom rootTo fspathTo pathTo realPathTo
@@ -930,14 +954,23 @@ let file rootFrom pathFrom rootTo fspathTo pathTo realPathTo
   end >>= fun status ->
   Trace.showTimer timer;
   match status with
-    Success info ->
-      checkContentsChange rootFrom pathFrom desc fp stamp ress false
+    TransferSucceeded info ->
+      checkForChangesToSource rootFrom pathFrom desc fp stamp ress None false
         >>= fun () ->
       Lwt.return info
-  | Failure reason ->
+  | TransferNeedsDoubleCheckAgainstCurrentSource (info,newfp) ->
+      debug (fun() -> Util.msg
+               "Archive data for %s is a pseudo-fingerprint: double-checking...\n"
+               (Path.toString realPathTo));
+      
+      checkForChangesToSource rootFrom pathFrom
+                              desc fp stamp ress (Some newfp) false
+        >>= (fun () ->
+      Lwt.return info)
+  | TransferFailed reason ->
       (* Maybe we failed because the source file was modified.
          We check this before reporting a failure *)
-      checkContentsChange rootFrom pathFrom desc fp stamp ress true
+      checkForChangesToSource rootFrom pathFrom desc fp stamp ress None true
         >>= fun () ->
-      (* This function always fails! *)
+      (* This function never returns (it is supposed to fail) *)
       saveTempFileOnRoot rootTo (pathTo, realPathTo, reason)

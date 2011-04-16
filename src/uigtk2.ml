@@ -3721,6 +3721,138 @@ lst_store#set ~row ~column:c_path path;
     end in
 
   (*********************************************************************
+    Buttons for -->, M, <--, Skip
+   *********************************************************************)
+  let doActionOnRow f i =
+    let theSI = !theState.(i) in
+    begin match theSI.whatHappened, theSI.ri.replicas with
+      None, Different diff ->
+        f theSI.ri diff;
+        redisplay i
+    | _ ->
+        ()
+    end
+  in
+  let updateCurrent () =
+    let n = mainWindow#rows in
+    (* This has quadratic complexity, thus we only do it when
+       the list is not too long... *)
+    if n < 300 then begin
+      current := IntSet.empty;
+      for i = 0 to n -1 do
+        if mainWindow#get_row_state i = `SELECTED then
+          current := IntSet.add i !current
+      done
+    end
+  in
+  let doAction f =
+    (* FIX: when the window does not have the focus, we are not notified
+       immediately from changes to the list of selected items.  So, we
+       update our view of the current selection here. *)
+    updateCurrent ();
+    match currentRow () with
+      Some i ->
+        doActionOnRow f i;
+        nextInteresting ()
+    | None ->
+        (* FIX: this is quadratic when all items are selected.
+           We could trigger a redisplay instead, but it may be tricky
+           to preserve the set of selected rows, the focus row and the
+           scrollbar position.
+           The right fix is probably to move to a GTree.column_list. *)
+        let n = IntSet.cardinal !current in
+        if n > 0 then begin
+          if n > 20 then mainWindow#freeze ();
+          IntSet.iter (fun i -> doActionOnRow f i) !current;
+          if n > 20 then mainWindow#thaw ()
+        end
+  in
+  let leftAction _ =
+    doAction (fun _ diff -> diff.direction <- Replica2ToReplica1) in
+  let rightAction _ =
+    doAction (fun _ diff -> diff.direction <- Replica1ToReplica2) in
+  let questionAction _ = doAction (fun _ diff -> diff.direction <- Conflict) in
+  let mergeAction    _ = doAction (fun _ diff -> diff.direction <- Merge) in
+
+(*  actionBar#insert_space ();*)
+  grAdd grAction
+    (actionBar#insert_button
+(*       ~icon:((GMisc.pixmap rightArrowBlack ())#coerce)*)
+       ~icon:((GMisc.image ~stock:`GO_FORWARD ())#coerce)
+       ~text:"Left to Right"
+       ~tooltip:"Propagate selected items\n\
+                 from the left replica to the right one"
+       ~callback:rightAction ());
+(*  actionBar#insert_space ();*)
+  grAdd grAction
+    (actionBar#insert_button ~text:"Skip"
+       ~icon:((GMisc.image ~stock:`NO ())#coerce)
+       ~tooltip:"Skip selected items"
+       ~callback:questionAction ());
+(*  actionBar#insert_space ();*)
+  grAdd grAction
+    (actionBar#insert_button
+(*       ~icon:((GMisc.pixmap leftArrowBlack ())#coerce)*)
+       ~icon:((GMisc.image ~stock:`GO_BACK ())#coerce)
+       ~text:"Right to Left"
+       ~tooltip:"Propagate selected items\n\
+                 from the right replica to the left one"
+       ~callback:leftAction ());
+(*  actionBar#insert_space ();*)
+  grAdd grAction
+    (actionBar#insert_button
+(*       ~icon:((GMisc.pixmap mergeLogoBlack())#coerce)*)
+       ~icon:((GMisc.image ~stock:`ADD ())#coerce)
+       ~text:"Merge"
+       ~tooltip:"Merge selected files"
+       ~callback:mergeAction ());
+
+  (*********************************************************************
+    Diff / merge buttons
+   *********************************************************************)
+  let diffCmd () =
+    match currentRow () with
+      Some i ->
+        getLock (fun () ->
+          let item = !theState.(i) in
+          let len =
+            match item.ri.replicas with
+              Problem _ ->
+                Uutil.Filesize.zero
+            | Different diff ->
+                snd (if !root1IsLocal then diff.rc2 else diff.rc1).size
+          in
+          item.bytesTransferred <- Uutil.Filesize.zero;
+          item.bytesToTransfer <- len;
+          initGlobalProgress len;
+          startStats ();
+          Uicommon.showDiffs item.ri
+            (fun title text ->
+               messageBox ~title:(transcode title) (transcode text))
+            Trace.status (Uutil.File.ofLine i);
+          stopStats ();
+          displayGlobalProgress 0.;
+          fastRedisplay i)
+    | None ->
+        () in
+
+  actionBar#insert_space ();
+  grAdd grDiff (actionBar#insert_button ~text:"Diff"
+                  ~icon:((GMisc.image ~stock:`DIALOG_INFO ())#coerce)
+                  ~tooltip:"Compare the two files at each replica"
+                  ~callback:diffCmd ());
+
+  (*********************************************************************
+    Detail button
+   *********************************************************************)
+(*  actionBar#insert_space ();*)
+  grAdd grDetail (actionBar#insert_button ~text:"Details"
+                    ~icon:((GMisc.image ~stock:`INFO ())#coerce)
+                    ~tooltip:"Show detailed information about\n\
+                              an item, when available"
+                    ~callback:showDetCommand ());
+
+  (*********************************************************************
     Quit button
    *********************************************************************)
 (*  actionBar#insert_space ();
@@ -3733,7 +3865,7 @@ lst_store#set ~row ~column:c_path path;
   (*********************************************************************
     go button
    *********************************************************************)
-(*  actionBar#insert_space ();*)
+  actionBar#insert_space ();
   grAdd grGo
     (actionBar#insert_button ~text:"Go"
        (* tooltip:"Go with displayed actions" *)
@@ -3788,138 +3920,6 @@ lst_store#set ~row ~column:c_path path;
        ~icon:((GMisc.image ~stock:`REFRESH ())#coerce)
        ~tooltip:"Check for updates"
        ~callback: (fun () -> reloadProfile(); detectCmd()) ());
-
-  (*********************************************************************
-    Buttons for <--, M, -->, Skip
-   *********************************************************************)
-  let doActionOnRow f i =
-    let theSI = !theState.(i) in
-    begin match theSI.whatHappened, theSI.ri.replicas with
-      None, Different diff ->
-        f theSI.ri diff;
-        redisplay i
-    | _ ->
-        ()
-    end
-  in
-  let updateCurrent () =
-    let n = mainWindow#rows in
-    (* This has quadratic complexity, thus we only do it when
-       the list is not too long... *)
-    if n < 300 then begin
-      current := IntSet.empty;
-      for i = 0 to n -1 do
-        if mainWindow#get_row_state i = `SELECTED then
-          current := IntSet.add i !current
-      done
-    end
-  in
-  let doAction f =
-    (* FIX: when the window does not have the focus, we are not notified
-       immediately from changes to the list of selected items.  So, we
-       update our view of the current selection here. *)
-    updateCurrent ();
-    match currentRow () with
-      Some i ->
-        doActionOnRow f i;
-        nextInteresting ()
-    | None ->
-        (* FIX: this is quadratic when all items are selected.
-           We could trigger a redisplay instead, but it may be tricky
-           to preserve the set of selected rows, the focus row and the
-           scrollbar position.
-           The right fix is probably to move to a GTree.column_list. *)
-        let n = IntSet.cardinal !current in
-        if n > 0 then begin
-          if n > 20 then mainWindow#freeze ();
-          IntSet.iter (fun i -> doActionOnRow f i) !current;
-          if n > 20 then mainWindow#thaw ()
-        end
-  in
-  let leftAction _ =
-    doAction (fun _ diff -> diff.direction <- Replica2ToReplica1) in
-  let rightAction _ =
-    doAction (fun _ diff -> diff.direction <- Replica1ToReplica2) in
-  let questionAction _ = doAction (fun _ diff -> diff.direction <- Conflict) in
-  let mergeAction    _ = doAction (fun _ diff -> diff.direction <- Merge) in
-
-  actionBar#insert_space ();
-  grAdd grAction
-    (actionBar#insert_button
-(*       ~icon:((GMisc.pixmap leftArrowBlack ())#coerce)*)
-       ~icon:((GMisc.image ~stock:`GO_BACK ())#coerce)
-       ~text:"Right to Left"
-       ~tooltip:"Propagate selected items\n\
-                 from the right replica to the left one"
-       ~callback:leftAction ());
-(*  actionBar#insert_space ();*)
-  grAdd grAction
-    (actionBar#insert_button ~text:"Skip"
-       ~icon:((GMisc.image ~stock:`NO ())#coerce)
-       ~tooltip:"Skip selected items"
-       ~callback:questionAction ());
-(*  actionBar#insert_space ();*)
-  grAdd grAction
-    (actionBar#insert_button
-(*       ~icon:((GMisc.pixmap rightArrowBlack ())#coerce)*)
-       ~icon:((GMisc.image ~stock:`GO_FORWARD ())#coerce)
-       ~text:"Left to Right"
-       ~tooltip:"Propagate selected items\n\
-                 from the left replica to the right one"
-       ~callback:rightAction ());
-(*  actionBar#insert_space ();*)
-  grAdd grAction
-    (actionBar#insert_button
-(*       ~icon:((GMisc.pixmap mergeLogoBlack())#coerce)*)
-       ~icon:((GMisc.image ~stock:`ADD ())#coerce)
-       ~text:"Merge"
-       ~tooltip:"Merge selected files"
-       ~callback:mergeAction ());
-
-  (*********************************************************************
-    Diff / merge buttons
-   *********************************************************************)
-  let diffCmd () =
-    match currentRow () with
-      Some i ->
-        getLock (fun () ->
-          let item = !theState.(i) in
-          let len =
-            match item.ri.replicas with
-              Problem _ ->
-                Uutil.Filesize.zero
-            | Different diff ->
-                snd (if !root1IsLocal then diff.rc2 else diff.rc1).size
-          in
-          item.bytesTransferred <- Uutil.Filesize.zero;
-          item.bytesToTransfer <- len;
-          initGlobalProgress len;
-          startStats ();
-          Uicommon.showDiffs item.ri
-            (fun title text ->
-               messageBox ~title:(transcode title) (transcode text))
-            Trace.status (Uutil.File.ofLine i);
-          stopStats ();
-          displayGlobalProgress 0.;
-          fastRedisplay i)
-    | None ->
-        () in
-
-  actionBar#insert_space ();
-  grAdd grDiff (actionBar#insert_button ~text:"Diff"
-                  ~icon:((GMisc.image ~stock:`DIALOG_INFO ())#coerce)
-                  ~tooltip:"Compare the two files at each replica"
-                  ~callback:diffCmd ());
-
-  (*********************************************************************
-    Detail button
-   *********************************************************************)
-(*  actionBar#insert_space ();*)
-  grAdd grDetail (actionBar#insert_button ~text:"Details"
-                    ~icon:((GMisc.image ~stock:`INFO ())#coerce)
-                    ~tooltip:"Show detailed information about\n\
-                              an item, when available"
-                    ~callback:showDetCommand ());
 
   (*********************************************************************
     Profile change button

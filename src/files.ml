@@ -471,19 +471,19 @@ let copy
     Lwt.catch
       (fun () ->
          match f with
-           Update.ArchiveFile (desc, dig, stamp, ress) ->
+           Update.ArchiveFile (desc, fp, stamp, ress) ->
              Lwt_util.run_in_region copyReg 1 (fun () ->
                Abort.check id;
                let stmp =
                  if Update.useFastChecking () then Some stamp else None in
                Copy.file
                  rootFrom pFrom rootTo workingDir pTo realPTo
-                 update desc dig stmp ress id
+                 update desc fp stmp ress id
                  >>= fun info ->
                let ress' = Osx.stamp info.Fileinfo.osX in
                Lwt.return
                  (Update.ArchiveFile (Props.override info.Fileinfo.desc desc,
-                                      dig, Fileinfo.stamp info, ress'),
+                                      fp, Fileinfo.stamp info, ress'),
                   []))
          | Update.ArchiveSymlink l ->
              Lwt_util.run_in_region copyReg 1 (fun () ->
@@ -822,14 +822,14 @@ let merge root1 path1 ui1 root2 path2 ui2 id showMergeFn =
       (* retrieve the archive for this file, if any *)
       let arch =
 	match ui1, ui2 with
-	| Updates (_, Previous (_,_,dig,_)), Updates (_, Previous (_,_,dig2,_)) ->
-	    if dig = dig2 then
-	      Stasher.getRecentVersion fspath1 localPath1 dig 
+	| Updates (_, Previous (_,_,fp,_)), Updates (_, Previous (_,_,fp2,_)) ->
+	    if fp = fp2 then
+	      Stasher.getRecentVersion fspath1 localPath1 fp 
 	    else
 	      assert false
-	| NoUpdates, Updates(_, Previous (_,_,dig,_))
-	| Updates(_, Previous (_,_,dig,_)), NoUpdates -> 
-	    Stasher.getRecentVersion fspath1 localPath1 dig
+	| NoUpdates, Updates(_, Previous (_,_,fp,_))
+	| Updates(_, Previous (_,_,fp,_)), NoUpdates -> 
+	    Stasher.getRecentVersion fspath1 localPath1 fp
 	| Updates (_, New), Updates(_, New) 
 	| Updates (_, New), NoUpdates
 	| NoUpdates, Updates (_, New) ->
@@ -860,9 +860,9 @@ let merge root1 path1 ui1 root2 path2 ui2 id showMergeFn =
       Os.delete workingDirForMerge newarch;
       let info1 = Fileinfo.get false workingDirForMerge working1 in
       (* FIX: Why split out the parts of the pair?  Why is it not abstract anyway??? *)
-      let dig1 = Os.fingerprint workingDirForMerge working1 info1 in
+      let fp1 = Os.fingerprint workingDirForMerge working1 info1 in
       let info2 = Fileinfo.get false workingDirForMerge working2 in
-      let dig2 = Os.fingerprint workingDirForMerge working2 info2 in
+      let fp2 = Os.fingerprint workingDirForMerge working2 info2 in
       let cmd = formatMergeCmd
           path1
           (Fspath.quotes (Fspath.concat workingDirForMerge working1))
@@ -910,9 +910,9 @@ let merge root1 path1 ui1 root2 path2 ui2 id showMergeFn =
 	  say (fun () -> Util.msg "Two outputs detected \n");
         let info1 = Fileinfo.get false workingDirForMerge new1 in
         let info2 = Fileinfo.get false workingDirForMerge new2 in
-        let dig1' = Os.fingerprint workingDirForMerge new1 info1 in
-        let dig2' = Os.fingerprint workingDirForMerge new2 info2 in
-        if dig1'=dig2' then begin
+        let fp1' = Os.fingerprint workingDirForMerge new1 info1 in
+        let fp2' = Os.fingerprint workingDirForMerge new2 info2 in
+        if fp1'=fp2' then begin
           debug (fun () -> Util.msg "Two outputs equal => update the archive\n");
           copy [(new1,working1); (new2,working2); (new1,workingarch)];
 	end else
@@ -950,18 +950,18 @@ let merge root1 path1 ui1 root2 path2 ui2 id showMergeFn =
         if working1_still_exists && working2_still_exists then begin
           say (fun () -> Util.msg "No output from merge cmd and both original files are still present\n");
           let info1' = Fileinfo.get false workingDirForMerge working1 in
-          let dig1' = Os.fingerprint workingDirForMerge working1 info1' in
+          let fp1' = Os.fingerprint workingDirForMerge working1 info1' in
           let info2' = Fileinfo.get false workingDirForMerge working2 in
-          let dig2' = Os.fingerprint workingDirForMerge working2 info2' in
-          if dig1 = dig1' && dig2 = dig2' then
+          let fp2' = Os.fingerprint workingDirForMerge working2 info2' in
+          if fp1 = fp1' && fp2 = fp2' then
             raise (Util.Transient "Merge program didn't change either temp file");
-          if dig1' = dig2' then begin
+          if fp1' = fp2' then begin
             say (fun () -> Util.msg "Merge program made files equal\n");
             copy [(working1,workingarch)];
-          end else if dig2 = dig2' then begin
+          end else if fp2 = fp2' then begin
             say (fun () -> Util.msg "Merge program changed just first input\n");
             copy [(working1,working2);(working1,workingarch)]
-          end else if dig1 = dig1' then begin
+          end else if fp1 = fp1' then begin
             say (fun () -> Util.msg "Merge program changed just second input\n");
             copy [(working2,working1);(working2,workingarch)]
           end else
@@ -1016,11 +1016,11 @@ let merge root1 path1 ui1 root2 path2 ui2 id showMergeFn =
              Util.msg "Warning: 'backupcurrent' is not set for path %s\n" (Path.toString path1);
            Stasher.stashCurrentVersion workingDirForMerge localPath1 (Some workingarch);
            let infoarch = Fileinfo.get false workingDirForMerge workingarch in
-           let dig = Os.fingerprint arch_fspath Path.empty infoarch in
-           debug (fun () -> Util.msg "New digest is %s\n" (Os.fullfingerprint_to_string dig));
+           let fp = Os.fingerprint arch_fspath Path.empty infoarch in
+           debug (fun () -> Util.msg "New fingerprint is %s\n" (Os.fullfingerprint_to_string fp));
            let new_archive_entry =
              Update.ArchiveFile
-               (Props.get (Fs.stat arch_fspath) infoarch.osX, dig,
+               (Props.get (Fs.stat arch_fspath) infoarch.osX, fp,
                 Fileinfo.stamp (Fileinfo.get true arch_fspath Path.empty),
                 Osx.stamp infoarch.osX) in
            Update.replaceArchive root1 path1 new_archive_entry >>= fun _ ->
