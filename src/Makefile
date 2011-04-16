@@ -60,8 +60,10 @@ STATIC=false
 # NAME, VERSION, and MAJORVERSION, automatically generated
 -include Makefile.ProjectInfo
 
-Makefile.ProjectInfo: mkProjectInfo.ml $(wildcard ../.bzr/branch/last-revision)
+Makefile.ProjectInfo: mkProjectInfo $(wildcard ../.bzr/branch/last-revision)
 	./mkProjectInfo > $@
+# BCP (4/11): simplified from this:
+#	ocaml str.cma unix.cma ./mkProjectInfo.ml > $@
 
 mkProjectInfo: mkProjectInfo.ml
 	ocamlc -o $@ unix.cma str.cma $^
@@ -210,7 +212,7 @@ prefsdocs: all
 
 # For developers 
 runtest:
-	$(MAKE) all NATIVE=false DEBUG=true
+	$(MAKE) NATIVE=false DEBUG=true text
 	./unison test
 
 repeattest:
