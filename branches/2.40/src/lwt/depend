@@ -6,5 +6,7 @@ lwt_util.cmo: lwt.cmi lwt_util.cmi
 lwt_util.cmx: lwt.cmx lwt_util.cmi 
 pqueue.cmo: pqueue.cmi 
 pqueue.cmx: pqueue.cmi 
+lwt.cmi: 
 lwt_unix.cmi: lwt.cmi 
 lwt_util.cmi: lwt.cmi 
+pqueue.cmi: 

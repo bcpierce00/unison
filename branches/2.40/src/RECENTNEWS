@@ -1,3 +1,10 @@
+CHANGES FROM VERSION 2.40.61
+
+* Small patch from Stephane Glondu to make Unison compile with Ocaml 3.12.
+
+* Makefile fixes suggested by Ron Isaacson
+
+-------------------------------
 CHANGES FROM VERSION 2.40.16
 
 * Fixed incompatibility with OpenSSH 5.6.

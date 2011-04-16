@@ -4,7 +4,7 @@
 let docs =
     ("about", ("About Unison", 
      "Unison File Synchronizer\n\
-      Version 2.40.16\n\
+      Version 2.40.61\n\
       \n\
       "))
 ::
@@ -2718,8 +2718,8 @@ let docs =
       \n\
       "))
 ::
-    ("news", ("Changes in Version 2.40.16", 
-     "Changes in Version 2.40.16\n\
+    ("news", ("Changes in Version 2.40.61", 
+     "Changes in Version 2.40.61\n\
       \n\
       \032  Changes since 2.40.1:\n\
       \032    * Added \"BelowPath\" patterns, that match a path as well as all paths\n\
