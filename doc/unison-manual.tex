@@ -296,7 +296,9 @@ then {\tt su} to root and do {\tt make install}.)
 
 You'll also need the GNU {\tt make} utility, standard on many Unix
 systems. (Type \showtt{make --version} to check that you've got the
-GNU version.)
+GNU version.)  Unison's build system is
+not parallelizable, so don't use make flags which cause it to start
+processes in parallel, e.g. -j for GNU make.
 
 Once you've got OCaml installed, grab a copy of the Unison sources,
 unzip and untar them, change to the new \showtt{unison} directory, and
@@ -601,9 +603,7 @@ Decide which of these you want to try, and continue with
 
 The standard remote shell facility on Unix systems is \verb|ssh|, which provides the
 same functionality as the older \verb|rsh| but much better security.  Ssh is available from
-\ONEURL{ftp://ftp.cs.hut.fi/pub/ssh/}; up-to-date binaries for some
-architectures can also be found at
-\ONEURL{ftp://ftp.faqs.org/ssh/contrib}.  See section~\ref{ssh-win}
+\ONEURL{http://www.openssh.org}.  See section~\ref{ssh-win}
 for installation instructions for the Windows version.
 
 Running
@@ -1672,7 +1672,7 @@ the command.
   state'' of the replicas.  (These three options are provided for
   later compatibility with the Harmony data synchronizer.)
 \end{itemize}
-To accomodate the wide variety of programs that users might want to use for
+To accommodate the wide variety of programs that users might want to use for
 merging, Unison checks for several possible situations when the merge
 program exits:
 \begin{itemize}
@@ -2252,9 +2252,9 @@ that one first.  Here's how to install it:
 \item You can now delete the directory \verb|Foo| and its contents.
 \end{enumerate}
 Some people have reported problems using Cygwin's ssh with Unison.  If
-you have trouble, you might try this one instead:
+you have trouble, you might try other ones instead:
 \begin{verbatim}
-  http://opensores.thebunker.net/pub/mirrors/ssh/contrib/ssh-1.2.14-win32bin.zip
+  http://linuxmafia.com/ssh/win32.html
 \end{verbatim}
 
 \item You must set the environment variables HOME and PATH\@.

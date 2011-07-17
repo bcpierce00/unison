@@ -1323,6 +1323,11 @@ let checkContentsChange
       Some newarch, checkPropChange newDesc archive archDesc
     end else begin
       debug (fun() -> Util.msg "  Updated file\n");
+      (* [BCP 5/2011] We might add a sanity check here: if the file contents
+         have changed but the modtime has not, signal an error.  I.e., abort if
+           Props.same_time info.Fileinfo.desc archDesc
+         is true at this point.
+      *)
       None,
       Updates (File (newDesc, ContentsUpdated (newFp, newStamp, newRess)),
                oldInfoOf archive)
@@ -1771,7 +1776,7 @@ let findLocal fspath pathList:
   addHashToTempNames fspath;
   (* Maybe we should remember the device number where the root lives at 
      the beginning of update detection, so that we can check, below, that 
-     the device has not changed.  This check allows us to abort in case 
+     the device has not changed.  This check would allow us to abort in case 
      the root is on a removable device and this device gets removed during
      update detection, causing all the files to appear to have been
      deleted.  --BCP 2006 *)
