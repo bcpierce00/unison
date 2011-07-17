@@ -2783,7 +2783,7 @@ let docs =
       \032           and is not slowed done due to the connection latency anymore\n\
       \032         + we get performance improvement for small files as well by\n\
       \032           scheduling many files simultaneously (as scheduling a file\n\
-      \032           for transfer consume little ressource: it does not mean\n\
+      \032           for transfer consume little resource: it does not mean\n\
       \032           allocating a large buffer anymore)\n\
       \032    * Changes to the internal implementation of the rsync algorithm:\n\
       \032         + use longer blocks for large files (the size of a block is the\n\

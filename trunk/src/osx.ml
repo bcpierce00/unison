@@ -58,15 +58,15 @@ let init b =
 let doubleMagic = "\000\005\022\007"
 let doubleVersion = "\000\002\000\000"
 let doubleFiller = String.make 16 '\000'
-let ressource_fork_empty_tag = "This resource fork intentionally left blank   "
+let resource_fork_empty_tag = "This resource fork intentionally left blank   "
 let finfoLength = 32L
 let emptyFinderInfo () = String.make 32 '\000'
-let empty_ressource_fork =
+let empty_resource_fork =
   "\000\000\001\000" ^
   "\000\000\001\000" ^
   "\000\000\000\000" ^
   "\000\000\000\030" ^
-  ressource_fork_empty_tag ^
+  resource_fork_empty_tag ^
   String.make (66+128) '\000' ^
   "\000\000\001\000" ^
   "\000\000\001\000" ^
@@ -239,7 +239,7 @@ let getFileInfos dataFspath dataPath typ =
   if not (Prefs.read rsrc) then defaultInfos typ else
   match typ with
     (`FILE | `DIRECTORY) as typ ->
-      Util.convertUnixErrorsToTransient "getting file informations" (fun () ->
+      Util.convertUnixErrorsToTransient "getting file information" (fun () ->
         try
           let (fInfo, rsrcLength) =
             getFileInfosInternal
@@ -260,15 +260,15 @@ let getFileInfos dataFspath dataPath typ =
             let (rsrcOffset, rsrcLength) =
               try
                 let (offset, len) = Safelist.assoc `RSRC entries in
-                (* We need to check that the ressource fork is not a
+                (* We need to check that the resource fork is not a
                    dummy one included for compatibility reasons *)
                 if len = 286L &&
                    protect (fun () ->
                      LargeFile.seek_in inch (Int64.add offset 16L);
-                     let len = String.length ressource_fork_empty_tag in
+                     let len = String.length resource_fork_empty_tag in
                      let buf = String.create len in
                      really_input inch buf 0 len;
-                     buf = ressource_fork_empty_tag)
+                     buf = resource_fork_empty_tag)
                      (fun () -> close_in_noerr inch)
                 then
                   (0L, 0L)
@@ -279,7 +279,7 @@ let getFileInfos dataFspath dataPath typ =
             in
             debug (fun () ->
               Util.msg
-                "AppleDouble for file %s / %s: ressource fork length: %d\n"
+                "AppleDouble for file %s / %s: resource fork length: %d\n"
                 (Fspath.toDebugString dataFspath) (Path.toString dataPath)
                 (Int64.to_int rsrcLength));
             let finfo =
@@ -339,7 +339,7 @@ let insertInfo fullInfo info =
 
 let setFileInfos dataFspath dataPath finfo =
   assert (finfo <> "");
-  Util.convertUnixErrorsToTransient "setting file informations" (fun () ->
+  Util.convertUnixErrorsToTransient "setting file information" (fun () ->
     try
       let p = Fspath.toSysPath (Fspath.concat dataFspath dataPath) in
       let (fullFinfo, _) = getFileInfosInternal p false in
@@ -391,7 +391,7 @@ let setFileInfos dataFspath dataPath finfo =
           in
           (* Apparently, for compatibility with various old versions
              of Mac OS X that did not follow the AppleDouble specification,
-             we have to include a dummy ressource fork...
+             we have to include a dummy resource fork...
              We also put an empty extended attribute section at the
              end of the finder info section, mimicking the Mac OS X
              kernel behavior.  *)
@@ -403,13 +403,13 @@ let setFileInfos dataFspath dataPath finfo =
             output_string outch "\000\000\000\009"; (* Finder info *)
             output_string outch "\000\000\000\050"; (* offset *)
             output_string outch "\000\000\014\176"; (* length *)
-            output_string outch "\000\000\000\002"; (* Ressource fork *)
+            output_string outch "\000\000\000\002"; (* Resource fork *)
             output_string outch "\000\000\014\226"; (* offset *)
             output_string outch "\000\000\001\030"; (* length *)
             output_string outch (insertInfo (emptyFinderInfo ()) finfo);
             output_string outch (empty_attribute_chunk ());
                                                     (* extended attributes *)
-            output_string outch empty_ressource_fork;
+            output_string outch empty_resource_fork;
             close_out outch)
             (fun () -> close_out_noerr outch)
         end
@@ -458,7 +458,7 @@ let ressFingerprint fspath path info =
       Fingerprint.file fspath (ressPath path)
   | AppleDoubleRess (_, _, _, len, (path, offset)) ->
       debug (fun () ->
-        Util.msg "ressource fork fingerprint: path %s, offset %d, len %d"
+        Util.msg "resource fork fingerprint: path %s, offset %d, len %d"
         (Fspath.toString path)
         (Int64.to_int offset) (Uutil.Filesize.toInt len));
       Fingerprint.subfile path offset len

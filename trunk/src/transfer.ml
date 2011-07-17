@@ -103,7 +103,7 @@ let queueSizeFS = Uutil.Filesize.ofInt queueSize
 type tokenQueue =
   { mutable data : Bytearray.t;  (* the queued tokens *)
     mutable previous : [`Str of int | `Block of int | `None];
-                                 (* some informations about the
+                                 (* some information about the
                                     previous token *)
     mutable pos : int;           (* head of the queue *)
     mutable prog : int;          (* the size of the data they represent *)

@@ -80,7 +80,7 @@ let logLwtNumbered (lwtDescription: string) (lwtShortDescription: string)
 let doAction fromRoot fromPath fromContents toRoot toPath toContents id =
   (* When streaming, we can transfer many file simultaneously:
      as the contents of only one file is transferred in one direction
-     at any time, little ressource is consumed this way. *)
+     at any time, little resource is consumed this way. *)
   let limit =
     let n = Prefs.read maxthreads in
     if n > 0 then n else

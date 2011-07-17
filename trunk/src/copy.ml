@@ -284,9 +284,12 @@ let copyContents fspathFrom pathFrom fspathTo pathTo fileKind fileLength ido =
             Uutil.readWriteBounded inFd outFd fileLength
               (fun l ->
                  use_id (fun id ->
+(* (Util.msg "Copied file %s (%d bytes)\n" (Path.toString pathFrom) l); *)
                    Uutil.showProgress id (Uutil.Filesize.ofInt l) "l"));
             close_in inFd;
-            close_out outFd)
+            close_out outFd;
+(* ignore (Sys.command ("ls -l " ^ (Fspath.toString (Fspath.concat fspathTo pathTo)))) *)
+         )
          (fun () -> close_out_noerr outFd))
     (fun () -> close_in_noerr inFd)
 
@@ -587,7 +590,7 @@ let transferFileContents
 
 (****)
 
-let transferRessourceForkAndSetFileinfo
+let transferResourceForkAndSetFileinfo
       connFrom fspathFrom pathFrom fspathTo pathTo realPathTo
       update desc fp ress id =
   (* Resource fork *)
@@ -625,7 +628,7 @@ let reallyTransferFile
     connFrom fspathFrom pathFrom fspathTo pathTo realPathTo update
     (match prefixLen with None -> `DATA | Some l -> `DATA_APPEND l)
     (Props.length desc) id >>= fun () ->
-  transferRessourceForkAndSetFileinfo
+  transferResourceForkAndSetFileinfo
     connFrom fspathFrom pathFrom fspathTo pathTo realPathTo
     update desc fp ress id
 
@@ -782,7 +785,7 @@ let finishExternalTransferLocal connFrom
     raise (Util.Transient (Printf.sprintf
       "External copy program did not create target file (or bad length): %s"
           (Path.toString pathTo)));
-  transferRessourceForkAndSetFileinfo
+  transferResourceForkAndSetFileinfo
     connFrom fspathFrom pathFrom fspathTo pathTo realPathTo
     update desc fp ress id >>= fun res ->
   Xferhint.insertEntry fspathTo pathTo fp;

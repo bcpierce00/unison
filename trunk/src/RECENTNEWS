@@ -1,3 +1,8 @@
+CHANGES FROM VERSION 2.44.2
+
+* Some spelling corrections in documentation and comments from Stephane Glondu
+
+-------------------------------
 CHANGES FROM VERSION 2.44.0
 
 * Small patch from Stephane Glondu to make Unison compile with Ocaml 3.12.
