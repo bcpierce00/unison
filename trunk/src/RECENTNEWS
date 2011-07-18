@@ -1,3 +1,9 @@
+CHANGES FROM VERSION 2.44.4
+
+- fixed a bug when calling the Unison macnew09 GUI from the command line with a profile specified
+- now possible to use the "-batch" option when calling the macnew09 GUI on the command line
+
+-------------------------------
 CHANGES FROM VERSION 2.44.2
 
 * Some spelling corrections in documentation and comments from Stephane Glondu
