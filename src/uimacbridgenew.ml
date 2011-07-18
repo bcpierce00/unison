@@ -196,6 +196,12 @@ let areRootsSet () =
 ;;
 Callback.register "areRootsSet" areRootsSet;;
 
+(* Utility function to tell the UI whether -batch is set *)
+
+let isBatchSet () =
+  Prefs.read Globals.batch
+;;
+Callback.register "isBatchSet" isBatchSet;;
 
 (* The first time we load preferences, we also read the command line
    arguments; if we re-load prefs (because the user selected a new profile)

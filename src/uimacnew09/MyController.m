@@ -109,15 +109,15 @@ static MyController *me; // needed by reloadTable and displayStatus, below
   
   /* Command-line processing */
 	OCamlValue *clprofile = (id)ocamlCall("@", "unisonInit0");
-	BOOL areRootsSet = (long)ocamlCall("i@", "areRootsSet") ? YES : NO;
+
+	BOOL areRootsSet = (long)ocamlCall("i", "areRootsSet") ? YES : NO;
 	if (areRootsSet) {
 		NSLog(@"Roots are on the command line");
 	}
 	else {
 		NSLog(@"Roots are not set on the command line");
 	}
-
-  
+	  
   /* Add toolbar */
   toolbar = [[[UnisonToolbar alloc] 
               initWithIdentifier: @"unisonToolbar" :self :tableView] autorelease];
@@ -166,12 +166,12 @@ static MyController *me; // needed by reloadTable and displayStatus, below
   
   [mainWindow display];
   [mainWindow makeKeyAndOrderFront:nil];
-  
+
   /* unless user has clicked Don't ask me again, ask about cltool */
-  if ( ([[NSUserDefaults standardUserDefaults] boolForKey:@"CheckCltool"]) &&
-      (![[NSFileManager defaultManager]
-         fileExistsAtPath:@"/usr/bin/unison"]) )
-    [self raiseCltoolWindow:nil];
+  if ( ([[NSUserDefaults standardUserDefaults] boolForKey:@"CheckCltool"]) && 
+	  (![[NSFileManager defaultManager]
+		 fileExistsAtPath:@"/usr/bin/unison"]) )
+	  [self raiseCltoolWindow:nil];
 }
 
 - (IBAction) checkOpenProfileChanged:(id)sender {
@@ -539,6 +539,24 @@ CAMLprim value unisonInit1Complete(value v)
 	ocamlCall("x", "unisonInit2");
 }
 
+- (void)doSync
+{
+    [tableView setEditable:NO];
+    syncable = NO;
+    duringSync = YES;
+	
+	[self updateToolbar];
+    
+	// This will run in another thread spawned in OCaml and will return immediately
+	// We'll get a call back to syncComplete() when it is complete
+	ocamlCall("x", "unisonSynchronize");	
+}
+
+- (IBAction)syncButton:(id)sender
+{
+	[self doSync];
+}
+
 
 - (void)afterUpdate:(id)retainedReconItems
 {
@@ -566,6 +584,17 @@ CAMLprim value unisonInit1Complete(value v)
 
 	[self updateTableViewWithReset:([reconItems count] > 0)];
 	[self updateToolbar];
+	BOOL isBatchSet = (long)ocamlCall("i", "isBatchSet") ? YES : NO;
+	if (isBatchSet) {
+		NSLog(@"batch set on the command line");
+	}
+	else {
+		NSLog(@"batch not set on the command line");
+	}
+	
+	if (isBatchSet) {
+		[self doSync];
+	}
 }
 
 CAMLprim value unisonInit2Complete(value v)
@@ -574,19 +603,6 @@ CAMLprim value unisonInit2Complete(value v)
   [me performSelectorOnMainThread:@selector(afterUpdate:) withObject:[[OCamlValue alloc] initWithValue:v] waitUntilDone:FALSE]; 
   [pool release];
   return Val_unit;
-}
-
-- (IBAction)syncButton:(id)sender
-{
-    [tableView setEditable:NO];
-    syncable = NO;
-    duringSync = YES;
- 
-	[self updateToolbar];
-    
-	// This will run in another thread spawned in OCaml and will return immediately
-	// We'll get a call back to syncComplete() when it is complete
-	ocamlCall("x", "unisonSynchronize");
 }
 
 - (void)afterSync:(id)ignore
