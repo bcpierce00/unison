@@ -1,3 +1,9 @@
+CHANGES FROM VERSION 2.44.5
+
+- uimacnew09: file details panel selectable
+- uimacnew09: automatically quit when done synchronizing if called from the command line with "-batch"
+
+-------------------------------
 CHANGES FROM VERSION 2.44.4
 
 - fixed a bug when calling the Unison macnew09 GUI from the command line with a profile specified
