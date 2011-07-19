@@ -400,7 +400,14 @@
 			isa = PBXProject;
 			buildConfigurationList = 2A3C3F2C0992245300E404E9 /* Build configuration list for PBXProject "uimacnew" */;
 			compatibilityVersion = "Xcode 3.1";
+			developmentRegion = English;
 			hasScannedForEncodings = 1;
+			knownRegions = (
+				English,
+				Japanese,
+				French,
+				German,
+			);
 			mainGroup = 29B97314FDCFA39411CA2CEA /* uimac */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -697,6 +704,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 2E282CCC0D9AE2E800439D01 /* ExternalSettings.xcconfig */;
 			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				FRAMEWORK_SEARCH_PATHS = "Frameworks/**";
 				LIBRARY_SEARCH_PATHS = "";
 				SDKROOT = macosx10.5;
@@ -708,6 +716,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 2E282CCC0D9AE2E800439D01 /* ExternalSettings.xcconfig */;
 			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				FRAMEWORK_SEARCH_PATHS = "Frameworks/**";
 				LIBRARY_SEARCH_PATHS = "";
 				SDKROOT = macosx10.5;
@@ -719,6 +728,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 2E282CCC0D9AE2E800439D01 /* ExternalSettings.xcconfig */;
 			buildSettings = {
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
 				FRAMEWORK_SEARCH_PATHS = "Frameworks/**";
 				LIBRARY_SEARCH_PATHS = "";
 				SDKROOT = macosx10.5;
