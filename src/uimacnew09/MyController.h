@@ -76,6 +76,8 @@
   IBOutlet NSSplitView *splitView;
 
   id fontChangeTarget;
+	
+  BOOL isBatchSet;
 }
 
 - (id)init;

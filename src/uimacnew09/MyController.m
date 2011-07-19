@@ -584,7 +584,7 @@ CAMLprim value unisonInit1Complete(value v)
 
 	[self updateTableViewWithReset:([reconItems count] > 0)];
 	[self updateToolbar];
-	BOOL isBatchSet = (long)ocamlCall("i", "isBatchSet") ? YES : NO;
+	isBatchSet = (long)ocamlCall("i", "isBatchSet") ? YES : NO;
 	if (isBatchSet) {
 		NSLog(@"batch set on the command line");
 	}
@@ -622,6 +622,15 @@ CAMLprim value unisonInit2Complete(value v)
 	[self updateTableViewWithReset:FALSE];
 }
 
+- (void)quitIfBatch:(id)ignore
+{
+	if (isBatchSet) {
+		NSLog(@"Automatically quitting because of -batch");
+    [NSApp performSelector:@selector(terminate:) withObject:nil afterDelay:0.0];
+    return Val_unit;
+	}  
+}
+
 CAMLprim value syncComplete()
 {
   id pool = [[NSAutoreleasePool alloc] init];
@@ -629,6 +638,9 @@ CAMLprim value syncComplete()
   if ([[NSUserDefaults standardUserDefaults] boolForKey:@"deleteLogOnExit"])
     [[NSFileManager defaultManager] removeItemAtPath:[@"~/unison.log" stringByExpandingTildeInPath] error:nil];
   [pool release];
+
+  [me performSelectorOnMainThread:@selector(quitIfBatch:) withObject:nil waitUntilDone:FALSE];
+  
   return Val_unit;
 }
 
