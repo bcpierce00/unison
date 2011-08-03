@@ -77,7 +77,7 @@ LABLGTK2LIB=$(OCAMLLIBDIR)/lablgtk2
 ##BCP [3/2007]: Removed temporarily, since the OSX UI is not working well 
 ## at the moment and we don't want to confuse people by building it by default
 ifeq ($(OSARCH),osx)
-  UISTYLE=macnew
+  UISTYLE=macnew09
 else
   ifeq ($(wildcard $(LABLGTK2LIB)),$(LABLGTK2LIB))
     UISTYLE=gtk2

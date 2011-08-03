@@ -622,12 +622,45 @@ CAMLprim value unisonInit2Complete(value v)
 	[self updateTableViewWithReset:FALSE];
 }
 
+- (void)alertDidEnd:(NSAlert *)alert returnCode:(NSInteger)returnCode contextInfo:(void *)contextInfo
+{
+    [_timer invalidate];
+
+    switch (returnCode) {
+        case NSAlertAlternateReturn:
+            return;
+            break;
+            
+        default:
+            [[NSApplication sharedApplication] performSelector: @selector(terminate:) withObject: nil afterDelay: 0.0];
+            break;
+    }
+}
+
+- (void)updateCountdown
+{
+    if (_secondsRemaining == 0) {
+        [_timer invalidate];
+        [[_timeoutAlert window] orderOut: nil];
+        [self alertDidEnd: _timeoutAlert returnCode: NSAlertDefaultReturn contextInfo: nil];
+    } else {
+        [_timeoutAlert setMessageText: [NSString stringWithFormat: @"Unison will quit in %lu seconds", _secondsRemaining]];
+        _secondsRemaining--;
+    }
+}
+
+
 - (void)quitIfBatch:(id)ignore
 {
 	if (isBatchSet) {
 		NSLog(@"Automatically quitting because of -batch");
-    [NSApp performSelector:@selector(terminate:) withObject:nil afterDelay:0.0];
-    return Val_unit;
+		_timeoutAlert = [NSAlert alertWithMessageText: @"" defaultButton: @"Quit" alternateButton: @"Cancel" otherButton: nil informativeTextWithFormat: @""];
+	
+		_secondsRemaining = 10;
+	
+		_timer = [NSTimer scheduledTimerWithTimeInterval: 1 target: self selector: @selector(updateCountdown) userInfo: nil repeats: YES];
+		
+		[_timeoutAlert beginSheetModalForWindow: mainWindow modalDelegate: self didEndSelector: @selector(alertDidEnd:returnCode:contextInfo:) contextInfo: NULL];
 	}  
 }
 
