@@ -78,6 +78,9 @@
   id fontChangeTarget;
 	
   BOOL isBatchSet;
+  NSTimer *_timer;
+  NSAlert *_timeoutAlert;
+  NSUInteger _secondsRemaining;
 }
 
 - (id)init;

@@ -1,3 +1,12 @@
+CHANGES FROM VERSION 2.44.6
+
+* A small improvement to the uimacnew09 interface from Alan Schmitt
+  and Steve Kalkwarf: when Unison is run with the -batch flag, the
+  interface will now automatically propagate changes and terminate,
+  without waiting for user interaction.
+
+* uimacnew09 is now the standard graphical interface on OSX
+-------------------------------
 CHANGES FROM VERSION 2.44.5
 
 - uimacnew09: file details panel selectable
