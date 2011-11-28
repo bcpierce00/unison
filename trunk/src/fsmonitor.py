@@ -65,9 +65,13 @@ def update_changes_nomangle(result):
     # In win32 there are no symlinks, therefore file mangling
 	# is not required
 
+    # remove root from the path:
+    result = relpath(op.root,result)
+
     mydebug('Changed paths: %s\n',result)
     try:
-        f = open(op.absoutfile,'a')
+        # Windows hack: open in binary mode
+        f = open(op.absoutfile,'ab')
         f.write(result+'\n')
         f.close()
     except IOError:
@@ -123,11 +127,16 @@ def relpath(root,path):
     abspath = os.path.abspath(path)
     mydebug('relpath: abspath(%s) = %s', path, abspath)
 	
-    #make sure the root and abspath both end with a '/'
-    if not root[-1]=='/':
-        root += '/'
-    if not abspath[-1]=='/':
-        abspath += '/'
+    # make sure the root and abspath both end with a '/' or '\'
+    if sys.platform == 'win32':
+      slash = '\\'
+    else:
+      slash = '/'
+    
+    if not root[-1]==slash:
+      root += slash
+    if not abspath[-1]==slash:
+      abspath += slash
 		
     mydebug('relpath: root = %s', root)
 
