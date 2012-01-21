@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 45;
+	objectVersion = 46;
 	objects = {
 
 /* Begin PBXAggregateTarget section */
@@ -398,8 +398,11 @@
 /* Begin PBXProject section */
 		29B97313FDCFA39411CA2CEA /* Project object */ = {
 			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0410;
+			};
 			buildConfigurationList = 2A3C3F2C0992245300E404E9 /* Build configuration list for PBXProject "uimacnew" */;
-			compatibilityVersion = "Xcode 3.1";
+			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = English;
 			hasScannedForEncodings = 1;
 			knownRegions = (
@@ -567,7 +570,6 @@
 			buildSettings = {
 				COPY_PHASE_STRIP = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				GCC_ENABLE_FIX_AND_CONTINUE = NO;
 				PRODUCT_NAME = "Create ExternalSettings";
 				ZERO_LINK = NO;
 			};
@@ -593,7 +595,6 @@
 				);
 				FRAMEWORK_SEARCH_PATHS_QUOTED_FOR_TARGET_1 = "\"$(SRCROOT)/Frameworks\"";
 				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_ENABLE_FIX_AND_CONTINUE = YES;
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
@@ -611,7 +612,6 @@
 					"-lbigarray",
 					"-lasmrun",
 				);
-				PREBINDING = NO;
 				PRODUCT_NAME = Unison;
 				SECTORDER_FLAGS = "";
 				WARNING_CFLAGS = (
@@ -636,7 +636,6 @@
 					"\"$(SRCROOT)/Frameworks\"",
 				);
 				FRAMEWORK_SEARCH_PATHS_QUOTED_FOR_TARGET_1 = "\"$(SRCROOT)/Frameworks\"";
-				GCC_ENABLE_FIX_AND_CONTINUE = NO;
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_WARN_FOUR_CHARACTER_CONSTANTS = YES;
@@ -652,7 +651,6 @@
 					"-lbigarray",
 					"-lasmrun",
 				);
-				PREBINDING = NO;
 				PRODUCT_NAME = Unison;
 				SECTORDER_FLAGS = "";
 				WARNING_CFLAGS = (
@@ -690,7 +688,6 @@
 					"-lbigarray",
 					"-lasmrun",
 				);
-				PREBINDING = NO;
 				PRODUCT_NAME = Unison;
 				SECTORDER_FLAGS = "";
 				WARNING_CFLAGS = (
@@ -709,7 +706,7 @@
 			buildSettings = {
 				FRAMEWORK_SEARCH_PATHS = "Frameworks/**";
 				LIBRARY_SEARCH_PATHS = "";
-				SDKROOT = macosx10.5;
+				SDKROOT = macosx;
 				USER_HEADER_SEARCH_PATHS = $OCAMLLIBDIR;
 			};
 			name = Development;
@@ -720,7 +717,7 @@
 			buildSettings = {
 				FRAMEWORK_SEARCH_PATHS = "Frameworks/**";
 				LIBRARY_SEARCH_PATHS = "";
-				SDKROOT = macosx10.5;
+				SDKROOT = macosx;
 				USER_HEADER_SEARCH_PATHS = $OCAMLLIBDIR;
 			};
 			name = Deployment;
@@ -731,7 +728,7 @@
 			buildSettings = {
 				FRAMEWORK_SEARCH_PATHS = "Frameworks/**";
 				LIBRARY_SEARCH_PATHS = "";
-				SDKROOT = macosx10.5;
+				SDKROOT = macosx;
 				USER_HEADER_SEARCH_PATHS = $OCAMLLIBDIR;
 			};
 			name = Default;

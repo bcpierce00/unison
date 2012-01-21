@@ -82,6 +82,21 @@ external displayFatalError : string -> unit = "fatalError";;
 let fatalError message =
   Trace.log (message ^ "\n");
   displayFatalError message
+    
+(* Defined in MyController.m; display the warning and ask whether to
+   exit or proceed *)
+external displayWarnPanel : string -> bool = "warnPanel";;
+
+let setWarnPrinter() =
+  Util.warnPrinter :=
+    Some(fun s ->
+      Trace.log ("Warning: " ^ s ^ "\n");
+      if not (Prefs.read Globals.batch) then begin
+	if (displayWarnPanel s) then begin
+          Lwt_unix.run (Update.unlockArchives ());
+          exit Uicommon.fatalExit
+	end
+      end)
 
 let doInOtherThread f =
   Thread.create
@@ -316,6 +331,9 @@ let do_unisonInit2 () =
        Printf.eprintf "\n"
     );
 
+  (* Install the warning panel, hopefully it's not too late *)
+  setWarnPrinter();
+  
   Lwt_unix.run
     (Uicommon.validateAndFixupPrefs () >>=
      Globals.propagatePrefs);

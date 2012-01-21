@@ -307,7 +307,7 @@ static MyController *me; // needed by reloadTable and displayStatus, below
 
 - (void)updateToolbar
 {
-    [toolbar validateVisibleItems];	
+  [toolbar validateVisibleItems];	
 	[tableModeSelector setEnabled:((syncable && !duringSync) || afterSync)];
 
 	// Why?
@@ -1173,6 +1173,31 @@ CAMLprim value fatalError(value s)
 - (void)fatalError:(NSString *)msg {
         NSRunAlertPanel(@"Fatal error", msg, @"Exit", nil, nil);
         exit(1);
+}
+
+/* Returns true if we need to exit, false if we proceed */
+
+CAMLprim value warnPanel(value s)
+{
+	NSString *str = [[NSString alloc] initWithUTF8String:String_val(s)];
+    
+  [me performSelectorOnMainThread:@selector(warnPanel:) withObject:str waitUntilDone:TRUE];
+	[str release];
+  if (me -> shouldExitAfterWarning) {
+    return Val_true;
+  } else {
+    return Val_false;
+  }
+}
+
+- (void)warnPanel:(NSString *)msg {
+  int warnVal = NSRunAlertPanel(@"Warning", msg, @"Proceed", @"Exit", nil);
+  NSLog(@"Warning Panel Returned %d",warnVal);
+  if (warnVal == NSAlertAlternateReturn) {
+    shouldExitAfterWarning = YES;
+  } else {
+    shouldExitAfterWarning = FALSE;
+  }
 }
 
 @end

@@ -153,12 +153,13 @@ static NSString*        TableModeIdentifier     = @"TableMode";
 	else if ([whichView isEqual: @"updatesView"]) {
 		return [NSArray arrayWithObjects:   QuitItemIdentifier,
 			RestartItemIdentifier, 
-			NSToolbarSeparatorItemIdentifier,
+			NSToolbarSpaceItemIdentifier,
 			GoItemIdentifier,
 			RescanItemIdentifier,
-			NSToolbarSeparatorItemIdentifier,
+			NSToolbarSpaceItemIdentifier,
 			RToLItemIdentifier, MergeItemIdentifier, LToRItemIdentifier, 
-			SkipItemIdentifier, NSToolbarSeparatorItemIdentifier,
+			SkipItemIdentifier,
+      NSToolbarSpaceItemIdentifier,
 			DiffItemIdentifier, 
 			TableModeIdentifier, nil];
 	}
@@ -177,14 +178,14 @@ static NSString*        TableModeIdentifier     = @"TableMode";
 	    GoItemIdentifier, RestartItemIdentifier, RescanItemIdentifier,
 	    RToLItemIdentifier, MergeItemIdentifier, LToRItemIdentifier, 
 	    SkipItemIdentifier, DiffItemIdentifier,
-	    NSToolbarSeparatorItemIdentifier, nil];
+	    NSToolbarSpaceItemIdentifier, nil];
 }
 
 - (void) setView: (NSString *) whichView {
 	if ([whichView isEqual:currentView]) return;
 
 	currentView = whichView;
-
+  
 	int i;
 	NSArray *identifiers;
 	NSString *oldIdentifier;
