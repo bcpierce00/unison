@@ -1,3 +1,13 @@
+CHANGES FROM VERSION 2.44.9
+
+- OS X GUI: fix crash under Lion, because of problems with the toolbar, using
+  the fix suggested in http://blitzbasic.com/Community/posts.php?topic=95778.
+
+- OS X GUI: show a modal warning window if there is no archive for the hosts.
+  The user can then choose to exit or proceed (proceed is the default). The
+  window is not shown if "batch" is true.
+
+-------------------------------
 CHANGES FROM VERSION 2.44.8
 
 * Change uimacnew09 icon to classic "U with arrows"

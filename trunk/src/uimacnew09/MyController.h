@@ -81,6 +81,8 @@
   NSTimer *_timer;
   NSAlert *_timeoutAlert;
   NSUInteger _secondsRemaining;
+    
+  BOOL shouldExitAfterWarning;
 }
 
 - (id)init;
