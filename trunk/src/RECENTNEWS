@@ -1,3 +1,9 @@
+CHANGES FROM VERSION 2.44.10
+
+* Added option clientHostName. If specified, it will be used to as the client
+  host name, overriding UNISONLOCALHOSTNAME and the actual host name.
+
+-------------------------------
 CHANGES FROM VERSION 2.44.9
 
 - OS X GUI: fix crash under Lion, because of problems with the toolbar, using

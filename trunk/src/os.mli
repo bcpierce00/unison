@@ -1,7 +1,7 @@
 (* Unison file synchronizer: src/os.mli *)
 (* Copyright 1999-2010, Benjamin C. Pierce (see COPYING for details) *)
 
-val myCanonicalHostName : string
+val myCanonicalHostName : unit -> string
 
 val tempPath : ?fresh:bool -> Fspath.t -> Path.local -> Path.local
 val tempFilePrefix : string
