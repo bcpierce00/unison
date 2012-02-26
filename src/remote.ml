@@ -1168,7 +1168,7 @@ let canonizeLocally s unicode =
 let canonizeOnServer =
   registerServerCmd "canonizeOnServer"
     (fun _ (s, unicode) ->
-       Lwt.return (Os.myCanonicalHostName, canonizeLocally s unicode))
+       Lwt.return (Os.myCanonicalHostName (), canonizeLocally s unicode))
 
 let canonize clroot = (* connection for clroot must have been set up already *)
   match clroot with

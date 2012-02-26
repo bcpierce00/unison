@@ -150,7 +150,7 @@ let storeRootsName () =
             (Safelist.map
                (function
                    (Common.Local,f) ->
-                     (Common.Remote Os.myCanonicalHostName,f)
+                     (Common.Remote (Os.myCanonicalHostName ()),f)
                 | r ->
                    r)
                (Globals.rootsInCanonicalOrder())))) in
@@ -166,7 +166,7 @@ let significantDigits =
   | `Unix -> 32
 
 let thisRootsGlobalName (fspath: Fspath.t): string =
-  root2stringOrAlias (Common.Remote Os.myCanonicalHostName, fspath)
+  root2stringOrAlias (Common.Remote (Os.myCanonicalHostName ()), fspath)
 
 (* ----- *)
 
@@ -278,7 +278,7 @@ let (archiveNameOnRoot
        let (name,_) = archiveName fspath v in
        Lwt.return
          (name,
-          Os.myCanonicalHostName,
+          Os.myCanonicalHostName (),
           System.file_exists (Os.fileInUnisonDir name)))
 
 
@@ -784,7 +784,7 @@ let lockArchiveLocal fspath =
     None
   else
     Some (Printf.sprintf "The file %s on host %s should be deleted"
-            (System.fspathToPrintString lockFile) Os.myCanonicalHostName)
+            (System.fspathToPrintString lockFile) (Os.myCanonicalHostName ()))
 
 let lockArchiveOnRoot: Common.root -> unit -> string option Lwt.t =
   Remote.registerRootCmd
@@ -1070,7 +1070,8 @@ let abortIfAnyMountpointsAreMissing fspath =
        if not (Os.exists fspath path) then
          raise (Util.Fatal
            (Printf.sprintf "Path %s / %s is designated as a mountpoint, but points to nothing on host %s\n"
-             (Fspath.toPrintString fspath) (Path.toString path) Os.myCanonicalHostName)))
+             (Fspath.toPrintString fspath) (Path.toString path)
+	     (Os.myCanonicalHostName ()))))
     (Prefs.read mountpoints)
 
 

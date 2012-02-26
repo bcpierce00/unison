@@ -21,9 +21,20 @@
 
 let debug = Util.debug "os"
 
-let myCanonicalHostName =
-  try System.getenv "UNISONLOCALHOSTNAME"
-  with Not_found -> Unix.gethostname()
+(* Assumption: Prefs are not loaded on server, so clientHostName is always *)
+(* set to myCanonicalHostName. *)
+    
+let clientHostName : string Prefs.t =
+  let myCanonicalHostName =
+    try System.getenv "UNISONLOCALHOSTNAME"
+    with Not_found -> Unix.gethostname()
+  in
+  Prefs.createString "clientHostName" myCanonicalHostName
+    "!set host name of client"
+    ("When specified, the host name of the client will not be guessed" ^
+     "and the provided host name will be used to find the archive.")
+
+let myCanonicalHostName () = Prefs.read clientHostName
 
 let tempFilePrefix = ".unison."
 let tempFileSuffixFixed = ".unison.tmp"
