@@ -1,3 +1,8 @@
+CHANGES FROM VERSION 2.44.11
+
+* Correctly quote the path when running merge commands
+
+-------------------------------
 CHANGES FROM VERSION 2.44.10
 
 * Added option clientHostName. If specified, it will be used to as the client
