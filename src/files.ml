@@ -733,7 +733,8 @@ let formatMergeCmd p f1 f2 backup out1 out2 outarch =
   let cooked = Util.replacesubstring cooked "NEW2"     out2 in
   let cooked = Util.replacesubstring cooked "NEWARCH"  outarch in
   let cooked = Util.replacesubstring cooked "NEW" out1 in
-  let cooked = Util.replacesubstring cooked "PATH" (Path.toString p) in
+  let cooked = Util.replacesubstring cooked "PATH"
+		(Uutil.quotes (Path.toString p)) in
   cooked
     
 let copyBack fspathFrom pathFrom rootTo pathTo propsTo uiTo id =
