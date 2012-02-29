@@ -1,3 +1,10 @@
+CHANGES FROM VERSION 2.44.12
+
+* Update copyright dates
+
+* Add quotes to paths when calling external file watcher utility
+
+-------------------------------
 CHANGES FROM VERSION 2.44.11
 
 * Correctly quote the path when running merge commands
@@ -95,13 +102,12 @@ CHANGES FROM VERSION 2.43.7
 CHANGES FROM VERSION 2.43.6
 
 * A small fix suggested by Jerome.  Still thinking about what needs to
-  chance to get newly created files to transfer without failing.
+  change to get newly created files to transfer without failing.
 
 -------------------------------
 CHANGES FROM VERSION 2.43.0
 
 * See if we can get revisionString to update automatically now...
-
 
 -------------------------------
 CHANGES FROM VERSION 2.43.0

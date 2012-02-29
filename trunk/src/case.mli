@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/case.mli *)
-(* Copyright 1999-2010, Benjamin C. Pierce (see COPYING for details) *)
+(* Copyright 1999-2012, Benjamin C. Pierce (see COPYING for details) *)
 
 val caseInsensitiveMode : [`True|`False|`Default] Prefs.t
 val unicodeEncoding : bool Prefs.t

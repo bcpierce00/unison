@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/fpcache.mli *)
-(* Copyright 1999-2010, Benjamin C. Pierce (see COPYING for details) *)
+(* Copyright 1999-2012, Benjamin C. Pierce (see COPYING for details) *)
 
 (* Initialize the cache *)
 val init : bool -> bool -> System.fspath -> unit

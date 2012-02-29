@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/uutil.mli *)
-(* Copyright 1999-2010, Benjamin C. Pierce (see COPYING for details) *)
+(* Copyright 1999-2012, Benjamin C. Pierce (see COPYING for details) *)
 
 (* This module collects a number of low-level, Unison-specific utility
    functions.  It is kept separate from the Util module so that that module
