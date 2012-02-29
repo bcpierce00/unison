@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/files.mli *)
-(* Copyright 1999-2010, Benjamin C. Pierce (see COPYING for details) *)
+(* Copyright 1999-2012, Benjamin C. Pierce (see COPYING for details) *)
 
 (* As usual, these functions should only be called by the client (i.e., in   *)
 (* the same address space as the user interface).                            *)

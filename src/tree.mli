@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/tree.mli *)
-(* Copyright 1999-2010, Benjamin C. Pierce (see COPYING for details) *)
+(* Copyright 1999-2012, Benjamin C. Pierce (see COPYING for details) *)
 
 (* An ('a, 'b) t is a tree with 'a-labeled arcs and 'b-labeled nodes.        *)
 (* Labeling for the internal nodes is optional                               *)

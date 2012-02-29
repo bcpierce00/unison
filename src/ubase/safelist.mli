@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/ubase/safelist.mli *)
-(* Copyright 1999-2010, Benjamin C. Pierce (see COPYING for details) *)
+(* Copyright 1999-2012, Benjamin C. Pierce (see COPYING for details) *)
 
 (* All functions here are tail recursive and will work for arbitrary
    sized lists (unlike some of the standard ones).  The intention is that

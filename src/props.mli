@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/props.mli *)
-(* Copyright 1999-2010, Benjamin C. Pierce (see COPYING for details) *)
+(* Copyright 1999-2012, Benjamin C. Pierce (see COPYING for details) *)
 
 (* File properties: time, permission, length, etc. *)
 

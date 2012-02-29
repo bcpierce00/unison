@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/recon.ml *)
-(* Copyright 1999-2010, Benjamin C. Pierce 
+(* Copyright 1999-2012, Benjamin C. Pierce 
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

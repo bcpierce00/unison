@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/uitext.ml *)
-(* Copyright 1999-2010, Benjamin C. Pierce 
+(* Copyright 1999-2012, Benjamin C. Pierce 
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -715,14 +715,17 @@ let watcherTemp r n =
   Os.fileInUnisonDir s
 
 let watchercmd r =
-  (* FIX: is the quoting of --follow parameters going to work on Win32? *)
+  (* FIX: is the quoting of --follow parameters going to work on Win32?
+       (2/2012: tried adding Uutil.quotes -- maybe this is OK now?) *)
   (* FIX -- need to find the program using watcherosx preference *)
   let root = Fspath.toString (snd r) in
   let changefile = watcherTemp root "changes" in
   let statefile = watcherTemp root "state" in
   let paths = Safelist.map Path.toString !originalValueOfPathsPreference in
   let followpaths = Pred.extern Path.followPred in
-  let follow = Safelist.map (fun s -> "--follow '"^s^"'") followpaths in
+  let follow = Safelist.map
+                 (fun s -> "--follow '" ^ Uutil.quotes s ^ "'")
+                 followpaths in
   let cmd = Printf.sprintf "fsmonitor.py %s --outfile %s --statefile %s %s %s\n"
               root
               (System.fspathToPrintString changefile)
