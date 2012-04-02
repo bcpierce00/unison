@@ -1,7 +1,0 @@
-//
-// Prefix header for all source files of the 'fstest' target in the 'fstest' project.
-//
-
-#ifdef __OBJC__
-    #import <Foundation/Foundation.h>
-#endif
