@@ -1,3 +1,64 @@
+\begin{changesfromversion}{2.40.63}
+\item New preference {\tt fastercheckUNSAFE}, which can be used (with care!)
+to achieve {\em much} faster update detection when all the common files in
+the two replicas are known to be identical.  See the manual for more
+information.
+
+This feature should still be considered experimental, but it's ready for
+other people to try out.
+\item Added option {\tt clientHostName}. If specified, it will be used to as
+the client host name, overriding {\tt UNISONLOCALHOSTNAME} and the actual
+host name.
+\item OS X GUI: 
+\begin{itemize}
+\item fix crash under Lion, because of problems with the toolbar, using the
+fix suggested in {\tt http://blitzbasic.com/Community/posts.php?topic=95778}.
+
+\item uimacnew09 is now the standard graphical interface on OSX
+\item A small improvement to the uimacnew09 interface from Alan Schmitt
+  and Steve Kalkwarf: when Unison is run with the -batch flag, the
+  interface will now automatically propagate changes and terminate,
+  without waiting for user interaction.
+\item Show a modal warning window if there is no archive for the hosts.  The
+user can then choose to exit or proceed (proceed is the default). The window
+is not shown if the {\tt batch} preference is true.
+\item file details panel selectable
+\end{itemize}
+\item GTK GUI:
+\begin{itemize}
+\item New version of uigtk2.ml from Matt Zagrabelny that reorganizes the
+icons in a slightly more intuitive way.
+\end{itemize}
+\item Minor fixes:
+\begin{itemize}
+\item Setting the {\tt prefer} preference to {\tt older} or {\tt newer} now
+propagates deletions when there is no conflict.
+\item Correctly quote the path when running merge commands.
+\item Add quotes to paths when calling external file watcher utility.
+\item Incorporate a patch to fsmonitor.py (the external filewatcher
+  utility) from Tomasz Zernicki to make it work better under Windows.
+\item Incorporated new version of fsmonitor.py from Christophe Gohle
+\item Fixed incompatibility with OpenSSH 5.6.
+\item Fixed fingerprint cache: do not cache file properties
+\item Some spelling corrections in documentation and comments from Stephane
+Glondu 
+\item Fixed O_APPEND mode for open under Windows (the previous attempt in
+  revision 422 was incomplete)
+\item Fixed String.sub invalid argument error when an AppleDouble file does
+  not contain a finder information field
+\item Trim duplicate paths when using "-repeat watch"
+\item Unison now passes path arguments and --follow directives to
+  fsmonitor.py.  This seems to work except for one small issue with
+  how fsmonitor.py treats {\tt -follow} directives for directories that
+  don't exist (or maybe this is an issue with how it treats any kind
+  of monitoring when the thing being monitored doesn't exist?).  If we
+  create a symlink to a nonexistant directory, give Unison (hence
+  fsmonitor.py) a 'follow' directive for the symlink, start unison, and
+  {\em then} create the directory, fsmonitor.py misses the change.
+\item Lines added in profile files by unison always start at a new line
+\end{itemize}
+\end{changesfromversion}
+
 \begin{changesfromversion}{2.40.1}
 \item Added "BelowPath" patterns, that match a path as well as all paths below
   (convenient to use with no{deletion,update,creation}partial preferences)

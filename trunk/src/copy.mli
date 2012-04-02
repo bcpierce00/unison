@@ -11,7 +11,7 @@ val file :
  -> Props.t             (* permissions for new file *)
  -> Os.fullfingerprint  (* fingerprint of file *)
  -> Fileinfo.stamp option (* source file stamp, if available *)
- -> Osx.ressStamp       (* ressource info of file *)
+ -> Osx.ressStamp       (* resource info of file *)
  -> Uutil.File.t        (* file's index in UI (for progress bars) *)
  -> Fileinfo.t Lwt.t    (* information regarding the transferred file *)
 

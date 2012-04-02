@@ -302,5 +302,5 @@ let fatFilesystem =
       do not attempt to synchronize symbolic links ({\\tt links = false}); \
       ignore inode number changes when detecting updates \
       ({\\tt ignoreinodenumbers = true}).  \
-      Any of these change can be overridden by explicitely setting \
+      Any of these change can be overridden by explicitly setting \
       the corresponding preference in the profile.")
