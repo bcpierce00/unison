@@ -1,0 +1,67 @@
+INFORMATION FOR CONTRIBUTORS
+============================
+
+Unison is a part-time project for its developers: we work on it
+because we enjoy making something useful for us and for the community,
+but we all have other jobs to do.  If you like Unison and you want to
+help us make it better, we'd be glad to have you on the team!
+
+    
+HOW YOU CAN HELP
+----------------
+
+There are lots of ways...
+
+    * Telling us how you like Unison, whether the installation went
+      smoothly, and what you use it for.
+    * Submitting bug reports (we're always glad to have these...)
+    * Submitting bug FIXES (... especially when accompanied by these! :-)
+    * Reading the code.  One of Unison's main design goals is robustness.  
+      Help us reach that goal by reading our code and seeing whether you
+      understand and believe it.
+    * Proposing ideas for new functionality.
+    * Undertaking serious development work.
+
+See the file TODO.txt for a "wish list" of improvements that are waiting
+for someone to take them on.
+
+
+DOWNLOADING THE DEVELOPER SOURCES
+---------------------------------
+
+If you just want to read the code, then the source distribution has
+everything you need.
+
+If you want to do any serious hacking on Unison, you should begin by
+grabbing a copy of the full distribution from here:
+
+     http://www.cis.upenn.edu/~bcpierce/unison/resources/developers-only
+
+The tar file you'll find contains a mirror of our whole source tree
+(including the sources for the documentation, various small tools,
+working notes, etc.).  It is copied every night from our central
+repository, so it is not guaranteed to be consistent, working,
+compilable, etc.
+
+
+SUBMITTING CHANGES
+------------------
+
+If you've made a change that you're happy with and think ought to
+become part of a future release of Unison, you can send it to us like
+this: 
+
+    cd <top of your unison directory tree>
+    make submit
+
+This will tar up the whole tree and mail it off to us, so that we can
+play with it, compare it to what's in the repository, and easily
+commit the changes.
+
+
+FINDING YOUR WAY AROUND
+-----------------------
+
+See the file ROADMAP.txt for some suggestions on how to start reading
+the sources.
+
