@@ -664,6 +664,8 @@ CAMLprim value unisonInit2Complete(value v)
 	}  
 }
 
+// TODO: (BCP, 3/2012) Note that the string literal "~/unison.log" here is wrong -- 
+// this is a user-settable preference (in ubase/trace.ml) and we should ask for its value.
 CAMLprim value syncComplete()
 {
   id pool = [[NSAutoreleasePool alloc] init];
