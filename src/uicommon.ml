@@ -120,9 +120,9 @@ let retry =
 
 let confirmmerge =
   Prefs.createBool "confirmmerge" false
-    "!ask for confirmation before commiting results of a merge"
+    "!ask for confirmation before committing results of a merge"
     ("Setting this preference causes both the text and graphical interfaces"
-     ^ " to ask the user if the results of a merge command may be commited "
+     ^ " to ask the user if the results of a merge command may be committed "
      ^ " to the replica or not. Since the merge command works on temporary files,"
      ^ " the user can then cancel all the effects of applying the merge if it"
      ^ " turns out that the result is not satisfactory.  In "
