@@ -1,0 +1,16 @@
+# Hungarian convention for the unison project
+# The convention applies to a bunch of types in the module Common
+
+ui.*   : Common.updateItem
+ui.*   : updateItem
+uc.*   : Common.updateContent
+uc.*   : updateContent
+rc.*   : Common.replicaContent
+rc.*   : replicaContent
+rplc.* : Common.replicas
+rplc.* : replicas
+ri.*   : Common.reconItem
+ri.*   : reconItem
+<>     : Prop.t
+
+# The end
