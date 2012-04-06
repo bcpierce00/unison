@@ -1,3 +1,8 @@
+CHANGES FROM VERSION 2.45.1
+
+- fixed a bug in the lookup of the host name on the server
+
+-------------------------------
 CHANGES FROM VERSION 2.45.-1
 
 * Bit more preparation for beta release
