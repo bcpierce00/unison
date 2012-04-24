@@ -91,6 +91,9 @@ buildexecutable::
 ####################################################################
 ### Default parameters
 
+# Generate backtrace information for exceptions
+CAMLFLAGS+=-g
+
 INCLFLAGS=-I lwt -I ubase -I system
 CAMLFLAGS+=$(INCLFLAGS)
 CAMLFLAGS+=-I system/$(SYSTEM) -I lwt/$(SYSTEM)
