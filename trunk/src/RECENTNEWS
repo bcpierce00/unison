@@ -1,11 +1,12 @@
+CHANGES FROM VERSION 2.45.6
+
+* Display full stack backtraces when printing exceptions, per comment
+  from Jerome
+-------------------------------
 CHANGES FROM VERSION 2.45.1
+
+* Display full stack backtraces when printing exceptions, per comment
+  from Jerome
 
 - fixed a bug in the lookup of the host name on the server
 
--------------------------------
-CHANGES FROM VERSION 2.45.-1
-
-* Bit more preparation for beta release
-
-
--------------------------------

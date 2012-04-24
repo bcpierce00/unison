@@ -125,13 +125,20 @@ let interface =
     (function Uicommon.Text -> ["text"]
       | Uicommon.Graphic -> ["graphic"]);;
 
-let init() = begin
+let catch_all f = 
+  try
+    Util.msg "Starting catch_all...\n";
+    f ();
+    Util.msg "Done catch_all...\n";
+  with e ->
+    Util.msg "Unison failed: %s\n" (Uicommon.exn2string e); exit 1;;
+
+let init () = begin
   ignore (Gc.set {(Gc.get ()) with Gc.max_overhead = 150});
+  (* Make sure exception descriptions include backtraces *)
+  Printexc.record_backtrace true;
 
   let argv = Prefs.scanCmdLine Uicommon.usageMsg in
-
-  let catch_all f =
-    (try f () with e -> Util.msg "%s\n" (Uicommon.exn2string e); exit 1) in
 
   (* Print version if requested *)
   if Util.StringMap.mem versionPrefName argv then begin
@@ -183,7 +190,7 @@ let init() = begin
   with Not_found -> () end;
 
   (* Install an appropriate function for finding preference files.  (We put
-     this in Util just because the Prefs module lives below the Os module in the
+     this here just because the Prefs module lives below the Os module in the
      dependency hierarchy, so Prefs can't call Os directly.) *)
   Util.supplyFileInUnisonDirFn 
     (fun n -> Os.fileInUnisonDir(n));
@@ -216,7 +223,7 @@ let init() = begin
 end
 
 (* non-GUI startup for Mac GUI version *)
-let nonGuiStartup() = begin
+let nonGuiStartup () = begin
   let argv = init() in (* might not return *)
   (* if it returns start a UI *)
   (try
@@ -228,7 +235,7 @@ let nonGuiStartup() = begin
   ()
 end
 
-module Body = functor(Ui : Uicommon.UI) -> struct
+module Body = functor (Ui : Uicommon.UI) -> struct
   let argv = init() in (* might not return *)
   (* if it returns start a UI *)
   Ui.start 

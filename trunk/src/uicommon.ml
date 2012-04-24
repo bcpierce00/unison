@@ -309,20 +309,24 @@ let reconItem2string oldPath theRI status =
   let (r1, action, r2, path) = reconItem2stringList oldPath theRI in
   Format.sprintf "%s %s %s %s %s" r1 (action2niceString action) r2 status path
 
-let exn2string = function
-    Sys.Break      -> "Terminated!"
-  | Util.Fatal(s)  -> Printf.sprintf "Fatal error: %s" s
-  | Util.Transient(s) -> Printf.sprintf "Error: %s" s
-  | Unix.Unix_error (err, fun_name, arg) ->
-      Printf.sprintf "Uncaught unix error: %s failed%s: %s%s"
-        fun_name
-        (if String.length arg > 0 then Format.sprintf " on \"%s\"" arg else "")
-        (Unix.error_message err)
-        (match err with
-           Unix.EUNKNOWNERR n -> Format.sprintf " (code %d)" n
-         | _                  -> "")
-  | Invalid_argument s -> Printf.sprintf "Invalid argument: %s" s
-  | other -> Printf.sprintf "Uncaught exception %s" (Printexc.to_string other)
+let exn2string e =
+  match e with
+     Sys.Break      -> "Terminated!"
+   | Util.Fatal(s)  -> Printf.sprintf "Fatal error: %s" s
+   | Util.Transient(s) -> Printf.sprintf "Error: %s" s
+   | Unix.Unix_error (err, fun_name, arg) ->
+       Printf.sprintf "Uncaught unix error: %s failed%s: %s%s\n%s"
+         fun_name
+         (if String.length arg > 0 then Format.sprintf " on \"%s\"" arg else "")
+         (Unix.error_message err)
+         (match err with
+            Unix.EUNKNOWNERR n -> Format.sprintf " (code %d)" n
+          | _                  -> "")
+         (Printexc.get_backtrace ())
+   | Invalid_argument s ->
+       Printf.sprintf "Invalid argument: %s\n%s" s (Printexc.get_backtrace ())
+   | other -> Printf.sprintf "Uncaught exception %s\n%s"
+       (Printexc.to_string other) (Printexc.get_backtrace ())
 
 (* precondition: uc = File (Updates(_, ..) on both sides *)
 let showDiffs ri printer errprinter id =
