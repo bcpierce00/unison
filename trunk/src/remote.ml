@@ -896,7 +896,10 @@ let registerStreamCmd
            Lwt_util.run_in_region streamReg 1
              (fun () -> sender (fun v -> client conn id v)))
         (fun v -> ping conn id >>= fun () -> Lwt.return v)
-        (fun e -> ping conn id >>= fun () -> Lwt.fail e)
+        (fun e ->
+           debugE (fun () ->
+             Util.msg "Pinging remote end after streaming error\n");
+           ping conn id >>= fun () -> Lwt.fail e)
     end
 
 let commandAvailable =
