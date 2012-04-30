@@ -1,3 +1,8 @@
+CHANGES FROM VERSION 2.45.7
+
+* Added some debugging code in transfer.ml
+
+-------------------------------
 CHANGES FROM VERSION 2.45.6
 
 * Display full stack backtraces when printing exceptions, per comment

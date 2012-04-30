@@ -147,8 +147,12 @@ let flushQueue q showProgress transmit cond =
     return ()
 
 let pushEOF q showProgress transmit =
+  if Trace.enabled "rsynctoken" then
+    debugToken (fun() ->
+      Util.msg "pushing EOF (pos:%d/%d)\n" q.pos queueSize);
   flushQueue q showProgress transmit
     (q.pos + 1 > queueSize) >>= (fun () ->
+  assert (q.pos < queueSize);
   q.data.{q.pos} <- 'E';
   q.pos <- q.pos + 1;
   q.previous <- `None;
@@ -156,7 +160,11 @@ let pushEOF q showProgress transmit =
 
 let rec pushString q id transmit s pos len =
   flushQueue q id transmit (q.pos + len + 3 > queueSize) >>= fun () ->
+  if Trace.enabled "rsynctoken" then
+    debugToken (fun() ->
+      Util.msg "pushing string (pos:%d/%d len:%d)\n" q.pos queueSize len);
   let l = min len (queueSize - q.pos - 3) in
+  assert (l > 0);
   q.data.{q.pos} <- 'S';
   encodeInt2 q.data (q.pos + 1) l;
   Bytearray.blit_from_string s pos q.data (q.pos + 3) l;
@@ -169,8 +177,13 @@ let rec pushString q id transmit s pos len =
     return ()
 
 let growString q id transmit len' s pos len =
+  if Trace.enabled "rsynctoken" then
+    debugToken (fun() ->
+      Util.msg "growing string (pos:%d/%d len:%d+%d)\n"
+        q.pos queueSize len' len);
   let l = min (queueSize - q.pos) len in
   Bytearray.blit_from_string s pos q.data q.pos l;
+  assert (q.pos - len' - 3 >= 0);
   assert (q.data.{q.pos - len' - 3} = 'S');
   assert (decodeInt2 q.data (q.pos - len' - 2) = len');
   let len'' = len' + l in
@@ -185,6 +198,10 @@ let growString q id transmit len' s pos len =
 
 let pushBlock q id transmit pos =
   flushQueue q id transmit (q.pos + 5 > queueSize) >>= (fun () ->
+  if Trace.enabled "rsynctoken" then
+    debugToken (fun() ->
+      Util.msg "pushing block (pos:%d/%d)\n" q.pos queueSize);
+  assert (q.pos + 5 <= queueSize);
   q.data.{q.pos} <- 'B';
   encodeInt3 q.data (q.pos + 1) pos;
   encodeInt1 q.data (q.pos + 4) 1;
@@ -194,6 +211,10 @@ let pushBlock q id transmit pos =
   return ())
 
 let growBlock q id transmit pos =
+  if Trace.enabled "rsynctoken" then
+    debugToken (fun() ->
+      Util.msg "growing blocks (pos:%d/%d)\n" q.pos queueSize);
+  assert (q.pos >= 5);
   let count = decodeInt1 q.data (q.pos - 1) in
   assert (q.data.{q.pos - 5} = 'B');
   assert (decodeInt3 q.data (q.pos - 4) + count = pos);
@@ -642,8 +663,10 @@ struct
        fingerprintMatchRec checksums pos fp i)
     in
     let fingerprintMatch k fp =
-      fingerprintMatchRec sigs.strongChecksum (k * sigs.checksumSize)
-        fp sigs.checksumSize
+      let pos = k * sigs.checksumSize in
+      assert
+        (pos + sigs.checksumSize <= Bigarray.Array1.dim sigs.strongChecksum);
+      fingerprintMatchRec sigs.strongChecksum pos fp sigs.checksumSize
     in
 
     (* Create the compression buffer *)
