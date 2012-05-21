@@ -264,15 +264,20 @@ let send infd length showProgress transmit =
   let buf = String.create bufSz in
   let q = makeQueue 0 in
   let rec sendSlice length =
-    let count =
-      reallyRead infd buf 0
-        (if length > bufSzFS then bufSz else Uutil.Filesize.toInt length) in
-    queueToken q showProgress transmit (STRING (buf, 0, count)) >>= (fun () ->
-    let length = Uutil.Filesize.sub length (Uutil.Filesize.ofInt count) in
-    if count = bufSz && length > Uutil.Filesize.zero then
-      sendSlice length
-    else
-      return ())
+    if length > Uutil.Filesize.zero then begin
+      let count =
+        reallyRead infd buf 0
+          (if length > bufSzFS then bufSz else Uutil.Filesize.toInt length) in
+      if count = 0 then
+        Lwt.return ()
+      else begin
+        queueToken q showProgress transmit (STRING (buf, 0, count))
+          >>= fun () ->
+        let length = Uutil.Filesize.sub length (Uutil.Filesize.ofInt count) in
+        sendSlice length
+      end
+    end else
+      Lwt.return ()
   in
   sendSlice length >>= (fun () ->
   queueToken q showProgress transmit EOF >>= (fun () ->
