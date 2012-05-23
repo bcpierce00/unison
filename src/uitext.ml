@@ -726,7 +726,12 @@ let watchercmd r =
   let follow = Safelist.map
                  (fun s -> "--follow '" ^ Uutil.quotes s ^ "'")
                  followpaths in
-  let cmd = Printf.sprintf "fsmonitor.py %s --outfile %s --statefile %s %s %s\n"
+(* BCP (per Josh Berdine, 5/2012): changed startup command from this...
+     let cmd = Printf.sprintf "fsmonitor.py %s --outfile %s --statefile %s %s %s\n"
+   ... to this: *)
+  let fsmonfile = Filename.concat (Filename.dirname Sys.executable_name) "fsmonitor.py" in
+  let cmd = Printf.sprintf "python \"%s\" \"%s\" --outfile \"%s\" --statefile \"%s\" %s %s\n"
+              fsmonfile
               root
               (System.fspathToPrintString changefile)
               (System.fspathToPrintString statefile)
