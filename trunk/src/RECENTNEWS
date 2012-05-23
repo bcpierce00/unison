@@ -1,19 +1,20 @@
-CHANGES FROM VERSION 2.45.8
+CHANGES FROM VERSION 2.45.7
 
-* Fix bug in last commit
-
+* Small fix to the way fsmonitor.py gets invoked when using the file
+  watching functionality, suggested by Josh Berdine.  Unison will now
+  look for fsmonitor.py in the same directory where the Unison
+  executable itself lives.
 -------------------------------
 CHANGES FROM VERSION 2.45.7
 
+* Small fix to the way fsmonitor.py gets invoked when using the file
+  watching functionality, suggested by Josh Berdine.  Unison will now
+  look for fsmonitor.py in the same directory where the Unison
+  executable itself lives.
+
+* Fix bug in last commit
+
 * Added some debugging code in transfer.ml
-
--------------------------------
-CHANGES FROM VERSION 2.45.6
-
-* Display full stack backtraces when printing exceptions, per comment
-  from Jerome
--------------------------------
-CHANGES FROM VERSION 2.45.1
 
 * Display full stack backtraces when printing exceptions, per comment
   from Jerome

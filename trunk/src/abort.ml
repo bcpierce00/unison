@@ -67,4 +67,4 @@ let check id =
     raise (Util.Transient "Aborted")
   end
 
-let testException e = e = Util.Transient "Aborted"
+let testException e = (e = Util.Transient "Aborted")
