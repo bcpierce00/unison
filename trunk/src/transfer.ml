@@ -521,7 +521,14 @@ struct
   (* Given a key, retrieve the corresponding entry in the table *)
   let findEntry hashTable hashTableLength checksum :
       (int * Checksum.t) list =
-    Array.unsafe_get hashTable ((hash checksum) land (hashTableLength - 1))
+    let i = (hash checksum) land (hashTableLength - 1) in
+    (*FIX: temporary debugging code... *)
+    if i < 0 || i >= Array.length hashTable then begin
+      Format.eprintf "index:%d checksum:%d len:%d/%d@."
+        i checksum hashTableLength (Array.length hashTable);
+      assert false
+    end;
+    hashTable.(i)
 
   let sigFilter hashTableLength signatures =
     let len = hashTableLength lsl 2 in
@@ -664,13 +671,20 @@ struct
     let rec fingerprintMatchRec checksums pos fp i =
       let i = i - 1 in
       i < 0 ||
-      (String.unsafe_get fp i = checksums.{pos + i} &&
+      (fp.[i] = checksums.{pos + i} &&
        fingerprintMatchRec checksums pos fp i)
     in
     let fingerprintMatch k fp =
       let pos = k * sigs.checksumSize in
-      assert
-        (pos + sigs.checksumSize <= Bigarray.Array1.dim sigs.strongChecksum);
+      (*FIX: temporary debugging code... *)
+      if
+        pos + sigs.checksumSize > Bigarray.Array1.dim sigs.strongChecksum
+      then begin
+        Format.eprintf "k:%d/%d pos:%d csSize:%d dim:%d@."
+          k sigs.blockCount pos sigs.checksumSize
+          (Bigarray.Array1.dim sigs.strongChecksum);
+        assert false
+      end;
       fingerprintMatchRec sigs.strongChecksum pos fp sigs.checksumSize
     in
 
