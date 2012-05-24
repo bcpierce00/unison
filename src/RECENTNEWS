@@ -1,3 +1,7 @@
+CHANGES FROM VERSION 2.45.9
+
+* Added some more debugging code in transfer.ml
+-------------------------------
 CHANGES FROM VERSION 2.45.7
 
 * Small fix to the way fsmonitor.py gets invoked when using the file
