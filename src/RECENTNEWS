@@ -1,3 +1,8 @@
+CHANGES FROM VERSION 2.45.13
+
+* Fixed Makefile for cross-compiling towards Windows (updated to MinGW-w64)
+
+-------------------------------
 CHANGES FROM VERSION 2.45.12
 
 * fsmonitor.py: fixed busy wait under Windows
