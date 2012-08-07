@@ -423,9 +423,23 @@ struct
       blockIter infd addBlock blockSize (min blockCount (256*256*256)) in
     debugLog (fun() -> Util.msg "%d blocks\n" count);
     Trace.showTimer timer;
-    ({ blockSize = blockSize; blockCount = count; checksumSize = csSize;
-       weakChecksum = weakCs; strongChecksum = strongCs },
-     blockSize)
+    let sigs =
+      { blockSize = blockSize; blockCount = count; checksumSize = csSize;
+        weakChecksum = weakCs; strongChecksum = strongCs } in
+    if
+      sigs.blockCount > Bigarray.Array1.dim sigs.weakChecksum ||
+      sigs.blockCount * sigs.checksumSize >
+      Bigarray.Array1.dim sigs.strongChecksum
+    then
+      raise
+        (Util.Transient
+           (Format.sprintf
+              "Internal error during rsync transfer (preprocess), \
+               please report: %d %d - %d %d"
+              sigs.blockCount (Bigarray.Array1.dim sigs.weakChecksum)
+              (sigs.blockCount * sigs.checksumSize)
+              (Bigarray.Array1.dim sigs.strongChecksum)));
+    (sigs, blockSize)
 
   (* Expected size of the [rsync_block_info] datastructure (in KiB). *)
   let memoryFootprint srcLength dstLength =
@@ -522,12 +536,6 @@ struct
   let findEntry hashTable hashTableLength checksum :
       (int * Checksum.t) list =
     let i = (hash checksum) land (hashTableLength - 1) in
-    (*FIX: temporary debugging code... *)
-    if i < 0 || i >= Array.length hashTable then begin
-      Format.eprintf "index:%d checksum:%d len:%d/%d@."
-        i checksum hashTableLength (Array.length hashTable);
-      assert false
-    end;
     hashTable.(i)
 
   let sigFilter hashTableLength signatures =
@@ -621,6 +629,19 @@ struct
   (* Compress the file using the algorithm described in the header *)
   let rsyncCompress sigs infd srcLength showProgress transmit =
     debug (fun() -> Util.msg "compressing\n");
+    if
+      sigs.blockCount > Bigarray.Array1.dim sigs.weakChecksum ||
+      sigs.blockCount * sigs.checksumSize >
+      Bigarray.Array1.dim sigs.strongChecksum
+    then
+      raise
+        (Util.Transient
+           (Format.sprintf
+              "Internal error during rsync transfer (compression), \
+               please report: %d %d - %d %d"
+              sigs.blockCount (Bigarray.Array1.dim sigs.weakChecksum)
+              (sigs.blockCount * sigs.checksumSize)
+              (Bigarray.Array1.dim sigs.strongChecksum)));
     let blockSize = sigs.blockSize in
     let comprBufSize = (2 * blockSize + 8191) land (-8192) in
     let comprBufSizeFS = Uutil.Filesize.ofInt comprBufSize in
@@ -679,12 +700,14 @@ struct
       (*FIX: temporary debugging code... *)
       if
         pos + sigs.checksumSize > Bigarray.Array1.dim sigs.strongChecksum
-      then begin
-        Format.eprintf "k:%d/%d pos:%d csSize:%d dim:%d@."
-          k sigs.blockCount pos sigs.checksumSize
-          (Bigarray.Array1.dim sigs.strongChecksum);
-        assert false
-      end;
+      then
+        raise
+          (Util.Transient
+             (Format.sprintf "Internal error during rsync transfer, \
+                              please report: \
+                              k:%d/%d pos:%d csSize:%d dim:%d"
+                k sigs.blockCount pos sigs.checksumSize
+                (Bigarray.Array1.dim sigs.strongChecksum)));
       fingerprintMatchRec sigs.strongChecksum pos fp sigs.checksumSize
     in
 
