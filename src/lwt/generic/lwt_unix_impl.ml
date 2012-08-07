@@ -128,8 +128,10 @@ let rec run thread =
           ([], [], [])
         else
           try
-            let res = Unix.select infds outfds [] delay in
-            if delay > 0. && !now <> -1. then now := !now +. delay;
+            let (readers, writers, _) as res =
+              Unix.select infds outfds [] delay in
+            if delay > 0. && !now <> -1. && readers = [] && writers = [] then
+              now := !now +. delay;
             res
           with
             Unix.Unix_error (Unix.EINTR, _, _) ->
