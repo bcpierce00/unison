@@ -5,11 +5,6 @@
 ####################################################################
 ### Try to automatically guess OS
 
-ifeq (${OSCOMP},cross) # Cross-compilation under Linux
-  OSARCH=win32gnuc
-  PATH := /usr/i586-mingw32msvc/bin:$(PATH)
-endif
-
 ifeq (${OSCOMP},cygwingnuc) # Define this if compiling with Cygwin GNU C
   OSARCH=win32gnuc
   ETAGS=/bin/etags
@@ -44,6 +39,11 @@ endif
 ETAGS=etags
 endif
 endif
+endif
+
+ifeq (${OSCOMP},cross) # Cross-compilation under Linux
+  OSARCH=win32gnuc
+  EXEC_PREFIX=i686-w64-mingw32-
 endif
 
 # The OCaml lib dir is used by all versions
@@ -364,11 +364,11 @@ ifeq ($(DEBUGGING), false)
 endif
 
 ifeq ($(PROFILING), true)
-  OCAMLC=ocamlcp
+  OCAMLC=$(EXEC_PREFIX)ocamlcp
 else
-  OCAMLC=ocamlc
+  OCAMLC=$(EXEC_PREFIX)ocamlc
 endif
-OCAMLOPT=ocamlopt
+OCAMLOPT=$(EXEC_PREFIX)ocamlopt
 
 ifeq ($(NATIVE), true)
   ## Set up for native code compilation
