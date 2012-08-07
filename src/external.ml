@@ -26,35 +26,30 @@ let (>>=) = Lwt.bind
 open Lwt
 
 let readChannelTillEof c =
-  let rec loop lines =
-    try let l = input_line c in
-        (* Util.msg "%s\n" l; *)
-        loop (l::lines)
-    with End_of_file -> lines in
-  String.concat "\n" (Safelist.rev (loop []))
+  let lst = ref [] in
+  let rec loop () =
+    lst := input_line c :: !lst;
+    loop ()
+  in
+  begin try loop () with End_of_file -> () end;
+  String.concat "\n" (Safelist.rev !lst)
 
 let readChannelTillEof_lwt c =
   let rec loop lines =
-    let lo =
-      try
-        Some(Lwt_unix.run (Lwt_unix.input_line c))
-      with End_of_file -> None
-    in
-    match lo with
-      Some l -> loop (l :: lines)
-    | None   -> lines
+    Lwt.try_bind
+      (fun () -> Lwt_unix.input_line c)
+      (fun l  -> loop (l :: lines))
+      (fun e  -> if e = End_of_file then Lwt.return lines else Lwt.fail e)
   in
-  String.concat "\n" (Safelist.rev (loop []))
+  String.concat "\n" (Safelist.rev (Lwt_unix.run (loop [])))
 
 let readChannelsTillEof l =
   let rec suckitdry lines c =
-    Lwt.catch
-      (fun() -> Lwt_unix.input_line c >>= (fun l -> return (Some l)))
-      (fun e -> match e with End_of_file -> return None | _ -> raise e)
-    >>= (fun lo ->
-           match lo with
-             None -> return lines
-           | Some l -> suckitdry (l :: lines) c) in
+    Lwt.try_bind
+      (fun () -> Lwt_unix.input_line c)
+      (fun l -> suckitdry (l :: lines) c)
+      (fun e -> match e with End_of_file -> Lwt.return lines | _ -> raise e)
+  in
   Lwt_util.map
     (fun c ->
        suckitdry [] c

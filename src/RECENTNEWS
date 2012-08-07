@@ -1,3 +1,9 @@
+CHANGES FROM VERSION 2.45.14
+
+* Function External.readChannelTillEof now tail recursive
+  (prevents a crash when the output of the diff program is too large)
+
+-------------------------------
 CHANGES FROM VERSION 2.45.13
 
 * Fixed Makefile for cross-compiling towards Windows (updated to MinGW-w64)
