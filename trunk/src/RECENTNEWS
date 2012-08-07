@@ -1,3 +1,9 @@
+CHANGES FROM VERSION 2.45.15
+
+* transfer.ml: updated debugging code; in particular, turns an
+  assertion failure into a more friendly transient failure
+
+-------------------------------
 CHANGES FROM VERSION 2.45.14
 
 * Function External.readChannelTillEof now tail recursive
