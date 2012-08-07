@@ -1,3 +1,8 @@
+CHANGES FROM VERSION 2.45.11
+
+* Fix bug in Lwt_unix.sleep
+
+-------------------------------
 CHANGES FROM VERSION 2.45.9
 
 * Added some more debugging code in transfer.ml

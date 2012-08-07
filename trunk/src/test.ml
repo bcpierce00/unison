@@ -370,7 +370,7 @@ let test() =
       check "4" R2 (Dir ["x", File "foo"]);
     );
 
-  raise (Util.Fatal "Skipping some tests -- remove me!\n"); 
+  (raise (Util.Fatal "Skipping some tests -- remove me!\n") : unit); 
 
   if bothRootsLocal then 
     runtest "backups 1 (local)" ["backup = Name *"] (fun() -> 
