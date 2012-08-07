@@ -813,7 +813,7 @@ let suckOnWatcherFileLocal r =
          let (changefile,cmd) = watchercmd r in
          debug (fun() -> Util.msg
                   "Starting watcher on root %s\n" (Common.root2string r));
-         let _ = System.open_process_in cmd in
+         let _ = System.open_process_out cmd in
          let wi = {file = changefile; ch = ref None;
                    lines = ref []; chars = ref ""} in
          watchers := RootMap.add r wi !watchers;

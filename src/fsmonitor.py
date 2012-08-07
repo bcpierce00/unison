@@ -11,8 +11,9 @@
 import sys
 import os
 import stat
+import threading
 from optparse import OptionParser
-from time import time
+from time import time, sleep
 
 def mydebug(fmt, *args, **kwds):
     if not op.debug:
@@ -375,15 +376,16 @@ if sys.platform == 'darwin':
 
                     #now we should know what to do: build a file directory list
                     #I assume here, that unison takes a flag for recursive scans
-                    if recursive:
-                            #we have to check all subdirectories
-                            if isinstance(path,list):
-                                    #we have to check all base paths
-                                    allpathsrecursive = [p + '\tr']
-                                    result.extend(path)
-                            else:
-                                    result.append(path+'\tr')
-                    else:
+#JV: commented out (not implemented by Unison)
+#                    if recursive:
+#                            #we have to check all subdirectories
+#                            if isinstance(path,list):
+#                                    #we have to check all base paths
+#                                    allpathsrecursive = [p + '\tr']
+#                                    result.extend(path)
+#                            else:
+#                                    result.append(path+'\tr')
+#                    else:
                             #just add the path
                             #result.append(path)
                             #try to find out what has changed
@@ -492,7 +494,6 @@ if sys.platform == 'darwin':
 if sys.platform == 'win32':
 	import win32file
 	import win32con
-	import threading
 	
 	FILE_LIST_DIRECTORY = 0x0001
 	
@@ -538,7 +539,7 @@ if sys.platform == 'win32':
 			
 		try:
 			while 1:
-				pass
+				sleep(3600)
 		except KeyboardInterrupt:
 			print "Cleaning up."
 
@@ -657,6 +658,14 @@ to read all the settings from there."""
 	except IOError:
 		mymesg('failed to open output file. STOP.')
 		exit(1)
+
+        #stop watching when stdin is closed
+        def exitThread():
+            while sys.stdin.readline(): pass
+            os._exit(0)
+        t = threading.Thread(target=exitThread)
+        t.setDaemon(True)
+        t.start()
 
 	if sys.platform=='darwin':
 		macosxwatcher()
