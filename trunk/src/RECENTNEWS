@@ -1,3 +1,10 @@
+CHANGES FROM VERSION 2.45.12
+
+* fsmonitor.py: fixed busy wait under Windows
+* fsmonitor.py: make sure this helper program exits when Unison terminates
+  (now, fsmonitor.py exits when stdin is closed, and Unison redirects stdin)
+
+-------------------------------
 CHANGES FROM VERSION 2.45.11
 
 * Fix bug in Lwt_unix.sleep
