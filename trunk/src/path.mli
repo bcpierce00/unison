@@ -29,6 +29,8 @@ val toDebugString : local -> string
 
 val addSuffixToFinalName : local -> string -> local
 val addPrefixToFinalName : local -> string -> local
+val addToFinalName : local -> string -> local
+  (* Add to the final name, but before any file extension. *)
 
 val compare : t -> t -> int
 val equal : local -> local -> bool

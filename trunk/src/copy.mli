@@ -26,3 +26,10 @@ val localFile :
  -> Uutil.Filesize.t     (* fork length *)
  -> Uutil.File.t option  (* file's index in UI (for progress bars), if appropriate *)
  -> unit
+
+val recursively :
+    Fspath.t             (* fspath of source *)
+ -> Path.local           (* path of source *)
+ -> Fspath.t             (* fspath of target *)
+ -> Path.local           (* path of target *)
+ -> unit

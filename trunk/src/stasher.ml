@@ -382,32 +382,7 @@ let backup fspath path (finalDisposition : [`AndRemove | `ByCopying]) arch =
               (Fspath.toDebugString fspath) (Path.toString path)
               (Path.toString backPath) (Fspath.toDebugString backRoot));
           let byCopying() = 
-            let rec copy p backp =
-              let info = Fileinfo.get true fspath p in
-              match info.Fileinfo.typ with
-              | `SYMLINK ->
-                  debug (fun () -> Util.msg "  Copying link %s / %s to %s / %s\n"
-                    (Fspath.toDebugString fspath) (Path.toString p)
-                    (Fspath.toDebugString backRoot) (Path.toString backp));
-                  Os.symlink backRoot backp (Os.readLink fspath p)
-              | `FILE ->
-                  debug (fun () -> Util.msg "  Copying file %s / %s to %s / %s\n"
-                    (Fspath.toDebugString fspath) (Path.toString p)
-                    (Fspath.toDebugString backRoot) (Path.toString backp));
-                  Copy.localFile  fspath p  backRoot backp backp 
-                    `Copy  info.Fileinfo.desc
-                    (Osx.ressLength info.Fileinfo.osX.Osx.ressInfo)  None
-              | `DIRECTORY ->
-                  debug (fun () -> Util.msg "  Copying directory %s / %s to %s / %s\n"
-                    (Fspath.toDebugString fspath) (Path.toString p)
-                    (Fspath.toDebugString backRoot) (Path.toString backp));
-                  Os.createDir backRoot backp info.Fileinfo.desc;
-                  let ch = Os.childrenOf fspath p in
-                  Safelist.iter (fun n -> copy (Path.child p n) (Path.child backp n)) ch
-              | `ABSENT -> assert false in
-            copy path backPath;
-            debug (fun () -> Util.msg "  Finished copying; deleting %s / %s\n"
-              (Fspath.toDebugString fspath) (Path.toString path));
+            Copy.recursively fspath path backRoot backPath;
             disposeIfNeeded() in
           begin if finalDisposition = `AndRemove then
             try
