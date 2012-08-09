@@ -77,7 +77,8 @@ let logLwtNumbered (lwtDescription: string) (lwtShortDescription: string)
     (fun _ ->
       Printf.sprintf "[END] %s\n" lwtShortDescription)
 
-let doAction fromRoot fromPath fromContents toRoot toPath toContents id =
+let doAction
+      fromRoot fromPath fromContents toRoot toPath toContents notDefault id =
   (* When streaming, we can transfer many file simultaneously:
      as the contents of only one file is transferred in one direction
      at any time, little resource is consumed this way. *)
@@ -98,7 +99,8 @@ let doAction fromRoot fromPath fromContents toRoot toPath toContents id =
                ("Deleting " ^ Path.toString toPath ^
                 "\n  from "^ root2string toRoot)
                ("Deleting " ^ Path.toString toPath)
-               (fun () -> Files.delete fromRoot fromPath toRoot toPath uiTo)
+               (fun () ->
+                  Files.delete fromRoot fromPath toRoot toPath uiTo notDefault)
         (* No need to transfer the whole directory/file if there were only
            property modifications on one side.  (And actually, it would be
            incorrect to transfer a directory in this case.) *)
@@ -120,7 +122,8 @@ let doAction fromRoot fromPath fromContents toRoot toPath toContents id =
               ("Updating file " ^ Path.toString toPath)
               (fun () ->
                 Files.copy (`Update (fileSize uiFrom uiTo))
-                  fromRoot fromPath uiFrom [] toRoot toPath uiTo [] id)
+                  fromRoot fromPath uiFrom [] toRoot toPath uiTo []
+                  notDefault id)
         | {ui = uiFrom; props = propsFrom}, {ui = uiTo; props = propsTo} ->
             logLwtNumbered
               ("Copying " ^ Path.toString toPath ^ "\n  from " ^
@@ -130,7 +133,8 @@ let doAction fromRoot fromPath fromContents toRoot toPath toContents id =
               (fun () ->
                  Files.copy `Copy
                    fromRoot fromPath uiFrom propsFrom
-                   toRoot toPath uiTo propsTo id))
+                   toRoot toPath uiTo propsTo
+                   notDefault id))
       (fun e -> Trace.log
           (Printf.sprintf
              "Failed: %s\n" (Util.printException e));
@@ -143,16 +147,20 @@ let propagate root1 root2 reconItem id showMergeFn =
       Trace.log (Printf.sprintf "[ERROR] Skipping %s\n  %s\n"
                    (Path.toString path) p);
       return ()
-  | Different {rc1 = rc1; rc2 = rc2; direction = dir} ->
+  | Different
+        {rc1 = rc1; rc2 = rc2; direction = dir; default_direction = def} ->
+      let notDefault = dir <> def in
       match dir with
         Conflict ->
           Trace.log (Printf.sprintf "[CONFLICT] Skipping %s\n"
                        (Path.toString path));
           return ()
       | Replica1ToReplica2 ->
-          doAction root1 reconItem.path1 rc1 root2 reconItem.path2 rc2 id
+          doAction
+            root1 reconItem.path1 rc1 root2 reconItem.path2 rc2 notDefault id
       | Replica2ToReplica1 ->
-          doAction root2 reconItem.path2 rc2 root1 reconItem.path1 rc1 id
+          doAction
+            root2 reconItem.path2 rc2 root1 reconItem.path1 rc1 notDefault id
       | Merge ->
           if rc1.typ <> `FILE || rc2.typ <> `FILE then
             raise (Util.Transient "Can only merge two existing files");

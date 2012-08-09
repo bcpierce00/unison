@@ -1,3 +1,12 @@
+CHANGES FROM VERSION 2.46.0
+
+* Added a "copyonconflict" preference, to make a copy of files that would
+  otherwise be overwritten or deleted in case of conflicting changes.
+  (This makes it possible to automatically resolve conflicts in a
+   fairly safe way when synchronizing continuously, in combination
+   with the "repeat = watch" and "prefer = newer" preferences.
+
+-------------------------------
 CHANGES FROM VERSION 2.46.-1
 
 * Bumped version number: incompatible protocol changes

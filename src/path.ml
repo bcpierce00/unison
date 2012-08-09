@@ -188,6 +188,14 @@ let toDebugString path = String.concat " / " (toStringList path)
 
 let addSuffixToFinalName path suffix = path ^ suffix
 
+let addToFinalName path suffix =
+  let l = String.length path in
+  assert (l > 0);
+  let i = try String.rindex path '/' with Not_found -> -1 in
+  let j = try String.rindex path '.' with Not_found -> -1 in
+  let j = if j <= i then l else j in
+  String.sub path 0 j ^ suffix ^ String.sub path j (l - j)
+
 let addPrefixToFinalName path prefix =
   try
     let i = String.rindex path pathSeparatorChar + 1 in

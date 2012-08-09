@@ -977,3 +977,36 @@ let file rootFrom pathFrom rootTo fspathTo pathTo realPathTo
         >>= fun () ->
       (* This function never returns (it is supposed to fail) *)
       saveTempFileOnRoot rootTo (pathTo, realPathTo, reason)
+
+(****)
+
+let recursively fspathFrom pathFrom fspathTo pathTo =
+  let rec copy pFrom pTo =
+    let info = Fileinfo.get true fspathFrom pFrom in
+    match info.Fileinfo.typ with
+    | `SYMLINK ->
+        debug (fun () -> Util.msg "  Copying link %s / %s to %s / %s\n"
+          (Fspath.toDebugString fspathFrom) (Path.toString pFrom)
+          (Fspath.toDebugString fspathTo) (Path.toString pTo));
+        Os.symlink fspathTo pTo (Os.readLink fspathFrom pFrom)
+    | `FILE ->
+        debug (fun () -> Util.msg "  Copying file %s / %s to %s / %s\n"
+          (Fspath.toDebugString fspathFrom) (Path.toString pFrom)
+          (Fspath.toDebugString fspathTo) (Path.toString pTo));
+        localFile fspathFrom pFrom fspathTo pTo pTo 
+          `Copy info.Fileinfo.desc
+          (Osx.ressLength info.Fileinfo.osX.Osx.ressInfo)  None
+    | `DIRECTORY ->
+        debug (fun () -> Util.msg "  Copying directory %s / %s to %s / %s\n"
+          (Fspath.toDebugString fspathFrom) (Path.toString pFrom)
+          (Fspath.toDebugString fspathTo) (Path.toString pTo));
+        Os.createDir fspathTo pTo info.Fileinfo.desc;
+        let ch = Os.childrenOf fspathFrom pFrom in
+        Safelist.iter
+          (fun n -> copy (Path.child pFrom n) (Path.child pTo n)) ch
+    | `ABSENT -> assert false in
+  debug (fun () -> Util.msg "  Copying recursively %s / %s\n"
+    (Fspath.toDebugString fspathFrom) (Path.toString pathFrom));
+  copy pathFrom pathTo;
+  debug (fun () -> Util.msg "  Finished copying %s / %s\n"
+    (Fspath.toDebugString fspathFrom) (Path.toString pathTo))

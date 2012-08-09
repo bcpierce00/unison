@@ -11,6 +11,7 @@ val delete :
   -> Common.root                 (* root *)
   -> Path.t                      (* path to delete *)
   -> Common.updateItem           (* updates that will be discarded *)
+  -> bool                        (* [true] if not Unison's default action *)
   -> unit Lwt.t
 
 (* Region used for the copying. Exported to be correctly set in transport.ml *)
@@ -31,6 +32,7 @@ val copy :
   -> Path.t                     (* to what path *)
   -> Common.updateItem          (* dest. updates *)
   -> Props.t list               (* properties of parent directories *)
+  -> bool                       (* [true] if not Unison's default action *)
   -> Uutil.File.t               (* id for showing progress of transfer *)
   -> unit Lwt.t
 
