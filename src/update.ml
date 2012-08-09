@@ -1460,6 +1460,7 @@ let rec buildUpdateChildren
       bool * bool
     =
   showStatusDir path;
+  Fswatch.scanDirectory path;
   let skip =
     Pred.test immutable (Path.toString path) &&
     not (Pred.test immutablenot (Path.toString path)) in
@@ -1780,7 +1781,10 @@ let rec buildUpdatePathTree archive fspath here tree scanInfo =
          NoUpdates)
   | _ ->
       showStatus scanInfo here;
-      buildUpdateRec archive fspath here scanInfo
+      Fswatch.startScanning scanInfo.archHash fspath here;
+      let res = buildUpdateRec archive fspath here scanInfo in
+      Fswatch.stopScanning ();
+      res
 
 (* Compute the updates for [path] against archive.  Also returns an
    archive, which is the old archive with time stamps updated

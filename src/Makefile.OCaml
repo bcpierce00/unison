@@ -33,6 +33,9 @@ else
 ifeq ($(shell uname),NetBSD)
   OSARCH=NetBSD
 endif
+ifeq ($(shell uname),Linux)
+  OSARCH=Linux
+endif
 endif
 endif
 endif
@@ -223,7 +226,7 @@ OCAMLOBJS += \
           \
           case.cmo pred.cmo uutil.cmo \
           fileutil.cmo name.cmo path.cmo fspath.cmo fs.cmo fingerprint.cmo \
-          abort.cmo osx.cmo external.cmo \
+          abort.cmo osx.cmo external.cmo fswatch.cmo \
           props.cmo fileinfo.cmo os.cmo lock.cmo clroot.cmo common.cmo \
           tree.cmo checksum.cmo terminal.cmo \
           transfer.cmo xferhint.cmo remote.cmo globals.cmo fswatchold.cmo \
@@ -300,6 +303,19 @@ ifeq ($(UISTYLE), gtk2)
   OCAMLOBJS+=pixmaps.cmo uigtk2.cmo linkgtk2.cmo
   OCAMLLIBS+=lablgtk.cma
 endif
+
+########################################################################
+### Filesystem monitoring
+
+ifeq ($(OSARCH),Linux)
+-include fsmonitor/linux/Makefile src/fsmonitor/linux/Makefile
+endif
+
+ifeq ($(OSARCH),win32gnuc)
+-include fsmonitor/windows/Makefile src/fsmonitor/windows/Makefile
+endif
+
+INCLFLAGS+=-I fsmonitor -I fsmonitor/linux -I fsmonitor/windows
 
 ####################################################################
 ### Static build setup

@@ -18,6 +18,7 @@ fpcache.cmi: system.cmi props.cmi path.cmi osx.cmi os.cmi fspath.cmi \
     fileinfo.cmi
 fs.cmi: system/system_intf.cmo fspath.cmi
 fspath.cmi: system.cmi path.cmi name.cmi
+fswatch.cmi: path.cmi lwt/lwt.cmi fspath.cmi
 fswatchold.cmi: path.cmi lwt/lwt.cmi fspath.cmi
 globals.cmi: ubase/prefs.cmi pred.cmi path.cmi lwt/lwt.cmi common.cmi
 lock.cmi: system.cmi
@@ -79,9 +80,9 @@ external.cmo: ubase/util.cmi system.cmi ubase/safelist.cmi lwt/lwt_util.cmi \
 external.cmx: ubase/util.cmx system.cmx ubase/safelist.cmx lwt/lwt_util.cmx \
     lwt/lwt_unix.cmx lwt/lwt.cmx external.cmi
 fileinfo.cmo: ubase/util.cmi system.cmi props.cmi ubase/prefs.cmi path.cmi \
-    osx.cmi fspath.cmi fs.cmi fileinfo.cmi
+    osx.cmi fswatch.cmi fspath.cmi fs.cmi fileinfo.cmi
 fileinfo.cmx: ubase/util.cmx system.cmx props.cmx ubase/prefs.cmx path.cmx \
-    osx.cmx fspath.cmx fs.cmx fileinfo.cmi
+    osx.cmx fswatch.cmx fspath.cmx fs.cmx fileinfo.cmi
 files.cmo: xferhint.cmi uutil.cmi ubase/util.cmi update.cmi ubase/trace.cmi \
     system.cmi stasher.cmi ubase/safelist.cmi ubase/rx.cmi remote.cmi \
     props.cmi ubase/prefs.cmi path.cmi osx.cmi os.cmi name.cmi \
@@ -112,18 +113,24 @@ fspath.cmo: uutil.cmi ubase/util.cmi system.cmi ubase/rx.cmi path.cmi \
     name.cmi fileutil.cmi fspath.cmi
 fspath.cmx: uutil.cmx ubase/util.cmx system.cmx ubase/rx.cmx path.cmx \
     name.cmx fileutil.cmx fspath.cmi
+fswatch.cmo: uutil.cmi ubase/util.cmi ubase/trace.cmi system.cmi path.cmi \
+    lwt/lwt_unix.cmi lwt/lwt.cmi fspath.cmi fswatch.cmi
+fswatch.cmx: uutil.cmx ubase/util.cmx ubase/trace.cmx system.cmx path.cmx \
+    lwt/lwt_unix.cmx lwt/lwt.cmx fspath.cmx fswatch.cmi
 fswatchold.cmo: uutil.cmi ubase/util.cmi system.cmi ubase/safelist.cmi \
     ubase/prefs.cmi pred.cmi path.cmi os.cmi lwt/lwt_unix.cmi lwt/lwt.cmi \
-    globals.cmi fspath.cmi fswatchold.cmi
+    globals.cmi fswatch.cmi fspath.cmi fswatchold.cmi
 fswatchold.cmx: uutil.cmx ubase/util.cmx system.cmx ubase/safelist.cmx \
     ubase/prefs.cmx pred.cmx path.cmx os.cmx lwt/lwt_unix.cmx lwt/lwt.cmx \
-    globals.cmx fspath.cmx fswatchold.cmi
+    globals.cmx fswatch.cmx fspath.cmx fswatchold.cmi
 globals.cmo: ubase/util.cmi ubase/trace.cmi ubase/safelist.cmi remote.cmi \
     ubase/prefs.cmi pred.cmi path.cmi os.cmi name.cmi lwt/lwt_util.cmi \
     lwt/lwt_unix.cmi lwt/lwt.cmi common.cmi clroot.cmi globals.cmi
 globals.cmx: ubase/util.cmx ubase/trace.cmx ubase/safelist.cmx remote.cmx \
     ubase/prefs.cmx pred.cmx path.cmx os.cmx name.cmx lwt/lwt_util.cmx \
     lwt/lwt_unix.cmx lwt/lwt.cmx common.cmx clroot.cmx globals.cmi
+library_info.cmo:
+library_info.cmx:
 linkgtk.cmo: uigtk.cmi main.cmo
 linkgtk.cmx: uigtk.cmx main.cmx
 linkgtk2.cmo: uigtk2.cmi main.cmo
@@ -290,20 +297,24 @@ update.cmo: xferhint.cmi uutil.cmi ubase/util.cmi tree.cmi ubase/trace.cmi \
     system.cmi ubase/safelist.cmi remote.cmi props.cmi ubase/proplist.cmi \
     ubase/prefs.cmi pred.cmi path.cmi osx.cmi os.cmi name.cmi ubase/myMap.cmi \
     lwt/lwt_unix.cmi lwt/lwt.cmi lock.cmi globals.cmi fswatchold.cmi \
-    fspath.cmi fpcache.cmi fingerprint.cmi fileinfo.cmi common.cmi case.cmi \
-    update.cmi
+    fswatch.cmi fspath.cmi fpcache.cmi fingerprint.cmi fileinfo.cmi \
+    common.cmi case.cmi update.cmi
 update.cmx: xferhint.cmx uutil.cmx ubase/util.cmx tree.cmx ubase/trace.cmx \
     system.cmx ubase/safelist.cmx remote.cmx props.cmx ubase/proplist.cmx \
     ubase/prefs.cmx pred.cmx path.cmx osx.cmx os.cmx name.cmx ubase/myMap.cmx \
     lwt/lwt_unix.cmx lwt/lwt.cmx lock.cmx globals.cmx fswatchold.cmx \
-    fspath.cmx fpcache.cmx fingerprint.cmx fileinfo.cmx common.cmx case.cmx \
-    update.cmi
-uutil.cmo: ubase/util.cmi ubase/trace.cmi ubase/projectInfo.cmo uutil.cmi
-uutil.cmx: ubase/util.cmx ubase/trace.cmx ubase/projectInfo.cmx uutil.cmi
+    fswatch.cmx fspath.cmx fpcache.cmx fingerprint.cmx fileinfo.cmx \
+    common.cmx case.cmx update.cmi
+uutil.cmo: ubase/util.cmi ubase/trace.cmi uutil.cmi
+uutil.cmx: ubase/util.cmx ubase/trace.cmx uutil.cmi
 xferhint.cmo: ubase/util.cmi ubase/trace.cmi ubase/prefs.cmi path.cmi os.cmi \
     fspath.cmi xferhint.cmi
 xferhint.cmx: ubase/util.cmx ubase/trace.cmx ubase/prefs.cmx path.cmx os.cmx \
     fspath.cmx xferhint.cmi
+fsmonitor/watchercommon.cmo: lwt/lwt_unix.cmi lwt/lwt.cmi \
+    fsmonitor/watchercommon.cmi
+fsmonitor/watchercommon.cmx: lwt/lwt_unix.cmx lwt/lwt.cmx \
+    fsmonitor/watchercommon.cmi
 lwt/lwt.cmo: lwt/lwt.cmi
 lwt/lwt.cmx: lwt/lwt.cmi
 lwt/lwt_unix.cmo: lwt/lwt_unix.cmi
@@ -324,8 +335,6 @@ ubase/prefs.cmo: ubase/util.cmi ubase/uarg.cmi system.cmi ubase/safelist.cmi \
     ubase/prefs.cmi
 ubase/prefs.cmx: ubase/util.cmx ubase/uarg.cmx system.cmx ubase/safelist.cmx \
     ubase/prefs.cmi
-ubase/projectInfo.cmo:
-ubase/projectInfo.cmx:
 ubase/proplist.cmo: ubase/util.cmi ubase/proplist.cmi
 ubase/proplist.cmx: ubase/util.cmx ubase/proplist.cmi
 ubase/rx.cmo: ubase/rx.cmi
@@ -344,6 +353,7 @@ ubase/util.cmo: ubase/uprintf.cmi system.cmi ubase/safelist.cmi \
     ubase/util.cmi
 ubase/util.cmx: ubase/uprintf.cmx system.cmx ubase/safelist.cmx \
     ubase/util.cmi
+fsmonitor/watchercommon.cmi:
 lwt/lwt.cmi:
 lwt/lwt_unix.cmi: lwt/lwt.cmi
 lwt/lwt_util.cmi: lwt/lwt.cmi
@@ -357,6 +367,22 @@ ubase/trace.cmi: ubase/prefs.cmi
 ubase/uarg.cmi:
 ubase/uprintf.cmi:
 ubase/util.cmi: system.cmi
+fsmonitor/linux/inotify.cmo: fsmonitor/linux/inotify.cmi
+fsmonitor/linux/inotify.cmx: fsmonitor/linux/inotify.cmi
+fsmonitor/linux/lwt_inotify.cmo: lwt/lwt_unix.cmi lwt/lwt.cmi \
+    fsmonitor/linux/inotify.cmi fsmonitor/linux/lwt_inotify.cmi
+fsmonitor/linux/lwt_inotify.cmx: lwt/lwt_unix.cmx lwt/lwt.cmx \
+    fsmonitor/linux/inotify.cmx fsmonitor/linux/lwt_inotify.cmi
+fsmonitor/linux/watcher.cmo: fsmonitor/watchercommon.cmi \
+    fsmonitor/linux/lwt_inotify.cmi lwt/lwt.cmi fsmonitor/linux/inotify.cmi
+fsmonitor/linux/watcher.cmx: fsmonitor/watchercommon.cmx \
+    fsmonitor/linux/lwt_inotify.cmx lwt/lwt.cmx fsmonitor/linux/inotify.cmx
+fsmonitor/windows/shortnames.cmo: fsmonitor/windows/shortnames.cmi
+fsmonitor/windows/shortnames.cmx: fsmonitor/windows/shortnames.cmi
+fsmonitor/windows/watcher.cmo: fsmonitor/watchercommon.cmi \
+    fsmonitor/windows/shortnames.cmi lwt/lwt.cmi
+fsmonitor/windows/watcher.cmx: fsmonitor/watchercommon.cmx \
+    fsmonitor/windows/shortnames.cmx lwt/lwt.cmx
 lwt/example/editor.cmo: lwt/lwt_unix.cmi
 lwt/example/editor.cmx: lwt/lwt_unix.cmx
 lwt/example/relay.cmo: lwt/lwt_unix.cmi lwt/lwt.cmi
@@ -365,7 +391,13 @@ lwt/generic/lwt_unix_impl.cmo: lwt/pqueue.cmi lwt/lwt.cmi
 lwt/generic/lwt_unix_impl.cmx: lwt/pqueue.cmx lwt/lwt.cmx
 lwt/win/lwt_unix_impl.cmo: lwt/pqueue.cmi lwt/lwt.cmi
 lwt/win/lwt_unix_impl.cmx: lwt/pqueue.cmx lwt/lwt.cmx
+lwt/win/lwt_win.cmo: lwt/win/lwt_win.cmi
+lwt/win/lwt_win.cmx: lwt/win/lwt_win.cmi
 system/generic/system_impl.cmo: system/system_generic.cmo
 system/generic/system_impl.cmx: system/system_generic.cmx
 system/win/system_impl.cmo: system/system_win.cmo system/system_generic.cmo
 system/win/system_impl.cmx: system/system_win.cmx system/system_generic.cmx
+fsmonitor/linux/inotify.cmi:
+fsmonitor/linux/lwt_inotify.cmi: lwt/lwt.cmi fsmonitor/linux/inotify.cmi
+fsmonitor/windows/shortnames.cmi:
+lwt/win/lwt_win.cmi: lwt/lwt.cmi

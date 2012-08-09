@@ -69,9 +69,10 @@ CAMLprim value ml_blit_buffer_to_string
 #define WRITE 1
 #define READ_OVERLAPPED 2
 #define WRITE_OVERLAPPED 3
-
-static char * action_name[4] = {
-  "read", "write", "read(overlapped)", "write(overlapped)"
+#define READDIRECTORYCHANGES 4
+static char * action_name[5] = {
+  "read", "write", "read(overlapped)", "write(overlapped)",
+  "ReadDirectoryChangesW"
 };
 
 static value completionCallback;
@@ -145,6 +146,7 @@ static HANDLE main_thread;
 static DWORD CALLBACK helper_thread (void * param) {
   D(printf("Helper thread created\n"));
   while (1) SleepEx(INFINITE, TRUE);
+  return 0;
 }
 
 static VOID CALLBACK exit_thread(ULONG_PTR param) {
@@ -596,3 +598,90 @@ CAMLprim value win_connect (value socket, value address, value id) {
   CAMLreturn (Val_unit);
 }
 */
+
+static int notify_filter_flags[8] = {
+  FILE_NOTIFY_CHANGE_FILE_NAME, FILE_NOTIFY_CHANGE_DIR_NAME,
+  FILE_NOTIFY_CHANGE_ATTRIBUTES, FILE_NOTIFY_CHANGE_SIZE,
+  FILE_NOTIFY_CHANGE_LAST_WRITE, FILE_NOTIFY_CHANGE_LAST_ACCESS,
+  FILE_NOTIFY_CHANGE_CREATION, FILE_NOTIFY_CHANGE_SECURITY
+};
+
+CAMLprim value win_readdirtorychanges
+(value fd_val, value buf_val, value recursive, value flags, value id_val) {
+  CAMLparam5(fd_val, buf_val, recursive, flags, id_val);
+  struct caml_bigarray *buf_arr = Bigarray_val(buf_val);
+  long id = Long_val(id_val);
+  HANDLE fd = Handle_val(fd_val);
+  char * buf = Array_data (buf_arr, 0);
+  long len = buf_arr->dim[0];
+  long action = READDIRECTORYCHANGES;
+  BOOL res;
+  long err;
+  int notify_filter = convert_flag_list(flags, notify_filter_flags);
+  completionData * d = GlobalAlloc(GPTR, sizeof(completionData));
+  if (d == NULL) {
+    errno = ENOMEM;
+    uerror(action_name[action], Nothing);
+  }
+  d->id = id;
+  d->action = action;
+
+  D(printf("Starting %s: id %ld, len %ld\n", action_name[action], id, len));
+
+  res = ReadDirectoryChangesW (fd, buf, len, Bool_val(recursive),
+                               notify_filter, NULL, &(d->overlapped),
+                               overlapped_completion);
+
+  if (!res) {
+    err = GetLastError ();
+    if (err != ERROR_IO_PENDING) {
+      win32_maperr (err);
+  D(printf("Action %s failed: id %ld -> err %d (errCode %ld)\n",
+           action_name[action], id, errno, err));
+      uerror("ReadDirectoryChangesW", Nothing);
+    }
+  }
+  CAMLreturn (Val_unit);
+}
+
+CAMLprim value win_parse_directory_changes (value buf_val) {
+  CAMLparam1(buf_val);
+  CAMLlocal4(lst, tmp, elt, filename);
+  struct caml_bigarray *buf_arr = Bigarray_val(buf_val);
+  char * pos = Array_data (buf_arr, 0);
+  FILE_NOTIFY_INFORMATION * entry;
+
+  lst = Val_long(0);
+  while (1) {
+    entry = (FILE_NOTIFY_INFORMATION *)pos;
+    elt = caml_alloc_tuple(2);
+    filename = caml_alloc_string(entry->FileNameLength);
+    memmove(String_val(filename), entry->FileName, entry->FileNameLength);
+    Store_field (elt, 0, filename);
+    Store_field (elt, 1, Val_long(entry->Action - 1));
+    tmp = caml_alloc_tuple(2);
+    Store_field (tmp, 0, elt);
+    Store_field (tmp, 1, lst);
+    lst = tmp;
+    if (entry->NextEntryOffset == 0) break;
+    pos += entry->NextEntryOffset;
+  }
+  CAMLreturn(lst);
+}
+
+CAMLprim value win_open_directory (value path, value wpath) {
+  CAMLparam2 (path, wpath);
+  HANDLE h;
+  h = CreateFileW((LPCWSTR) String_val(wpath),
+                  FILE_LIST_DIRECTORY,
+                  FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                  NULL,
+                  OPEN_EXISTING,
+                  FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED,
+                  NULL);
+  if (h == INVALID_HANDLE_VALUE) {
+    win32_maperr (GetLastError ());
+    uerror("open", path);
+  }
+  CAMLreturn(win_alloc_handle(h));
+}

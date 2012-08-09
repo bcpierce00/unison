@@ -55,13 +55,14 @@ let statFn fromRoot fspath path =
   if stats.Unix.LargeFile.st_kind = Unix.S_LNK 
      && fromRoot 
      && Path.followLink path
-  then 
+  then begin
+    Fswatch.followLink path;
     try Fs.stat fullpath 
     with Unix.Unix_error((Unix.ENOENT | Unix.ENOTDIR),_,_) ->
       raise (Util.Transient (Printf.sprintf
         "Path %s is marked 'follow' but its target is missing"
         (Fspath.toPrintString fullpath)))
-  else
+  end else
     stats
 
 let get fromRoot fspath path =

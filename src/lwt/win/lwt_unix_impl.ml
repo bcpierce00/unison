@@ -160,6 +160,7 @@ if !d then Format.eprintf "Handling event %d (len %d)@." id len;
   begin match action with
     `Write         -> ()
   | `Read (s, pos) -> if len > 0 then blit_buffer_to_string buf 0 s pos len
+  | `Readdirectorychanges -> ()
   end;
   IntTbl.remove ioInFlight id;
   release_id id;
@@ -643,3 +644,46 @@ let close_process_full (outchan, inchan, errchan) =
 type lwt_in_channel
 let input_line _ = assert false (*XXXXX*)
 let intern_in_channel _ = assert false (*XXXXX*)
+
+(***)
+
+type directory_handle = Unix.file_descr
+
+external open_dir : string -> string -> directory_handle = "win_open_directory"
+let open_directory f = open_dir f (System_impl.Fs.W.epath f)
+
+type notify_filter_flag =
+    FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_DIR_NAME
+  | FILE_NOTIFY_CHANGE_ATTRIBUTES | FILE_NOTIFY_CHANGE_SIZE
+  | FILE_NOTIFY_CHANGE_LAST_WRITE | FILE_NOTIFY_CHANGE_LAST_ACCESS
+  | FILE_NOTIFY_CHANGE_CREATION | FILE_NOTIFY_CHANGE_SECURITY
+
+external start_read_dir_changes :
+  directory_handle -> buffer -> bool -> notify_filter_flag list -> int -> unit =
+  "win_readdirtorychanges"
+
+type file_action =
+    FILE_ACTION_ADDED | FILE_ACTION_REMOVED
+  | FILE_ACTION_MODIFIED | FILE_ACTION_RENAMED_OLD_NAME
+  | FILE_ACTION_RENAMED_NEW_NAME
+
+external parse_directory_changes : buffer -> (string * file_action) list
+  = "win_parse_directory_changes"
+
+let readdirectorychanges ch recursive flags =
+if !d then Format.eprintf "Start reading directory changes@.";
+  let id = acquire_id () in
+  let buf = acquire_buffer () in
+  let res = Lwt.wait () in
+  IntTbl.add ioInFlight id (`Readdirectorychanges, buf, res);
+  start_read_dir_changes ch buf recursive flags id;
+if !d then Format.eprintf "Reading started@.";
+  Lwt.bind res (fun len ->
+  if len = 0 then
+    Lwt.return []
+  else
+    Lwt.return (List.rev_map (fun (nm, act) ->
+                                (System_impl.Fs.W.path8 nm, act))
+                        (parse_directory_changes buf)))
+
+let close_dir = Unix.close

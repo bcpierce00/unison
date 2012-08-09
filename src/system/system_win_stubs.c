@@ -1,9 +1,9 @@
+#define WINVER 0x0500
+
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>
 #include <caml/memory.h>
 #include <caml/fail.h>
-
-#define WINVER 0x0500
 
 #include <windows.h>
 #include <fcntl.h>
