@@ -93,21 +93,9 @@ let repeat =
     ("Setting this preference causes the text-mode interface to synchronize "
      ^ "repeatedly, rather than doing it just once and stopping.  If the "
      ^ "argument is a number, Unison will pause for that many seconds before "
-     ^ "beginning again.")
-
-(*   ^ "If the argument is a path, Unison will wait for the "
-     ^ "file at this path---called a {\\em changelog}---to "
-     ^ "be modified (on either the client or the server "
-     ^ "machine), read the contents of the changelog (which should be a newline-"
-     ^ "separated list of paths) on both client and server, "
-     ^ "combine the results, "
-     ^ "and start again, using the list of paths read from the changelogs as the "
-     ^ " '-path' preference for the new run.  The idea is that an external "
-     ^ "process will watch the filesystem and, when it thinks something may have "
-     ^ "changed, write the changed pathname to its local changelog where Unison "
-     ^ "will find it the next time it looks.  If the changelogs have not been "
-     ^ "modified, Unison will wait, checking them again every few seconds."
-*)
+     ^ "beginning again. When the argument is \\verb|watch|, Unison relies on "
+     ^ "an external file monitoring process to synchronize whenever a change "
+     ^ "happens.")
 
 let retry =
   Prefs.createInt "retry" 0

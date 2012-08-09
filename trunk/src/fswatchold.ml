@@ -21,14 +21,6 @@
 (* FIX: the names of the paths being watched should get included
    in the name of the watcher's state file *)
 
-let useWatcher =
-  Prefs.createBool "watch" true
-    "!when set, use a file watcher process to detect changes"
-    "Unison uses a file watcher process, when available, to detect filesystem \
-     changes; this is used to speed up update detection, and for continuous \
-     synchronization (\\verb|-repeat watch| preference. Setting this flag to \
-     false disable the use of this process." 
-
 let debug = Util.debug "fswatch"
 
 let watchinterval = 5
@@ -72,6 +64,7 @@ type watcherinfo = {file: System.fspath;
                     chars: Buffer.t;
                     mutable lines: string list}
 let watchers : watcherinfo RootMap.t ref = ref RootMap.empty
+let newWatchers = ref StringSet.empty
 
 let trim_duplicates l =
   let rec loop l = match l with
@@ -120,16 +113,23 @@ let readChanges wi =
     readAvailableLinesFromWatcher wi
 
 let getChanges archHash =
+  if StringSet.mem archHash !newWatchers then
+    Fswatch.getChanges archHash
+  else begin
     let wi = RootMap.find archHash !watchers in
     readChanges wi;
     let res = wi.lines in
     wi.lines <- [];
     List.map Path.fromString (trim_duplicates res)
+  end
 
 let start archHash fspath =
-  if not (Prefs.read useWatcher) then
+  if not (Prefs.read Fswatch.useWatcher) then
     false
-  else if not (RootMap.mem archHash !watchers) then begin
+  else if Fswatch.start archHash then begin
+    newWatchers := StringSet.add archHash !newWatchers;
+    true
+  end else if not (RootMap.mem archHash !watchers) then begin
     (* Watcher process not running *)
     match watchercmd archHash (Fspath.toString fspath) with
       Some (changefile,cmd) ->
@@ -150,7 +150,9 @@ let start archHash fspath =
   end
 
 let wait archHash =
-  if not (RootMap.mem archHash !watchers) then
+  if StringSet.mem archHash !newWatchers then
+    Fswatch.wait archHash
+  else if not (RootMap.mem archHash !watchers) then
     raise (Util.Fatal "No file monitoring helper program found")
   else begin
     let wi = RootMap.find archHash !watchers in

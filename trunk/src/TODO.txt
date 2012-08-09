@@ -65,6 +65,19 @@ See the file BUGS.txt for a list of currently open bugs.
 
        We're running under Cygwin (which is needed to have rsync)
 
+* The directory scanning optimization is currently disabled under Windows,
+  as FAT partitions do not have directory modification times.
+  we could check whether we are on an NTFS partition by calling
+  GetVolumeInformation to get the filesystem name.
+
+* We could defer most fingerprint computations to the propagation phase;
+  this would improve the user experience and save some fingerprints:
+  - do not compute fingerprint of new files during update detection
+  - during reconciliation, try to decide what to do based on what is
+    known so far
+  - for undecided paths (two files), request checksums (in batch)
+  - hashes are finally computed during propagation
+
 ###########################################################################
 
 * SOON

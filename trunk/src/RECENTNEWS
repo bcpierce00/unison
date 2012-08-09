@@ -1,3 +1,10 @@
+CHANGES FROM VERSION 2.46.1
+
+* More robust file watching helper programs for Windows and Linux.
+  They communicate with Unison through pipes (Unison redirects stdin
+  and stdout), using a race-free protocol.
+
+-------------------------------
 CHANGES FROM VERSION 2.46.0
 
 * Added a "copyonconflict" preference, to make a copy of files that would
