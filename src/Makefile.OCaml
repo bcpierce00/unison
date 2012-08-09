@@ -226,7 +226,7 @@ OCAMLOBJS += \
           abort.cmo osx.cmo external.cmo \
           props.cmo fileinfo.cmo os.cmo lock.cmo clroot.cmo common.cmo \
           tree.cmo checksum.cmo terminal.cmo \
-          transfer.cmo xferhint.cmo remote.cmo globals.cmo \
+          transfer.cmo xferhint.cmo remote.cmo globals.cmo fswatchold.cmo \
           fpcache.cmo update.cmo copy.cmo stasher.cmo \
 	  files.cmo sortri.cmo recon.cmo transport.cmo \
           strings.cmo uicommon.cmo uitext.cmo test.cmo

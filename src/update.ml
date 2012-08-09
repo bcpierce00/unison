@@ -1074,6 +1074,65 @@ let abortIfAnyMountpointsAreMissing fspath =
 	     (Os.myCanonicalHostName ()))))
     (Prefs.read mountpoints)
 
+(***********************************************************************
+                           Set of paths
+************************************************************************)
+
+type pathTree = PathTreeLeaf
+              | PathTreeNode of pathTree NameMap.t
+
+let rec addPathToTree path tree =
+  match Path.deconstruct path, tree with
+    None, _ | _, Some PathTreeLeaf ->
+      PathTreeLeaf
+  | Some (nm, p), None ->
+      PathTreeNode (NameMap.add nm (addPathToTree p None) NameMap.empty)
+  | Some (nm, p), Some (PathTreeNode children) ->
+      let t = try Some (NameMap.find nm children) with Not_found -> None in
+      PathTreeNode (NameMap.add nm (addPathToTree p t) children)
+
+let rec removePathFromTree path tree =
+  match Path.deconstruct path, tree with
+    None, _ ->
+      None
+  | Some (nm, p), PathTreeLeaf ->
+      Some tree
+  | Some (nm, p), PathTreeNode children ->
+      try
+        let t = NameMap.find nm children in
+        match removePathFromTree p t with
+          None ->
+            let newChildren = NameMap.remove nm children in
+            if NameMap.is_empty children then None else
+            Some (PathTreeNode newChildren)
+        | Some t ->
+            Some (PathTreeNode (NameMap.add nm t children))
+      with Not_found ->
+        Some tree
+  
+let pathTreeOfList l =
+  Safelist.fold_left (fun t p -> Some (addPathToTree p t)) None l
+
+let removePathsFromTree l treeOpt =
+  Safelist.fold_left
+    (fun t p ->
+       match t with
+         None   -> None
+       | Some t -> removePathFromTree p t)
+    treeOpt l
+
+let rec getSubTree path tree =
+  match Path.deconstruct path, tree with
+    None, _ ->
+      Some tree
+  | Some (nm, p), PathTreeLeaf ->
+      Some PathTreeLeaf
+  | Some (nm, p), PathTreeNode children ->
+      try
+        let t = NameMap.find nm children in
+        getSubTree p t
+      with Not_found ->
+        None
 
 (***********************************************************************
                            UPDATE DETECTION
@@ -1126,6 +1185,7 @@ type scanInfo =
     { fastCheck : bool;
       dirFastCheck : bool;
       dirStamp : Props.dirChangedStamp;
+      archHash : string;
       showStatus : bool }
 
 (** Status display **)
@@ -1423,9 +1483,11 @@ let rec buildUpdateChildren
         let path' = Path.child path nm in
         debugverbose (fun () -> Util.msg
           "buildUpdateChildren(handleChild): %s\n" (Path.toString path'));
-        (* BCP 6/10: Added check for ignored path, but I'm not completely
-           sure this is the right place for it: *)
         if Globals.shouldIgnore path' then begin
+          (* We have to ignore paths which are in the archive but no
+             longer exists in the filesystem. Note that we cannot
+             reach this point for files that exists on the filesystem
+             ([hasIgnoredChildren] below would have been true). *)
           debugignore (fun()->Util.msg "buildUpdateChildren: ignoring path %s\n"
                                 (Path.toString path'));
           archive
@@ -1628,6 +1690,98 @@ and buildUpdateRec archive currfspath path scanInfo =
   with
     Util.Transient(s) -> None, Error(s)
 
+(* Compute the updates for the tree of paths [tree] against archive. *)
+let rec buildUpdatePathTree archive fspath here tree scanInfo =
+  match tree, archive with
+    PathTreeNode children, ArchiveDir (archDesc, archChildren) ->
+      let curChildren =
+        lazy (List.fold_left (fun m (nm, st) -> NameMap.add nm st m)
+                NameMap.empty (getChildren fspath here))
+      in
+      let updates = ref [] in
+      let archUpdated = ref false in
+      let newChi = ref archChildren in
+      let handleChild nm archive status tree' =
+        let path' = Path.child here nm in
+        if Os.isTempFile (Name.toString nm) || Globals.shouldIgnore path' then
+          archive
+        else begin
+          match status with
+            `Ok | `Abs ->
+              let (arch,uiChild) =
+                buildUpdatePathTree archive fspath path' tree' scanInfo in
+              if uiChild <> NoUpdates then
+                updates := (nm, uiChild) :: !updates;
+              begin match arch with
+                None      -> archive
+              | Some arch -> archUpdated := true; arch
+              end
+          | `Dup ->
+              let uiChild =
+                Error
+                  ("Two or more files on a case-sensitive system have names \
+                    identical except for case.  They cannot be synchronized \
+                    to a case-insensitive file system.  (File '" ^
+                   Path.toString path' ^ "')")
+              in
+              updates := (nm, uiChild) :: !updates;
+              archive
+          | `BadEnc ->
+              let uiChild =
+                Error ("The file name is not encoded in Unicode.  (File '"
+                       ^ Path.toString path' ^ "')")
+              in
+              updates := (nm, uiChild) :: !updates;
+              archive
+          | `BadName ->
+              let uiChild =
+                Error
+                  ("The name of this Unix file is not allowed under Windows.  \
+                    (File '" ^ Path.toString path' ^ "')")
+              in
+              updates := (nm, uiChild) :: !updates;
+              archive
+        end
+      in
+      NameMap.iter
+        (fun nm tree' ->
+           let inArchive = NameMap.mem nm archChildren in
+           let arch =
+             if tree' = PathTreeLeaf || not inArchive then begin
+               let (nm', st) =
+                 try
+                   NameMap.findi nm (Lazy.force curChildren)
+                 with Not_found -> try
+                   (fst (NameMap.findi nm archChildren), `Abs)
+                 with Not_found ->
+                   (nm, `Abs)
+               in
+               let arch =
+                 try NameMap.find nm archChildren with Not_found -> NoArchive
+               in
+               handleChild nm' arch st tree'
+             end else begin
+               let (nm', arch) = NameMap.findi nm archChildren in
+               handleChild nm' arch `Ok tree'
+             end
+           in
+           if inArchive then newChi := NameMap.add nm arch !newChi)
+        children;
+      (begin if !archUpdated then
+          Some (ArchiveDir (archDesc, !newChi))
+        else
+          None
+       end,
+       if !updates <> [] then
+         (* The Recon module relies on the updates to be sorted *)
+         Updates (Dir (archDesc, Safelist.rev !updates, PropsSame, false),
+                  oldInfoOf archive)
+       else
+         NoUpdates)
+  | _ ->
+      showStatus scanInfo here;
+      buildUpdateRec archive fspath here scanInfo
+
 (* Compute the updates for [path] against archive.  Also returns an
    archive, which is the old archive with time stamps updated
    appropriately (i.e., for those files whose contents remain
@@ -1635,12 +1789,11 @@ and buildUpdateRec archive currfspath path scanInfo =
    contents.  The directory permissions along the path are also
    collected, in case we need to build the directory hierarchy
    on one side. *)
-let rec buildUpdate archive fspath fullpath here path dirStamp scanInfo =
+let rec buildUpdate archive fspath fullpath here path pathTree scanInfo =
   match Path.deconstruct path with
     None ->
-      showStatus scanInfo here;
       let (arch, ui) =
-        buildUpdateRec archive fspath here scanInfo in
+        buildUpdatePathTree archive fspath here pathTree scanInfo in
       (begin match arch with
          None      -> archive
        | Some arch -> arch
@@ -1707,8 +1860,8 @@ let rec buildUpdate archive fspath fullpath here path dirStamp scanInfo =
               let otherChildren = NameMap.remove name children in
               let (arch, updates, localPath, props) =
                 buildUpdate
-                  archChild fspath fullpath (Path.child here name') path'
-                  dirStamp scanInfo
+                  archChild fspath fullpath (Path.child here name')
+                  path' pathTree scanInfo
               in
               let children =
                 if arch = NoArchive then otherChildren else
@@ -1720,8 +1873,8 @@ let rec buildUpdate archive fspath fullpath here path dirStamp scanInfo =
           | _ ->
               let (arch, updates, localPath, props) =
                 buildUpdate
-                  NoArchive fspath fullpath (Path.child here name') path'
-                  dirStamp scanInfo
+                  NoArchive fspath fullpath (Path.child here name')
+                  path' pathTree scanInfo
               in
               assert (arch = NoArchive);
               (archive, updates, localPath,
@@ -1766,10 +1919,16 @@ Format.eprintf "==> %b@." (oldPreds = newPreds);
             (Proplist.add rsrcKey newRsrc props)));
     stamp
 
+(* This contains the list of synchronized paths and the directory stamps
+   used by the previous update detection, when a watcher process is used.
+   This make it possible to know when the state of the watcher process
+   needs to be reset. *)
+let previousFindOptions = Hashtbl.create 7
+
 (* for the given path, find the archive and compute the list of update
    items; as a side effect, update the local archive w.r.t. time-stamps for
    unchanged files *)
-let findLocal fspath pathList:
+let findLocal wantWatcher fspath pathList subpaths :
       (Path.local * Common.updateItem * Props.t list) list =
   debug (fun() -> Util.msg
     "findLocal %s (%s)\n" (Fspath.toDebugString fspath)
@@ -1793,24 +1952,79 @@ let t1 = Unix.gettimeofday () in
          as Windows does not update directory modification times
          on FAT filesystems. *)
       dirFastCheck = useFastChecking () && Util.osType = `Unix;
-      dirStamp = dirStamp;
+      dirStamp = dirStamp; archHash = archiveHash fspath;
       showStatus = not !Trace.runningasserver }
   in
   let (cacheFilename, _) = archiveName fspath FPCache in
   let cacheFile = Os.fileInUnisonDir cacheFilename in
   Fpcache.init scanInfo.fastCheck (Prefs.read ignoreArchives) cacheFile;
+  let unchangedOptions =
+    try
+      Hashtbl.find previousFindOptions scanInfo.archHash
+      = (scanInfo.dirStamp, pathList)
+    with Not_found ->
+      false
+  in
+  let paths =
+    match subpaths with
+      Some (unsynchronizedPaths, blacklistedPaths) when unchangedOptions ->
+        let (>>) x f = f x in
+        let paths =
+          Fswatchold.getChanges scanInfo.archHash
+          (* We do not really need to filter here (they are filtered also
+             by [buildUpdatePathTree], but that might reduce greatly and
+             cheaply number of paths to consider... *)
+          >> List.filter (fun path -> not (Globals.shouldIgnore path))
+        in
+        let filterPaths paths subpaths =
+          let number_list l =
+            let i = ref (-1) in
+            Safelist.map (fun x -> incr i; (!i, x)) l
+          in
+          paths >> (* We number paths, to be able to recover their
+                      initial order. *)
+                   number_list
+                >> (* We put longest paths first, in order to deal
+                      correctly with nested paths (tough that might be
+                      overkill...) *)
+                   List.sort (fun (_, p1) (_, p2) -> Path.compare p2 p1)
+                >> (* We extract the set of changed paths included in
+                      each synchronized path *)
+                   List.fold_left
+                     (fun (l, tree) (i, p) ->
+                        match tree with
+                          None ->
+                            ((i, (p, None)) :: l, None)
+                        | Some tree ->
+                            ((i, (p, getSubTree p tree)) :: l,
+                             removePathFromTree p tree))
+                     ([], pathTreeOfList subpaths)
+                >> fst
+                >> (* Finally, we restaure the initial order *)
+                   List.sort (fun (i1, _) (i2, _) -> compare i1 i2)
+                >> List.map snd
+        in
+        filterPaths pathList (Safelist.append unsynchronizedPaths paths)
+    | _ ->
+        if wantWatcher && Fswatchold.start scanInfo.archHash fspath then
+          Hashtbl.replace previousFindOptions
+            scanInfo.archHash (scanInfo.dirStamp, pathList)
+        else
+          Hashtbl.remove previousFindOptions scanInfo.archHash;
+        Safelist.map (fun p -> (p, Some PathTreeLeaf)) pathList
+  in
   let (archive, updates) =
     Safelist.fold_right
-      (fun path (arch, upd) ->
-         if Globals.shouldIgnore path then
-           (arch, (translatePathLocal fspath path, NoUpdates, []) :: upd)
-         else
-           let (arch', ui, localPath, props) =
-             buildUpdate
-               arch fspath path Path.empty path dirStamp scanInfo
-           in
-           arch', (localPath, ui, props) :: upd)
-      pathList (archive, [])
+      (fun (path, pathTreeOpt) (arch, upd) ->
+         match pathTreeOpt with
+           Some pathTree when not (Globals.shouldIgnore path) ->
+             let (arch', ui, localPath, props) =
+               buildUpdate arch fspath path Path.empty path pathTree scanInfo
+             in
+             (arch', (localPath, ui, props) :: upd)
+         | _ ->
+             (arch, (translatePathLocal fspath path, NoUpdates, []) :: upd))
+      paths (archive, [])
   in
   Fpcache.finish ();
 (*
@@ -1824,10 +2038,10 @@ Format.eprintf "Update detection: %f@." (t2 -. t1);
 let findOnRoot =
   Remote.registerRootCmd
     "find"
-    (fun (fspath, pathList) ->
-       Lwt.return (findLocal fspath pathList))
+    (fun (fspath, (wantWatcher, pathList, subpaths)) ->
+       Lwt.return (findLocal wantWatcher fspath pathList subpaths))
 
-let findUpdatesOnPaths pathList =
+let findUpdatesOnPaths ?wantWatcher pathList subpaths =
   Lwt_unix.run
     (loadArchives true >>= (fun (ok, checksums) ->
      begin if ok then Lwt.return checksums else begin
@@ -1850,7 +2064,7 @@ let findUpdatesOnPaths pathList =
      let t = Trace.startTimer "Collecting changes" in
      Globals.allRootsMapWithWaitingAction (fun r ->
        debug (fun() -> Util.msg "findOnRoot %s\n" (root2string r));
-       findOnRoot r pathList)
+       findOnRoot r (wantWatcher <> None, pathList, subpaths))
        (fun (host, _) ->
          begin match host with
            Remote _ -> Uutil.showUpdateStatus "";
@@ -1870,10 +2084,10 @@ let findUpdatesOnPaths pathList =
      Trace.status "";
      Lwt.return result))))
 
-let findUpdates () =
+let findUpdates ?wantWatcher subpaths =
   (* TODO: We should filter the paths to remove duplicates (including prefixes)
      and ignored paths *)
-  findUpdatesOnPaths (Prefs.read Globals.paths)
+  findUpdatesOnPaths ?wantWatcher (Prefs.read Globals.paths) subpaths
 
 
 (*****************************************************************************)
@@ -2253,7 +2467,7 @@ let checkNoUpdates fspath pathInArchive ui =
   (* ...and check that this is a good description of what's out in the world *)
   let scanInfo =
     { fastCheck = false; dirFastCheck = false;
-      dirStamp = Props.changedDirStamp;
+      dirStamp = Props.changedDirStamp; archHash = "" (* Not used *);
       showStatus = false } in
   let (_, uiNew) = buildUpdateRec archive fspath localPath scanInfo in
   markPossiblyUpdatedRec fspath pathInArchive uiNew;

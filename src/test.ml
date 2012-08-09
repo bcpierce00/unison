@@ -214,7 +214,7 @@ let displayRis ris =
 
 let sync ?(verbose=false) () = 
   let (reconItemList, _, _) =
-    Recon.reconcileAll (Update.findUpdates()) in
+    Recon.reconcileAll (Update.findUpdates None) in
   if verbose then begin
     Util.msg "Sync result:\n";
     displayRis reconItemList

@@ -125,6 +125,7 @@ type stateItem = { mutable ri : reconItem;
                    mutable bytesToTransfer : Uutil.Filesize.t;
                    mutable whatHappened : (Util.confirmation * string option) option}
 let theState = ref [||]
+let unsynchronizedPaths = ref None
 
 module IntSet = Set.Make (struct type t = int let compare = compare end)
 
@@ -3368,7 +3369,7 @@ lst_store#set ~row ~column:c_path path;
     let findUpdates () =
       let t = Trace.startTimer "Checking for updates" in
       Trace.status "Looking for changes";
-      let updates = Update.findUpdates () in
+      let updates = Update.findUpdates ~wantWatcher:() !unsynchronizedPaths in
       Trace.showTimer t;
       updates in
     let reconcile updates =
@@ -3396,6 +3397,8 @@ lst_store#set ~row ~column:c_path path;
                          bytesToTransfer = Uutil.Filesize.zero;
                          whatHappened = None })
             reconItemList);
+    unsynchronizedPaths :=
+      Some (List.map (fun ri -> ri.path1) reconItemList, []);
     current := IntSet.empty;
     displayMain();
     progressBarPulse := false; sync_action := None; displayGlobalProgress 0.;
@@ -3645,6 +3648,10 @@ lst_store#set ~row ~column:c_path path;
         if skippedCount = 0 then [] else
         [Printf.sprintf "%d skipped" skippedCount]
       in
+      unsynchronizedPaths :=
+        Some (List.map (fun (si, _, _) -> si.ri.path1)
+                (failureList @ partialList @ skippedList),
+              []);
       Trace.status
         (Printf.sprintf "Synchronization complete         %s"
            (String.concat ", " (failures @ partials @ skipped)));
@@ -3891,6 +3898,7 @@ lst_store#set ~row ~column:c_path path;
   let loadProfile p reload =
     debug (fun()-> Util.msg "Loading profile %s..." p);
     Trace.status "Loading profile";
+    unsynchronizedPaths := None;
     Uicommon.initPrefs p
       (fun () -> if not reload then displayWaitMessage ())
       getFirstRoot getSecondRoot termInteract;
@@ -4123,9 +4131,13 @@ lst_store#set ~row ~column:c_path path;
            let confirmBigDeletes = Prefs.read Globals.confirmBigDeletes in
            Prefs.set Globals.paths failedpaths;
            Prefs.set Globals.confirmBigDeletes false;
+           (* Modifying global paths does not play well with filesystem
+              monitoring, so we disable it. *)
+           unsynchronizedPaths := None;
            detectCmd();
            Prefs.set Globals.paths paths;
-           Prefs.set Globals.confirmBigDeletes confirmBigDeletes)
+           Prefs.set Globals.confirmBigDeletes confirmBigDeletes;
+           unsynchronizedPaths := None)
        "Re_check Unsynchronized Items");
 
   ignore (fileMenu#add_separator ());

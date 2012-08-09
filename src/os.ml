@@ -50,6 +50,10 @@ let includeInTempNames s =
     if s = "" then tempFileSuffixFixed
     else "." ^ s ^ tempFileSuffixFixed
 
+let isTempFile file =
+  Util.endswith file tempFileSuffixFixed &&
+  Util.startswith file tempFilePrefix
+
 (*****************************************************************************)
 (*                      QUERYING THE FILESYSTEM                              *)
 (*****************************************************************************)
@@ -124,10 +128,7 @@ let rec childrenOf fspath path =
 (*             removeBackupIfUnwanted fspath newPath; *)
 (*             false *)
 (*           end  *)
-       else if
-         Util.endswith file tempFileSuffixFixed &&
-         Util.startswith file tempFilePrefix
-       then begin
+       else if isTempFile file then begin
          if Util.endswith file !tempFileSuffix then begin
            let p = Path.child path filename in
            let i = Fileinfo.get false fspath p in

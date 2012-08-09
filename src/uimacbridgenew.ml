@@ -18,6 +18,7 @@ type stateItem = { mutable ri : reconItem;
                    mutable whatHappened : Util.confirmation option;
                    mutable statusMessage : string option };;
 let theState = ref [| |];;
+let unsynchronizedPaths = ref None;;
 
 let unisonDirectory() = System.fspathToString Os.unisonDir
 ;;
@@ -230,6 +231,7 @@ let do_unisonInit1 profileName =
   (* Load the profile and command-line arguments *)
   (* Restore prefs to their default values, if necessary *)
   if not !firstTime then Prefs.resetToDefaults();
+  unsynchronizedPaths := None;
 
   if profileName <> "" then begin
     (* Tell the preferences module the name of the profile *)
@@ -356,7 +358,7 @@ let do_unisonInit2 () =
   let t = Trace.startTimer "Checking for updates" in
   let findUpdates () =
     Trace.status "Looking for changes";
-    let updates = Update.findUpdates () in
+    let updates = Update.findUpdates ~wantWatcher:() !unsynchronizedPaths in
     Trace.showTimer t;
     updates in
   let reconcile updates = Recon.reconcileAll updates in
@@ -381,6 +383,8 @@ let do_unisonInit2 () =
                    whatHappened = None; statusMessage = None })
       reconItemList in
   theState := Array.of_list stateItemList;
+  unsynchronizedPaths :=
+    Some (List.map (fun ri -> ri.path1) reconItemList, []);
   if dangerousPaths <> [] then begin
     Prefs.set Globals.batch false;
     Util.warn (Uicommon.dangerousPathMsg dangerousPaths)
@@ -615,36 +619,69 @@ let do_unisonSynchronize () =
     Trace.showTimer t;
     commitUpdates ();
 
+    let failureList =
+      Array.fold_right
+        (fun si l ->
+           match si.whatHappened with
+             Some (Util.Failed err) ->
+               (si, [err], "transport failure") :: l
+           | _ ->
+               l)
+        !theState []
+    in
+    let failureCount = List.length failureList in
     let failures =
-      let count =
-        Array.fold_left
-          (fun l si ->
-             l + (match si.whatHappened with Some(Util.Failed(_)) -> 1 | _ -> 0))
-          0 !theState in
-      if count = 0 then [] else
-        [Printf.sprintf "%d failure%s" count (if count=1 then "" else "s")] in
+      if failureCount = 0 then [] else
+      [Printf.sprintf "%d failure%s"
+         failureCount (if failureCount = 1 then "" else "s")]
+    in
+    let partialList =
+      Array.fold_right
+        (fun si l ->
+           match si.whatHappened with
+             Some Util.Succeeded
+             when partiallyProblematic si.ri &&
+                  not (problematic si.ri) ->
+               let errs =
+                 match si.ri.replicas with
+                   Different diff -> diff.errors1 @ diff.errors2
+                 | _              -> assert false
+               in
+               (si, errs,
+                "partial transfer (errors during update detection)") :: l
+           | _ ->
+               l)
+        !theState []
+    in
+    let partialCount = List.length partialList in
     let partials =
-      let count =
-        Array.fold_left
-          (fun l si ->
-             l + match si.whatHappened with
-                   Some Util.Succeeded
-                   when partiallyProblematic si.ri &&
-                        not (problematic si.ri) ->
-                     1
-                 | _ ->
-                     0)
-          0 !theState in
-      if count = 0 then [] else
-        [Printf.sprintf "%d partially transferred" count] in
+      if partialCount = 0 then [] else
+      [Printf.sprintf "%d partially transferred" partialCount]
+    in
+    let skippedList =
+      Array.fold_right
+        (fun si l ->
+           match si.ri.replicas with
+             Problem err ->
+               (si, [err], "error during update detection") :: l
+           | Different diff when diff.direction = Conflict ->
+               (si, [],
+                if diff.default_direction = Conflict then
+                  "conflict"
+                else "skipped") :: l
+           | _ ->
+               l)
+        !theState []
+    in
+    let skippedCount = List.length skippedList in
     let skipped =
-      let count =
-        Array.fold_left
-          (fun l si ->
-             l + (if problematic si.ri then 1 else 0))
-          0 !theState in
-      if count = 0 then [] else
-        [Printf.sprintf "%d skipped" count] in
+      if skippedCount = 0 then [] else
+      [Printf.sprintf "%d skipped" skippedCount]
+    in
+    unsynchronizedPaths :=
+      Some (List.map (fun (si, _, _) -> si.ri.path1)
+              (failureList @ partialList @ skippedList),
+            []);
     Trace.status
       (Printf.sprintf "Synchronization complete         %s"
          (String.concat ", " (failures @ partials @ skipped)));

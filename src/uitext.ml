@@ -654,7 +654,7 @@ let checkForDangerousPath dangerousPaths =
     end 
   end
 
-let synchronizeOnce () =
+let synchronizeOnce ?wantWatcher ?skipRecentFiles pathsOpt =
   let showStatus path =
     if path = "" then Util.set_infos "" else
     let max_len = 70 in
@@ -675,7 +675,7 @@ let synchronizeOnce () =
   debug (fun() -> Util.msg "temp: Globals.paths = %s\n"
            (String.concat " "
               (Safelist.map Path.toString (Prefs.read Globals.paths))));
-  let updates = Update.findUpdates() in
+  let updates = Update.findUpdates ?wantWatcher pathsOpt in
 
   Uutil.setUpdateStatusPrinter None;
   Util.set_infos "";
@@ -698,192 +698,79 @@ let synchronizeOnce () =
     (exitStatus, failedPaths)
   end
 
-let originalValueOfPathsPreference = ref [] 
-
 (* ----------------- Filesystem watching mode ---------------- *)
 
-(* FIX: we should check that the child process has not died and
-   restart it if so... *)
+let watchinterval = 1.    (* Minimal interval between two synchronizations *)
+let retrydelay = 5.       (* Minimal delay to retry failed paths *)
+let maxdelay = 30. *. 60. (* Maximal delay to retry failed paths *)
 
-(* FIX: the names of the paths being watched should get included
-   in the name of the watcher's state file *)
+module PathMap = Map.Make (Path)
 
-let watchinterval = 5
-
-let watcherTemp r n =
-  let s = n ^ (Update.archiveHash (Fspath.canonize (Some r))) in
-  Os.fileInUnisonDir s
-
-let watchercmd r =
-  (* FIX: is the quoting of --follow parameters going to work on Win32?
-       (2/2012: tried adding Uutil.quotes -- maybe this is OK now?) *)
-  (* FIX -- need to find the program using watcherosx preference *)
-  let root = Fspath.toString (snd r) in
-  let changefile = watcherTemp root "changes" in
-  let statefile = watcherTemp root "state" in
-  let paths = Safelist.map Path.toString !originalValueOfPathsPreference in
-  let followpaths = Pred.extern Path.followPred in
-  let follow = Safelist.map
-                 (fun s -> "--follow '" ^ Uutil.quotes s ^ "'")
-                 followpaths in
-(* BCP (per Josh Berdine, 5/2012): changed startup command from this...
-     let cmd = Printf.sprintf "fsmonitor.py %s --outfile %s --statefile %s %s %s\n"
-   ... to this: *)
-  let fsmonfile = Filename.concat (Filename.dirname Sys.executable_name) "fsmonitor.py" in
-  let cmd = Printf.sprintf "python \"%s\" \"%s\" --outfile \"%s\" --statefile \"%s\" %s %s\n"
-              fsmonfile
-              root
-              (System.fspathToPrintString changefile)
-              (System.fspathToPrintString statefile)
-              (String.concat " " follow)
-              (String.concat " " paths) in
-  debug (fun() -> Util.msg "watchercmd = %s\n" cmd);
-  (changefile,cmd)
-
-module RootMap = Map.Make (struct type t = Common.root
-                                  let compare = Pervasives.compare
-                           end)
-(* Using string concatenation to accumulate characters is
-   a bit inefficient, but it's not clear how much it matters in the
-   grand scheme of things.  Current experience suggests that this
-   implementation performs well enough. *)
-type watcherinfo = {file: System.fspath;
-                    ch:Pervasives.in_channel option ref;
-                    chars: string ref;
-                    lines: string list ref}
-let watchers : watcherinfo RootMap.t ref = ref RootMap.empty 
-
-let trim_duplicates l =
-  let rec loop l = match l with
-    [] -> l
-  | [s] -> l
-  | s1::s2::rest ->
-      if Util.startswith s1 s2 || Util.startswith s2 s1 then
-        loop (s2::rest)
-      else
-        s1 :: (loop (s2::rest)) in
-  loop (Safelist.sort String.compare l)  
-
-let getAvailableLinesFromWatcher wi =
-  let ch = match !(wi.ch) with Some(c) -> c | None -> assert false in 
-  let rec loop () =
-    match try Some(input_char ch) with End_of_file -> None with
-      None ->
-        let res = !(wi.lines) in
-        wi.lines := [];
-        trim_duplicates res
-    | Some(c) ->
-        if c = '\n' then begin
-          wi.lines := !(wi.chars) :: !(wi.lines);
-          wi.chars := "";
-          loop ()
-        end else begin
-          wi.chars := (!(wi.chars)) ^ (String.make 1 c);
-          loop ()
-        end in
-    loop ()
-
-let suckOnWatcherFileLocal r =
-  Util.convertUnixErrorsToFatal
-    "Reading changes from watcher process "
-    (fun () ->
-       (* Make sure there's a watcher running *)
-       try
-         let wi = RootMap.find r !watchers in
-         if !(wi.ch) = None then
-           (* Watcher channel not built yet *)
-           if System.file_exists wi.file then begin
-             (* Build it and go *)
-             let c = System.open_in_bin wi.file in
-             wi.ch := Some(c);
-             getAvailableLinesFromWatcher wi
-           end else begin
-             (* Wait for change file to be built *)
-             debug (fun() -> Util.msg
-               "Waiting for change file %s\n"
-               (System.fspathToPrintString wi.file));
-             []
-           end
-         else begin
-           (* Watcher running and channel built: go ahead and read *)
-           getAvailableLinesFromWatcher wi
-         end 
-       with Not_found -> begin
-         (* Watcher process not running *)
-         let (changefile,cmd) = watchercmd r in
-         debug (fun() -> Util.msg
-                  "Starting watcher on root %s\n" (Common.root2string r));
-         let _ = System.open_process_out cmd in
-         let wi = {file = changefile; ch = ref None;
-                   lines = ref []; chars = ref ""} in
-         watchers := RootMap.add r wi !watchers;
-         []
-      end)
-
-let suckOnWatcherFileRoot: Common.root -> Common.root -> (string list) Lwt.t =
+let waitForChangesRoot: Common.root -> unit -> unit Lwt.t =
   Remote.registerRootCmd
-    "suckOnWatcherFile"
-    (fun (fspath, r) ->
-      Lwt.return (suckOnWatcherFileLocal r))
+    "waitForChanges"
+    (fun (fspath, _) -> Fswatchold.wait (Update.archiveHash fspath))
 
-let suckOnWatcherFiles () =
-  Safelist.concat
-    (Lwt_unix.run (
-      Globals.allRootsMap (fun r -> suckOnWatcherFileRoot r r)))
-
-let shouldNotIgnore p =
-  let rec test prefix rest =
-    if Globals.shouldIgnore prefix then
-      false
-    else match (Path.deconstruct rest) with
-        None -> true
-      | Some(n,rest') ->
-          test (Path.child prefix n) rest'
-    in 
-  test Path.empty (Path.fromString p) 
+let waitForChanges t =
+  let dt = t -. Unix.gettimeofday () in
+  if dt > 0. then begin
+    let timeout = if dt <= maxdelay then [Lwt_unix.sleep dt] else [] in
+    Lwt_unix.run
+      (Globals.allRootsMap (fun r -> Lwt.return (waitForChangesRoot r ()))
+         >>= fun l ->
+       Lwt.choose (timeout @ l))
+  end
 
 let synchronizePathsFromFilesystemWatcher () =
-  (* Make sure the confirmbigdeletes preference is turned off.  If it's on,
-     then all deletions will fail because every deletion will count as
-     a "big deletion"! *)
-  Prefs.set Globals.confirmBigDeletes false;
-
-  let rec loop failedPaths = 
-    let newpathsraw = suckOnWatcherFiles () in
-    debug (fun () -> Util.msg
-      "Changed paths: %s\n" (String.concat " " newpathsraw));
-    let newpaths = Safelist.filter shouldNotIgnore newpathsraw in
-    if newpaths <> [] then
-      display (Printf.sprintf "Changed paths:  %s%s\n"
-                 (if newpaths=[] then "" else "\n  ")
-                 (String.concat "\n  " newpaths));
-    let p = failedPaths @ (Safelist.map Path.fromString newpaths) in
-    if p <> [] then begin
-      Prefs.set Globals.paths p;
-      let (exitStatus,newFailedPaths) = synchronizeOnce() in 
-      debug (fun() -> Util.msg "Sleeping for %d seconds...\n" watchinterval);
-      Unix.sleep watchinterval;
-      loop newFailedPaths 
-    end else begin
-      debug (fun() -> Util.msg "Nothing changed: sleeping for %d seconds...\n"
-               watchinterval);
-      Unix.sleep watchinterval;
-      loop []
-    end in
-  loop []
+  let rec loop isStart delayInfo =
+    let t = Unix.gettimeofday () in
+    let (delayedPaths, readyPaths) =
+      PathMap.fold
+        (fun p (t', _) (delayed, ready) ->
+           if t' <= t then (delayed, p :: ready) else (p :: delayed, ready))
+        delayInfo ([], [])
+    in
+    let (exitStatus, failedPaths) =
+      synchronizeOnce ~wantWatcher:() ~skipRecentFiles:()
+        (if isStart then None else Some (readyPaths, delayedPaths))
+    in
+    (* After a failure, we retry at once, then use an exponential backoff *)
+    let delayInfo =
+      Safelist.fold_left
+        (fun newDelayInfo p ->
+           PathMap.add p
+             (try
+                let (t', d) = PathMap.find p delayInfo in
+                if t' > t then (t', d) else
+                let d = max retrydelay (min maxdelay (2. *. d)) in
+                (t +. d, d)
+              with Not_found ->
+                (t, 0.))
+             newDelayInfo)
+        PathMap.empty
+        (Safelist.append delayedPaths failedPaths)
+    in
+    Lwt_unix.run (Lwt_unix.sleep watchinterval);
+    let nextTime =
+      PathMap.fold (fun _ (t, d) t' -> min t t') delayInfo 1e20 in
+    waitForChanges nextTime;
+    loop false delayInfo
+  in
+  loop true PathMap.empty
 
 (* ----------------- Repetition ---------------- *)
 
-let synchronizeUntilNoFailures () =
-  let rec loop triesLeft =
-    let (exitStatus,failedPaths) = synchronizeOnce() in
+let synchronizeUntilNoFailures repeatMode =
+  let rec loop triesLeft pathsOpt =
+    let (exitStatus, failedPaths) =
+      synchronizeOnce
+        ?wantWatcher:(if repeatMode then Some () else None) pathsOpt in
     if failedPaths <> [] && triesLeft <> 0 then begin
-      loop (triesLeft - 1)
+      loop (triesLeft - 1) (Some (failedPaths, []))
     end else begin
-      Prefs.set Globals.paths !originalValueOfPathsPreference;
       exitStatus
     end in
-  loop (Prefs.read Uicommon.retry)
+  loop (Prefs.read Uicommon.retry) None
 
 let rec synchronizeUntilDone () =
   let repeatinterval =
@@ -898,7 +785,7 @@ let rec synchronizeUntilDone () =
                            ^Prefs.read Uicommon.repeat
                            ^") should be either a number or 'watch'\n")) in
 
-  let exitStatus = synchronizeUntilNoFailures() in
+  let exitStatus = synchronizeUntilNoFailures(repeatinterval >= 0) in
   if repeatinterval < 0 then
     exitStatus
   else begin
@@ -957,10 +844,6 @@ let rec start interface =
     if not (Prefs.read Globals.batch) then setupTerminal();
     setWarnPrinter();
     Trace.statusFormatter := formatStatus;
-
-    (* Save away the user's path preferences in case they are needed for
-       restarting/repeating *)
-    originalValueOfPathsPreference := Prefs.read Globals.paths;
 
     let exitStatus = synchronizeUntilDone() in
 
