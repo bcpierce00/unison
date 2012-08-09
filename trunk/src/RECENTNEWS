@@ -1,3 +1,15 @@
+CHANGES FROM VERSION 2.46.-1
+
+* Bumped version number: incompatible protocol changes
+* Improvements to the file watching functionality:
+  - retries paths with failures using an exponential backoff algorithm
+  - the information returned by the file watchers are used
+    independently for each replica; thus, when only one replica has
+    changes, Unison will only rescan this replica
+  - when available, used by the graphical UIs to speed up rescanning
+    (can be disabled by setting the new 'watch' preference to false)
+
+-------------------------------
 CHANGES FROM VERSION 2.45.15
 
 * transfer.ml: updated debugging code; in particular, turns an

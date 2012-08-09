@@ -18,10 +18,16 @@ val storeRootsName : unit -> unit
 (* Retrieve the actual names of the roots *)
 val getRootsName : unit -> string 
 
-(* Structures describing dirty files/dirs (1 per path given in the -path preference) *)
+(* Perform update detection. Optionally, takes as input the list of
+   paths known not to be synchronized and a list of paths not to
+   check. Returns structures describing dirty files/dirs (1 per path
+   given in the -path preference). An option controls whether we
+   would like to use the external filesytem monitoring process. *)
 val findUpdates :
-  unit -> ((Path.local * Common.updateItem * Props.t list) *
-           (Path.local * Common.updateItem * Props.t list)) list
+  ?wantWatcher:unit ->
+  (Path.t list * Path.t list) option ->
+  ((Path.local * Common.updateItem * Props.t list) *
+      (Path.local * Common.updateItem * Props.t list)) list
 
 (* Take a tree of equal update contents and update the archive accordingly. *)
 val markEqual :
