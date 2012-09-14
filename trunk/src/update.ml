@@ -757,6 +757,8 @@ let loadArchives (optimistic: bool) =
         "Internal error: On-disk archives are not identical.\n"
       ^ "\n"
       ^ "This can happen when both machines have the same hostname.\n"
+      ^ "It can also happen when one copy of Unison has been compiled with\n"
+      ^ "OCaml version 3 and one with OCaml version 4.\n"
       ^ "\n"
       ^ "If this is not the case and you get this message repeatedly, please:\n"
       ^ "  a) Send a bug report to unison-users@yahoogroups.com (you may need\n"
