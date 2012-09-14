@@ -243,7 +243,7 @@ let exec_path =
   try
     (* Linux *)
     [System.fspathFromString (Unix.readlink "/proc/self/exe")]
-  with Unix.Unix_error _ ->
+  with Unix.Unix_error _ | Invalid_argument _ ->
     let name = (System.argv ()).(0) in
     if not (Filename.is_relative name) then
       [System.fspathFromString name]
