@@ -1,5 +1,63 @@
 
-Changes in Version 2.40.16
+Changes in Version 2.45.4
+
+   Changes since 2.40.63:
+     * New preference fastercheckUNSAFE, which can be used (with care!)
+       to achieve much faster update detection when all the common files
+       in the two replicas are known to be identical. See the manual for
+       more information.
+       This feature should still be considered experimental, but it's
+       ready for other people to try out.
+     * Added option clientHostName. If specified, it will be used to as
+       the client host name, overriding UNISONLOCALHOSTNAME and the
+       actual host name.
+     * OS X GUI:
+          + fix crash under Lion, because of problems with the toolbar,
+            using the fix suggested in
+            http://blitzbasic.com/Community/posts.php?topic=95778.
+          + uimacnew09 is now the standard graphical interface on OSX
+          + A small improvement to the uimacnew09 interface from Alan
+            Schmitt and Steve Kalkwarf: when Unison is run with the
+            -batch flag, the interface will now automatically propagate
+            changes and terminate, without waiting for user interaction.
+          + Show a modal warning window if there is no archive for the
+            hosts. The user can then choose to exit or proceed (proceed
+            is the default). The window is not shown if the batch
+            preference is true.
+          + file details panel selectable
+     * GTK GUI:
+          + New version of uigtk2.ml from Matt Zagrabelny that
+            reorganizes the icons in a slightly more intuitive way.
+     * Minor fixes:
+          + Setting the prefer preference to older or newer now
+            propagates deletions when there is no conflict.
+          + Correctly quote the path when running merge commands.
+          + Add quotes to paths when calling external file watcher
+            utility.
+          + Incorporate a patch to fsmonitor.py (the external filewatcher
+            utility) from Tomasz Zernicki to make it work better under
+            Windows.
+          + Incorporated new version of fsmonitor.py from Christophe
+            Gohle
+          + Fixed incompatibility with OpenSSH 5.6.
+          + Fixed fingerprint cache: do not cache file properties
+          + Some spelling corrections in documentation and comments from
+            Stephane Glondu
+          + Fixed O_APPEND mode for open under Windows
+          + Fixed String.sub invalid argument error when an AppleDouble
+            file does not contain a finder information field
+          + Trim duplicate paths when using "-repeat watch"
+          + Unison now passes path arguments and -follow directives to
+            fsmonitor.py. This seems to work except for one small issue
+            with how fsmonitor.py treats -follow directives for
+            directories that don't exist (or maybe this is an issue with
+            how it treats any kind of monitoring when the thing being
+            monitored doesn't exist?). If we create a symlink to a
+            nonexistant directory, give Unison (hence fsmonitor.py) a
+            'follow' directive for the symlink, start unison, and then
+            create the directory, fsmonitor.py misses the change.
+          + Lines added in profile files by unison always start at a new
+            line
 
    Changes since 2.40.1:
      * Added "BelowPath" patterns, that match a path as well as all paths
@@ -1579,7 +1637,7 @@ Changes in Version 2.40.16
        changed. Instead of putting a line of the form
                  ignore = <regexp>
        in your profile (.unison/default.prf), you should put:
-                 ignore = Regexp <regexp>
+                 ignore = Regex <regexp>
        Moreover, two other styles of pattern are also recognized:
                  ignore = Name <name>
        matches any path in which one component matches <name>, while
