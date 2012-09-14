@@ -1,3 +1,11 @@
+CHANGES FROM VERSION 2.46.3
+
+* Add a note to the 'new archives not identical' error message
+  explaining that this can happen because Unison binaries compiled
+  with OCaml 3 and OCaml 4 are incompatible.
+
+
+-------------------------------
 CHANGES FROM VERSION 2.46.2
 
 * Fix Unix.readlink invalid argument error under Windows

@@ -302,7 +302,7 @@ processes in parallel, e.g. -j for GNU make.
 
 Once you've got OCaml installed, grab a copy of the Unison sources,
 unzip and untar them, change to the new \showtt{unison} directory, and
-type ``{\tt make UISTYLE=text}.''
+type ``{\tt make UISTYLE=text}''.
 The result should be an executable file called \showtt{unison}.
 Type \showtt{./unison} to make sure the program is executable.  You
 should get back a usage message.
@@ -1865,7 +1865,8 @@ standard ``globbing'' conventions can be used in \ARG{name} and
 \item \verb|[xyz]| matches any character from the set $\{{\tt x},
   {\tt y}, {\tt z} \}$
 \item \verb|{a,bb,ccc}| matches any one of \verb|a|, \verb|bb|, or
-  \verb|ccc|. 
+  \verb|ccc|.  (Be careful not to put extra spaces after the commas:
+  these will be interpreted literally as part of the strings to be matched!) 
 \end{itemize}
 \item 
 The path separator in path patterns is always the
