@@ -4,7 +4,7 @@
 let docs =
     ("about", ("About Unison", 
      "Unison File Synchronizer\n\
-      Version 2.40.16\n\
+      Version 2.45.4\n\
       \n\
       "))
 ::
@@ -272,6 +272,8 @@ let docs =
       \n\
       \032  You'll also need the GNU make utility, standard on many Unix systems.\n\
       \032  (Type \"make -version\" to check that you've got the GNU version.)\n\
+      \032  Unison's build system is not parallelizable, so don't use make flags\n\
+      \032  which cause it to start processes in parallel, e.g. -j for GNU make.\n\
       \n\
       \032  Once you've got OCaml installed, grab a copy of the Unison sources,\n\
       \032  unzip and untar them, change to the new \"unison\" directory, and type\n\
@@ -537,10 +539,8 @@ let docs =
       \n\
       \032  The standard remote shell facility on Unix systems is ssh, which\n\
       \032  provides the same functionality as the older rsh but much better\n\
-      \032  security. Ssh is available from ftp://ftp.cs.hut.fi/pub/ssh/;\n\
-      \032  up-to-date binaries for some architectures can also be found at\n\
-      \032  ftp://ftp.faqs.org/ssh/contrib. See section [1]A.2 for installation\n\
-      \032  instructions for the Windows version.\n\
+      \032  security. Ssh is available from http://www.openssh.org. See\n\
+      \032  section [1]A.2 for installation instructions for the Windows version.\n\
       \n\
       \032  Running ssh requires some coordination between the client and server\n\
       \032  machines to establish that the client is allowed to invoke commands on\n\
@@ -2170,7 +2170,7 @@ let docs =
       \032      the replicas. (These three options are provided for later\n\
       \032      compatibility with the Harmony data synchronizer.)\n\
       \n\
-      \032  To accomodate the wide variety of programs that users might want to\n\
+      \032  To accommodate the wide variety of programs that users might want to\n\
       \032  use for merging, Unison checks for several possible situations when\n\
       \032  the merge program exits:\n\
       \032    * If the merge program exits with a non-zero status, then merge is\n\
@@ -2678,9 +2678,8 @@ let docs =
       \032           and \"Add to Start Menu.\" You make the call.\n\
       \032        d. You can now delete the directory Foo and its contents.\n\
       \032      Some people have reported problems using Cygwin's ssh with Unison.\n\
-      \032      If you have trouble, you might try this one instead:\n\
-      \032 http://opensores.thebunker.net/pub/mirrors/ssh/contrib/ssh-1.2.14-win32bin.zi\n\
-      p\n\
+      \032      If you have trouble, you might try other ones instead:\n\
+      \032 http://linuxmafia.com/ssh/win32.html\n\
       \032   2. You must set the environment variables HOME and PATH. Ssh will\n\
       \032      create a directory .ssh in the directory given by HOME, so that it\n\
       \032      has a place to keep data like your public and private keys. PATH\n\
@@ -2718,8 +2717,66 @@ let docs =
       \n\
       "))
 ::
-    ("news", ("Changes in Version 2.40.16", 
-     "Changes in Version 2.40.16\n\
+    ("news", ("Changes in Version 2.45.4", 
+     "Changes in Version 2.45.4\n\
+      \n\
+      \032  Changes since 2.40.63:\n\
+      \032    * New preference fastercheckUNSAFE, which can be used (with care!)\n\
+      \032      to achieve much faster update detection when all the common files\n\
+      \032      in the two replicas are known to be identical. See the manual for\n\
+      \032      more information.\n\
+      \032      This feature should still be considered experimental, but it's\n\
+      \032      ready for other people to try out.\n\
+      \032    * Added option clientHostName. If specified, it will be used to as\n\
+      \032      the client host name, overriding UNISONLOCALHOSTNAME and the\n\
+      \032      actual host name.\n\
+      \032    * OS X GUI:\n\
+      \032         + fix crash under Lion, because of problems with the toolbar,\n\
+      \032           using the fix suggested in\n\
+      \032           http://blitzbasic.com/Community/posts.php?topic=95778.\n\
+      \032         + uimacnew09 is now the standard graphical interface on OSX\n\
+      \032         + A small improvement to the uimacnew09 interface from Alan\n\
+      \032           Schmitt and Steve Kalkwarf: when Unison is run with the\n\
+      \032           -batch flag, the interface will now automatically propagate\n\
+      \032           changes and terminate, without waiting for user interaction.\n\
+      \032         + Show a modal warning window if there is no archive for the\n\
+      \032           hosts. The user can then choose to exit or proceed (proceed\n\
+      \032           is the default). The window is not shown if the batch\n\
+      \032           preference is true.\n\
+      \032         + file details panel selectable\n\
+      \032    * GTK GUI:\n\
+      \032         + New version of uigtk2.ml from Matt Zagrabelny that\n\
+      \032           reorganizes the icons in a slightly more intuitive way.\n\
+      \032    * Minor fixes:\n\
+      \032         + Setting the prefer preference to older or newer now\n\
+      \032           propagates deletions when there is no conflict.\n\
+      \032         + Correctly quote the path when running merge commands.\n\
+      \032         + Add quotes to paths when calling external file watcher\n\
+      \032           utility.\n\
+      \032         + Incorporate a patch to fsmonitor.py (the external filewatcher\n\
+      \032           utility) from Tomasz Zernicki to make it work better under\n\
+      \032           Windows.\n\
+      \032         + Incorporated new version of fsmonitor.py from Christophe\n\
+      \032           Gohle\n\
+      \032         + Fixed incompatibility with OpenSSH 5.6.\n\
+      \032         + Fixed fingerprint cache: do not cache file properties\n\
+      \032         + Some spelling corrections in documentation and comments from\n\
+      \032           Stephane Glondu\n\
+      \032         + Fixed O_APPEND mode for open under Windows\n\
+      \032         + Fixed String.sub invalid argument error when an AppleDouble\n\
+      \032           file does not contain a finder information field\n\
+      \032         + Trim duplicate paths when using \"-repeat watch\"\n\
+      \032         + Unison now passes path arguments and -follow directives to\n\
+      \032           fsmonitor.py. This seems to work except for one small issue\n\
+      \032           with how fsmonitor.py treats -follow directives for\n\
+      \032           directories that don't exist (or maybe this is an issue with\n\
+      \032           how it treats any kind of monitoring when the thing being\n\
+      \032           monitored doesn't exist?). If we create a symlink to a\n\
+      \032           nonexistant directory, give Unison (hence fsmonitor.py) a\n\
+      \032           'follow' directive for the symlink, start unison, and then\n\
+      \032           create the directory, fsmonitor.py misses the change.\n\
+      \032         + Lines added in profile files by unison always start at a new\n\
+      \032           line\n\
       \n\
       \032  Changes since 2.40.1:\n\
       \032    * Added \"BelowPath\" patterns, that match a path as well as all paths\n\
@@ -2783,7 +2840,7 @@ let docs =
       \032           and is not slowed done due to the connection latency anymore\n\
       \032         + we get performance improvement for small files as well by\n\
       \032           scheduling many files simultaneously (as scheduling a file\n\
-      \032           for transfer consume little resource: it does not mean\n\
+      \032           for transfer consume little ressource: it does not mean\n\
       \032           allocating a large buffer anymore)\n\
       \032    * Changes to the internal implementation of the rsync algorithm:\n\
       \032         + use longer blocks for large files (the size of a block is the\n\
@@ -4299,7 +4356,7 @@ let docs =
       \032      changed. Instead of putting a line of the form\n\
       \032                ignore = <regexp>\n\
       \032      in your profile (.unison/default.prf), you should put:\n\
-      \032                ignore = Regexp <regexp>\n\
+      \032                ignore = Regex <regexp>\n\
       \032      Moreover, two other styles of pattern are also recognized:\n\
       \032                ignore = Name <name>\n\
       \032      matches any path in which one component matches <name>, while\n\
@@ -4382,7 +4439,7 @@ let docs =
       \n\
       References\n\
       \n\
-      \032  1. file://localhost/Users/bcpierce/current/unison/trunk/doc/temp.html#ssh-win\n\
+      \032  1. file://localhost/Users/bcpierce/current/unison/branches/2.45/doc/temp.html#ssh-win\n\
       \032  2. http://pauillac.inria.fr/~maranget/hevea/index.html\n\
       "))
 ::
