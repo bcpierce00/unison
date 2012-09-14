@@ -1,3 +1,8 @@
+CHANGES FROM VERSION 2.46.2
+
+* Fix Unix.readlink invalid argument error under Windows
+
+-------------------------------
 CHANGES FROM VERSION 2.46.1
 
 * More robust file watching helper programs for Windows and Linux.
