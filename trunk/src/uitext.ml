@@ -860,8 +860,12 @@ let rec start interface =
   | e -> begin
       (* If any other bad thing happened and the -repeat preference is
          set, then restart *)
+      (* JV: it seems safer to just abort here, as we don't know in which
+         state Unison is; for instance, if the connection is lost, there
+         is no point in restarting as Unison will currently not attempt to
+         establish a new connection. *)
       handleException e;
-      if Prefs.read Uicommon.repeat <> "" then begin
+      if false (*Prefs.read Uicommon.repeat <> ""*) then begin
         Util.msg "Restarting in 10 seconds...\n";
         Unix.sleep 10;        
         start interface
