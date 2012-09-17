@@ -230,7 +230,9 @@ if !d then Format.eprintf "vvv@.";
       let i =
         try
           win_wait (truncate (ceil (delay *. 1000.))) !event_count
-        with e -> assert false
+        with
+          Sys.Break as e -> raise e
+        | _              -> assert false
       in
 if !d then Format.eprintf "^^^@.";
       if i = -1 then now := !now +. delay;

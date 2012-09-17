@@ -1,3 +1,13 @@
+CHANGES FROM VERSION 2.46.4
+
+* Windows/lwt: correctly deals with Sys.Break exceptions when sleeping
+* File system monitoring: improved search for unison-fsmonitor 
+* File system monitoring: detect when the helper process exits
+* Do not restart Unison in case of uncaught exception when the repeat
+  preference is set.  This seems safer.  And it does not work, for
+  instance, in case of lost connection.
+
+-------------------------------
 CHANGES FROM VERSION 2.46.3
 
 * Add a note to the 'new archives not identical' error message

@@ -472,6 +472,7 @@ clean::
 	-$(RM) system/*.cm[iox] system/*.{o,obj} system/win/*~
 	-$(RM) system/generic/*.cm[iox] system/generic/*.{o,obj} system/generic/*~
 	-$(RM) system/win/*.cm[iox] system/win/*.{o,obj} system/win/*~
+	-$(RM) fsmonitor/*.cm[iox] fsmonitor/*.{o,obj}
 
 .PHONY: paths
 paths:

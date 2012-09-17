@@ -239,7 +239,8 @@ let search_in_path ?(path = path) name =
        path)
     name
 
-let exec_path =
+let exec_path = [System.fspathFromString Sys.executable_name]
+(*
   try
     (* Linux *)
     [System.fspathFromString (Unix.readlink "/proc/self/exe")]
@@ -254,6 +255,7 @@ let exec_path =
         []
     else
       [System.fspathConcat (System.getcwd ()) name]
+*)
 
 let exec_dir = List.map System.fspathDirname exec_path
 
@@ -300,7 +302,9 @@ let startProcess () =
     Unix.close i1; Unix.close o2;
     ignore
       (Lwt.catch (fun () -> reader (read_line i2))
-         (fun e -> last_line := Exn e; Cond.signal has_line; Lwt.return ()));
+         (fun e ->
+            Cond.signal has_changes;
+            last_line := Exn e; Cond.signal has_line; Lwt.return ()));
     conn := Some o1;
     true
   with Not_found ->
