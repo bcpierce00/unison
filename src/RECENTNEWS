@@ -1,3 +1,9 @@
+CHANGES FROM VERSION 2.46.8
+
+* Filesystem monitoring: do not use filters on maps, for compatibility
+  with OCaml 3.11
+
+-------------------------------
 CHANGES FROM VERSION 2.46.6
 
 * A bytecode version of unison-fsmonitor is now produced by "make NATIVE=false"

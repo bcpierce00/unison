@@ -22,6 +22,11 @@ let _ =
     ignore(Sys.set_signal Sys.sigpipe Sys.Signal_ignore)
 
 module StringMap = Map.Make(String)
+(*FIX: temporary workaround, as there is no StringMap.filter function
+  in OCaml 3.11 *)
+let stringmap_filter f m =
+  StringMap.fold (fun k v m' -> if f k v then StringMap.add k v m' else m')
+    m StringMap.empty
 module StringSet = Set.Make(String)
 module IntSet =
   Set.Make
@@ -296,7 +301,7 @@ let clear_change_table hash =
 let rec clear_changes hash time =
   let rec clear_rec f =
     f.changed_children <-
-      StringMap.filter
+      stringmap_filter
         (fun nm (_, time_ref) ->
            if time -. !time_ref <= delay then true else begin
              remove_change f nm;
@@ -373,7 +378,7 @@ let gather_changes hash time =
   clear_event_memory ();
   let rec gather_rec path r l =
     let c =
-      StringMap.filter (fun _ (_, time_ref) -> time -. !time_ref > delay)
+      stringmap_filter (fun _ (_, time_ref) -> time -. !time_ref > delay)
         r.changed_children
     in
     let l = StringMap.fold (fun nm _ l -> concat path nm :: l) c l in
