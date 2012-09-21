@@ -305,7 +305,7 @@ let hash id h =
     (match id with
        IdIgnored   -> -1
      | IdNumeric i -> i
-     | IdNamed nm  -> Hashtbl.hash nm)
+     | IdNamed nm  -> Uutil.hash nm)
     h
 
 let similar id id' =
@@ -609,7 +609,7 @@ type t = string option
 
 let dummy = None
 
-let hash t h = Uutil.hash2 (Hashtbl.hash t) h
+let hash t h = Uutil.hash2 (Uutil.hash t) h
 
 let similar t t' =
   not (Prefs.read Osx.rsrc) || t = t'

@@ -33,5 +33,3 @@ val quotes : t -> string
 
 (* CASE-SENSITIVE comparison between fspaths *)
 val compare : t -> t -> int
-(* CASE-SENSITIVE hash of a fspath *)
-val hash : t -> int

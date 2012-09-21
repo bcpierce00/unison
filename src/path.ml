@@ -210,10 +210,6 @@ let addPrefixToFinalName path prefix =
     assert (not (isEmpty path));
     prefix ^ path
 
-(* No need to perform case normalization on local paths *)
-let hash p = Hashtbl.hash p
-let equal (p1 : local) (p2 : local) = p1 = p2
-
 (* Pref controlling whether symlinks are followed. *)
 let followPred = Pred.create ~advanced:true "follow"
     ("Including the preference \\texttt{-follow \\ARG{pathspec}} causes Unison to \

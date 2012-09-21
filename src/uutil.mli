@@ -13,6 +13,8 @@ val myNameAndVersion : string
 
 (* Hashing *)
 val hash2 : int -> int -> int
+(* Hash function (OCaml 3.x version) *)
+val hash : 'a -> int
 
 module type FILESIZE = sig
   type t

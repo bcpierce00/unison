@@ -1,3 +1,9 @@
+CHANGES FROM VERSION 2.46.9
+
+* Use hash function from OCaml 3.x for comparing archives, even when
+  compiled with OCaml 4.x
+
+-------------------------------
 CHANGES FROM VERSION 2.46.8
 
 * Filesystem monitoring: do not use filters on maps, for compatibility
