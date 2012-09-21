@@ -33,8 +33,6 @@ val addToFinalName : local -> string -> local
   (* Add to the final name, but before any file extension. *)
 
 val compare : t -> t -> int
-val equal : local -> local -> bool
-val hash : local -> int
 
 val followLink : local -> bool
 val followPred : Pred.t
