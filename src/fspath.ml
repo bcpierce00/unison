@@ -335,4 +335,3 @@ let findWorkingDir fspath path =
 
 let quotes (Fspath f) = Uutil.quotes f
 let compare (Fspath f1) (Fspath f2) = compare f1 f2
-let hash (Fspath f) = Hashtbl.hash f
