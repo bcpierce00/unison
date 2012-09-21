@@ -256,9 +256,9 @@ let rec checkArchive
                        (checkArchive false (n :: path) a h))
         children (Props.hash desc h)
   | ArchiveFile (desc, dig, _, ress) ->
-      Uutil.hash2 (Hashtbl.hash dig) (Props.hash desc h)
+      Uutil.hash2 (Uutil.hash dig) (Props.hash desc h)
   | ArchiveSymlink content ->
-      Uutil.hash2 (Hashtbl.hash content) h
+      Uutil.hash2 (Uutil.hash content) h
   | NoArchive ->
       135
 
