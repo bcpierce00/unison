@@ -1,3 +1,10 @@
+CHANGES FROM VERSION 2.46.10
+
+* File system monitoring: more robust communication with the helper program
+  (in socket mode, the unison server will still work properly despite
+  unexpected unison client disconnections)
+
+-------------------------------
 CHANGES FROM VERSION 2.46.9
 
 * Use hash function from OCaml 3.x for comparing archives, even when

@@ -74,10 +74,6 @@ Protocol description
   Finally, the command 'RESET hash' tells the child process to stop
   watching the given replica. In particular, it can discard any
   pending change information for this replica.
-
-  UNISON CLIENT-SERVER PROTOCOL CHANGE!
-
-  - =====> fix [associate] function <================
 *)
 
 let debug = Util.debug "fswatch"
@@ -271,24 +267,41 @@ let watcher =
             ("unison-fsmonitor" ^ suffix)))
 
 type 'a exn_option = Value of 'a | Exn of exn | Nothing
-let has_changes = Cond.make ()
-let has_line = Cond.make ()
-let line_read = Cond.make ()
-let last_line = ref Nothing
 
-let rec reader read_line =
-  read_line () >>= fun l ->
-  Cond.signal has_changes;
-  if l = "CHANGES" then begin
-    reader read_line
-  end else begin
-    last_line := Value l;
-    Cond.signal has_line;
-    Cond.wait line_read >>= fun () ->
-    reader read_line
-   end
+type conn =
+  { output : Lwt_unix.file_descr;
+    has_changes : Cond.t;
+    has_line : Cond.t;
+    line_read : Cond.t;
+    mutable last_line : string exn_option }
 
 let conn = ref None
+
+let rec reader conn read_line =
+  read_line () >>= fun l ->
+  Cond.signal conn.has_changes;
+  if fst (split_on_space l) = "CHANGES" then begin
+    reader conn read_line
+  end else begin
+    conn.last_line <- Value l;
+    Cond.signal conn.has_line;
+    Cond.wait conn.line_read >>= fun () ->
+    reader conn read_line
+   end
+
+let safeClose fd = try Lwt_unix.close fd with Unix.Unix_error _ -> ()
+
+let currentConnection () =
+  match !conn with
+    Some c -> c
+  | None   -> raise (Util.Fatal ("File monitoring helper program not running"))
+
+let closeConnection () =
+  match !conn with
+    Some c -> conn := None; safeClose c.output
+  | None   -> ()
+
+let connected () = !conn <> None
 
 let startProcess () =
   try
@@ -300,29 +313,42 @@ let startProcess () =
     Util.convertUnixErrorsToFatal "starting filesystem watcher" (fun () ->
       ignore (System.create_process w [|w|] i1 o2 Unix.stderr));
     Unix.close i1; Unix.close o2;
+    let c =
+      { output = o1;
+        has_changes = Cond.make ();
+        has_line = Cond.make ();
+        line_read = Cond.make ();
+        last_line = Nothing }
+    in
     ignore
-      (Lwt.catch (fun () -> reader (read_line i2))
+      (Lwt.catch (fun () -> reader c (read_line i2))
          (fun e ->
-            Cond.signal has_changes;
-            last_line := Exn e; Cond.signal has_line; Lwt.return ()));
-    conn := Some o1;
+            closeConnection (); safeClose i2;
+            Cond.signal c.has_changes;
+            c.last_line <- Exn e; Cond.signal c.has_line;
+            Lwt.return ()));
+    conn := Some c;
     true
   with Not_found ->
     false
 
-let rec emitCmd fmt =
-  match !conn with
-    Some o -> begin try printf o fmt with e -> conn := None; raise e end
-  | None   -> assert false
-
+let emitCmd fmt =
+  let c = currentConnection () in
+  try
+    printf c.output fmt
+  with e ->
+    closeConnection ();
+    raise e
+ 
 let rec readLine () =
-  match !last_line with
-    Nothing -> Lwt_unix.run (Cond.wait has_line); readLine ()
-  | Value l -> last_line := Nothing; Cond.signal line_read; l
-  | Exn e   -> conn := None; raise e
+  let c = currentConnection () in
+  match c.last_line with
+    Nothing -> Lwt_unix.run (Cond.wait c.has_line); readLine ()
+  | Value l -> c.last_line <- Nothing; Cond.signal c.line_read; l
+  | Exn e   -> raise e
 
 let badResponse cmd args expected =
-  conn := None;
+  closeConnection ();
   if cmd = "ERROR" then
     raise (Util.Fatal ("Filesystem watcher error: " ^ (unquote args) ^ "\n\
                         The watcher can be disabled by setting preference \
@@ -373,10 +399,8 @@ let relpath path =
     String.sub s2 (l1 + 1) (l2 - l1 - 1)
   end
 
-let started () = !conn <> None
-
 let startScanning hash fspath path =
-  if started () then begin
+  if connected () then begin
     emitCmd "START %s %s %s\n"
       (quote hash)
       (quote (Fspath.toString fspath)) (quote (Path.toString path));
@@ -406,7 +430,7 @@ let stopScanning () =
 let start hash =
   if not (Prefs.read useWatcher) then
     false
-  else if not (started ()) then
+  else if not (connected ()) then
     exchangeVersions ()
   else begin
     emitCmd "RESET %s\n" (quote hash);
@@ -414,12 +438,10 @@ let start hash =
   end
 
 let wait hash =
-  if started () then begin
-    let res = Cond.wait has_changes in
-    emitCmd "WAIT %s\n" (quote hash);
-    res
-  end else
-    raise (Util.Fatal "No file monitoring helper program found")
+  let c = currentConnection () in
+  let res = Cond.wait c.has_changes in
+  emitCmd "WAIT %s\n" (quote hash);
+  res
 
 (****)
 
@@ -436,7 +458,7 @@ let rec parseChanges l =
       badResponse other args "RECURSIVE or DONE"
 
 let getChanges hash =
-  if started () then begin
+  if connected () then begin
     emitCmd "CHANGES %s\n" (quote hash);
     parseChanges []
   end else
