@@ -360,7 +360,8 @@ let rec signal_change time dir nm_opt kind =
 
 let signal_overflow () =
   Hashtbl.iter (fun _ r -> r.changed <- true) roots;
-  ignore (signal_changes !waiting_for_changes)
+  if not (StringSet.is_empty !waiting_for_changes) then
+    ignore (signal_changes !waiting_for_changes)
 
 (****)
 
