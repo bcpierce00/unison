@@ -1,3 +1,9 @@
+CHANGES FROM VERSION 2.46.12
+
+* File system monitoring: the file watcher now fails when unable to
+  watch a directory, rather than silently ignoring the issue
+
+-------------------------------
 CHANGES FROM VERSION 2.46.10
 
 * File system monitoring: more robust communication with the helper program
