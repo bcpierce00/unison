@@ -196,6 +196,8 @@ let watch () =
           Watchercommon.error
             ("error while handling events: " ^ Watchercommon.format_exc e)))
 
+let i = ref 0
+
 let release_watch file =
   match get_watch file with
     None ->
@@ -204,6 +206,7 @@ let release_watch file =
       set_watch file None;
       let s = IntSet.remove (get_id file) (Hashtbl.find watcher_by_id id) in
       if IntSet.is_empty s then begin
+        incr i; if !i mod 32 = 0 then Lwt_unix.run (Lwt_unix.yield ());
         begin try
           Lwt_inotify.rm_watch st id
           (* Will fail with EINVAL if the file has been deleted... *)
@@ -234,7 +237,14 @@ let add_watch path file =
   with Inotify.Error (_, no) ->
     release_watch file;
     match no with
-      2 | 13 | 20 | 28 | 40 ->
+      2 (* ENOENT *) ->
+        Watchercommon.error
+          (Format.sprintf "file '%s' does not exist" path)
+    | 28 (* ENOSPC *) ->
+        Watchercommon.error "cannot add a watcher: system limit reached"
+    | 13 (* EACCES *) | 20 (* ENOTDIR *) | 40 (* ELOOP *) ->
+        (* These errors should be well handled by Unison (they will
+           result in errors during update detection *)
         ()
     | _ ->
         Watchercommon.error

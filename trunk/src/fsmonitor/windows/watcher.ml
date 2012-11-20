@@ -188,10 +188,10 @@ let add_watch path file =
       try
         watch_info.handle <- Some (watch_root_directory path file)
       with Unix.Unix_error _ as e ->
-        if !Watchercommon.debug then
-          Format.eprintf
-            "Error while starting to watch for changes: %s@."
-            (Watchercommon.format_exc e)
+        Watchercommon.error
+          (Format.sprintf
+             "Error while starting to watch for changes: %s@."
+             (Watchercommon.format_exc e))
     end;
     let mapping =
       try Shortnames.in_directory path with Unix.Unix_error _ -> [] in
