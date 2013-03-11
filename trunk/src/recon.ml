@@ -211,6 +211,15 @@ let noCreationPartial =
       It is recommended to use {\\tt BelowPath} \
       patterns when selecting a directory and all its contents.")
 
+let maxSizeThreshold =
+  Prefs.createInt "maxsizethreshold" (-1)
+    "!prevent transfer of files bigger than this (if >=0, in Kb)"
+    ("A number indicating above what filesize (in kilobytes) Unison should "
+     ^ "flag a conflict instead of transferring the file. "
+     ^ "This conflict remains even in the presence of force or prefer options. "
+     ^ "A negative number will allow every transfer independently of the size.  "
+     ^ "The default is -1. ")
+
 let partialCancelPref actionKind =
   match actionKind with
     `DELETION -> noDeletionPartial
@@ -236,10 +245,17 @@ let shouldCancel path rc1 rc2 root2 =
       ||
     List.mem root2 (Pred.assoc_all (partialCancelPref kind) path)
   in
+  let testSize rc =
+       Prefs.read maxSizeThreshold >= 0
+    && Props.length rc.desc >=
+         Uutil.Filesize.ofInt64
+           (Int64.mul (Int64.of_int 1000)
+                      (Int64.of_int (Prefs.read maxSizeThreshold)))
+  in
   match actionKind rc1 rc2 with
-    `UPDATE   -> test `UPDATE
+    `UPDATE   -> test `UPDATE || testSize rc1
   | `DELETION -> test `UPDATE || test `DELETION
-  | `CREATION -> test `CREATION
+  | `CREATION -> test `CREATION  || testSize rc1
 
 let filterRi root1 root2 ri =
   match ri.replicas with
