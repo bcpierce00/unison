@@ -1,3 +1,13 @@
+CHANGES FROM VERSION 2.46.13
+
+* Log conflicts and problems in the text UI even if nothing is propagated.
+* Added a string to the Conflict direction to document the reason of
+  the conflict. The text UI has been adapted to this change, the other
+  UIs need to be modified.
+* Adding the maxsizethreshold option which prevents the transfer of
+  files larger than the size specified (in Kb)
+
+-------------------------------
 CHANGES FROM VERSION 2.46.12
 
 * File system monitoring: the file watcher now fails when unable to

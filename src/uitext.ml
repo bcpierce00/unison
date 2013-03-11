@@ -578,9 +578,12 @@ let rec interactAndPropagateChanges reconItemList
     if skipped>0 then
       Safelist.iter
         (fun ri ->
-        if problematic ri then
-          alwaysDisplayAndLog
-            ("  skipped: " ^ (Path.toString ri.path1)))
+         match ri.replicas with
+           Problem r
+         | Different {rc1 = _; rc2 = _; direction = Conflict r; default_direction = _} ->
+            alwaysDisplayAndLog (Printf.sprintf "  skipped: %s (%s)"
+                                                (Path.toString ri.path1) r)
+         | _ -> ())
         newReconItemList;
     if partials>0 then
       Safelist.iter
@@ -604,6 +607,25 @@ let rec interactAndPropagateChanges reconItemList
     if !Update.foundArchives && Prefs.read Uicommon.repeat = "" then
       Update.commitUpdates ();
     display "No updates to propagate\n";
+    if skipped > 0 then begin
+      let summary =
+        Printf.sprintf
+          "Synchronization complete at %s  (0 item transferred, %d skipped, 0 failed)"
+          (let tm = Util.localtime (Util.time()) in
+           Printf.sprintf "%02d:%02d:%02d"
+                          tm.Unix.tm_hour tm.Unix.tm_min tm.Unix.tm_sec)
+          skipped in
+      Trace.log (summary ^ "\n");
+      Safelist.iter
+        (fun ri ->
+         match ri.replicas with
+           Problem r
+         | Different {rc1 = _; rc2 = _; direction = Conflict r; default_direction = _} ->
+            alwaysDisplayAndLog (Printf.sprintf "  skipped: %s (%s)"
+                                                (Path.toString ri.path1) r)
+         | _ -> ())
+        newReconItemList
+      end;
     (skipped > 0, false, false, [])
   end else if proceed=ProceedImmediately then begin
     doit()
