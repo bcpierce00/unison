@@ -1,0 +1,9 @@
+*.cmx
+*.cmi
+*.o
+src/unison
+src/Makefile.ProjectInfo
+src/TAGS
+src/mkProjectInfo
+*.cmo
+src/ubase/projectInfo.ml
