@@ -218,7 +218,7 @@ let displayri ri =
   match ri.replicas with
     Problem _ ->
       alwaysDisplay s
-  | Different {direction = d} when d=Conflict ->
+  | Different {direction = d} when isConflict d ->
       alwaysDisplay s
   | _ ->
       display s
@@ -254,7 +254,7 @@ let interact rilist =
         match ri.replicas with
           Problem s -> display "\n"; display s; display "\n"; next()
         | Different ({rc1 = rc1; rc2 = rc2; direction = dir} as diff) ->
-            if Prefs.read Uicommon.auto && dir<>Conflict then begin
+            if Prefs.read Uicommon.auto && not (isConflict dir) then begin
               display "\n"; next()
             end else
               let (descr, descl) =
@@ -271,14 +271,14 @@ let interact rilist =
               end;
               selectAction
                 (if Prefs.read Globals.batch then Some " " else None)
-                [((if dir=Conflict && not (Prefs.read Globals.batch)
+                [((if (isConflict dir) && not (Prefs.read Globals.batch)
                      then ["f"]  (* Offer no default behavior if we've got
                                     a conflict and we're in interactive mode *)
                      else ["";"f";" "]),
                   ("follow " ^ Uutil.myName ^ "'s recommendation (if any)"),
                   fun ()->
                     newLine ();
-                    if dir = Conflict && not (Prefs.read Globals.batch)
+                    if (isConflict dir) && not (Prefs.read Globals.batch)
                     then begin
                       display "No default action [type '?' for help]\n";
                       repeat()
@@ -360,7 +360,7 @@ let interact rilist =
                  (["/"],
                   ("skip"),
                   (fun () ->
-                    diff.direction <- Conflict;
+                    if not (isConflict dir) then diff.direction <- Conflict "skip requested";
                     redisplayri();
                     next()));
                  ([">";"."],

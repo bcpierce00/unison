@@ -267,7 +267,7 @@ type action = AError | ASkip of bool | ALtoR of bool | ARtoL of bool | AMerge
 
 let direction2action partial dir =
   match dir with
-    Conflict           -> ASkip partial
+    Conflict _         -> ASkip partial
   | Replica1ToReplica2 -> ALtoR partial
   | Replica2ToReplica1 -> ARtoL partial
   | Merge              -> AMerge

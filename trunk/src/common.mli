@@ -96,12 +96,14 @@ type replicaContent =
     props : Props.t list }         (* Parent properties *)
 
 type direction =
-    Conflict
+    Conflict of string (* The string is the reason of the conflict *)
   | Merge
   | Replica1ToReplica2
   | Replica2ToReplica1
 
 val direction2string : direction -> string
+
+val isConflict : direction -> bool
 
 type difference =
   { rc1 : replicaContent;           (* - content of first replica *)
