@@ -151,9 +151,9 @@ let propagate root1 root2 reconItem id showMergeFn =
         {rc1 = rc1; rc2 = rc2; direction = dir; default_direction = def} ->
       let notDefault = dir <> def in
       match dir with
-        Conflict ->
-          Trace.log (Printf.sprintf "[CONFLICT] Skipping %s\n"
-                       (Path.toString path));
+        Conflict c ->
+          Trace.log (Printf.sprintf "[CONFLICT] Skipping %s\n  %s\n"
+                       (Path.toString path) c);
           return ()
       | Replica1ToReplica2 ->
           doAction

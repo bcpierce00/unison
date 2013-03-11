@@ -118,16 +118,20 @@ type replicaContent =
     props : Props.t list }         (* Parent properties *)
 
 type direction =
-    Conflict
+    Conflict of string (* The string is the reason of the conflict *)
   | Merge
   | Replica1ToReplica2
   | Replica2ToReplica1
 
 let direction2string = function
-    Conflict -> "conflict"
+    Conflict _ -> "conflict"
   | Merge -> "merge"
   | Replica1ToReplica2 -> "replica1 to replica2"
   | Replica2ToReplica1 -> "replica2 to replica1"
+
+let isConflict = function
+    Conflict _ -> true
+  | _ -> false
 
 type difference =
   { rc1 : replicaContent;
@@ -176,7 +180,7 @@ let riLength ri =
       begin match dir with
         Replica1ToReplica2 -> rcLength rc1 rc2
       | Replica2ToReplica1 -> rcLength rc2 rc1
-      | Conflict           -> Uutil.Filesize.zero
+      | Conflict _         -> Uutil.Filesize.zero
       | Merge              -> Uutil.Filesize.zero (* underestimate :-*)
       end
   | _ ->
@@ -205,14 +209,14 @@ let fileInfos ui1 ui2 =
 let problematic ri =
   match ri.replicas with
     Problem _      -> true
-  | Different diff -> diff.direction = Conflict
+  | Different diff -> isConflict diff.direction
 
 let partiallyProblematic ri =
   match ri.replicas with
     Problem _      ->
       true
-  | Different diff ->
-      diff.direction = Conflict || diff.errors1 <> [] || diff.errors2 <> []
+  | Different diff -> 
+     isConflict diff.direction || diff.errors1 <> [] || diff.errors2 <> []
 
 let isDeletion ri =
   match ri.replicas with

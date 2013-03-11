@@ -27,7 +27,7 @@ let setDirection ri dir force =
   match ri.replicas with
     Different
       ({rc1 = rc1; rc2 = rc2; direction = d; default_direction = default } as diff)
-          when force=`Force || default=Conflict ->
+          when force=`Force || isConflict default ->
       if dir=`Replica1ToReplica2 then
         diff.direction <- Replica1ToReplica2
       else if dir=`Replica2ToReplica1 then
@@ -37,10 +37,10 @@ let setDirection ri dir force =
       end else begin  (* dir = `Older or dir = `Newer *)
         match rc1.status, rc2.status with
           `Deleted, _ ->
-            if default=Conflict then
+            if isConflict default then
               diff.direction <- Replica2ToReplica1
         | _, `Deleted ->
-            if default=Conflict then
+            if isConflict default then
               diff.direction <- Replica1ToReplica2
         | _ ->
             let comp = Props.time rc1.desc -. Props.time rc2.desc in
@@ -253,25 +253,33 @@ let shouldCancel path rc1 rc2 root2 =
                       (Int64.of_int (Prefs.read maxSizeThreshold)))
   in
   match actionKind rc1 rc2 with
-    `UPDATE   -> test `UPDATE || testSize rc1
-  | `DELETION -> test `UPDATE || test `DELETION
-  | `CREATION -> test `CREATION  || testSize rc1
+    `UPDATE   -> 
+     if test `UPDATE then true, "would update a file with noupdate or noupdatepartial set"
+     else testSize rc1, "would transfer a file of size greater than maxsizethreshold"
+  | `DELETION -> 
+     if test `UPDATE then true, "would update a file with noupdate or noupdatepartial set"
+     else test `DELETION, "would delete a file with nodeletion or nodeletionpartial set"
+  | `CREATION ->
+     if test `CREATION then true, "would create a file with nocreation or nocreationpartial set"
+     else testSize rc1, "would transfer a file of size greater than maxsizethreshold"
 
 let filterRi root1 root2 ri =
   match ri.replicas with
     Problem _ ->
       ()
   | Different diff ->
-      if
-        match diff.direction with
-          Replica1ToReplica2 ->
-            shouldCancel (Path.toString ri.path1) diff.rc1 diff.rc2 root2
-        | Replica2ToReplica1 ->
-            shouldCancel (Path.toString ri.path1) diff.rc2 diff.rc1 root1
-        | Conflict | Merge ->
-            false
-      then
-        diff.direction <- Conflict
+     let cancel,reason = 
+       match diff.direction with
+         Replica1ToReplica2 ->
+          shouldCancel (Path.toString ri.path1) diff.rc1 diff.rc2 root2
+       | Replica2ToReplica1 ->
+          shouldCancel (Path.toString ri.path1) diff.rc2 diff.rc1 root1
+       | Conflict _ | Merge ->
+          false,""
+     in 
+     if cancel 
+     then
+       diff.direction <- Conflict reason
 
 let filterRis ris =
   let (root1, root2) = Globals.rawRootPair () in
@@ -534,7 +542,7 @@ let add_equal (counter, archiveUpdated) equal v =
 (* --                                                                        *)
 let rec reconcile
           allowPartial path ui1 props1 ui2 props2 counter equals unequals =
-  let different uc1 uc2 oldType equals unequals =
+  let different uc1 uc2 reason oldType equals unequals =
     (equals,
      Tree.add unequals
        (propagateErrors allowPartial
@@ -542,7 +550,8 @@ let rec reconcile
                               path true ui1 props1 uc1 oldType;
                       rc2 = update2replicaContent
                               path true ui2 props2 uc2 oldType;
-                      direction = Conflict; default_direction = Conflict;
+                      direction = Conflict reason;
+                      default_direction = Conflict reason;
                       errors1 = []; errors2 = []}))) in
   let toBeMerged uc1 uc2 oldType equals unequals =
     (equals,
@@ -583,7 +592,7 @@ let rec reconcile
            let action =
              if propsChanged1 = PropsSame then Replica2ToReplica1
              else if propsChanged2 = PropsSame then Replica1ToReplica2
-             else Conflict in
+             else Conflict "properties changed on both sides" in
            (equals,
             Tree.add unequals
               (Different
@@ -618,23 +627,27 @@ let rec reconcile
 (* expect this.)                                                             *)
              let uc1' = File(desc1,ContentsSame) in
              let uc2' = File(desc2,ContentsSame) in
-             different uc1' uc2' (oldType prev) equals unequals
+             different uc1' uc2' "properties changed on both sides" 
+                       (oldType prev) equals unequals
        | ContentsSame, ContentsSame when Props.similar desc1 desc2 ->
            (add_equal counter equals (uc1, uc2), unequals)
        | ContentsUpdated _, ContentsUpdated _
              when Globals.shouldMerge path ->
            toBeMerged uc1 uc2 (oldType prev) equals unequals
        | _ ->
-           different uc1 uc2 (oldType prev) equals unequals
+           different uc1 uc2 "contents changed on both sides"
+                     (oldType prev) equals unequals
        end
   | (Updates (Symlink(l1) as uc1, prev),
      Updates (Symlink(l2) as uc2, _)) ->
        if l1 = l2 then
          (add_equal counter equals (uc1, uc2), unequals)
        else
-         different uc1 uc2 (oldType prev) equals unequals
+         different uc1 uc2 "symbolic links changed on both sides"
+                   (oldType prev) equals unequals
   | (Updates (uc1, prev), Updates (uc2, _)) ->
-      different uc1 uc2 (oldType prev) equals unequals
+      different uc1 uc2 "conflicting updates"
+                (oldType prev) equals unequals
 
 (* Sorts the paths so that they will be displayed in order                   *)
 let sortPaths pathUpdatesList =
