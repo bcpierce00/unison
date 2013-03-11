@@ -39,6 +39,9 @@ endif
 
 git_checkin: remembernews
 	echo >> src/mkProjectInfo.ml # so the Rev keyword gets updated
+  git add src/RECENTNEWS src/mkProjectInfo.ml
+  git commit --amend --no-edit
+  $(RM) logmsg
 	git svn dcommit # no logmsg here: the changes are in the commits
 
 remembernews: logmsg
