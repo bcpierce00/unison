@@ -37,6 +37,10 @@ ifeq ($(USER),bcpierce)
 	$(MAKE) nightly
 endif
 
+git_checkin: remembernews
+	echo >> src/mkProjectInfo.ml # so the Rev keyword gets updated
+	git svn dcommit # no logmsg here: the changes are in the commits
+
 remembernews: logmsg
 	echo "CHANGES FROM VERSION" $(VERSION) > rc.tmp
 	echo >> rc.tmp
