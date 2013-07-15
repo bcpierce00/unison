@@ -1,3 +1,8 @@
+CHANGES FROM VERSION 2.46.18
+
+Adapting the GTK ui to the new Conflict type. For the moment the string carried is not used.
+
+-------------------------------
 CHANGES FROM VERSION 2.46.13
 
 * Log conflicts and problems in the text UI even if nothing is propagated.

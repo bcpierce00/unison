@@ -3062,7 +3062,7 @@ let createToplevelWindow () =
       if i < l then
         match !theState.(i).ri.replicas with
           Different {direction = dir}
-              when not (Prefs.read Uicommon.auto) || dir = Conflict ->
+              when not (Prefs.read Uicommon.auto) || isConflict dir ->
             select i true
         | _ ->
             loop (i + 1) in
@@ -3074,7 +3074,7 @@ let createToplevelWindow () =
     let oldPath = if i = 0 then Path.empty else !theState.(i-1).ri.path1 in
     let status =
       match !theState.(i).ri.replicas with
-        Different {direction = Conflict} | Problem _ ->
+        Different {direction = Conflict _} | Problem _ ->
           NoStatus
       | _ ->
           match !theState.(i).whatHappened with
@@ -3297,7 +3297,7 @@ lst_store#set ~row ~column:c_path path;
               clientWritten := !clientWritten +. Uutil.Filesize.toFloat bytes
             else
               serverWritten := !serverWritten +. Uutil.Filesize.toFloat bytes
-        | Conflict | Merge ->
+        | Conflict _ | Merge ->
             (* Diff / merge *)
             clientWritten := !clientWritten +. Uutil.Filesize.toFloat bytes
         end
@@ -3634,9 +3634,9 @@ lst_store#set ~row ~column:c_path path;
              match si.ri.replicas with
                Problem err ->
                  (si, [err], "error during update detection") :: l
-             | Different diff when diff.direction = Conflict ->
+             | Different diff when isConflict diff.direction ->
                  (si, [],
-                  if diff.default_direction = Conflict then
+                  if isConflict diff.default_direction then
                     "conflict"
                   else "skipped") :: l
              | _ ->
@@ -3778,7 +3778,7 @@ lst_store#set ~row ~column:c_path path;
     doAction (fun _ diff -> diff.direction <- Replica2ToReplica1) in
   let rightAction _ =
     doAction (fun _ diff -> diff.direction <- Replica1ToReplica2) in
-  let questionAction _ = doAction (fun _ diff -> diff.direction <- Conflict) in
+  let questionAction _ = doAction (fun _ diff -> diff.direction <- Conflict "") in
   let mergeAction    _ = doAction (fun _ diff -> diff.direction <- Merge) in
 
 (*  actionBar#insert_space ();*)
@@ -4117,7 +4117,7 @@ lst_store#set ~row ~column:c_path path;
                  | Some(Util.Succeeded, _) -> false)
               || match !theState.(i).ri.replicas with
                    Problem _ -> true
-                 | Different diff -> diff.direction = Conflict in
+                 | Different diff -> isConflict diff.direction in
              if notok then loop (i+1) (i::acc)
              else loop (i+1) (acc) in
            let failedindices = loop 0 [] in
