@@ -366,7 +366,7 @@ clean::
 	$(MAKE) -C ubase clean
 	$(MAKE) -C lwt clean
 
-ifeq (${OSARCH},osx)
+ifneq ($(strip $(UIMACDIR)),)
 clean::
 	-(cd $(UIMACDIR); xcodebuild clean)
 	-(cd $(UIMACDIR); $(RM) -r build ExternalSettings.xcconfig)
