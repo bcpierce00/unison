@@ -1,6 +1,17 @@
+CHANGES FROM VERSION 2.46.20
+
+* Incorporated patch from Irányossy Knoblauch Artúr to make temp file
+  names fit within 143 characters (to make eCryptFS happy).
+
+
+-------------------------------
 CHANGES FROM VERSION 2.46.18
 
-Adapting the GTK ui to the new Conflict type. For the moment the string carried is not used.
+* Incorporated patch from Irányossy Knoblauch Artúr to make temp file
+  names fit within 143 characters (to make eCryptFS happy).
+
+* Adapting the GTK UI to the new Conflict type. For the moment, the
+  string carried is not used.
 
 -------------------------------
 CHANGES FROM VERSION 2.46.13
@@ -43,6 +54,7 @@ CHANGES FROM VERSION 2.46.6
 * A bytecode version of unison-fsmonitor is now produced by "make NATIVE=false"
 
 -------------------------------
+>>>>>>> .r525
 CHANGES FROM VERSION 2.46.4
 
 * Windows/lwt: correctly deals with Sys.Break exceptions when sleeping

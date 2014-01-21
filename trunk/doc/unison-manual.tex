@@ -1761,6 +1761,11 @@ form
 file exists and use the appropriate variant of the arguments to {\tt
   opendiff}. 
 
+Linux users may enjoy this variant:
+\begin{verbatim}
+    merge = Name * -> kdiff3 -o NEW CURRENTARCHOPT CURRENT1 CURRENT2
+\end{verbatim}
+
 Ordinarily, external merge programs are only invoked when Unison is {\em
   not} running in batch mode.  To specify an external merge program that
 should be used no matter the setting of the {\tt batch} flag, use the {\tt

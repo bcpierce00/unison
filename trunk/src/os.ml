@@ -338,6 +338,11 @@ let rec truncate_filename s l =
   else
     String.sub s 0 l
 
+(* We need to be careful not to use longer temp-file names than the
+   file system permits.  eCryptfs has the lowest file name length
+   limit we know of, at 143 bytes. *)
+let maxFileNameLength = 143
+
 (* Generates an unused fspath for a temporary file.                          *)
 let genTempPath fresh fspath path prefix suffix =
   let rec f i =
@@ -350,12 +355,17 @@ let genTempPath fresh fspath path prefix suffix =
           assert false
       | Some (name, parentPath) ->
           let name = Name.toString name in
-          let len = String.length name in
-          let maxlen = 64 in
+          let nameLen = String.length name in
+          let prefixLen = String.length prefix in
+          let suffixLen = String.length s in
+          let maxLen = maxFileNameLength - prefixLen - suffixLen in
           let name =
-            if len <= maxlen then name else
-            (truncate_filename name maxlen ^
-             Digest.to_hex (Digest.string name))
+            if nameLen <= maxLen then name else
+              let nameDigest = Digest.to_hex (Digest.string name) in
+              let nameDigestLen = String.length nameDigest in
+              let maxLen = maxLen - nameDigestLen in
+              assert (maxLen>0);
+              (truncate_filename name maxLen ^ nameDigest)
           in
           Path.child parentPath (Name.fromString (prefix ^ name ^ s))
     in
