@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/xferhint.mli *)
-(* Copyright 1999-2012, Benjamin C. Pierce (see COPYING for details) *)
+(* Copyright 1999-2014, Benjamin C. Pierce (see COPYING for details) *)
 
 (* This module maintains a cache that can be used to map
    an Os.fullfingerprint to a (Fspath.t * Path.t) naming a file that *may*

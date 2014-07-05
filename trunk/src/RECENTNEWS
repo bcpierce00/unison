@@ -1,3 +1,12 @@
+CHANGES FROM VERSION 2.47.0
+
+* Incorporated a refresh of the OSX GUI, contributed by Alan Shutko.
+
+* Update dates in copyright notices
+
+* Tidying for beta-release
+
+-------------------------------
 CHANGES FROM VERSION 2.46.20
 
 * Incorporated patch from Irányossy Knoblauch Artúr to make temp file

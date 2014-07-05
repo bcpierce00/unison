@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/ubase/util.mli *)
-(* Copyright 1999-2012, Benjamin C. Pierce (see COPYING for details) *)
+(* Copyright 1999-2014, Benjamin C. Pierce (see COPYING for details) *)
 
 (* Miscellaneous utility functions and datatypes *)
 

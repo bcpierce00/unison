@@ -71,7 +71,7 @@ OCAMLLIBDIR=$(shell ocamlc -v | tail -1 | sed -e 's/.* //g' | tr '\\' '/' | tr -
 #     UISTYLE=gtk2
 #     UISTYLE=mac       (old and limited, but working)
 #     UISTYLE=macnew    (spiffier)
-#     UISTYLE=macnew09  (even spiffier, but not yet extensively tested)
+#     UISTYLE=mac14  (even spiffier, but not yet extensively tested)
 #
 # This should be set to an appropriate value automatically, depending
 # on whether the lablgtk library is available
@@ -80,7 +80,7 @@ LABLGTK2LIB=$(OCAMLLIBDIR)/lablgtk2
 ##BCP [3/2007]: Removed temporarily, since the OSX UI is not working well 
 ## at the moment and we don't want to confuse people by building it by default
 ifeq ($(OSARCH),osx)
-  UISTYLE=macnew09
+  UISTYLE=mac14
 else
   ifeq ($(wildcard $(LABLGTK2LIB)),$(LABLGTK2LIB))
     UISTYLE=gtk2
@@ -178,9 +178,9 @@ ifeq ($(UISTYLE),macnew)
   buildexecutable:: macexecutable
   UIMACDIR=uimacnew
 else
-ifeq ($(UISTYLE),macnew09)
+ifeq ($(UISTYLE),mac14)
   buildexecutable:: macexecutable
-  UIMACDIR=uimacnew09
+  UIMACDIR=uimac14
 else
   buildexecutable:: $(NAME)$(EXEC_EXT)
 endif
@@ -263,8 +263,8 @@ ifeq ($(UISTYLE),macnew)
   INCLFLAGS+=-thread 
 endif
 
-## New Mac UI, 2009 version
-ifeq ($(UISTYLE),macnew09)
+## New Mac UI, 2014 version
+ifeq ($(UISTYLE),mac14)
   OCAMLOBJS+=uimacbridgenew.cmo
   THREADS=true
   OCAMLLIBS+=threads.cma

@@ -443,7 +443,7 @@ let unisonRiToFileType ri =
 Callback.register "unisonRiToFileType" unisonRiToFileType;;
 
 let direction2niceString = function (* from Uicommon where it's not exported *)
-    Conflict           -> "<-?->"
+    Conflict _         -> "<-?->"
   | Replica1ToReplica2 -> "---->"
   | Replica2ToReplica1 -> "<----"
   | Merge              -> "<-M->"
@@ -466,7 +466,7 @@ Callback.register "unisonRiSetRight" unisonRiSetRight;;
 let unisonRiSetConflict ri =
   match ri.ri.replicas with
     Problem _ -> ()
-  | Different diff -> diff.direction <- Conflict;;
+  | Different diff -> diff.direction <- Conflict "skip requested";;
 Callback.register "unisonRiSetConflict" unisonRiSetConflict;;
 let unisonRiSetMerge ri =
   match ri.ri.replicas with
@@ -484,7 +484,7 @@ let unisonRiToProgress ri =
   match (ri.statusMessage, ri.whatHappened,ri.ri.replicas) with
     (None,None,_) -> ""
   | (Some s,None,_) -> Unicode.protect s
-  | (_,_,Different {direction = Conflict}) -> ""
+  | (_,_,Different {direction = Conflict "files differed"}) -> ""
   | (_,_,Problem _) -> ""
   | (_,Some Util.Succeeded,_) -> "done"
   | (_,Some (Util.Failed s),_) -> "FAILED";;
@@ -664,9 +664,9 @@ let do_unisonSynchronize () =
            match si.ri.replicas with
              Problem err ->
                (si, [err], "error during update detection") :: l
-           | Different diff when diff.direction = Conflict ->
+           | Different diff when (isConflict diff.direction) ->
                (si, [],
-                if diff.default_direction = Conflict then
+                if (isConflict diff.default_direction) then
                   "conflict"
                 else "skipped") :: l
            | _ ->
@@ -758,7 +758,7 @@ Callback.register "unisonSecondRootString" unisonSecondRootString;;
    the current setting is Conflict *)
 let unisonRiIsConflict ri =
   match ri.ri.replicas with
-  | Different {default_direction = Conflict} -> true
+  | Different {default_direction = Conflict "files differ"} -> true
   | _ -> false;;
 Callback.register "unisonRiIsConflict" unisonRiIsConflict;;
 

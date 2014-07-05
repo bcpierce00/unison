@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/main.ml *)
-(* Copyright 1999-2012, Benjamin C. Pierce 
+(* Copyright 1999-2014, Benjamin C. Pierce 
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -127,9 +127,9 @@ let interface =
 
 let catch_all f = 
   try
-    Util.msg "Starting catch_all...\n";
+    (* Util.msg "Starting catch_all...\n"; *)
     f ();
-    Util.msg "Done catch_all...\n";
+    (* Util.msg "Done catch_all...\n"; *)
   with e ->
     Util.msg "Unison failed: %s\n" (Uicommon.exn2string e); exit 1;;
 
