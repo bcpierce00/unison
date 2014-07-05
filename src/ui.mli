@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/ui.mli *)
-(* Copyright 1999-2012, Benjamin C. Pierce (see COPYING for details) *)
+(* Copyright 1999-2014, Benjamin C. Pierce (see COPYING for details) *)
 
 (* The module Ui provides only the user interface signature.
    Implementations are provided by Uitext and Uitk. *)

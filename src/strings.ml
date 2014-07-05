@@ -7,4 +7,5 @@ let docs =
       Version 2.46.6\n\
       \n\
       "))
-::
+:: []
+

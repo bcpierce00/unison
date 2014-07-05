@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/globals.mli *)
-(* Copyright 1999-2012, Benjamin C. Pierce (see COPYING for details) *)
+(* Copyright 1999-2014, Benjamin C. Pierce (see COPYING for details) *)
 
 (* Global variables and functions needed by top-level modules and user       *)
 (* interfaces                                                                *)

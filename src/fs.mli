@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/fs.mli *)
-(* Copyright 1999-2012, Benjamin C. Pierce (see COPYING for details) *)
+(* Copyright 1999-2014, Benjamin C. Pierce (see COPYING for details) *)
 
 (* Operations on fspaths *)
 
