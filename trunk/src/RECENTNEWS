@@ -1,3 +1,9 @@
+CHANGES FROM VERSION 2.47.1
+
+* Fixed a bug in export procedure that was messing up documentation strings
+
+
+-------------------------------
 CHANGES FROM VERSION 2.47.0
 
 * Incorporated a refresh of the OSX GUI, contributed by Alan Shutko.
