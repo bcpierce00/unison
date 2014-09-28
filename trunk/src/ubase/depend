@@ -12,10 +12,8 @@ trace.cmo : util.cmi safelist.cmi prefs.cmi trace.cmi
 trace.cmx : util.cmx safelist.cmx prefs.cmx trace.cmi
 uarg.cmo : util.cmi safelist.cmi uarg.cmi
 uarg.cmx : util.cmx safelist.cmx uarg.cmi
-uprintf.cmo : uprintf.cmi
-uprintf.cmx : uprintf.cmi
-util.cmo : uprintf.cmi safelist.cmi util.cmi
-util.cmx : uprintf.cmx safelist.cmx util.cmi
+util.cmo : safelist.cmi util.cmi
+util.cmx : safelist.cmx util.cmi
 myMap.cmi :
 prefs.cmi : util.cmi
 proplist.cmi :
@@ -23,5 +21,4 @@ rx.cmi :
 safelist.cmi :
 trace.cmi : prefs.cmi
 uarg.cmi :
-uprintf.cmi :
 util.cmi :
