@@ -1,3 +1,11 @@
+CHANGES FROM VERSION 2.47.2
+
+* Incorporate a small patch from Christopher Zimmermann to replace the
+  Uprintf module (which doesn't work with OCaml 4.02) with equivalent
+  functionality from the standard library.
+
+
+-------------------------------
 CHANGES FROM VERSION 2.47.1
 
 * Fixed a bug in export procedure that was messing up documentation strings
