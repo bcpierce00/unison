@@ -1,0 +1,6 @@
+About to mail release message to user groups...
+
+Edit mail.tmp if you like, then press RETURN.
+
+(Also, take a moment to save a copy of the whole directory, just in case
+something needs to be edited in the next couple of days.)

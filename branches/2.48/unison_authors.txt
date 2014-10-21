@@ -1,0 +1,9 @@
+bcpierce = Benjamin C. Pierce <bcpierce@cis.upenn.edu>
+ben = Ben Willmore <bdeb@willmore.eu>
+craigf = Craig Federighi <craig.federighi@gmail.com>
+gildor = Sylvain Le Gall <gildor@debian.org>
+lescuyer = Stéphane Lescuyer <stephane.lescuyer@polytechnique.org>
+schmitta = Alan Schmitt <alan.schmitt@polytechnique.org>
+tjim = Trevor Jim <trevor@research.att.com>
+trevor = Trevor Jim <trevor@research.att.com>
+vouillon = Jérôme Vouillon <vouillon@pps.jussieu.fr>
