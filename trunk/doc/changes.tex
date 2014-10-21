@@ -1,3 +1,62 @@
+\begin{changesfromversion}{2.45}
+\item Incorporated a patch from Christopher Zimmermann to replace the
+  Uprintf module (which doesn't work with OCaml 4.02, causing Unison to crash) with equivalent
+  functionality from the standard library.
+\item Incorporated a refresh of the OSX GUI, contributed by Alan Shutko.
+\item Added a {\tt maxsizethreshold} option, which prevents the transfer of
+  files larger than the size specified (in Kb).
+\item Added a "copyonconflict" preference, to make a copy of files that would
+  otherwise be overwritten or deleted in case of conflicting changes.
+  (This makes it possible to automatically resolve conflicts in a
+   fairly safe way when synchronizing continuously, in combination
+   with the "{\tt repeat = watch}" and "{\tt prefer = newer}" preferences.
+%%%%%
+\item  File system monitoring: 
+\begin{itemize}
+\item 
+The file watcher now fails when unable to
+  watch a directory, rather than silently ignoring the issue.
+\item File system monitoring: more robust communication with the helper program
+  (in socket mode, the unison server will still work properly despite
+  unexpected unison client disconnections).
+\item A bytecode version of unison-fsmonitor is now produced by "make NATIVE=false"
+\item Improved search for unison-fsmonitor 
+\item Detect when the helper process exits.
+\item More robust file watching helper programs for Windows and Linux.
+  They communicate with Unison through pipes (Unison redirects stdin
+  and stdout), using a race-free protocol.
+\item Retries paths with failures using an exponential backoff algorithm.
+\item  The information returned by the file watchers are used
+    independently for each replica; thus, when only one replica has
+    changes, Unison will only rescan this replica.
+\item When available, used by the graphical UIs to speed up rescanning
+    (can be disabled by setting the new {\tt watch} preference to 
+\item Small fix to the way fsmonitor.py gets invoked when using the file
+  watching functionality, suggested by Josh Berdine.  Unison will now
+  look for {\tt fsmonitor.py} in the same directory where the Unison
+  executable itself lives.
+\end{itemize}
+%%%%%
+\item Minor:
+\begin{itemize}
+\item Fixed a bug in export procedure that was messing up documentation
+strings.
+\item Incorporated a patch from Ir\'anyossy Knoblauch Art\'ur to make temp file
+  names fit within 143 characters (to make eCryptFS happy).
+\item Added a string to the Conflict direction to document the reason of
+  the conflict. 
+\item Log conflicts and problems in the text UI even if nothing is propagated.
+\item Use hash function from OCaml 3.x for comparing archives, even when
+  compiled with OCaml 4.x.
+\item Do not restart Unison in case of uncaught exception when the repeat
+  preference is set.  This seems safer.  And it does not work, for
+  instance, in case of lost connection.
+\item Fix Unix.readlink invalid argument error under Windows
+\item Fix a crash when the output of the {\tt diff} program is too large.
+\item Fixed Makefile for cross-compiling towards Windows (updated to MinGW-w64)
+\end{itemize}
+\end{changesfromversion}
+
 \begin{changesfromversion}{2.40.63}
 \item New preference {\tt fastercheckUNSAFE}, which can be used (with care!)
 to achieve {\em much} faster update detection when all the common files in

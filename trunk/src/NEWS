@@ -1,5 +1,64 @@
 
-Changes in Version 2.47.1
+Changes in Version 2.47.4
+
+   Changes since 2.45:
+     * Incorporated a patch from Christopher Zimmermann to replace the
+       Uprintf module (which doesn't work with OCaml 4.02, causing Unison
+       to crash) with equivalent functionality from the standard library.
+     * Incorporated a refresh of the OSX GUI, contributed by Alan Shutko.
+     * Added a maxsizethreshold option, which prevents the transfer of
+       files larger than the size specified (in Kb).
+     * Added a "copyonconflict" preference, to make a copy of files that
+       would otherwise be overwritten or deleted in case of conflicting
+       changes. (This makes it possible to automatically resolve conflicts
+       in a fairly safe way when synchronizing continuously, in
+       combination with the "repeat = watch" and "prefer = newer"
+       preferences.
+     * File system monitoring:
+          + The file watcher now fails when unable to watch a directory,
+            rather than silently ignoring the issue.
+          + File system monitoring: more robust communication with the
+            helper program (in socket mode, the unison server will still
+            work properly despite unexpected unison client
+            disconnections).
+          + A bytecode version of unison-fsmonitor is now produced by
+            "make NATIVE=false"
+          + Improved search for unison-fsmonitor
+          + Detect when the helper process exits.
+          + More robust file watching helper programs for Windows and
+            Linux. They communicate with Unison through pipes (Unison
+            redirects stdin and stdout), using a race-free protocol.
+          + Retries paths with failures using an exponential backoff
+            algorithm.
+          + The information returned by the file watchers are used
+            independently for each replica; thus, when only one replica
+            has changes, Unison will only rescan this replica.
+          + When available, used by the graphical UIs to speed up
+            rescanning (can be disabled by setting the new watch
+            preference to
+          + Small fix to the way fsmonitor.py gets invoked when using the
+            file watching functionality, suggested by Josh Berdine. Unison
+            will now look for fsmonitor.py in the same directory where the
+            Unison executable itself lives.
+     * Minor:
+          + Fixed a bug in export procedure that was messing up
+            documentation strings.
+          + Incorporated a patch from Irányossy Knoblauch Artúr to make
+            temp file names fit within 143 characters (to make eCryptFS
+            happy).
+          + Added a string to the Conflict direction to document the
+            reason of the conflict.
+          + Log conflicts and problems in the text UI even if nothing is
+            propagated.
+          + Use hash function from OCaml 3.x for comparing archives, even
+            when compiled with OCaml 4.x.
+          + Do not restart Unison in case of uncaught exception when the
+            repeat preference is set. This seems safer. And it does not
+            work, for instance, in case of lost connection.
+          + Fix Unix.readlink invalid argument error under Windows
+          + Fix a crash when the output of the diff program is too large.
+          + Fixed Makefile for cross-compiling towards Windows (updated to
+            MinGW-w64)
 
    Changes since 2.40.63:
      * New preference fastercheckUNSAFE, which can be used (with care!) to

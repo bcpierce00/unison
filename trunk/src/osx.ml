@@ -206,7 +206,8 @@ let defaultInfos typ =
   | `DIRECTORY -> { ressInfo = NoRess; finfo = "D" }
   |  _         -> { ressInfo = NoRess; finfo = "" }
 
-let noTypeCreator = String.make 10 '\000'
+(* BCP: dead code
+   let noTypeCreator = String.make 10 '\000' *)
 
 (* Remove trailing zeroes *)
 let trim s =
