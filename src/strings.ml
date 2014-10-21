@@ -4,7 +4,7 @@
 let docs =
     ("about", ("About Unison", 
      "Unison File Synchronizer\n\
-      Version 2.47.1\n\
+      Version 2.47.4\n\
       \n\
       "))
 ::
@@ -2768,8 +2768,67 @@ let docs =
       \n\
       "))
 ::
-    ("news", ("Changes in Version 2.47.1", 
-     "Changes in Version 2.47.1\n\
+    ("news", ("Changes in Version 2.47.4", 
+     "Changes in Version 2.47.4\n\
+      \n\
+      \032  Changes since 2.45:\n\
+      \032    * Incorporated a patch from Christopher Zimmermann to replace the\n\
+      \032      Uprintf module (which doesn't work with OCaml 4.02, causing Unison\n\
+      \032      to crash) with equivalent functionality from the standard library.\n\
+      \032    * Incorporated a refresh of the OSX GUI, contributed by Alan Shutko.\n\
+      \032    * Added a maxsizethreshold option, which prevents the transfer of\n\
+      \032      files larger than the size specified (in Kb).\n\
+      \032    * Added a \"copyonconflict\" preference, to make a copy of files that\n\
+      \032      would otherwise be overwritten or deleted in case of conflicting\n\
+      \032      changes. (This makes it possible to automatically resolve conflicts\n\
+      \032      in a fairly safe way when synchronizing continuously, in\n\
+      \032      combination with the \"repeat = watch\" and \"prefer = newer\"\n\
+      \032      preferences.\n\
+      \032    * File system monitoring:\n\
+      \032         + The file watcher now fails when unable to watch a directory,\n\
+      \032           rather than silently ignoring the issue.\n\
+      \032         + File system monitoring: more robust communication with the\n\
+      \032           helper program (in socket mode, the unison server will still\n\
+      \032           work properly despite unexpected unison client\n\
+      \032           disconnections).\n\
+      \032         + A bytecode version of unison-fsmonitor is now produced by\n\
+      \032           \"make NATIVE=false\"\n\
+      \032         + Improved search for unison-fsmonitor\n\
+      \032         + Detect when the helper process exits.\n\
+      \032         + More robust file watching helper programs for Windows and\n\
+      \032           Linux. They communicate with Unison through pipes (Unison\n\
+      \032           redirects stdin and stdout), using a race-free protocol.\n\
+      \032         + Retries paths with failures using an exponential backoff\n\
+      \032           algorithm.\n\
+      \032         + The information returned by the file watchers are used\n\
+      \032           independently for each replica; thus, when only one replica\n\
+      \032           has changes, Unison will only rescan this replica.\n\
+      \032         + When available, used by the graphical UIs to speed up\n\
+      \032           rescanning (can be disabled by setting the new watch\n\
+      \032           preference to\n\
+      \032         + Small fix to the way fsmonitor.py gets invoked when using the\n\
+      \032           file watching functionality, suggested by Josh Berdine. Unison\n\
+      \032           will now look for fsmonitor.py in the same directory where the\n\
+      \032           Unison executable itself lives.\n\
+      \032    * Minor:\n\
+      \032         + Fixed a bug in export procedure that was messing up\n\
+      \032           documentation strings.\n\
+      \032         + Incorporated a patch from Ir\225nyossy Knoblauch Art\250r to make\n\
+      \032           temp file names fit within 143 characters (to make eCryptFS\n\
+      \032           happy).\n\
+      \032         + Added a string to the Conflict direction to document the\n\
+      \032           reason of the conflict.\n\
+      \032         + Log conflicts and problems in the text UI even if nothing is\n\
+      \032           propagated.\n\
+      \032         + Use hash function from OCaml 3.x for comparing archives, even\n\
+      \032           when compiled with OCaml 4.x.\n\
+      \032         + Do not restart Unison in case of uncaught exception when the\n\
+      \032           repeat preference is set. This seems safer. And it does not\n\
+      \032           work, for instance, in case of lost connection.\n\
+      \032         + Fix Unix.readlink invalid argument error under Windows\n\
+      \032         + Fix a crash when the output of the diff program is too large.\n\
+      \032         + Fixed Makefile for cross-compiling towards Windows (updated to\n\
+      \032           MinGW-w64)\n\
       \n\
       \032  Changes since 2.40.63:\n\
       \032    * New preference fastercheckUNSAFE, which can be used (with care!) to\n\
