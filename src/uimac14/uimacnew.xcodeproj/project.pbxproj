@@ -83,7 +83,7 @@
 		B5B44C1F09DF61A4000DC7AF /* table-right-green.tif in Resources */ = {isa = PBXBuildFile; fileRef = B5B44C1709DF61A4000DC7AF /* table-right-green.tif */; };
 		B5B44C2009DF61A4000DC7AF /* table-skip.tif in Resources */ = {isa = PBXBuildFile; fileRef = B5B44C1809DF61A4000DC7AF /* table-skip.tif */; };
 		B5E03B3909E38B9E0058C7B9 /* rescan.tif in Resources */ = {isa = PBXBuildFile; fileRef = B5E03B3809E38B9E0058C7B9 /* rescan.tif */; };
-		BB1ADE26114AEB1100575BFC /* Growl.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = BBE2BCAC11355CDD00B187F2 /* Growl.framework */; };
+		BB1ADE26114AEB1100575BFC /* Growl.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = BBE2BCAC11355CDD00B187F2 /* Growl.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		BBE2BCAE11355CDD00B187F2 /* Growl.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BBE2BCAC11355CDD00B187F2 /* Growl.framework */; };
 		DE2444D610C294EA007E1546 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = DE2444D410C294EA007E1546 /* MainMenu.xib */; };
 /* End PBXBuildFile section */
@@ -419,7 +419,7 @@
 		29B97313FDCFA39411CA2CEA /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0410;
+				LastUpgradeCheck = 0610;
 			};
 			buildConfigurationList = 2A3C3F2C0992245300E404E9 /* Build configuration list for PBXProject "uimacnew" */;
 			compatibilityVersion = "Xcode 3.2";
@@ -609,7 +609,7 @@
 		2A3C3F290992245300E404E9 /* Development */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
+				COMBINE_HIDPI_IMAGES = YES;
 				COPY_PHASE_STRIP = NO;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(FRAMEWORK_SEARCH_PATHS)",
@@ -651,7 +651,7 @@
 		2A3C3F2A0992245300E404E9 /* Deployment */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
+				COMBINE_HIDPI_IMAGES = YES;
 				COPY_PHASE_STRIP = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(FRAMEWORK_SEARCH_PATHS)",
@@ -690,7 +690,7 @@
 		2A3C3F2B0992245300E404E9 /* Default */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
+				COMBINE_HIDPI_IMAGES = YES;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(FRAMEWORK_SEARCH_PATHS)",
 					"$(SRCROOT)",
