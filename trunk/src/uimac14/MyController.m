@@ -1,4 +1,4 @@
-/* Copyright (c) 2003, 2014, see file COPYING for details. */
+/* Copyright (c) 2003, 2015, see file COPYING for details. */
 
 #import "MyController.h"
 

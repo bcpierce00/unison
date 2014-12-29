@@ -2,6 +2,9 @@
 \newif\iffull \fullfalse
 \newif\ifdraft  \drafttrue
 
+\IfFileExists{texdirectives.tex}
+   {\input{texdirectives}}
+   {\typeout{== ERROR == The dynamically generated file `texdirectives.tex' couldn't be found. You should use `make` to build the manual for Unison (`unison-manual.pdf'). Don't call latex directly.}\stop}
 \input{texdirectives}
 \input{unisonversion}
 
