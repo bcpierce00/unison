@@ -3,7 +3,7 @@
 //  Unison
 //
 //  Created by Trevor Jim on Wed Aug 27 2003.
-//  Copyright (c) 2003, 2014.  See file COPYING for details.
+//  Copyright (c) 2003, 2015.  See file COPYING for details.
 //
 
 #import "ReconTableView.h"
