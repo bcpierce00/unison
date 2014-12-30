@@ -1,3 +1,9 @@
+CHANGES FROM VERSION 2.40.102
+
+* Backport fix for OCaml 4 to stable version (2.40)
+
+
+-------------------------------
 CHANGES FROM VERSION 2.40.69
 
 * Use hash function from OCaml 3.x for comparing archives, even when
