@@ -20,10 +20,12 @@ let rec findFirstSNIP ch =
 let prsection ch =
   let name = input_line ch in
   let shortname = input_line ch in
-  let empty = input_line ch in
-  if empty<>"" then
-    (fprintf stderr "Second line after SNIP is '%s', not empty!\n" empty;
-     exit 1);
+  if shortname <> "" then begin
+    let empty = input_line ch in
+    if empty<>"" then
+      (fprintf stderr "Second line after SNIP is '%s', not empty!\n" empty;
+       exit 1)
+    end;
   fprintf ml "    (\"%s\", (\"%s\", \n     \"" shortname name;
   let rec loop () =
     let l = input_line ch in

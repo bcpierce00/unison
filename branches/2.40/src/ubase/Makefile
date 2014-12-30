@@ -1,7 +1,7 @@
 NAME = ubase
 
 OBJECTS  = \
-  safelist.cmo uprintf.cmo util.cmo uarg.cmo prefs.cmo trace.cmo rx.cmo \
+  safelist.cmo util.cmo uarg.cmo prefs.cmo trace.cmo rx.cmo \
   myMap.cmo
 
 OCAMLC = ocamlfind ocamlc -g 
