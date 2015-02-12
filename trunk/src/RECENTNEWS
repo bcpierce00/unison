@@ -1,23 +1,5 @@
-CHANGES FROM VERSION 2.48.0
+CHANGES FROM VERSION 2.48.3
 
-* Remove uigtk.ml (superceded a long time ago by uigtk2)
-
-* Update copyright dates for 2015
-
-
--------------------------------
-CHANGES FROM VERSION 2.48.-1
-
-* Preparing for new beta release
-
--------------------------------
-CHANGES FROM VERSION 2.48.0
-
-* Preparing for new beta release
-
--------------------------------
-CHANGES FROM VERSION 2.47.4
-
-* Preparing for new beta release
+* Final cleanup for stable release
 
 -------------------------------

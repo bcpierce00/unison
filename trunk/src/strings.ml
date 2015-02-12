@@ -4,7 +4,7 @@
 let docs =
     ("about", ("About Unison", 
      "Unison File Synchronizer\n\
-      Version 2.47.4\n\
+      Version 2.48.3\n\
       \n\
       "))
 ::
@@ -255,13 +255,18 @@ let docs =
       \n\
       Unix\n\
       \n\
-      \032  You'll need the Objective Caml compiler (version 3.11.2 or later),\n\
-      \032  which is available from http://caml.inria.fr. Building and installing\n\
-      \032  OCaml on Unix systems is very straightforward; just follow the\n\
-      \032  instructions in the distribution. You'll probably want to build the\n\
-      \032  native-code compiler in addition to the bytecode compiler, as Unison\n\
-      \032  runs much faster when compiled to native code, but this is not\n\
-      \032  absolutely necessary. (Quick start: on many systems, the following\n\
+      \032  Unison can be built with or without a graphical user interface (GUI).\n\
+      \032  The build system will decide automatically depending on the libraries\n\
+      \032  installed on your system, but you can also type make UISTYLE=text to\n\
+      \032  build Unison without GUI.\n\
+      \n\
+      \032  You'll need the Objective Caml compiler, available from\n\
+      \032  http://caml.inria.fr. OCaml is available from most package managers\n\
+      \032  Building and installing OCaml on Unix systems is very straightforward;\n\
+      \032  just follow the instructions in the distribution. You'll probably want\n\
+      \032  to build the native-code compiler in addition to the bytecode compiler,\n\
+      \032  as Unison runs much faster when compiled to native code, but this is\n\
+      \032  not absolutely necessary. (Quick start: on many systems, the following\n\
       \032  sequence of commands will get you a working and installed compiler:\n\
       \032  first do make world opt, then su to root and do make install.)\n\
       \n\
@@ -277,26 +282,25 @@ let docs =
       \032  should get back a usage message.\n\
       \n\
       \032  If you want to build the graphical user interface, you will need to\n\
-      \032  install two additional things:\n\
-      \032    * The Gtk2 libraries. These areavailable from http://www.gtk.org and\n\
-      \032      are standard on many Unix installations.\n\
-      \032    * The lablgtk2 OCaml library. Grab the developers' tarball from\n\
+      \032  install some additional things:\n\
+      \032    * The Gtk2 development libraries (package libgtk2.0-dev on debian\n\
+      \032      based systems).\n\
+      \032    * OCaml bindings for Gtk2. Install them from your software\n\
+      \032      repositories (package liblablgtk2-ocaml on debian based systems).\n\
+      \032      Also available from\n\
+      \032      http://wwwfun.kurims.kyoto-u.ac.jp/soft/olabl/lablgtk.html.\n\
+      \032    * Pango, a text rendering library and a part of Gtk2. On some systems\n\
+      \032      (e.g. Ubuntu) the bindings between Pango and OCaml need to be\n\
+      \032      installed explicitly (package liblablgtk-extras-ocaml-dev on\n\
+      \032      Ubuntu).\n\
       \n\
-      \032    http://wwwfun.kurims.kyoto-u.ac.jp/soft/olabl/lablgtk.html,\n\
-      \032      untar it, and follow the instructions to build and install it.\n\
-      \032      (Quick start: make configure, then make, then make opt, then su and\n\
-      \032      make install.)\n\
-      \n\
-      \032  Now build unison. If your search paths are set up correctly, simply\n\
-      \032  typing make again should build a unison executable with a Gtk2\n\
-      \032  graphical interface. (In previous releases of Unison, it was necessary\n\
-      \032  to add UISTYLE=gtk2 to the 'make' command above. This requirement has\n\
-      \032  been removed: the makefile should detect automatically when lablgtk2 is\n\
-      \032  present and set this flag automatically.)\n\
+      \032  Type make to build Unison. If Gtk2 is available on the system, Unison\n\
+      \032  with a GUI will be built automatically.\n\
       \n\
       \032  Put the unison executable somewhere in your search path, either by\n\
       \032  adding the Unison directory to your PATH variable or by copying the\n\
-      \032  executable to some standard directory where executables are stored.\n\
+      \032  executable to some standard directory where executables are stored. Or\n\
+      \032  just type make install to install Unison to $HOME/bin/unison.\n\
       \n\
       Mac OS X\n\
       \n\
@@ -2768,8 +2772,8 @@ let docs =
       \n\
       "))
 ::
-    ("news", ("Changes in Version 2.47.4", 
-     "Changes in Version 2.47.4\n\
+    ("news", ("Changes in Version 2.48.3", 
+     "Changes in Version 2.48.3\n\
       \n\
       \032  Changes since 2.45:\n\
       \032    * Incorporated a patch from Christopher Zimmermann to replace the\n\
