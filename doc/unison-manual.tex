@@ -51,7 +51,7 @@
   \LARGE%
   Version \unisonversion \\[4ex] %
   % \today %
-  \large Copyright 1998-2014, Benjamin C. Pierce
+  \large Copyright 1998-2015, Benjamin C. Pierce
   \end{center}%
 \fi%
 %
@@ -283,8 +283,15 @@ Solaris, Linux, FreeBSD), and on both 32- and 64-bit architectures.
 
 \SUBSUBSECTION{Unix}{build-unix}
 
-You'll need the Objective Caml compiler (version 3.11.2 or later), which is
-available from \ONEURL{http://caml.inria.fr}.  Building and installing OCaml
+Unison can be built with or without a graphical user interface (GUI). The
+build system will decide automatically depending on the libraries installed
+on your system, but you can also type {\tt make UISTYLE=text} to build
+Unison without GUI.
+
+You'll need the Objective Caml compiler, 
+available from \ONEURL{http://caml.inria.fr}.  OCaml is available from most
+package managers 
+Building and installing OCaml
 on Unix systems is very straightforward; just follow the instructions in the
 distribution.  You'll probably want to build the native-code compiler in
 addition to the bytecode compiler, as Unison runs much faster when compiled
@@ -300,41 +307,31 @@ GNU version.)  Unison's build system is
 not parallelizable, so don't use make flags which cause it to start
 processes in parallel, e.g. -j for GNU make.
 
-Once you've got OCaml installed, grab a copy of the Unison sources,
-unzip and untar them, change to the new \showtt{unison} directory, and
-type ``{\tt make UISTYLE=text}''.
-The result should be an executable file called \showtt{unison}.
-Type \showtt{./unison} to make sure the program is executable.  You
-should get back a usage message.
+Once you've got OCaml installed, grab a copy of the Unison sources, unzip
+and untar them, change to the new \showtt{unison} directory, and type ``{\tt
+  make UISTYLE=text}''.  The result should be an executable file called
+\showtt{unison}.  Type \showtt{./unison} to make sure the program is
+executable.  You should get back a usage message.
 
 If you want to build the graphical user interface, you will need to install
-two additional things:
+some additional things:
 \begin{itemize}
-\item The Gtk2 libraries.  These areavailable from
-  \ONEURL{http://www.gtk.org} and are standard on many Unix installations.   
-  
-\item The {\tt lablgtk2} OCaml library.  Grab the
-  developers' tarball from
-  \begin{quote}
-  \ONEURL{http://wwwfun.kurims.kyoto-u.ac.jp/soft/olabl/lablgtk.html},
-  \end{quote}
-  untar it, and follow the instructions to build and install it.
-
-  (Quick start: {\tt make configure}, then {\tt make}, then {\tt make
-  opt}, then {\tt su} and {\tt make install}.)
+\item The Gtk2 development libraries (package {\tt libgtk2.0-dev} on debian
+based systems).
+\item OCaml bindings for Gtk2. Install them from your software repositories
+(package {\tt liblablgtk2-ocaml} on debian based systems). Also available
+from \ONEURL{http://wwwfun.kurims.kyoto-u.ac.jp/soft/olabl/lablgtk.html}.
+\item Pango, a text rendering library and a part of Gtk2. On some systems
+(e.g. Ubuntu) the bindings between Pango and OCaml need to be installed
+explicitly (package {\tt liblablgtk-extras-ocaml-dev} on Ubuntu).
 \end{itemize}
+Type {\tt make} to build Unison. If Gtk2 is available on the system, Unison
+with a GUI will be built automatically. 
 
-Now build unison.  If your search paths are set up correctly, simply typing
-{\tt make}
-again should build a \verb|unison| executable with a Gtk2 graphical
-interface.  (In previous releases of Unison, it was necessary to add {\tt
-  UISTYLE=gtk2} to the 'make' command above.  This requirement has been
-removed: the makefile should detect automatically when lablgtk2 is
-present and set this flag automatically.)  
-
-Put the \verb|unison| executable somewhere in your search path, either
-by adding the Unison directory to your PATH variable or by copying the
-executable to some standard directory where executables are stored.
+Put the \verb|unison| executable somewhere in your search path, either by
+adding the Unison directory to your PATH variable or by copying the
+executable to some standard directory where executables are stored.  Or just
+type {\tt make install} to install Unison to {\tt \$HOME/bin/unison}.
 
 \SUBSUBSECTION{Mac OS X}{build-osx}
 
