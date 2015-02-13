@@ -18,7 +18,7 @@ static void simpleNotify(NSString *name, NSString *descFmt, NSString *profile);
 
 - (void)awakeFromNib
 {
-    [GrowlApplicationBridge setGrowlDelegate:self];
+    [[NSUserNotificationCenter defaultUserNotificationCenter] setDelegate:self];
 }
 
 - (void)updateFinishedFor: (NSString *)profile
@@ -34,32 +34,17 @@ static void simpleNotify(NSString *name, NSString *descFmt, NSString *profile);
                  profile);
 }
 
-- (NSDictionary *)registrationDictionaryForGrowl
-{
-    NSArray* notifications = [NSArray arrayWithObjects:
-        NOTIFY_UPDATE,
-        NOTIFY_SYNC,
-        nil];
-    return [NSDictionary dictionaryWithObjectsAndKeys:
-        notifications,      GROWL_NOTIFICATIONS_ALL,
-        notifications,      GROWL_NOTIFICATIONS_DEFAULT,
-        nil];
-}
-
-- (NSString *)applicationNameForGrowl
-{
-    return @"Unison";
+- (BOOL)userNotificationCenter:(NSUserNotificationCenter *)center shouldPresentNotification:(NSUserNotification *)notification{
+    return YES;
 }
 
 @end
 
 static void simpleNotify(NSString *name, NSString *descFmt, NSString *profile)
 {
-    [GrowlApplicationBridge notifyWithTitle:name
-                                description:[NSString stringWithFormat:descFmt, profile]
-                           notificationName:name
-                                   iconData:nil
-                                   priority:0
-                                   isSticky:false
-                               clickContext:nil];
+    NSUserNotification *notification = [[NSUserNotification alloc] init];
+    notification.title = name;
+    notification.informativeText = [NSString stringWithFormat:descFmt, profile];
+    notification.soundName = NSUserNotificationDefaultSoundName;
+    [[NSUserNotificationCenter defaultUserNotificationCenter] deliverNotification:notification];
 }
