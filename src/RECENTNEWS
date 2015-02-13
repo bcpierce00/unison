@@ -1,3 +1,9 @@
+CHANGES FROM VERSION 2.48.5
+
+uimac14: replace Growl with OS X native notification center.
+
+Thanks to Jan Hacker for the patch.
+-------------------------------
 CHANGES FROM VERSION 2.48.3
 
 * Final cleanup for stable release
