@@ -609,9 +609,8 @@
 					"$(FRAMEWORK_SEARCH_PATHS)",
 					"$(SRCROOT)",
 					"$(FRAMEWORK_SEARCH_PATHS_QUOTED_FOR_TARGET_1)",
-					"\"$(SRCROOT)/Frameworks\"",
 				);
-				FRAMEWORK_SEARCH_PATHS_QUOTED_FOR_TARGET_1 = "\"$(SRCROOT)/Frameworks\"";
+				FRAMEWORK_SEARCH_PATHS_QUOTED_FOR_TARGET_1 = "";
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
 				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
@@ -651,9 +650,8 @@
 					"$(FRAMEWORK_SEARCH_PATHS)",
 					"$(SRCROOT)",
 					"$(FRAMEWORK_SEARCH_PATHS_QUOTED_FOR_TARGET_1)",
-					"\"$(SRCROOT)/Frameworks\"",
 				);
-				FRAMEWORK_SEARCH_PATHS_QUOTED_FOR_TARGET_1 = "\"$(SRCROOT)/Frameworks\"";
+				FRAMEWORK_SEARCH_PATHS_QUOTED_FOR_TARGET_1 = "";
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_WARN_FOUR_CHARACTER_CONSTANTS = YES;
@@ -689,9 +687,8 @@
 					"$(FRAMEWORK_SEARCH_PATHS)",
 					"$(SRCROOT)",
 					"$(FRAMEWORK_SEARCH_PATHS_QUOTED_FOR_TARGET_1)",
-					"\"$(SRCROOT)/Frameworks\"",
 				);
-				FRAMEWORK_SEARCH_PATHS_QUOTED_FOR_TARGET_1 = "\"$(SRCROOT)/Frameworks\"";
+				FRAMEWORK_SEARCH_PATHS_QUOTED_FOR_TARGET_1 = "";
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				INFOPLIST_FILE = Info.plist;
@@ -722,7 +719,6 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 2E282CCC0D9AE2E800439D01 /* ExternalSettings.xcconfig */;
 			buildSettings = {
-				FRAMEWORK_SEARCH_PATHS = "Frameworks/**";
 				LIBRARY_SEARCH_PATHS = "";
 				SDKROOT = macosx;
 				USER_HEADER_SEARCH_PATHS = $OCAMLLIBDIR;
@@ -733,7 +729,6 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 2E282CCC0D9AE2E800439D01 /* ExternalSettings.xcconfig */;
 			buildSettings = {
-				FRAMEWORK_SEARCH_PATHS = "Frameworks/**";
 				LIBRARY_SEARCH_PATHS = "";
 				SDKROOT = macosx;
 				USER_HEADER_SEARCH_PATHS = $OCAMLLIBDIR;
@@ -744,7 +739,6 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 2E282CCC0D9AE2E800439D01 /* ExternalSettings.xcconfig */;
 			buildSettings = {
-				FRAMEWORK_SEARCH_PATHS = "Frameworks/**";
 				LIBRARY_SEARCH_PATHS = "";
 				SDKROOT = macosx;
 				USER_HEADER_SEARCH_PATHS = $OCAMLLIBDIR;
