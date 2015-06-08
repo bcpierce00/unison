@@ -1,3 +1,11 @@
+CHANGES FROM VERSION 2.48.6
+
+* Add shortcut key to GTK2 user interface allowing - to be used as a
+  synonym for / (to accommodate german keyboards)
+
+* Small fix to manual
+
+-------------------------------
 CHANGES FROM VERSION 2.48.5
 
 uimac14: replace Growl with OS X native notification center.

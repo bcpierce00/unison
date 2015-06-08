@@ -4012,7 +4012,7 @@ lst_store#set ~row ~column:c_path path;
         (actionMenu#add_image_item ~key:GdkKeysyms._slash ~callback:questionAction
           ~image:((GMisc.image ~stock:`NO ~icon_size:`MENU ())#coerce)
           "Do _Not Propagate Changes") in
-    grAdd grAction skip;
+    grAdd grAction skip; 
     skip#add_accelerator ~group:accel_group ~modi:[`SHIFT] GdkKeysyms._minus;
 
     let merge =
