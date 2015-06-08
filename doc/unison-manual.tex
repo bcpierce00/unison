@@ -1236,7 +1236,11 @@ In Windows, if the environment variable
 otherwise if {\tt HOME} is defined, it will be
 {\tt \$HOME$\backslash$.unison};
 otherwise, it will be
-{\tt c:$\backslash$.unison}.
+{\tt c:$\backslash$.unison}.  
+On OS X, 
+{\tt \$HOME/.unison} will be used if it is present, but 
+{\tt \$HOME/Library/Application Support/Unison} will be created and used by
+default. 
 
 The archive file for each replica is found in the {\tt .unison}
 directory on that replica's host.  Profiles (described below) are
