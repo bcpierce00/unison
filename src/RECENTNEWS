@@ -1,3 +1,13 @@
+CHANGES FROM VERSION 2.49.0
+
+* Small change for OSX El Capitan, from Alan Shutko
+
+* Add a new preference, 'atomic', for specifying directories that
+  should be treated atomically -- if there are changes within such a
+  directory in both replicase, the whole directory is marked as a
+  conflict instead of propagating any of the changes.  Thanks to
+  Julian Squires for submitting this patch!
+-------------------------------
 CHANGES FROM VERSION 2.48.6
 
 * Add shortcut key to GTK2 user interface allowing - to be used as a

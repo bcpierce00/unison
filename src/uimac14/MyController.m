@@ -182,7 +182,9 @@ static MyController *me; // needed by reloadTable and displayStatus, below
   /* unless user has clicked Don't ask me again, ask about cltool */
   if ( ([[NSUserDefaults standardUserDefaults] boolForKey:@"CheckCltool"]) && 
 	  (![[NSFileManager defaultManager]
-		 fileExistsAtPath:@"/usr/bin/unison"]) )
+              /* BCP 6/2015: Changed from /usr/bin/unison for El Capitan, per 
+                 suggestion from Alan Shutko */
+		 fileExistsAtPath:@"/usr/local/bin/unison"]) )
 	  [self raiseCltoolWindow:nil];
 }
 

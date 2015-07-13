@@ -322,6 +322,40 @@ let test() =
      running fast enough that the whole thing happens within a second, then the
      update will be missed! *)
 
+  (* Test that .git is treated atomically. *)
+  runtest "Atomicity of certain directories 1" ["atomic = Name .git";
+                                                "force = newer"] (fun() ->
+      let orig = (Dir ["foo", Dir [".git", Dir ["a", File "foo";
+                                                "b", File "bar";
+                                                "c", File "baz"]]]) in
+      put R1 orig; put R2 orig; sync();
+      let expected = (Dir ["foo", Dir [".git", Dir ["a", File "modified on R1";
+                                                    "b", File "bar";
+                                                    "c", File "modified on R1"]]]) in
+      put R2 (Dir ["foo", Dir [".git",
+                               Dir ["a", File "foo";
+                                    "b", File "modified on R2";
+                                    "c", File "modified on R2"]]]);
+      put R1 expected;
+      sync ();
+      check "1" R2 expected;
+      check "2" R1 expected
+    );
+
+  runtest "Atomicity of certain directories 2" ["atomic = Name .git"] (fun() ->
+      let a = (Dir ["foo", Dir [".git", Dir ["a", File "foo";
+                                             "b", File "bar";
+                                             "c", File "baz";
+                                             "d", File "quux"]]]) in
+      let b = (Dir ["foo", Dir [".git", Dir ["a", File "foo";
+                                             "b", File "bar";
+                                             "c", File "baz";
+                                             "e", File "quux"]]]) in
+      put R1 a; put R2 b; sync();
+      check "1" R1 a;
+      check "2" R2 b
+    );
+
   (* Check for the bug reported by Ralf Lehmann *)
   if not bothRootsLocal then 
     runtest "backups 1 (remote)" ["backup = Name *"] (fun() -> 
