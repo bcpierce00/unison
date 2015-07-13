@@ -258,7 +258,11 @@ let ignorenotPred =
      and then using {\\tt ignorenot} to select particular paths to be 
      synchronized will not work.  Instead, you should use the {\\tt path}
      preference to choose particular paths to synchronize.")
-    
+
+let atomic = Pred.create "atomic" ~advanced:true
+  ("This preference specifies paths for directories whose \
+     contents will be considered as a group rather than individually.")
+
 let shouldIgnore p =
   let p = Path.toString p in
   (Pred.test ignorePred p) && not (Pred.test ignorenotPred p) 
