@@ -328,8 +328,9 @@ let renameOnHost = Remote.registerRootCmd "rename" renameLocal
 
 let rename root localPath workingDir pathOld pathNew ui archOpt notDefault =
   debug (fun() ->
-    Util.msg "rename(root=%s, pathOld=%s, pathNew=%s)\n"
+    Util.msg "rename(root=%s, localPath=%s, pathOld=%s, pathNew=%s)\n"
       (root2string root)
+      (Path.toString localPath)
       (Path.toString pathOld) (Path.toString pathNew));
   renameOnHost root
     (localPath, workingDir, pathOld, pathNew, ui, archOpt, notDefault)
@@ -606,6 +607,7 @@ let copy
   else begin
     (* Rename the files to their final location and then update the
        archive on the destination replica *)
+    debugverbose (fun () -> Util.msg "rename from copy\n");
     rename rootTo localPathTo workingDir tempPathTo realPathTo uiTo
       (Some archTo) notDefault >>= fun () ->
     (* Update the archive on the source replica
@@ -790,6 +792,7 @@ let copyBack fspathFrom pathFrom rootTo pathTo propsTo uiTo id =
   Copy.file
     (Local, fspathFrom) pathFrom rootTo workingDirForCopy tempPathTo realPathTo
     `Copy newprops fp None stamp id >>= fun info ->
+  debugverbose (fun () -> Util.msg "rename from copyBack\n");
   rename rootTo localPathTo workingDirForCopy tempPathTo realPathTo
     uiTo None false)
     

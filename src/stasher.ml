@@ -307,9 +307,12 @@ let backupPath fspath path =
 
   let rec f i =
     let tempPath = makeBackupName path i in
+    verbose (fun () -> Util.msg "backupPath f %s %d\n" (Path.toString path) i);
     if Os.exists sFspath tempPath then
-      if i < Prefs.read maxbackups then
+      if i < Prefs.read maxbackups then begin
+        verbose (fun () -> Util.msg "need to rename backup file\n");
         Os.rename "backupPath" sFspath tempPath sFspath (f (i + 1))
+      end
       else if i >= Prefs.read maxbackups then
         Os.delete sFspath tempPath;
     tempPath in
