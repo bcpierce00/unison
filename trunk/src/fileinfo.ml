@@ -77,7 +77,7 @@ let get fromRoot fspath path =
                      fromRoot stats.Unix.LargeFile.st_ctime stats.Unix.LargeFile.st_mtime);
          let typ =
            match stats.Unix.LargeFile.st_kind with
-             Unix.S_REG -> `FILE
+             Unix.S_REG -> Util.debug "fileinfo+" (fun () -> Util.msg "get: FILE\n"); `FILE
            | Unix.S_DIR -> `DIRECTORY
            | Unix.S_LNK ->
                if not fromRoot || Prefs.read symlinksAllowed then

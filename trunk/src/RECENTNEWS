@@ -1,3 +1,7 @@
+CHANGES FROM VERSION 2.49.3
+
+uimac14: install the command-line tool in /usr/local/bin
+-------------------------------
 CHANGES FROM VERSION 2.49.2
 
 * Wording improvement in manual
