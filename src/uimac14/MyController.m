@@ -1101,7 +1101,7 @@ CAMLprim value displayDiffErr(value s)
 
     if (exec_path == nil) return;
     char *args[] = { "-f", (char *)[exec_path UTF8String], 
-		     "/usr/bin/unison", NULL };
+		     "/usr/local/bin/unison", NULL };
 
     myFlags = kAuthorizationFlagDefaults;
     myStatus = AuthorizationExecuteWithPrivileges
