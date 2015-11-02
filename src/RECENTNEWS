@@ -1,3 +1,8 @@
+CHANGES FROM VERSION 2.49.4
+
+* Remove colon from names of files created by the -copyonconflict
+  flag, to avoid unhappiness with some filesystems.     
+-------------------------------
 CHANGES FROM VERSION 2.49.3
 
 uimac14: install the command-line tool in /usr/local/bin
