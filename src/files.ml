@@ -82,7 +82,10 @@ let copyOnConflict = Prefs.createBool "copyonconflict" false
    with the \\verb|-repeat watch| and \\verb|-prefer newer| preferences."
 
 let prepareCopy workingDir path notDefault =
-  if notDefault && Prefs.read copyOnConflict then begin
+  if notDefault
+     && Prefs.read copyOnConflict
+     && (Fileinfo.get true workingDir path).Fileinfo.typ <> `ABSENT
+  then begin
     let tmpPath = Os.tempPath workingDir path in
     Copy.recursively workingDir path workingDir tmpPath;
     Some (workingDir, path, tmpPath)
