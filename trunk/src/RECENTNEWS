@@ -1,3 +1,13 @@
+CHANGES FROM VERSION 2.49.6
+
+* Small fix to gtk2 UI per suggestion from Daniel Reichelt, to scan
+  profiles before main window is created.
+
+* Small fix to avoid assertion failure on conflicts involving deleted
+  files when using -copyonconflict flag
+
+
+-------------------------------
 CHANGES FROM VERSION 2.49.4
 
 * Remove colon from names of files created by the -copyonconflict
