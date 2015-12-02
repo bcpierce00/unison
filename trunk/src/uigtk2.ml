@@ -4265,6 +4265,8 @@ let start _ =
     in
     ignore_result (tick ());
 
+    Os.createUnisonDir();
+    scanProfiles();
     let detectCmd = createToplevelWindow() in
 
     Uicommon.uiInit
@@ -4275,7 +4277,6 @@ let start _ =
       getFirstRoot
       getSecondRoot
       termInteract;
-    scanProfiles();
     detectCmd ();
 
     (* Display the ui *)
