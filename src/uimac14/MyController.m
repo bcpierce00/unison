@@ -1,4 +1,4 @@
-/* Copyright (c) 2003, 2015, see file COPYING for details. */
+/* Copyright (c) 2003, 2016, see file COPYING for details. */
 
 #import "MyController.h"
 
@@ -182,7 +182,7 @@ static MyController *me; // needed by reloadTable and displayStatus, below
   /* unless user has clicked Don't ask me again, ask about cltool */
   if ( ([[NSUserDefaults standardUserDefaults] boolForKey:@"CheckCltool"]) && 
 	  (![[NSFileManager defaultManager]
-              /* BCP 6/2015: Changed from /usr/bin/unison for El Capitan, per 
+              /* BCP 6/2016: Changed from /usr/bin/unison for El Capitan, per 
                  suggestion from Alan Shutko */
 		 fileExistsAtPath:@"/usr/local/bin/unison"]) )
 	  [self raiseCltoolWindow:nil];

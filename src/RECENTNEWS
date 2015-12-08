@@ -1,3 +1,10 @@
+CHANGES FROM VERSION 2.49.8
+
+* Update copyright dates to 2016
+
+
+
+-------------------------------
 CHANGES FROM VERSION 2.49.7
 
 * Small fix to gtk2 UI per suggestion from Daniel Reichelt, to scan

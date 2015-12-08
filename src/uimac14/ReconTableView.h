@@ -5,7 +5,7 @@
 //  The keyDown: method is redefined.
 //
 //  Created by Trevor Jim on Wed Aug 27 2003.
-//  Copyright (c) 2003, 2014, licensed under GNU GPL.
+//  Copyright (c) 2003, 2016, licensed under GNU GPL.
 //
 
 #import <AppKit/AppKit.h>

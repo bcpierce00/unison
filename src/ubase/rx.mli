@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/ubase/rx.mli *)
-(* Copyright 1999-2015, Benjamin C. Pierce (see COPYING for details) *)
+(* Copyright 1999-2016, Benjamin C. Pierce (see COPYING for details) *)
 
 type t
 
