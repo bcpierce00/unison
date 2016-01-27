@@ -90,6 +90,10 @@ text:
 	$(MAKE) -C .. text
 
 doinstall: $(NAME)$(EXEC_EXT)
+	if [ ! $(NAME) ]; then \
+	    echo "makefile variable NAME not bound"; \
+	    exit 1 \
+          ; fi 
 	-mv $(INSTALLDIR)/$(NAME)$(EXEC_EXT) /tmp/$(NAME)-$(shell echo $$$$)
 	cp $(NAME)$(EXEC_EXT) $(INSTALLDIR)
 	cp $(NAME)$(EXEC_EXT) $(INSTALLDIR)$(NAME)-$(MAJORVERSION)$(EXEC_EXT)
