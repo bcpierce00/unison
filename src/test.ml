@@ -212,6 +212,9 @@ let displayRis ris =
       Util.msg "%s\n" (Uicommon.reconItem2string Path.empty ri ""))
     ris
 
+let minisleep (sec: float) =
+  ignore (Unix.select [] [] [] sec)
+
 let sync ?(verbose=false) () =
   let (reconItemList, _, _) =
     Recon.reconcileAll (Update.findUpdates None) in
@@ -219,6 +222,7 @@ let sync ?(verbose=false) () =
     Util.msg "Sync result:\n";
     displayRis reconItemList
   end;
+  minisleep 0.1;
   Lwt_unix.run (
     Lwt_util.iter
       (fun ri ->
@@ -393,6 +397,7 @@ let test() =
       put R2 (Dir ["x", File "bar"]); sync();
       (* Change contents without changing size and check that change is propagated *)
       put R1 (Dir ["x", File "f00"]); sync();
+
       check "3a" R1 (Dir ["x", File "f00"]);
       check "3b" R2 (Dir ["x", File "f00"]);
 
