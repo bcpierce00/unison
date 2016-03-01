@@ -77,7 +77,7 @@ OCAMLLIBDIR=$(shell ocamlc -v | tail -1 | sed -e 's/.* //g' | tr '\\' '/' | tr -
 # on whether the lablgtk library is available
 LABLGTKLIB=$(OCAMLLIBDIR)/lablgtk
 LABLGTK2LIB=$(OCAMLLIBDIR)/lablgtk2
-##BCP [3/2007]: Removed temporarily, since the OSX UI is not working well 
+##BCP [3/2007]: Removed temporarily, since the OSX UI is not working well
 ## at the moment and we don't want to confuse people by building it by default
 ifeq ($(OSARCH),osx)
   UISTYLE=mac14
@@ -197,7 +197,7 @@ endif
 # The two cases for cltool are needed because Xcode 2.1+
 # builds in build/Default/, and earlier versions use build/
 .PHONY: macexecutable
-macexecutable: 
+macexecutable:
 #	sed -e's/@@VERSION@@/$(VERSION)/' $(UIMACDIR)/Info.plist.template > $(UIMACDIR)/Info.plist
 	(cd $(UIMACDIR); xcodebuild $(XCODEFLAGS) OCAMLLIBDIR="$(OCAMLLIBDIR)" SYMROOT=build)
 	if [ -e $(UIMACDIR)/build/Default ]; then \
@@ -260,7 +260,7 @@ ifeq ($(UISTYLE),macnew)
   OCAMLOBJS+=uimacbridgenew.cmo
   THREADS=true
   OCAMLLIBS+=threads.cma
-  INCLFLAGS+=-thread 
+  INCLFLAGS+=-thread
 endif
 
 ## New Mac UI, 2014 version
@@ -268,7 +268,7 @@ ifeq ($(UISTYLE),mac14)
   OCAMLOBJS+=uimacbridgenew.cmo
   THREADS=true
   OCAMLLIBS+=threads.cma
-  INCLFLAGS+=-thread 
+  INCLFLAGS+=-thread
 endif
 
 ## Graphic UI
