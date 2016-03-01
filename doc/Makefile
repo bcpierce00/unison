@@ -81,7 +81,7 @@ clean::
 	   texdirectives.tex \
 	   junk.* *.htoc *.toc *.bak \
 	   docs docs.exe temp.dvi temp.html unison-manual.html \
-	   postproc postproc.exe postproc.ml obsolete \
+	   postproc postproc.exe postproc.ml \
 	   unison-manual.dvi unison-manual.ps unison-manual.pdf \
 	   unison-manual.info* unisonversion.tex \
 	   contact.html faq.html faq.haux index.html
