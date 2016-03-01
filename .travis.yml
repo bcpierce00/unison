@@ -1,11 +1,11 @@
 language: c
 sudo: required
-install: wget https://raw.githubusercontent.com/ocaml/ocaml-ci-scripts/master/.travis-opam.sh
-script: bash -ex .travis-opam.sh && make && make test
+script: ./.travis-run.sh
 
 cache:
   directories:
   - $HOME/.opam
+  - /usr/local
 
 env:
   # - OCAML_VERSION=4.00
