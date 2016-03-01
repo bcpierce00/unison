@@ -20,7 +20,7 @@ val createBool :
      -> string              (* documentation string *)
      -> string              (* full (tex) documentation string *)
      -> bool t              (*   -> new preference value *)
-  
+
 val createInt :
         string              (* preference name *)
      -> ?local:bool             (* whether it is local to the client *)
@@ -28,7 +28,7 @@ val createInt :
      -> string              (* documentation string *)
      -> string              (* full (tex) documentation string *)
      -> int t               (*   -> new preference value *)
-  
+
 val createString :
         string              (* preference name *)
      -> ?local:bool             (* whether it is local to the client *)
@@ -36,7 +36,7 @@ val createString :
      -> string              (* documentation string *)
      -> string              (* full (tex) documentation string *)
      -> string t            (*   -> new preference value *)
-  
+
 val createFspath :
         string              (* preference name *)
      -> ?local:bool             (* whether it is local to the client *)
@@ -44,7 +44,7 @@ val createFspath :
      -> string              (* documentation string *)
      -> string              (* full (tex) documentation string *)
      -> System.fspath t     (*   -> new preference value *)
-  
+
 val createStringList :
         string              (* preference name *)
      -> ?local:bool             (* whether it is local to the client *)
@@ -74,7 +74,7 @@ val create :
                                    (1st arg is old value of preference) *)
      -> ('a -> string list)     (* printing function for preference values *)
      -> 'a t                    (*   -> new preference value *)
-  
+
 (* Create an alternate name for a preference (the new name will not appear   *)
 (* in usage messages or generated documentation)                             *)
 val alias : 'a t              (* existing preference *)
@@ -152,5 +152,4 @@ val list : unit -> string list
 (* ------------------------------------------------------------------------- *)
 
 val printFullDocs : unit -> unit
-val dumpPrefsToStderr : unit -> unit  
-
+val dumpPrefsToStderr : unit -> unit

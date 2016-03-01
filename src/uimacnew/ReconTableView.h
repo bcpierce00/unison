@@ -1,6 +1,6 @@
 //
 //  ReconTableView.h
-//  
+//
 //  NSTableView extended to handle additional keyboard events for the reconcile window.
 //  The keyDown: method is redefined.
 //

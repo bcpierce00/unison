@@ -135,12 +135,12 @@
  *	@param clickContext	A context passed back to the Growl delegate if it implements -(void)growlNotificationWasClicked: and the notification is clicked. Not all display plugins support clicking. The clickContext must be plist-encodable (completely of <code>NSString</code>, <code>NSArray</code>, <code>NSNumber</code>, <code>NSDictionary</code>, and <code>NSData</code> types).
  */
 + (void) notifyWithTitle:(NSString *)title
-			 description:(NSString *)description
-		notificationName:(NSString *)notifName
-				iconData:(NSData *)iconData
-				priority:(signed int)priority
-				isSticky:(BOOL)isSticky
-			clickContext:(id)clickContext;
+                         description:(NSString *)description
+                notificationName:(NSString *)notifName
+                                iconData:(NSData *)iconData
+                                priority:(signed int)priority
+                                isSticky:(BOOL)isSticky
+                        clickContext:(id)clickContext;
 
 /*!
  *	@method notifyWithTitle:description:notificationName:iconData:priority:isSticky:clickContext:identifier:
@@ -168,13 +168,13 @@
  *	@param identifier	An identifier for this notification. Notifications with equal identifiers are coalesced.
  */
 + (void) notifyWithTitle:(NSString *)title
-			 description:(NSString *)description
-		notificationName:(NSString *)notifName
-				iconData:(NSData *)iconData
-				priority:(signed int)priority
-				isSticky:(BOOL)isSticky
-			clickContext:(id)clickContext
-			  identifier:(NSString *)identifier;
+                         description:(NSString *)description
+                notificationName:(NSString *)notifName
+                                iconData:(NSData *)iconData
+                                priority:(signed int)priority
+                                isSticky:(BOOL)isSticky
+                        clickContext:(id)clickContext
+                          identifier:(NSString *)identifier;
 
 /*!	@method	notifyWithDictionary:
  *	@abstract	Notifies using a userInfo dictionary suitable for passing to

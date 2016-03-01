@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/monitoring/windows/watcher.ml *)
-(* Copyright 2012, Benjamin C. Pierce 
+(* Copyright 2012, Benjamin C. Pierce
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -52,7 +52,7 @@ let event_is_immediate (_, act) =
     Lwt_win.FILE_ACTION_ADDED
   | Lwt_win.FILE_ACTION_MODIFIED         -> false
   | Lwt_win.FILE_ACTION_REMOVED
-  | Lwt_win.FILE_ACTION_RENAMED_OLD_NAME 
+  | Lwt_win.FILE_ACTION_RENAMED_OLD_NAME
   | Lwt_win.FILE_ACTION_RENAMED_NEW_NAME -> true
 
 let event_kind (_, act) =

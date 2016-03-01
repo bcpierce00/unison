@@ -18,56 +18,56 @@
 {
   IBOutlet NSWindow *mainWindow;
   UnisonToolbar *toolbar;
-  
+
   IBOutlet NSWindow *cltoolWindow;
   IBOutlet NSButton *cltoolPref;
-  
+
   IBOutlet ProfileController *profileController;
   IBOutlet NSView *chooseProfileView;
   NSString *myProfile;
-  
+
   IBOutlet PreferencesController *preferencesController;
   IBOutlet NSView *preferencesView;
-  
+
   IBOutlet NSView *updatesView;
   IBOutlet NSView *ConnectingView;
   IBOutlet ColorGradientView *connectingViewGradient;
-  
+
   NSView *blankView;
-  
+
   IBOutlet ReconTableView *tableView;
   IBOutlet NSTextField *updatesText;
   IBOutlet NSTextField *detailsTextView;
   IBOutlet NSTextField *statusText;
   IBOutlet ColorGradientView *detailsTextViewGradient;
-  
+
   IBOutlet NSWindow *passwordWindow;
   IBOutlet NSTextField *passwordPrompt;
   IBOutlet NSTextField *passwordText;
   IBOutlet NSButton *passwordCancelButton;
   BOOL waitingForPassword;
-  
+
   IBOutlet NSWindow *aboutWindow;
   IBOutlet NSTextField *versionText;
-  
+
   IBOutlet NSProgressIndicator *progressBar;
-  
+
   IBOutlet NotificationController *notificationController;
-  
+
   BOOL syncable;
-  BOOL duringSync;	
+  BOOL duringSync;
   BOOL afterSync;
-  
+
   NSMutableArray *reconItems;
   ParentReconItem *rootItem;
   OCamlValue *preconn;
-  
+
   BOOL doneFirstDiff;
   IBOutlet NSWindow *diffWindow;
   IBOutlet NSTextView *diffView;
   IBOutlet NSSegmentedControl *tableModeSelector;
   IBOutlet NSProgressIndicator *connectingAnimation;
-  
+
   IBOutlet NSWindow *preferencesWindow;
   IBOutlet NSButton* checkOpenProfile;
   IBOutlet NSComboBox *profileBox;
@@ -79,12 +79,12 @@
   IBOutlet NSSplitView *splitView;
 
   id fontChangeTarget;
-	
+
   BOOL isBatchSet;
   NSTimer *_timer;
   NSAlert *_timeoutAlert;
   NSUInteger _secondsRemaining;
-    
+
   BOOL shouldExitAfterWarning;
 }
 
@@ -144,4 +144,3 @@
 - (void) updateFontDisplay;
 
 @end
-

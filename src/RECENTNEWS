@@ -30,7 +30,7 @@ CHANGES FROM VERSION 2.49.6
 CHANGES FROM VERSION 2.49.4
 
 * Remove colon from names of files created by the -copyonconflict
-  flag, to avoid unhappiness with some filesystems.     
+  flag, to avoid unhappiness with some filesystems.
 -------------------------------
 CHANGES FROM VERSION 2.49.3
 

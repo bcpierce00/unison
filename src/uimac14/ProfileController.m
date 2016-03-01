@@ -20,11 +20,11 @@ NSString *unisonDirectory()
 #endif
     unsigned int count = [files count];
     unsigned int i,j;
-    
+
     [profiles release];
     profiles = [[NSMutableArray alloc] init];
     defaultIndex = -1;
-    
+
     for (i = j = 0; i < count; i++) {
         NSString *file = [files objectAtIndex:i];
         if ([[file pathExtension] isEqualTo:@"prf"]) {

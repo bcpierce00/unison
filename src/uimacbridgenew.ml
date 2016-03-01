@@ -24,7 +24,7 @@ let unisonDirectory() = System.fspathToString Os.unisonDir
 ;;
 Callback.register "unisonDirectory" unisonDirectory;;
 
-(* Global progress indicator, similar to uigtk2.m; *) 
+(* Global progress indicator, similar to uigtk2.m; *)
 external displayGlobalProgress : float -> unit = "displayGlobalProgress";;
 
 let totalBytesToTransfer = ref Uutil.Filesize.zero;;
@@ -34,7 +34,7 @@ let lastFrac = ref 0.;;
 let showGlobalProgress b =
   (* Concatenate the new message *)
   totalBytesTransferred := Uutil.Filesize.add !totalBytesTransferred b;
-  let v = 
+  let v =
     if !totalBytesToTransfer  = Uutil.Filesize.dummy then 0.
     else if !totalBytesToTransfer  = Uutil.Filesize.zero then 100.
     else (Uutil.Filesize.percentageOfTotalSize
@@ -60,20 +60,20 @@ external displayStatus : string -> unit = "displayStatus";;
 let displayStatus s = displayStatus (Unicode.protect s);;
 
 (*
-	Called to create callback threads which wait on the C side for callbacks.
-	(We create three just for good measure...)
-	
-	FIXME: the thread created by Thread.create doesn't run even if we yield --
-	we have to join.  At that point we actually do get a different pthread, but
-	we've caused the calling thread to block (forever).  As a result, this call
-	never returns.
+        Called to create callback threads which wait on the C side for callbacks.
+        (We create three just for good measure...)
+
+        FIXME: the thread created by Thread.create doesn't run even if we yield --
+        we have to join.  At that point we actually do get a different pthread, but
+        we've caused the calling thread to block (forever).  As a result, this call
+        never returns.
 *)
-let callbackThreadCreate() = 
-	let tCode () = 
-		bridgeThreadWait 1;
-	in ignore (Thread.create tCode ()); ignore (Thread.create tCode ());
-	let tid = Thread.create tCode ()
-	in Thread.join tid;
+let callbackThreadCreate() =
+        let tCode () =
+                bridgeThreadWait 1;
+        in ignore (Thread.create tCode ()); ignore (Thread.create tCode ());
+        let tid = Thread.create tCode ()
+        in Thread.join tid;
 ;;
 Callback.register "callbackThreadCreate" callbackThreadCreate;;
 
@@ -83,7 +83,7 @@ external displayFatalError : string -> unit = "fatalError";;
 let fatalError message =
   Trace.log (message ^ "\n");
   displayFatalError message
-    
+
 (* Defined in MyController.m; display the warning and ask whether to
    exit or proceed *)
 external displayWarnPanel : string -> bool = "warnPanel";;
@@ -93,10 +93,10 @@ let setWarnPrinter() =
     Some(fun s ->
       Trace.log ("Warning: " ^ s ^ "\n");
       if not (Prefs.read Globals.batch) then begin
-	if (displayWarnPanel s) then begin
+        if (displayWarnPanel s) then begin
           Lwt_unix.run (Update.unlockArchives ());
           exit Uicommon.fatalExit
-	end
+        end
       end)
 
 let doInOtherThread f =
@@ -145,7 +145,7 @@ let unisonInit0() =
   (* Install an appropriate function for finding preference files.  (We put
      this in Util just because the Prefs module lives below the Os module in the
      dependency hierarchy, so Prefs can't call Os directly.) *)
-  Util.supplyFileInUnisonDirFn 
+  Util.supplyFileInUnisonDirFn
     (fun n -> Os.fileInUnisonDir(n));
   (* Display status in GUI instead of on stderr *)
   let formatStatus major minor = (Util.padto 30 (major ^ "  ")) ^ minor in
@@ -205,7 +205,7 @@ Callback.register "unisonInit0" unisonInit0;;
 
 (* Utility function to tell the UI whether roots were set *)
 
-let areRootsSet () = 
+let areRootsSet () =
   match Globals.rawRoots() with
   | [] -> false
   | _ -> true
@@ -236,7 +236,7 @@ let do_unisonInit1 profileName =
   if profileName <> "" then begin
     (* Tell the preferences module the name of the profile *)
     Prefs.profileName := Some(profileName);
-  
+
     (* If the profile does not exist, create an empty one (this should only
        happen if the profile is 'default', since otherwise we will already
        have checked that the named one exists). *)
@@ -327,7 +327,7 @@ let do_unisonInit2 () =
                     (Clroot.clroot2string (Clroot.parseRoot clr)))
          (Globals.rawRoots ());
        Printf.eprintf "  i.e. (in canonical order)\n";
-       Safelist.iter (fun r -> 
+       Safelist.iter (fun r ->
          Printf.eprintf "       %s\n" (root2string r))
          (Globals.rootsInCanonicalOrder());
        Printf.eprintf "\n"
@@ -335,7 +335,7 @@ let do_unisonInit2 () =
 
   (* Install the warning panel, hopefully it's not too late *)
   setWarnPrinter();
-  
+
   Lwt_unix.run
     (Uicommon.validateAndFixupPrefs () >>=
      Globals.propagatePrefs);
@@ -343,9 +343,9 @@ let do_unisonInit2 () =
   (* Initializes some backups stuff according to the preferences just loaded from the profile.
      Important to do it here, after prefs are propagated, because the function will also be
      run on the server, if any. Also, this should be done each time a profile is reloaded
-     on this side, that's why it's here. *) 
+     on this side, that's why it's here. *)
   Stasher.initBackups ();
-  
+
   (* Turn on GC messages, if the '-debug gc' flag was provided *)
   if Trace.enabled "gc" then Gc.set {(Gc.get ()) with Gc.verbose = 0x3F};
 
@@ -506,7 +506,7 @@ let displayDiffErr err = displayDiffErr (Unicode.protect err)
 (* If only properties have changed, we can't diff or merge.
    'Can't diff' is produced (uicommon.ml) if diff is attemped
    when either side has PropsChanged *)
-let filesAreDifferent status1 status2 = 
+let filesAreDifferent status1 status2 =
   match status1, status2 with
    `PropsChanged, `Unchanged -> false
   | `Unchanged, `PropsChanged -> false
@@ -514,7 +514,7 @@ let filesAreDifferent status1 status2 =
   | _, _ -> true;;
 
 (* check precondition for diff; used to disable diff button *)
-let canDiff ri = 
+let canDiff ri =
   match ri.ri.replicas with
     Problem _ -> false
   | Different {rc1 = {typ = `FILE; status = status1};
@@ -581,8 +581,8 @@ let do_unisonSynchronize () =
                 catch (fun () ->
                   Transport.transportItem
                     theSI.ri (Uutil.File.ofLine i)
-                    (fun title text -> 
-		       debug (fun () -> Util.msg "MERGE '%s': '%s'"
+                    (fun title text ->
+                       debug (fun () -> Util.msg "MERGE '%s': '%s'"
                             title text);
                        displayDiff title text; true)
                          >>= (fun () ->
@@ -762,10 +762,10 @@ let unisonRiIsConflict ri =
   | _ -> false;;
 Callback.register "unisonRiIsConflict" unisonRiIsConflict;;
 
-(* Test whether reconItem's current state is different from 
-   Unison's recommendation.  Used to colour arrows in 
+(* Test whether reconItem's current state is different from
+   Unison's recommendation.  Used to colour arrows in
    the reconItems table *)
-let changedFromDefault ri = 
+let changedFromDefault ri =
   match ri.ri.replicas with
     Different diff -> diff.direction <> diff.default_direction
    | _ -> false;;
@@ -798,4 +798,3 @@ let unisonExnInfo e =
   | _ -> Printexc.to_string e;;
 Callback.register "unisonExnInfo"
   (fun e -> Unicode.protect (unisonExnInfo e));;
-

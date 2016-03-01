@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/fsmonitoring/linux/watcher.ml *)
-(* Copyright 2012, Benjamin C. Pierce 
+(* Copyright 2012, Benjamin C. Pierce
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

@@ -1,8 +1,8 @@
-Checklist for release process: 
+Checklist for release process:
 
   - If you haven't already, you need to begin by...
 
-    - Moving everything interesting from src/RECENTNEWS to doc/changes.tex  
+    - Moving everything interesting from src/RECENTNEWS to doc/changes.tex
 
     - Doing 'svn update' to find out the current revision number
 

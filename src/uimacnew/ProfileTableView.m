@@ -24,7 +24,7 @@
 
 /* Override default highlight colour to match ReconTableView */
 - (id)_highlightColorForCell:(NSCell *)cell
-{   
+{
     if(([[self window] firstResponder] == self) &&
         [[self window] isMainWindow] &&
         [[self window] isKeyWindow])

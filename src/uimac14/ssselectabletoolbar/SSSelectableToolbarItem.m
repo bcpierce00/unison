@@ -15,8 +15,8 @@
 
 -(void) dealloc
 {
-	[linkedView release];
-	[super dealloc];
+        [linkedView release];
+        [super dealloc];
 }
 
 @end

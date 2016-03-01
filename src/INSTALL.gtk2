@@ -33,7 +33,7 @@ In order to use gtk2 with unison,
    for example, export LANG=zh_HK.BIG5-HKSCS
 
    otherwise, you will get
-     Uncaught exception Glib.GError("Invalid byte sequence in conversion input")  
+     Uncaught exception Glib.GError("Invalid byte sequence in conversion input")
 5) enjoy unison with i18n!
 
 -----------------------------
@@ -53,5 +53,3 @@ this build to work with 'STATIC=true'.
 WINDOWS:
 
 (Anybody want to contribute instructions??)
-
-

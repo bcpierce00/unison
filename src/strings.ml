@@ -2,13 +2,13 @@
    This file has been automatically generated, see docs.ml. *)
 
 let docs =
-    ("about", ("About Unison", 
+    ("about", ("About Unison",
      "Unison File Synchronizer\n\
       Version 2.48.3\n\
       \n\
       "))
 ::
-    ("", ("Overview", 
+    ("", ("Overview",
      "Overview\n\
       \n\
       \032  Unison is a file-synchronization tool for Unix and Windows. It allows\n\
@@ -51,12 +51,12 @@ let docs =
       \n\
       "))
 ::
-    ("", ("Preface", 
+    ("", ("Preface",
      "Preface\n\
       \n\
       "))
 ::
-    ("people", ("People", 
+    ("people", ("People",
      "People\n\
       \n\
       \032  Benjamin Pierce (http://www.cis.upenn.edu/~bcpierce/) leads the Unison\n\
@@ -87,7 +87,7 @@ let docs =
       \n\
       "))
 ::
-    ("lists", ("Mailing Lists and Bug Reporting", 
+    ("lists", ("Mailing Lists and Bug Reporting",
      "Mailing Lists and Bug Reporting\n\
       \n\
       Mailing Lists:\n\
@@ -102,7 +102,7 @@ let docs =
       \n\
       "))
 ::
-    ("status", ("Development Status", 
+    ("status", ("Development Status",
      "Development Status\n\
       \n\
       \032  Unison is no longer under active development as a research project.\n\
@@ -136,7 +136,7 @@ let docs =
       \n\
       "))
 ::
-    ("copying", ("Copying", 
+    ("copying", ("Copying",
      "Copying\n\
       \n\
       \032  This file is part of Unison.\n\
@@ -157,7 +157,7 @@ let docs =
       \n\
       "))
 ::
-    ("ack", ("Acknowledgements", 
+    ("ack", ("Acknowledgements",
      "Acknowledgements\n\
       \n\
       \032  Work on Unison has been supported by the National Science Foundation\n\
@@ -167,7 +167,7 @@ let docs =
       \n\
       "))
 ::
-    ("install", ("Installation", 
+    ("install", ("Installation",
      "Installation\n\
       \n\
       \032  Unison is designed to be easy to install. The following sequence of\n\
@@ -359,7 +359,7 @@ let docs =
       \n\
       "))
 ::
-    ("tutorial", ("Tutorial", 
+    ("tutorial", ("Tutorial",
      "Tutorial\n\
       \n\
       Preliminaries\n\
@@ -713,7 +713,7 @@ let docs =
       \n\
       "))
 ::
-    ("basics", ("Basic Concepts", 
+    ("basics", ("Basic Concepts",
      "Basic Concepts\n\
       \n\
       \032  To understand how Unison works, it is necessary to discuss a few\n\
@@ -874,7 +874,7 @@ let docs =
       \n\
       "))
 ::
-    ("failures", ("Invariants", 
+    ("failures", ("Invariants",
      "Invariants\n\
       \n\
       \032  Given the importance and delicacy of the job that it performs, it is\n\
@@ -1006,14 +1006,14 @@ let docs =
       \n\
       "))
 ::
-    ("", ("Reference Guide", 
+    ("", ("Reference Guide",
      "Reference Guide\n\
       \n\
       \032  This section covers the features of Unison in detail.\n\
       \n\
       "))
 ::
-    ("running", ("Running Unison", 
+    ("running", ("Running Unison",
      "Running Unison\n\
       \n\
       \032  There are several ways to start Unison.\n\
@@ -2666,7 +2666,7 @@ let docs =
       \n\
       "))
 ::
-    ("ssh", ("Installing Ssh", 
+    ("ssh", ("Installing Ssh",
      "Installing Ssh\n\
       \n\
       \032  Warning: These instructions may be out of date. More current\n\
@@ -2772,7 +2772,7 @@ let docs =
       \n\
       "))
 ::
-    ("news", ("Changes in Version 2.48.3", 
+    ("news", ("Changes in Version 2.48.3",
      "Changes in Version 2.48.3\n\
       \n\
       \032  Changes since 2.45:\n\
@@ -4531,7 +4531,7 @@ let docs =
       \n\
       "))
 ::
-    ("", ("Junk", 
+    ("", ("Junk",
      "Junk\n\
       \032    __________________________________________________________________\n\
       \n\
@@ -4544,4 +4544,3 @@ let docs =
       "))
 ::
     [];;
-

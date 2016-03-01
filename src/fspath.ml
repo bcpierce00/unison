@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/fspath.ml *)
-(* Copyright 1999-2016, Benjamin C. Pierce 
+(* Copyright 1999-2016, Benjamin C. Pierce
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -249,16 +249,16 @@ let canonizeFspath p0 =
         newp
       with
         Sys_error why ->
-	  (* We could not chdir to p.  Either                                *)
-	  (*                                                               - *)
-	  (*              (1) p does not exist                               *)
-	  (*              (2) p is a file                                    *)
-	  (*              (3) p is a dir but we don't have permission        *)
-	  (*                                                               - *)
-	  (* In any case, we try to cd to the parent of p, and if that       *)
-	  (* fails, we just quit.  This works nicely for most cases of (1),  *)
-	  (* it works for (2), and on (3) it may leave a mess for someone    *)
-	  (* else to pick up.                                                *)
+          (* We could not chdir to p.  Either                                *)
+          (*                                                               - *)
+          (*              (1) p does not exist                               *)
+          (*              (2) p is a file                                    *)
+          (*              (3) p is a dir but we don't have permission        *)
+          (*                                                               - *)
+          (* In any case, we try to cd to the parent of p, and if that       *)
+          (* fails, we just quit.  This works nicely for most cases of (1),  *)
+          (* it works for (2), and on (3) it may leave a mess for someone    *)
+          (* else to pick up.                                                *)
           let p = if Util.osType = `Win32 then Fileutil.backslashes2forwardslashes p else p in
           if isRootDir p then raise
             (Util.Fatal (Printf.sprintf

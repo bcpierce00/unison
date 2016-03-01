@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/fsmonitoring/watchercommon.ml *)
-(* Copyright 2012, Benjamin C. Pierce 
+(* Copyright 2012, Benjamin C. Pierce
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -397,7 +397,7 @@ let gather_changes hash time =
              we report that it should be scanned again. On the other hand,
              this is not reported as a change by the WAIT function, so that
              Unison does not loop checking this path. *)
-          if r.changed && r.watch = None then path :: l else            
+          if r.changed && r.watch = None then path :: l else
           gather_rec path r l)
        roots [])
 

@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/pred.ml *)
-(* Copyright 1999-2016, Benjamin C. Pierce 
+(* Copyright 1999-2016, Benjamin C. Pierce
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -40,8 +40,8 @@ let error_msg s =
 
 (* [select str [(p1, f1), ..., (pN, fN)] fO]: (roughly) *)
 (* match str with                                       *)
-(*  p1 p' -> f1 p'                                      *) 
-(*  ...		       	       	       	       	       	*) 
+(*  p1 p' -> f1 p'                                      *)
+(*  ...		       	       	       	       	       	*)
 (*  pN p' -> fN p'   					*)
 (*  otherwise -> fO str	       	       	       	        *)
 let rec select str l f =
@@ -68,7 +68,7 @@ let compile_pattern clause =
     | _ -> raise (Prefs.IllegalValue ("Malformed pattern: "
                   ^ "\"" ^ clause ^ "\"\n"
                   ^ "Only one instance of " ^ mapSeparator ^ " allowed.")) in
-  let compiled = 
+  let compiled =
     begin try
       select p
         [("Name ", fun str -> Rx.seq [Rx.rx "(.*/)?"; Rx.globx str]);
@@ -97,7 +97,7 @@ let compile_pattern clause =
   (compiled, v)
 
 let create name ?(local=false) ?(advanced=false) fulldoc =
-  let pref = 
+  let pref =
     Prefs.create name ~local []
       ((if advanced then "!" else "")
        ^ "add a pattern to the " ^ name ^ " list")
@@ -108,7 +108,7 @@ let create name ?(local=false) ?(advanced=false) fulldoc =
       (fun l -> l) in
   {pref = pref; name = name;
    last_pref = []; default = []; last_def = []; last_mode = (Case.ops())#mode;
-   compiled = Rx.empty; associated_strings = []} 
+   compiled = Rx.empty; associated_strings = []}
 
 let addDefaultPatterns p pats =
   p.default <- Safelist.append pats p.default

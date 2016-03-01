@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/files.ml *)
-(* Copyright 1999-2016, Benjamin C. Pierce 
+(* Copyright 1999-2016, Benjamin C. Pierce
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -19,14 +19,14 @@
 open Common
 open Lwt
 open Fileinfo
-  
+
 let debug = Trace.debug "files"
 let debugverbose = Trace.debug "files+"
-    
+
 (* ------------------------------------------------------------ *)
-    
+
 let commitLogName = Util.fileInHomeDir "DANGER.README"
-    
+
 let writeCommitLog source target tempname =
   let sourcename = Fspath.toDebugString source in
   let targetname = Fspath.toDebugString target in
@@ -51,7 +51,7 @@ let clearCommitLog () =
   Util.convertUnixErrorsToFatal
     "clearing commit log"
       (fun () -> System.unlink commitLogName)
-    
+
 let processCommitLog () =
   if System.file_exists commitLogName then begin
     raise(Util.Fatal(
@@ -62,10 +62,10 @@ let processCommitLog () =
                 (System.fspathToPrintString commitLogName)))
   end else
     Lwt.return ()
-      
+
 let processCommitLogOnHost =
   Remote.registerHostCmd "processCommitLog" processCommitLog
-    
+
 let processCommitLogs() =
   Lwt_unix.run
     (Globals.allHostsIter (fun h -> processCommitLogOnHost h ()))
@@ -238,7 +238,7 @@ let performRename fspathTo localPathTo workingDir pathFrom pathTo prevArch =
         Util.msg "back from Fileinfo.get from renameLocal\n");
       if filetypeFrom = `ABSENT then raise (Util.Transient (Printf.sprintf
            "Error while renaming %s to %s -- source file has disappeared!"
-	   (Fspath.toPrintString source) (Fspath.toPrintString target)));
+           (Fspath.toPrintString source) (Fspath.toPrintString target)));
       let filetypeTo = (Fileinfo.get false target Path.empty).Fileinfo.typ in
 
        (* Windows and Unix operate differently if the target path of a
@@ -289,11 +289,11 @@ let performRename fspathTo localPathTo workingDir pathFrom pathTo prevArch =
         Stasher.backup fspathTo localPathTo `ByCopying prevArch;
         Os.rename "renameLocal(3)" source Path.empty target Path.empty;
         debug (fun() ->
-	  if filetypeFrom = `FILE then
+          if filetypeFrom = `FILE then
             Util.msg
               "Contents of %s after renaming = %s\n"
               (Fspath.toDebugString target)
-    	      (Fingerprint.toString (Fingerprint.file target Path.empty)));
+	      (Fingerprint.toString (Fingerprint.file target Path.empty)));
       end)
 
 (* FIX: maybe we should rename the destination before making any check ? *)
@@ -657,7 +657,7 @@ let rec diff root1 path1 ui1 root2 path2 ui2 showDiff id =
            "CURRENT2", Fspath.quotes fspath2] in
     let c = System.open_process_in
       (if Util.osType = `Win32 && not Util.isCygwin then
-        (* BCP: Proposed by Karl M. to deal with the standard windows 
+        (* BCP: Proposed by Karl M. to deal with the standard windows
            command processor's weird treatment of spaces and quotes: *)
         "\"" ^ cmd ^ "\""
        else
@@ -690,7 +690,7 @@ let rec diff root1 path1 ui1 root2 path2 ui2 showDiff id =
                  fp2 None ress2 id) >>= fun info ->
               Lwt.return ());
            displayDiff
-	     (Fspath.concat workingDir realPath)
+             (Fspath.concat workingDir realPath)
              (Fspath.concat workingDir tmppath);
            Os.delete workingDir tmppath)
   | (Remote host1,fspath1),(Local,fspath2) ->
@@ -710,7 +710,7 @@ let rec diff root1 path1 ui1 root2 path2 ui2 showDiff id =
               Lwt.return ()));
            displayDiff
              (Fspath.concat workingDir tmppath)
-	     (Fspath.concat workingDir realPath);
+             (Fspath.concat workingDir realPath);
            Os.delete workingDir tmppath)
   | (Remote host1,fspath1),(Remote host2,fspath2) ->
       assert false
@@ -764,27 +764,27 @@ let formatMergeCmd p f1 f2 backup out1 out2 outarch =
   let cooked =
     match backup with
       None -> begin
-	let cooked = Util.replacesubstring cooked "CURRENTARCHOPT" "" in
-	match Util.findsubstring "CURRENTARCH" cooked with
-	  None -> cooked
-	| Some _ -> raise (Util.Transient
+        let cooked = Util.replacesubstring cooked "CURRENTARCHOPT" "" in
+        match Util.findsubstring "CURRENTARCH" cooked with
+          None -> cooked
+        | Some _ -> raise (Util.Transient
                       ("No archive found, but the 'merge' command "
                        ^ "template expects one.  (Consider enabling "
                        ^ "'backupcurrent' for this file or using CURRENTARCHOPT "
                        ^ "instead of CURRENTARCH.)"))
       end
     | Some(s) ->
-	let cooked = Util.replacesubstring cooked "CURRENTARCHOPT" s in
-	let cooked = Util.replacesubstring cooked "CURRENTARCH"    s in
+        let cooked = Util.replacesubstring cooked "CURRENTARCHOPT" s in
+        let cooked = Util.replacesubstring cooked "CURRENTARCH"    s in
         cooked in
   let cooked = Util.replacesubstring cooked "NEW1"     out1 in
   let cooked = Util.replacesubstring cooked "NEW2"     out2 in
   let cooked = Util.replacesubstring cooked "NEWARCH"  outarch in
   let cooked = Util.replacesubstring cooked "NEW" out1 in
   let cooked = Util.replacesubstring cooked "PATH"
-		(Uutil.quotes (Path.toString p)) in
+                (Uutil.quotes (Path.toString p)) in
   cooked
-    
+
 let copyBack fspathFrom pathFrom rootTo pathTo propsTo uiTo id =
   setupTargetPaths rootTo pathTo
     >>= (fun (workingDirForCopy, realPathTo, tempPathTo, localPathTo) ->
@@ -798,8 +798,8 @@ let copyBack fspathFrom pathFrom rootTo pathTo propsTo uiTo id =
   debugverbose (fun () -> Util.msg "rename from copyBack\n");
   rename rootTo localPathTo workingDirForCopy tempPathTo realPathTo
     uiTo None false)
-    
-let keeptempfilesaftermerge =   
+
+let keeptempfilesaftermerge =
   Prefs.createBool
     "keeptempfilesaftermerge" false "*" ""
 
@@ -813,7 +813,7 @@ let merge root1 path1 ui1 root2 path2 ui2 id showMergeFn =
       (Path.toString path1) (root2string root1) (root2string root2));
 
   (* The following assumes root1 is always local: switch them if needed to make this so *)
-  let (root1,path1,ui1,root2,path2,ui2) = 
+  let (root1,path1,ui1,root2,path2,ui2) =
     match root1 with
       (Local,fspath1) -> (root1,path1,ui1,root2,path2,ui2)
     | _ -> (root2,path2,ui2,root1,path1,ui1) in
@@ -824,7 +824,7 @@ let merge root1 path1 ui1 root2 path2 ui2 id showMergeFn =
         let localPath1 = Update.translatePathLocal fspath1 path1 in
         (localPath1, Fspath.findWorkingDir fspath1 localPath1, fspath1)
     | _ -> assert false in
-  
+
   (* We're going to be doing a lot of copying, so let's define a shorthand
      that fixes most of the arguments to Copy.localfile *)
   let copy l =
@@ -839,71 +839,71 @@ let merge root1 path1 ui1 root2 path2 ui2 id showMergeFn =
           `Copy info.Fileinfo.desc
           (Osx.ressLength info.Fileinfo.osX.Osx.ressInfo) (Some id))
       l in
-  
+
   let working1 = Path.addPrefixToFinalName basep (tempName "merge1-") in
   let working2 = Path.addPrefixToFinalName basep (tempName "merge2-") in
   let workingarch = Path.addPrefixToFinalName basep (tempName "mergearch-") in
   let new1 = Path.addPrefixToFinalName basep (tempName "mergenew1-") in
   let new2 = Path.addPrefixToFinalName basep (tempName "mergenew2-") in
   let newarch = Path.addPrefixToFinalName basep (tempName "mergenewarch-") in
-  
+
   let (desc1, fp1, ress1, desc2, fp2, ress2) = Common.fileInfos ui1 ui2 in
-  
+
   Util.convertUnixErrorsToTransient "merging files" (fun () ->
     (* Install finalizer (below) in case we unwind the stack *)
     Util.finalize (fun () ->
-      
+
     (* Make local copies of the two replicas *)
       Os.delete workingDirForMerge working1;
       Os.delete workingDirForMerge working2;
       Os.delete workingDirForMerge workingarch;
       Lwt_unix.run
-	(Copy.file
+        (Copy.file
            root1 localPath1 root1 workingDirForMerge working1 basep
            `Copy desc1 fp1 None ress1 id >>= fun info ->
          Lwt.return ());
       Lwt_unix.run
-	(Update.translatePath root2 path2 >>= (fun path2 ->
-	  Copy.file
-	    root2 path2 root1 workingDirForMerge working2 basep
-	    `Copy desc2 fp2 None ress2 id) >>= fun info ->
+        (Update.translatePath root2 path2 >>= (fun path2 ->
+          Copy.file
+            root2 path2 root1 workingDirForMerge working2 basep
+            `Copy desc2 fp2 None ress2 id) >>= fun info ->
          Lwt.return ());
-      
+
       (* retrieve the archive for this file, if any *)
       let arch =
-	match ui1, ui2 with
-	| Updates (_, Previous (_,_,fp,_)), Updates (_, Previous (_,_,fp2,_)) ->
-	    if fp = fp2 then
-	      Stasher.getRecentVersion fspath1 localPath1 fp 
-	    else
-	      assert false
-	| NoUpdates, Updates(_, Previous (_,_,fp,_))
-	| Updates(_, Previous (_,_,fp,_)), NoUpdates -> 
-	    Stasher.getRecentVersion fspath1 localPath1 fp
-	| Updates (_, New), Updates(_, New) 
-	| Updates (_, New), NoUpdates
-	| NoUpdates, Updates (_, New) ->
-	    debug (fun () -> Util.msg "File is new, no current version will be searched");
-	    None
-	| _ -> assert false    in
-      
-      (* Make a local copy of the archive file (in case the merge program  
+        match ui1, ui2 with
+        | Updates (_, Previous (_,_,fp,_)), Updates (_, Previous (_,_,fp2,_)) ->
+            if fp = fp2 then
+              Stasher.getRecentVersion fspath1 localPath1 fp
+            else
+              assert false
+        | NoUpdates, Updates(_, Previous (_,_,fp,_))
+        | Updates(_, Previous (_,_,fp,_)), NoUpdates ->
+            Stasher.getRecentVersion fspath1 localPath1 fp
+        | Updates (_, New), Updates(_, New)
+        | Updates (_, New), NoUpdates
+        | NoUpdates, Updates (_, New) ->
+            debug (fun () -> Util.msg "File is new, no current version will be searched");
+            None
+        | _ -> assert false    in
+
+      (* Make a local copy of the archive file (in case the merge program
          overwrites it and the program crashes before the call to the Stasher). *)
       begin
-        match arch with 
-	  Some fspath ->
-	    let info = Fileinfo.get false fspath Path.empty in
-	    Copy.localFile 
-	      fspath Path.empty 
-	      workingDirForMerge workingarch workingarch
-	      `Copy 
-	      info.Fileinfo.desc
-	      (Osx.ressLength info.Fileinfo.osX.Osx.ressInfo)
-	      None
-	| None ->
-	    ()
+        match arch with
+          Some fspath ->
+            let info = Fileinfo.get false fspath Path.empty in
+            Copy.localFile
+              fspath Path.empty
+              workingDirForMerge workingarch workingarch
+              `Copy
+              info.Fileinfo.desc
+              (Osx.ressLength info.Fileinfo.osX.Osx.ressInfo)
+              None
+        | None ->
+            ()
       end;
-	    
+
       (* run the merge command *)
       Os.delete workingDirForMerge new1;
       Os.delete workingDirForMerge new2;
@@ -922,10 +922,10 @@ let merge root1 path1 ui1 root2 path2 ui2 id showMergeFn =
           (Fspath.quotes (Fspath.concat workingDirForMerge new2))
           (Fspath.quotes (Fspath.concat workingDirForMerge newarch)) in
       Trace.log (Printf.sprintf "Merge command: %s\n" cmd);
-      
+
       let returnValue, mergeResultLog =
         Lwt_unix.run (External.runExternalProgram cmd) in
-      
+
       Trace.log (Printf.sprintf "Merge result (%s):\n%s\n"
                    (showStatus returnValue) mergeResultLog);
       debug (fun () -> Util.msg "Merge result = %s\n"
@@ -941,8 +941,8 @@ let merge root1 path1 ui1 root2 path2 ui2 id showMergeFn =
              (Printf.sprintf "Results of merging %s" (Path.toString path1))
              mergeResultLog) then
         raise (Util.Transient ("Merge command canceled by the user"));
-      
-      (* It's useful for now to be a bit verbose about what we're doing, but let's 
+
+      (* It's useful for now to be a bit verbose about what we're doing, but let's
          keep it easy to switch this to debug-only in some later release... *)
       let say f = f() in
 
@@ -952,12 +952,12 @@ let merge root1 path1 ui1 root2 path2 ui2 id showMergeFn =
       let new1exists = Fs.file_exists (Fspath.concat workingDirForMerge new1) in
       let new2exists = Fs.file_exists (Fspath.concat workingDirForMerge new2) in
       let newarchexists = Fs.file_exists (Fspath.concat workingDirForMerge newarch) in
-      
+
       if new1exists && new2exists then begin
-        if newarchexists then 
-	  say (fun () -> Util.msg "Three outputs detected \n")
-	else
-	  say (fun () -> Util.msg "Two outputs detected \n");
+        if newarchexists then
+          say (fun () -> Util.msg "Three outputs detected \n")
+        else
+          say (fun () -> Util.msg "Two outputs detected \n");
         let info1 = Fileinfo.get false workingDirForMerge new1 in
         let info2 = Fileinfo.get false workingDirForMerge new2 in
         let fp1' = Os.fingerprint workingDirForMerge new1 info1 in
@@ -965,38 +965,38 @@ let merge root1 path1 ui1 root2 path2 ui2 id showMergeFn =
         if fp1'=fp2' then begin
           debug (fun () -> Util.msg "Two outputs equal => update the archive\n");
           copy [(new1,working1); (new2,working2); (new1,workingarch)];
-	end else
-	  if returnValue = Unix.WEXITED 0 then begin
+        end else
+          if returnValue = Unix.WEXITED 0 then begin
             say (fun () -> (Util.msg "Two outputs not equal but merge command returned 0, so we will\n";
-   		            Util.msg "overwrite the other replica and the archive with the first output\n"));
-	    copy [(new1,working1); (new1,working2); (new1,workingarch)];
-	  end else begin
+		            Util.msg "overwrite the other replica and the archive with the first output\n"));
+            copy [(new1,working1); (new1,working2); (new1,workingarch)];
+          end else begin
             say (fun () -> (Util.msg "Two outputs not equal and the merge command exited with nonzero status, \n";
-		            Util.msg "so we will copy back the new files but not update the archive\n"));
-	    copy [(new1,working1); (new2,working2)];
-	    
-          end 
+                            Util.msg "so we will copy back the new files but not update the archive\n"));
+            copy [(new1,working1); (new2,working2)];
+
+          end
       end
-	  
+
       else if new1exists && (not new2exists) && (not newarchexists) then begin
-	  if returnValue = Unix.WEXITED 0 then begin
+          if returnValue = Unix.WEXITED 0 then begin
             say (fun () -> Util.msg "One output detected \n");
             copy [(new1,working1); (new1,working2); (new1,workingarch)];
-	  end else begin
+          end else begin
             say (fun () -> Util.msg "One output detected but merge command returned nonzero exit status\n");
             raise (Util.Transient "One output detected but merge command returned nonzero exit status\n")
           end
       end
-	  
+
       else if (not new1exists) && new2exists && (not newarchexists) then begin
         assert false
       end
-	  
+
       else if (not new1exists) && (not new2exists) && (not newarchexists) then begin
         say (fun () -> Util.msg "No outputs detected \n");
         let working1_still_exists = Fs.file_exists (Fspath.concat workingDirForMerge working1) in
         let working2_still_exists = Fs.file_exists (Fspath.concat workingDirForMerge working2) in
-	
+
         if working1_still_exists && working2_still_exists then begin
           say (fun () -> Util.msg "No output from merge cmd and both original files are still present\n");
           let info1' = Fileinfo.get false workingDirForMerge working1 in
@@ -1015,29 +1015,29 @@ let merge root1 path1 ui1 root2 path2 ui2 id showMergeFn =
             say (fun () -> Util.msg "Merge program changed just second input\n");
             copy [(working2,working1);(working2,workingarch)]
           end else
-	    if returnValue <> Unix.WEXITED 0 then
-	      raise (Util.Transient ("Error: the merge function changed both of "
+            if returnValue <> Unix.WEXITED 0 then
+              raise (Util.Transient ("Error: the merge function changed both of "
                                      ^ "its inputs but did not make them equal"))
-	    else begin
-	      say (fun () -> (Util.msg "Merge program changed both of its inputs in";
-			      Util.msg "different ways, but returned zero.\n"));
+            else begin
+              say (fun () -> (Util.msg "Merge program changed both of its inputs in";
+                              Util.msg "different ways, but returned zero.\n"));
               (* Note that we assume the merge program knew what it was doing when it
                  returned 0 -- i.e., we assume a zero result means that the files are
                  "morally equal" and either can be replaced by the other; we therefore
                  choose one of them (#2) as the unique new result, so that we can update
                  Unison's archive and call the file 'in sync' again. *)
               copy [(working2,working1);(working2,workingarch)];
-	    end
+            end
         end
-	    
-        else if working1_still_exists && (not working2_still_exists) 
-	    && returnValue = Unix.WEXITED 0 then begin
+
+        else if working1_still_exists && (not working2_still_exists)
+            && returnValue = Unix.WEXITED 0 then begin
               say (fun () -> Util.msg "No outputs and second replica has been deleted \n");
               copy [(working1,working2); (working1,workingarch)];
             end
-	    
-        else if (not working1_still_exists) && working2_still_exists 
-	    && returnValue = Unix.WEXITED 0 then begin
+
+        else if (not working1_still_exists) && working2_still_exists
+            && returnValue = Unix.WEXITED 0 then begin
               say (fun () -> Util.msg "No outputs and first replica has been deleted \n");
               copy [(working2,working1); (working2,workingarch)];
             end
@@ -1046,16 +1046,16 @@ let merge root1 path1 ui1 root2 path2 ui2 id showMergeFn =
                                    ^ "inputs and generated no output!"))
         end else begin
             say (fun() -> Util.msg "The merge program exited with nonzero status and did not leave";
-			  Util.msg " both files equal");
-	    raise (Util.Transient ("Error: the merge program failed and did not leave"
-				   ^ " both files equal"))
+                          Util.msg " both files equal");
+            raise (Util.Transient ("Error: the merge program failed and did not leave"
+                                   ^ " both files equal"))
         end
       end else begin
         assert false
       end;
 
       Lwt_unix.run
-	(debug (fun () -> Util.msg "Committing results of merge\n");
+        (debug (fun () -> Util.msg "Committing results of merge\n");
          copyBack workingDirForMerge working1 root1 path1 desc1 ui1 id >>= (fun () ->
          copyBack workingDirForMerge working2 root2 path2 desc2 ui2 id >>= (fun () ->
          let arch_fspath = Fspath.concat workingDirForMerge workingarch in
@@ -1076,11 +1076,11 @@ let merge root1 path1 ui1 root2 path2 ui2 id showMergeFn =
            Update.replaceArchive root1 path1 new_archive_entry >>= fun _ ->
            Update.replaceArchive root2 path2 new_archive_entry >>= fun _ ->
            Lwt.return ()
-         end else 
+         end else
            (Lwt.return ()) )))) )
     (fun _ ->
       Util.ignoreTransientErrors
-	(fun () ->
+        (fun () ->
            if not (Prefs.read keeptempfilesaftermerge) then begin
              Os.delete workingDirForMerge working1;
              Os.delete workingDirForMerge working2;

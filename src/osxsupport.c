@@ -110,7 +110,7 @@ CAMLprim value setFileInfos (value path, value fInfo) {
                         sizeof attrBuf.finderInfo, options);
 
   if (retcode == -1 && errno == EACCES) {
-    /* Unlike with normal Unix attributes, we cannot set OS X attributes 
+    /* Unlike with normal Unix attributes, we cannot set OS X attributes
        if file is read-only.  Try making it writable temporarily. */
     struct stat st;
     int r = stat(String_val(path), &st);

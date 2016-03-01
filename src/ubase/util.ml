@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/ubase/util.ml *)
-(* Copyright 1999-2016, Benjamin C. Pierce 
+(* Copyright 1999-2016, Benjamin C. Pierce
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -81,7 +81,7 @@ let format_to_string f =
   let s = Format.flush_str_formatter () in
   curr_formatter := old_formatter;
   s
-    
+
 let flush () = Format.pp_print_flush (!curr_formatter) ()
 
 (*****************************************************************************)
@@ -355,7 +355,7 @@ let rec replacesubstring s fromstring tostring =
       before ^ tostring ^ (replacesubstring after fromstring tostring)
 
 let replacesubstrings s pairs =
-  Safelist.fold_left 
+  Safelist.fold_left
     (fun s' (froms,tos) -> replacesubstring s' froms tos)
     s pairs
 

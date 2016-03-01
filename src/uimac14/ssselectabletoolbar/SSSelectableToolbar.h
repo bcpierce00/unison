@@ -8,17 +8,17 @@
 
 #import <Cocoa/Cocoa.h>
 
-@interface SSSelectableToolbar : NSToolbar 
+@interface SSSelectableToolbar : NSToolbar
 {
-	NSWindow* window;
-	NSView* blankView;
-	NSInteger defaultItemIndex;
+        NSWindow* window;
+        NSView* blankView;
+        NSInteger defaultItemIndex;
 }
 @property (nonatomic, retain) IBOutlet NSWindow* window;
 @property (nonatomic, assign) NSInteger defaultItemIndex;
 
 -(NSToolbarItem*)itemWithIdentifier:(NSString*)identifier;
-// select the item with the given index, ordered as per the palette and ignoring 
+// select the item with the given index, ordered as per the palette and ignoring
 // all types of buttons except SSSelectableToolbarItem
 -(void)selectItemWithIndex:(NSInteger)idx;
 // Convert a selectable item index (ignoring all except selectable items in palette)

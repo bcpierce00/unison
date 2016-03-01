@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/checksum.ml *)
-(* Copyright 1999-2016, Benjamin C. Pierce 
+(* Copyright 1999-2016, Benjamin C. Pierce
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -38,7 +38,7 @@ let rec power v n =
 (* roll: If [init l] => I, then I_n = n * 16381 ^ (l + 1), for 0 <= n < 256  *)
 (* NB: 256 is the upper-bound of ASCII code returned by Char.code            *)
 
-let init l = 
+let init l =
   let p = power 16381 (l + 1) in
   Array.init 256 (fun i -> (i * p) land 0x7fffffff)
 

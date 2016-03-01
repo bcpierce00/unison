@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/props.ml *)
-(* Copyright 1999-2016, Benjamin C. Pierce 
+(* Copyright 1999-2016, Benjamin C. Pierce
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -192,7 +192,7 @@ let syncedPartsToString =
      bit 0o0001 "?" "-" "x"
 
 let dontChmod =
-  Prefs.createBool "dontchmod" 
+  Prefs.createBool "dontchmod"
   false
   "!when set, never use the chmod system call"
   (  "By default, Unison uses the 'chmod' system call to set the permission bits"
@@ -202,7 +202,7 @@ let dontChmod =
 
 let validatePrefs () =
   if Prefs.read dontChmod && (Prefs.read permMask <> 0) then raise (Util.Fatal
-    "If the 'dontchmod' preference is set, the 'perms' preference should be 0")  
+    "If the 'dontchmod' preference is set, the 'perms' preference should be 0")
 
 let set fspath path kind (fp, mask) =
   (* BCP: removed "|| kind <> `Update" on 10/2005, but reinserted it on 11/2008.

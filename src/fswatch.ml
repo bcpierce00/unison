@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/fswatch.ml *)
-(* Copyright 1999-2016, Benjamin C. Pierce 
+(* Copyright 1999-2016, Benjamin C. Pierce
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -176,7 +176,7 @@ let useWatcher =
     "Unison uses a file watcher process, when available, to detect filesystem \
      changes; this is used to speed up update detection, and for continuous \
      synchronization (\\verb|-repeat watch| preference. Setting this flag to \
-     false disable the use of this process." 
+     false disable the use of this process."
 
 let printf o fmt =
   Printf.ksprintf
@@ -218,7 +218,7 @@ let read_line i =
       read ()
   in
   read
-  
+
 (****)
 
 let path =
@@ -339,7 +339,7 @@ let emitCmd fmt =
   with e ->
     closeConnection ();
     raise e
- 
+
 let rec readLine () =
   let c = currentConnection () in
   match c.last_line with

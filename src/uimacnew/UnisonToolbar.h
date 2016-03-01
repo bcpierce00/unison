@@ -1,6 +1,6 @@
 //
 //  UnisonToolbar.h
-//  
+//
 //  Extended NSToolbar with several views
 //
 //  Created by Ben Willmore on Sun March 12 2006.
@@ -16,10 +16,10 @@
   <NSToolbarDelegate>
 #endif
 {
-	ReconTableView*  tableView;
-	MyController*    myController;
-	NSString*        currentView;
-	NSView*          tableModeView;
+        ReconTableView*  tableView;
+        MyController*    myController;
+        NSString*        currentView;
+        NSView*          tableModeView;
 }
 
 - initWithIdentifier:(NSString *) identifier :(MyController *) aController :(ReconTableView *) aTableView;

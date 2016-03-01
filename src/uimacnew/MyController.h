@@ -45,11 +45,11 @@
     IBOutlet NotificationController *notificationController;
 
     BOOL syncable;
-    BOOL duringSync;	
+    BOOL duringSync;
     BOOL afterSync;
 
     NSMutableArray *reconItems;
-	ParentReconItem *rootItem;
+        ParentReconItem *rootItem;
     OCamlValue *preconn;
 
     BOOL doneFirstDiff;
@@ -109,4 +109,3 @@
 - (float)toolbarHeightForWindow:(NSWindow *)window;
 
 @end
-

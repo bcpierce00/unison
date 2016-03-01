@@ -28,7 +28,7 @@ val runningasserver : bool ref
 
 (* Tell the Trace module which local stream to use for tracing and
    debugging messages *)
-val redirect : [`Stdout | `Stderr | `FormatStdout] -> unit 
+val redirect : [`Stdout | `Stderr | `FormatStdout] -> unit
 
 (* ---------------------------------------------------------------------- *)
 (* Tracing *)
@@ -37,7 +37,7 @@ val redirect : [`Stdout | `Stderr | `FormatStdout] -> unit
    user is going to see it.  The default value just prints the string
    on stderr.  The graphical user interface should install an
    appropriate function here when it starts.  In the server process, this
-   variable's value is ignored. *) 
+   variable's value is ignored. *)
 val messageDisplayer : (string -> unit) ref
 
 (* The function used to format a status message (with a major and a minor

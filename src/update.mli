@@ -16,7 +16,7 @@ type archive =
 val storeRootsName : unit -> unit
 
 (* Retrieve the actual names of the roots *)
-val getRootsName : unit -> string 
+val getRootsName : unit -> string
 
 (* Perform update detection. Optionally, takes as input the list of
    paths known not to be synchronized and a list of paths not to

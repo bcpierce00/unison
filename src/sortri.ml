@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/sortri.ml *)
-(* Copyright 1999-2016, Benjamin C. Pierce 
+(* Copyright 1999-2016, Benjamin C. Pierce
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
 *)
 
 
-open Common  
+open Common
 
 let dbgsort = Util.debug "sort"
 
@@ -66,7 +66,7 @@ let saveSortingPrefs () =
       bs = Prefs.read bysize;
       nf = Prefs.read newfirst }
 
-let restoreDefaultSettings () = 
+let restoreDefaultSettings () =
   match !savedPrefs with
     None -> ()
   | Some {nf=nf; bs=bs; sf=sf; sl=sl} ->
@@ -86,12 +86,12 @@ let zeroSortingPrefs () =
 let sortByName () =
   saveSortingPrefs();
   zeroSortingPrefs()
-  
+
 let sortBySize () =
   saveSortingPrefs();
   zeroSortingPrefs();
   Prefs.set bysize true
- 
+
 let sortNewFirst () =
   saveSortingPrefs();
   Prefs.set newfirst (not (Prefs.read newfirst))
@@ -127,7 +127,7 @@ let compareReconItems () =
     let pred p =
       let b1 = p ri1 in let b2 = p ri2 in
       if b1 && b2 then 0 else if b1 then -1 else if b2 then 1 else 0 in
-    let cmp = 
+    let cmp =
       combineCmp [
         pred problematic;
         pred partiallyProblematic;
@@ -146,4 +146,3 @@ let compareReconItems () =
     cmp
 
 let sortReconItems items = Safelist.stable_sort (compareReconItems()) items
-

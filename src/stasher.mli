@@ -16,7 +16,7 @@ val backup:
 val stashCurrentVersion:
       Fspath.t                (* fspath to stash *)
    -> Path.local              (* path to stash *)
-   -> Path.local option       (* path to actual bits to be stashed (used to stash an 
+   -> Path.local option       (* path to actual bits to be stashed (used to stash an
                                  additional archive version in addition to the current version) *)
    -> unit
 
@@ -34,9 +34,7 @@ val backupDirectory : unit -> Fspath.t
 val shouldBackupCurrent : Path.t -> bool
 
 (* Low-level backupdir preference *)
-val backupdir : string Prefs.t  
+val backupdir : string Prefs.t
 
 (* Initialize the module *)
 val initBackups: unit -> unit
-
-  

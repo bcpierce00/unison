@@ -9,9 +9,9 @@
 #import <Cocoa/Cocoa.h>
 
 
-@interface SSSelectableToolbarItem : NSToolbarItem 
+@interface SSSelectableToolbarItem : NSToolbarItem
 {
-	NSView* linkedView;
+        NSView* linkedView;
 }
 
 @property (nonatomic, retain) IBOutlet NSView* linkedView;

@@ -6,7 +6,7 @@ because we enjoy making something useful for us and for the community,
 but we all have other jobs to do.  If you like Unison and you want to
 help us make it better, we'd be glad to have you on the team!
 
-    
+
 HOW YOU CAN HELP
 ----------------
 
@@ -16,7 +16,7 @@ There are lots of ways...
       smoothly, and what you use it for.
     * Submitting bug reports (we're always glad to have these...)
     * Submitting bug FIXES (... especially when accompanied by these! :-)
-    * Reading the code.  One of Unison's main design goals is robustness.  
+    * Reading the code.  One of Unison's main design goals is robustness.
       Help us reach that goal by reading our code and seeing whether you
       understand and believe it.
     * Proposing ideas for new functionality.
@@ -49,7 +49,7 @@ SUBMITTING CHANGES
 
 If you've made a change that you're happy with and think ought to
 become part of a future release of Unison, you can send it to us like
-this: 
+this:
 
     cd <top of your unison directory tree>
     make submit
@@ -64,4 +64,3 @@ FINDING YOUR WAY AROUND
 
 See the file ROADMAP.txt for some suggestions on how to start reading
 the sources.
-

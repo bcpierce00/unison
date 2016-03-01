@@ -5,7 +5,7 @@ type t = int
 type u = int array
 
 val init : int             (* blockSize *)
-        -> u               (* pre-computed table *) 
+        -> u               (* pre-computed table *)
 
 val substring : string
              -> int        (* offset in string *)

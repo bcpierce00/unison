@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/uicommon.ml *)
-(* Copyright 1999-2016, Benjamin C. Pierce 
+(* Copyright 1999-2016, Benjamin C. Pierce
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -85,7 +85,7 @@ let contactquietly =
      ^ "during startup.")
 
 let contactingServerMsg () =
-  Printf.sprintf "Contacting server..." 
+  Printf.sprintf "Contacting server..."
 
 let repeat =
   Prefs.createString "repeat" ""
@@ -115,7 +115,7 @@ let confirmmerge =
      ^ " the user can then cancel all the effects of applying the merge if it"
      ^ " turns out that the result is not satisfactory.  In "
      ^ " batch-mode, this preference has no effect.  Default is false.")
-    
+
 let runTestsPrefName = "selftest"
 let runtests =
   Prefs.createBool runTestsPrefName false
@@ -149,8 +149,8 @@ let showprev =
     "*Show previous properties, if they differ from current"
     ""
 
-(* The next function produces nothing unless the "showprev" 
-   preference is set.  This is because it tends to make the 
+(* The next function produces nothing unless the "showprev"
+   preference is set.  This is because it tends to make the
    output trace too long and annoying. *)
 let prevProps newprops ui =
   if not (Prefs.read showprev) then ""
@@ -180,26 +180,26 @@ let replicaContent2string rc sep =
   | `FILE, `Created ->
      d (choose "new file         " "file             ")
   | `FILE, `Modified ->
-     d "changed file     " 
+     d "changed file     "
   | `FILE, `PropsChanged ->
-     d "changed props    " 
+     d "changed props    "
   | `SYMLINK, `Created ->
      d (choose "new symlink      " "symlink          ")
   | `SYMLINK, `Modified ->
-     d "changed symlink  " 
+     d "changed symlink  "
   | `DIRECTORY, `Created ->
      d (choose "new dir          " "dir              ")
   | `DIRECTORY, `Modified ->
      d "changed dir      "
   | `DIRECTORY, `PropsChanged ->
-     d "dir props changed" 
+     d "dir props changed"
 
   (* Some cases that can't happen... *)
   | `ABSENT, (`Created | `Modified | `PropsChanged)
   | `SYMLINK, `PropsChanged
   | (`FILE|`SYMLINK|`DIRECTORY), `Deleted ->
       assert false
-  
+
 let replicaContent2shortString rc =
   match rc.typ, rc.status with
     _, `Unchanged             -> "        "
@@ -256,12 +256,12 @@ let displayPath previousPath path =
   let (level,suffixNames) = loop 0 previousNames names in
   let suffixPath =
     Safelist.fold_left Path.child Path.empty suffixNames in
-  let spaces = String.make (level*3) ' ' in 
+  let spaces = String.make (level*3) ' ' in
   spaces ^ (Path.toString suffixPath)
 
 let roots2string () =
   let replica1, replica2 = roots2niceStrings 12 (Globals.roots()) in
-  (Printf.sprintf "%s   %s       " replica1 replica2) 
+  (Printf.sprintf "%s   %s       " replica1 replica2)
 
 type action = AError | ASkip of bool | ALtoR of bool | ARtoL of bool | AMerge
 
@@ -327,7 +327,7 @@ let showDiffs ri printer errprinter id =
       begin
         try Files.diff root1 ri.path1 ui1 root2 ri.path2 ui2 printer id
         with Util.Transient e -> errprinter e
-      end 
+      end
   | Different _ ->
       errprinter "Can't diff: path doesn't refer to a file in both replicas"
 
@@ -420,7 +420,7 @@ let shortUsageMsg =
    ^ " -doc tutorial\".\n"
    ^ "For other documentation, type \"" ^ Uutil.myName ^ " -doc topics\".\n"
 
-let usageMsg = coreUsageMsg 
+let usageMsg = coreUsageMsg
 
 let debug = Trace.debug "startup"
 
@@ -448,7 +448,7 @@ let architecture =
 (* During startup the client determines the case sensitivity of each root.
    If any root is case insensitive, all roots must know this -- it's
    propagated in a pref.  Also, detects HFS (needed for resource forks) and
-   Windows (needed for permissions) and does some sanity checking. *) 
+   Windows (needed for permissions) and does some sanity checking. *)
 let validateAndFixupPrefs () =
   Props.validatePrefs();
   let supportUnicodeCaseSensitive = supportUnicodeCaseSensitive () in
@@ -511,11 +511,11 @@ let initPrefs ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
 
   (* Tell the preferences module the name of the profile *)
   Prefs.profileName := Some(profileName);
-  
+
   (* Check whether the -selftest flag is present on the command line *)
   let testFlagPresent =
     Util.StringMap.mem runTestsPrefName (Prefs.scanCmdLine usageMsg) in
-  
+
   (* If the -selftest flag is present, then we skip loading the preference file.
      (This is prevents possible confusions where settings from a preference
      file could cause unit tests to fail.) *)
@@ -544,7 +544,7 @@ let initPrefs ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
 
   (* Install dummy roots and backup directory if we are running self-tests *)
   if Prefs.read runtests then begin
-    if Globals.rawRoots() = [] then 
+    if Globals.rawRoots() = [] then
       Prefs.loadStrings ["root = test-a.tmp"; "root = test-b.tmp"];
     if (Prefs.read Stasher.backupdir) = "" then
       Prefs.loadStrings ["backupdir = test-backup.tmp"];
@@ -609,11 +609,11 @@ let initPrefs ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
                         (Clroot.clroot2string (Clroot.parseRoot clr)))
          (Globals.rawRoots ());
        Printf.eprintf "  i.e. (in canonical order)\n";
-       Safelist.iter (fun r -> 
+       Safelist.iter (fun r ->
                         Printf.eprintf "       %s\n" (root2string r))
          (Globals.rootsInCanonicalOrder());
        Printf.eprintf "\n");
-  
+
   Lwt_unix.run
     (validateAndFixupPrefs () >>=
      Globals.propagatePrefs);
@@ -621,9 +621,9 @@ let initPrefs ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
   (* Initializes some backups stuff according to the preferences just loaded from the profile.
      Important to do it here, after prefs are propagated, because the function will also be
      run on the server, if any. Also, this should be done each time a profile is reloaded
-     on this side, that's why it's here. *) 
+     on this side, that's why it's here. *)
   Stasher.initBackups ();
-  
+
   firstTime := false
 
 (**********************************************************************
@@ -658,7 +658,7 @@ let uiInit
 
   (* Make sure we have a directory for archives and profiles *)
   Os.createUnisonDir();
- 
+
   (* Extract any command line profile or roots *)
   let clprofile = ref None in
   begin
@@ -704,7 +704,7 @@ let uiInit
             clprofile := getProfile();
             match !clprofile with
               None -> exit 0 (* None means the user wants to quit *)
-            | Some x -> x 
+            | Some x -> x
           end else begin
             (* Roots given on command line.
                The profile should be the default. *)
@@ -724,7 +724,7 @@ let uiInit
   (* Load the profile and command-line arguments *)
   initPrefs
     profileName displayWaitMessage getFirstRoot getSecondRoot termInteract;
-  
+
   (* Turn on GC messages, if the '-debug gc' flag was provided *)
   if Trace.enabled "gc" then Gc.set {(Gc.get ()) with Gc.verbose = 0x3F};
 
