@@ -22,7 +22,7 @@
 
 let myName = ProjectInfo.myName
 
-let myVersion = ProjectInfo.myVersion
+let myVersion = ProjectInfo.myVersion ^ " (ocaml " ^ Sys.ocaml_version ^ ")"
 
 let myMajorVersion = ProjectInfo.myMajorVersion
 

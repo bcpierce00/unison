@@ -494,6 +494,12 @@ let promptForRoots getFirstRoot getSecondRoot =
 
 (* ---- *)
 
+let makeTempDir pattern =
+  let ic = Unix.open_process_in (Printf.sprintf "(mktemp --tmpdir -d %s || mktemp -d -t %s) 2>/dev/null" pattern pattern) in
+  let path = input_line ic in
+  ignore (Unix.close_process_in ic);
+  path
+
 (* The first time we load preferences, we also read the command line
    arguments; if we re-load prefs (because the user selected a new profile)
    we ignore the command line *)
@@ -544,10 +550,15 @@ let initPrefs ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
 
   (* Install dummy roots and backup directory if we are running self-tests *)
   if Prefs.read runtests then begin
-    if Globals.rawRoots() = [] then
-      Prefs.loadStrings ["root = test-a.tmp"; "root = test-b.tmp"];
-    if (Prefs.read Stasher.backupdir) = "" then
-      Prefs.loadStrings ["backupdir = test-backup.tmp"];
+    let tmpdir = makeTempDir "unison-selftest" in
+      if Globals.rawRoots() = [] then
+        Prefs.loadStrings [
+          "root = " ^ tmpdir ^ "a";
+          "root = " ^ tmpdir ^ "b";
+          "logfile = " ^ tmpdir ^ "unison.log";
+        ];
+      if (Prefs.read Stasher.backupdir) = "" then
+        Prefs.loadStrings [ "backupdir = " ^ tmpdir ^ "backup" ]
   end;
 
   (* Print the preference settings *)

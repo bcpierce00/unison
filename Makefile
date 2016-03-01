@@ -1,7 +1,12 @@
 .PHONY: all src
 
+default: text
+
 text:
 	$(MAKE) -C src UISTYLE=text
+
+test:
+	./src/unison -selftest
 
 all: src
 
@@ -109,12 +114,7 @@ $(DOWNLOADDIR):
 #	touch $(DOWNLOADDIR)/THIS-IS-UNISON-$(VERSION)
 
 exportsources:
-	$(RM) -r $(TMP)/$(EXPORTNAME)
-	(svn export src /tmp/$(EXPORTNAME))
-	-$(RM) $(TMP)/$(EXPORTNAME)/RECENTNEWS
-	(cd $(TMP); tar cvf - $(EXPORTNAME) \
-           | gzip --force --best > $(EXPORTNAME).tar.gz)
-	mv $(TMP)/$(EXPORTNAME).tar.gz $(DOWNLOADDIR)
+	git archive --output $(DOWNLOADDIR)/$(EXPORTNAME).tar.gz -- HEAD src
 
 exportdocs:
 	-rm -f src/unison
@@ -239,11 +239,10 @@ depend::
 clean::
 	$(RM) -r *.tmp \
 	   *.o *.obj *.cmo *.cmx *.cmi core TAGS *~ *.log \
-	   *.aux *.log *.dvi *.out *.backup[0-9] obsolete *.bak $(STABLEFLAG)
+	   *.aux *.log *.dvi *.out *.backup[0-9] *.bak $(STABLEFLAG)
 	$(MAKE) -C doc clean
 	$(MAKE) -C tools clean
 	$(MAKE) -C src clean
-	-find . -name obsolete -exec $(RM) -r {} \;
 
 install:
 	$(MAKE) -C src install
