@@ -1,6 +1,6 @@
 language: c
 sudo: required
-script: ./.travis-run.sh
+script: ./tests/travis-run.sh
 
 cache:
   directories:
@@ -8,7 +8,6 @@ cache:
   - /usr/local
 
 env:
-  # - OCAML_VERSION=4.00
   # - OCAML_VERSION=4.01
   - OCAML_VERSION=4.02
 

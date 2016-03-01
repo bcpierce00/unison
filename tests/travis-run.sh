@@ -2,7 +2,7 @@
 #
 
 set -ue
-sh -x .travis-ocaml.sh &>travis.log
+sh -x ./tests/travis-ocaml.sh &>travis.log
 . <( opam config env )
 
 set -x
