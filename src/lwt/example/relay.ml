@@ -18,7 +18,7 @@ let rec really_write out_ch buffer pos len =
 
 let relay in_ch out_ch =
   let rec relay_rec previous_write =
-    let buffer = String.create 8192 in
+    let buffer = Bytes.create 8192 in
     (* Read some data from the input socket *)
     Lwt_unix.read in_ch buffer 0 8192 >>= (fun len ->
     (* If we read nothing, this means that the connection has been

@@ -21,12 +21,12 @@ let backslashes2forwardslashes s0 =
   try
     ignore(String.index s0 '\\'); (* avoid alloc if possible *)
     let n = String.length s0 in
-    let s = String.create n in
+    let s = Bytes.create n in
     for i = 0 to n-1 do
       let c = String.get s0 i in
       if c = '\\'
-      then String.set s i '/'
-      else String.set s i c
+      then Bytes.set s i '/'
+      else Bytes.set s i c
     done;
     s
   with Not_found -> s0

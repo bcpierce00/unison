@@ -50,7 +50,7 @@ let state = ref None
 
 let decompress st i path =
   let l = String.length path in
-  let s = String.create (l + i) in
+  let s = Bytes.create (l + i) in
   String.blit !st 0 s 0 i;
   String.blit path 0 s i l;
   st := s;
@@ -74,14 +74,14 @@ let read st ic =
   let fp1 = Digest.input ic in
   let fp2 = Digest.input ic in
   let headerSize = Marshal.header_size in
-  let header = String.create headerSize in
+  let header = Bytes.create headerSize in
   really_input ic header 0 headerSize;
   if fp1 <> Digest.string header then begin
     debug (fun () -> Util.msg "bad header checksum\n");
     raise End_of_file
   end;
   let dataSize = Marshal.data_size header 0 in
-  let s = String.create (headerSize + dataSize) in
+  let s = Bytes.create (headerSize + dataSize) in
   String.blit header 0 s 0 headerSize;
   really_input ic s headerSize dataSize;
   if fp2 <> Digest.string s then begin

@@ -125,7 +125,7 @@ let bufferSize = 16384
    buffer of this size *)
 
 let makeBuffer ch =
-  { channel = ch; buffer = String.create bufferSize;
+  { channel = ch; buffer = Bytes.create bufferSize;
     length = 0; opened = true }
 
 (****)

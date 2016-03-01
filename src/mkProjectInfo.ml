@@ -42,10 +42,8 @@ let pointVersionOrigin = 543 (* Revision that corresponds to point version 0 *)
 (* ---------------------------------------------------------------------- *)
 (* You shouldn't need to edit below. *)
 
-let revisionString = "$Rev$";;
-
-let pointVersion =
-  Scanf.sscanf revisionString "$Rev: %d " (fun x -> x) - pointVersionOrigin;;
+let revisionString = "2.49.543";;
+let pointVersion = 543;;
 
 Printf.printf "MAJORVERSION=%d.%d\n" majorVersion minorVersion;;
 Printf.printf "VERSION=%d.%d.%d\n" majorVersion minorVersion pointVersion;;

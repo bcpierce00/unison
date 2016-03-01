@@ -110,7 +110,7 @@ let getInput () =
         (* We cannot used buffered I/Os under Windows, as character
            '\r' is not passed through (probably due to the code that
            turns \r\n into \n) *)
-        let s = String.create 1 in
+        let s = Bytes.create 1 in
         let n = Unix.read Unix.stdin s 0 1 in
         if n = 0 then raise End_of_file;
         if s.[0] = '\003' then raise Sys.Break;

@@ -369,11 +369,11 @@ let really_input ic s ofs len =
   else unsafe_really_input ic s ofs len
 
 let input_line ic =
-  let buf = ref (String.create 128) in
+  let buf = ref (Bytes.create 128) in
   let pos = ref 0 in
   let rec loop () =
     if !pos = String.length !buf then begin
-      let newbuf = String.create (2 * !pos) in
+      let newbuf = Bytes.create (2 * !pos) in
       String.blit !buf 0 newbuf 0 !pos;
       buf := newbuf
     end;
@@ -395,7 +395,7 @@ let input_line ic =
           | _ ->
               Lwt.fail e))
     (fun () ->
-       let res = String.create !pos in
+       let res = Bytes.create !pos in
        String.blit !buf 0 res 0 !pos;
        Lwt.return res)
 

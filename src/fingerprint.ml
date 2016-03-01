@@ -75,7 +75,7 @@ let hexaCode theChar =
 let toString md5 =
   if ispseudo md5 then md5 else begin
     let length = String.length md5 in
-    let string = String.create (length * 2) in
+    let string = Bytes.create (length * 2) in
     for i=0 to (length - 1) do
       let c1, c2 =  hexaCode (md5.[i]) in
       string.[2*i] <- c1;

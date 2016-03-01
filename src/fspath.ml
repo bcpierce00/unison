@@ -92,7 +92,7 @@ let appleDouble (Fspath f) =
   let len = String.length f in
   try
     let i = 1 + String.rindex f '/' in
-    let res = String.create (len + 2) in
+    let res = Bytes.create (len + 2) in
     String.blit f 0 res 0 i;
     res.[i] <- '.';
     res.[i + 1] <- '_';
@@ -192,7 +192,7 @@ let concat fspath path =
       let p = Path.toString path in
       let l = String.length fspath in
       let l' = String.length p in
-      let s = String.create (l + l' + 1) in
+      let s = Bytes.create (l + l' + 1) in
       String.blit fspath 0 s 0 l;
       s.[l] <- '/';
       String.blit p 0 s (l + 1) l';

@@ -1,9 +1,7 @@
-#######################################################################
-# $I1: Unison file synchronizer: Makefile $
-# $I2: Last modified by bcpierce on Mon, 06 Sep 2004 19:43:55 -0400 $
-# $I3: Copyright 1999-2004 (see COPYING for details) $
-#######################################################################
 .PHONY: all src
+
+text:
+	$(MAKE) -C src UISTYLE=text
 
 all: src
 
@@ -20,53 +18,9 @@ src/mkProjectInfo: src/mkProjectInfo.ml
 
 docs:
 	$(MAKE) -C src UISTYLE=text
-	$(MAKE) -C doc 
+	$(MAKE) -C doc
 
 include src/Makefile.OCaml
-
-######################################################################
-# Version control
-
-SUBMISSIONADDR = bcpierce@cis.upenn.edu
-
-checkin: logmsg remembernews
-	echo >> src/mkProjectInfo.ml # so the Rev keyword gets updated
-	svn commit --file logmsg
-	$(RM) logmsg
-ifeq ($(USER),bcpierce)
-	$(MAKE) nightly
-endif
-
-git_checkin: remembernews
-	echo >> src/mkProjectInfo.ml # so the Rev keyword gets updated
-	git add src/RECENTNEWS src/mkProjectInfo.ml
-	git commit --amend --no-edit
-	$(RM) logmsg
-	git svn dcommit # no logmsg here: the changes are in the commits
-
-remembernews: logmsg
-	echo "CHANGES FROM VERSION" $(VERSION) > rc.tmp
-	echo >> rc.tmp
-	cat logmsg >> rc.tmp
-	echo  >> rc.tmp
-	echo    ------------------------------- >> rc.tmp
-	-cat src/RECENTNEWS >> rc.tmp
-	mv -f rc.tmp src/RECENTNEWS
-
-DUPCMD = svn merge -r prev:committed ../branches/2.27
-
-# This doesn't seem to work, actually: svn doesn't detect all of the files with changes that
-# need merging.  :-(  
-dup:
-	@echo "Make sure changes have been committed in the 2.27 branch!"
-	$(DUPCMD) --dry-run 
-	@echo "Note that there may be conflicts on some silly files "
-	@echo "  (not sure how to avoid merging those changes!) "
-	@echo -n "Press RETURN to really do it... "
-	@read JUNK
-	$(DUPCMD)
-	echo >> logmsg
-	echo "* Transfer changes from 2.27 branch" >> logmsg
 
 ######################################################################
 # Export
@@ -104,7 +58,14 @@ DOWNLOADDIR=$(DOWNLOADPARENT)/$(NAME)-$(VERSION)
 BRANCH=$(MAJORVERSION)
 EXPORTNAME=$(NAME)-$(VERSION)
 DOWNLOADAREA=releases
-TMP=/tmp
+# OSX/linux portability
+ifeq ($(OSARCH),osx)
+	TMP=$(shell mktemp -d -t unison)
+else
+	TMP=$(shell mktemp -d)
+endif
+# TMP="/tmp"
+# TMP=$(shell mktemp -d 2>/dev/null || mktemp -d -t unison)
 
 # Do this when it's time to create a new beta-release from the development trunk
 beta: tools/ask
@@ -185,7 +146,7 @@ mailchanges: tools/ask src/$(NAME)
 	tools/ask tools/mailmsg.txt
 
 ######################################################################
-# Export binary for the current architecture 
+# Export binary for the current architecture
 # (this stuff is all probably dead)
 
 EXPORTTMP=$(TMP)/export-$(OSARCH)x.tmp
@@ -289,9 +250,6 @@ install:
 
 installtext:
 	$(MAKE) -C src install UISTYLE=text
-
-text:
-	$(MAKE) -C src UISTYLE=text
 
 tools/ask: tools/ask.ml
 	$(MAKE) -C tools

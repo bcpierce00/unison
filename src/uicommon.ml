@@ -359,7 +359,7 @@ let dangerousPathMsg dangerousPaths =
 
 let quote s =
   let len = String.length s in
-  let buf = String.create (2 * len) in
+  let buf = Bytes.create (2 * len) in
   let pos = ref 0 in
   for i = 0 to len - 1 do
     match s.[i] with

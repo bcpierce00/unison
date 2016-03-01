@@ -5,18 +5,18 @@ let encode_utf8 c =
   if c < 0x80 then
     String.make 1 (Char.chr c)
   else if c < 0x800 then
-    let s = String.create 2 in
+    let s = Bytes.create 2 in
     s.[0] <- Char.chr (c lsr 6 + 0xC0);
     s.[1] <- Char.chr (c land 0x3f + 0x80);
     s
   else if c < 0x10000 then
-    let s = String.create 3 in
+    let s = Bytes.create 3 in
     s.[0] <- Char.chr (c lsr 12 + 0xE0);
     s.[1] <- Char.chr ((c lsr 6) land 0x3f + 0x80);
     s.[2] <- Char.chr (c land 0x3f + 0x80);
     s
   else
-    let s = String.create 4 in
+    let s = Bytes.create 4 in
     s.[0] <- Char.chr (c lsr 18 + 0xF0);
     s.[1] <- Char.chr ((c lsr 12) land 0x3f + 0x80);
     s.[2] <- Char.chr ((c lsr 6) land 0x3f + 0x80);
@@ -1660,7 +1660,7 @@ let _ =
 
 let read_file nm l =
   let ch = open_in ("codepages/" ^ nm) in
-  let s = String.create l in
+  let s = Bytes.create l in
   really_input ch s 0 l;
   s
 
