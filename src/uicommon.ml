@@ -550,13 +550,18 @@ let initPrefs ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
 
   (* Install dummy roots and backup directory if we are running self-tests *)
   if Prefs.read runtests then begin
+    let tmpdir = makeTempDir ( "unison-selftest" );
+
     if Globals.rawRoots() = [] then
       Prefs.loadStrings [
-        String.concat " = " ["root"; makeTempDir "test-a"];
-        String.concat " = " ["root"; makeTempDir "test-b"]
+        String.concat "" [ "root = "; tmpdir; "a" ];
+        String.concat "" [ "root = "; tmpdir; "b" ];
+        String.concat "" [ "logfile = "; tmpdir; "unison.log" ];
       ];
     if (Prefs.read Stasher.backupdir) = "" then
-      Prefs.loadStrings [ String.concat " = " ["backupdir"; makeTempDir "test-backup"] ]
+      Prefs.loadStrings [
+        String.concat "" [ "backupdir = "; tmpdir; "backup" ];
+      ]
   end;
 
   (* Print the preference settings *)
