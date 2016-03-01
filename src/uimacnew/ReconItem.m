@@ -6,12 +6,12 @@
 @implementation ReconItem
 
 - init {
-	[super init];
-	selected = NO; // NB only used/updated during sorts. Not a 
-				   // reliable indicator of whether item is selected
-	fileSize = -1.;
-	bytesTransferred = -1.;
-	return self;
+        [super init];
+        selected = NO; // NB only used/updated during sorts. Not a
+                                   // reliable indicator of whether item is selected
+        fileSize = -1.;
+        bytesTransferred = -1.;
+        return self;
 }
 
 - (void)dealloc
@@ -20,28 +20,28 @@
     [fullPath release];
     // [direction release];  // assuming retained by cache, so not retained
     // [directionSortString release];  // no retain/release necessary because is constant
-	[super dealloc];
+        [super dealloc];
 }
 
-- (ReconItem *)parent 
+- (ReconItem *)parent
 {
-	return parent;
+        return parent;
 }
 
 - (void)setParent:(ReconItem *)p
 {
-	parent = p;
+        parent = p;
 }
 
 - (void)willChange
 {
-	// propagate up parent chain
-	[parent willChange];
+        // propagate up parent chain
+        [parent willChange];
 }
 
 - (NSArray *)children
 {
-	return nil;
+        return nil;
 }
 
 - (BOOL)selected
@@ -61,28 +61,28 @@
 
 - (void)setPath:(NSString *)aPath
 {
-	[path autorelease];
-	path = [aPath retain];
-	
-	// invalidate
-	[fullPath autorelease];
-	fullPath = nil;
+        [path autorelease];
+        path = [aPath retain];
+
+        // invalidate
+        [fullPath autorelease];
+        fullPath = nil;
 }
 
 - (NSString *)fullPath
 {
-	if (!fullPath) {
-		NSString *parentPath = [parent fullPath];
-		[self setFullPath:(([parentPath length] > 0) ? [parentPath stringByAppendingFormat:@"/%@", path] : path)];
-	}
+        if (!fullPath) {
+                NSString *parentPath = [parent fullPath];
+                [self setFullPath:(([parentPath length] > 0) ? [parentPath stringByAppendingFormat:@"/%@", path] : path)];
+        }
 
     return fullPath;
 }
 
 - (void)setFullPath:(NSString *)p
 {
-	[fullPath autorelease];
-	fullPath = [p retain];
+        [fullPath autorelease];
+        fullPath = [p retain];
 }
 
 - (NSString *)left
@@ -99,139 +99,139 @@ static NSMutableDictionary *_ChangeIconsByType = nil;
 
 - (NSImage *)changeIconFor:(NSString *)type other:(NSString *)other
 {
-	if (![type length]) {
-		if ([other isEqual:@"Created"]) {
-			type = @"Absent";
-		} else if ([other length]) {
-			type = @"Unmodified";		
-		} else
-			return nil;
-	}
+        if (![type length]) {
+                if ([other isEqual:@"Created"]) {
+                        type = @"Absent";
+                } else if ([other length]) {
+                        type = @"Unmodified";
+                } else
+                        return nil;
+        }
 
-	NSImage *result = [_ChangeIconsByType objectForKey:type];
-	if (!result) {
-		NSString *imageName = [NSString stringWithFormat:@"Change_%@.png", type];
-		result = [NSImage imageNamed:imageName];
-		if (!_ChangeIconsByType) _ChangeIconsByType = [[NSMutableDictionary alloc] init];
-		[_ChangeIconsByType setObject:result forKey:type];
-	}
-	return result;
+        NSImage *result = [_ChangeIconsByType objectForKey:type];
+        if (!result) {
+                NSString *imageName = [NSString stringWithFormat:@"Change_%@.png", type];
+                result = [NSImage imageNamed:imageName];
+                if (!_ChangeIconsByType) _ChangeIconsByType = [[NSMutableDictionary alloc] init];
+                [_ChangeIconsByType setObject:result forKey:type];
+        }
+        return result;
 }
 
 - (NSImage *)leftIcon
 {
-	return [self changeIconFor:[self left] other:[self right]];
+        return [self changeIconFor:[self left] other:[self right]];
 }
 
 - (NSImage *)rightIcon
 {
-	return [self changeIconFor:[self right] other:[self left]];
+        return [self changeIconFor:[self right] other:[self left]];
 }
 
 
 - (double)computeFileSize
 {
-	return 0.;
+        return 0.;
 }
 
 - (double)bytesTransferred
 {
-	return 0.;
+        return 0.;
 }
 
 - (long)fileCount
 {
-	return 1;
+        return 1;
 }
 
 - (double)fileSize
 {
-	if (fileSize == -1.) fileSize = [self computeFileSize];
-	return fileSize;
+        if (fileSize == -1.) fileSize = [self computeFileSize];
+        return fileSize;
 }
 
 - (NSString *)formatFileSize:(double)size
 {
-	if (size == 0) return @"--";
-	if (size < 1024) return @"< 1KB"; // return [NSString stringWithFormat:@"%i bytes", size];
-	size /= 1024;
-	if (size < 1024) return [NSString stringWithFormat:@"%i KB", (int)size];
-	size /= 1024;
-	if (size < 1024) return [NSString stringWithFormat:@"%1.1f MB", size];
-	size = size / 1024;
-	return [NSString stringWithFormat:@"%1.1f GB", size];
+        if (size == 0) return @"--";
+        if (size < 1024) return @"< 1KB"; // return [NSString stringWithFormat:@"%i bytes", size];
+        size /= 1024;
+        if (size < 1024) return [NSString stringWithFormat:@"%i KB", (int)size];
+        size /= 1024;
+        if (size < 1024) return [NSString stringWithFormat:@"%1.1f MB", size];
+        size = size / 1024;
+        return [NSString stringWithFormat:@"%1.1f GB", size];
 }
 
 - (NSString *)fileSizeString
 {
-	return [self formatFileSize:[self fileSize]];
+        return [self formatFileSize:[self fileSize]];
 }
 
 - (NSString *)bytesTransferredString
 {
-	return [self formatFileSize:[self bytesTransferred]];
+        return [self formatFileSize:[self bytesTransferred]];
 }
 
 - (NSNumber *)percentTransferred
 {
-	double size = [self computeFileSize];
-	return (size > 0) ? [NSNumber numberWithDouble:([self bytesTransferred] / (size) * 100.0)]
-					  : nil;
+        double size = [self computeFileSize];
+        return (size > 0) ? [NSNumber numberWithDouble:([self bytesTransferred] / (size) * 100.0)]
+                                          : nil;
 }
 
 static NSMutableDictionary *_iconsByExtension = nil;
 
 - (NSImage *)iconForExtension:(NSString *)extension
 {
-	NSImage *icon = [_iconsByExtension objectForKey:extension];
-	if (!_iconsByExtension) _iconsByExtension = [[NSMutableDictionary alloc] init];
-	if (!icon) {
-		icon = [[NSWorkspace sharedWorkspace] iconForFileType:extension];
-		[icon setSize:NSMakeSize(16.0, 16.0)];
-		[_iconsByExtension setObject:icon forKey:extension];
-	}
-	return icon;
+        NSImage *icon = [_iconsByExtension objectForKey:extension];
+        if (!_iconsByExtension) _iconsByExtension = [[NSMutableDictionary alloc] init];
+        if (!icon) {
+                icon = [[NSWorkspace sharedWorkspace] iconForFileType:extension];
+                [icon setSize:NSMakeSize(16.0, 16.0)];
+                [_iconsByExtension setObject:icon forKey:extension];
+        }
+        return icon;
 }
 
 - (NSImage *)fileIcon
 {
-	return [self iconForExtension:NSFileTypeForHFSTypeCode(kOpenFolderIcon)];
+        return [self iconForExtension:NSFileTypeForHFSTypeCode(kOpenFolderIcon)];
 }
 
 - (NSString *)dirString
 {
-	return @"<-?->";
+        return @"<-?->";
 }
 
 - (NSImage *)direction
 {
-    if (direction) return direction;    
+    if (direction) return direction;
     NSString * dirString = [self dirString];
 
     BOOL changedFromDefault = [self changedFromDefault];
-    
+
     if ([dirString isEqual:@"<-?->"]) {
         if (changedFromDefault | resolved) {
             direction = [NSImage imageNamed: @"table-skip.tif"];
-			directionSortString = @"3";
-		}
+                        directionSortString = @"3";
+                }
         else {
             direction = [NSImage imageNamed: @"table-conflict.tif"];
-			directionSortString = @"2";
+                        directionSortString = @"2";
         }
     }
-    
+
     else if ([dirString isEqual:@"---->"]) {
         if (changedFromDefault) {
             direction = [NSImage imageNamed: @"table-right-blue.tif"];
             directionSortString = @"6";
         }
-	else {
+        else {
             direction = [NSImage imageNamed: @"table-right-green.tif"];
             directionSortString = @"8";
         }
     }
-    
+
     else if ([dirString isEqual:@"<----"]) {
         if (changedFromDefault) {
             direction = [NSImage imageNamed: @"table-left-blue.tif"];
@@ -247,17 +247,17 @@ static NSMutableDictionary *_iconsByExtension = nil;
         direction = [NSImage imageNamed: @"table-merge.tif"];
         directionSortString = @"4";
     }
-    
-	else if ([dirString isEqual:@"<--->"]) {
-		direction = [NSImage imageNamed: @"table-mixed.tif"];
-		directionSortString = @"9";
-	}
+
+        else if ([dirString isEqual:@"<--->"]) {
+                direction = [NSImage imageNamed: @"table-mixed.tif"];
+                directionSortString = @"9";
+        }
 
     else {
         direction = [NSImage imageNamed: @"table-error.tif"];
         directionSortString = @"1";
     }
-    
+
     [direction retain];
     return direction;
 }
@@ -306,13 +306,13 @@ static NSMutableDictionary *_iconsByExtension = nil;
 {
     switch (action) {
     case 'I':
-		ocamlCall("xS", "unisonIgnorePath", [self fullPath]);
+                ocamlCall("xS", "unisonIgnorePath", [self fullPath]);
         break;
     case 'E':
-		ocamlCall("xS", "unisonIgnoreExt", [self path]);
+                ocamlCall("xS", "unisonIgnoreExt", [self path]);
         break;
     case 'N':
-		ocamlCall("xS", "unisonIgnoreName", [self path]);
+                ocamlCall("xS", "unisonIgnoreName", [self path]);
         break;
     default:
         NSLog(@"ReconItem.doIgnore : unknown ignore");
@@ -373,13 +373,13 @@ static NSMutableDictionary *_iconsByExtension = nil;
 
 - (NSString *)progress
 {
-	return nil;
+        return nil;
 }
 
 - (BOOL)transferInProgress
 {
-	double soFar = [self bytesTransferred];
-	return (soFar > 0) && (soFar < [self fileSize]);
+        double soFar = [self bytesTransferred];
+        return (soFar > 0) && (soFar < [self fileSize]);
 }
 
 - (void)resetProgress
@@ -388,16 +388,16 @@ static NSMutableDictionary *_iconsByExtension = nil;
 
 - (NSString *)progressString
 {
-	NSString *progress = [self progress];
-	if ([progress length] == 0. || [progress hasSuffix:@"%"])
-		progress = [self transferInProgress] ? [self bytesTransferredString] : @"";
-	else if ([progress isEqual:@"done"]) progress = @"";
-	return progress;
+        NSString *progress = [self progress];
+        if ([progress length] == 0. || [progress hasSuffix:@"%"])
+                progress = [self transferInProgress] ? [self bytesTransferredString] : @"";
+        else if ([progress isEqual:@"done"]) progress = @"";
+        return progress;
 }
 
 - (NSString *)details
 {
-	return nil;
+        return nil;
 }
 
 - (NSString *)updateDetails
@@ -407,17 +407,17 @@ static NSMutableDictionary *_iconsByExtension = nil;
 
 - (BOOL)isConflict
 {
-	return NO;
+        return NO;
 }
 
 - (BOOL)changedFromDefault
 {
-	return NO;
+        return NO;
 }
 
 - (void)revertDirection
 {
-	[self willChange];
+        [self willChange];
     [direction release];
     direction = nil;
     resolved = NO;
@@ -425,7 +425,7 @@ static NSMutableDictionary *_iconsByExtension = nil;
 
 - (BOOL)canDiff
 {
-	return NO;
+        return NO;
 }
 
 - (void)showDiffs
@@ -434,7 +434,7 @@ static NSMutableDictionary *_iconsByExtension = nil;
 
 - (ReconItem *)collapseParentsWithSingleChildren:(BOOL)isRoot
 {
-	return self;
+        return self;
 }
 @end
 
@@ -446,7 +446,7 @@ static NSMutableDictionary *_iconsByExtension = nil;
 {
     [super init];
     ri = [v retain];
-	index = i;
+        index = i;
     resolved = NO;
     directionSortString = @"";
     return self;
@@ -459,7 +459,7 @@ static NSMutableDictionary *_iconsByExtension = nil;
     [right release];
     [progress release];
     [details release];
-	
+
     [super dealloc];
 }
 
@@ -472,13 +472,13 @@ static NSMutableDictionary *_iconsByExtension = nil;
 - (NSString *)left
 {
     if (!left) left = [(NSString *)ocamlCall("S@", "unisonRiToLeft", ri) retain];
-	return left;
+        return left;
 }
 
 - (NSString *)right
 {
-    if (!right)	right = [(NSString *)ocamlCall("S@", "unisonRiToRight", ri) retain];    
-	return right;
+    if (!right)	right = [(NSString *)ocamlCall("S@", "unisonRiToRight", ri) retain];
+        return right;
 }
 
 - (double)computeFileSize
@@ -488,58 +488,58 @@ static NSMutableDictionary *_iconsByExtension = nil;
 
 - (double)bytesTransferred
 {
-	if (bytesTransferred == -1.) {
-		// need to force to fileSize if done, otherwise may not match up to 100%
-		bytesTransferred = ([[self progress] isEqual:@"done"]) ? [self fileSize]
+        if (bytesTransferred == -1.) {
+                // need to force to fileSize if done, otherwise may not match up to 100%
+                bytesTransferred = ([[self progress] isEqual:@"done"]) ? [self fileSize]
                   : [(NSNumber*)ocamlCall("N@", "unisonRiToBytesTransferred", ri) doubleValue];
-	}
-	return bytesTransferred;
+        }
+        return bytesTransferred;
 }
 
 - (NSImage *)fileIcon
 {
-	NSString *extension = [[self path] pathExtension];
-	
-	if ([@"" isEqual:extension]) {
-		NSString *type = (NSString *)ocamlCall("S@", "unisonRiToFileType", ri);
-		extension = [type isEqual:@"dir"] 
-			? NSFileTypeForHFSTypeCode(kGenericFolderIcon)
-			: NSFileTypeForHFSTypeCode(kGenericDocumentIcon);
-	}
-	return [self iconForExtension:extension];
+        NSString *extension = [[self path] pathExtension];
+
+        if ([@"" isEqual:extension]) {
+                NSString *type = (NSString *)ocamlCall("S@", "unisonRiToFileType", ri);
+                extension = [type isEqual:@"dir"]
+                        ? NSFileTypeForHFSTypeCode(kGenericFolderIcon)
+                        : NSFileTypeForHFSTypeCode(kGenericDocumentIcon);
+        }
+        return [self iconForExtension:extension];
 }
 
 - (NSString *)dirString
 {
-	return (NSString *)ocamlCall("S@", "unisonRiToDirection", ri);
+        return (NSString *)ocamlCall("S@", "unisonRiToDirection", ri);
 }
 
 - (void)setDirection:(char *)d
 {
-	[self willChange];
+        [self willChange];
     [super setDirection:d];
-	ocamlCall("x@", d, ri);
+        ocamlCall("x@", d, ri);
 }
 
 - (NSString *)progress
 {
     if (!progress) {
-		progress = 	[(NSString *)ocamlCall("S@", "unisonRiToProgress", ri) retain];
-		if ([progress isEqual:@"FAILED"]) [self updateDetails];
+                progress = 	[(NSString *)ocamlCall("S@", "unisonRiToProgress", ri) retain];
+                if ([progress isEqual:@"FAILED"]) [self updateDetails];
     }
-	return progress;
+        return progress;
 }
 
 - (void)resetProgress
 {
     // Get rid of the memoized progress because we expect it to change
-	[self willChange];
-	bytesTransferred = -1.;
+        [self willChange];
+        bytesTransferred = -1.;
     [progress release];
-	
-	// Force update now so we get the result while the OCaml thread is available
-	// [self progress];
-	// [self bytesTransferred];
+
+        // Force update now so we get the result while the OCaml thread is available
+        // [self progress];
+        // [self bytesTransferred];
     progress = nil;
 }
 
@@ -551,35 +551,35 @@ static NSMutableDictionary *_iconsByExtension = nil;
 
 - (NSString *)updateDetails
 {
-	[details autorelease];
-	details = [(NSString *)ocamlCall("S@", "unisonRiToDetails", ri) retain];
+        [details autorelease];
+        details = [(NSString *)ocamlCall("S@", "unisonRiToDetails", ri) retain];
     return details;
 }
 
 - (BOOL)isConflict
 {
-	return ((long)ocamlCall("i@", "unisonRiIsConflict", ri) ? YES : NO);
+        return ((long)ocamlCall("i@", "unisonRiIsConflict", ri) ? YES : NO);
 }
 
 - (BOOL)changedFromDefault
 {
-	return ((long)ocamlCall("i@", "changedFromDefault", ri) ? YES : NO);
+        return ((long)ocamlCall("i@", "changedFromDefault", ri) ? YES : NO);
 }
 
 - (void)revertDirection
 {
-	ocamlCall("x@", "unisonRiRevert", ri);
-	[super revertDirection];
+        ocamlCall("x@", "unisonRiRevert", ri);
+        [super revertDirection];
 }
 
 - (BOOL)canDiff
 {
-	return ((long)ocamlCall("i@", "canDiff", ri) ? YES : NO);
+        return ((long)ocamlCall("i@", "canDiff", ri) ? YES : NO);
 }
 
 - (void)showDiffs
 {
-	ocamlCall("x@i", "runShowDiffs", ri, index);
+        ocamlCall("x@i", "runShowDiffs", ri, index);
 }
 
 @end
@@ -590,19 +590,19 @@ static NSMutableDictionary *_iconsByExtension = nil;
 
 @implementation NSImage (TintedImage)
 
-- (NSImage *)tintedImageWithColor:(NSColor *) tint operation:(NSCompositingOperation) op  
+- (NSImage *)tintedImageWithColor:(NSColor *) tint operation:(NSCompositingOperation) op
 {
-	NSSize size = [self size];
-	NSRect imageBounds = NSMakeRect(0, 0, size.width, size.height);    
-	NSImage *newImage = [[NSImage alloc] initWithSize:size];
-	
-	[newImage lockFocus];
-	[self compositeToPoint:NSZeroPoint operation:NSCompositeSourceOver];
-	[tint set];
-	NSRectFillUsingOperation(imageBounds, op);
-	[newImage unlockFocus];
-	
-	return [newImage autorelease];
+        NSSize size = [self size];
+        NSRect imageBounds = NSMakeRect(0, 0, size.width, size.height);
+        NSImage *newImage = [[NSImage alloc] initWithSize:size];
+
+        [newImage lockFocus];
+        [self compositeToPoint:NSZeroPoint operation:NSCompositeSourceOver];
+        [tint set];
+        NSRectFillUsingOperation(imageBounds, op);
+        [newImage unlockFocus];
+
+        return [newImage autorelease];
 }
 
 @end
@@ -610,230 +610,229 @@ static NSMutableDictionary *_iconsByExtension = nil;
 // ----  Parent nodes in grouped items
 @implementation ParentReconItem
 
-- init 
+- init
 {
-	[super init];
-	_children = [[NSMutableArray alloc] init];
-	return self;
+        [super init];
+        _children = [[NSMutableArray alloc] init];
+        return self;
 }
 
 - initWithPath:(NSString *)aPath
 {
-	[self init];
-	path = [aPath retain];
-	return self;
+        [self init];
+        path = [aPath retain];
+        return self;
 }
 
 - (void)dealloc
 {
-	[_children release];
-	[super dealloc];
+        [_children release];
+        [super dealloc];
 }
 
 - (NSArray *)children;
 {
-	return _children;
+        return _children;
 }
 
 - (void)addChild:(ReconItem *)item pathArray:(NSArray *)pathArray level:(int)level
 {
-	NSString *element = [pathArray count] ? [pathArray objectAtIndex:level] : @"";
+        NSString *element = [pathArray count] ? [pathArray objectAtIndex:level] : @"";
 
-	// if we're at the leaf of the path, then add the item
-	if (((0 == [pathArray count]) && (0 == level)) || (level == [pathArray count]-1)) {
-		[item setParent:self];
-		[item setPath:element];
-		[_children addObject:item];
-		return;
-	}
-		
-	// find / add matching parent node
-	ReconItem *last = [_children lastObject];
-	if (last == nil || ![last isKindOfClass:[ParentReconItem class]] || ![[last path] isEqual:element]) {
-		last = [[ParentReconItem alloc] initWithPath:element];
-		[last setParent:self];
-		[_children addObject:last];
-		[last release];
-	}
-	
-	[(ParentReconItem *)last addChild:item pathArray:pathArray level:level+1];
+        // if we're at the leaf of the path, then add the item
+        if (((0 == [pathArray count]) && (0 == level)) || (level == [pathArray count]-1)) {
+                [item setParent:self];
+                [item setPath:element];
+                [_children addObject:item];
+                return;
+        }
+
+        // find / add matching parent node
+        ReconItem *last = [_children lastObject];
+        if (last == nil || ![last isKindOfClass:[ParentReconItem class]] || ![[last path] isEqual:element]) {
+                last = [[ParentReconItem alloc] initWithPath:element];
+                [last setParent:self];
+                [_children addObject:last];
+                [last release];
+        }
+
+        [(ParentReconItem *)last addChild:item pathArray:pathArray level:level+1];
 }
 
 - (void)addChild:(ReconItem *)item nested:(BOOL)nested
 {
-	[item setPath:nil]; // invalidate/reset
-	
-	if (nested) {
-		[self addChild:item pathArray:[[item path] pathComponents] level:0];
-	} else {
-		[item setParent:self];
-		[_children addObject:item];
-	}
+        [item setPath:nil]; // invalidate/reset
+
+        if (nested) {
+                [self addChild:item pathArray:[[item path] pathComponents] level:0];
+        } else {
+                [item setParent:self];
+                [_children addObject:item];
+        }
 }
 
 - (void)sortUsingDescriptors:(NSArray *)sortDescriptors
 {
-	// sort our children
-	[_children sortUsingDescriptors:sortDescriptors];
-	
-	// then have them sort theirs
-	int i = [_children count];
-	while (i--) {
-		id child = [_children objectAtIndex:i];
-		if ([child isKindOfClass:[ParentReconItem class]]) [child sortUsingDescriptors:sortDescriptors];
-	}
+        // sort our children
+        [_children sortUsingDescriptors:sortDescriptors];
+
+        // then have them sort theirs
+        int i = [_children count];
+        while (i--) {
+                id child = [_children objectAtIndex:i];
+                if ([child isKindOfClass:[ParentReconItem class]]) [child sortUsingDescriptors:sortDescriptors];
+        }
 }
 
 - (ReconItem *)collapseParentsWithSingleChildren:(BOOL)isRoot
 {
-	// replace ourselves?
-	if (!isRoot && [_children count] == 1) {
-		ReconItem *child = [_children lastObject];
-		[child setPath:[path stringByAppendingFormat:@"/%@", [child path]]];
-		return [child collapseParentsWithSingleChildren:NO];
-	}
-	
-	// recurse
-	int i = [_children count];
-	while (i--) {
-		ReconItem *child = [_children objectAtIndex:i];
-		ReconItem *replacement = [child collapseParentsWithSingleChildren:NO];
-		if (child != replacement) {
-			[_children replaceObjectAtIndex:i withObject:replacement];
-			[replacement setParent:self];
-		}
-	}
-	return self;
+        // replace ourselves?
+        if (!isRoot && [_children count] == 1) {
+                ReconItem *child = [_children lastObject];
+                [child setPath:[path stringByAppendingFormat:@"/%@", [child path]]];
+                return [child collapseParentsWithSingleChildren:NO];
+        }
+
+        // recurse
+        int i = [_children count];
+        while (i--) {
+                ReconItem *child = [_children objectAtIndex:i];
+                ReconItem *replacement = [child collapseParentsWithSingleChildren:NO];
+                if (child != replacement) {
+                        [_children replaceObjectAtIndex:i withObject:replacement];
+                        [replacement setParent:self];
+                }
+        }
+        return self;
 }
 
 - (void)willChange
 {
-	// invalidate child-based state
-	// Assuming caches / constant, so not retained / released
-	// [direction autorelease]; 
-	// [directionSortString autorelease]; 
-	direction = nil;
-	directionSortString = nil;
-	bytesTransferred = -1.;
-	// fileSize = -1;
+        // invalidate child-based state
+        // Assuming caches / constant, so not retained / released
+        // [direction autorelease];
+        // [directionSortString autorelease];
+        direction = nil;
+        directionSortString = nil;
+        bytesTransferred = -1.;
+        // fileSize = -1;
     // resolved = NO;
 
-	// propagate up parent chain
-	[parent willChange];
+        // propagate up parent chain
+        [parent willChange];
 }
 
 // Propagation methods
 - (void)doAction:(unichar)action
 {
-	int i = [_children count];
-	while (i--) {
-		ReconItem *child = [_children objectAtIndex:i];
-		[child doAction:action]; 
-	}
+        int i = [_children count];
+        while (i--) {
+                ReconItem *child = [_children objectAtIndex:i];
+                [child doAction:action];
+        }
 }
 
 - (void)doIgnore:(unichar)action
 {
-	// handle Path ignores at this level, name and extension at the child nodes
-	if (action == 'I') {
-		[super doIgnore:'I'];
-	} else {
-		int i = [_children count];
-		while (i--) {
-			ReconItem *child = [_children objectAtIndex:i];
-			[child doIgnore:action]; 
-		}
-	}
+        // handle Path ignores at this level, name and extension at the child nodes
+        if (action == 'I') {
+                [super doIgnore:'I'];
+        } else {
+                int i = [_children count];
+                while (i--) {
+                        ReconItem *child = [_children objectAtIndex:i];
+                        [child doIgnore:action];
+                }
+        }
 }
 
 // Rollup methods
 - (long)fileCount
 {
-	if (fileCount == 0) {
-		int i = [_children count];
-		while (i--) {
-			ReconItem *child = [_children objectAtIndex:i];
-			fileCount += [child fileCount]; 
-		}
-	}
-	return fileCount;
+        if (fileCount == 0) {
+                int i = [_children count];
+                while (i--) {
+                        ReconItem *child = [_children objectAtIndex:i];
+                        fileCount += [child fileCount];
+                }
+        }
+        return fileCount;
 }
 
 - (double)computeFileSize
 {
-	double size = 0;
-	int i = [_children count];
-	while (i--) {
-		ReconItem *child = [_children objectAtIndex:i];
-		size += [child fileSize]; 
-	}
-	return size;
+        double size = 0;
+        int i = [_children count];
+        while (i--) {
+                ReconItem *child = [_children objectAtIndex:i];
+                size += [child fileSize];
+        }
+        return size;
 }
 
 - (double)bytesTransferred
 {
-	if (bytesTransferred == -1.) {
-		bytesTransferred = 0.;
-		int i = [_children count];
-		while (i--) {
-			ReconItem *child = [_children objectAtIndex:i];
-			bytesTransferred += [child bytesTransferred]; 
-		}
-	}
-	return bytesTransferred;
+        if (bytesTransferred == -1.) {
+                bytesTransferred = 0.;
+                int i = [_children count];
+                while (i--) {
+                        ReconItem *child = [_children objectAtIndex:i];
+                        bytesTransferred += [child bytesTransferred];
+                }
+        }
+        return bytesTransferred;
 }
 
 
 
 - (NSString *)dirString
 {
-	NSString *rollup = nil;
-	int i = [_children count];
-	while (i--) {
-		ReconItem *child = [_children objectAtIndex:i];
-		NSString *dirString = [child dirString];
-		if (!rollup || [dirString isEqual:rollup]) {
-			rollup = dirString;
-		} else {
-			// conflict
-			if ([dirString isEqual:@"---->"] || [dirString isEqual:@"<----"] || [dirString isEqual:@"<--->"]) {
-				if ([rollup isEqual:@"---->"] || [rollup isEqual:@"<----"] || [rollup isEqual:@"<--->"]) {
-					rollup = @"<--->";
-				}
-			} else {
-				rollup = @"<-?->";
-			}
-		}
-	}
-	// NSLog(@"dirString for %@: %@", path, rollup);
-	return rollup;
+        NSString *rollup = nil;
+        int i = [_children count];
+        while (i--) {
+                ReconItem *child = [_children objectAtIndex:i];
+                NSString *dirString = [child dirString];
+                if (!rollup || [dirString isEqual:rollup]) {
+                        rollup = dirString;
+                } else {
+                        // conflict
+                        if ([dirString isEqual:@"---->"] || [dirString isEqual:@"<----"] || [dirString isEqual:@"<--->"]) {
+                                if ([rollup isEqual:@"---->"] || [rollup isEqual:@"<----"] || [rollup isEqual:@"<--->"]) {
+                                        rollup = @"<--->";
+                                }
+                        } else {
+                                rollup = @"<-?->";
+                        }
+                }
+        }
+        // NSLog(@"dirString for %@: %@", path, rollup);
+        return rollup;
 }
 
 - (BOOL)hasConflictedChildren
 {
-	NSString *dirString = [self dirString];
-	BOOL result = [dirString isEqual:@"<--->"] || [dirString isEqual:@"<-?->"];
-	// NSLog(@"hasConflictedChildren (%@): %@: %i", [self path], dirString, result);
-	return result;
+        NSString *dirString = [self dirString];
+        BOOL result = [dirString isEqual:@"<--->"] || [dirString isEqual:@"<-?->"];
+        // NSLog(@"hasConflictedChildren (%@): %@: %i", [self path], dirString, result);
+        return result;
 }
 
 static NSMutableDictionary *_parentImages = nil;
 static NSColor *_veryLightGreyColor = nil;
 - (NSImage *)direction
 {
-	if (!_parentImages) {
-		_parentImages = [[NSMutableDictionary alloc] init];
-		_veryLightGreyColor = [[NSColor colorWithCalibratedRed:0.7 green:0.7 blue:0.7 alpha:1.0] retain];
-	}
-	NSImage *baseImage = [super direction];
-	NSImage *parentImage = [_parentImages objectForKey:baseImage];
-	if (!parentImage) {
-		// make parent images a grey version of the leaf images
-		parentImage = [baseImage tintedImageWithColor:_veryLightGreyColor operation:NSCompositeSourceIn];
-		[_parentImages setObject:parentImage forKey:baseImage];
-	}
-	return parentImage;
+        if (!_parentImages) {
+                _parentImages = [[NSMutableDictionary alloc] init];
+                _veryLightGreyColor = [[NSColor colorWithCalibratedRed:0.7 green:0.7 blue:0.7 alpha:1.0] retain];
+        }
+        NSImage *baseImage = [super direction];
+        NSImage *parentImage = [_parentImages objectForKey:baseImage];
+        if (!parentImage) {
+                // make parent images a grey version of the leaf images
+                parentImage = [baseImage tintedImageWithColor:_veryLightGreyColor operation:NSCompositeSourceIn];
+                [_parentImages setObject:parentImage forKey:baseImage];
+        }
+        return parentImage;
 }
 
 @end
-

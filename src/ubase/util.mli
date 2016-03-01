@@ -109,7 +109,7 @@ val format : ('a, Format.formatter, unit) format -> 'a
 
 val flush : unit -> unit
 
-val format_to_string : (unit -> unit) -> string 
+val format_to_string : (unit -> unit) -> string
 (** [format_to_string f] runs [f] in a context where the Format functions are redirected to
     a string, which it returns. *)
 

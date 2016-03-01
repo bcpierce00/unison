@@ -54,7 +54,7 @@
             return NO;
         }
     }
-	ocamlCall("xSSS", "unisonProfileInit", profileName, firstRoot, secondRoot);
+        ocamlCall("xSSS", "unisonProfileInit", profileName, firstRoot, secondRoot);
     return YES;
 }
 

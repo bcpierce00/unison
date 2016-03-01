@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/fswatcherold.ml *)
-(* Copyright 1999-2016, Benjamin C. Pierce 
+(* Copyright 1999-2016, Benjamin C. Pierce
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -75,10 +75,10 @@ let trim_duplicates l =
         loop (s2::rest)
       else
         s1 :: (loop (s2::rest)) in
-  loop (Safelist.sort String.compare l)  
+  loop (Safelist.sort String.compare l)
 
 let readAvailableLinesFromWatcher wi =
-  let ch = match wi.ch with Some(c) -> c | None -> assert false in 
+  let ch = match wi.ch with Some(c) -> c | None -> assert false in
   let rec loop () =
     match try Some(input_char ch) with End_of_file -> None with
       None ->

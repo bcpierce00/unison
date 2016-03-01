@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/ubase/safelist.ml *)
-(* Copyright 1999-2016, Benjamin C. Pierce 
+(* Copyright 1999-2016, Benjamin C. Pierce
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -138,7 +138,7 @@ let fold_right f l accu =
 
 let flatten_map f l = flatten (map f l)
 
-let remove x l = 
+let remove x l =
   let rec loop acc = function
   | [] -> List.rev acc
   | a :: rest ->

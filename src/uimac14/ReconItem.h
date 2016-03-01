@@ -6,7 +6,7 @@
 
 @interface ReconItem : NSObject
 {
-	ReconItem *parent;
+        ReconItem *parent;
     NSString *path;
     NSString *fullPath;
     BOOL selected;
@@ -71,8 +71,8 @@
 
 @interface ParentReconItem : ReconItem
 {
-	NSMutableArray *_children;
-	long fileCount;
+        NSMutableArray *_children;
+        long fileCount;
 }
 - (void)addChild:(ReconItem *)item nested:(BOOL)useNesting;
 - (void)sortUsingDescriptors:(NSArray *)sortDescriptors;

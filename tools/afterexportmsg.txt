@@ -5,4 +5,4 @@ here (if any -- these days most binaries are built by external packagers)...
 Finish up by doing "make commitexport" to commit what you've built
 
 Double-check that the web page lists the right stable and beta version
-numbers 
+numbers

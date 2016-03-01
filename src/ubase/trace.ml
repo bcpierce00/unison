@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/ubase/trace.ml *)
-(* Copyright 1999-2016, Benjamin C. Pierce 
+(* Copyright 1999-2016, Benjamin C. Pierce
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@ let redirect x = (traceprinter := x)
 
 let debugmods =
   Prefs.createStringList "debug"
-    "!debug module xxx ('all' -> everything, 'verbose' -> more)" 
+    "!debug module xxx ('all' -> everything, 'verbose' -> more)"
     ("This preference is used to make Unison print various sorts of "
      ^ "information about what it is doing internally on the standard "
      ^ "error stream.  It can be used many times, each time with the name "
@@ -48,14 +48,14 @@ let debugmods =
 let debugtimes =
   Prefs.createBool "debugtimes"
     false "*annotate debugging messages with timestamps" ""
-                                   
+
 let runningasserver = ref false
 
 let debugging() = (Prefs.read debugmods) <> []
 
 let enabled modname =
   let m = Prefs.read debugmods in
-  let en = 
+  let en =
     m <> [] && (   (* tracing labeled "" is enabled if anything is *)
                    (modname = "")
                 || (* '-debug verbose' enables everything *)
@@ -70,7 +70,7 @@ let enabled modname =
                    (Safelist.mem (modname ^ "+") m)
                ) in
   en
-    
+
 let enable modname onoff =
   let m = Prefs.read debugmods in
   let m' = if onoff then (modname::m) else (Safelist.remove modname m) in
@@ -144,7 +144,7 @@ let writeLog s =
       | `Stdout -> Printf.printf "%s" s
       | `Stderr -> Util.msg "%s" s
       | `FormatStdout -> Format.printf "%s " s
-  end else debug "" (fun() -> 
+  end else debug "" (fun() ->
       match !traceprinter with
       | `Stdout -> Printf.printf "%s" s
       | `Stderr -> Util.msg "%s" s
@@ -173,7 +173,7 @@ let defaultMessageDisplayer s =
     let show() = if s<>"" then Util.msg "%s\n" s in
     if enabled "" then debug "" show
     else if not !runningasserver then show()
-  end 
+  end
 
 let messageDisplayer = ref defaultMessageDisplayer
 
@@ -184,7 +184,7 @@ let statusFormatter = ref defaultStatusFormatter
 let statusMsgMajor = ref ""
 let statusMsgMinor = ref ""
 
-let displayMessageLocally (mt,s) = 
+let displayMessageLocally (mt,s) =
   let display = !messageDisplayer in
   let displayStatus() =
     display (!statusFormatter !statusMsgMajor !statusMsgMinor) in
@@ -210,7 +210,7 @@ let status s =
   displayMessage (StatusMajor, s)
 
 let statusMinor s = displayMessage (StatusMinor, s)
-                      
+
 let statusDetail s =
   let ss = if not !runningasserver then s else (Util.padto 30 s) ^ " [server]" in
   displayMessage (StatusMinor, ss)
@@ -221,15 +221,15 @@ let logverbose s =
   let temp = !sendLogMsgsToStderr in
   sendLogMsgsToStderr := !sendLogMsgsToStderr && not (Prefs.read terse);
   displayMessage (Log, s);
-  sendLogMsgsToStderr := temp 
+  sendLogMsgsToStderr := temp
 
 (* ---------------------------------------------------------------------- *)
 (* Timing *)
-    
+
 let printTimers =
   Prefs.createBool "timers" false
     "*print timing information" ""
-    
+
 type timer = string * float
 
 let gettime () = Unix.gettimeofday()
@@ -253,4 +253,3 @@ let showTimer (desc, t1) =
     if Prefs.read(printTimers) then
       let t2 = gettime() in
       message (Printf.sprintf "%s (%.2f seconds)" desc (t2 -. t1))
-

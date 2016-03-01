@@ -9,7 +9,7 @@ rule lex = parse
 
 | "<BR>\n<BR>" { print_string "<p>"; lex lexbuf }
 | "<BR><BR>" { print_string "<p>"; lex lexbuf }
-    
+
 | _ { print_string (Lexing.lexeme lexbuf); lex lexbuf }
 
 {

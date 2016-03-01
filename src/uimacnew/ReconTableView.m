@@ -14,71 +14,71 @@
 
 - (NSArray *)selectedObjects
 {
-	NSMutableArray *result = [NSMutableArray array];
+        NSMutableArray *result = [NSMutableArray array];
   NSIndexSet *set = [self selectedRowIndexes];
   NSUInteger index = [set firstIndex];
   while (index != NSNotFound) {
     [result addObject:[self itemAtRow:index]];
     index = [set indexGreaterThanIndex: index];
   }
-	return result;
+        return result;
 }
 
 - (void)setSelectedObjects:(NSArray *)selectedObjects
 {
-	NSMutableIndexSet *set = [NSMutableIndexSet indexSet];
-	int i = [selectedObjects count];
-	while (i--) {
-		int index = [self rowForItem:[selectedObjects objectAtIndex:i]];
-		if (index >= 0)	[set addIndex:index];
-	}
-	[self selectRowIndexes:set byExtendingSelection:NO];
+        NSMutableIndexSet *set = [NSMutableIndexSet indexSet];
+        int i = [selectedObjects count];
+        while (i--) {
+                int index = [self rowForItem:[selectedObjects objectAtIndex:i]];
+                if (index >= 0)	[set addIndex:index];
+        }
+        [self selectRowIndexes:set byExtendingSelection:NO];
 }
 
 - (NSEnumerator *)selectedObjectEnumerator
 {
-	return [[self selectedObjects] objectEnumerator];
+        return [[self selectedObjects] objectEnumerator];
 }
 
-- (int)rowCapacityWithoutScrolling 
+- (int)rowCapacityWithoutScrolling
 {
-	float bodyHeight = [self visibleRect].size.height;
-	bodyHeight -=  [[self headerView] visibleRect].size.height;
-	return bodyHeight / ([self rowHeight] + 2.0);
+        float bodyHeight = [self visibleRect].size.height;
+        bodyHeight -=  [[self headerView] visibleRect].size.height;
+        return bodyHeight / ([self rowHeight] + 2.0);
 }
 
 - (BOOL)_canAcceptRowCountWithoutScrolling:(int)rows
 {
-	return ([self numberOfRows] + rows) <= [self rowCapacityWithoutScrolling];
+        return ([self numberOfRows] + rows) <= [self rowCapacityWithoutScrolling];
 }
 
 - (BOOL)_expandChildrenIfSpace:(id)parent level:(int)level
 {
-	BOOL didExpand = NO;
-	id dataSource = [self dataSource];
-	int count = [dataSource outlineView:self numberOfChildrenOfItem:parent];
-	if (level == 0) {
-		if (count && ([self isItemExpanded:parent] || [self _canAcceptRowCountWithoutScrolling:count])) {
-			[self expandItem:parent expandChildren:NO];
-			didExpand = YES;
-		}
-	} else {
-		// try expanding each of our children.  If all expand, then return YES,
-		// indicating that it may be worth trying the next level
-		int i;
-		for (i=0; i < count; i++) {
-			id child = [dataSource outlineView:self child:i ofItem:parent];
-			didExpand = [self _expandChildrenIfSpace:child level:level-1] || didExpand;
-		}
-	}
+        BOOL didExpand = NO;
+        id dataSource = [self dataSource];
+        int count = [dataSource outlineView:self numberOfChildrenOfItem:parent];
+        if (level == 0) {
+                if (count && ([self isItemExpanded:parent] || [self _canAcceptRowCountWithoutScrolling:count])) {
+                        [self expandItem:parent expandChildren:NO];
+                        didExpand = YES;
+                }
+        } else {
+                // try expanding each of our children.  If all expand, then return YES,
+                // indicating that it may be worth trying the next level
+                int i;
+                for (i=0; i < count; i++) {
+                        id child = [dataSource outlineView:self child:i ofItem:parent];
+                        didExpand = [self _expandChildrenIfSpace:child level:level-1] || didExpand;
+                }
+        }
 
-	return didExpand;
+        return didExpand;
 }
 
 - (void)expandChildrenIfSpace
 {
-	int level = 1;
-	while ([self _expandChildrenIfSpace:nil level:level]) level++;
+        int level = 1;
+        while ([self _expandChildrenIfSpace:nil level:level]) level++;
 }
 
 @end
@@ -116,14 +116,14 @@
     else if (action == @selector(showDiff:)) {
         if ((!editable) || (!([self numberOfSelectedRows]==1)))
             return NO;
-	else return [self canDiffSelection];
+        else return [self canDiffSelection];
     }
     else return YES;
 }
 
 - (BOOL)validateMenuItem:(NSMenuItem *)menuItem
 {
-	return [self validateItem:[menuItem action]];
+        return [self validateItem:[menuItem action]];
 }
 
 - (BOOL)validateToolbarItem:(NSToolbarItem *)toolbarItem
@@ -134,10 +134,10 @@
 - (void)doIgnore:(unichar)c
 {
     NSEnumerator *e = [self selectedObjectEnumerator];
-	ReconItem *item, *last = nil;
+        ReconItem *item, *last = nil;
     while (item = [e nextObject]) {
         [item doIgnore:c];
-		last = item;
+                last = item;
     }
     if (last) { // something was selected
         MyController* controller = (MyController*) [self dataSource];
@@ -166,14 +166,14 @@
 {
     int numSelected = 0;
     NSEnumerator *e = [self selectedObjectEnumerator];
-	ReconItem *item, *last = nil;
+        ReconItem *item, *last = nil;
     while (item = [e nextObject]) {
         numSelected++;
         [item doAction:c];
-		last = item;
+                last = item;
     }
     if (numSelected>0) {
-		int nextRow = [self rowForItem:last] + 1;
+                int nextRow = [self rowForItem:last] + 1;
         if (numSelected == 1 && [self numberOfRows] > nextRow && c!='d') {
             // Move to next row, unless already at last row, or if more than one row selected
             [self selectRowIndexes:[NSIndexSet indexSetWithIndex:nextRow] byExtendingSelection:NO];
@@ -215,7 +215,7 @@
     NSMutableArray *reconItems = [controller reconItems];
     int i = 0;
     for (; i < [reconItems count]; i++) {
-		ReconItem *item = [reconItems objectAtIndex:i]; 
+                ReconItem *item = [reconItems objectAtIndex:i];
         if ([item isConflict])
             [self selectRowIndexes:[NSIndexSet indexSetWithIndex:[self rowForItem:item]] byExtendingSelection:YES];
     }
@@ -276,17 +276,17 @@
 {
     BOOL canDiff = YES;
     NSEnumerator *e = [self selectedObjectEnumerator];
-	ReconItem *item;
+        ReconItem *item;
     while (item = [e nextObject]) {
         if (![item canDiff]) canDiff= NO;
-    }    
+    }
     return canDiff;
 }
 
-/* Override default highlight colour because it's hard to see the 
+/* Override default highlight colour because it's hard to see the
    conflict/resolution icons */
 - (id)_highlightColorForCell:(NSCell *)cell
-{   
+{
     if(([[self window] firstResponder] == self) &&
         [[self window] isMainWindow] &&
         [[self window] isKeyWindow])

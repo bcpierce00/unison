@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/external.ml *)
-(* Copyright 1999-2016, Benjamin C. Pierce 
+(* Copyright 1999-2016, Benjamin C. Pierce
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -69,7 +69,7 @@ let runExternalProgram cmd =
          "\n\n" ^ Util.process_status_to_string returnValue
        else
          "") in
-    Lwt.return (returnValue,mergeResultLog) 
+    Lwt.return (returnValue,mergeResultLog)
   end else
     let (out, ipt, err) as desc = System.open_process_full cmd in
     let out = Lwt_unix.intern_in_channel out in

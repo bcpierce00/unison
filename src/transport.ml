@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/transport.ml *)
-(* Copyright 1999-2016, Benjamin C. Pierce 
+(* Copyright 1999-2016, Benjamin C. Pierce
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -72,7 +72,7 @@ let rLogCounter = ref 0
 let logLwtNumbered (lwtDescription: string) (lwtShortDescription: string)
     (t: unit -> 'a Lwt.t): 'a Lwt.t =
   let _ = (rLogCounter := (!rLogCounter) + 1; !rLogCounter) in
-  let lwtDescription = Util.replacesubstring lwtDescription "\n " "" in 
+  let lwtDescription = Util.replacesubstring lwtDescription "\n " "" in
   logLwt (Printf.sprintf "[BGN] %s\n" lwtDescription) t
     (fun _ ->
       Printf.sprintf "[END] %s\n" lwtShortDescription)

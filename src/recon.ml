@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/recon.ml *)
-(* Copyright 1999-2016, Benjamin C. Pierce 
+(* Copyright 1999-2016, Benjamin C. Pierce
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -253,10 +253,10 @@ let shouldCancel path rc1 rc2 root2 =
                       (Int64.of_int (Prefs.read maxSizeThreshold)))
   in
   match actionKind rc1 rc2 with
-    `UPDATE   -> 
+    `UPDATE   ->
      if test `UPDATE then true, "would update a file with noupdate or noupdatepartial set"
      else testSize rc1, "would transfer a file of size greater than maxsizethreshold"
-  | `DELETION -> 
+  | `DELETION ->
      if test `UPDATE then true, "would update a file with noupdate or noupdatepartial set"
      else test `DELETION, "would delete a file with nodeletion or nodeletionpartial set"
   | `CREATION ->
@@ -268,7 +268,7 @@ let filterRi root1 root2 ri =
     Problem _ ->
       ()
   | Different diff ->
-     let cancel,reason = 
+     let cancel,reason =
        match diff.direction with
          Replica1ToReplica2 ->
           shouldCancel (Path.toString ri.path1) diff.rc1 diff.rc2 root2
@@ -276,8 +276,8 @@ let filterRi root1 root2 ri =
           shouldCancel (Path.toString ri.path1) diff.rc2 diff.rc1 root1
        | Conflict _ | Merge ->
           false,""
-     in 
-     if cancel 
+     in
+     if cancel
      then
        diff.direction <- Conflict reason
 
@@ -307,7 +307,7 @@ let overrideReconcilerChoices ris =
 let checkThatPreferredRootIsValid () =
   let test_root predname = function
     | "" | "newer" -> ()
-    | "older" as r -> 
+    | "older" as r ->
         if not (Prefs.read Props.syncModtimes) then
           raise (Util.Transient (Printf.sprintf
                                    "The '%s=%s' preference can only be used with 'times=true'"
@@ -637,7 +637,7 @@ let rec reconcile
 (* expect this.)                                                             *)
              let uc1' = File(desc1,ContentsSame) in
              let uc2' = File(desc2,ContentsSame) in
-             different uc1' uc2' "properties changed on both sides" 
+             different uc1' uc2' "properties changed on both sides"
                        (oldType prev) equals unequals
        | ContentsSame, ContentsSame when Props.similar desc1 desc2 ->
            (add_equal counter equals (uc1, uc2), unequals)
@@ -732,9 +732,9 @@ let reconcileList allowPartial
   overrideReconcilerChoices sorted;
   (sorted, not (Tree.is_empty equals), dangerous)
 
-(* This is the main function: it takes a list of updateItem lists and,       
-   according to the roots and paths of synchronization, builds the           
-   corresponding reconItem list.  A second component indicates whether there 
+(* This is the main function: it takes a list of updateItem lists and,
+   according to the roots and paths of synchronization, builds the
+   corresponding reconItem list.  A second component indicates whether there
    is any file updated in the same way on both sides. *)
 let reconcileAll ?(allowPartial = false) updatesList =
   Trace.status "Reconciling changes";

@@ -31,7 +31,7 @@ let profilePathname n =
   if System.file_exists f then f
   else Util.fileInUnisonDir (n ^ ".prf")
 
-let thePrefsFile () = 
+let thePrefsFile () =
   match !profileName with
     None -> raise (Util.Transient("No preference file has been specified"))
   | Some(n) -> profilePathname n
@@ -63,7 +63,7 @@ let addprinter name f = printers := (name, f) :: !printers
 (* When we load a new profile, we need to reset all preferences to their     *)
 (* default values.  Each preference has a resetter for doing this.           *)
 
-let resetters = ref [] 
+let resetters = ref []
 
 let addresetter f = resetters := f :: !resetters
 
@@ -271,13 +271,13 @@ let oneLineDocs u =
   let formatAll p =
     String.concat ""
       (Safelist.rev
-         (Util.StringMap.fold 
+         (Util.StringMap.fold
             (fun name (doc, pspec, _) l ->
                (formatOne name pspec doc
                   (String.length doc > 0 && doc.[0] <> '*' && p doc)) :: l)
             !prefs []))
   in
-    u ^ "\n" 
+    u ^ "\n"
   ^ "Basic options: \n"
   ^ formatAll (fun doc -> doc.[0] <> '!')
   ^ "\nAdvanced options: \n"
@@ -296,16 +296,16 @@ let processCmdLine usage hook =
   in
   let anonfun =
     try
-      let (_, p, _) = Util.StringMap.find "rest" !prefs in 
+      let (_, p, _) = Util.StringMap.find "rest" !prefs in
       match hook "rest" p with
         Uarg.String stringFunction -> stringFunction
       | _                         -> defaultanonfun
     with
       Not_found -> defaultanonfun
-  in 
+  in
   try
     Uarg.parse argspecs anonfun (oneLineDocs usage)
-  with IllegalValue str -> 
+  with IllegalValue str ->
     raise(Util.Fatal(Printf.sprintf "%s \n%s\n" (oneLineDocs usage) str))
 
 let parseCmdLine usage =
@@ -314,7 +314,7 @@ let parseCmdLine usage =
 (* Scan command line without actually setting any preferences; return a      *)
 (* string map associating a list of strings with each option appearing on    *)
 (* the command line.                                                         *)
-let scanCmdLine usage = 
+let scanCmdLine usage =
   let m = ref (Util.StringMap.empty : (string list) Util.StringMap.t) in
   let insert name s =
     let old = try Util.StringMap.find name !m with Not_found -> [] in
@@ -333,7 +333,7 @@ let scanCmdLine usage =
 (*****************************************************************************)
 
 let string2bool name = function
-   "true"  -> true 
+   "true"  -> true
  | "false" -> false
  | other   -> raise (Util.Fatal (name^" expects a boolean value, but \n"^other
                                 ^ " is not a boolean"))
@@ -341,8 +341,8 @@ let string2bool name = function
 let string2int name string =
  try
    int_of_string string
- with Failure "int_of_string" -> 
-   raise (Util.Fatal (name ^ " expects an integer value, but\n" 
+ with Failure "int_of_string" ->
+   raise (Util.Fatal (name ^ " expects an integer value, but\n"
                  ^ string ^ " is not an integer"))
 
 (* Takes a filename and returns a list of "parsed lines" containing
@@ -375,7 +375,7 @@ let rec readAFile filename : (string * int * string * string) list =
 
 (* Takes a list of strings in reverse order and yields a list of "parsed lines"
    in correct order *)
-and parseLines filename lines = 
+and parseLines filename lines =
   let rec loop lines lineNum res =
     match lines with
       [] -> res
@@ -390,8 +390,8 @@ and parseLines filename lines =
               let sublines = readAFile f in
               loop rest (lineNum+1) (Safelist.append sublines res)
           | _ -> raise (Util.Fatal(Printf.sprintf
-				     "File \"%s\", line %d:\nGarbled 'include' directive: %s" 
-				     filename lineNum theLine))
+                                     "File \"%s\", line %d:\nGarbled 'include' directive: %s"
+                                     filename lineNum theLine))
         else try
           let pos = String.index theLine '=' in
           let varName = Util.trimWhitespace (String.sub theLine 0 pos) in
@@ -401,7 +401,7 @@ and parseLines filename lines =
           loop rest (lineNum+1) ((filename, lineNum, varName, theResult)::res)
         with Not_found -> (* theLine does not contain '=' *)
           raise(Util.Fatal(Printf.sprintf
-			     "File \"%s\", line %d:\nGarbled line (no '='):\n%s" filename lineNum theLine)) in
+                             "File \"%s\", line %d:\nGarbled line (no '='):\n%s" filename lineNum theLine)) in
   loop lines 1 []
 
 let processLines lines =
@@ -418,11 +418,11 @@ let processLines lines =
              stringFunction theResult
          | _ -> assert false
        with Not_found ->
-         raise (Util.Fatal ("File \""^ fileName ^ "\", line " ^ 
+         raise (Util.Fatal ("File \""^ fileName ^ "\", line " ^
                             string_of_int lineNum ^ ": `" ^
                             varName ^ "' is not a valid option"))
-       | IllegalValue str -> 
-           raise(Util.Fatal("File \""^ fileName ^ "\", line " ^ 
+       | IllegalValue str ->
+           raise(Util.Fatal("File \""^ fileName ^ "\", line " ^
                             string_of_int lineNum ^ ": " ^ str)))
     lines
 
@@ -469,7 +469,7 @@ let addprefsto = createString "addprefsto" ""
    \\texttt{addprefsto \\ARG{filename}} makes Unison \
    add new preferences to the file named \\ARG{filename} instead."
 
-let addLine l = 
+let addLine l =
   let filename =
     if read addprefsto <> ""
       then profilePathname (read addprefsto)
@@ -493,7 +493,7 @@ let addLine l =
           (Printf.sprintf "Could not write preferences file (%s)\n" e) in
         Util.warn resultmsg;
         resultmsg
-      end 
+      end
 
 let add name value = addLine (name ^ " = " ^ value)
 

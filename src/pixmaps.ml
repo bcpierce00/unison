@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/pixmaps.ml *)
-(* Copyright 1999-2016, Benjamin C. Pierce 
+(* Copyright 1999-2016, Benjamin C. Pierce
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -115,7 +115,7 @@ let success = [|
 "  c None";
 "* c #00dd00";
 (* pixels *)
-"                    "; 
+"                    ";
 "                    ";
 "             ***    ";
 "           ******   ";
@@ -138,7 +138,7 @@ let failure = [|
 "  c None";
 "* c #ff0000";
 (* pixels *)
-"     *        *     "; 
+"     *        *     ";
 "    ***      **     ";
 "     ***    ***     ";
 "      **    **      ";

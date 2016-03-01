@@ -1,6 +1,6 @@
 //
 //  UnisonToolbar.h
-//  
+//
 //  Extended NSToolbar with several views
 //
 //  Created by Ben Willmore on Sun March 12 2006.
@@ -30,12 +30,12 @@ static NSString*        TableModeIdentifier     = @"TableMode";
 - initWithIdentifier:(NSString *) identifier :(MyController *) aController :(ReconTableView *) aTableView {
 
     if ((self = [super initWithIdentifier: identifier])) {
-		[self setAllowsUserCustomization: NO];
-		[self setAutosavesConfiguration: NO];
-		[self setDelegate: self];
-		myController = aController;
-		tableView = aTableView;
-		currentView = @"";	
+                [self setAllowsUserCustomization: NO];
+                [self setAutosavesConfiguration: NO];
+                [self setDelegate: self];
+                myController = aController;
+                tableView = aTableView;
+                currentView = @"";
     }
 
     return self;
@@ -43,44 +43,44 @@ static NSString*        TableModeIdentifier     = @"TableMode";
 
 - (void)takeTableModeView:(NSView *)view
 {
-	tableModeView = [view retain];
-	[view setHidden:YES];	
+        tableModeView = [view retain];
+        [view setHidden:YES];
 }
 
 - (NSToolbarItem *) toolbar: (NSToolbar *)toolbar itemForItemIdentifier: (NSString *) itemIdent willBeInsertedIntoToolbar:(BOOL) willBeInserted {
 
     NSToolbarItem *toolbarItem = [[[NSToolbarItem alloc] initWithItemIdentifier: itemIdent] autorelease];
     if ([itemIdent isEqual: QuitItemIdentifier]) {
-		[toolbarItem setLabel: @"Quit"];
-		[toolbarItem setImage: [NSImage imageNamed: @"quit.tif"]];
-		[toolbarItem setTarget:NSApp];
-		[toolbarItem setAction:@selector(terminate:)];
-	}
-	else if ([itemIdent isEqual: OpenItemIdentifier]) {
+                [toolbarItem setLabel: @"Quit"];
+                [toolbarItem setImage: [NSImage imageNamed: @"quit.tif"]];
+                [toolbarItem setTarget:NSApp];
+                [toolbarItem setAction:@selector(terminate:)];
+        }
+        else if ([itemIdent isEqual: OpenItemIdentifier]) {
         [toolbarItem setLabel: @"Open"];
         [toolbarItem setImage: [NSImage imageNamed: @"go.tif"]];
         [toolbarItem setTarget:myController];
         [toolbarItem setAction:@selector(openButton:)];
     }
-	else if ([itemIdent isEqual: NewItemIdentifier]) {
+        else if ([itemIdent isEqual: NewItemIdentifier]) {
         [toolbarItem setLabel: @"New"];
         [toolbarItem setImage: [NSImage imageNamed: @"add.tif"]];
         [toolbarItem setTarget:myController];
         [toolbarItem setAction:@selector(createButton:)];
     }
-	else if ([itemIdent isEqual: CancelItemIdentifier]) {
+        else if ([itemIdent isEqual: CancelItemIdentifier]) {
         [toolbarItem setLabel: @"Cancel"];
         [toolbarItem setImage: [NSImage imageNamed: @"restart.tif"]];
         [toolbarItem setTarget:myController];
         [toolbarItem setAction:@selector(chooseProfiles)];
     }
-	else if ([itemIdent isEqual: SaveItemIdentifier]) {
+        else if ([itemIdent isEqual: SaveItemIdentifier]) {
         [toolbarItem setLabel: @"Save"];
         [toolbarItem setImage: [NSImage imageNamed: @"save.tif"]];
         [toolbarItem setTarget:myController];
         [toolbarItem setAction:@selector(saveProfileButton:)];
-    }	
-	else if ([itemIdent isEqual: GoItemIdentifier]) {
+    }
+        else if ([itemIdent isEqual: GoItemIdentifier]) {
         [toolbarItem setLabel: @"Go"];
         [toolbarItem setImage: [NSImage imageNamed: @"go.tif"]];
         [toolbarItem setTarget:myController];
@@ -108,64 +108,64 @@ static NSString*        TableModeIdentifier     = @"TableMode";
         [toolbarItem setLabel: @"Merge"];
         [toolbarItem setImage: [NSImage imageNamed: @"merge.tif"]];
         [toolbarItem setTarget:tableView];
-	[toolbarItem setAction:@selector(merge:)];
+        [toolbarItem setAction:@selector(merge:)];
     }
-	else if ([itemIdent isEqual: LToRItemIdentifier]) {
+        else if ([itemIdent isEqual: LToRItemIdentifier]) {
         [toolbarItem setLabel: @"Left to right"];
         [toolbarItem setImage: [NSImage imageNamed: @"right.tif"]];
         [toolbarItem setTarget:tableView];
         [toolbarItem setAction:@selector(copyLR:)];
-	}
-	else if ([itemIdent isEqual: SkipItemIdentifier]) {
+        }
+        else if ([itemIdent isEqual: SkipItemIdentifier]) {
         [toolbarItem setLabel: @"Skip"];
         [toolbarItem setImage: [NSImage imageNamed: @"skip.tif"]];
         [toolbarItem setTarget:tableView];
         [toolbarItem setAction:@selector(leaveAlone:)];
-	}
-	else if ([itemIdent isEqual: DiffItemIdentifier]) {
+        }
+        else if ([itemIdent isEqual: DiffItemIdentifier]) {
         [toolbarItem setLabel: @"Diff"];
         [toolbarItem setImage: [NSImage imageNamed: @"diff.tif"]];
         [toolbarItem setTarget:tableView];
         [toolbarItem setAction:@selector(showDiff:)];
-	}
-	else if ([itemIdent isEqual: TableModeIdentifier]) {
-		[toolbarItem setLabel:@"Layout"];
-		[toolbarItem setToolTip:@"Switch table nesting"];
-		[tableModeView setHidden:NO];	
-		[toolbarItem setView:tableModeView];
-		//[toolbarItem setMinSize:NSMakeSize(NSWidth([tableModeView frame]),NSHeight([tableModeView frame])+10)];
-		//[toolbarItem setMaxSize:NSMakeSize(NSWidth([tableModeView frame]),NSHeight([tableModeView frame])+10)];
-	}
+        }
+        else if ([itemIdent isEqual: TableModeIdentifier]) {
+                [toolbarItem setLabel:@"Layout"];
+                [toolbarItem setToolTip:@"Switch table nesting"];
+                [tableModeView setHidden:NO];
+                [toolbarItem setView:tableModeView];
+                //[toolbarItem setMinSize:NSMakeSize(NSWidth([tableModeView frame]),NSHeight([tableModeView frame])+10)];
+                //[toolbarItem setMaxSize:NSMakeSize(NSWidth([tableModeView frame]),NSHeight([tableModeView frame])+10)];
+        }
 
-	return toolbarItem;
+        return toolbarItem;
 }
 
 - (NSArray *) itemIdentifiersForView: (NSString *) whichView {
     if ([whichView isEqual: @"chooseProfileView"]) {
-	    return [NSArray arrayWithObjects:   QuitItemIdentifier, NewItemIdentifier, OpenItemIdentifier, nil];
-	}
-	else if ([whichView isEqual: @"preferencesView"]) {
-		return [NSArray arrayWithObjects:   QuitItemIdentifier, SaveItemIdentifier, CancelItemIdentifier, nil];
-	}
-	else if ([whichView isEqual: @"ConnectingView"]) {
-		return [NSArray arrayWithObjects:   QuitItemIdentifier, nil];
-	}
-	else if ([whichView isEqual: @"updatesView"]) {
-		return [NSArray arrayWithObjects:   QuitItemIdentifier,
-			RestartItemIdentifier, 
-			NSToolbarSpaceItemIdentifier,
-			GoItemIdentifier,
-			RescanItemIdentifier,
-			NSToolbarSpaceItemIdentifier,
-			RToLItemIdentifier, MergeItemIdentifier, LToRItemIdentifier, 
-			SkipItemIdentifier,
+            return [NSArray arrayWithObjects:   QuitItemIdentifier, NewItemIdentifier, OpenItemIdentifier, nil];
+        }
+        else if ([whichView isEqual: @"preferencesView"]) {
+                return [NSArray arrayWithObjects:   QuitItemIdentifier, SaveItemIdentifier, CancelItemIdentifier, nil];
+        }
+        else if ([whichView isEqual: @"ConnectingView"]) {
+                return [NSArray arrayWithObjects:   QuitItemIdentifier, nil];
+        }
+        else if ([whichView isEqual: @"updatesView"]) {
+                return [NSArray arrayWithObjects:   QuitItemIdentifier,
+                        RestartItemIdentifier,
+                        NSToolbarSpaceItemIdentifier,
+                        GoItemIdentifier,
+                        RescanItemIdentifier,
+                        NSToolbarSpaceItemIdentifier,
+                        RToLItemIdentifier, MergeItemIdentifier, LToRItemIdentifier,
+                        SkipItemIdentifier,
       NSToolbarSpaceItemIdentifier,
-			DiffItemIdentifier, 
-			TableModeIdentifier, nil];
-	}
-	else {
-		return [NSArray arrayWithObjects: QuitItemIdentifier, Nil];
-	}
+                        DiffItemIdentifier,
+                        TableModeIdentifier, nil];
+        }
+        else {
+                return [NSArray arrayWithObjects: QuitItemIdentifier, Nil];
+        }
 }
 
 - (NSArray *) toolbarDefaultItemIdentifiers: (NSToolbar *) toolbar {
@@ -173,44 +173,44 @@ static NSString*        TableModeIdentifier     = @"TableMode";
 }
 
 - (NSArray *) toolbarAllowedItemIdentifiers: (NSToolbar *) toolbar {
-    return [NSArray arrayWithObjects:   QuitItemIdentifier, OpenItemIdentifier, NewItemIdentifier, 
-	    CancelItemIdentifier, SaveItemIdentifier,
-	    GoItemIdentifier, RestartItemIdentifier, RescanItemIdentifier,
-	    RToLItemIdentifier, MergeItemIdentifier, LToRItemIdentifier, 
-	    SkipItemIdentifier, DiffItemIdentifier,
-	    NSToolbarSpaceItemIdentifier, nil];
+    return [NSArray arrayWithObjects:   QuitItemIdentifier, OpenItemIdentifier, NewItemIdentifier,
+            CancelItemIdentifier, SaveItemIdentifier,
+            GoItemIdentifier, RestartItemIdentifier, RescanItemIdentifier,
+            RToLItemIdentifier, MergeItemIdentifier, LToRItemIdentifier,
+            SkipItemIdentifier, DiffItemIdentifier,
+            NSToolbarSpaceItemIdentifier, nil];
 }
 
 - (void) setView: (NSString *) whichView {
-	if ([whichView isEqual:currentView]) return;
+        if ([whichView isEqual:currentView]) return;
 
-	currentView = whichView;
-  
-	int i;
-	NSArray *identifiers;
-	NSString *oldIdentifier;
-	NSString *newIdentifier;
-	
-	identifiers=[self itemIdentifiersForView:whichView];
-	for (i=0; i<[identifiers count]; i++) {
-		newIdentifier = [identifiers objectAtIndex:i];
-		if (i<[[self items] count]) {
-			oldIdentifier = [[[self items] objectAtIndex:i] itemIdentifier];
-			if ([newIdentifier isEqual: oldIdentifier] ) {
-				[[[self items] objectAtIndex:i] setEnabled:YES];
-			}
-			else {
-				[self removeItemAtIndex:i];
-				[self insertItemWithItemIdentifier:newIdentifier atIndex:i];
-			}
-		}
-		else {
-			[self insertItemWithItemIdentifier:newIdentifier atIndex:i];
-		}
-	}
-	while ([[self items] count] > [identifiers count]) {
-		[self removeItemAtIndex:[identifiers count]];
-	}
+        currentView = whichView;
+
+        int i;
+        NSArray *identifiers;
+        NSString *oldIdentifier;
+        NSString *newIdentifier;
+
+        identifiers=[self itemIdentifiersForView:whichView];
+        for (i=0; i<[identifiers count]; i++) {
+                newIdentifier = [identifiers objectAtIndex:i];
+                if (i<[[self items] count]) {
+                        oldIdentifier = [[[self items] objectAtIndex:i] itemIdentifier];
+                        if ([newIdentifier isEqual: oldIdentifier] ) {
+                                [[[self items] objectAtIndex:i] setEnabled:YES];
+                        }
+                        else {
+                                [self removeItemAtIndex:i];
+                                [self insertItemWithItemIdentifier:newIdentifier atIndex:i];
+                        }
+                }
+                else {
+                        [self insertItemWithItemIdentifier:newIdentifier atIndex:i];
+                }
+        }
+        while ([[self items] count] > [identifiers count]) {
+                [self removeItemAtIndex:[identifiers count]];
+        }
 }
 
 @end

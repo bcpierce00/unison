@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/monitoring-linux/lwt_inotify.ml *)
-(* Copyright 2012, Benjamin C. Pierce 
+(* Copyright 2012, Benjamin C. Pierce
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -47,4 +47,3 @@ let in_directory d =
     assert false
   with End_of_file ->
     !l
-

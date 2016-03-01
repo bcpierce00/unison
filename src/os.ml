@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/os.ml *)
-(* Copyright 1999-2016, Benjamin C. Pierce 
+(* Copyright 1999-2016, Benjamin C. Pierce
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -23,7 +23,7 @@ let debug = Util.debug "os"
 
 (* Assumption: Prefs are not loaded on server, so clientHostName is always *)
 (* set to myCanonicalHostName. *)
-    
+
 let localCanonicalHostName =
   try System.getenv "UNISONLOCALHOSTNAME"
   with Not_found -> Unix.gethostname()
@@ -45,7 +45,7 @@ let tempFileSuffix = ref tempFileSuffixFixed
 let includeInTempNames s =
   (* BCP: Added this in Jan 08.  If (as I believe) it never fails, then this tricky
      stuff can be deleted. *)
-  assert (s<>"");  
+  assert (s<>"");
   tempFileSuffix :=
     if s = "" then tempFileSuffixFixed
     else "." ^ s ^ tempFileSuffixFixed
@@ -184,7 +184,7 @@ and delete fspath path =
           Fs.unlink absolutePath
       | `ABSENT ->
           ())
-    
+
 let rename fname sourcefspath sourcepath targetfspath targetpath =
   let source = Fspath.concat sourcefspath sourcepath in
   let source' = Fspath.toPrintString source in
@@ -204,7 +204,7 @@ let rename fname sourcefspath sourcepath targetfspath targetpath =
         else if Fs.file_exists targetDouble then
           Fs.unlink targetDouble
       end)
-    
+
 let symlink =
   if Util.isCygwin || (Util.osType != `Win32) then
     fun fspath path l ->

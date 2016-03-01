@@ -1,7 +1,7 @@
 % htmlgen Verion 0.0 : html.sty
 % This is a very basic style file for latex document to be processed
 % with htmlgen. It contains definitions of LaTeX commands which are
-% processed in a special way by the translator. 
+% processed in a special way by the translator.
 %  Mostly :
 %     - environment latexonly, not processed by htmlgen, processed by latex.
 %     - environment htmlonly , the reverse
@@ -44,7 +44,7 @@
 % LaTeX2HTML Version 0.6.4 : html.sty
 %
 % This file contains definitions of LaTeX commands which are
-% processed in a special way by the translator. 
+% processed in a special way by the translator.
 % For example, there are commands for embedding external hypertext links,
 % for cross-references between documents or for including
 % raw HTML.
@@ -70,10 +70,10 @@
 % This can be used to provide links to arbitrary documents.
 % The first argumment should be the text that is going to be
 % highlighted and the second argument a URL.
-% The hyperlink will appear as a hyperlink in the HTML 
+% The hyperlink will appear as a hyperlink in the HTML
 % document and as a footnote in the dvi or ps files.
 %
-\newcommand{\htmladdnormallinkfoot}[2]{ #1\footnote{#2}} 
+\newcommand{\htmladdnormallinkfoot}[2]{ #1\footnote{#2}}
 
 % This is an alternative definition of the command above which
 % will ignore the URL in the dvi or ps files.
@@ -87,12 +87,12 @@
 
 %%% CROSS-REFERENCES BETWEEN (LOCAL OR REMOTE) DOCUMENTS
 %
-% This can be used to refer to symbolic labels in other Latex 
+% This can be used to refer to symbolic labels in other Latex
 % documents that have already been processed by the translator.
 % The arguments should be:
 % #1 : the URL to the directory containing the external document
 % #2 : the path to the labels.pl file of the external document.
-% If the external document lives on a remote machine then labels.pl 
+% If the external document lives on a remote machine then labels.pl
 % must be copied on the local machine.
 %
 %e.g. \externallabels{http://cbl.leeds.ac.uk/nikos/WWW/doc/tex2html/latex2html}
@@ -189,8 +189,8 @@
 \excludecomment{comment}
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-%%% RAW HTML 
-% 
+%%% RAW HTML
+%
 % Enclose raw HTML between a \begin{rawhtml} and \end{rawhtml}.
 % The html environment ignores its body
 %
@@ -198,15 +198,15 @@
 
 %%% HTML ONLY
 %
-% Enclose LaTeX constructs which will only appear in the 
-% HTML output and will be ignored by LaTeX with 
+% Enclose LaTeX constructs which will only appear in the
+% HTML output and will be ignored by LaTeX with
 % \begin{htmlonly} and \end{htmlonly}
 %
 \excludecomment{htmlonly}
 
 %%% LaTeX ONLY
-% Enclose LaTeX constructs which will only appear in the 
-% DVI output and will be ignored by latex2html with 
+% Enclose LaTeX constructs which will only appear in the
+% DVI output and will be ignored by latex2html with
 %\begin{latexonly} and \end{latexonly}
 %
 \newenvironment{latexonly}{}{}
@@ -217,9 +217,9 @@
 \def\endverbimage{\global\setbox\graph=\box\graph}
 %\newcommand{\imageflush}[1][]{}
 \newcommand{\imageflush}{}
-%%% HYPERREF 
+%%% HYPERREF
 % Suggested by Eric M. Carol <eric@ca.utoronto.utcc.enfm>
-% Similar to \ref but accepts conditional text. 
+% Similar to \ref but accepts conditional text.
 % The first argument is HTML text which will become ``hyperized''
 % (underlined).
 % The second and third arguments are text which will appear only in the paper
@@ -241,13 +241,13 @@
 % This command can be used inside any environment that is converted
 % into an inlined image (eg a "figure" environment) in order to change
 % the way the image will be translated. The argument of \htmlimage
-% is really a string of options separated by commas ie 
+% is really a string of options separated by commas ie
 % [scale=<scale factor>],[external],[thumbnail=<reduction factor>
 % The scale option allows control over the size of the final image.
-% The ``external'' option will cause the image not to be inlined 
+% The ``external'' option will cause the image not to be inlined
 % (images are inlined by default). External images will be accessible
-% via a hypertext link. 
-% The ``thumbnail'' option will cause a small inlined image to be 
+% via a hypertext link.
+% The ``thumbnail'' option will cause a small inlined image to be
 % placed in the caption. The size of the thumbnail depends on the
 % reduction factor. The use of the ``thumbnail'' option implies
 % the ``external'' option.
@@ -257,7 +257,7 @@
 % will cause a small thumbnail image 1/5th of the original size to be
 % placed in the final document, pointing to an external image 1.5
 % times bigger than the original.
-% 
+%
 \newcommand{\htmlimage}[1]{}
 
 %%% HTMLADDTONAVIGATION

@@ -310,8 +310,8 @@ have caml-electric-indent on, which see.")
       (define-key caml-mode-map "\C-c\C-d" 'caml-show-imenu)
       (define-key caml-mode-map [menu-bar] (make-sparse-keymap))
       (define-key caml-mode-map [menu-bar caml] (cons "Caml" map))
-      (define-key map [fill-comment] 
-	'("Fill comment" . caml-fill-comment-paragraph-auto))
+      (define-key map [fill-comment]
+        '("Fill comment" . caml-fill-comment-paragraph-auto))
       (define-key map [separator-format] '("--"))
       (define-key map [run-caml] '("Start subshell..." . run-caml))
       (define-key map [compile] '("Compile..." . compile))
@@ -354,8 +354,8 @@ have caml-electric-indent on, which see.")
         [ "Switch view" caml-find-alternate-file t ]
         [ "Compile..." compile t ]
         [ "Start subshell..." run-caml t ]
-	"---"
-	[ "Fill comment paragraph" caml-fill-comment-paragraph t]))
+        "---"
+        [ "Fill comment paragraph" caml-fill-comment-paragraph t]))
   "Menu to add to the menubar when running Xemacs")
 
 (defvar caml-mode-syntax-table nil
@@ -486,7 +486,7 @@ have caml-electric-indent on, which see.")
   (inferior-caml-eval-region start end))
 
 ;; old version ---to be deleted later
-; 
+;
 ; (defun caml-eval-phrase ()
 ;   "Send the current Caml phrase to the inferior Caml process."
 ;   (interactive)
@@ -496,15 +496,15 @@ have caml-electric-indent on, which see.")
 
 (defun caml-eval-phrase (arg &optional min max)
   "Send the phrase containing the point to the CAML process.
-With prefix-arg send as many phrases as its numeric value, 
+With prefix-arg send as many phrases as its numeric value,
 If an error occurs during evalutaion, stop at this phrase and
-repport the error. 
+repport the error.
 
 Return nil if noerror and position of error if any.
 
 If arg's numeric value is zero or negative, evaluate the current phrase
-or as many as prefix arg, ignoring evaluation errors. 
-This allows to jump other erroneous phrases. 
+or as many as prefix arg, ignoring evaluation errors.
+This allows to jump other erroneous phrases.
 
 Optional arguments min max defines a region within which the phrase
 should lies."
@@ -1795,7 +1795,7 @@ with `caml-fill-comment-paragraph-postfix'.")
 (defvar caml-fill-comment-brief-style t
   "*This boolean variable controls the comment fill style:
 When it's set to T, the comment block is formatted as
-(* .... ...  ... .... ...   
+(* .... ...  ... .... ...
    ....  .. .... ... ....
    .... *)
 
@@ -1833,23 +1833,23 @@ still need to be justified.
         (end-2 nil)
         (indent nil)
         (fill-prefix nil)
-	(extra-spaces 1)
-	(extra-spaces-padding " ")
-	(back-closed t)   
-	;; if the comment block terminates by "-" or "*", not "*)"
-	(front-closed t)
-	(continuing)
-	)
-    
+        (extra-spaces 1)
+        (extra-spaces-padding " ")
+        (back-closed t)
+        ;; if the comment block terminates by "-" or "*", not "*)"
+        (front-closed t)
+        (continuing)
+        )
+
     ;; check if inside comment
     (if (not (caml-in-comment-p))
-	(save-excursion
-	   ; perhaps the cursor is right before or after the current 
-	   ; comment line;  move inside the line and try again.
-	  (back-to-indentation)
-	  (forward-char 1)
-	  (if (not (caml-in-comment-p))
-	      (error "not inside comment"))))
+        (save-excursion
+           ; perhaps the cursor is right before or after the current
+           ; comment line;  move inside the line and try again.
+          (back-to-indentation)
+          (forward-char 1)
+          (if (not (caml-in-comment-p))
+              (error "not inside comment"))))
     ;;
     ;; find limits of paragraph
     ;;
@@ -1860,17 +1860,17 @@ still need to be justified.
       ;; find end of paragraph
       (setq continuing t)               ;; comment is not closed.
       (while (and (or continuing
-		      (looking-at "(\\*"))
-		  (or (not (looking-at "\\((\\*\\)?[ \t*-]*\\(\\*)\\)?[ \t]*$"))
-		      (looking-at "\\((\\*\\)?[ \t]*\\(\\*)\\)?[ \t]*$")))
-	;; this line is still in the current comment paragraph
-	;; unless it contains only some lines "-", or "*" (apart from spaces)
-	(setq continuing (not (looking-at ".*\\*)[ \t]*$")))
-	(forward-line 1)
-	(back-to-indentation))
+                      (looking-at "(\\*"))
+                  (or (not (looking-at "\\((\\*\\)?[ \t*-]*\\(\\*)\\)?[ \t]*$"))
+                      (looking-at "\\((\\*\\)?[ \t]*\\(\\*)\\)?[ \t]*$")))
+        ;; this line is still in the current comment paragraph
+        ;; unless it contains only some lines "-", or "*" (apart from spaces)
+        (setq continuing (not (looking-at ".*\\*)[ \t]*$")))
+        (forward-line 1)
+        (back-to-indentation))
       (if (and (eq preserve-leading-spaces 'auto)
-	       (not (looking-at "\\((\\*\\)?[ \t]*\\*[ \t*]*\\(\\*)\\)?[ \t]*$")))
-	  (setq preserve-leading-spaces nil))
+               (not (looking-at "\\((\\*\\)?[ \t]*\\*[ \t*]*\\(\\*)\\)?[ \t]*$")))
+          (setq preserve-leading-spaces nil))
       (setq back-closed (not continuing))   ; comment block not terminated by "*)"
       (beginning-of-line)
       (setq end (point-marker))
@@ -1880,145 +1880,145 @@ still need to be justified.
 
       (setq continuing t)
       (while (and (or continuing
-		      (looking-at ".*\\*)[ \t]*$"))
-		  (or (not (looking-at "\\((\\*\\)?[ \t*-]*\\(\\*)\\)?[ \t]*$"))
-		      (looking-at "\\((\\*\\)?[ \t]*\\(\\*)\\)?[ \t]*$")))
-	
-	(setq continuing (not (looking-at "(\\*")))
-	(forward-line -1)
+                      (looking-at ".*\\*)[ \t]*$"))
+                  (or (not (looking-at "\\((\\*\\)?[ \t*-]*\\(\\*)\\)?[ \t]*$"))
+                      (looking-at "\\((\\*\\)?[ \t]*\\(\\*)\\)?[ \t]*$")))
+
+        (setq continuing (not (looking-at "(\\*")))
+        (forward-line -1)
         (back-to-indentation))
       (if (and (eq preserve-leading-spaces 'auto)
-	       (not (looking-at "\\((\\*\\)?[ \t]*\\*[ \t*]*\\(\\*)\\)?[ \t]*$")))
-	  (setq preserve-leading-spaces nil))
+               (not (looking-at "\\((\\*\\)?[ \t]*\\*[ \t*]*\\(\\*)\\)?[ \t]*$")))
+          (setq preserve-leading-spaces nil))
       (setq front-closed (not continuing)) ;; comment block not starting with "(*"
       (forward-line 1)
       ;; get indentation to calculate width for filling
       (if (not preserve-leading-spaces)
-	  (caml-indent-command))
+          (caml-indent-command))
       (back-to-indentation)
       (setq indent (current-column))
       (setq begin (point-marker)))
-    
+
     (if preserve-leading-spaces
-	(progn
-	  (setq extra-spaces 0)
-	  (setq extra-spaces-padding "")))
-    
+        (progn
+          (setq extra-spaces 0)
+          (setq extra-spaces-padding "")))
+
     ;; delete old postfix if necessary
     (save-excursion
       (goto-char begin)
       (while (re-search-forward "[ \t]*\\(\\*)\\)?[ \t]*\n" end t)
-	(replace-match "\n")))
-    
+        (replace-match "\n")))
+
     ;; delete leading whitespace and uncomment
     (save-excursion
       (goto-char begin)
       (beginning-of-line)
       (if preserve-leading-spaces
-	  (while (re-search-forward "^[ \t]*(\\*" end t)
-	    (replace-match ""))
-	(while (re-search-forward "^\\([ \t]*(\\*[ \t]*\\|[ \t]+\\)" end t)
-	  (replace-match "")))) ; in case it matches ""
+          (while (re-search-forward "^[ \t]*(\\*" end t)
+            (replace-match ""))
+        (while (re-search-forward "^\\([ \t]*(\\*[ \t]*\\|[ \t]+\\)" end t)
+          (replace-match "")))) ; in case it matches ""
     (if (not preserve-leading-spaces)
-	(progn
-	  ;; calculate fill width
-	  (setq fill-column (- fill-column indent
-			       (length caml-fill-comment-prefix)
-			       (length caml-fill-comment-postfix)
-			       extra-spaces
-			       extra-spaces))
-	  
-	  ;; fill paragraph
-	  (fill-region begin (1- end) t)
-	  (setq fill-column (+ fill-column indent
-			       (length caml-fill-comment-prefix)
-			       (length caml-fill-comment-postfix)
-			       extra-spaces
-			       extra-spaces))))
+        (progn
+          ;; calculate fill width
+          (setq fill-column (- fill-column indent
+                               (length caml-fill-comment-prefix)
+                               (length caml-fill-comment-postfix)
+                               extra-spaces
+                               extra-spaces))
+
+          ;; fill paragraph
+          (fill-region begin (1- end) t)
+          (setq fill-column (+ fill-column indent
+                               (length caml-fill-comment-prefix)
+                               (length caml-fill-comment-postfix)
+                               extra-spaces
+                               extra-spaces))))
     ;; find end of second last line
     ;; (save-excursion
     ;;   (goto-char end)
     ;;   (forward-line -2)
     ;;   (end-of-line)
     ;;   (setq end-2 (point-marker)))
-    
+
     (save-excursion
       (goto-char end)
       (forward-char -1)
       (beginning-of-line)
       (while (eq (char-after) ?\n)
-	(forward-char -1)
-	(delete-char 1)
-	(beginning-of-line)))
-    
+        (forward-char -1)
+        (delete-char 1)
+        (beginning-of-line)))
+
     ;; re-comment and re-indent region
     (save-excursion
       (goto-char begin)
       (if (not preserve-leading-spaces)
-	  (indent-to indent))
-      (if front-closed 
-	  (insert (concat caml-fill-comment-prefix extra-spaces-padding)))
+          (indent-to indent))
+      (if front-closed
+          (insert (concat caml-fill-comment-prefix extra-spaces-padding)))
       (let ((replacement-for-newline
-	     (if front-closed
-		 (concat "\n" 
-			 (if caml-fill-comment-brief-style
-			     (make-string 
-			      (if preserve-leading-spaces
-				  0
-				(length caml-fill-comment-prefix)) 
-			      ? )
-			   caml-fill-comment-prefix)
-			 extra-spaces-padding)
-	       "\n")))
-	(setq junk replacement-for-newline)
-	(while (re-search-forward "\n" (1- end) t)
-	  (replace-match replacement-for-newline)
-	  (if (not preserve-leading-spaces)
-	      (progn
-		(beginning-of-line)
-		(indent-to indent))))))
-    
-    ;; append postfix 
+             (if front-closed
+                 (concat "\n"
+                         (if caml-fill-comment-brief-style
+                             (make-string
+                              (if preserve-leading-spaces
+                                  0
+                                (length caml-fill-comment-prefix))
+                              ? )
+                           caml-fill-comment-prefix)
+                         extra-spaces-padding)
+               "\n")))
+        (setq junk replacement-for-newline)
+        (while (re-search-forward "\n" (1- end) t)
+          (replace-match replacement-for-newline)
+          (if (not preserve-leading-spaces)
+              (progn
+                (beginning-of-line)
+                (indent-to indent))))))
+
+    ;; append postfix
     (if (not caml-fill-comment-brief-style)
-	(save-excursion
-	  (goto-char begin)
-	  (while (re-search-forward "\n" (1- end) t)
-	    (forward-char -1)
-	    (let* ((spaces (max 0
-				(- fill-column
-				   (current-column)
-				   (length caml-fill-comment-postfix)
-				   extra-spaces)))
-		   (the-replacement (concat (make-string spaces ? )
-					    extra-spaces-padding
-					    caml-fill-comment-postfix
-					    "\n")))
-	      (replace-match the-replacement)))))
+        (save-excursion
+          (goto-char begin)
+          (while (re-search-forward "\n" (1- end) t)
+            (forward-char -1)
+            (let* ((spaces (max 0
+                                (- fill-column
+                                   (current-column)
+                                   (length caml-fill-comment-postfix)
+                                   extra-spaces)))
+                   (the-replacement (concat (make-string spaces ? )
+                                            extra-spaces-padding
+                                            caml-fill-comment-postfix
+                                            "\n")))
+              (replace-match the-replacement)))))
 
     ;; append postfix, _without_ fill the last line, perche e` brutto
     (end-of-line)
     (if back-closed
-	   ; 	  (insert-char ? 
-	   ; 		       (max 0 (- fill-column
-	   ; 				 (current-column)
-	   ; 				 (length caml-fill-comment-postfix)
-	   ; 				 extra-spaces)))
-	(insert (concat " " caml-fill-comment-postfix)))
-    
+           ; 	  (insert-char ?
+           ; 		       (max 0 (- fill-column
+           ; 				 (current-column)
+           ; 				 (length caml-fill-comment-postfix)
+           ; 				 extra-spaces)))
+        (insert (concat " " caml-fill-comment-postfix)))
+
     ;; delete the extra line that gets inserted somehow(??)
     ;;(save-excursion
     ;;  (goto-char (1- end))
     ;;  (end-of-line)
     ;;  (delete-char 1))
-    
+
     (goto-char opos)
     (font-lock-fontify-block)
     (message (concat "filling comment paragraph ... done {frt-closed="
-		     (if front-closed "tt" "ff")
-		     "; bk-closed="
-		     (if back-closed "tt" "ff")
-		     "; prsv-spc="
-		     (if preserve-leading-spaces "tt" "ff"))))
+                     (if front-closed "tt" "ff")
+                     "; bk-closed="
+                     (if back-closed "tt" "ff")
+                     "; prsv-spc="
+                     (if preserve-leading-spaces "tt" "ff"))))
   t)
 ;;; caml.el ends here
 

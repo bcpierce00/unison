@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/uigtk2.ml *)
-(* Copyright 1999-2016, Benjamin C. Pierce 
+(* Copyright 1999-2016, Benjamin C. Pierce
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -2570,7 +2570,7 @@ let messageBox ~title ?(action = fun t -> t#destroy) message =
 
 (* twoBoxAdvanced: Display a message in a window and wait for the user
    to hit one of two buttons.  Return true if the first button is
-   chosen, false if the second button is chosen. Also has a button for 
+   chosen, false if the second button is chosen. Also has a button for
    showing more details to the user in a messageBox dialog *)
 let twoBoxAdvanced
       ~parent ~title ~message ~longtext ~advLabel ~astock ~bstock =
@@ -3527,7 +3527,7 @@ lst_store#set ~row ~column:c_path path;
                   catch (fun () ->
                            Transport.transportItem
                              theSI.ri (Uutil.File.ofLine i)
-                             (fun title text -> 
+                             (fun title text ->
                                textDetailed := (Some text);
                                if Prefs.read Uicommon.confirmmerge then
                                  twoBoxAdvanced
@@ -3539,7 +3539,7 @@ lst_store#set ~row ~column:c_path path;
                                    ~advLabel:"View details..."
                                    ~astock:`YES
                                    ~bstock:`NO
-                               else 
+                               else
                                  true)
                            >>= (fun () ->
                              return Util.Succeeded))
@@ -4007,12 +4007,12 @@ lst_store#set ~row ~column:c_path path;
     right#add_accelerator ~group:accel_group ~modi:[`SHIFT] GdkKeysyms._less;
     right#add_accelerator ~group:accel_group ~modi:[`SHIFT] GdkKeysyms._comma;
 
-    let skip = 
+    let skip =
       grAdd grAction
         (actionMenu#add_image_item ~key:GdkKeysyms._slash ~callback:questionAction
           ~image:((GMisc.image ~stock:`NO ~icon_size:`MENU ())#coerce)
           "Do _Not Propagate Changes") in
-    grAdd grAction skip; 
+    grAdd grAction skip;
     skip#add_accelerator ~group:accel_group ~modi:[`SHIFT] GdkKeysyms._minus;
 
     let merge =

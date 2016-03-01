@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/ubase/rx.ml *)
-(* Copyright 1999-2016, Benjamin C. Pierce 
+(* Copyright 1999-2016, Benjamin C. Pierce
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -166,7 +166,7 @@ let rec dif x y =
   match x.desc, y.desc with
     Dif (x1, y1), _ -> dif x1 (alt2 y1 y)
   | Alt [], _       -> empty
-  | _, Alt []       -> x 
+  | _, Alt []       -> x
   | _               -> make (Dif (x, y))
 
 (**** Computation of the next states of an automata ****)
@@ -482,7 +482,7 @@ module CSetMap =
 let trans_set cache cm s =
   match s with
     [i, j] when i = j ->
-      [cm.(i)] 
+      [cm.(i)]
   | _ ->
       let v = (cset_hash_rec s, s) in
       try

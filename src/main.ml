@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/main.ml *)
-(* Copyright 1999-2016, Benjamin C. Pierce 
+(* Copyright 1999-2016, Benjamin C. Pierce
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -51,7 +51,7 @@
    without loading a profile; and then we can't do command-line
    parsing because it is intertwined with profile loading.
 
-   NB: the Mac GUI handles these options itself and needs to change 
+   NB: the Mac GUI handles these options itself and needs to change
    if any more are added.
 *)
 
@@ -125,7 +125,7 @@ let interface =
     (function Uicommon.Text -> ["text"]
       | Uicommon.Graphic -> ["graphic"]);;
 
-let catch_all f = 
+let catch_all f =
   try
     (* Util.msg "Starting catch_all...\n"; *)
     f ();
@@ -192,7 +192,7 @@ let init () = begin
   (* Install an appropriate function for finding preference files.  (We put
      this here just because the Prefs module lives below the Os module in the
      dependency hierarchy, so Prefs can't call Os directly.) *)
-  Util.supplyFileInUnisonDirFn 
+  Util.supplyFileInUnisonDirFn
     (fun n -> Os.fileInUnisonDir(n));
 
   (* Start a server if requested *)
@@ -238,7 +238,7 @@ end
 module Body = functor (Ui : Uicommon.UI) -> struct
   let argv = init() in (* might not return *)
   (* if it returns start a UI *)
-  Ui.start 
+  Ui.start
     (try
       (match Util.StringMap.find uiPrefName argv with
         "text"::_    -> Uicommon.Text

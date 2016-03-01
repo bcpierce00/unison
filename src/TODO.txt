@@ -7,7 +7,7 @@ promise that anybody is going to implement it!)
 See the file BUGS.txt for a list of currently open bugs.
 
 ###########################################################################
-        
+
 * CURRENT
 * =======
 
@@ -24,7 +24,7 @@ See the file BUGS.txt for a list of currently open bugs.
      - It would be better to ignore the exit status of the external merge
        tool and just look at what files it produced to decide what happened
      - The function that runs the external program should not grab stdin /
-       stdout / stderr if Unison is running with the text UI. 
+       stdout / stderr if Unison is running with the text UI.
      - The confirmation step should offer to display the new merged file.
      - (There are some older merge issues documented below)
 
@@ -89,13 +89,13 @@ See the file BUGS.txt for a list of currently open bugs.
      that prevents mutation from outside the module where the preference is
      defined (by exposing it with a weak type).
 
-**** Remaining problem with merging code: 
+**** Remaining problem with merging code:
        - create two directories, each containing a .txt file
        - sync so they are equal
        - change the file so that one region is in conflict and another
          region has changes that can be propagated correctly
        - sync
-       - now we should be able to change the second region in just one file, 
+       - now we should be able to change the second region in just one file,
          sync again, and see the change propagate; instead, it conflicts
        - diagnosis: the merge stuff is not correctly updating the archive in
          the event of a partial reconciliation
@@ -135,7 +135,7 @@ See the file BUGS.txt for a list of currently open bugs.
   think this may also explain similar problems I had using the default
   unison behavior (which treats Cygwin files as read-only or read-write
   only) -- though there are several possible causes of like failures to
-  syncrhonize permissions.  
+  syncrhonize permissions.
 
   The answer is obvious, following from the basic handling of permissions
   in Cygwin (in NT permissions mode), but I didn't see it.  Users and
@@ -146,7 +146,7 @@ See the file BUGS.txt for a list of currently open bugs.
   when the user and group happen to be the same, the user-permissions and
   the group-permissions are operating on the same underlying Windows
   object, and so they cannot be different.  I think the user-permissions
-  prevail. 
+  prevail.
 
   For example, if you try to sync a Unix file with permissions rw-r--r--
   with a Cygwin file with permissions rw-rw-r-- whose owner happens to be
@@ -156,19 +156,19 @@ See the file BUGS.txt for a list of currently open bugs.
   so that the degenerate permissions under Cygwin will migrate to the
   Unix system unless you are careful to prevent unison from doing it.
   (When you are trying to sync some 75,000 email and font files, this all
-  is more than a little exasperating!) 
+  is more than a little exasperating!)
 
   ---
 
   Further important advice if you are going to synchronize Cygwin
   filesystems with unison's full Unix permissions model (and perhaps it
-  is also important even with unison's default behavior): 
+  is also important even with unison's default behavior):
 
   Background:  the flags "ntsec" or "ntea" in the CYGWIN environment
   variable signals Cygwin's libraries to use the richer NT permissions
   model rather than a simplified Win95-98 model.  "ntsec" requires an
   NTFS filesystem, "ntea" will work with FAT filesystems.  I use
-  "ntsec". 
+  "ntsec".
 
   If unison does not have CYGWIN set appropriately in its environment,
   some chmod calls will not do the expected thing, even though they
@@ -177,14 +177,14 @@ See the file BUGS.txt for a list of currently open bugs.
   (wrong) permissions from the Cygwin file back to the Unix system.  (The
   first chmod apparently succeeded, so unison records the new permissions
   in its archive; the second time, when the file does not match the
-  archive, it seems to unison that the Cygwin file has been changed.) 
+  archive, it seems to unison that the Cygwin file has been changed.)
 
   If you run unison from the bash command line, you will most likely not
   have a problem, since CYGWIN is probably set appropriately and exported
   in the .bat script that launches bash.  Likewise, when the Cygwin
   filesystem is the remote one, Cygwin's sshd is by default set up (by
   /usr/bin/ssh-host-config) to establish and export an appropriate value
-  of CYGWIN to ssh clients. 
+  of CYGWIN to ssh clients.
 
   If you launch unison directly from a Windows shortcut, however, you
   must set CYGWIN in your Windows environment variables.  This is
@@ -192,7 +192,7 @@ See the file BUGS.txt for a list of currently open bugs.
   profile or generically.  The instructions for setting up Cygwin and the
   discussions of the CYGWIN envariable in the user manual never mention
   any need to put CYGWIN in the Windows envariables, however. (I'm
-  writing them to suggest they do.) 
+  writing them to suggest they do.)
 
   >From the unison standpoint, the code which chooses to use the full
   permissions model on Cygwin hosts (right now I have it hacked simply to
@@ -210,20 +210,20 @@ See the file BUGS.txt for a list of currently open bugs.
 * There is no way of selecting files with wildchar. I had to use
      ignorenot = Name opt/root/.unison/*.prf
      ignore = Name opt/root/.unison/*
-  But this is inconvinent, but the worse is that it gets complicated very 
-  fast and I cannot make it for more complicated scenarios. I would expect 
+  But this is inconvinent, but the worse is that it gets complicated very
+  fast and I cannot make it for more complicated scenarios. I would expect
   something like (suggestion):
      Files = opt/root/.unison/*.prf
 
-* If a directory does not exist in one of the host, unison (for 
-  security reasons, which I like) pops up a window and Quit is the only 
-  option. I would expect a message stating mere clearly on which host and 
-  direcory and an option to create that directory. I had recently to make 
-  a lot of reinstalls and new pendrives and it took a long time to create 
+* If a directory does not exist in one of the host, unison (for
+  security reasons, which I like) pops up a window and Quit is the only
+  option. I would expect a message stating mere clearly on which host and
+  direcory and an option to create that directory. I had recently to make
+  a lot of reinstalls and new pendrives and it took a long time to create
   all those dirs. Someone in the list even made a script to do the job!!!
 
-* When synchronizing FAT32, there could be an explicit command for 
-  ignoring attributes. The problem happens when one side is FAT32 but the 
+* When synchronizing FAT32, there could be an explicit command for
+  ignoring attributes. The problem happens when one side is FAT32 but the
   other is not, or when mounting parameters are different.
 
 
@@ -231,18 +231,18 @@ See the file BUGS.txt for a list of currently open bugs.
 * =======================
 
 ** 'make install' could be improved (and documented)
-   1. Typing "make install' after a "make" should simply install the 
+   1. Typing "make install' after a "make" should simply install the
    program that was made, not attempt to do a remake with different options.
    ===> Doesn't it???
-   2. "make install' should try to install as /usr/local/bin/unison, not 
-   ~/bin/, especially considering that ~/bin is the wrong place to do the 
+   2. "make install' should try to install as /usr/local/bin/unison, not
+   ~/bin/, especially considering that ~/bin is the wrong place to do the
    install under OSX (it should be ~/Apps or ~/Apps/bin)
 
 should strip symbols from binary files in 'make exportnative'
 
-* [Joerg von den Hoff, 2009] OS X: make the destination directory for the CL 
-  version selectable (instead of dumping it in the middle of a systems 
-  directory :-)) something like /usr/local/bin or whatever might frequently be 
+* [Joerg von den Hoff, 2009] OS X: make the destination directory for the CL
+  version selectable (instead of dumping it in the middle of a systems
+  directory :-)) something like /usr/local/bin or whatever might frequently be
   more suitable
 
 
@@ -272,8 +272,8 @@ should strip symbols from binary files in 'make exportnative'
   - what happens when files are included whose parent dirs are
     excluded? (With Regex?  With multiple Path and Name?)
     ===> document
-  - the documentation is very good, but i couldn't find a description of how 
-    to respond to the prompts in the textual ui. is that explained 
+  - the documentation is very good, but i couldn't find a description of how
+    to respond to the prompts in the textual ui. is that explained
     somewhere? a few typos i noticed: "with t fast", "nison", "off of".
 
 
@@ -309,7 +309,7 @@ should strip symbols from binary files in 'make exportnative'
         roots and add a call to the rootalias-expanding function.
 
 *** Delete old backups mechanism and, instead, extend new one to cover its
-    functionality 
+    functionality
        - put backups in same dir as files by default
        - otherwise, put them in a central place if one is given
        - Update.incrVersionsOfBackups should not be externally visible
@@ -334,8 +334,8 @@ should strip symbols from binary files in 'make exportnative'
     //cern.ch//afs/cern.ch/user/n/nagya [NAGY Andras <nagya@inf.elte.hu>,
     March 12]
     ===> We definitely ought to do something about this problem -- it's
-         increasingly common.  Not sure if this is the right proposal, but 
-         something. 
+         increasingly common.  Not sure if this is the right proposal, but
+         something.
 
 *** Currently, if a file changes on either side between the initial update
     detection and the time when the transport module tries to propagate
@@ -394,7 +394,7 @@ should strip symbols from binary files in 'make exportnative'
 ** small additions to merge functionality:
   - if the external merge program *deletes* one of the files it is given,
     Unison should interpret this as "Copy the other file onto this location
-    (instead of merging)".  This will allow some other interesting 
+    (instead of merging)".  This will allow some other interesting
     functionality, e.g. external programs that may decide to keep both
     versions by moving one of them out of the way (mh-rename).
   - the invocation of the external 'diff' program should be selectable
@@ -402,15 +402,15 @@ should strip symbols from binary files in 'make exportnative'
   - would be nice to be able to invoke DIFFERENT merge programs
     depending on paths
 
-** We should document other available merge tools, e.g., 
-   idiff [BCP has a copy of the code for idiff that Norman sent.]  
+** We should document other available merge tools, e.g.,
+   idiff [BCP has a copy of the code for idiff that Norman sent.]
 
 ** Allow 'default.prf' in place of 'default' for profile names
 
 ** [dlux@dlux.hu, Feb 2002] For some apps (e.g., some mail readers?),
   putting temp files in the same directory as the file we're about to
   overwrite is bad/dangerous. Some alternatives that we could
-  consider... 
+  consider...
     -  Add a configuration option for temporary directory and notice the
        user about the volume restrictions in the docs and then if the user
        does not consider it, then we use a non-atomic (copy + unlink)
@@ -428,11 +428,11 @@ should strip symbols from binary files in 'make exportnative'
      - in the preference file, each value looks like either
             prefname = string
        or
-            prefname = string WHEN Path PPPPP 
+            prefname = string WHEN Path PPPPP
             prefname = string WHEN Name XXXXX
             prefname = string WHEN Regex XXXXX
      - when we look up such a preference, we provide a current path, and it
-       returns the one that matches the current path, if any 
+       returns the one that matches the current path, if any
 
 ** Would be good to (optionally) change the semantics of the "backup"
    functionality, so that Unison would not insist on making a *full*
@@ -494,7 +494,7 @@ should strip symbols from binary files in 'make exportnative'
     file:////share/subdir  (//share/subdir as from the point of view of
                           the local file system)
     unison://host///share/subdir
-  -- 
+  --
   Should local roots in a profile be canonized?
     Right now, we can have a relative root in the profile.  This
     is going to be a problem if unison is started in a different
@@ -519,7 +519,7 @@ should strip symbols from binary files in 'make exportnative'
 
 * The -terse preference should suppress more (in fact, almost all)
   messages in the text ui.  See Dale Worley's message for a detailed
-  proposal. 
+  proposal.
 
 * [Joerg von den Hoff, 2009] I use unison (up to now) only from the command
   line and it's used from within scripts or Makefiles. it is therefore
@@ -530,7 +530,7 @@ should strip symbols from binary files in 'make exportnative'
   GUI regularly will start it anyway by double clicking the app)
 
 Would be nice to have the Unison log file relative to my home directory,
- like this 
+ like this
        logfile = ~/.unision/log
   or
        logfile = $HOME/.unision/log
@@ -659,7 +659,7 @@ maybe put backup files somewhere other than in the replica (e.g. in
 
 Better documentation of the -backups flag, and a way to expire old backups
 
-Add a preference that makes the reconciler ignore prefs-only differences 
+Add a preference that makes the reconciler ignore prefs-only differences
   between files (not updating the archive, though -- just suppressing
   the difference -- will this slow things down too much??  Maybe it needs
   to happen in the update detector, before things are transmitted across
@@ -709,17 +709,17 @@ the local host and which side the remote host is.
 
 ** In menu Actions
     - show Diff applies to the current line, while
-    - revert to unision's recommandation applies to all lines 
+    - revert to unision's recommandation applies to all lines
    Should be clearer and/or homogeneous behavior.
    I would also like to have "revert to unision's recommandation" for the
-   current line. 
+   current line.
 
 ** in gtk ui, display green checkmark next to finished items even if their
    direction indicates a conflict; do not list such items as "skipped" at
    the end
 
 ** In both UIs, show how many bytes/files were successfully transferred
-   at the end 
+   at the end
 
 ** Should support auto-termination of the graphical UI (switch-controlled)
     * Unison starts in the usual way and checks for changes
@@ -747,10 +747,10 @@ the local host and which side the remote host is.
   are lots of errors in a subdir, only the first will be reported.
   Recon.propagateUpdates would be a starting point for changes.
 
-* [Jamey Leifer] 
+* [Jamey Leifer]
   Would be nice if both UIs had a "revert to Unison's proposal" button...
 
-* [Jamey Leifer] 
+* [Jamey Leifer]
   [graphic ui, wishlist] The documentation topics aren't searchable.  As
   a result "unison -doc running | less" is still indispensable if one
   wants to find anything.  I suggest adding a box
@@ -774,7 +774,7 @@ the local host and which side the remote host is.
 * The unison gui currently displays a percentage completion in the lower right
   corner.  I would find it comforting if it would also display an effective
   bandwidth there, i.e., how many bits per second are flowing through the
-  transport layer?  I make this request because owing to a hardware 
+  transport layer?  I make this request because owing to a hardware
   catastrophe, I have just started using Unison through the phone lines, and
   it seems to do nothing for a long period of time.  I don't know whether
   to blame the cheap modem, the cheap ISP, or whether Unison simply isn't
@@ -813,10 +813,10 @@ the local host and which side the remote host is.
   especially attractive if my short names were meaningful on the command
   line.
 
-* In the GTK user interface, it would be nice to be able to put up a window 
+* In the GTK user interface, it would be nice to be able to put up a window
   displaying the contents of the log file (and add log messages to it
   dynamically as we're working).  Be careful, though: the log could get
-  large and we don't want this to be too slow. 
+  large and we don't want this to be too slow.
 
 * Could there be an option between -ui text and -ui graphic that when combine
   with -batch and -auto would start in text mode, but pop up an interactive
@@ -856,7 +856,7 @@ It would be nice to have a command in the GUI that would allow a single
 
 The scroll bar is not usable during transport: every time a line changes
   in the list, the display jumps to that line; if many small files are
-  transfered, it makes browsing in the list quite impossible...  
+  transfered, it makes browsing in the list quite impossible...
 
 [From Manuel Serrano] Would be nice to put the arrows in different
   directions in different colors, so that, e.g., you could quickly scan the
@@ -891,7 +891,7 @@ Make it possible to select a bunch of conflicts at the same time and
 The UI window should display the current roots somewhere.
 
 There should be a -geometry command-line interface, following the usual X
-  conventions. 
+  conventions.
 
 put in a command-line option that makes fatal errors exit right away
   without displaying anything in the graphical UI (for debugging)
@@ -902,7 +902,7 @@ Use the CTree widget to display the list of files
 it would be nice to give a visual indication of which files are
   particularly big, so that the user can tell where the transfer
   operations may get slowed down.  Maybe a "size bar" showing the log
-  of the size (perhaps also color coded). 
+  of the size (perhaps also color coded).
   ===> less urgent now because we can re-sort the update items by size
 
 Would it be hard to allow long-running transfers to be aborted?
@@ -919,7 +919,7 @@ It would be nice if the initial 'usage' message were not so long.  Maybe
   the novice ones (with an indication how to obtain the full expert
   printout).
 
-> Show diff should behave as an emacs view-mode buffer and quit on a single 
+> Show diff should behave as an emacs view-mode buffer and quit on a single
 > 'q' in the window, or better quit even without focus be sent to the diff
 > window...
 The UI for the diff functionality needs some polishing.  (Also, it should
@@ -932,22 +932,22 @@ would be nice to be able to "Proceed" just the selected line
 
 might be nice if the GUI would beep when finished syncing (needs to be
   switch-selectable and off by default, naturally).  Is this easy with
-  LablGTK? 
+  LablGTK?
 
 It would be nice to be able to STOP the GUI in the middle of propagating
-  changes.  
+  changes.
 
 
 * TIDYING
 * =======
 
 * Go through the sources and make all fatal and transient error messages
-  as informative as possible 
+  as informative as possible
 
 More documentation (especially in the interface files) is always nice.
   In particular, there isn't enough documentation of the big picture.
-  It isn't clear how to fit together archives, servers, paths, roots, 
-  update detection, reconciliation, conflict resolution, or the user 
+  It isn't clear how to fit together archives, servers, paths, roots,
+  update detection, reconciliation, conflict resolution, or the user
   interface...
 
 Ocamlexc v1.0, the uncaught exceptions analyzer for Objective Caml is now
@@ -959,12 +959,12 @@ Ocamlexc v1.0, the uncaught exceptions analyzer for Objective Caml is now
 * =================
 
 Fast update checking would be cool... Some resources:
-   FAM (used in Enlightenment) 
+   FAM (used in Enlightenment)
    dnotify (linux 2.4)
    BSD kqueue
    the "VFS stacking layer" implemented by a guy at Columbia
 
-[From JMS] 
+[From JMS]
   Some update detection speed improvement suggestions:
   - Read the FFS (Fast Filesystem) paper for hints
   - change the working directory instead of using absolute paths; this
@@ -979,7 +979,7 @@ Rewrite recon.ml in a more modular way.  Probably, have for each property
 
 It would be good to have a graphical interface allowing management and
   editing of profiles, ignore patterns, etc.  Or, less ambitiously, just
-  have UI options for all command-line options (killServer) 
+  have UI options for all command-line options (killServer)
 
 How about a facility so that you can specify more than one pair of
   file systems for a single invocation of Unison? This would be like
@@ -1011,7 +1011,7 @@ It might be nice to implement an (optional) safety check that detects
   complains if it finds any.  This should not be *too* expensive, since
   we already know all the inode numbers.  (Even if it *is* expensive, it
   might be useful to allow users to do this occasionally, if they are
-  paranoid.) 
+  paranoid.)
 
 
 * WINDOWS ISSUES
@@ -1021,18 +1021,18 @@ Suggestion from Arnaud:
   I have been using XP for a while and despite all the problems I have, there
   is a very nice feature: being able to mount remote folders (nothing new), to
   work with them offline and synchronize them. Really useful.
-  -- 
+  --
   A good way to simulate this with Unison would be to package it as a shell
   extension. From the desktop by clicking on the right button the user selects
   "create new Unison mount point" and answers a few trivial question. And the
   rest is done in the background. There are a lot of examples of shell
   extensions and there is a really good book for O'Reilly about it.
-  -- 
+  --
   A good project for a student :-)
-  -- 
+  --
   PS: see http://www.simplythebest.net/shellenh.html for some examples.
 
-NTFS seems to have two ways of setting a file read-only!  
+NTFS seems to have two ways of setting a file read-only!
 Comments from Karl Moerder:
     Tonight I made some files read-only on my desktop at home. I did this by
     setting global read and execute permissions (from the security tab of
@@ -1052,6 +1052,6 @@ Comments from Karl Moerder:
     (added for NTFS file systems). The new way has rwxdpo bits for each
     group (and there can be several groups).
 
-Local Variables: 
+Local Variables:
 mode: outline
-End: 
+End:

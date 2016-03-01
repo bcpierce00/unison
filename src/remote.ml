@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/remote.ml *)
-(* Copyright 1999-2016, Benjamin C. Pierce 
+(* Copyright 1999-2016, Benjamin C. Pierce
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -1292,7 +1292,7 @@ let openConnectionStart clroot =
               Prefs.read rshCmd
             else
               shell) in
-          let shellCmdArgs = 
+          let shellCmdArgs =
             (if shell = "ssh" then
               Prefs.read sshargs
             else if shell = "rsh" then

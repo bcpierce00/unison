@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/copy.ml *)
-(* Copyright 1999-2016, Benjamin C. Pierce 
+(* Copyright 1999-2016, Benjamin C. Pierce
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -50,7 +50,7 @@ let checkForChangesToSourceLocal
   (* Retrieve attributes of current source file *)
   let sourceInfo = Fileinfo.get true fspathFrom pathFrom in
   match newFpOpt with
-    None -> 
+    None ->
       (* no newfp provided: so we need to compare the archive with the
          current source *)
       let clearlyChanged =
@@ -91,7 +91,7 @@ let checkForChangesToSourceLocal
           "The source file %s\nhas been modified during synchronization.  \
            Transfer aborted."
           (Fspath.toPrintString (Fspath.concat fspathFrom pathFrom))))
-  | Some newfp -> 
+  | Some newfp ->
       (* newfp provided means that the archive contains a pseudo-fingerprint... *)
       assert (Os.isPseudoFingerprint archFp);
       (* ... so we can't compare the archive with the source; instead we
@@ -890,10 +890,10 @@ let transferFileReg = Lwt_util.make_region 440
 
 let bufferSize sz =
     (* Token queue *)
-    min 64 ((truncate (Uutil.Filesize.toFloat sz) + 1023) / 1024) 
+    min 64 ((truncate (Uutil.Filesize.toFloat sz) + 1023) / 1024)
   +
    (* Read buffer *)
-   8 
+   8
 
 let transferFile
       rootFrom pathFrom rootTo fspathTo pathTo realPathTo
@@ -965,7 +965,7 @@ let file rootFrom pathFrom rootTo fspathTo pathTo realPathTo
       debug (fun() -> Util.msg
                "Archive data for %s is a pseudo-fingerprint: double-checking...\n"
                (Path.toString realPathTo));
-      
+
       checkForChangesToSource rootFrom pathFrom
                               desc fp stamp ress (Some newfp) false
         >>= (fun () ->
@@ -993,7 +993,7 @@ let recursively fspathFrom pathFrom fspathTo pathTo =
         debug (fun () -> Util.msg "  Copying file %s / %s to %s / %s\n"
           (Fspath.toDebugString fspathFrom) (Path.toString pFrom)
           (Fspath.toDebugString fspathTo) (Path.toString pTo));
-        localFile fspathFrom pFrom fspathTo pTo pTo 
+        localFile fspathFrom pFrom fspathTo pTo pTo
           `Copy info.Fileinfo.desc
           (Osx.ressLength info.Fileinfo.osX.Osx.ressInfo)  None
     | `DIRECTORY ->

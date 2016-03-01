@@ -4,11 +4,11 @@
 SHOWSTOPPERS
 ============
 
-Mac OSX, Windows XP: 
+Mac OSX, Windows XP:
   - Unison does not understand extended attributes (OSX) or alternate data
-    streams (XP) and will not synchronize them properly. 
+    streams (XP) and will not synchronize them properly.
 
-Linux, Solaris: 
+Linux, Solaris:
   - None known.
 
 ---------------------------------------------------------------------------
@@ -28,7 +28,7 @@ SERIOUS
   I get this message from unison:
     Fatal error: Internal error: New archives are not identical.
     Retaining original archives.  Please run Unison again to bring them
-     up to date. 
+     up to date.
     If you get this message again, please notify unison-help@cis.upenn.edu.
   and I think that I know what's going wrong. Unison is somehow using a
   key consisting of the result of `hostname' (and maybe other stuff) to
@@ -51,7 +51,7 @@ SERIOUS
        unique enough.  But what, exactly?
 
 [APril 2002, Jason Eisner] Recently I found an aliasing problem that may
-  endanger Unison's semantics.  
+  endanger Unison's semantics.
   --
   The problem is with the "follow" directive, which is documented like
   this: "Including the preference -follow <pathspec> causes Unison to
@@ -131,7 +131,7 @@ The "Diff" window [under Windows] sometimes shows nothing.  Does this
   arise from a missing "Diff" program?  We should detect this case!
 
 ---------------------------------------------------------------------------
-COSMETIC 
+COSMETIC
 ========
 
 Interactively adding an ignore pattern for src will not make

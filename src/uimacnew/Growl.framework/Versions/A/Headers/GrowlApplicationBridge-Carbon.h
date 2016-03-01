@@ -53,170 +53,170 @@ __BEGIN_DECLS
  *  @field growlNotificationTimedOut Called when a Growl notification timed out.
  */
 struct Growl_Delegate {
-	/*	@discussion This should be sizeof(struct Growl_Delegate).
-	 */
-	size_t size;
+        /*	@discussion This should be sizeof(struct Growl_Delegate).
+         */
+        size_t size;
 
-	/*All of these attributes are optional.
-	 *Optional attributes can be NULL; required attributes that
-	 *	 are NULL cause setting the Growl delegate to fail.
-	 *XXX - move optional/required status into the discussion for each field
-	 */
+        /*All of these attributes are optional.
+         *Optional attributes can be NULL; required attributes that
+         *	 are NULL cause setting the Growl delegate to fail.
+         *XXX - move optional/required status into the discussion for each field
+         */
 
-	/* This name is used both internally and in the Growl preferences.
-	 *
-	 *	 This should remain stable between different versions and incarnations of
-	 *	 your application.
-	 *	 For example, "SurfWriter" is a good app name, whereas "SurfWriter 2.0" and
-	 *	 "SurfWriter Lite" are not.
-	 *
-	 * This can be <code>NULL</code> if it is provided elsewhere, namely in an
-	 *	 auto-discoverable plist file in your app bundle
-	 *	 (XXX refer to more information on that) or in registrationDictionary.
-	 */
-	CFStringRef applicationName;
+        /* This name is used both internally and in the Growl preferences.
+         *
+         *	 This should remain stable between different versions and incarnations of
+         *	 your application.
+         *	 For example, "SurfWriter" is a good app name, whereas "SurfWriter 2.0" and
+         *	 "SurfWriter Lite" are not.
+         *
+         * This can be <code>NULL</code> if it is provided elsewhere, namely in an
+         *	 auto-discoverable plist file in your app bundle
+         *	 (XXX refer to more information on that) or in registrationDictionary.
+         */
+        CFStringRef applicationName;
 
-	/*
-	 * Must contain at least these keys:
-	 *	GROWL_NOTIFICATIONS_ALL (CFArray):
-	 *		Contains the names of all notifications your application may post.
-	 *
-	 * Can also contain these keys:
-	 *	GROWL_NOTIFICATIONS_DEFAULT (CFArray):
-	 *		Names of notifications that should be enabled by default.
-	 *		If omitted, GROWL_NOTIFICATIONS_ALL will be used.
-	 *	GROWL_APP_NAME (CFString):
-	 *		Same as the applicationName member of this structure.
-	 *		If both are present, the applicationName member shall prevail.
-	 *		If this key is present, you may omit applicationName (set it to <code>NULL</code>).
-	 *	GROWL_APP_ICON (CFData):
-	 *		Same as the iconData member of this structure.
-	 *		If both are present, the iconData member shall prevail.
-	 *		If this key is present, you may omit iconData (set it to <code>NULL</code>).
-	 *
-	 * If you change the contents of this dictionary after setting the delegate,
-	 *	be sure to call Growl_Reregister.
-	 *
-	 * This can be <code>NULL</code> if you have an auto-discoverable plist file in your app
-	 *	 bundle. (XXX refer to more information on that)
-	 */
-	CFDictionaryRef registrationDictionary;
+        /*
+         * Must contain at least these keys:
+         *	GROWL_NOTIFICATIONS_ALL (CFArray):
+         *		Contains the names of all notifications your application may post.
+         *
+         * Can also contain these keys:
+         *	GROWL_NOTIFICATIONS_DEFAULT (CFArray):
+         *		Names of notifications that should be enabled by default.
+         *		If omitted, GROWL_NOTIFICATIONS_ALL will be used.
+         *	GROWL_APP_NAME (CFString):
+         *		Same as the applicationName member of this structure.
+         *		If both are present, the applicationName member shall prevail.
+         *		If this key is present, you may omit applicationName (set it to <code>NULL</code>).
+         *	GROWL_APP_ICON (CFData):
+         *		Same as the iconData member of this structure.
+         *		If both are present, the iconData member shall prevail.
+         *		If this key is present, you may omit iconData (set it to <code>NULL</code>).
+         *
+         * If you change the contents of this dictionary after setting the delegate,
+         *	be sure to call Growl_Reregister.
+         *
+         * This can be <code>NULL</code> if you have an auto-discoverable plist file in your app
+         *	 bundle. (XXX refer to more information on that)
+         */
+        CFDictionaryRef registrationDictionary;
 
-	/* The data can be in any format supported by NSImage. As of
-	 *	 Mac OS X 10.3, this includes the .icns, TIFF, JPEG, GIF, PNG, PDF, and
-	 *	 PICT formats.
-	 *
-	 *	 If this is not supplied, Growl will look up your application's icon by
-	 *	 its application name.
-	 */
-	CFDataRef applicationIconData;
+        /* The data can be in any format supported by NSImage. As of
+         *	 Mac OS X 10.3, this includes the .icns, TIFF, JPEG, GIF, PNG, PDF, and
+         *	 PICT formats.
+         *
+         *	 If this is not supplied, Growl will look up your application's icon by
+         *	 its application name.
+         */
+        CFDataRef applicationIconData;
 
-	/* Installer display attributes
-	 *
-	 * These four attributes are used by the Growl installer, if this framework
-	 *	supports it.
-	 * For any of these being <code>NULL</code>, a localised default will be
-	 *	supplied.
-	 */
+        /* Installer display attributes
+         *
+         * These four attributes are used by the Growl installer, if this framework
+         *	supports it.
+         * For any of these being <code>NULL</code>, a localised default will be
+         *	supplied.
+         */
 
-	/*	If this is <code>NULL</code>, Growl will use a default,
-	 *	 localized title.
-	 *
-	 *	 Only used if you're using Growl-WithInstaller.framework. Otherwise,
-	 *	 this member is ignored.
-	 */
-	CFStringRef growlInstallationWindowTitle;
-	/*	This information may be as long or short as desired (the
-	 *	 window will be sized to fit it).  If Growl is not installed, it will
-	 *	 be displayed to the user as an explanation of what Growl is and what
-	 *	 it can do in your application.
-	 *	 It should probably note that no download is required to install.
-	 *
-	 *	 If this is <code>NULL</code>, Growl will use a default, localized
-	 *	 explanation.
-	 *
-	 *	 Only used if you're using Growl-WithInstaller.framework. Otherwise,
-	 *	 this member is ignored.
-	 */
-	CFStringRef growlInstallationInformation;
-	/*	If this is <code>NULL</code>, Growl will use a default,
-	 *	 localized title.
-	 *
-	 *	 Only used if you're using Growl-WithInstaller.framework. Otherwise,
-	 *	 this member is ignored.
-	 */
-	CFStringRef growlUpdateWindowTitle;
-	/*	This information may be as long or short as desired (the
-	 *	 window will be sized to fit it).  If an older version of Growl is
-	 *	 installed, it will be displayed to the user as an explanation that an
-	 *	 updated version of Growl is included in your application and
-	 *	 no download is required.
-	 *
-	 *	 If this is <code>NULL</code>, Growl will use a default, localized
-	 *	 explanation.
-	 *
-	 *	 Only used if you're using Growl-WithInstaller.framework. Otherwise,
-	 *	 this member is ignored.
-	 */
-	CFStringRef growlUpdateInformation;
+        /*	If this is <code>NULL</code>, Growl will use a default,
+         *	 localized title.
+         *
+         *	 Only used if you're using Growl-WithInstaller.framework. Otherwise,
+         *	 this member is ignored.
+         */
+        CFStringRef growlInstallationWindowTitle;
+        /*	This information may be as long or short as desired (the
+         *	 window will be sized to fit it).  If Growl is not installed, it will
+         *	 be displayed to the user as an explanation of what Growl is and what
+         *	 it can do in your application.
+         *	 It should probably note that no download is required to install.
+         *
+         *	 If this is <code>NULL</code>, Growl will use a default, localized
+         *	 explanation.
+         *
+         *	 Only used if you're using Growl-WithInstaller.framework. Otherwise,
+         *	 this member is ignored.
+         */
+        CFStringRef growlInstallationInformation;
+        /*	If this is <code>NULL</code>, Growl will use a default,
+         *	 localized title.
+         *
+         *	 Only used if you're using Growl-WithInstaller.framework. Otherwise,
+         *	 this member is ignored.
+         */
+        CFStringRef growlUpdateWindowTitle;
+        /*	This information may be as long or short as desired (the
+         *	 window will be sized to fit it).  If an older version of Growl is
+         *	 installed, it will be displayed to the user as an explanation that an
+         *	 updated version of Growl is included in your application and
+         *	 no download is required.
+         *
+         *	 If this is <code>NULL</code>, Growl will use a default, localized
+         *	 explanation.
+         *
+         *	 Only used if you're using Growl-WithInstaller.framework. Otherwise,
+         *	 this member is ignored.
+         */
+        CFStringRef growlUpdateInformation;
 
-	/*	This member is provided for use by your retain and release
-	 *	 callbacks (see below).
-	 *
-	 *	 GrowlApplicationBridge never directly uses this member. Instead, it
-	 *	 calls your retain callback (if non-<code>NULL</code>) and your release
-	 *	 callback (if non-<code>NULL</code>).
-	 */
-	unsigned referenceCount;
+        /*	This member is provided for use by your retain and release
+         *	 callbacks (see below).
+         *
+         *	 GrowlApplicationBridge never directly uses this member. Instead, it
+         *	 calls your retain callback (if non-<code>NULL</code>) and your release
+         *	 callback (if non-<code>NULL</code>).
+         */
+        unsigned referenceCount;
 
-	//Functions. Currently all of these are optional (any of them can be NULL).
+        //Functions. Currently all of these are optional (any of them can be NULL).
 
-	/*	When you call Growl_SetDelegate(newDelegate), it will call
-	 *	 oldDelegate->release(oldDelegate), and then it will call
-	 *	 newDelegate->retain(newDelegate), and the return value from retain
-	 *	 is what will be set as the delegate.
-	 *	 (This means that this member works like CFRetain and -[NSObject retain].)
-	 *	 This member is optional (it can be <code>NULL</code>).
-	 *	 For a delegate allocated with malloc, this member would be
-	 *	 <code>NULL</code>.
-	 *	@result	A delegate to which GrowlApplicationBridge holds a reference.
-	 */
-	void *(*retain)(void *);
-	/*	When you call Growl_SetDelegate(newDelegate), it will call
-	 *	 oldDelegate->release(oldDelegate), and then it will call
-	 *	 newDelegate->retain(newDelegate), and the return value from retain
-	 *	 is what will be set as the delegate.
-	 *	 (This means that this member works like CFRelease and
-	 *	  -[NSObject release].)
-	 *	 This member is optional (it can be NULL).
-	 *	 For a delegate allocated with malloc, this member might be
-	 *	 <code>free</code>(3).
-	 */
-	void (*release)(void *);
+        /*	When you call Growl_SetDelegate(newDelegate), it will call
+         *	 oldDelegate->release(oldDelegate), and then it will call
+         *	 newDelegate->retain(newDelegate), and the return value from retain
+         *	 is what will be set as the delegate.
+         *	 (This means that this member works like CFRetain and -[NSObject retain].)
+         *	 This member is optional (it can be <code>NULL</code>).
+         *	 For a delegate allocated with malloc, this member would be
+         *	 <code>NULL</code>.
+         *	@result	A delegate to which GrowlApplicationBridge holds a reference.
+         */
+        void *(*retain)(void *);
+        /*	When you call Growl_SetDelegate(newDelegate), it will call
+         *	 oldDelegate->release(oldDelegate), and then it will call
+         *	 newDelegate->retain(newDelegate), and the return value from retain
+         *	 is what will be set as the delegate.
+         *	 (This means that this member works like CFRelease and
+         *	  -[NSObject release].)
+         *	 This member is optional (it can be NULL).
+         *	 For a delegate allocated with malloc, this member might be
+         *	 <code>free</code>(3).
+         */
+        void (*release)(void *);
 
-	/*	Informs the delegate that Growl (specifically, the GrowlHelperApp) was
-	 *	 launched successfully (or was already running). The application can
-	 *	 take actions with the knowledge that Growl is installed and functional.
-	 */
-	void (*growlIsReady)(void);
+        /*	Informs the delegate that Growl (specifically, the GrowlHelperApp) was
+         *	 launched successfully (or was already running). The application can
+         *	 take actions with the knowledge that Growl is installed and functional.
+         */
+        void (*growlIsReady)(void);
 
-	/*	Informs the delegate that a Growl notification was clicked. It is only
-	 *	 sent for notifications sent with a non-<code>NULL</code> clickContext,
-	 *	 so if you want to receive a message when a notification is clicked,
-	 *	 clickContext must not be <code>NULL</code> when calling
-	 *	 Growl_PostNotification or
-	 *	 Growl_NotifyWithTitleDescriptionNameIconPriorityStickyClickContext.
-	 */
-	void (*growlNotificationWasClicked)(CFPropertyListRef clickContext);
+        /*	Informs the delegate that a Growl notification was clicked. It is only
+         *	 sent for notifications sent with a non-<code>NULL</code> clickContext,
+         *	 so if you want to receive a message when a notification is clicked,
+         *	 clickContext must not be <code>NULL</code> when calling
+         *	 Growl_PostNotification or
+         *	 Growl_NotifyWithTitleDescriptionNameIconPriorityStickyClickContext.
+         */
+        void (*growlNotificationWasClicked)(CFPropertyListRef clickContext);
 
-	/*	Informs the delegate that a Growl notification timed out. It is only
-	 *	 sent for notifications sent with a non-<code>NULL</code> clickContext,
-	 *	 so if you want to receive a message when a notification is clicked,
-	 *	 clickContext must not be <code>NULL</code> when calling
-	 *	 Growl_PostNotification or
-	 *	 Growl_NotifyWithTitleDescriptionNameIconPriorityStickyClickContext.
-	 */
-	void (*growlNotificationTimedOut)(CFPropertyListRef clickContext);
+        /*	Informs the delegate that a Growl notification timed out. It is only
+         *	 sent for notifications sent with a non-<code>NULL</code> clickContext,
+         *	 so if you want to receive a message when a notification is clicked,
+         *	 clickContext must not be <code>NULL</code> when calling
+         *	 Growl_PostNotification or
+         *	 Growl_NotifyWithTitleDescriptionNameIconPriorityStickyClickContext.
+         */
+        void (*growlNotificationTimedOut)(CFPropertyListRef clickContext);
 };
 
 /*!	@struct Growl_Notification
@@ -234,95 +234,95 @@ struct Growl_Delegate {
  * 	@field clickCallback A callback to call when the notification is clicked.
  */
 struct Growl_Notification {
-	/*	This should be sizeof(struct Growl_Notification).
-	 */
- 	size_t size;
+        /*	This should be sizeof(struct Growl_Notification).
+         */
+	size_t size;
 
-	/*	The notification name distinguishes one type of
-	 *	 notification from another. The name should be human-readable, as it
-	 *	 will be displayed in the Growl preference pane.
-	 *
-	 *	 The name is used in the GROWL_NOTIFICATIONS_ALL and
-	 *	 GROWL_NOTIFICATIONS_DEFAULT arrays in the registration dictionary, and
-	 *	 in this member of the Growl_Notification structure.
-	 */
-	CFStringRef name;
+        /*	The notification name distinguishes one type of
+         *	 notification from another. The name should be human-readable, as it
+         *	 will be displayed in the Growl preference pane.
+         *
+         *	 The name is used in the GROWL_NOTIFICATIONS_ALL and
+         *	 GROWL_NOTIFICATIONS_DEFAULT arrays in the registration dictionary, and
+         *	 in this member of the Growl_Notification structure.
+         */
+        CFStringRef name;
 
-	/*	A notification's title describes the notification briefly.
-	 *	 It should be easy to read quickly by the user.
-	 */
-	CFStringRef title;
+        /*	A notification's title describes the notification briefly.
+         *	 It should be easy to read quickly by the user.
+         */
+        CFStringRef title;
 
-	/*	The description supplements the title with more
-	 *	 information. It is usually longer and sometimes involves a list of
-	 *	 subjects. For example, for a 'Download complete' notification, the
-	 *	 description might have one filename per line. GrowlMail in Growl 0.6
-	 *	 uses a description of '%d new mail(s)' (formatted with the number of
-	 *	 messages).
-	 */
-	CFStringRef description;
+        /*	The description supplements the title with more
+         *	 information. It is usually longer and sometimes involves a list of
+         *	 subjects. For example, for a 'Download complete' notification, the
+         *	 description might have one filename per line. GrowlMail in Growl 0.6
+         *	 uses a description of '%d new mail(s)' (formatted with the number of
+         *	 messages).
+         */
+        CFStringRef description;
 
-	/*	The notification icon usually indicates either what
-	 *	 happened (it may have the same icon as e.g. a toolbar item that
-	 *	 started the process that led to the notification), or what it happened
-	 *	 to (e.g. a document icon).
-	 *
-	 *	 The icon data is optional, so it can be <code>NULL</code>. In that
-	 *	 case, the application icon is used alone. Not all displays support
-	 *	 icons.
-	 *
-	 *	 The data can be in any format supported by NSImage. As of Mac OS X
-	 *	 10.3, this includes the .icns, TIFF, JPEG, GIF, PNG, PDF, and PICT form
-	 *	 ats.
-	 */
-	CFDataRef iconData;
+        /*	The notification icon usually indicates either what
+         *	 happened (it may have the same icon as e.g. a toolbar item that
+         *	 started the process that led to the notification), or what it happened
+         *	 to (e.g. a document icon).
+         *
+         *	 The icon data is optional, so it can be <code>NULL</code>. In that
+         *	 case, the application icon is used alone. Not all displays support
+         *	 icons.
+         *
+         *	 The data can be in any format supported by NSImage. As of Mac OS X
+         *	 10.3, this includes the .icns, TIFF, JPEG, GIF, PNG, PDF, and PICT form
+         *	 ats.
+         */
+        CFDataRef iconData;
 
-	/*	Priority is new in Growl 0.6, and is represented as a
-	 *	 signed integer from -2 to +2. 0 is Normal priority, -2 is Very Low
-	 *	 priority, and +2 is Very High priority.
-	 *
-	 *	 Not all displays support priority. If you do not wish to assign a
-	 *	 priority to your notification, assign 0.
-	 */
-	signed int priority;
+        /*	Priority is new in Growl 0.6, and is represented as a
+         *	 signed integer from -2 to +2. 0 is Normal priority, -2 is Very Low
+         *	 priority, and +2 is Very High priority.
+         *
+         *	 Not all displays support priority. If you do not wish to assign a
+         *	 priority to your notification, assign 0.
+         */
+        signed int priority;
 
-	/*	These bits are not used in Growl 0.6. Set them to 0.
-	 */
-	unsigned reserved: 31;
+        /*	These bits are not used in Growl 0.6. Set them to 0.
+         */
+        unsigned reserved: 31;
 
-	/*	When the sticky bit is clear, in most displays,
-	 *	 notifications disappear after a certain amount of time. Sticky
-	 *	 notifications, however, remain on-screen until the user dismisses them
-	 *	 explicitly, usually by clicking them.
-	 *
-	 *	 Sticky notifications were introduced in Growl 0.6. Most notifications
-	 *	 should not be sticky. Not all displays support sticky notifications,
-	 *	 and the user may choose in Growl's preference pane to force the
-	 *	 notification to be sticky or non-sticky, in which case the sticky bit
-	 *	 in the notification will be ignored.
-	 */
-	unsigned isSticky: 1;
+        /*	When the sticky bit is clear, in most displays,
+         *	 notifications disappear after a certain amount of time. Sticky
+         *	 notifications, however, remain on-screen until the user dismisses them
+         *	 explicitly, usually by clicking them.
+         *
+         *	 Sticky notifications were introduced in Growl 0.6. Most notifications
+         *	 should not be sticky. Not all displays support sticky notifications,
+         *	 and the user may choose in Growl's preference pane to force the
+         *	 notification to be sticky or non-sticky, in which case the sticky bit
+         *	 in the notification will be ignored.
+         */
+        unsigned isSticky: 1;
 
-	/*	If this is not <code>NULL</code>, and your click callback
-	 *	 is not <code>NULL</code> either, this will be passed to the callback
-	 *	 when your notification is clicked by the user.
-	 *
-	 *	 Click feedback was introduced in Growl 0.6, and it is optional. Not
-	 *	 all displays support click feedback.
-	 */
-	CFPropertyListRef clickContext;
+        /*	If this is not <code>NULL</code>, and your click callback
+         *	 is not <code>NULL</code> either, this will be passed to the callback
+         *	 when your notification is clicked by the user.
+         *
+         *	 Click feedback was introduced in Growl 0.6, and it is optional. Not
+         *	 all displays support click feedback.
+         */
+        CFPropertyListRef clickContext;
 
-	/*	If this is not <code>NULL</code>, it will be called instead
-	 *	 of the Growl delegate's click callback when clickContext is
-	 *	 non-<code>NULL</code> and the notification is clicked on by the user.
-	 *
-	 *	 Click feedback was introduced in Growl 0.6, and it is optional. Not
-	 *	 all displays support click feedback.
-	 *
-	 *	 The per-notification click callback is not yet supported as of Growl
-	 *	 0.7.
-	 */
-	void (*clickCallback)(CFPropertyListRef clickContext);
+        /*	If this is not <code>NULL</code>, it will be called instead
+         *	 of the Growl delegate's click callback when clickContext is
+         *	 non-<code>NULL</code> and the notification is clicked on by the user.
+         *
+         *	 Click feedback was introduced in Growl 0.6, and it is optional. Not
+         *	 all displays support click feedback.
+         *
+         *	 The per-notification click callback is not yet supported as of Growl
+         *	 0.7.
+         */
+        void (*clickCallback)(CFPropertyListRef clickContext);
 };
 
 #pragma mark -
@@ -336,24 +336,24 @@ struct Growl_Notification {
  *	 referenceCount (which will be set to 1).
  */
 #define InitGrowlDelegate(delegate) \
-	do { \
-		if (delegate) { \
-			(delegate)->size = sizeof(struct Growl_Delegate); \
-			(delegate)->applicationName = NULL; \
-			(delegate)->registrationDictionary = NULL; \
-			(delegate)->applicationIconData = NULL; \
-			(delegate)->growlInstallationWindowTitle = NULL; \
-			(delegate)->growlInstallationInformation = NULL; \
-			(delegate)->growlUpdateWindowTitle = NULL; \
-			(delegate)->growlUpdateInformation = NULL; \
-			(delegate)->referenceCount = 1U; \
-			(delegate)->retain = NULL; \
-			(delegate)->release = NULL; \
-			(delegate)->growlIsReady = NULL; \
-			(delegate)->growlNotificationWasClicked = NULL; \
-			(delegate)->growlNotificationTimedOut = NULL; \
-		} \
-	} while(0)
+        do { \
+                if (delegate) { \
+                        (delegate)->size = sizeof(struct Growl_Delegate); \
+                        (delegate)->applicationName = NULL; \
+                        (delegate)->registrationDictionary = NULL; \
+                        (delegate)->applicationIconData = NULL; \
+                        (delegate)->growlInstallationWindowTitle = NULL; \
+                        (delegate)->growlInstallationInformation = NULL; \
+                        (delegate)->growlUpdateWindowTitle = NULL; \
+                        (delegate)->growlUpdateInformation = NULL; \
+                        (delegate)->referenceCount = 1U; \
+                        (delegate)->retain = NULL; \
+                        (delegate)->release = NULL; \
+                        (delegate)->growlIsReady = NULL; \
+                        (delegate)->growlNotificationWasClicked = NULL; \
+                        (delegate)->growlNotificationTimedOut = NULL; \
+                } \
+        } while(0)
 
 /*!	@defined	InitGrowlNotification
  *	@abstract	Callable macro. Initializes a Growl notification structure to defaults.
@@ -363,19 +363,19 @@ struct Growl_Notification {
  *	<code>sizeof(struct Growl_Notification)</code>).
  */
 #define InitGrowlNotification(notification) \
-	do { \
-		if (notification) { \
-			(notification)->size = sizeof(struct Growl_Notification); \
-			(notification)->name = NULL; \
-			(notification)->title = NULL; \
-			(notification)->description = NULL; \
-			(notification)->iconData = NULL; \
-			(notification)->priority = 0; \
-			(notification)->reserved = 0U; \
-			(notification)->isSticky = false; \
-			(notification)->clickContext = NULL; \
-		} \
-	} while(0)
+        do { \
+                if (notification) { \
+                        (notification)->size = sizeof(struct Growl_Notification); \
+                        (notification)->name = NULL; \
+                        (notification)->title = NULL; \
+                        (notification)->description = NULL; \
+                        (notification)->iconData = NULL; \
+                        (notification)->priority = 0; \
+                        (notification)->reserved = 0U; \
+                        (notification)->isSticky = false; \
+                        (notification)->clickContext = NULL; \
+                } \
+        } while(0)
 
 #pragma mark -
 #pragma mark Public API
@@ -493,13 +493,13 @@ void Growl_PostNotificationWithDictionary(CFDictionaryRef userInfo);
  */
 void Growl_NotifyWithTitleDescriptionNameIconPriorityStickyClickContext(
  /*inhale*/
-	CFStringRef title,
-	CFStringRef description,
-	CFStringRef notificationName,
-	CFDataRef iconData,
-	signed int priority,
-	Boolean isSticky,
-	CFPropertyListRef clickContext);
+        CFStringRef title,
+        CFStringRef description,
+        CFStringRef notificationName,
+        CFDataRef iconData,
+        signed int priority,
+        Boolean isSticky,
+        CFPropertyListRef clickContext);
 
 #pragma mark -
 

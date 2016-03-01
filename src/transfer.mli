@@ -5,24 +5,24 @@
    Rsync : general algorithm description
 
      The rsync algorithm is a technique for reducing the cost of a file
-   transfer by avoiding the transfer of blocks that are already at the 
+   transfer by avoiding the transfer of blocks that are already at the
    destination.
      Imagine we have source and destination computers that have files X and
-   Y respectively, where X and Y are similar. The algorithm proceeds as 
+   Y respectively, where X and Y are similar. The algorithm proceeds as
    follows :
-   - The destination computer divides file Y into blocks of an agreed-upon 
+   - The destination computer divides file Y into blocks of an agreed-upon
      size N.
-   - For each block, the destination computer computes two functions of the 
+   - For each block, the destination computer computes two functions of the
      block's contents :
-       - A 128-bit fingerprint of the block, which with very high 
+       - A 128-bit fingerprint of the block, which with very high
          probability is different from the fingerprints of different blocks.
-       - A small checksum, which can be computed in a "rolling" fashion. 
+       - A small checksum, which can be computed in a "rolling" fashion.
          More precisely, if we are given the checksum for the N-byte block
          at offset k, and we are given the bytes at offsets k and N+k, we
          can efficiently compute the checksum for the N-byte block at offset
          k+1.
    - The destination computer sends a list of fingerprints and checksums to
-     the source computer. Blocks are identified implicitly by the order in 
+     the source computer. Blocks are identified implicitly by the order in
      which they appear in the list.
    - The source computer searches through file X to identify blocks that
      have the same fingerprints as blocks that appear in the list sent
@@ -82,7 +82,7 @@ module Rsync :
 
     (* Compute block information from the old file *)
     val rsyncPreprocess :
-	   in_channel            (* old file descriptor *)
+           in_channel            (* old file descriptor *)
         -> Uutil.Filesize.t      (* source file length *)
         -> Uutil.Filesize.t      (* destination file length *)
         -> rsync_block_info * int
@@ -91,22 +91,22 @@ module Rsync :
     val rsyncDecompress :
            int                   (* block size *)
         -> in_channel            (* old file descriptor *)
-	-> out_channel           (* output file descriptor *)
+        -> out_channel           (* output file descriptor *)
         -> (int -> unit)         (* progress report *)
-	-> transfer_instruction  (* transfer instruction received *)
-	-> bool
+        -> transfer_instruction  (* transfer instruction received *)
+        -> bool
 
     (*** SOURCE HOST ***)
 
     (* Using block information, parse the new file and send transfer
        instructions accordingly *)
     val rsyncCompress :
-	   rsync_block_info
+           rsync_block_info
                               (* block info received from the destination *)
         -> in_channel         (* new file descriptor *)
         -> Uutil.Filesize.t   (* source file length *)
         -> (int -> unit)      (* progress report *)
-	-> transmitter        (* transfer instruction transmitter *)
+        -> transmitter        (* transfer instruction transmitter *)
         -> unit Lwt.t
 
   end

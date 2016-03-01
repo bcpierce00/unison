@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/common.ml *)
-(* Copyright 1999-2016, Benjamin C. Pierce 
+(* Copyright 1999-2016, Benjamin C. Pierce
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -215,7 +215,7 @@ let partiallyProblematic ri =
   match ri.replicas with
     Problem _      ->
       true
-  | Different diff -> 
+  | Different diff ->
      isConflict diff.direction || diff.errors1 <> [] || diff.errors2 <> []
 
 let isDeletion ri =

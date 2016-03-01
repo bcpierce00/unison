@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/test.ml *)
-(* Copyright 1999-2016, Benjamin C. Pierce 
+(* Copyright 1999-2016, Benjamin C. Pierce
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -37,12 +37,12 @@ let rec remove_file_or_dir d =
             else begin
               remove_file_or_dir (Fspath.concat d (Path.fromString f));
               loop ()
-            end  
+            end
         | None ->
             handle.Fs.closedir ();
             Fs.rmdir d
       in loop ()
-    end else 
+    end else
       Fs.unlink d
   | None -> ()
 
@@ -128,7 +128,7 @@ let fsopt2string = function
   | Some(f) -> fs2string f
 
 let readfs p =
-  let rec loop p = 
+  let rec loop p =
     let s = Fs.lstat p in
     match s.Unix.LargeFile.st_kind with
       | Unix.S_REG -> File (read p)
@@ -137,7 +137,7 @@ let readfs p =
       | _ -> assert false
   in try Some(loop p) with
     Unix.Unix_error (Unix.ENOENT,_,_) -> None
-          
+
 let default_perm = 0o755
 
 let writefs p fs =
@@ -208,11 +208,11 @@ let loadPrefs l =
 
 let displayRis ris =
   Safelist.iter
-    (fun ri -> 
+    (fun ri ->
       Util.msg "%s\n" (Uicommon.reconItem2string Path.empty ri ""))
     ris
 
-let sync ?(verbose=false) () = 
+let sync ?(verbose=false) () =
   let (reconItemList, _, _) =
     Recon.reconcileAll (Update.findUpdates None) in
   if verbose then begin
@@ -234,8 +234,8 @@ type checkable = R1 | R2 | BACKUP1 | BACKUP2
 let checkable2string = function
   R1 -> "R1" | R2 -> "R2" | BACKUP1 -> "BACKUP1" | BACKUP2 -> "BACKUP2"
 
-let test() = 
-  Util.warnPrinter := None; 
+let test() =
+  Util.warnPrinter := None;
   Prefs.set Trace.logging false;
   Prefs.set Trace.terse true;
   Trace.sendLogMsgsToStderr := false;
@@ -244,7 +244,7 @@ let test() =
 
   let runtest name prefs f =
     Util.msg "%s...\n" name;
-    Util.convertUnixErrorsToFatal "Test.test" (fun() -> 
+    Util.convertUnixErrorsToFatal "Test.test" (fun() ->
       currentTest := name;
       Prefs.load origPrefs;
       loadPrefs prefs;
@@ -260,14 +260,14 @@ let test() =
   if not (Safelist.for_all
             (fun r -> Util.findsubstring "test" r <> None)
             (Globals.rawRoots())) then
-    raise (Util.Fatal 
+    raise (Util.Fatal
       "Self-tests can only be run if both roots include the string 'test'");
   if Util.findsubstring "test" (Fspath.toPrintString (Stasher.backupDirectory())) = None then
-    raise (Util.Fatal 
+    raise (Util.Fatal
         ("Self-tests can only be run if the 'backupdir' preference (or wherever the backup "
        ^ "directory name is coming from, e.g. the UNISONBACKUPDIR environment variable) "
        ^ "includes the string 'test'"));
-    
+
   Lwt_unix.run (Globals.allRootsIter (fun r -> makeRootEmpty r ()));
 
   let (r2,r1) = Globals.roots () in
@@ -277,8 +277,8 @@ let test() =
       (Common.Local,_),(Common.Local,_) -> true
     | _ -> false in
 
-  let put c fs = 
-    Lwt_unix.run 
+  let put c fs =
+    Lwt_unix.run
       (match c with
         R1 -> putfs r1 fs | R2 -> putfs r2 fs | BACKUP1 | BACKUP2 -> assert false) in
 
@@ -287,7 +287,7 @@ let test() =
   let check name c fs =
     debug (fun() -> Util.msg "Checking %s / %s\n" (!currentTest) name);
     let actual =
-        Lwt_unix.run 
+        Lwt_unix.run
           ((match c with
             R1 -> getfs r1 | R2 -> getfs r2 | BACKUP1 -> getbackup r1 | BACKUP2 -> getbackup r2) ())  in
     let fail () =
@@ -296,14 +296,14 @@ let test() =
         (!currentTest) name (checkable2string c) (fs2string fs) (fsopt2string actual);
       failures := !failures+1;
       raise (Util.Fatal (Printf.sprintf "Self-test %s / %s failed!" (!currentTest) name)) in
-    match actual with 
+    match actual with
         Some(a) -> if not (equal a fs) then fail()
       | None -> fail() in
 
   let checkmissing name c =
     debug (fun() -> Util.msg "Checking nonexistence %s / %s\n" (!currentTest) name);
     let actual =
-      Lwt_unix.run 
+      Lwt_unix.run
         ((match c with
           R1 -> getfs r1 | R2 -> getfs r2 | BACKUP1 -> getbackup r1 | BACKUP2 -> getbackup r2) ()) in
     if  actual <> None then begin
@@ -315,7 +315,7 @@ let test() =
     end in
 
   (* N.b.: When making up tests, it's important to choose file contents of different
-     lengths.  The reason for this is that, on some Unix systems, it is possible for 
+     lengths.  The reason for this is that, on some Unix systems, it is possible for
      the inode number of a just-deleted file to be reassigned to the very next file
      created -- i.e., to the updated version of the file that the test script has
      just written.  If the length of the contents is also the same and the test is
@@ -357,8 +357,8 @@ let test() =
     );
 
   (* Check for the bug reported by Ralf Lehmann *)
-  if not bothRootsLocal then 
-    runtest "backups 1 (remote)" ["backup = Name *"] (fun() -> 
+  if not bothRootsLocal then
+    runtest "backups 1 (remote)" ["backup = Name *"] (fun() ->
       put R1 (Dir []); put R2 (Dir []); sync();
       debug (fun () -> Util.msg "First check\n");
       checkmissing "1" BACKUP1;
@@ -373,11 +373,11 @@ let test() =
       check "6" BACKUP2 (Dir [("test.txt", File "1")]);
     );
 
-  if bothRootsLocal then 
-    runtest "fastercheckUNSAFE 1" ["fastercheckUNSAFE = true"] (fun() -> 
+  if bothRootsLocal then
+    runtest "fastercheckUNSAFE 1" ["fastercheckUNSAFE = true"] (fun() ->
       put R1 (Dir []); put R2 (Dir []); sync();
       (* Create a file on both sides with different contents *)
-      put R1 (Dir ["x", File "foo"]); 
+      put R1 (Dir ["x", File "foo"]);
       put R2 (Dir ["x", File "bar"]); sync();
       check "1a" R1 (Dir ["x", File "foo"]);
       check "1b" R2 (Dir ["x", File "bar"]);
@@ -389,7 +389,7 @@ let test() =
       (* Start again *)
       put R1 (Dir []); put R2 (Dir []); sync();
       (* Create a file on both sides with different contents *)
-      put R1 (Dir ["x", File "foo"]); 
+      put R1 (Dir ["x", File "foo"]);
       put R2 (Dir ["x", File "bar"]); sync();
       (* Change contents without changing size and check that change is propagated *)
       put R1 (Dir ["x", File "f00"]); sync();
@@ -404,10 +404,10 @@ let test() =
       check "4" R2 (Dir ["x", File "foo"]);
     );
 
-  (raise (Util.Fatal "Skipping some tests -- remove me!\n") : unit); 
+  (raise (Util.Fatal "Skipping some tests -- remove me!\n") : unit);
 
-  if bothRootsLocal then 
-    runtest "backups 1 (local)" ["backup = Name *"] (fun() -> 
+  if bothRootsLocal then
+    runtest "backups 1 (local)" ["backup = Name *"] (fun() ->
       put R1 (Dir []); put R2 (Dir []); sync();
       (* Create a file and a directory *)
       put R1 (Dir ["x", File "foo"; "d", Dir ["a", File "barr"]]); sync();
@@ -421,7 +421,7 @@ let test() =
                               (".bak.1.x", File "foo"); (".bak.1.d", Dir [("a", File "barr")])])
     );
 
-  runtest "backups 2" ["backup = Name *"; "backuplocation = local"] (fun() -> 
+  runtest "backups 2" ["backup = Name *"; "backuplocation = local"] (fun() ->
     put R1 (Dir []); put R2 (Dir []); sync();
     (* Create a file and a directory *)
     put R1 (Dir ["x", File "foo"; "d", Dir ["a", File "barr"]]); sync();
@@ -431,7 +431,7 @@ let test() =
     check "1" R2 (Dir [(".bak.0.x", File "foo"); (".bak.0.d", Dir [("a", File "barr")])]);
   );
 
-  runtest "backups 2a" ["backup = Name *"; "backuplocation = local"] (fun() -> 
+  runtest "backups 2a" ["backup = Name *"; "backuplocation = local"] (fun() ->
     put R1 (Dir []); put R2 (Dir []); sync();
     (* Create a file and a directory *)
     put R1 (Dir ["foo", File "1"]); sync();
@@ -439,10 +439,10 @@ let test() =
     check "2" R1 (Dir [("foo", File "1")]);
     put R1 (Dir ["foo", File "2"]); sync();
     check "3" R1 (Dir [("foo", File "2")]);
-    check "4" R2 (Dir [("foo", File "2"); (".bak.0.foo", File "1")]); 
+    check "4" R2 (Dir [("foo", File "2"); (".bak.0.foo", File "1")]);
   );
 
-  runtest "backups 3" ["backup = Name *"; "backuplocation = local"; "backupcurrent = Name *"] (fun() -> 
+  runtest "backups 3" ["backup = Name *"; "backuplocation = local"; "backupcurrent = Name *"] (fun() ->
     put R1 (Dir []); put R2 (Dir []); sync();
     put R1 (Dir ["x", File "foo"]); sync ();
     check "1a" R1 (Dir [("x", File "foo"); (".bak.0.x", File "foo")]);
@@ -452,7 +452,7 @@ let test() =
     check "2b" R2 (Dir [("x", File "barr"); (".bak.1.x", File "foo"); (".bak.0.x", File "barr")]);
   );
 
-  runtest "backups 4" ["backup = Name *"; "backupcurrent = Name *"; "maxbackups = 7"] (fun() -> 
+  runtest "backups 4" ["backup = Name *"; "backupcurrent = Name *"; "maxbackups = 7"] (fun() ->
     put R1 (Dir []); put R2 (Dir []); sync();
     put R1 (Dir ["x", File "foo"]); sync();
     check "1a" BACKUP1 (Dir [("x", File "foo")]);
@@ -462,7 +462,7 @@ let test() =
     check "1c" BACKUP1 (Dir [("x", File "bazzz"); (".bak.2.x", File "foo"); (".bak.1.x", File "barr")]);
   );
 
-  runtest "backups 5 (directories)" ["backup = Name *"; "backupcurrent = Name *"; "maxbackups = 7"] (fun() -> 
+  runtest "backups 5 (directories)" ["backup = Name *"; "backupcurrent = Name *"; "maxbackups = 7"] (fun() ->
     put R1 (Dir []); put R2 (Dir []); sync();
     (* Create a directory x containing files a and l; check that the current version gets backed up *)
     put R1 (Dir ["x", Dir ["a", File "foo"; "l", File "./foo"]]); sync();
@@ -474,31 +474,31 @@ let test() =
        whether we're running the test locally or remotely; in the former case, we should see *both* the
        old and the new version as backups *)
     put R1 (Dir ["x", File "bazzz"]); sync();
-    if bothRootsLocal then                                   
+    if bothRootsLocal then
       check "3" BACKUP1 (Dir [("x", File "bazzz"); (".bak.2.x", Dir [("l", File "./barr"); ("b", File "barr"); ("a", File "foo"); (".bak.1.l", File "./foo")]); (".bak.1.x", Dir [("l", File "./barr"); ("b", File "barr")])])
-    else 
+    else
       check "3" BACKUP1 (Dir [("x", File "bazzz"); (".bak.1.x", Dir [("l", File "./barr"); ("b", File "barr"); ("a", File "foo"); (".bak.1.l", File "./foo")])]);
   );
 
-  runtest "backups 6 (backup prefix/suffix)" ["backup = Name *"; 
+  runtest "backups 6 (backup prefix/suffix)" ["backup = Name *";
                "backuplocation = local";
                "backupprefix = back/$VERSION-";
                "backupsuffix = .backup";
-               "backupcurrent = Name *"] (fun() -> 
+               "backupcurrent = Name *"] (fun() ->
     put R1 (Dir []); put R2 (Dir []); sync();
     put R1 (Dir ["x", File "foo"]); sync();
     check "1" R1 (Dir [("x", File "foo"); ("back", Dir [("0-x.backup", File "foo")])]);
   );
 
   if not (Prefs.read Globals.someHostIsRunningWindows) then begin
-    runtest "links 1 (directories and links)" ["backup = Name *"; "backupcurrent = Name *"; "maxbackups = 7"] (fun() -> 
+    runtest "links 1 (directories and links)" ["backup = Name *"; "backupcurrent = Name *"; "maxbackups = 7"] (fun() ->
       put R1 (Dir []); put R2 (Dir []); sync();
       put R1 (Dir ["x", Dir ["a", File "foo"; "l", Link "./foo"]]); sync();
       check "1" BACKUP1 (Dir [("x", Dir [("l", Link "./foo"); ("a", File "foo")])]);
       put R2 (Dir ["x", Dir ["b", File "barr"; "l", Link "./barr"]]); sync();
       check "2" BACKUP1 (Dir [("x", Dir [("l", Link "./barr"); ("b", File "barr"); ("a", File "foo"); (".bak.1.l", Link "./foo")])]);
       put R1 (Dir ["x", File "bazzz"]); sync();
-      if bothRootsLocal then                                   
+      if bothRootsLocal then
         check "3" BACKUP1
           (Dir [("x", File "bazzz");
                 (".bak.2.x", Dir [("l", Link "./barr"); ("b", File "barr"); ("a", File "foo");
@@ -513,7 +513,7 @@ let test() =
 
     (* Test that we correctly fail when we try to 'follow' a symlink that does not
        point to anything *)
-    runtest "links 2 (symlink to nowhere)" ["follow = Name y"] (fun() -> 
+    runtest "links 2 (symlink to nowhere)" ["follow = Name y"] (fun() ->
       let orig = (Dir []) in
       put R1 orig; put R2 orig; sync();
       put R1 (Dir ["y", Link "x"]); sync();

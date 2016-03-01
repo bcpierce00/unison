@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/globals.ml *)
-(* Copyright 1999-2016, Benjamin C. Pierce 
+(* Copyright 1999-2016, Benjamin C. Pierce
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -175,10 +175,10 @@ let globPath lr p =
                   "Path %s ends with *, %s"
                   (Path.toString p)
                   "but first root (after canonizing) is non-local"))
-      | Some lrfspath -> 
+      | Some lrfspath ->
           Safelist.map (fun c -> Path.makeGlobal (Path.child parent c))
             (Os.childrenOf lrfspath parent)
-      end 
+      end
   | _ -> [Path.makeGlobal p]
 
 let expandWildcardPaths() =
@@ -186,7 +186,7 @@ let expandWildcardPaths() =
     match rootsInCanonicalOrder() with
       [(Local, fspath); _] -> Some fspath
     | _ -> None in
-  Prefs.set paths 
+  Prefs.set paths
     (Safelist.flatten_map (globPath lr) (Prefs.read paths))
 
 (*****************************************************************************)
@@ -197,7 +197,7 @@ let propagatePrefsTo =
   Remote.registerHostCmd
     "installPrefs"
     (fun prefs -> return (Prefs.load prefs))
-    
+
 let propagatePrefs () =
   let prefs = Prefs.dump() in
   let toHost root =
@@ -238,13 +238,13 @@ let ignorePred =
      ^ "described in \\sectionref{pathspec}{Path Specification}, and further "
      ^ "details on ignoring paths is found in"
      ^ " \\sectionref{ignore}{Ignoring Paths}.")
-    
+
 let ignorenotPred =
   Pred.create "ignorenot"
-    ("This preference overrides the preference \\texttt{ignore}. 
-      It gives a list of patterns 
-     (in the same format as 
-     \\verb|ignore|) for paths that should definitely {\\em not} be ignored, 
+    ("This preference overrides the preference \\texttt{ignore}.
+      It gives a list of patterns
+     (in the same format as
+     \\verb|ignore|) for paths that should definitely {\\em not} be ignored,
      whether or not they happen to match one of the \\verb|ignore| patterns.
      \\par Note that the semantics of {\\tt ignore} and {\\tt ignorenot} is a
      little counter-intuitive.  When detecting updates, Unison examines
@@ -252,10 +252,10 @@ let ignorenotPred =
      and working downwards.  Before examining each path, it checks whether
      it matches {\\tt ignore} and does not match {\\tt ignorenot}; in this case
      it skips this path {\\em and all its descendants}.  This means that,
-     if some parent of a given path matches an {\\tt ignore} pattern, then 
+     if some parent of a given path matches an {\\tt ignore} pattern, then
      it will be skipped even if the path itself matches an {\\tt ignorenot}
      pattern.  In particular, putting {\\tt ignore = Path *} in your profile
-     and then using {\\tt ignorenot} to select particular paths to be 
+     and then using {\\tt ignorenot} to select particular paths to be
      synchronized will not work.  Instead, you should use the {\\tt path}
      preference to choose particular paths to synchronize.")
 
@@ -265,14 +265,14 @@ let atomic = Pred.create "atomic" ~advanced:true
 
 let shouldIgnore p =
   let p = Path.toString p in
-  (Pred.test ignorePred p) && not (Pred.test ignorenotPred p) 
+  (Pred.test ignorePred p) && not (Pred.test ignorenotPred p)
 
 let addRegexpToIgnore re =
   let oldRE = Pred.extern ignorePred in
   let newRE = re::oldRE in
   Pred.intern ignorePred newRE
 
-let merge = 
+let merge =
   Pred.create "merge" ~advanced:true
     ("This preference can be used to run a merge program which will create "
      ^ "a new version for each of the files and the backup, "
@@ -283,7 +283,7 @@ let merge =
      ^ "described in \\sectionref{pathspec}{Path Specification}, and further "
      ^ "details on Merging functions are present in "
      ^ "\\sectionref{merge}{Merging files}.")
-        
+
 let shouldMerge p = Pred.test merge (Path.toString p)
 
 let mergeCmdForPath p = Pred.assoc merge (Path.toString p)

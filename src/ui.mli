@@ -5,7 +5,5 @@
    Implementations are provided by Uitext and Uitk. *)
 
 module type SIG = sig
- val start : unit -> unit 
+ val start : unit -> unit
 end
-
-

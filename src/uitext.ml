@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/uitext.ml *)
-(* Copyright 1999-2016, Benjamin C. Pierce 
+(* Copyright 1999-2016, Benjamin C. Pierce
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@ open Common
 open Lwt
 
 module Body : Uicommon.UI = struct
-  
+
 let debug = Trace.debug "ui"
 
 let dumbtty =
@@ -38,7 +38,7 @@ let dumbtty =
      ^ "recognizes keystrokes as soon as they are typed.)\n\n"
      ^ "This preference has no effect on the graphical user "
      ^ "interface.")
-    
+
 let silent =
   Prefs.createBool "silent" false "print nothing except error messages"
     ("When this preference is set to {\\tt true}, the textual user "
@@ -59,7 +59,7 @@ let defaultTerminal () =
   match !cbreakMode with
     None      -> ()
   | Some funs -> funs.System.defaultTerminal ()
- 
+
 let restoreTerminal() =
   if supportSignals && not (Prefs.read dumbtty) then
     Sys.set_signal Sys.sigcont Sys.Signal_default;
@@ -379,7 +379,7 @@ let interact rilist =
                 (fun () -> displayri ri)
   in
     loop [] rilist
-    
+
 let verifyMerge title text =
   Printf.printf "%s\n" text;
   if Prefs.read Globals.batch then
@@ -673,7 +673,7 @@ let checkForDangerousPath dangerousPaths =
                        exit Uicommon.fatalExit))]
           (fun () -> display "Do you really want to proceed? ")
       end
-    end 
+    end
   end
 
 let synchronizeOnce ?wantWatcher ?skipRecentFiles pathsOpt =
@@ -800,8 +800,8 @@ let rec synchronizeUntilDone () =
     try int_of_string (Prefs.read Uicommon.repeat)
     with Failure "int_of_string" ->
       (* If the 'repeat' pref is not a number, switch modes... *)
-      if Prefs.read Uicommon.repeat = "watch" then 
-        synchronizePathsFromFilesystemWatcher() 
+      if Prefs.read Uicommon.repeat = "watch" then
+        synchronizePathsFromFilesystemWatcher()
       else
         raise (Util.Fatal ("Value of 'repeat' preference ("
                            ^Prefs.read Uicommon.repeat
@@ -842,7 +842,7 @@ let rec start interface =
       (fun () -> setWarnPrinter();
                  if Prefs.read silent then Prefs.set Trace.terse true;
                  if not (Prefs.read silent)
-                 then Util.msg "%s\n" (Uicommon.contactingServerMsg())) 
+                 then Util.msg "%s\n" (Uicommon.contactingServerMsg()))
       (fun () -> Some "default")
       (fun () -> Util.msg "%s" Uicommon.shortUsageMsg; exit 1)
       (fun () -> Util.msg "%s" Uicommon.shortUsageMsg; exit 1)
@@ -878,7 +878,7 @@ let rec start interface =
       (* If we've been killed, then die *)
       handleException Sys.Break;
       exit Uicommon.fatalExit
-    end 
+    end
   | e -> begin
       (* If any other bad thing happened and the -repeat preference is
          set, then restart *)
@@ -889,11 +889,11 @@ let rec start interface =
       handleException e;
       if false (*Prefs.read Uicommon.repeat <> ""*) then begin
         Util.msg "Restarting in 10 seconds...\n";
-        Unix.sleep 10;        
+        Unix.sleep 10;
         start interface
       end else
         exit Uicommon.fatalExit
-    end 
+    end
   end
 
 let defaultUi = Uicommon.Text

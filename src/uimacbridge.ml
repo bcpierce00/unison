@@ -22,7 +22,7 @@ let unsynchronizedPaths = ref None;;
 let unisonDirectory() = System.fspathToPrintString Os.unisonDir
 ;;
 Callback.register "unisonDirectory" unisonDirectory;;
- 
+
 (* Defined in MyController.m, used to redisplay the table
    when the status for a row changes *)
 external displayStatus : string -> unit = "displayStatus";;
@@ -61,7 +61,7 @@ let unisonInit0() =
   (* Install an appropriate function for finding preference files.  (We put
      this in Util just because the Prefs module lives below the Os module in the
      dependency hierarchy, so Prefs can't call Os directly.) *)
-  Util.supplyFileInUnisonDirFn 
+  Util.supplyFileInUnisonDirFn
     (fun n -> Os.fileInUnisonDir(n));
   (* Display status in GUI instead of on stderr *)
   let formatStatus major minor = (Util.padto 30 (major ^ "  ")) ^ minor in
@@ -131,7 +131,7 @@ let unisonInit1 profileName =
 
   (* Tell the preferences module the name of the profile *)
   Prefs.profileName := Some(profileName);
-  
+
   (* If the profile does not exist, create an empty one (this should only
      happen if the profile is 'default', since otherwise we will already
      have checked that the named one exists). *)
@@ -206,7 +206,7 @@ let unisonInit2 () =
                     (Clroot.clroot2string (Clroot.parseRoot clr)))
          (Globals.rawRoots ());
        Printf.eprintf "  i.e. (in canonical order)\n";
-       Safelist.iter (fun r -> 
+       Safelist.iter (fun r ->
          Printf.eprintf "       %s\n" (root2string r))
          (Globals.rootsInCanonicalOrder());
        Printf.eprintf "\n"
@@ -219,9 +219,9 @@ let unisonInit2 () =
   (* Initializes some backups stuff according to the preferences just loaded from the profile.
      Important to do it here, after prefs are propagated, because the function will also be
      run on the server, if any. Also, this should be done each time a profile is reloaded
-     on this side, that's why it's here. *) 
+     on this side, that's why it's here. *)
   Stasher.initBackups ();
-  
+
   (* Turn on GC messages, if the '-debug gc' flag was provided *)
   if Trace.enabled "gc" then Gc.set {(Gc.get ()) with Gc.verbose = 0x3F};
 
@@ -359,8 +359,8 @@ let unisonSynchronize () =
                 catch (fun () ->
                          Transport.transportItem
                            theSI.ri (Uutil.File.ofLine i)
-                           (fun title text -> 
-			     Trace.status (Printf.sprintf "MERGE %s: %s" title text); true)
+                           (fun title text ->
+                             Trace.status (Printf.sprintf "MERGE %s: %s" title text); true)
                          >>= (fun () ->
                          return Util.Succeeded))
                       (fun e ->

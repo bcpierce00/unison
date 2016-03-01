@@ -61,17 +61,17 @@ val allHostsIter : (string -> unit Lwt.t) -> unit Lwt.t
 (* Run a command on all hosts in roots and collect results                   *)
 val allHostsMap : (string -> 'a) -> 'a list
 
-(* Make sure that the server has the same settings for its preferences as we 
-   do locally.  Should be called whenever the local preferences have         
-   changed.  (This isn't conceptually a part of this module, but it can't    
-   live in the Prefs module because that would introduce a circular          
+(* Make sure that the server has the same settings for its preferences as we
+   do locally.  Should be called whenever the local preferences have
+   changed.  (This isn't conceptually a part of this module, but it can't
+   live in the Prefs module because that would introduce a circular
    dependency.)                                                              *)
 val propagatePrefs : unit -> unit Lwt.t
 
 (* User preference: when true, don't ask any questions *)
 val batch : bool Prefs.t
 
-(* User preference: ask for confirmation when propagating a deletion of 
+(* User preference: ask for confirmation when propagating a deletion of
    a whole replica or top-level path *)
 val confirmBigDeletes : bool Prefs.t
 
@@ -87,7 +87,7 @@ val atomic : Pred.t
    be called again whenever this happens. *)
 val addRegexpToIgnore : string -> unit
 
-(* Merging commands *)  
+(* Merging commands *)
 val mergeCmdForPath : Path.t -> string
 
 (* Internal prefs, needed to know whether to do filenames checks *)

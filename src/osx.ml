@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/osx.ml *)
-(* Copyright 1999-2016, Benjamin C. Pierce 
+(* Copyright 1999-2016, Benjamin C. Pierce
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -310,7 +310,7 @@ let getFileInfos dataFspath dataPath typ =
                    end,
                    stats.Unix.LargeFile.st_mtime,
                    begin match Util.osType with
-                     `Win32 -> (* Was "stats.Unix.LargeFile.st_ctime", but 
+                     `Win32 -> (* Was "stats.Unix.LargeFile.st_ctime", but
                                   this was bogus: Windows ctimes are
                                   not reliable.  [BCP, Apr 07] *)
                        0.

@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/update.ml *)
-(* Copyright 1999-2016, Benjamin C. Pierce 
+(* Copyright 1999-2016, Benjamin C. Pierce
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -1056,7 +1056,7 @@ let translatePath =
                              MOUNT POINTS
 ************************************************************************)
 
-let mountpoints = 
+let mountpoints =
   Prefs.createStringList "mountpoint"
     "!abort if this path does not exist"
     ("Including the preference \\texttt{-mountpoint PATH} causes Unison to "
@@ -1073,7 +1073,7 @@ let abortIfAnyMountpointsAreMissing fspath =
          raise (Util.Fatal
            (Printf.sprintf "Path %s / %s is designated as a mountpoint, but points to nothing on host %s\n"
              (Fspath.toPrintString fspath) (Path.toString path)
-	     (Os.myCanonicalHostName ()))))
+             (Os.myCanonicalHostName ()))))
     (Prefs.read mountpoints)
 
 (***********************************************************************
@@ -1111,7 +1111,7 @@ let rec removePathFromTree path tree =
             Some (PathTreeNode (NameMap.add nm t children))
       with Not_found ->
         Some tree
-  
+
 let pathTreeOfList l =
   Safelist.fold_left (fun t p -> Some (addPathToTree p t)) None l
 
@@ -1201,7 +1201,7 @@ let t0 = ref 0.
 (* Note that we do *not* want to do any status displays from the server
    side, since this will cause the server to block until the client has
    finished its own update detection and can receive and acknowledge
-   the status display message -- thus effectively serializing the client 
+   the status display message -- thus effectively serializing the client
    and server! *)
 let showStatusAddLength scanInfo info =
   let len1 = Props.length info.Fileinfo.desc in
@@ -1940,9 +1940,9 @@ let findLocal wantWatcher fspath pathList subpaths :
     "findLocal %s (%s)\n" (Fspath.toDebugString fspath)
     (String.concat " " (Safelist.map Path.toString pathList)));
   addHashToTempNames fspath;
-  (* Maybe we should remember the device number where the root lives at 
-     the beginning of update detection, so that we can check, below, that 
-     the device has not changed.  This check would allow us to abort in case 
+  (* Maybe we should remember the device number where the root lives at
+     the beginning of update detection, so that we can check, below, that
+     the device has not changed.  This check would allow us to abort in case
      the root is on a removable device and this device gets removed during
      update detection, causing all the files to appear to have been
      deleted.  --BCP 2006 *)

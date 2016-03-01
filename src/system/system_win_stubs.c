@@ -88,7 +88,7 @@ CAMLprim value win_rename(value path1, value wpath1, value wpath2)
   t = 10;
  retry:
   if (!MoveFileExW((LPWSTR)String_val(wpath1), (LPWSTR)String_val(wpath2),
-		  MOVEFILE_REPLACE_EXISTING)) {
+                  MOVEFILE_REPLACE_EXISTING)) {
     err = GetLastError ();
     if ((err == ERROR_SHARING_VIOLATION || err == ERROR_ACCESS_DENIED) &&
         t < 1000) {
@@ -166,8 +166,8 @@ CAMLprim value win_utimes (value path, value wpath, value atime, value mtime) {
     fmtime = fatime;
   }
   h = CreateFileW ((LPWSTR) wpath, FILE_WRITE_ATTRIBUTES,
-		   FILE_SHARE_READ | FILE_SHARE_WRITE,
-		   NULL, OPEN_EXISTING, 0, NULL);
+                   FILE_SHARE_READ | FILE_SHARE_WRITE,
+                   NULL, OPEN_EXISTING, 0, NULL);
   if (h == INVALID_HANDLE_VALUE) {
     win32_maperr (GetLastError ());
     uerror("utimes", path);
@@ -242,7 +242,7 @@ CAMLprim value win_stat(value path, value wpath)
   CAMLlocal1 (v);
 
   h = CreateFileW ((LPCWSTR) String_val (wpath), 0, 0, NULL, OPEN_EXISTING,
-		   FILE_FLAG_BACKUP_SEMANTICS | FILE_ATTRIBUTE_READONLY, NULL);
+                   FILE_FLAG_BACKUP_SEMANTICS | FILE_ATTRIBUTE_READONLY, NULL);
 
   if (h == INVALID_HANDLE_VALUE) {
     win32_maperr (GetLastError ());
@@ -275,7 +275,7 @@ CAMLprim value win_stat(value path, value wpath)
     (v, 1, Val_int (MAKEDWORDLONG(info.nFileIndexLow,info.nFileIndexHigh)+155825701*((DWORDLONG)info.nFileIndexHigh)));
   Store_field
     (v, 2, Val_int (info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY
-		    ? 1: 0));
+                    ? 1: 0));
   mode = 0000444;
   if (info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
     mode |= 0000111;
@@ -454,7 +454,7 @@ CAMLprim value w_create_process_native
   CAMLparam5(wprog, wargs, fd1, fd2, fd3);
 
   res = SearchPathW (NULL, (LPCWSTR) String_val(wprog), L".exe",
-		     MAX_PATH, fullname, NULL);
+                     MAX_PATH, fullname, NULL);
   if (res == 0) {
     win32_maperr (GetLastError ());
     uerror("create_process", prog);
@@ -482,8 +482,8 @@ CAMLprim value w_create_process_native
   */
 
   res = CreateProcessW (fullname, (LPWSTR) String_val(wargs),
-			NULL, NULL, TRUE, flags,
-		        NULL, NULL, &si, &pi);
+                        NULL, NULL, TRUE, flags,
+                        NULL, NULL, &si, &pi);
   if (res == 0) {
     win32_maperr (GetLastError ());
     uerror("create_process", prog);
@@ -496,7 +496,7 @@ CAMLprim value w_create_process_native
 CAMLprim value w_create_process(value * argv, int argn)
 {
   return w_create_process_native(argv[0], argv[1], argv[2],
-				 argv[3], argv[4], argv[5]);
+                                 argv[3], argv[4], argv[5]);
 }
 
 /****/
@@ -507,8 +507,8 @@ static void init_conin ()
 {
   if (conin == INVALID_HANDLE_VALUE) {
     conin = CreateFile ("CONIN$", GENERIC_READ | GENERIC_WRITE,
-			FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
-			OPEN_EXISTING, 0, 0);
+                        FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
+                        OPEN_EXISTING, 0, 0);
     if (conin == INVALID_HANDLE_VALUE) {
       win32_maperr (GetLastError ());
       uerror("init_conin", Nothing);

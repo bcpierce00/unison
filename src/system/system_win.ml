@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/system/system_win.ml *)
-(* Copyright 1999-2016, Benjamin C. Pierce 
+(* Copyright 1999-2016, Benjamin C. Pierce
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -331,7 +331,7 @@ let terminalStateFunctions () =
      from the console in order to be able to interrupt Unison at any
      time.  *)
   { defaultTerminal = (fun () -> setConsoleMode oldstate;
-			         setConsoleOutputCP oldcp);
+                                 setConsoleOutputCP oldcp);
     rawTerminal = (fun () -> setConsoleMode 0x19; setConsoleOutputCP 65001);
     startReading = (fun () -> setConsoleMode 0x18);
     stopReading = (fun () -> setConsoleMode 0x19) }

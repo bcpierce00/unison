@@ -240,7 +240,7 @@ let fastercheckUNSAFE =
     false "!skip computing fingerprints for new files (experts only!)"
     (  "THIS FEATURE IS STILL EXPERIMENTAL AND SHOULD BE USED WITH EXTREME CAUTION.  "
        ^ "\n\n"
-       ^ "When this flag is set to {\\tt true}, Unison will compute a 'pseudo-" 
+       ^ "When this flag is set to {\\tt true}, Unison will compute a 'pseudo-"
        ^ "fingerprint' the first time it sees a file (either because the file is "
        ^ "new or because Unison is running for the first time).  This enormously "
        ^ "speeds update detection, but it must be used with care, as it can cause "

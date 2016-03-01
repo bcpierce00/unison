@@ -34,7 +34,7 @@ Section 1 - Setting up the Windows system
 
 1.1 General requirements
 
-  We will assume your are logged in as a regular user. We will mention cases 
+  We will assume your are logged in as a regular user. We will mention cases
 when you need to be granted administrator permissions.
 
   We will work in your home directory.
@@ -49,7 +49,7 @@ It itself requires Visual C++ 6.0.
 
 1.2 A Unix-like layer: CygWin
 
-  Download CygWin from 'http://www.cygwin.com/': 
+  Download CygWin from 'http://www.cygwin.com/':
 * click "install cygwin now" and follow the instruction to set up cygwin.
   install the essential packages such as "make", "fileutil", "openssh", etc.
   set the root directory (e.g. 'd:\cygwin')
@@ -65,7 +65,7 @@ It itself requires Visual C++ 6.0.
   file) to understand that we are compiling under Windows platform.
 
   Remember you can access the whole Windows filesystem with a Unix
-path through '/cygdrive/<drive letter>/<path>' (e.g. '/cygdrive/c/winnt' 
+path through '/cygdrive/<drive letter>/<path>' (e.g. '/cygdrive/c/winnt'
 stands for 'C:\WinNT')
 
 
@@ -77,23 +77,23 @@ permissions. We only need Visual C++ and MsDN is not required.
   To check out your installation, use 'bash' to enter 'cl /?'.
 
   If something goes wrong :
-* your path must contain the Visual C++ 'bin' directory; you may have to 
-  enter something like 
+* your path must contain the Visual C++ 'bin' directory; you may have to
+  enter something like
   'export PATH=$PATH:/cygdrive/progra~1/micros~1/vc98/bin'.
 * your path must contain the Visual Studio '.dll' files' directory; you may
-  have to enter something like 
+  have to enter something like
   'export PATH=$PATH:/cygdrive/progra~1/micros~1/common/msdev98/bin'.
 * the Visual C++ compiler must be able to access the headers; you may have to
-  enter something like 'export INCLUDE='C:\progra~1\micros~1\vc98\include'' 
+  enter something like 'export INCLUDE='C:\progra~1\micros~1\vc98\include''
   (path between single quotes).
 * the Visual C++ linker must be able to access the libraries; you may have to
-  enter something like 'export LIB='C:\progra~1\micros~1\vc98\lib'' (path 
+  enter something like 'export LIB='C:\progra~1\micros~1\vc98\lib'' (path
   between single quotes).
 
 
 1.4 The OCaml compiler
 
-  Download the Native Win32 port of OCaml 3.04 from 
+  Download the Native Win32 port of OCaml 3.04 from
 'http://caml.inria.fr/ocaml/distrib.html'.  It's a self-extracting binary.
 
   Run it with Administrator permissions (only use 8 characters-long
@@ -102,10 +102,10 @@ names in the installation directory).
   To check out your installation, use 'bash' to enter 'ocamlc -v'.
 
   If something goes wrong :
-* your path must contain the OCaml 'bin' directory;  you may have to enter 
+* your path must contain the OCaml 'bin' directory;  you may have to enter
   something like 'export PATH=$PATH:/cygdrive/c/ocaml/bin'.
 * 'ocamlc -v' must report the OCaml 'lib' directory; you may have to enter
-  something like "export CAMLLIB='C:\ocaml\lib'" (path between single 
+  something like "export CAMLLIB='C:\ocaml\lib'" (path between single
   quotes).
 
 1.5  Microsoft Macro Assembler (MASM32)
@@ -126,7 +126,7 @@ Your shell should answer with
 
 
 Section 2 - Compiling Unison
- 
+
 
 2.1 Text user interface
 
@@ -137,7 +137,7 @@ Section 2 - Compiling Unison
   If something goes wrong :
 * if 'make' reports 'missing separator', be sure the makefiles are in
   Unix text format (see Appendix A).
-* if .depend is not provided, create one using 
+* if .depend is not provided, create one using
   'ocamldep *.mli *.ml > .depend'; you will have to convert this file
   to Unix text format (see Appendix A).
 * the minor 'etags' error is reported when 'emacs' is missing; you may
@@ -151,7 +151,7 @@ directory of the Unison web site and unpack it in your Ocaml 'lib'
 directory. This will create a 'guilib' directory containing the
 libraries.
 
-  Now you need the LablGtk extension to OCaml. 
+  Now you need the LablGtk extension to OCaml.
   First, the Gtk development package is required. Get the
 'wingtk.patched.tar.gz' tarball from the 'resources' directory of the
 Unison web site and unpack it. This will create a 'wingtk' directory.
@@ -197,7 +197,7 @@ to patch them and to build the new static and dynamic libraries.
 with the .dll's (dynamic version).
 
   Using the new version of 'wingtk', recompile LablGtk (see section 2.3).
-  
+
 
 3.2 Patching a new version of LablGtk
 
@@ -206,7 +206,7 @@ with the .dll's (dynamic version).
 it.
 
   Download the 'lablgtk-1.2.3-msvc-static.patch.gz' from the 'resources'
-directory of the Unison web site. Apply the patch by typing: 
+directory of the Unison web site. Apply the patch by typing:
   'patch < lablgtk.patch'
 above the 'lablgtk' directory.
 
@@ -222,52 +222,52 @@ recommand using the provided sources and patches as a base for your
 further enhancements.
 
   To be exhaustive, here are the steps followed to create the provided
-sources (hoping it would help when trying to adapt a new version):  
+sources (hoping it would help when trying to adapt a new version):
 
-  WinGtk: 
+  WinGtk:
 
 * Download the Gtk win32 sources from
   'http://www.gimp.org/~tml/gimp/win32//downloads.html'. We need
   'glib-src-yyyymmdd' and 'gtk+-src-yyyymmdd' where 'yyyymmdd' is the
-  release date. Version 2000/04/16 of these files was used.  
+  release date. Version 2000/04/16 of these files was used.
 
 * We will make new Windows Makefiles from the old ones. Here is how to
   convert a Makefile:
-  - change all '/MD' to '/MT' to use the same windows system 
+  - change all '/MD' to '/MT' to use the same windows system
     libraries than ocaml
     (e.g. 'OPTIMIZE = -Ox -MD' becomes 'OPTIMIZE = -Ox -MT')
   - turns all '.dll' targets to '.lib' ones using
     'MKLIB = lib /nologo /out:'
     you must remove all references to '.def' files
-    you must remove all references to other '.lib' and '.res' but 
+    you must remove all references to other '.lib' and '.res' but
     you will have to provide them when linking an executable later
-    (e.g. 
+    (e.g.
      glib-$(GLIB_VER).dll : $(glib_OBJECTS) glib.def
-	$(CC) $(CFLAGS) -LD -Feglib-$(GLIB_VER).dll $(glib_OBJECTS) \
+        $(CC) $(CFLAGS) -LD -Feglib-$(GLIB_VER).dll $(glib_OBJECTS) \
         user32.lib advapi32.lib wsock32.lib $(LDFLAGS) /def:glib.def
      becomes:
      glib-$(GLIB_VER).lib : $(glib_OBJECTS)
-	$(MKLIB)glib-$(GLIB_VER).lib $(glib_OBJECTS)
+        $(MKLIB)glib-$(GLIB_VER).lib $(glib_OBJECTS)
      )
   - remove all '-GD' compilation flags
     (e.g.
      .c.obj :
-	$(CC) $(CFLAGS) -GD -c -DGLIB_COMPILATION \
+        $(CC) $(CFLAGS) -GD -c -DGLIB_COMPILATION \
         -DG_LOG_DOMAIN=g_log_domain_glib $<
      becomes:
      .c.obj :
-	$(CC) $(CFLAGS)     -c -DGLIB_COMPILATION \
+        $(CC) $(CFLAGS)     -c -DGLIB_COMPILATION \
         -DG_LOG_DOMAIN=g_log_domain_glib $<
      )
   - provides the right libraries when linking executables
     (e.g.
      testgtk.exe : gtk-$(GTK_VER).dll testgtk.obj
-	$(CC) $(CFLAGS) testgtk.obj gtk-$(GTK_VER).lib \
+        $(CC) $(CFLAGS) testgtk.obj gtk-$(GTK_VER).lib \
         ..\gdk\gdk-$(GTK_VER).lib $(GLIB)\glib-$(GLIB_VER).lib \
         $(LDFLAGS)
-     becomes: 
+     becomes:
      testgtk.exe : gtk-$(GTK_VER).lib testgtk.obj
-	$(CC) $(CFLAGS) testgtk.obj gtk-$(GTK_VER).lib \
+        $(CC) $(CFLAGS) testgtk.obj gtk-$(GTK_VER).lib \
         ..\gdk\gdk-$(GTK_VER).lib ..\gdk\win32\gdk-win32.lib \
         $(GLIB)\glib-$(GLIB_VER).lib $(GLIB)\gmodule-$(GLIB_VER).lib \
         user32.lib advapi32.lib wsock32.lib gdi32.lib imm32.lib \
@@ -305,7 +305,7 @@ sources (hoping it would help when trying to adapt a new version):
 * Convert 'gtk+/gdk/makefile.msc' and remove all references to
   'WTKIT', 'wntab32x', 'INTL' and 'gnu-intl' from it. Include
   'gdk-win32.lib' as an object for the 'gdk' library.
- 
+
 * You should now be able to compile the 'gdk' library. Remember to
   provide 'win32/gdk.res' as well as the 'gdk' library when linking
   programs.
@@ -330,7 +330,7 @@ sources (hoping it would help when trying to adapt a new version):
   finally obtain static/dynamic sources.
 
 * Make a patch with 'diff -Nr -C 5 <old dir> <new dir>' (you have to
-  use the GNU diffutils' 'diff'). You will apply the patch with 
+  use the GNU diffutils' 'diff'). You will apply the patch with
   'patch -p1 < <patch file>'.
 
   LablGtk:
@@ -360,13 +360,13 @@ Windows and Unix use different text file formats. This section
 explains how to convert a file from a format to another.
 
 A.1 Text format conversion
-  
+
   In order to convert a dos text file to a unix text file, we have to
-remove all extra characters that are : 
-* carriage return or CR  or ^M (ctrl-M) or \x0d or \o13 or \r 
+remove all extra characters that are :
+* carriage return or CR  or ^M (ctrl-M) or \x0d or \o13 or \r
 * dos end-of-file or SUB or ^Z (ctrl-Z) or \x1a or \o26
 
-A.2 Conversion tools 
+A.2 Conversion tools
 
   On a Unix-like top level (e.g any unix system or cygwin), you can use:
 

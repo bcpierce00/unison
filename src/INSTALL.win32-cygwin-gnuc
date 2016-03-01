@@ -15,7 +15,7 @@ simple (at least for the text user interface).
          latest unison sources from the live subversion
          repository.
 
-   - Download the desired version of the Unison source tarball 
+   - Download the desired version of the Unison source tarball
      from the Unison home page and unpack it, or else grab the sources
      using svn. Make sure the directory path name has no space in it or
      the OCaml compiler will get confused later.
@@ -33,7 +33,7 @@ simple (at least for the text user interface).
 
    - The text-only version can be run on any system that has cygwin installed:
 
-     $ cygcheck ./unison.exe 
+     $ cygcheck ./unison.exe
      C:\cygwin\tmp\unison-2.32.52\unison.exe
        C:\cygwin\bin\cygwin1.dll
          C:\WINDOWS\system32\ADVAPI32.DLL
@@ -58,7 +58,7 @@ simple (at least for the text user interface).
    - The graphics version needs many more libraries to run and hence is a
      lot less portable:
 
-     $ cygcheck ./unison.exe 
+     $ cygcheck ./unison.exe
      C:\cygwin\tmp\unison-2.32.52\unison.exe
        C:\cygwin\bin\cygwin1.dll
          C:\WINDOWS\system32\ADVAPI32.DLL
@@ -126,7 +126,7 @@ Section 1 - Setting up the Windows system
 
 1.1 General requirements
 
-  We will assume your are logged in as a regular user. We will mention cases 
+  We will assume your are logged in as a regular user. We will mention cases
 when you need to be granted administrator permissions.
 
   We will work in your home directory.
@@ -137,12 +137,12 @@ when you need to be granted administrator permissions.
 GNU tools like 'bash', 'make', 'sed', 'patch', etc, and in particular
 the GNU C compiler.
 
-  The CygWin port of OCaml distribution version 3.04 is required. 
+  The CygWin port of OCaml distribution version 3.04 is required.
 
 
 .2 A Unix-like layer: CygWin
 
-  Download CygWin from 'http://www.cygwin.com/': 
+  Download CygWin from 'http://www.cygwin.com/':
 * click "install cygwin now" and follow the instruction to set up cygwin.
   install the essential packages such as "gcc", "make", "fileutil",
   "openssh", etc.
@@ -159,7 +159,7 @@ the GNU C compiler.
   compiling under Windows platform using Cygwin GNU C.
 
   Remember you can access the whole Windows filesystem with a Unix
-path through '/cygdrive/<drive letter>/<path>' (e.g. '/cygdrive/c/winnt' 
+path through '/cygdrive/<drive letter>/<path>' (e.g. '/cygdrive/c/winnt'
 stands for 'C:\WinNT')
 
 
@@ -175,7 +175,7 @@ directory (using, e.g., winzip, or "tar xzvf ocaml-3.04.tar.gz"
 
   Enter the ocaml directory, and type:
   $ ./configure
-                        # or "./configure -prefix <install-prefix>".  
+                        # or "./configure -prefix <install-prefix>".
                         # For other options, see INSTALL
   $ make world
   $ make opt
@@ -183,14 +183,14 @@ directory (using, e.g., winzip, or "tar xzvf ocaml-3.04.tar.gz"
 
   To check your installation, use 'bash' and enter 'ocamlc -v'
   If something goes wrong :
-* your path must contain the OCaml 'bin' directory;  you may have to enter 
+* your path must contain the OCaml 'bin' directory;  you may have to enter
   something like 'export PATH=$PATH:/usr/local/ocaml/bin'.
 * 'ocamlc -v' must report the OCaml 'lib' directory; you may have to enter
-  something like 'export CAMLLIB=/usr/local/ocaml/lib/ocaml/' 
+  something like 'export CAMLLIB=/usr/local/ocaml/lib/ocaml/'
 
 
 Section 2 - Compiling Unison
- 
+
 
 2.1 Text user interface
 
@@ -201,7 +201,7 @@ Section 2 - Compiling Unison
   If something goes wrong :
 * if 'make' reports 'missing separator', be sure the makefiles are in
   Unix text format (see Appendix A).
-* if .depend is not provided, create one using 
+* if .depend is not provided, create one using
   'ocamldep *.mli *.ml > .depend'; you will have to convert this file
   to Unix text format (see Appendix A).
 * the minor 'etags' error is reported when 'emacs' is missing; you may
@@ -221,15 +221,15 @@ directory of the Unison web site and unpack it.  This will create a
   $ make
   $ make opt
   $ make install
-  
-  Finally, add the result of running 
+
+  Finally, add the result of running
       echo `ocamlc -where`/lablgtk/dlls
   to the environment variable PATH.*
 
-* Under Windows menu: Start -> Settings -> Control Panel -> System -> 
+* Under Windows menu: Start -> Settings -> Control Panel -> System ->
                       Advanced -> Environment Variables.
 
-  OPTIONAL: At this stage, you can test the installation of lablgtk by 
+  OPTIONAL: At this stage, you can test the installation of lablgtk by
 
             $ cd lablgtk-1.2.3-cygwin/lablgtk-1.2.3/examples
             $ lablgtk <a program>.ml
@@ -250,4 +250,3 @@ to include them in the PATH.
 
 * The way to find out which DLL are used under windows:
   objdump -p <executable name> | grep "DLL Name"
-

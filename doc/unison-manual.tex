@@ -1,4 +1,4 @@
-\documentclass{article} 
+\documentclass{article}
 \usepackage{alltt}
 \usepackage{fullpage}
 \usepackage{moreverb}
@@ -31,12 +31,12 @@
 \fi%
 \SNIP{About Unison}{about}%
 \iftextversion
-  \section*{Unison File Synchronizer 
-%%   \\ 
+  \section*{Unison File Synchronizer
+%%   \\
 %%   \ONEURL{http://www.cis.upenn.edu/\home{bcpierce}/unison}
   \\
   Version
-  \unisonversion 
+  \unisonversion
   }
 \else%
   \ifhevea\else \vspace*{2in} \fi%
@@ -58,7 +58,7 @@
 %
 \ifhevea\begin{rawhtml}</div>\end{rawhtml}\fi
 
-\ifhevea\else\newpage\fi 
+\ifhevea\else\newpage\fi
 \TABLEOFCONTENTS
 \ifhevea\else\newpage\fi
 
@@ -71,7 +71,7 @@
 % \begin{quote}
 % {\bf\ifhevea\red\fi Warning:} The current implementation of Unison is
 % considered beta-test software.  It is in daily use by quite a few
-% people, but there are still undoubtedly some bugs.  If you choose to 
+% people, but there are still undoubtedly some bugs.  If you choose to
 % use it to synchronize important data, please pay careful attention
 % to what it is doing!  Also, the installation/setup procedure is not
 % yet as smooth as we want it to be.
@@ -83,7 +83,7 @@
 \TOPSUBSECTION{People}{people}
 
 \URL{http://www.cis.upenn.edu/\home{bcpierce}/}{Benjamin Pierce} leads the
-Unison project.   
+Unison project.
 %
 The current version of Unison was designed and implemented by
     \URL{http://www.research.att.com/\home{trevor}/}{Trevor Jim},
@@ -98,7 +98,7 @@ with
     Matthieu Goulay.
 %
 The Mac user interface was started by Trevor Jim and enormously improved by
-Ben Willmore. 
+Ben Willmore.
 %
 Our implementation of the
   \URL{http://samba.org/rsync/}{rsync}
@@ -120,7 +120,7 @@ The mirroring and merging functionality was implemented by
 %
  \URL{http://wwwfun.kurims.kyoto-u.ac.jp/\home{garrigue}/}{Jacques Garrigue}
  contributed the original Gtk version of the user
-  interface; the Gtk2 version was built by Stephen Tse. 
+  interface; the Gtk2 version was built by Stephen Tse.
 %
 Sundar Balasubramaniam helped build a prototype implementation of
 an earlier synchronizer in Java.
@@ -140,7 +140,7 @@ contributed to an even earlier prototype.
 Unison is no longer under active development as a research
 project.  (Our research efforts  are now focused on a follow-on
 project called Harmony, described at
-\ONEURL{http://www.cis.upenn.edu/\home{bcpierce}/harmony}.) 
+\ONEURL{http://www.cis.upenn.edu/\home{bcpierce}/harmony}.)
 At this point, there is no one whose job it is to maintain Unison,
 fix bugs, or answer questions.
 
@@ -152,7 +152,7 @@ improvements, and contributed patches.
 Reports of bugs affecting correctness or safety are of interest to many
 people and will generally get high priority.  Other bug reports will be
 looked at as time permits.  Bugs should be reported to the users list at
-\UNISONUSERS. 
+\UNISONUSERS.
 
 Feature requests are welcome, but will probably just be added to the
 ever-growing todo list.  They should also be sent to \UNISONUSERS.
@@ -194,17 +194,17 @@ Research in Cognitive Science (IRCS).
 
 Unison is designed to be easy to install.  The following sequence of
 steps should get you a fully working installation in a few minutes.  If
-you run into trouble, you may find the suggestions on the 
+you run into trouble, you may find the suggestions on the
 \SHOWURL{http://www.cis.upenn.edu/\home{bcpierce}/unison/faq.html}{Frequently Asked
 Questions page} helpful.  Pre-built binaries are available for a
 variety of platforms.
 
-Unison can be used with either of two user interfaces: 
+Unison can be used with either of two user interfaces:
 \begin{enumerate}
 \item a simple textual interface, suitable for dumb terminals (and
-running from scripts), and 
+running from scripts), and
 \item a more sophisticated grapical interface, based on Gtk2 (on
-       Linux/Windows) or the native UI framework (on OSX).  
+       Linux/Windows) or the native UI framework (on OSX).
 \end{enumerate}
 
 You will need to install a copy of Unison on every machine that you
@@ -217,7 +217,7 @@ fine with the textual version.
 
 \SUBSECTION{Downloading Unison}{download}
 
-The Unison download site lives under 
+The Unison download site lives under
 \ONEURL{http://www.cis.upenn.edu/\home{bcpierce}/unison}.
 
 If a pre-built binary of Unison is available for the client machine's
@@ -235,12 +235,12 @@ If you don't see a pre-built executable for your architecture, you'll
 need to build it yourself.  See \sectionref{building}{Building Unison}.
 There are also a small number of contributed ports to other
 architectures that are not maintained by us.  See the
-\SHOWURL{http://www.cis.upenn.edu/\home{bcpierce}/unison/download.html}{Contributed 
+\SHOWURL{http://www.cis.upenn.edu/\home{bcpierce}/unison/download.html}{Contributed
 Ports page} to check what's available.
 
 Check to make sure that what you have downloaded is really executable.
 Either click-start it, or type \showtt{unison -version} at the command
-line.  
+line.
 
 Unison can be used in three different modes: with different directories on a
 single machine, with a remote machine over a direct socket connection, or
@@ -248,9 +248,9 @@ with a remote machine using {\tt ssh} for authentication and secure
 transfer.  If you intend to use the last option, you may need to install
 {\tt ssh}; see \sectionref{ssh}{Installing Ssh}.
 
-\SUBSECTION{Running Unison}{afterinstall} 
+\SUBSECTION{Running Unison}{afterinstall}
 
-Once you've got Unison installed on at least one system, read 
+Once you've got Unison installed on at least one system, read
 \sectionref{tutorial}{Tutorial} of the user manual (or type \showtt{unison -doc
   tutorial}) for instructions on how to get started.
 
@@ -288,9 +288,9 @@ build system will decide automatically depending on the libraries installed
 on your system, but you can also type {\tt make UISTYLE=text} to build
 Unison without GUI.
 
-You'll need the Objective Caml compiler, 
+You'll need the Objective Caml compiler,
 available from \ONEURL{http://caml.inria.fr}.  OCaml is available from most
-package managers 
+package managers
 Building and installing OCaml
 on Unix systems is very straightforward; just follow the instructions in the
 distribution.  You'll probably want to build the native-code compiler in
@@ -326,7 +326,7 @@ from \ONEURL{http://wwwfun.kurims.kyoto-u.ac.jp/soft/olabl/lablgtk.html}.
 explicitly (package {\tt liblablgtk-extras-ocaml-dev} on Ubuntu).
 \end{itemize}
 Type {\tt make} to build Unison. If Gtk2 is available on the system, Unison
-with a GUI will be built automatically. 
+with a GUI will be built automatically.
 
 Put the \verb|unison| executable somewhere in your search path, either by
 adding the Unison directory to your PATH variable or by copying the
@@ -352,7 +352,7 @@ follows:
 \item Go to the {\tt uimacnew09} directory and double-click the file {\tt
   BWToolkit.ibplugin}.
 \item Go back up to the {\tt src} directory and type {\tt make
-  UISTYLE=macnew09}.  
+  UISTYLE=macnew09}.
 \item You should get an application built for you at {\tt
   uimacnew09/build/Default/Unison.app}.
 \end{enumerate}
@@ -367,12 +367,12 @@ some people may want to build Unison from scratch on those systems too.
 to build a Unison executable is to build a bytecode version.  You need
 first install Windows version of the OCaml compiler (version 3.07 or
 later, available from \ONEURL{http://caml.inria.fr}).  Then grab a copy
-of Unison sources and type  
+of Unison sources and type
 \begin{verbatim}
        make NATIVE=false
 \end{verbatim}
 to compile the bytecode.  The result should be an executable file called
-\verb|unison.exe|. 
+\verb|unison.exe|.
 
 \paragraph{Native version:} Building a more efficient, native version of
 Unison on Windows requires a little more work.  See the file {\tt
@@ -389,7 +389,7 @@ ones:
 compiler, yielding an executable that will run quite a bit faster. We use
 this for building distribution versions.
 \item Building with \verb|make DEBUGGING=true| generates debugging
-symbols. 
+symbols.
 \item Building with \verb|make STATIC=true| generates a (mostly)
 statically linked executable.  We use this for building distribution
 versions, for portability.
@@ -404,20 +404,20 @@ versions, for portability.
 
 \SUBSECTION{Preliminaries}{prelim}
 
-Unison can be used with either of two user interfaces: 
+Unison can be used with either of two user interfaces:
 \begin{enumerate}
-\item a straightforward textual interface and 
+\item a straightforward textual interface and
 \item a more sophisticated graphical interface
 \end{enumerate}
 The textual interface is more convenient for running from scripts and
 works on dumb terminals; the graphical interface is better for most
 interactive use.  For this tutorial, you can use either.  If you are running
-Unison from the command line, just typing {\tt unison} 
+Unison from the command line, just typing {\tt unison}
 will select either the text or the graphical interface, depending on which
 has been selected as default when the executable you are running was
 built.  You can force the text interface even if graphical is the default by
-adding {\tt -ui text}.  
-The other command-line arguments to both versions are identical.  
+adding {\tt -ui text}.
+The other command-line arguments to both versions are identical.
 
 The graphical version can also be run directly by clicking on its icon, but
 this may require a little set-up (see \sectionref{click}{Click-starting
@@ -494,7 +494,7 @@ Run Unison again:
 This time, the user interface will display only the files that have
 changed.  If a file has been modified in just one
 replica, then it will be displayed with an arrow indicating the
-direction that the change needs to be propagated.  For example, 
+direction that the change needs to be propagated.  For example,
 \begin{verbatim}
                  <---  new file   c  [f]
 \end{verbatim}
@@ -507,12 +507,12 @@ press the ``f'' at the prompt.
 If both replicas are modified and their contents are different, then
 the changes are in conflict: \texttt{<-?->} is displayed to indicate
 that Unison needs guidance on which replica should override the
-other.  
+other.
 \begin{verbatim}
      new file  <-?->  new file   d/h  []
 \end{verbatim}
 By default, neither version will be propagated and both
-replicas will remain as they are.  
+replicas will remain as they are.
 
 If both replicas have been modified but their new contents are the same
 (as with the file {\tt b}), then no propagation is necessary and
@@ -523,7 +523,7 @@ interface.  The only difference lies in the way in which Unison's
 default actions are either accepted or overridden by the user.
 
 \begin{textui}
-The status of each modified file is displayed, in turn.  
+The status of each modified file is displayed, in turn.
 When the copies of a file in the two replicas are not identical, the
 user interface will ask for instructions as to how to propagate the
 change.  If some default action is indicated (by an arrow), you can
@@ -539,14 +539,14 @@ When Unison stops to wait for input from the user, pressing ``\verb|?|''
 will always give a list of possible responses and their meanings.
 \end{textui}
 
-\begin{tkui}  
+\begin{tkui}
 The main window shows all the files that have been modified in either
 {\tt a.tmp} or {\tt b.tmp}.  To override a default action (or to select
 an action in the case when there is no default), first select the file, either
 by clicking on its name or by using the up- and down-arrow keys.  Then
 press either the left-arrow or ``\verb|<|'' key (to cause the version in b.tmp to
 propagate to a.tmp) or the right-arrow or ``\verb|>|'' key (which makes the a.tmp
-version override b.tmp). 
+version override b.tmp).
 
 Every keyboard command can also be invoked from the menus at the top
 of the user interface.  (Conversely, each menu item is annotated with
@@ -568,12 +568,12 @@ Follow the instructions in the Installation section to download or
 build an executable version of Unison on the server machine, and
 install it somewhere on your search path.  (It doesn't matter whether
 you install the textual or graphical version, since the copy of Unison on
-the server doesn't need to display any user interface at all.)  
+the server doesn't need to display any user interface at all.)
 
 It is important that the version of Unison installed on the server
 machine is the same as the version of Unison on the client machine.
 But some flexibility on the version of Unison at the client side can
-be achieved by using the \verb|-addversionno| option; see 
+be achieved by using the \verb|-addversionno| option; see
 \sectionref{prefs}{Preferences}.
 
 Now there is a decision to be made.  Unison provides two methods for
@@ -587,7 +587,7 @@ communicating between the client and the server:
   secure (especially if you use \verb|ssh|).
 
 \item {\em Socket method}: This method requires only that you can get
-  TCP packets from the client to the server and back.  A draconian 
+  TCP packets from the client to the server and back.  A draconian
   firewall can prevent this, but otherwise it should work anywhere.
 \end{itemize}
 
@@ -627,7 +627,7 @@ the server doesn't contain the \verb|unison| executable (e.g.,
 ``command not found'').
 
 Create a test directory {\tt a.tmp} in your home directory on the client
-machine.  
+machine.
 
 Test that the local unison client can start and connect to the
 remote server.  Type
@@ -677,7 +677,7 @@ of the path:
 \SUBSECTION{Socket Method}{socketmeth}
 
 \begin{quote}
-  {\bf\ifhevea\red\fi Warning:} The socket method is 
+  {\bf\ifhevea\red\fi Warning:} The socket method is
   insecure: not only are the texts of your changes transmitted over
   the network in unprotected form, it is also possible for anyone in
   the world to connect to the server process and read out the contents
@@ -722,7 +722,7 @@ case.
 
 Since the socket method is not used by many people, its functionality is
 rather limited.  For example, the server can only deal with one client at a
-time. 
+time.
 
 
 \SUBSECTION{Using Unison for All Your Files}{usingit}
@@ -738,7 +738,7 @@ to avoid synchronizing temporary files and things that only belong on
 one host.
 \item Create a subdirectory called {\tt shared} (or {\tt current}, or
 whatever) in your home directory on each host, and put all the files
-you want to synchronize into this directory.  
+you want to synchronize into this directory.
 \item Create a subdirectory called {\tt shared} (or {\tt current}, or
 whatever) in your home directory on each host, and put {\em links to}
 all the files you want to synchronize into this directory.  Use the
@@ -751,7 +751,7 @@ on the command line:
 \begin{alltt}
        unison /home/\NT{username} ssh://\NT{remotehost}//home/\NT{username} -path shared
 \end{alltt}
-The {\tt -path} option can be used as many times as needed, to 
+The {\tt -path} option can be used as many times as needed, to
 synchronize several files or subdirectories:
 \begin{alltt}
        unison /home/\NT{username} ssh://\NT{remotehost}//home/\NT{username} \verb|\|
@@ -781,7 +781,7 @@ Some tips on improving Unison's performance can be found on the
 
 Unison is designed for synchronizing pairs of replicas.  However, it is
 possible to use it to keep larger groups of machines in sync by performing
-multiple pairwise synchronizations.  
+multiple pairwise synchronizations.
 
 If you need to do this, the most reliable way to set things up is to
 organize the machines into a ``star topology,'' with one machine designated
@@ -801,18 +801,18 @@ can be obtained either by typing
 \end{verbatim}
 \noindent
 at the command line, or by selecting the Help menu in the graphical
-user interface.  
+user interface.
 \iftextversion
 The same information is also available in a typeset User's
 Manual (HTML or PostScript format) through
-\ONEURL{http://www.cis.upenn.edu/\home{bcpierce}/unison}. 
+\ONEURL{http://www.cis.upenn.edu/\home{bcpierce}/unison}.
 \else
 The on-line information and the printed manual are essentially identical.
 \fi
 
 If you use Unison regularly, you should subscribe to one of the mailing
 lists, to receive announcements of new versions.  See
-\sectionref{lists}{Mailing Lists}. 
+\sectionref{lists}{Mailing Lists}.
 
 \SECTION{Basic Concepts}{basics}{basics}
 
@@ -858,7 +858,7 @@ is used to specify the hostname and the port that the client Unison should
 use to contact it.
 
 The syntax for roots is based on that of URIs (described in RFC 2396).
-The full grammar is: 
+The full grammar is:
 \begin{alltt}
   \NT{replica} ::= [\NT{protocol}:]//[\NT{user}@][\NT{host}][:\NT{port}][/\NT{path}]
            |  \NT{path}
@@ -930,19 +930,19 @@ refer to anything at all in that replica).  More specifically:
 \begin{itemize}
 \item If \verb|p| refers to an ordinary file, then the
 contents of \verb|p| are the actual contents of this file (a string of bytes)
-plus the current permission bits of the file.  
+plus the current permission bits of the file.
 \item If \verb|p| refers to a symbolic link, then the contents of \verb|p|
 are just the string specifying where the link points.
 \item If \verb|p| refers to a directory, then the
 contents of \verb|p| are just the token ``DIRECTORY'' plus the current
-permission bits of the directory.  
+permission bits of the directory.
 \item If \verb|p| does not refer to anything in this replica, then the
 contents of \verb|p| are the token ``ABSENT.''
 \end{itemize}
 Unison keeps a record of the contents of each path after each
 successful synchronization of that path (i.e., it remembers the
 contents at the last moment when they were the same in the two
-replicas).  
+replicas).
 
 We say that a path is {\em updated} (in some replica) if its current
 contents are different from its contents the last time it was successfully
@@ -961,9 +961,9 @@ definition; see \sectionref{caveats}{Caveats and Shortcomings}.
 
 A path is said to be {\em conflicting} if the following conditions all hold:
 \begin{enumerate}
-\item it has been updated in one replica, 
+\item it has been updated in one replica,
 \item it or any of its descendants has been updated in the other
-  replica, 
+  replica,
 and
 \item its contents in the two replicas are not identical.
 \end{enumerate}
@@ -994,7 +994,7 @@ nonconflicting updates, and choose actions for conflicting updates.
 performed by first transferring the new contents to a temporary file
 on the receiving host, then atomically moving them into place.
 \item It updates its archive files to reflect the new state of the
-replicas. 
+replicas.
 \end{enumerate}
 
 \TOPSUBSECTION{Invariants}{failures}
@@ -1002,7 +1002,7 @@ replicas.
 Given the importance and delicacy of the job that it performs, it is
 important to understand both what a synchronizer does under normal
 conditions and what can happen under unusual conditions such as system
-crashes and communication failures.  
+crashes and communication failures.
 
 % Unison deals with two sorts of information: the two replicas
 % themselves and its own memory of the ``last synchronized state'' of
@@ -1038,7 +1038,7 @@ crashes and communication failures.
 % compared, to see if they actually differ.  (This is done by comparing
 % fingerprints, not transferring the whole files.)  Paths whose contents
 % are actually identical are marked as synchronized and deleted from the
-% list. 
+% list.
 
 % \item The remaining paths are displayed to the user, who then has an
 % opportunity to change the default actions and choose actions for
@@ -1049,7 +1049,7 @@ crashes and communication failures.
 
 % \item Finally, Unison updates its internal state, marking as
 % synchronized all the files for which changes were successfully
-% propagated. 
+% propagated.
 % \end{enumerate}
 
 Unison is careful to protect both its internal state and the state of
@@ -1104,7 +1104,7 @@ replicas had both been completely empty at the point of the last
 synchronization.  The effect of this is that, on the first run, files
 that exist in only one replica will be propagated to the other, while
 files that exist in both replicas but are unequal will be marked as
-conflicting. 
+conflicting.
 
 Touching a file without changing its contents should never affect whether or
 not Unison does an update. (When running with the fastcheck preference set
@@ -1118,7 +1118,7 @@ times.)
 
 It is safe to ``brainwash'' Unison by deleting its archive files
 {\em on both replicas}.  The next time it runs, it will assume that
-all the files it sees in the replicas are new.  
+all the files it sees in the replicas are new.
 
 It is safe to modify files while Unison is working.  If Unison
 discovers that it has propagated an out-of-date change, or that the
@@ -1133,13 +1133,13 @@ the `i' key) are immediately reflected in the current profile.
 
 \SUBSECTION{Caveats and Shortcomings}{caveats}
 
-Here are some things to be careful of when using Unison.  
+Here are some things to be careful of when using Unison.
 
 \begin{itemize}
 \item In the interests of speed, the update detection algorithm may
   (depending on which OS architecture that you run Unison on)
   actually use an approximation to the definition given in
-  \sectionref{updates}{What is an Update?}.  
+  \sectionref{updates}{What is an Update?}.
 
   In particular, the Unix
   implementation does not compare the actual contents of files to their
@@ -1152,21 +1152,21 @@ Here are some things to be careful of when using Unison.
   one.  However, it is possible to fool it, for example by using
   \verb|retouch| to change a file's modtime back to a time in the past.
   \finishlater{One user---Marcus Mottl---claimed that it could also
-  happen if we use 
+  happen if we use
   memory mapped I/O, but this is not clear}
 
 \item If you synchronize between a single-user filesystem and a shared
 Unix server, you should pay attention to your permission bits: by
 default, Unison will synchronize permissions verbatim, which may leave
 group-writable files on the server that could be written over by a lot of
-people.  
+people.
 
 You can control this by setting your \verb|umask| on both computers to
 something like 022, masking out the ``world write'' and ``group write''
-permission bits.  
+permission bits.
 
 Unison does not synchronize the \verb|setuid| and \verb|setgid| bits, for
-security. 
+security.
 
 \item The graphical user interface is single-threaded.  This
 means that if Unison is performing some long-running operation, the
@@ -1177,7 +1177,7 @@ middle of detecting changes or propagating files.
 \item Unison does not understand hard links.
 
 \item It is important to be a little careful when renaming directories
-containing {\tt ignore}d files. 
+containing {\tt ignore}d files.
 
 For example, suppose Unison is synchronizing directory A between the two
 machines called the ``local'' and the ``remote'' machine; suppose directory
@@ -1185,9 +1185,9 @@ A contains a subdirectory D; and suppose D on the local machine contains a
 file or subdirectory P that matches an ignore directive in the profile used
 to synchronize. Thus path A/D/P exists on the local machine but not on the
 remote machine.
-                                                                                
- If D is renamed to D' on the remote machine, and this change is                
- propagated to the local machine, all such files or subdirectories P            
+
+ If D is renamed to D' on the remote machine, and this change is
+ propagated to the local machine, all such files or subdirectories P
  will be deleted.  This is because Unison sees the rename as a delete and a
  separate create: it deletes the old directory (including the ignored files)
  and creates a new one ({\em not} including the ignored files, since they
@@ -1198,7 +1198,7 @@ remote machine.
 
 \SECTION{Reference Guide}{reference}{ }
 
-This section covers the features of Unison in detail.  
+This section covers the features of Unison in detail.
 
 \TOPSUBSECTION{Running Unison}{running}
 
@@ -1216,10 +1216,10 @@ any {\tt root} directives.
 has the same effect as typing ``{\tt unison default \NT{root1} \NT{root2}}.''
 \item Typing just ``{\tt unison}'' (or invoking Unison by clicking on
 a desktop icon).  In this case, Unison will ask for the profile to use
-for synchronization (or create a new one, if necessary).   
+for synchronization (or create a new one, if necessary).
 \end{itemize}
 
-% \finish{Need to check that the text UI actually works this way.  (It 
+% \finish{Need to check that the text UI actually works this way.  (It
 %   doesn't prompt, for sure, but it should.)}
 
 \SUBSECTION{The {\tt .unison} Directory}{unisondir}
@@ -1236,11 +1236,11 @@ In Windows, if the environment variable
 otherwise if {\tt HOME} is defined, it will be
 {\tt \$HOME$\backslash$.unison};
 otherwise, it will be
-{\tt c:$\backslash$.unison}.  
-On OS X, 
-{\tt \$HOME/.unison} will be used if it is present, but 
+{\tt c:$\backslash$.unison}.
+On OS X,
+{\tt \$HOME/.unison} will be used if it is present, but
 {\tt \$HOME/Library/Application Support/Unison} will be created and used by
-default. 
+default.
 
 The archive file for each replica is found in the {\tt .unison}
 directory on that replica's host.  Profiles (described below) are
@@ -1257,12 +1257,12 @@ files in the {\tt .unison} directory is definitely OK.
 
 \SUBSECTION{Archive Files}{archives}
 
-The name of the archive file on each replica is calculated from 
+The name of the archive file on each replica is calculated from
 \begin{itemize}
 \item the {\em canonical names} of all the hosts (short names like
-  \verb|saul| are converted into full addresses like \verb|saul.cis.upenn.edu|), 
+  \verb|saul| are converted into full addresses like \verb|saul.cis.upenn.edu|),
 \item the paths to the replicas on all the hosts (again, relative
-  pathnames, symbolic links, etc.\ are converted into full, absolute paths), and 
+  pathnames, symbolic links, etc.\ are converted into full, absolute paths), and
 \item an internal version number that is changed whenever a new Unison
   release changes the format of the information stored in the archive.
 \end{itemize}
@@ -1281,7 +1281,7 @@ moved around a lot).
 
 A more powerful way of changing archive names is provided by the
 \verb|rootalias| preference.  The preference file may contain any number of
-lines of the form: 
+lines of the form:
 \begin{alltt}
     rootalias = //\NT{hostnameA}//\NT{path-to-replicaA} -> //\NT{hostnameB}/\NT{path-to-replicaB}
 \end{alltt}
@@ -1314,7 +1314,7 @@ detection is working as expected.
 \SUBSECTION{Preferences}{prefs}
 
 Many details of Unison's behavior are configurable by user-settable
-``preferences.''  
+``preferences.''
 
 Some preferences are boolean-valued; these are often called {\em flags}.
 Others take numeric or string arguments, indicated in the preferences
@@ -1338,12 +1338,12 @@ boolean flag to \verb|false| on the command line, use {\tt -p=false}.
 Here are all the preferences supported by Unison.  This list can be
   obtained by typing {\tt unison -help}.
 \begin{quote}
-\verbatiminput{prefs.tmp} 
+\verbatiminput{prefs.tmp}
 \end{quote}
 Here, in more detail, is what they do.  Many are discussed in greater detail
 in other sections of the manual.
 %
-\input{prefsdocs.tmp} 
+\input{prefsdocs.tmp}
 
 
 \SUBSECTION{Profiles}{profile}
@@ -1368,7 +1368,7 @@ for a boolean flag or
 \begin{verbatim}
         p = <value>
 \end{verbatim}
-for a preference of any other type.  
+for a preference of any other type.
 
 Whitespaces around {\tt p} and {\tt xxx} are ignored.
 A profile may also include blank lines and lines beginning
@@ -1376,7 +1376,7 @@ with {\tt \#}; both are ignored.
 
 When Unison starts, it first reads the profile and then the command
 line, so command-line options will override settings from the
-profile.  
+profile.
 
 Profiles may also include lines of the form \texttt{include
   \ARG{name}}, which will cause the file \ARG{name} (or
@@ -1393,7 +1393,7 @@ selection dialog, and displayed in the top-right corner of the main
 Unison window in the graphical user interface.
 
 The graphical user-interface also supports one-key shortcuts for commonly
-used profiles.  If a profile contains a preference of the form 
+used profiles.  If a profile contains a preference of the form
 %
 `\texttt{key = \ARG{n}}', where \ARG{n} is a single digit, then
 pressing this digit key will cause Unison to immediately switch to
@@ -1413,7 +1413,7 @@ Here is a very minimal profile file, such as might be found in {\tt
     root = /home/bcpierce
     root = ssh://saul//home/bcpierce
 
-    # Paths to synchronize 
+    # Paths to synchronize
     path = current
     path = common
     path = .netscape/bookmarks.html
@@ -1422,13 +1422,13 @@ Here is a very minimal profile file, such as might be found in {\tt
 \SUBSUBSECTION{A Basic Profile}{basicprofile}
 
 Here is a more sophisticated profile, illustrating some other useful
-features. 
+features.
 \begin{verbatim}
     # Roots of the synchronization
     root = /home/bcpierce
     root = ssh://saul//home/bcpierce
 
-    # Paths to synchronize 
+    # Paths to synchronize
     path = current
     path = common
     path = .netscape/bookmarks.html
@@ -1449,7 +1449,7 @@ features.
     backupdir = /home/bcpierce/backups
     backup = Name *
     backupprefix = $VERSION.
-    backupsuffix = 
+    backupsuffix =
 
     # Use this command for displaying diffs
     diff = diff -y -W 79 --suppress-common-lines
@@ -1548,14 +1548,14 @@ Each of these has the form
     backup = <pathspec>
 \end{verbatim}
 where \verb|<pathspec>| has the same form as for the \verb|ignore|
-preference.  For example, 
+preference.  For example,
 \begin{verbatim}
     backup = Name *
 \end{verbatim}
 causes Unison to keep backups of {\em all} files and directories.  The
 \verb|backupnot| preference can be used to give a few exceptions: it
 specifies which files and directories should {\em not} be backed up, even if
-they match the \verb|backup| pathspec. 
+they match the \verb|backup| pathspec.
 
 It is important to note that the \verb|pathspec| is matched against the path
 that is being updated by Unison, not its descendants.  For example, if you
@@ -1564,12 +1564,12 @@ set \verb|backup = Name *.txt| and then delete a whole directory named
 because Unison will just check that \verb|foo| does not match \verb|*.txt|.
 Similarly, if the directory itself happened to be called \verb|foo.txt|,
 then the whole directory and all the files in it will be backed up,
-regardless of their names. 
+regardless of their names.
 
 Backup files can be stored either {\em centrally} or {\em locally}.  This
 behavior is controlled by the preference \verb|backuplocation|, whose value
 must be either \verb|central| or \verb|local|.  (The default is
-\verb|central|.)  
+\verb|central|.)
 
 When backups are stored locally, they are kept in the same
 directory as the original.
@@ -1581,7 +1581,7 @@ checked first.)  If neither of these are set, then the directory
 \verb|.unison/backup| in the user's home directory is used.
 
 The preference \verb|maxbackups| controls how many previous versions of
-each file are kept (including the current version).  
+each file are kept (including the current version).
 
 By default, backup files are named \verb|.bak.VERSION.FILENAME|,
 where \verb|FILENAME| is the original filename and \verb|VERSION| is the
@@ -1593,7 +1593,7 @@ backup files for each directory into a single subdirectory.  For example, settin
 \begin{verbatim}
     backuplocation = local
     backupprefix = .unison/$VERSION.
-    backupsuffix = 
+    backupsuffix =
 \end{verbatim}
 will put all backups in a local subdirectory named \verb|.unison|.  Also,
 note that the string \verb|$VERSION| in either \verb|backupprefix| or
@@ -1609,7 +1609,7 @@ It simply means \verb|backup = Name *| and \verb|backuplocation = local|.
 \SUBSECTION{Merging Conflicting Versions}{merge}
 
 Unison can invoke external programs to merge conflicting versions of a file.
-The preference \verb|merge| controls this process.  
+The preference \verb|merge| controls this process.
 
 The \verb|merge| preference may be given once or several times in a
 preference file (it can also be given on the command line, of course, but
@@ -1622,7 +1622,7 @@ The \verb|<PATHSPEC>| here has exactly the same format as for the
 \verb|ignore| preference (see \sectionref{pathspec}{Path specification}).  For example,
 using ``\verb|Name *.txt|'' as the \verb|<PATHSPEC>| tells Unison that this
 command should be used whenever a file with extension \verb|.txt| needs to
-be merged.  
+be merged.
 
 Many external merging programs require as inputs not just the two files that
 need to be merged, but also a file containing the {\em last synchronized
@@ -1643,7 +1643,7 @@ The \verb|<MERGECMD>| part of the preference specifies what external command
 should be invoked to merge files at paths matching the \verb|<PATHSPEC>|.
 Within this string, several special substrings are recognized; these will be
 substituted with appropriate values before invoking a sub-shell to execute
-the command.  
+the command.
 \begin{itemize}
 \item \relax\verb|CURRENT1| is replaced by the name of (a temporary copy of)
   the local variant of the file.
@@ -1655,7 +1655,7 @@ the command.
   if the current filename matches the path specifications for the
   \verb|backupcurrent| preference, as explained above), if one exists.
   If no archive exists and \relax\verb|CURRENTARCH| appears in the
-  merge command, then an error is signalled. 
+  merge command, then an error is signalled.
 \item \relax\verb|CURRENTARCHOPT| is replaced by the name of the backed up copy
   of the original version of the file (i.e., its state at the end of
   the last successful run of Unison), if one exists, or the empty
@@ -1681,7 +1681,7 @@ program exits:
   considered to have failed and the replicas are not changed.
 \item If the file \verb|NEW| has been created, it is written back to both
   replicas (and stored in the backup directory).  Similarly, if just the
-  file \verb|NEW1| has been created, it is written back to both 
+  file \verb|NEW1| has been created, it is written back to both
   replicas.
 \item If neither \verb|NEW| nor \verb|NEW1| have been created, then Unison
   examines the temporary files \verb|CURRENT1|  and \verb|CURRENT2| that
@@ -1692,18 +1692,18 @@ program exits:
   both replicas.
 \item If the files \verb|NEW1|, \verb|NEW2|, and \verb|NEWARCH| have all
   been created, they are written back to the local replica, remote replica,
-  and backup directory, respectively. If the files \verb|NEW1|, \verb|NEW2| have 
+  and backup directory, respectively. If the files \verb|NEW1|, \verb|NEW2| have
   been created, but \verb|NEWARCH| has not, then these files are written back to the
   local replica and remote replica, respectively.  Also, if \verb|NEW1| and
   \verb|NEW2| have identical contents, then the same contents are stored as
   a backup (if the \verb|backupcurrent| preference is set for this path) to
-  reflect the fact that the path is currently in sync. 
+  reflect the fact that the path is currently in sync.
   \item If \verb|NEW1| and \verb|NEW2| (resp. \verb|CURRENT1| and
   \verb|CURRENT2|) are created (resp. overwritten) with different contents
   but the merge command did not fail (i.e., it exited with status code 0),
   then we copy \verb|NEW1| (resp. \verb|CURRENT1|) to the other replica and
-  to the archive.  
-  
+  to the archive.
+
   This behavior is a design choice made to handle the case where a merge
   command only synchronizes some specific contents between two files,
   skipping some irrelevant information (order between entries, for
@@ -1718,24 +1718,24 @@ If the \verb|confirmmerge| preference is set and Unison is not run in
 batch mode, then Unison will always ask for confirmation before
 actually committing the results of the merge to the replicas.
 
-A large number of external merging programs are available.  
+A large number of external merging programs are available.
 For example, on Unix systems setting the \verb|merge| preference to
 \begin{verbatim}
     merge = Name *.txt -> diff3 -m CURRENT1 CURRENTARCH CURRENT2
                             > NEW || echo "differences detected"
 \end{verbatim}
 \noindent
-will tell Unison to use the external \verb|diff3| program for merging.  
+will tell Unison to use the external \verb|diff3| program for merging.
 %
 Alternatively, users of \verb|emacs| may find the following settings convenient:
 \begin{verbatim}
-    merge = Name *.txt -> emacs -q --eval '(ediff-merge-files-with-ancestor 
-                             "CURRENT1" "CURRENT2" "CURRENTARCH" nil "NEW")' 
+    merge = Name *.txt -> emacs -q --eval '(ediff-merge-files-with-ancestor
+                             "CURRENT1" "CURRENT2" "CURRENTARCH" nil "NEW")'
 \end{verbatim}
 \noindent
 (These commands are displayed here on two lines to avoid running off the
 edge of the page.  In your preference file, each command should be written on a
-single line.) 
+single line.)
 
 Users running emacs under windows may find something like this useful:
 \begin{verbatim}
@@ -1750,17 +1750,17 @@ the {\tt opendiff} utility) may prefer
 \end{verbatim}
 Here is a slightly more involved hack.  The {\tt opendiff} program can
 operate either with or without an archive file.  A merge command of this
-form 
+form
 \begin{verbatim}
-    merge = Name *.txt -> 
-              if [ CURRENTARCHOPTx = x ]; 
-              then opendiff CURRENT1 CURRENT2 -merge NEW; 
-              else opendiff CURRENT1 CURRENT2 -ancestor CURRENTARCHOPT -merge NEW; 
+    merge = Name *.txt ->
+              if [ CURRENTARCHOPTx = x ];
+              then opendiff CURRENT1 CURRENT2 -merge NEW;
+              else opendiff CURRENT1 CURRENT2 -ancestor CURRENTARCHOPT -merge NEW;
               fi
 \end{verbatim}
 (still all on one line in the preference file!) will test whether an archive
 file exists and use the appropriate variant of the arguments to {\tt
-  opendiff}. 
+  opendiff}.
 
 Linux users may enjoy this variant:
 \begin{verbatim}
@@ -1830,7 +1830,7 @@ that match any one of the path pattern.
 
 \begin{itemize}
 \item Pattern preferences can be given on the command line,
-  or, more often, stored in profiles, using the same syntax as other preferences.  
+  or, more often, stored in profiles, using the same syntax as other preferences.
   For example, a profile line of the form
 \begin{alltt}
              ignore = \ARG{pattern}
@@ -1859,27 +1859,27 @@ matches exactly the path \ARG{path}, and
 matches the path \ARG{path} and any path below.
 %
 The \ARG{name} and \ARG{path} arguments of the latter forms of
-patterns are {\em not} regular expressions.  Instead, 
+patterns are {\em not} regular expressions.  Instead,
 standard ``globbing'' conventions can be used in \ARG{name} and
-\ARG{path}:  
+\ARG{path}:
 \begin{itemize}
 \item a \verb|*| matches any sequence of characters not including \verb|/|
 (and not beginning with \verb|.|, when used at the beginning of a
 \ARG{name})
 \item a \verb|?| matches any single character except \verb|/| (and leading
-  \verb|.|) 
+  \verb|.|)
 \item \verb|[xyz]| matches any character from the set $\{{\tt x},
   {\tt y}, {\tt z} \}$
 \item \verb|{a,bb,ccc}| matches any one of \verb|a|, \verb|bb|, or
   \verb|ccc|.  (Be careful not to put extra spaces after the commas:
-  these will be interpreted literally as part of the strings to be matched!) 
+  these will be interpreted literally as part of the strings to be matched!)
 \end{itemize}
-\item 
+\item
 The path separator in path patterns is always the
 forward-slash character ``/'' --- even when the client or server is
 running under Windows, where the normal separator character is a
 backslash.  This makes it possible to use the same set of path
-patterns for both Unix and Windows file systems.  
+patterns for both Unix and Windows file systems.
 \end{itemize}
 Some examples of path patterns appear in \sectionref{ignore}{Ignoring
   Paths}.
@@ -1920,7 +1920,7 @@ match the whole path, not just a substring of the path.
 Here are a few extra points regarding the \texttt{ignore} preference.
 \begin{itemize}
 \item If a directory is ignored, all its descendents will be too.
-  
+
 \item The user interface provides some convenient commands for adding
   new patterns to be ignored.  To ignore a particular file, select it
   and press ``{\tt i}''.  To ignore all files with the same extension,
@@ -1936,7 +1936,7 @@ collection of preferences in several top-level preference files, you will
 probably also want to set the \verb|addprefsto| preference to the name of
 this file.  This will cause any new ignore patterns that you add from
 inside Unison to be appended to this file, instead of whichever top-level
-preference file you started Unison with.  
+preference file you started Unison with.
 
 \item Ignore patterns can also be specified on the command line, if
 you like (this is probably not very useful), using an option like
@@ -1961,11 +1961,11 @@ therefore they do not get recreated in the new version of the directory).
   \item If the root is a directory, Unison continues looking for updates in
   all the immediate children of the root.  Again, if the name of some child matches an
   \verb|ignore| pattern and does not match an \verb|ignorenot| pattern, then
-  this whole path {\em including everything below it} will be ignored.  
+  this whole path {\em including everything below it} will be ignored.
   \item If any of the non-ignored children are directories, then the process
   continues recursively.
   \end{itemize}
-\end{itemize} 
+\end{itemize}
 
 \SUBSECTION{Symbolic Links}{symlinks}
 
@@ -2000,14 +2000,14 @@ client and a Unix server).  In detail, here's how it works:
 \item When the permission bits of an existing file or directory are
 changed, the values of those bits that make sense on {\em both}
 operating systems will be propagated to the other replica.  The other
-bits will not be changed.  
+bits will not be changed.
 \item When a newly created file is propagated to a remote replica, the
 permission bits that make sense in both operating systems are also
 propagated.  The values of the other bits are set to default values
 (they are taken from the current umask, if the receiving host is a
 Unix system).
 \item For security reasons, the Unix \verb|setuid| and \verb|setgid|
-bits are not propagated.  
+bits are not propagated.
 \item The Unix owner and group ids are not propagated.  (What would
 this mean, in general?)  All files are created with the owner and
 group of the server process.
@@ -2026,7 +2026,7 @@ Windows, on the other hand, filenames are not case sensitive:
 means that a Unix \texttt{foo} and \texttt{FOO} cannot be synchronized
 onto a Windows system --- Windows won't allow two different files to
 have the ``same'' name.  Unison detects this situation for you, and
-reports that it cannot synchronize the files.  
+reports that it cannot synchronize the files.
 
 You can deal with a case conflict in a couple of ways.  If you need to
 have both files on the Windows system, your only choice is to rename
@@ -2049,7 +2049,7 @@ file and re-synchronize, or you can ignore it.
 \SUBSECTION{Slow Links}{speed}
 
 Unison is built to run well even over relatively slow links such as
-modems and DSL connections.  
+modems and DSL connections.
 
 Unison uses the ``rsync protocol'' designed by Andrew Tridgell and Paul
 Mackerras to greatly speed up transfers of large files in which only
@@ -2059,7 +2059,7 @@ can be found at the rsync web site (\ONEURL{http://samba.anu.edu.au/rsync/}).
 If you are using Unison with {\tt ssh}, you may get some speed
 improvement by enabling {\tt ssh}'s compression feature.  Do this by
 adding the option ``{\tt -sshargs -C}'' to the command line or ``{\tt
-  sshargs = -C}'' to your profile.  
+  sshargs = -C}'' to your profile.
 
 
 \SUBSECTION{Making Unison Faster on Large Files}{speeding}
@@ -2092,7 +2092,7 @@ partially transferred temp file on the receiving host.  Be careful here:
 Your external tool needs to be instructed to copy files in place (otherwise
 if the transfer is interrupted Unison will not notice that some of the data
 has already been transferred, the next time it tries).  The default values
-are: 
+are:
 \begin{verbatim}
    copyprog      =   rsync --inplace --compress
    copyprogrest  =   rsync --partial --inplace --compress
@@ -2125,7 +2125,7 @@ sync---the only completely safe way to do it under Windows) is too slow.
 Unison provides a preference {\tt fastcheck} that, when set to
 \verb|true|, causes it to use file creation times as 'pseudo inode
 numbers' when scanning replicas for updates, instead of reading the full
-contents of every file.  
+contents of every file.
 
 When \verb|fastcheck| is set to \verb|no|,
 Unison will perform slow checking---re-scanning the contents of each file
@@ -2144,7 +2144,7 @@ switch most of the time and occasionally run Unison once with {\tt
 overlooked an update.
 
 Fastcheck is (always) automatically disabled for files with extension
-\verb|.xls| or \verb|.mpp|, to prevent Unison from being confused by the 
+\verb|.xls| or \verb|.mpp|, to prevent Unison from being confused by the
 habits of certain programs (Excel, in particular) of updating files without
 changing their modification times.
 
@@ -2164,7 +2164,7 @@ To prevent accidents, Unison provides a preference called
 in your preference file will cause Unison to check, after it finishes
 detecting updates, that something actually exists at the path
 \verb|foo| on both replicas; if it does not, the Unison run will
-abort. 
+abort.
 
 \SUBSECTION{Click-starting Unison}{click}
 
@@ -2185,7 +2185,7 @@ appear and you will type your password in the DOS window you were
 using.
 
 To use Unison in this mode, you must first create a profile (see
-\sectionref{profile}{Profile}).  Use your favorite editor for this.  
+\sectionref{profile}{Profile}).  Use your favorite editor for this.
 
 
 \appendix
@@ -2209,11 +2209,11 @@ Most modern Unix installations come with \verb|ssh| pre-installed.
 Many Windows implementations of ssh only provide graphical interfaces,
 but Unison requires an ssh client that it can invoke with a
 command-line interface.  A suitable version of ssh can be installed as
-follows.  
+follows.
 
 \begin{enumerate}
-\item Download an \verb|ssh| executable.  
-  
+\item Download an \verb|ssh| executable.
+
 Warning: there are many implementations and ports of ssh for
 Windows, and not all of them will work with Unison.  We have gotten
 Unison to work with Cygwin's port of openssh, and we suggest you try
@@ -2237,14 +2237,14 @@ that one first.  Here's how to install it:
   Settings'' successfully, but you may need to make a different
   selection depending on your networking setup.  The next dialog gives
   a list of mirrors; select one close to you.
-  
+
   Next you are asked to select which packages to install.  The default
   settings in this dialog download a lot of packages that are not
   strictly necessary to run Unison with ssh.  If you don't want to
   install a package, click on it until ``skip'' is shown.  For a
   minimum installation, select only the packages ``cygwin'' and
   ``openssh,'' which come to about 1900KB; the full installation is
-  much larger.  
+  much larger.
 
   \begin{quote} \em Note that you are plan to build unison using the free
     CygWin GNU C compiler, you need to install essential development
@@ -2270,7 +2270,7 @@ you have trouble, you might try other ones instead:
   private keys.  PATH must be set to include the Cygwin \verb|bin|
   directory, so that Unison can find the ssh executable.
   \begin{itemize}
-  \item 
+  \item
     On Windows 95/98, add the lines
 \begin{verbatim}
     set PATH=%PATH%;<SSHDIR>
@@ -2289,7 +2289,7 @@ you have trouble, you might try other ones instead:
       variables
     \end{itemize}
     then select Path and edit its value by appending \verb|;<SSHDIR>|
-    to it, where \verb|<SSHDIR>| is the full name of the directory 
+    to it, where \verb|<SSHDIR>| is the full name of the directory
     that includes the ssh executable; if you've installed Cygwin in
     the default location, this is \verb|C:\cygwin\bin|.
   \end{itemize}
@@ -2302,7 +2302,7 @@ you have trouble, you might try other ones instead:
   \item Note that \verb|ssh-keygen| may not work (fails with
   ``gethostname: no such file or directory'') on some systems.  This is
   OK: you can use ssh with your regular password for the remote
-  system. 
+  system.
 \item You should now be able to use Unison with an ssh connection. If
   you are logged in with a different user name on the local and remote
   hosts, provide your remote user name when providing the remote root
@@ -2317,7 +2317,7 @@ you have trouble, you might try other ones instead:
 \SECTION{Other Synchronizers}{other}{other}
 
 Unison is just one of several file synchronizers that are currently
-available. 
+available.
 
 Check out:
   http://www.bell-labs.com/project/stage/
@@ -2338,8 +2338,8 @@ Also:
 Things to write about:
 \begin{itemize}
 \item When started in 'socket server' mode, Unison prints 'server started' on
-  stderr when it is ready to accept connections.  
-  (This may be useful for scripts that want to tell when a socket-mode server 
+  stderr when it is ready to accept connections.
+  (This may be useful for scripts that want to tell when a socket-mode server
   has finished initialization.)
 \item {\tt DANGER.README}.
 \end{itemize}
@@ -2355,7 +2355,7 @@ Things to write about later:
 }
 
 \iftextversion
-\SECTION{Junk}{ }{ } 
+\SECTION{Junk}{ }{ }
 \fi
 
 \ifhevea\begin{rawhtml}</div>\end{rawhtml}\fi

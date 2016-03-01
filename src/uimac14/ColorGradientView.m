@@ -10,7 +10,7 @@
 
 @implementation ColorGradientView
 
-// Automatically create accessor methods		
+// Automatically create accessor methods
 @synthesize startingColor;
 @synthesize endingColor;
 @synthesize angle;
@@ -39,7 +39,7 @@
                                  initWithStartingColor:startingColor
                                  endingColor:endingColor];
         [aGradient drawInRect:[self bounds] angle:angle];
-	[aGradient release];
+        [aGradient release];
     }
 }
 
