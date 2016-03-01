@@ -495,7 +495,7 @@ let promptForRoots getFirstRoot getSecondRoot =
 (* ---- *)
 
 let makeTempDir pattern =
-  let ic = Unix.open_process_in (Printf.sprintf "(mktemp --tmpdir -d %s || mktemp -d -t %s) 2>/dev/null" pattern pattern) in
+  let ic = Unix.open_process_in (Printf.sprintf "(mktemp --tmpdir -d %s.XXXXXX || mktemp -d -t %s) 2>/dev/null" pattern pattern) in
   let path = input_line ic in
   ignore (Unix.close_process_in ic);
   path
@@ -550,7 +550,7 @@ let initPrefs ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
 
   (* Install dummy roots and backup directory if we are running self-tests *)
   if Prefs.read runtests then begin
-    let tmpdir = makeTempDir "unison-selftest" in
+    let tmpdir = makeTempDir "unisontest" in
       if Globals.rawRoots() = [] then
         Prefs.loadStrings [
           "root = " ^ tmpdir ^ "a";
