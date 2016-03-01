@@ -108,7 +108,7 @@ let getID buf ofs =
     | _ -> `UNKNOWN
 
 let setInt4 v =
-  let s = String.create 4 in
+  let s = Bytes.create 4 in
   let set i =
     s.[i] <-
       Char.chr (Int64.to_int (Int64.logand 255L
@@ -126,7 +126,7 @@ let fail dataFspath dataPath doubleFspath msg =
               (Fspath.toPrintString (Fspath.concat dataFspath dataPath)) msg))
 
 let readDouble dataFspath dataPath doubleFspath inch len =
-  let buf = String.create len in
+  let buf = Bytes.create len in
   begin try
     really_input inch buf 0 len
   with End_of_file ->
@@ -267,7 +267,7 @@ let getFileInfos dataFspath dataPath typ =
                    protect (fun () ->
                      LargeFile.seek_in inch (Int64.add offset 16L);
                      let len = String.length resource_fork_empty_tag in
-                     let buf = String.create len in
+                     let buf = Bytes.create len in
                      really_input inch buf 0 len;
                      buf = resource_fork_empty_tag)
                      (fun () -> close_in_noerr inch)

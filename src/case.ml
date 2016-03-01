@@ -95,7 +95,7 @@ let hasTrailingDots s =
 
 let removeTrailingDots s =
   let len = String.length s in
-  let s' = String.create len in
+  let s' = Bytes.create len in
   let pos = ref (len - 1) in
   let pos' = ref (len - 1) in
   while !pos >= 0 do

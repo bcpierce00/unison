@@ -44,7 +44,7 @@ external unsafe_blit_to_string : t -> int -> string -> int -> int -> unit
 let to_string a =
   let l = length a in
   if l > Sys.max_string_length then invalid_arg "Bytearray.to_string" else
-  let s = String.create l in
+  let s = Bytes.create l in
   unsafe_blit_to_string a 0 s 0 l;
   s
 
@@ -60,7 +60,7 @@ let sub a ofs len =
   then
     invalid_arg "Bytearray.sub"
   else begin
-    let s = String.create len in
+    let s = Bytes.create len in
     unsafe_blit_to_string a ofs s 0 len;
     s
   end

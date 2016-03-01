@@ -111,7 +111,7 @@ let rec norm s i l s' j =
 
 let normalize s =
   let l = String.length s in
-  let s' = String.create (3 * l) in
+  let s' = Bytes.create (3 * l) in
   try norm s 0 l s' 0 with Invalid -> s
 
 (****)
@@ -774,7 +774,7 @@ and cont s' j s i l v =
 
 let to_utf_16 s =
   let l = String.length s in
-  let s' = String.create (2 * l) in
+  let s' = Bytes.create (2 * l) in
   scan s' 0 s 0 l
 
 (****)
@@ -804,7 +804,7 @@ let rec scan s' i' l' s i l =
 let from_utf_16 s =
   let l = String.length s in
   let l' = 3 * l / 2 in
-  let s' = String.create l' in
+  let s' = Bytes.create l' in
   scan s' 0 l' s 0 l
 
 (*

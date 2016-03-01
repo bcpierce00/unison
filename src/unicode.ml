@@ -930,7 +930,7 @@ let rec norm s i l s' j =
 
 let normalize s =
   let l = String.length s in
-  let s' = String.create (3 * l) in
+  let s' = Bytes.create (3 * l) in
   try
     let s' = norm s 0 l s' 0 in order s'; s'
   with Invalid ->
@@ -1027,7 +1027,7 @@ let rec decomp s i l s' j =
 
 let decompose s =
   let l = String.length s in
-  let s' = String.create (3 * l) in
+  let s' = Bytes.create (3 * l) in
   try
     let s' = decomp s 0 l s' 0 in order s'; s'
   with Invalid ->
@@ -1753,7 +1753,7 @@ let rec scan s' i' l' s i l =
 let from_utf_16 s =
   let l = String.length s in
   let l' = 3 * l / 2 in
-  let s' = String.create l' in
+  let s' = Bytes.create l' in
   scan s' 0 l' s 0 l
 
 (****)
@@ -1813,7 +1813,7 @@ let rec scan s' i' l' s i l =
 let from_utf_16_filename s =
   let l = String.length s in
   let l' = 3 * l / 2 in
-  let s' = String.create l' in
+  let s' = Bytes.create l' in
   scan s' 0 l' s 0 l
 
 (****)

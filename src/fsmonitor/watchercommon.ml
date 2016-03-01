@@ -46,7 +46,7 @@ let quote s =
   let n = ref 0 in
   for i = 0 to l - 1 do if disallowed_char s.[i] then incr n done;
   if !n = 0 then s else begin
-    let q = String.create (l + 2 * !n) in
+    let q = Bytes.create (l + 2 * !n) in
     let j = ref 0 in
     let hex = "0123456789ABCDEF" in
     for i = 0 to l - 1 do
@@ -76,7 +76,7 @@ let unquote s =
       | 'A'..'F' -> Char.code c - Char.code 'A' + 10
       | _        -> invalid_arg "unquote"
     in
-    let u = String.create (l - 2 * !n) in
+    let u = Bytes.create (l - 2 * !n) in
     let j = ref 0 in
     for i = 0 to l - 2 * !n - 1 do
       let c = s.[!j] in
@@ -130,7 +130,7 @@ let printf fmt =
 
 let read_line =
   let b = Buffer.create 160 in
-  let buf = String.create 160 in
+  let buf = Bytes.create 160 in
   let start = ref 0 in
   let last = ref 0 in
   let rec read_line () =

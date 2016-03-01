@@ -48,7 +48,7 @@ let rec remove_file_or_dir d =
 
 let read_chan chan =
   let nbytes = in_channel_length chan in
-  let string = String.create nbytes in
+  let string = Bytes.create nbytes in
   really_input chan string 0 nbytes;
   string
 

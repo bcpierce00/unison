@@ -113,7 +113,7 @@ let showUpdateStatus path =
 
 let bufsize = 16384
 let bufsizeFS = Filesize.ofInt bufsize
-let buf = String.create bufsize
+let buf = Bytes.create bufsize
 
 let readWrite source target notify =
   let len = ref 0 in
