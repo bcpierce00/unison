@@ -296,8 +296,8 @@ update.cmx : xferhint.cmx uutil.cmx ubase/util.cmx tree.cmx ubase/trace.cmx \
     lwt/lwt_unix.cmx lwt/lwt.cmx lock.cmx globals.cmx fswatchold.cmx \
     fswatch.cmx fspath.cmx fpcache.cmx fingerprint.cmx fileinfo.cmx \
     common.cmx case.cmx update.cmi
-uutil.cmo : ubase/util.cmi ubase/trace.cmi ubase/projectInfo.cmo uutil.cmi
-uutil.cmx : ubase/util.cmx ubase/trace.cmx ubase/projectInfo.cmx uutil.cmi
+uutil.cmo : ubase/util.cmi ubase/trace.cmi uutil.cmi
+uutil.cmx : ubase/util.cmx ubase/trace.cmx uutil.cmi
 xferhint.cmo : ubase/util.cmi ubase/trace.cmi ubase/prefs.cmi path.cmi \
     os.cmi fspath.cmi xferhint.cmi
 xferhint.cmx : ubase/util.cmx ubase/trace.cmx ubase/prefs.cmx path.cmx \
@@ -326,8 +326,6 @@ ubase/prefs.cmo : ubase/util.cmi ubase/uarg.cmi system.cmi \
     ubase/safelist.cmi ubase/prefs.cmi
 ubase/prefs.cmx : ubase/util.cmx ubase/uarg.cmx system.cmx \
     ubase/safelist.cmx ubase/prefs.cmi
-ubase/projectInfo.cmo :
-ubase/projectInfo.cmx :
 ubase/proplist.cmo : ubase/util.cmi ubase/proplist.cmi
 ubase/proplist.cmx : ubase/util.cmx ubase/proplist.cmi
 ubase/rx.cmo : ubase/rx.cmi
