@@ -174,16 +174,11 @@ ifeq ($(UISTYLE),mac)
   buildexecutable:: macexecutable
   UIMACDIR=uimac
 else
-ifeq ($(UISTYLE),macnew)
-  buildexecutable:: macexecutable
-  UIMACDIR=uimacnew
-else
 ifeq ($(UISTYLE),mac14)
   buildexecutable:: macexecutable
   UIMACDIR=uimac14
 else
   buildexecutable:: $(NAME)$(EXEC_EXT)
-endif
 endif
 endif
 
