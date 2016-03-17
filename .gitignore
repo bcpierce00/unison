@@ -29,7 +29,6 @@
 /src/ubase/projectInfo.ml
 /src/unison
 /src/unison-fsmonitor
-Makefile.ProjectInfo
 TAGS
 build
 logmsg
