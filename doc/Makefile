@@ -86,8 +86,3 @@ clean::
 	   unison-manual.info* unisonversion.tex \
 	   contact.html faq.html faq.haux index.html
 
-../src/Makefile.ProjectInfo: ../src/mkProjectInfo
-	../src/mkProjectInfo > $@
-
-../src/mkProjectInfo: ../src/mkProjectInfo.ml
-	ocamlc str.cma -o $@ $^

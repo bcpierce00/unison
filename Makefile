@@ -15,12 +15,6 @@ src:
 
 -include src/Makefile.ProjectInfo
 
-src/Makefile.ProjectInfo: src/mkProjectInfo
-	$(MAKE) -C src Makefile.ProjectInfo
-
-src/mkProjectInfo: src/mkProjectInfo.ml
-	$(MAKE) -C src mkProjectInfo
-
 docs:
 	$(MAKE) -C src UISTYLE=text
 	$(MAKE) -C doc
@@ -58,38 +52,48 @@ endif
 endif
 
 EXPORTDIR=$(BCPHOME)/pub/$(NAME)
+DOWNLOADAREA=releases
 DOWNLOADPARENT=$(EXPORTDIR)/download/$(DOWNLOADAREA)
-DOWNLOADDIR=$(DOWNLOADPARENT)/$(NAME)-$(VERSION)
+REALDOWNLOADDIR=$(DOWNLOADPARENT)/$(NAME)-$(VERSION)
 BRANCH=$(MAJORVERSION)
 EXPORTNAME=$(NAME)-$(VERSION)
-DOWNLOADAREA=releases
 # OSX/linux portability
 ifeq ($(OSARCH),osx)
 	TMP=$(shell mktemp -d -t unison)
 else
 	TMP=$(shell mktemp -d)
 endif
-# TMP="/tmp"
-# TMP=$(shell mktemp -d 2>/dev/null || mktemp -d -t unison)
+DOWNLOADDIR=/tmp/$(NAME)-$(VERSION)
+# DOWNLOADDIR=$(REALDOWNLOADDIR)
 
 # Do this when it's time to create a new beta-release from the development trunk
-beta: tools/ask
+beta: 
+	@echo "Makefile needs fixing"
+	@exit 1
 	@tools/ask tools/exportmsg.txt
 	(cd ..; svn copy trunk branches/$(BRANCH))
 	(cd ../branches/$(BRANCH); svn commit -m "New release branch")
 	@echo
-	@echo -n "Press RETURN to export it... "
+	@echo "Press RETURN to export it... "
 	@read JUNK
 	$(MAKE) -C ../branches/$(BRANCH) export
 
 # Do this in a release branch to export a new tarball (e.g., after fixing a bug)
 export:
+	@echo
+	@echo "CHECKLIST:"
+	@echo "  - Bump version number in src/Makefile.ProjectInfo"
+	@echo "  - Move everything interesting from src/RECENTNEWS to doc/changes.tex"
+	@echo "  - Do 'make checkin'"
+	@echo ""
+	@echo "If all this is done, hit RETURN (otherwise Ctrl-C and do it)"
+	@read JUNK
 	$(MAKE) $(DOWNLOADDIR)
 	$(MAKE) exportdocs
 	$(MAKE) exportsources
 	(cd $(DOWNLOADDIR); genindexhtml)
 	@echo
-	@echo -n "OK to commit?  Press RETURN if yes (Crtl-C and tidy web dir if no)... "
+	@echo "OK to commit?  Press RETURN if yes (Crtl-C if no)..."
 	@read JUNK
 	$(MAKE) commitexport
 
@@ -100,6 +104,7 @@ commitexport:
 realcommit:
 	@echo
 	@echo Committing new export directory
+	mv $(DOWNLOADDIR) $(REALDOWNLOADDIR)
 	-chmod -R a+r $(EXPORTDIR)
 	-chmod -R g+wr $(EXPORTDIR)
 	-chmod -R o-w $(EXPORTDIR)
@@ -111,7 +116,6 @@ $(DOWNLOADDIR):
 	@echo Creating DOWNLOADDIR = $(DOWNLOADDIR)
 	@echo
 	-mkdir -p $(DOWNLOADDIR)
-#	touch $(DOWNLOADDIR)/THIS-IS-UNISON-$(VERSION)
 
 exportsources:
 	git archive --output $(DOWNLOADDIR)/$(EXPORTNAME).tar.gz -- HEAD src
@@ -132,7 +136,7 @@ exportdocs:
 
 MAILTMP = $(HOME)/mail.tmp
 
-mailchanges: tools/ask src/$(NAME)
+mailchanges: 
 	@echo To: $(NAME)-announce@yahoogroups.com,$(NAME)-users@yahoogroups.com \
             > $(MAILTMP)
 	@echo Subject: $(NAME) $(VERSION) now available >> $(MAILTMP)
@@ -143,7 +147,7 @@ mailchanges: tools/ask src/$(NAME)
 	@echo >> $(MAILTMP)
 	@cat src/NEWS >> $(MAILTMP)
 	@src/unison -doc news >> $(MAILTMP)
-	tools/ask tools/mailmsg.txt
+	@echo "Announcement draft can be found in $(MAILTMP)"
 
 ######################################################################
 # Export binary for the current architecture
@@ -178,57 +182,24 @@ realexportnative:
             $(DOWNLOADDIR)/$(EXPORTNAME).$(OSARCH)$(KIND)-gtkui$(EXEC_EXT) \
           > $(DOWNLOADDIR)/$(EXPORTNAME).$(OSARCH)$(KIND)-gtkui$(EXEC_EXT).gz
 
-######################################################################
-# Export developer sources  (normally run every night by a cron job on
-# saul.cis.upenn.edu; also as a last step of 'make checkin', when performed
-# by bcp.  Can also be run manually if needed.
-
-DEVELDIR=$(EXPORTDIR)/download/resources/developers-only
-
-nightly:
-	($(RM) -r $(HOME)/tmp/unison; \
-         cd $(HOME)/tmp; \
-	 svn co https://webdav.seas.upenn.edu/svn/unison/trunk unison; \
-         cd $(HOME)/tmp/unison; \
-         $(MAKE) exportdevel)
-
-exportdevel: tareverything
-	-$(RM) $(DEVELDIR)/*
-	mv $(TMP)/$(EXPORTNAME).tar.gz $(DEVELDIR)
 
 ######################################################################
-# Submitting changes
+# Version control
 
-CP = cp
+checkin: logmsg remembernews
+	git commit -a --file=logmsg
+	$(RM) logmsg
+	@echo 
+	@echo "Remember to do 'git pull && git push'"
 
-submit: tareverything sendsubmission
-
-tareverything:
-	$(RM) -r $(TMP)/$(EXPORTNAME)
-	$(CP) -r . $(TMP)/$(EXPORTNAME)
-	$(RM) -r $(TMP)/$(EXPORTNAME)/private
-	$(MAKE) -C $(TMP)/$(EXPORTNAME) clean
-	(cd $(TMP); tar cf - $(EXPORTNAME) \
-           | gzip --force --best > $(EXPORTNAME).tar.gz)
-
-sendsubmission:
-	echo Subject: $(NAME) submission "(based on version $(VERSION))" \
-            > /tmp/submail
-	echo >> /tmp/submail
-	uuencode $(EXPORTNAME).tar.gz \
-             < $(TMP)/$(EXPORTNAME).tar.gz \
-	     >> /tmp/submail
-	/bin/mail $(SUBMISSIONADDR) < /tmp/submail
-	$(RM) /tmp/submail
-
-######################################################################
-# Tools
-
-tools/%: tools/%.mll
-	$(MAKE) -C tools $*
-
-tools/%: tools/%.ml
-	ocamlc -o tools/$* -I $(OCAMLLIBDIR)/labltk labltk.cma tools/$*.ml
+remembernews: logmsg
+	echo "CHANGES FROM VERSION" $(VERSION) > rc.tmp
+	echo >> rc.tmp
+	cat logmsg >> rc.tmp
+	echo  >> rc.tmp
+	echo    ------------------------------- >> rc.tmp
+	-cat src/RECENTNEWS >> rc.tmp
+	mv -f rc.tmp src/RECENTNEWS
 
 ######################################################################
 # Misc
@@ -241,7 +212,6 @@ clean::
 	   *.o *.obj *.cmo *.cmx *.cmi core TAGS *~ *.log \
 	   *.aux *.log *.dvi *.out *.backup[0-9] *.bak $(STABLEFLAG)
 	$(MAKE) -C doc clean
-	$(MAKE) -C tools clean
 	$(MAKE) -C src clean
 
 install:
@@ -249,9 +219,6 @@ install:
 
 installtext:
 	$(MAKE) -C src install UISTYLE=text
-
-tools/ask: tools/ask.ml
-	$(MAKE) -C tools
 
 src/$(NAME):
 	$(MAKE) -C src
