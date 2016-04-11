@@ -301,11 +301,9 @@ to native code, but this is not absolutely necessary.
 get you a working and installed compiler: first do {\tt make world opt},
 then {\tt su} to root and do {\tt make install}.)
 
-You'll also need the GNU {\tt make} utility, standard on many Unix
-systems. (Type \showtt{make --version} to check that you've got the
-GNU version.)  Unison's build system is
-not parallelizable, so don't use make flags which cause it to start
-processes in parallel, e.g. -j for GNU make.
+You'll also need the GNU {\tt make} utility, which is standard on most Unix
+systems.  Unison's build system is not parallelizable, so don't use flags
+that cause it to start processes in parallel (e.g. -j).
 
 Once you've got OCaml installed, grab a copy of the Unison sources, unzip
 and untar them, change to the new \showtt{unison} directory, and type ``{\tt
