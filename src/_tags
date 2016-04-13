@@ -1,0 +1,6 @@
+"ubase": include
+"system": include
+"system/generic": include
+"lwt": include
+"lwt/generic": include
+true: package(unix), package(str), package(bigarray), package(lablgtk2)

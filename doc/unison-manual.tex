@@ -279,7 +279,8 @@ In principle, Unison should work on any platform to which OCaml has been
 ported and on which the \verb|Unix| module is fully implemented.  It has
 been tested on many flavors of Windows (98, NT, 2000, XP) and Unix (OS X,
 Solaris, Linux, FreeBSD), and on both 32- and 64-bit architectures.
-
+Unison can be also built using OPAM, a package/build manager for
+Ocaml, which in some cases greatly simplifies the installation setup.
 
 \SUBSUBSECTION{Unix}{build-unix}
 
@@ -394,6 +395,12 @@ versions, for portability.
 \end{itemize}
 %\finish{Any other important ones?}
 
+\SUBSUBSECTION{OPAM}{build-opam}
+
+In order to build Unison with OPAM, you need a working OPAM
+version. Then, do `{\tt opam install ocamlbuild lablgtk2}` and {\tt
+  make ocb} in the `{\tt src}` directory should do generate the proper
+binaries in all platforms.
 
 \SECTION{Tutorial}{tutorial}{tutorial}
 

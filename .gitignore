@@ -33,3 +33,7 @@ TAGS
 build
 logmsg
 xcuserdata
+src/_build
+src/linkgtk2.native
+src/linktext.native
+

@@ -42,7 +42,7 @@ all:: INSTALL
 	run runbatch runt rundebug runp runtext runsort runprefer \
 	prefsdocs runtest repeattest \
 	selftest selftestdebug selftestremote testmerge \
-	checkin installremote
+	checkin installremote ocb ocb-clean
 
 .DELETE_ON_ERROR:
 # to avoid problems when something fails to run
@@ -384,3 +384,24 @@ strings.ml:
 	echo "(* Dummy strings.ml *)" > strings.ml
 	echo "let docs = []" >> strings.ml
 
+
+# Building with ocamlbuild
+ubase/projectInfo.ml: Makefile.ProjectInfo
+	echo 'let myName = "'$(NAME)'";;' > $@
+	echo 'let myVersion = "'$(VERSION)'";;' >> $@
+	echo 'let myMajorVersion = "'$(MAJORVERSION)'";;' >> $@
+
+ULFLAGS=-lflags libunison_stubs.a -lflags '-cclib -lutil'
+
+ocb: ubase/projectInfo.ml
+# Unfortunately make -f doesn't propagate the proper names so we must that hack
+	# $(MAKE) -f Makefile.OCaml ubase/projectInfo.ml
+	ocamlbuild -use-ocamlfind libunison_stubs.a
+	ocamlbuild -j 4 -use-ocamlfind linktext.native $(ULFLAGS)
+	cp linktext.native $(NAME)
+	ocamlbuild -j 4 -use-ocamlfind linkgtk2.native $(ULFLAGS)
+	cp linkgtk2.native $(NAME)-gtk
+
+ocb-clean:
+	ocamlbuild -clean
+	rm -f unison unison-gtk

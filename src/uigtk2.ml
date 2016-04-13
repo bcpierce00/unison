@@ -4008,7 +4008,7 @@ lst_store#set ~row ~column:c_path path;
     right#add_accelerator ~group:accel_group ~modi:[`SHIFT] GdkKeysyms._comma;
 
     let skip =
-      grAdd grAction
+      (* grAdd grAction *)
         (actionMenu#add_image_item ~key:GdkKeysyms._slash ~callback:questionAction
           ~image:((GMisc.image ~stock:`NO ~icon_size:`MENU ())#coerce)
           "Do _Not Propagate Changes") in
