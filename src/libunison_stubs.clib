@@ -1,0 +1,3 @@
+bytearray_stubs.o
+osxsupport.o
+pty.o

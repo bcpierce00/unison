@@ -1,0 +1,15 @@
+S .
+S lwt
+S lwt/generic
+S system
+S system/generic
+S ubase
+
+B ./_build
+B ./_build/lwt
+B ./_build/lwt/generic
+B ./_build/system
+B ./_build/system/generic
+B ./_build/ubase
+
+PKG unix lablgtk2
