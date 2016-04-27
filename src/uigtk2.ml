@@ -3996,7 +3996,7 @@ lst_store#set ~row ~column:c_path path;
 
     let def_descl = "Right to Left" in
     let descl =
-      if init || loc1 = loc2 then def_descr else
+      if init || loc1 = loc2 then def_descl else
       Printf.sprintf "from %s to %s"
         (Unicode.protect loc2) (Unicode.protect loc1) in
     let right =
