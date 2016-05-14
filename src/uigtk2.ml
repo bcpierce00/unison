@@ -3996,7 +3996,7 @@ lst_store#set ~row ~column:c_path path;
 
     let def_descl = "Right to Left" in
     let descl =
-      if init || loc1 = loc2 then def_descr else
+      if init || loc1 = loc2 then def_descl else
       Printf.sprintf "from %s to %s"
         (Unicode.protect loc2) (Unicode.protect loc1) in
     let right =
@@ -4008,10 +4008,9 @@ lst_store#set ~row ~column:c_path path;
     right#add_accelerator ~group:accel_group ~modi:[`SHIFT] GdkKeysyms._comma;
 
     let skip =
-      grAdd grAction
-        (actionMenu#add_image_item ~key:GdkKeysyms._slash ~callback:questionAction
-          ~image:((GMisc.image ~stock:`NO ~icon_size:`MENU ())#coerce)
-          "Do _Not Propagate Changes") in
+      actionMenu#add_image_item ~key:GdkKeysyms._slash ~callback:questionAction
+        ~image:((GMisc.image ~stock:`NO ~icon_size:`MENU ())#coerce)
+        "Do _Not Propagate Changes" in
     grAdd grAction skip;
     skip#add_accelerator ~group:accel_group ~modi:[`SHIFT] GdkKeysyms._minus;
 
