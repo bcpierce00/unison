@@ -1,5 +1,11 @@
 CHANGES FROM VERSION 2.49.543
 
+* Fix description of where the command-line tool will be installed
+
+
+-------------------------------
+CHANGES FROM VERSION 2.49.543
+
 * Improve error report when failing on OCaml compiler version mismatch
 
 -------------------------------

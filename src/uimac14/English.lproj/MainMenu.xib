@@ -892,7 +892,7 @@ This software is licensed under the GNU General Public License.</string>
                         <autoresizingMask key="autoresizingMask"/>
                         <textFieldCell key="cell" sendsActionOnEndEditing="YES" id="555">
                             <font key="font" metaFont="smallSystem"/>
-                            <string key="title">The command-line tool is a small program that can be installed in a standard place on your computer (/usr/bin/unison) so Unison can easily be found. If you want to be able to synchronize files on this computer by running Unison on a remote computer, you should probably install it.
+                            <string key="title">The command-line tool is a small program that can be installed in a standard place on your computer (/usr/local/bin/unison) so Unison can easily be found. If you want to be able to synchronize files on this computer by running Unison on a remote computer, you should probably install it.
 
 If you don't install it now, you can do so later by choosing 'Install command-line tool' from the Unison menu.
 </string>
