@@ -190,7 +190,8 @@ checkin: logmsg remembernews
 	git commit -a --file=logmsg
 	$(RM) logmsg
 	@echo 
-	@echo "Remember to do 'git pull && git push'"
+	@echo "Remember to do:"
+	@echo "   git pull && git push"
 
 remembernews: logmsg
 	echo "CHANGES FROM VERSION" $(VERSION) > rc.tmp

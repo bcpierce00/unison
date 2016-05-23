@@ -1,5 +1,12 @@
 CHANGES FROM VERSION 2.49.543
 
+* Makefile fix
+
+
+
+-------------------------------
+CHANGES FROM VERSION 2.49.543
+
 * Fix description of where the command-line tool will be installed
 
 
