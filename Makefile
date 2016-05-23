@@ -148,7 +148,7 @@ $(DOWNLOADDIR):
 #	touch $(DOWNLOADDIR)/THIS-IS-UNISON-$(VERSION)
 
 exportsources:
-	git archive --format=tar.gz --prefix=$(EXPORTNAME)/ HEAD > $(DOWNLOADDIR)/$(EXPORTNAME).tar.gz 
+	git archive --output $(DOWNLOADDIR)/$(EXPORTNAME).tar.gz -- HEAD src
 
 exportdocs:
 	-rm -f src/unison
