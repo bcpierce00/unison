@@ -915,7 +915,16 @@ let commandAvailable =
                      BUILDING CONNECTIONS TO THE SERVER
  ****************************************************************************)
 
-let connectionHeader = "Unison " ^ Uutil.myMajorVersion ^ "\n"
+let connectionHeader =
+  let (major,minor,patchlevel) =
+    Scanf.sscanf Sys.ocaml_version "%d.%d.%d" (fun x y z -> (x,y,z)) in
+  let compiler =
+    if    major < 4 
+       || major = 4 && minor <= 2
+       || major = 4 && minor = 2 && patchlevel <= 1
+    then "<= 4.01.1"
+    else ">= 4.01.2"
+  in "Unison " ^ Uutil.myMajorVersion ^ " with OCaml " ^ compiler ^ "\n"
 
 let rec checkHeader conn buffer pos len =
   if pos = len then

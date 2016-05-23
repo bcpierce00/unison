@@ -80,7 +80,7 @@ text:
 	$(MAKE) -C .. text
 
 doinstall: $(NAME)$(EXEC_EXT)
-	if [ ! $(NAME) ]; then \
+	@if [ ! $(NAME) ]; then \
 	    echo "makefile variable NAME not bound"; \
 	    exit 1 \
           ; fi 

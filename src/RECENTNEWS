@@ -1,18 +1,10 @@
 CHANGES FROM VERSION 2.49.543
 
-* Makefile fix
-
-
-
--------------------------------
-CHANGES FROM VERSION 2.49.543
-
+* Add OCaml compiler version (<= 4.02.1 or >= 4.02.2) to connection
+  header string that is exchanged when client connects to server, to
+  fail more cleanly when incompatible versions are recognized.
+* Bump version number to 2.50.0 to avoid confusion
 * Fix description of where the command-line tool will be installed
-
-
--------------------------------
-CHANGES FROM VERSION 2.49.543
-
 * Improve error report when failing on OCaml compiler version mismatch
 
 -------------------------------
@@ -37,14 +29,11 @@ CHANGES FROM VERSION 2.49.8
 
 * Update copyright dates to 2016
 
-
-
 -------------------------------
 CHANGES FROM VERSION 2.49.7
 
 * Small fix to gtk2 UI per suggestion from Daniel Reichelt, to scan
   profiles before main window is created. (second try)
-
 
 -------------------------------
 CHANGES FROM VERSION 2.49.6
