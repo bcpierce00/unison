@@ -6,7 +6,7 @@
 let projectName = "unison"
 let majorVersion = 2
 let minorVersion = 48
-let pointVersionOrigin = 533 (* Revision that corresponds to point version 0 *)
+let pointVersionOrigin = 0 (* Revision that corresponds to point version 0 *)
 
 (* Documentation:
    This is a program to construct a version of the form Major.Minor.Point,
@@ -42,7 +42,7 @@ let pointVersionOrigin = 533 (* Revision that corresponds to point version 0 *)
 (* ---------------------------------------------------------------------- *)
 (* You shouldn't need to edit below. *)
 
-let revisionString = "$Rev$";;
+let revisionString = "$Rev: 4$";;
 
 let pointVersion = 
   Scanf.sscanf revisionString "$Rev: %d " (fun x -> x) - pointVersionOrigin;;

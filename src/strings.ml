@@ -4,7 +4,7 @@
 let docs =
     ("about", ("About Unison", 
      "Unison File Synchronizer\n\
-      Version 2.47.4\n\
+      Version 2.48.4\n\
       \n\
       "))
 ::
@@ -2768,8 +2768,8 @@ let docs =
       \n\
       "))
 ::
-    ("news", ("Changes in Version 2.47.4", 
-     "Changes in Version 2.47.4\n\
+    ("news", ("Changes in Version 2.48.4", 
+     "Changes in Version 2.48.4\n\
       \n\
       \032  Changes since 2.45:\n\
       \032    * Incorporated a patch from Christopher Zimmermann to replace the\n\
@@ -4535,7 +4535,7 @@ let docs =
       \n\
       References\n\
       \n\
-      \032  1. file:///Users/bcpierce/current/unison/trunk/doc/temp.html#ssh-win\n\
+      \032  1. file:///Users/bcpierce/home/unison/doc/temp.html#ssh-win\n\
       \032  2. http://pauillac.inria.fr/~maranget/hevea/index.html\n\
       "))
 ::

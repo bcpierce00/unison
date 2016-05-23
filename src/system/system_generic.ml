@@ -57,7 +57,8 @@ let opendir f =
 let readdir = Unix.readdir
 let closedir = Unix.closedir
 let readlink = Unix.readlink
-let symlink = Unix.symlink
+(* BCP 5/16: Eta-expand for backward compatibility with OCaml <=4.02 *)
+let symlink s1 s2 = Unix.symlink s1 s2
 let chdir = Sys.chdir
 let getcwd = Sys.getcwd
 

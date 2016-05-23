@@ -148,12 +148,7 @@ $(DOWNLOADDIR):
 #	touch $(DOWNLOADDIR)/THIS-IS-UNISON-$(VERSION)
 
 exportsources:
-	$(RM) -r $(TMP)/$(EXPORTNAME)
-	(svn export src /tmp/$(EXPORTNAME))
-	-$(RM) $(TMP)/$(EXPORTNAME)/RECENTNEWS
-	(cd $(TMP); tar cvf - $(EXPORTNAME) \
-           | gzip --force --best > $(EXPORTNAME).tar.gz)
-	mv $(TMP)/$(EXPORTNAME).tar.gz $(DOWNLOADDIR)
+	git archive --format=tar.gz --prefix=$(EXPORTNAME)/ HEAD > $(DOWNLOADDIR)/$(EXPORTNAME).tar.gz 
 
 exportdocs:
 	-rm -f src/unison

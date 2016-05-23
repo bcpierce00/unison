@@ -1,3 +1,12 @@
+CHANGES FROM VERSION 2.48.4
+
+* Fix build for OCaml 4.03
+(and add Makefile improvements for exporting under git)
+
+
+
+
+-------------------------------
 CHANGES FROM VERSION 2.48.1
 
 uimac14: install the command-line tool in /usr/local/bin
