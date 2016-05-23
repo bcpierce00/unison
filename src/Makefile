@@ -338,7 +338,7 @@ testmerge:
 .PHONY: tags
 
 tags:
-	-if [ -f `which $(ETAGS)` ]; then \
+	-if [ -f "`which $(ETAGS)`" ]; then \
 	    $(ETAGS) *.mli */*.mli *.ml */*.ml */*.m *.c */*.c *.txt \
           ; fi 
 
