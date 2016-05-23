@@ -36,8 +36,8 @@ end
 
 module Filesize : FILESIZE
 
-(* The UI may (if it likes) supply a function to be used to show progress of *)
-(* file transfers.                                                           *)
+(* The UI may (if it likes) supply a function to be used to show progress of 
+   file transfers. *)
 module File :
   sig
     type t

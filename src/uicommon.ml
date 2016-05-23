@@ -85,7 +85,7 @@ let contactquietly =
      ^ "during startup.")
 
 let contactingServerMsg () =
-  Printf.sprintf "Contacting server..."
+  Printf.sprintf "Unison %s: Contacting server..." Uutil.myVersion 
 
 let repeat =
   Prefs.createString "repeat" ""

@@ -1,3 +1,8 @@
+CHANGES FROM VERSION 2.49.543
+
+* Improve error report when failing on OCaml compiler version mismatch
+
+-------------------------------
 CHANGES FROM VERSION 2.49.600
 
 * Tidy Makefiles for move to Git
