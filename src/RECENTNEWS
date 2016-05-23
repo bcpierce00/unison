@@ -3,8 +3,7 @@ CHANGES FROM VERSION 2.48.4
 * Fix build for OCaml 4.03
 (and add Makefile improvements for exporting under git)
 
-
-
+* Better reporting for OCaml compiler version mismatch
 
 -------------------------------
 CHANGES FROM VERSION 2.48.1

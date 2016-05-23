@@ -450,7 +450,12 @@ let defaultMarshalingFunctions =
      let s = Bytearray.marshal data [Marshal.No_sharing] in
      let l = Bytearray.length s in
      ((s, 0, l) :: rem, l)),
-  (fun buf pos -> Bytearray.unmarshal buf pos)
+  (fun buf pos ->
+      try Bytearray.unmarshal buf pos
+      with Failure s -> raise (Util.Fatal (Printf.sprintf 
+"Fatal error during unmarshaling (%s),
+possibly because client and server have been compiled with different\
+versions of the OCaml compiler." s)))
 
 let makeMarshalingFunctions payloadMarshalingFunctions string =
   let (marshalPayload, unmarshalPayload) = payloadMarshalingFunctions in
