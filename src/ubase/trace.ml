@@ -113,10 +113,10 @@ let logging =
 
 let logfile =
   Prefs.createFspath "logfile"
-    (Util.fileInHomeDir "unison.log")
+    (Util.fileInHomeDir ".unison/unison.log")
     "!logfile name"
     "By default, logging messages will be appended to the file
-     \\verb|unison.log| in your HOME directory.  Set this preference if
+     \\verb|unison.log| in your .unison directory.  Set this preference if
      you prefer another file."
 
 let logch = ref None
