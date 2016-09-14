@@ -1,5 +1,5 @@
 
-(* Clear the list of aborted item. *)
+(* Clear the list of aborted items. *)
 val reset : unit -> unit
 
 (* Abort transfer for either one particular item or all items. *)
