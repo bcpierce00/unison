@@ -2575,7 +2575,7 @@ let docs =
       \032  than a megabyte).\n\
       \n\
       \032  If you want to use a different external copy utility, set both the\n\
-      \032  copyprog and copyprogpartial preferences--the former is used for the\n\
+      \032  copyprog and copyprogrest preferences--the former is used for the\n\
       \032  first transfer of a file, while the latter is used when Unison sees a\n\
       \032  partially transferred temp file on the receiving host. Be careful here:\n\
       \032  Your external tool needs to be instructed to copy files in place\n\
