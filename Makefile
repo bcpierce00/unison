@@ -224,3 +224,6 @@ installtext:
 src/$(NAME):
 	$(MAKE) -C src
 
+windres:
+	windres src/win32rc/unison.rc -O coff src/win32rc/unison.res.lib
+	windres src/win32rc/unison.rc -O res src/win32rc/unison.res
