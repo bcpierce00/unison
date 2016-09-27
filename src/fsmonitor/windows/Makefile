@@ -1,5 +1,5 @@
 
-FSMONITOR = $(NAME)-fsmonitor
+FSMONITOR = unison-fsmonitor
 
 DIR=fsmonitor/windows
 FSMOCAMLOBJS = \
