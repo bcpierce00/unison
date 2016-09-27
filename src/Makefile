@@ -359,6 +359,7 @@ clean::
 clean::
 	$(MAKE) -C ubase clean
 	$(MAKE) -C lwt clean
+	$(MAKE) -C fsmonitor/windows clean
 
 ifneq ($(strip $(UIMACDIR)),)
 clean::
