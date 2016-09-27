@@ -1,6 +1,6 @@
 .PHONY: all src
 
-default: src
+default: text
 
 text:
 	$(MAKE) -C src UISTYLE=text
