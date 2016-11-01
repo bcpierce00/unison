@@ -1,15 +1,13 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="11542" systemVersion="16B2555" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none">
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="5056" systemVersion="13E28" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none">
     <dependencies>
-        <deployment version="1050" identifier="macosx"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="11542"/>
-        <capability name="box content view" minToolsVersion="7.0"/>
-        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+        <deployment version="1050" defaultVersion="1090" identifier="macosx"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="5056"/>
     </dependencies>
     <objects>
         <customObject id="-2" userLabel="File's Owner" customClass="NSApplication"/>
         <customObject id="-1" userLabel="First Responder" customClass="FirstResponder"/>
-        <customObject id="-3" userLabel="Application" customClass="NSObject">
+        <customObject id="-3" userLabel="Application">
             <connections>
                 <outlet property="delegate" destination="209" id="571"/>
             </connections>
@@ -26,7 +24,7 @@
                 <subviews>
                     <segmentedControl verticalHuggingPriority="750" id="515">
                         <rect key="frame" x="370" y="317" width="83" height="25"/>
-                        <segmentedCell key="cell" borderStyle="border" alignment="left" style="automatic" trackingMode="selectOne" id="527">
+                        <segmentedCell key="cell" alignment="left" style="automatic" trackingMode="selectOne" id="527">
                             <font key="font" metaFont="system"/>
                             <segments>
                                 <segment image="Outline-Flat" imageScaling="none" width="24" tag="1"/>
@@ -128,7 +126,7 @@
                 <menuItem title="Actions" id="261">
                     <menu key="submenu" title="Actions" id="262">
                         <items>
-                            <menuItem title="Propagate Left to Right" keyEquivalent="&gt;" id="263">
+                            <menuItem title="Propagate Left to Right" keyEquivalent=">" id="263">
                                 <connections>
                                     <action selector="copyLR:" target="-1" id="270"/>
                                 </connections>
@@ -232,17 +230,17 @@
                     <rect key="frame" x="20" y="20" width="323" height="208"/>
                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                     <clipView key="contentView" id="WLB-IC-vB8">
-                        <rect key="frame" x="1" y="0.0" width="321" height="207"/>
-                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <rect key="frame" x="1" y="17" width="306" height="190"/>
+                        <autoresizingMask key="autoresizingMask"/>
                         <subviews>
                             <tableView verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="lastColumnOnly" multipleSelection="NO" emptySelection="NO" autosaveColumns="NO" headerView="563" id="205" customClass="ProfileTableView">
-                                <rect key="frame" x="0.0" y="0.0" width="321" height="190"/>
+                                <rect key="frame" x="0.0" y="0.0" width="306" height="190"/>
                                 <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                 <size key="intercellSpacing" width="3" height="2"/>
-                                <color key="backgroundColor" name="controlBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                                 <color key="gridColor" name="gridColor" catalog="System" colorSpace="catalog"/>
                                 <tableColumns>
-                                    <tableColumn identifier="profiles" editable="NO" width="317.97698974609375" minWidth="47.477001190185547" maxWidth="1000" id="202">
+                                    <tableColumn identifier="profiles" editable="NO" width="303.47698974609375" minWidth="47.477001190185547" maxWidth="1000" id="202">
                                         <tableHeaderCell key="headerCell" lineBreakMode="truncatingTail" borderStyle="border" alignment="left" title="Profiles">
                                             <font key="font" metaFont="smallSystem"/>
                                             <color key="textColor" name="headerTextColor" catalog="System" colorSpace="catalog"/>
@@ -262,17 +260,18 @@
                                 </connections>
                             </tableView>
                         </subviews>
+                        <color key="backgroundColor" name="controlBackgroundColor" catalog="System" colorSpace="catalog"/>
                     </clipView>
                     <scroller key="horizontalScroller" hidden="YES" verticalHuggingPriority="750" horizontal="YES" id="562">
                         <rect key="frame" x="-100" y="-100" width="113" height="15"/>
                         <autoresizingMask key="autoresizingMask"/>
                     </scroller>
                     <scroller key="verticalScroller" verticalHuggingPriority="750" horizontal="NO" id="561">
-                        <rect key="frame" x="306" y="17" width="16" height="190"/>
+                        <rect key="frame" x="307" y="17" width="15" height="190"/>
                         <autoresizingMask key="autoresizingMask"/>
                     </scroller>
                     <tableHeaderView key="headerView" id="563">
-                        <rect key="frame" x="0.0" y="0.0" width="321" height="17"/>
+                        <rect key="frame" x="0.0" y="0.0" width="306" height="17"/>
                         <autoresizingMask key="autoresizingMask"/>
                     </tableHeaderView>
                 </scrollView>
@@ -322,14 +321,14 @@
                             <rect key="frame" x="0.0" y="0.0" width="730" height="428"/>
                             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                             <clipView key="contentView" id="AuU-c4-4ip">
-                                <rect key="frame" x="0.0" y="0.0" width="730" height="428"/>
-                                <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                <rect key="frame" x="0.0" y="17" width="730" height="411"/>
+                                <autoresizingMask key="autoresizingMask"/>
                                 <subviews>
                                     <tableView verticalHuggingPriority="750" allowsExpansionToolTips="YES" columnAutoresizingStyle="lastColumnOnly" autosaveColumns="NO" rowHeight="18" headerView="591" id="594" customClass="ReconTableView">
                                         <rect key="frame" x="0.0" y="0.0" width="730" height="411"/>
                                         <autoresizingMask key="autoresizingMask"/>
                                         <size key="intercellSpacing" width="3" height="2"/>
-                                        <color key="backgroundColor" name="controlBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                        <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                                         <color key="gridColor" name="gridColor" catalog="System" colorSpace="catalog"/>
                                         <tableColumns>
                                             <tableColumn identifier="path" editable="NO" width="426" minWidth="27.095703125" maxWidth="1000" id="597">
@@ -383,7 +382,7 @@
                                                 <sortDescriptor key="sortDescriptorPrototype" selector="compare:" sortKey="directionSortKey"/>
                                             </tableColumn>
                                             <tableColumn identifier="rightIcon" editable="NO" width="16" minWidth="16" maxWidth="16" id="598">
-                                                <tableHeaderCell key="headerCell" lineBreakMode="truncatingTail" borderStyle="border" alignment="left" title="&gt;">
+                                                <tableHeaderCell key="headerCell" lineBreakMode="truncatingTail" borderStyle="border" alignment="left" title=">">
                                                     <font key="font" metaFont="smallSystem"/>
                                                     <color key="textColor" name="headerTextColor" catalog="System" colorSpace="catalog"/>
                                                     <color key="backgroundColor" name="headerColor" catalog="System" colorSpace="catalog"/>
@@ -398,6 +397,7 @@
                                         </connections>
                                     </tableView>
                                 </subviews>
+                                <color key="backgroundColor" name="controlBackgroundColor" catalog="System" colorSpace="catalog"/>
                             </clipView>
                             <scroller key="horizontalScroller" hidden="YES" verticalHuggingPriority="750" horizontal="YES" id="592">
                                 <rect key="frame" x="-100" y="-100" width="629" height="15"/>
@@ -516,7 +516,7 @@
                 <box title="Second root" id="323">
                     <rect key="frame" x="20" y="16" width="497" height="106"/>
                     <autoresizingMask key="autoresizingMask" widthSizable="YES"/>
-                    <view key="contentView" id="TzD-tK-3Ya">
+                    <view key="contentView">
                         <rect key="frame" x="2" y="2" width="493" height="86"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
@@ -614,12 +614,14 @@
                             </textField>
                         </subviews>
                     </view>
+                    <color key="borderColor" white="0.0" alpha="0.41999999999999998" colorSpace="calibratedWhite"/>
+                    <color key="fillColor" white="0.0" alpha="0.0" colorSpace="calibratedWhite"/>
                     <font key="titleFont" metaFont="system"/>
                 </box>
                 <box title="First root" id="321">
                     <rect key="frame" x="20" y="129" width="497" height="71"/>
                     <autoresizingMask key="autoresizingMask" widthSizable="YES"/>
-                    <view key="contentView" id="uao-4e-fDZ">
+                    <view key="contentView">
                         <rect key="frame" x="2" y="2" width="493" height="51"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
@@ -648,6 +650,8 @@
                             </textField>
                         </subviews>
                     </view>
+                    <color key="borderColor" white="0.0" alpha="0.41999999999999998" colorSpace="calibratedWhite"/>
+                    <color key="fillColor" white="0.0" alpha="0.0" colorSpace="calibratedWhite"/>
                     <font key="titleFont" metaFont="system"/>
                 </box>
             </subviews>
@@ -809,13 +813,15 @@ This software is licensed under the GNU General Public License.</string>
                             <rect key="frame" x="0.0" y="0.0" width="505" height="342"/>
                             <autoresizingMask key="autoresizingMask"/>
                             <subviews>
-                                <textView editable="NO" selectable="NO" importsGraphics="NO" usesFontPanel="YES" findStyle="panel" continuousSpellChecking="YES" usesRuler="YES" smartInsertDelete="YES" id="478">
+                                <textView editable="NO" selectable="NO" importsGraphics="NO" findStyle="panel" continuousSpellChecking="YES" usesRuler="YES" usesFontPanel="YES" verticallyResizable="YES" smartInsertDelete="YES" id="478">
                                     <rect key="frame" x="0.0" y="0.0" width="505" height="342"/>
                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                     <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                                     <size key="minSize" width="505" height="342"/>
                                     <size key="maxSize" width="1010" height="10000000"/>
                                     <color key="insertionPointColor" white="0.0" alpha="1" colorSpace="calibratedWhite"/>
+                                    <size key="minSize" width="505" height="342"/>
+                                    <size key="maxSize" width="1010" height="10000000"/>
                                 </textView>
                             </subviews>
                             <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
