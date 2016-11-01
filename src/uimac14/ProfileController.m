@@ -25,17 +25,20 @@ NSString *unisonDirectory()
     profiles = [[NSMutableArray alloc] init];
     defaultIndex = -1;
 
-    for (i = j = 0; i < count; i++) {
-        NSString *file = [files objectAtIndex:i];
-        if ([[file pathExtension] isEqualTo:@"prf"]) {
-            NSString *withoutExtension = [file stringByDeletingPathExtension];
-            [profiles insertObject:withoutExtension atIndex:j];
-            if ([@"default" isEqualTo:withoutExtension]) defaultIndex = j;
-            j++;
+    if (files) {
+        for (i = j = 0; i < count; i++) {
+            NSString *file = [files objectAtIndex:i];
+            if ([[file pathExtension] isEqualTo:@"prf"]) {
+                NSString *withoutExtension = [file stringByDeletingPathExtension];
+                [profiles insertObject:withoutExtension atIndex:j];
+                if ([@"default" isEqualTo:withoutExtension]) defaultIndex = j;
+                j++;
+            }
         }
+        if (j > 0)
+            [tableView selectRowIndexes:[NSIndexSet indexSetWithIndex:0] byExtendingSelection:NO];
+
     }
-    if (j > 0)
-        [tableView selectRowIndexes:[NSIndexSet indexSetWithIndex:0] byExtendingSelection:NO];
 }
 
 - (void)awakeFromNib
@@ -61,7 +64,7 @@ NSString *unisonDirectory()
 {
     if (rowIndex >= 0 && rowIndex < [profiles count])
         return [profiles objectAtIndex:rowIndex];
-    else return @"[internal error!]";
+    else return nil;
 }
 
 - (NSString *)selected
@@ -69,7 +72,7 @@ NSString *unisonDirectory()
     int rowIndex = [tableView selectedRow];
     if (rowIndex >= 0 && rowIndex < [profiles count])
         return [profiles objectAtIndex:rowIndex];
-    else return @"[internal error!]";
+    else return nil;
 }
 
 - (NSTableView *)tableView
