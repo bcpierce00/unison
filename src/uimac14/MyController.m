@@ -314,10 +314,8 @@ static MyController *me; // needed by reloadTable and displayStatus, below
 - (IBAction)openButton:(id)sender
 {
     NSString *profile = [profileController selected];
-    if (profile) {
-        [self profileSelected:profile];
-        [self connect:profile];
-    }
+    [self profileSelected:profile];
+    [self connect:profile];
     return;
 }
 
