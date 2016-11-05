@@ -291,7 +291,7 @@ let reconItem2stringList oldPath theRI =
       (replicaContent2shortString diff.rc1,
        direction2action partial diff.direction,
        replicaContent2shortString diff.rc2,
-       displayPath oldPath theRI.path1)
+       Path.toString theRI.path1)
 
 let reconItem2string oldPath theRI status =
   let (r1, action, r2, path) = reconItem2stringList oldPath theRI in
