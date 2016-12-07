@@ -203,7 +203,7 @@ Unison can be used with either of two user interfaces:
 \begin{enumerate}
 \item a simple textual interface, suitable for dumb terminals (and
 running from scripts), and
-\item a more sophisticated grapical interface, based on Gtk2 (on
+\item a more sophisticated graphical interface, based on Gtk2 (on
        Linux/Windows) or the native UI framework (on OSX).
 \end{enumerate}
 
@@ -1490,7 +1490,7 @@ The file {\tt common} contains the real preferences:
 
     # If any new preferences are added by Unison (e.g. 'ignore'
     # preferences added via the graphical UI), then store them in the
-    # file 'common' rathen than in the top-level preference file
+    # file 'common' rather than in the top-level preference file
     addprefsto = common
 
     # Names and paths to ignore:
@@ -1899,7 +1899,7 @@ The next pattern makes Unison ignore the path \verb|a/b|:
 \begin{verbatim}
              ignore = Path a/b
 \end{verbatim}
-Path patterns do {\em not} skip filesnames beginning with \verb|.| (as Name
+Path patterns do {\em not} skip filenames beginning with \verb|.| (as Name
 patterns do).  For example,
 \begin{verbatim}
              ignore = Path */tmp
@@ -1917,7 +1917,7 @@ match the whole path, not just a substring of the path.
 
 Here are a few extra points regarding the \texttt{ignore} preference.
 \begin{itemize}
-\item If a directory is ignored, all its descendents will be too.
+\item If a directory is ignored, all its descendants will be too.
 
 \item The user interface provides some convenient commands for adding
   new patterns to be ignored.  To ignore a particular file, select it
@@ -1992,7 +1992,7 @@ Windows system, all symbolic links should match either an
 \SUBSECTION{Permissions}{perms}
 
 Synchronizing the permission bits of files is slightly tricky when two
-different filesytems are involved (e.g., when synchronizing a Windows
+different filesystems are involved (e.g., when synchronizing a Windows
 client and a Unix server).  In detail, here's how it works:
 \begin{itemize}
 \item When the permission bits of an existing file or directory are
@@ -2169,7 +2169,7 @@ abort.
 On Windows NT/2k/XP systems, the graphical version of Unison can be
 invoked directly by clicking on its icon.  On Windows 95/98 systems,
 click-starting also works, {\em as long as you are not using ssh}.
-Due to an incompatibility with ocaml and Windows 95/98 that is not
+Due to an incompatibility with OCaml and Windows 95/98 that is not
 under our control, you must start Unison from a DOS window in Windows
 95/98 if you want to use ssh.
 
@@ -2214,7 +2214,7 @@ follows.
 
 Warning: there are many implementations and ports of ssh for
 Windows, and not all of them will work with Unison.  We have gotten
-Unison to work with Cygwin's port of openssh, and we suggest you try
+Unison to work with Cygwin's port of OpenSSH, and we suggest you try
 that one first.  Here's how to install it:
 \begin{enumerate}
 \item First, create a new folder on your desktop to hold temporary
