@@ -1617,7 +1617,7 @@ involved).  Each instance of the preference looks like this:
     merge = <PATHSPEC> -> <MERGECMD>
 \end{verbatim}
 The \verb|<PATHSPEC>| here has exactly the same format as for the
-\verb|ignore| preference (see \sectionref{pathspec}{Path specification}).  For example,
+\verb|ignore| preference (see \sectionref{pathspec}{Path Specification}).  For example,
 using ``\verb|Name *.txt|'' as the \verb|<PATHSPEC>| tells Unison that this
 command should be used whenever a file with extension \verb|.txt| needs to
 be merged.
@@ -1817,7 +1817,7 @@ Currently, there are four possible values for the exit status:
 The graphical interface does not return any useful information through the
 exit status.
 
-\SUBSECTION{Path specification}{pathspec}
+\SUBSECTION{Path Specification}{pathspec}
 Several Unison preferences (e.g., \verb|ignore|/\verb|ignorenot|,
 \verb|follow|, \verb|sortfirst|/\verb|sortlast|, \verb|backup|,
 \verb|merge|, etc.)
@@ -1888,7 +1888,7 @@ Most users of Unison will find that their replicas contain lots of
 files that they don't ever want to synchronize --- temporary files,
 very large files, old stuff, architecture-specific binaries, etc.
 They can instruct Unison to ignore these paths using patterns
-introduced in \sectionref{pathspec}{Path Patterns}.
+introduced in \sectionref{pathspec}{Path Specification}.
 
 For example, the following pattern will make Unison ignore any
 path containing the name \verb|CVS| or a name ending in \verb|.cmo|:
@@ -1980,7 +1980,7 @@ to treat a link in this manner, add a line of the form
              follow = \ARG{pathspec}
 \end{alltt}
 to the profile, where \ARG{pathspec} is a path pattern as described in
-\sectionref{pathspec}{Path Patterns}.
+\sectionref{pathspec}{Path Specification}.
 
 Windows file systems do not support symbolic links; Unison will refuse
 to propagate an opaque symbolic link from Unix to Windows and flag the
