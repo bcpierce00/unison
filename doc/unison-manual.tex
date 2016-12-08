@@ -232,7 +232,7 @@ appears by default, while the textual interface can be selected by including
 provides just the textual interface.
 
 If you don't see a pre-built executable for your architecture, you'll
-need to build it yourself.  See \sectionref{building}{Building Unison}.
+need to build it yourself.  See \sectionref{building}{Building Unison from Scratch}.
 There are also a small number of contributed ports to other
 architectures that are not maintained by us.  See the
 \SHOWURL{http://www.cis.upenn.edu/\home{bcpierce}/unison/download.html}{Contributed
@@ -664,7 +664,7 @@ of the path:
   on the server by using the command-line option \showtt{-servercmd
     /full/path/name/of/unison} or adding
   \showtt{servercmd=/full/path/name/of/unison} to your profile (see
-  \sectionref{profile}{Profile}).  Similarly, you can specify a
+  \sectionref{profile}{Profiles}).  Similarly, you can specify a
   explicit path for the \verb|ssh| program using the \showtt{-sshcmd}
   option.
   Extra arguments can be passed to \verb|ssh| by setting the
@@ -731,7 +731,7 @@ used files.  There are several possible ways of going about this:
 
 \begin{enumerate}
 \item Synchronize your whole home directory, using the Ignore facility
-(see \sectionref{ignore}{Ignore})
+(see \sectionref{ignore}{Ignoring Paths})
 to avoid synchronizing temporary files and things that only belong on
 one host.
 \item Create a subdirectory called {\tt shared} (or {\tt current}, or
@@ -768,7 +768,7 @@ synchronizing a laptop with a fileserver, you'll probably always run
 Unison on the laptop.)  This is a bit different from the usual
 situation with asymmetric mirroring programs like \verb|rdist|, where
 the mirroring operation typically needs to be initiated from the
-machine with the most recent changes.  \sectionref{profile}{Profile}
+machine with the most recent changes.  \sectionref{profile}{Profiles}
 covers the syntax of Unison profiles, together with some sample profiles.
 
 Some tips on improving Unison's performance can be found on the
@@ -810,7 +810,7 @@ The on-line information and the printed manual are essentially identical.
 
 If you use Unison regularly, you should subscribe to one of the mailing
 lists, to receive announcements of new versions.  See
-\sectionref{lists}{Mailing Lists}.
+\sectionref{lists}{Mailing Lists and Bug Reporting}.
 
 \SECTION{Basic Concepts}{basics}{basics}
 
@@ -2033,7 +2033,7 @@ If you don't need the files on the Windows system, you can simply
 disregard Unison's warning message, and go ahead with the
 synchronization; Unison won't touch those files.  If you don't want to
 see the warning on each synchronization, you can tell Unison to ignore
-the files (see \sectionref{ignore}{Ignore}).
+the files (see \sectionref{ignore}{Ignoring Paths}).
 
 \textbf{Illegal filenames.}  Unix allows some filenames that are
 illegal in Windows.  For example, colons (`:') are not allowed in
@@ -2183,7 +2183,7 @@ appear and you will type your password in the DOS window you were
 using.
 
 To use Unison in this mode, you must first create a profile (see
-\sectionref{profile}{Profile}).  Use your favorite editor for this.
+\sectionref{profile}{Profiles}).  Use your favorite editor for this.
 
 
 \appendix

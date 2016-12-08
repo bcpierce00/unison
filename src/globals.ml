@@ -282,7 +282,7 @@ let merge =
      ^ "The syntax of \\ARG{pathspec>cmd} is "
      ^ "described in \\sectionref{pathspec}{Path Specification}, and further "
      ^ "details on Merging functions are present in "
-     ^ "\\sectionref{merge}{Merging files}.")
+     ^ "\\sectionref{merge}{Merging Conflicting Versions}.")
 
 let shouldMerge p = Pred.test merge (Path.toString p)
 
