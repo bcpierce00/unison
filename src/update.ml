@@ -1063,7 +1063,7 @@ let mountpoints =
      ^ "double-check, at the end of update detection, that \\texttt{PATH} exists "
      ^ "and abort if it does not.  This is useful when Unison is used to synchronize "
      ^ "removable media.  This preference can be given more than once.  "
-     ^ "See \\sectionref{mountpoints}{Mount Points}.")
+     ^ "See \\sectionref{mountpoints}{Mount Points and Removable Media}.")
 
 let abortIfAnyMountpointsAreMissing fspath =
   Safelist.iter
@@ -1166,7 +1166,7 @@ let fastcheck =
        For backward compatibility, \
        \\verb|yes|, \\verb|no|, and \\verb|default| can be used in place \
        of \\verb|true|, \\verb|false|, and \\verb|auto|.  See \
-       \\sectionref{fastcheck}{Fast Checking} for more information.")
+       \\sectionref{fastcheck}{Fast Update Detection} for more information.")
 
 let useFastChecking () =
       Prefs.read fastcheck = `True
