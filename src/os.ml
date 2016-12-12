@@ -185,10 +185,8 @@ and delete fspath path =
       | `ABSENT ->
           ())
 
-let rename fname sourcefspath sourcepath targetfspath targetpath =
-  let source = Fspath.concat sourcefspath sourcepath in
+let renameFspath fname source target =
   let source' = Fspath.toPrintString source in
-  let target = Fspath.concat targetfspath targetpath in
   let target' = Fspath.toPrintString target in
   if source = target then
     raise (Util.Transient ("Rename ("^fname^"): identical source and target " ^ source'));
@@ -204,6 +202,11 @@ let rename fname sourcefspath sourcepath targetfspath targetpath =
         else if Fs.file_exists targetDouble then
           Fs.unlink targetDouble
       end)
+
+let rename fname sourcefspath sourcepath targetfspath targetpath =
+  let source = Fspath.concat sourcefspath sourcepath in
+  let target = Fspath.concat targetfspath targetpath in
+  renameFspath fname source target
 
 let symlink =
   if Util.isCygwin || (Util.osType != `Win32) then
