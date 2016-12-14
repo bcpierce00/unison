@@ -585,7 +585,7 @@ let check fspath path stats t =
             (syncedPartsToString t')))
 
 let maxModificationTimeDifference =
-  Prefs.createInt "maxmodificationtimedifference" 0
+  Prefs.createInt "maxtimediff" 0
     "!maximum modification time difference (in seconds) for a file"
     ("Used to compare files against the archive.")
 
@@ -597,7 +597,7 @@ let same p p' =
     Synced _, Synced _ ->
       similar p p'
   | _                  ->
-      let delta = extract p -. extract p' in
+      let delta = (abs_float (extract p -. extract p')) in
       delta <= (float_of_int (Prefs.read maxModificationTimeDifference)) || delta = 3600. || delta = -3600.
 
 let init _ = ()
