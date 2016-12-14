@@ -593,7 +593,7 @@ let same p p' =
       similar p p'
   | _                  ->
       let delta = extract p -. extract p' in
-      delta = 0. || delta = 3600. || delta = -3600.
+      delta < 8. || delta = 3600. || delta = -3600.
 
 let init _ = ()
 
