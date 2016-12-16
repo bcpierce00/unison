@@ -585,9 +585,9 @@ let check fspath path stats t =
             (syncedPartsToString t')))
 
 let maxModificationTimeDifference =
-  Prefs.createInt "maxtimediff" 0
-    "!maximum modification time difference (in seconds) for a file"
-    ("Used to compare files against the archive.")
+  Prefs.createInt "modtimedelta" 0
+    "!If file modification time changes by less than delta, file won't be checked for changes"
+    ("Used to check if a file may have changed compared to archive.")
 
 (* When modification time are synchronized, we cannot update the
    archive when they are changed due to daylight saving time.  Thus,
@@ -597,6 +597,12 @@ let same p p' =
     Synced _, Synced _ ->
       similar p p'
   | _                  ->
+      (* There are certain cases where modification times may fluctuate
+         by a few seconds. This has been observed i.e. on an sshfs mount
+         of an Android external SDCard, where fluctuations of up to 2
+         seconds can happen. To gracefully handle this case without re-
+         hashing all the files, users may use a preference setting of
+         a maximum accepted time delta. *)
       let delta = (abs_float (extract p -. extract p')) in
       delta <= (float_of_int (Prefs.read maxModificationTimeDifference)) || delta = 3600. || delta = -3600.
 
