@@ -5,6 +5,7 @@
 
 #include "caml/intext.h"
 #include "caml/bigarray.h"
+#include "caml/memory.h"
 
 CAMLprim value ml_marshal_to_bigarray(value v, value flags)
 {
@@ -21,9 +22,12 @@ CAMLprim value ml_marshal_to_bigarray(value v, value flags)
 
 CAMLprim value ml_unmarshal_from_bigarray(value b, value ofs)
 {
+  CAMLparam1(b); /* Holds [b] live until unmarshalling completes. */
+  value result;
   struct caml_bigarray *b_arr = Bigarray_val(b);
-  return input_value_from_block (Array_data (b_arr, ofs),
+  result = input_value_from_block (Array_data (b_arr, ofs),
                                  b_arr->dim[0] - Long_val(ofs));
+  CAMLreturn(result);
 }
 
 CAMLprim value ml_blit_string_to_bigarray
