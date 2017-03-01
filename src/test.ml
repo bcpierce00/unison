@@ -522,6 +522,21 @@ let test() =
       put R1 (Dir ["y", Link "x"]); sync();
       check "1" R2 orig;
     );
+
+    (* Check for the bug reported by Sebastian Elsner (Jan 2017) *)
+    (* NOT POSSIBLE because the test API does not enable one to play with file
+       owners, but I put the test here anyway. *)
+    (*
+    runtest "owner of path directories" ["owner"; "path = a/b"] (fun() ->
+      put R1 (Dir ["a", Dir ["b", Dir["foo", File "Foo";
+                                      "bar", File "Bar";
+                                      "baz", File "Baz";]]]]);
+      setOwner R1 "a/b" "testuser";  (* does not exist *)
+      put R2 (Dir []);
+      sync();
+      checkOwner "1" R2 "a/b" "testuser";  (* does not exist *)
+    );
+    *)
   end;
 
   if !failures = 0 then

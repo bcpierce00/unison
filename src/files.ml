@@ -377,7 +377,8 @@ let rec createDirectories fspath localPath props =
           createDirectories fspath parentPath rem;
           try
             let absolutePath = Fspath.concat fspath parentPath in
-             Fs.mkdir absolutePath (Props.perms desc)
+             Fs.mkdir absolutePath (Props.perms desc);
+             Fileinfo.set fspath parentPath (`Copy parentPath) desc
             (* The directory may have already been created
                if there are several paths with the same prefix *)
           with Unix.Unix_error (Unix.EEXIST, _, _) -> ()
@@ -452,14 +453,11 @@ let deleteSpuriousChildrenLocal (_, (fspathTo, pathTo, archChildren)) =
 let deleteSpuriousChildren =
   Remote.registerRootCmd "deleteSpuriousChildren" deleteSpuriousChildrenLocal
 
-let rec normalizePropsRec propsFrom propsTo =
+let rec normalizeProps propsFrom propsTo =
   match propsFrom, propsTo with
-    d :: r, d' :: r' -> normalizePropsRec r r'
-  | _, []            -> propsFrom
+    d :: r, d' :: r' -> normalizeProps r r'
+  | _, []            -> (Safelist.rev propsFrom)
   | [], _ :: _       -> assert false
-
-let normalizeProps propsFrom propsTo =
-  normalizePropsRec (Safelist.rev propsFrom) (Safelist.rev propsTo)
 
 (* ------------------------------------------------------------ *)
 
