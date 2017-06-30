@@ -79,6 +79,7 @@ static value completionCallback;
 
 static void invoke_completion_callback
 (long id, long len, long errCode, long action) {
+  CAMLparam0();
   CAMLlocal2 (err, name);
   value args[4];
   err = Val_long(0);
