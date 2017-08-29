@@ -35,6 +35,9 @@ NSString *unisonDirectory()
                 j++;
             }
         }
+        NSSortDescriptor *sort = [NSSortDescriptor sortDescriptorWithKey:nil ascending:YES];
+        [profiles sortUsingDescriptors:[NSArray arrayWithObject:sort]];
+
         if (j > 0)
             [tableView selectRowIndexes:[NSIndexSet indexSetWithIndex:0] byExtendingSelection:NO];
 
