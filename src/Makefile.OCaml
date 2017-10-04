@@ -293,8 +293,14 @@ ifeq ($(UISTYLE), gtk)
 endif
 
 # Gtk2 GUI
+OCAMLFIND := $(shell command -v ocamlfind 2> /dev/null)
+
 ifeq ($(UISTYLE), gtk2)
-  CAMLFLAGS+=-I +lablgtk2
+  ifndef OCAMLFIND
+    CAMLFLAGS+=-I +lablgtk2
+  else
+    CAMLFLAGS+=$(shell $(OCAMLFIND) query -i-format lablgtk2 )
+  endif
   OCAMLOBJS+=pixmaps.cmo uigtk2.cmo linkgtk2.cmo
   OCAMLLIBS+=lablgtk.cma
 endif
