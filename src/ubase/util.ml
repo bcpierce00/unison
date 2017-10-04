@@ -425,8 +425,7 @@ let padto n s = s ^ (String.make (max 0 (n - String.length s)) ' ')
 (*              Building pathnames in the user's home dir                    *)
 (*****************************************************************************)
 
-let homeDir () =
-  System.fspathFromString
+let homeDirStr = 
     (if (osType = `Unix) || isCygwin then
        safeGetenv "HOME"
      else if osType = `Win32 then
@@ -443,6 +442,9 @@ let homeDir () =
        "c:/" (* Default *)
      else
        assert false (* osType can't be anything else *))
+
+let homeDir () =
+  System.fspathFromString homeDirStr
 
 let fileInHomeDir n = System.fspathConcat (homeDir ()) n
 

@@ -46,11 +46,20 @@ let writeCommitLog source target tempname =
        Printf.fprintf c "(and delete this notice when you've done so).\n";
        close_out c)
 
-let clearCommitLog () =
+let clearCommitLog pathTo =
   debug (fun() -> (Util.msg "Deleting commit log\n"));
+
+  let tmpPathDir = Fspath.canonize (Some Util.homeDirStr) in  (* tmpPathDir is a Fspath.t *)
+  (* Use pathTo in the temporary name (instead of DANGER.README) to reduce chance of reuse *)
+  let tmpPath = Os.tempPath tmpPathDir pathTo in  (* tmpPath is a Path.local *)
+  let dangerFspath = Fspath.canonize (Some (System.fspathToString commitLogName)) in
+  let dangerFsPathTmp = Fspath.concat tmpPathDir tmpPath in
+
+  Os.renameFspath "DANGER.README" dangerFspath dangerFsPathTmp;
+  
   Util.convertUnixErrorsToFatal
     "clearing commit log"
-      (fun () -> System.unlink commitLogName)
+      (fun () -> System.unlink (System.fspathFromString (Fspath.toString dangerFsPathTmp)) )
 
 let processCommitLog () =
   if System.file_exists commitLogName then begin
@@ -280,7 +289,7 @@ let performRename fspathTo localPathTo workingDir pathFrom pathTo prevArch =
                        (Fspath.toDebugString target));
               Os.rename "renameLocal(2)"
                 source Path.empty target Path.empty))
-          (fun _ -> clearCommitLog());
+          (fun _ -> clearCommitLog pathTo);
         (* It is ok to leave a temporary file.  So, the log can be
            cleared before deleting it. *)
         Os.delete temp Path.empty

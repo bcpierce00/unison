@@ -79,6 +79,7 @@ val percentageOfTotal :
 val monthname : int -> string
 val percent2string : float -> string
 val fileInHomeDir : string -> System.fspath
+val homeDirStr : string
 
 (* Just like the versions in the Unix module, but raising Transient
    instead of Unix_error *)
