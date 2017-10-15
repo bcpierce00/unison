@@ -340,6 +340,7 @@ let test() =
                                Dir ["a", File "foo";
                                     "b", File "modified on R2";
                                     "c", File "modified on R2"]]]);
+      Unix.sleep 2; (* in case time granularity is coarse on this FS *)
       put R1 expected;
       sync ();
       check "1" R2 expected;
