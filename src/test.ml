@@ -332,7 +332,9 @@ let test() =
       let orig = (Dir ["foo", Dir [".git", Dir ["a", File "foo";
                                                 "b", File "bar";
                                                 "c", File "baz"]]]) in
-      put R1 orig; put R2 orig; sync();
+      put R1 orig;
+      Unix.sleep 2; (* in case time granularity is coarse on this FS *)
+      put R2 orig; sync();
       let expected = (Dir ["foo", Dir [".git", Dir ["a", File "modified on R1";
                                                     "b", File "bar";
                                                     "c", File "modified on R1"]]]) in
@@ -340,7 +342,7 @@ let test() =
                                Dir ["a", File "foo";
                                     "b", File "modified on R2";
                                     "c", File "modified on R2"]]]);
-      Unix.sleep 2; (* in case time granularity is coarse on this FS *)
+      Unix.sleep 2; 
       put R1 expected;
       sync ();
       check "1" R2 expected;
