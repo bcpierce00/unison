@@ -1648,8 +1648,17 @@ and buildUpdateRec archive currfspath path scanInfo =
     | (`DIRECTORY, ArchiveDir (archDesc, prevChildren)) ->
         debugverbose (fun() -> Util.msg "  buildUpdate -> Directory\n");
         let (permchange, desc) =
+          (* BCP 10/17: If this directory is being treated atomically,
+             then we want to use its real modtime; otherwise, we don't
+             want to consider it as modified unless its own properties
+             have changed (i.e., we don't want touching a file inside
+             the directory to count as a modification to the
+             directory). *)
           if isPropUnchanged info.Fileinfo.desc archDesc then
-            (PropsSame, archDesc)
+            if Pred.test Globals.atomic (Path.toString path) then
+              (PropsSame, info.Fileinfo.desc)
+            else
+              (PropsSame, archDesc)
           else
             (PropsUpdated, info.Fileinfo.desc) in
         let unchanged =
