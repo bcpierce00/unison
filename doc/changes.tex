@@ -1,3 +1,15 @@
+\begin{changesfromversion}{2.48}
+\item Repository moved to GitHub (\URL{https://github.com/bcpierce00/unison}).
+\item Miscellaneous:
+\begin{itemize}
+\item The OCaml compiler version is now included in the ``connection header
+--- the string that's printed when connecting to a remote server --- to
+facilitate debugging version mismatch issues.  
+\item Added a DockerFile for the convenience of Docker users.
+\item Many small bugfixes and UI improvements.
+\end{itemize}
+\end{changesfromversion}
+
 \begin{changesfromversion}{2.45}
 \item Incorporated a patch from Christopher Zimmermann to replace the
   Uprintf module (which doesn't work with OCaml 4.02, causing Unison to crash) with equivalent

@@ -1,7 +1,7 @@
 #######################################################################
 # $I1: Unison file synchronizer: src/Makefile $
 # $I2: Last modified by bcpierce on Sun, 22 Aug 2004 22:29:04 -0400 $
-# $I3: Copyright 1999-2004 (see COPYING for details) $
+# $I3: Copyright 1999-2017 (see COPYING for details) $
 #######################################################################
 ## User Settings
 
