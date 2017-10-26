@@ -427,6 +427,8 @@ win32rc/unison.res.lib: win32rc/unison.res
 	@echo "$(CAMLC): $< ---> $@"
 	$(CAMLC) $(CAMLFLAGS) -c $(CWD)/$<
 
+fswatch.cmi : ubase/prefs.cmi
+
 %.cmo: %.ml
 	@echo "$(OCAMLC): $< ---> $@"
 	$(OCAMLC) $(CAMLFLAGS) -c $(CWD)/$<
