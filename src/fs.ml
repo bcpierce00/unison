@@ -21,7 +21,7 @@ type fspath = Fspath.t
 type dir_handle = System.dir_handle
                 = { readdir : unit -> string; closedir : unit -> unit }
 
-let symlink l f = System.symlink l (Fspath.toString f)
+let symlink ?to_dir l f = System.symlink l (Fspath.toString f)
 
 let readlink f = System.readlink (Fspath.toString f)
 
