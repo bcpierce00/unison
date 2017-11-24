@@ -95,7 +95,7 @@ buildexecutable::
 ### Default parameters
 
 # Generate backtrace information for exceptions
-CAMLFLAGS+=-g
+CAMLFLAGS+=-g -unsafe-string
 
 INCLFLAGS=-I lwt -I ubase -I system
 CAMLFLAGS+=$(INCLFLAGS)
@@ -426,6 +426,8 @@ win32rc/unison.res.lib: win32rc/unison.res
 %.cmi : %.mli
 	@echo "$(CAMLC): $< ---> $@"
 	$(CAMLC) $(CAMLFLAGS) -c $(CWD)/$<
+
+fswatch.cmi : ubase/prefs.cmi
 
 %.cmo: %.ml
 	@echo "$(OCAMLC): $< ---> $@"
