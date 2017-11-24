@@ -20,7 +20,7 @@ module type Core = sig
 type fspath
 type dir_handle = { readdir : unit -> string; closedir : unit -> unit }
 
-val symlink : string -> fspath -> unit
+val symlink : ?to_dir:bool -> string -> fspath -> unit
 val readlink : fspath -> string
 val chown : fspath -> int -> int -> unit
 val chmod : fspath -> int -> unit
