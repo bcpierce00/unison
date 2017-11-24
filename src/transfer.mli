@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/transfer.mli *)
-(* Copyright 1999-2016, Benjamin C. Pierce (see COPYING for details) *)
+(* Copyright 1999-2017, Benjamin C. Pierce (see COPYING for details) *)
 
 (*
    Rsync : general algorithm description

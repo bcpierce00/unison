@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/path.mli *)
-(* Copyright 1999-2016, Benjamin C. Pierce (see COPYING for details) *)
+(* Copyright 1999-2017, Benjamin C. Pierce (see COPYING for details) *)
 
 (* Abstract type of relative pathnames *)
 type 'a path
