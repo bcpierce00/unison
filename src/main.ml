@@ -90,7 +90,7 @@ let socket =
     (fun _ -> fun i ->
       (try
          Some(int_of_string i)
-       with Failure "int_of_string" ->
+       with Failure _ ->
          raise(Prefs.IllegalValue "-socket must be followed by a number")))
     (function None -> [] | Some(i) -> [string_of_int i]) ;;
 
