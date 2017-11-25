@@ -798,8 +798,8 @@ let rec synchronizeUntilDone () =
   let repeatinterval =
     if Prefs.read Uicommon.repeat = "" then -1 else
     try int_of_string (Prefs.read Uicommon.repeat)
-    with Failure "int_of_string" ->
-      (* If the 'repeat' pref is not a number, switch modes... *)
+    with Failure _ ->
+      (* If the 'repeat' pref is not a valid number, switch modes... *)
       if Prefs.read Uicommon.repeat = "watch" then
         synchronizePathsFromFilesystemWatcher()
       else

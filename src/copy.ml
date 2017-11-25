@@ -15,7 +15,6 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 *)
 
-
 let (>>=) = Lwt.bind
 
 let debug = Trace.debug "copy"
@@ -260,7 +259,7 @@ let openFileOut fspath path kind len =
       let fullpath = Fspath.concat fspath path in
       let perm = 0o600 in
       let ch = Fs.open_out_gen [Open_wronly; Open_binary] perm fullpath in
-      Fs.chmod fullpath perm;
+      if not (Prefs.read Props.dontChmod) then Fs.chmod fullpath perm;
       LargeFile.seek_out ch (Uutil.Filesize.toInt64 len);
       ch
   | `RESS ->
