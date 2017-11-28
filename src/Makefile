@@ -57,18 +57,13 @@ DEBUGGING=true
 PROFILING=false
 STATIC=false
 
-# NAME, VERSION, and MAJORVERSION, automatically generated
 -include Makefile.ProjectInfo
-
-Makefile.ProjectInfo: mkProjectInfo $(wildcard ../.bzr/branch/last-revision)
-	./mkProjectInfo > $@
 
 mkProjectInfo: mkProjectInfo.ml
 	ocamlc -o $@ unix.cma str.cma $^
 
 clean::
 	$(RM) mkProjectInfo
-	$(RM) Makefile.ProjectInfo
 
 ########################################################################
 ### Compilation rules
