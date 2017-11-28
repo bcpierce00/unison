@@ -69,9 +69,7 @@ OCAMLLIBDIR=$(shell ocamlc -v | tail -1 | sed -e 's/.* //g' | tr '\\' '/' | tr -
 #     UISTYLE=text
 #     UISTYLE=gtk
 #     UISTYLE=gtk2
-#     UISTYLE=mac       (old and limited, but working)
-#     UISTYLE=macnew    (spiffier)
-#     UISTYLE=mac14  (even spiffier, but not yet extensively tested)
+#     UISTYLE=mac14
 #
 # This should be set to an appropriate value automatically, depending
 # on whether the lablgtk library is available
@@ -170,16 +168,11 @@ clean::
 ####################################################################
 ### Unison objects and libraries
 
-ifeq ($(UISTYLE),mac)
-  buildexecutable:: macexecutable
-  UIMACDIR=uimac
-else
 ifeq ($(UISTYLE),mac14)
   buildexecutable:: macexecutable
   UIMACDIR=uimac14
 else
   buildexecutable:: $(NAME)$(EXEC_EXT)
-endif
 endif
 
 MINOSXVERSION=10.5
@@ -243,19 +236,6 @@ COBJS+=osxsupport$(OBJ_EXT) pty$(OBJ_EXT) bytearray_stubs$(OBJ_EXT)
 ## Text UI
 ifeq ($(UISTYLE), text)
   OCAMLOBJS+=linktext.cmo
-endif
-
-## Old Mac UI
-ifeq ($(UISTYLE),mac)
-  OCAMLOBJS+=uimacbridge.cmo
-endif
-
-## New Mac UI
-ifeq ($(UISTYLE),macnew)
-  OCAMLOBJS+=uimacbridgenew.cmo
-  THREADS=true
-  OCAMLLIBS+=threads.cma
-  INCLFLAGS+=-thread
 endif
 
 ## New Mac UI, 2014 version
@@ -481,4 +461,3 @@ clean::
 paths:
 	@echo PATH = $(PATH)
 	@echo OCAMLLIBDIR = $(OCAMLLIBDIR)
-

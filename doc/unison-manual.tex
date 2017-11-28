@@ -51,7 +51,7 @@
   \LARGE%
   Version \unisonversion \\[4ex] %
   % \today %
-  \large Copyright 1998-2015, Benjamin C. Pierce
+  \large Copyright 1998-2015, 2017, Benjamin C. Pierce
   \end{center}%
 \fi%
 %
@@ -339,22 +339,9 @@ planning on building the GUI, just to make sure it works.
 
 To build the basic GUI version, you'll first need to download and install
 the XCode developer tools from Apple.  Once this is done, just type {\tt
-  make UISTYLE=macnew} in the {\tt src} directory, and if things go well you
+  make} in the {\tt src} directory, and if things go well you
 should get an application that you can move from {\tt
-  uimacnew/build/Default/Unison.app} to wherever you want it.
-
-There is also an experimental GUI with a somewhat smoother look and feel.
-To compile this one (once you've got the basic one working), proceed as
-follows:
-\begin{enumerate}
-\item Go to the {\tt uimacnew09} directory and double-click the file {\tt
-  BWToolkit.ibplugin}.
-\item Go back up to the {\tt src} directory and type {\tt make
-  UISTYLE=macnew09}.
-\item You should get an application built for you at {\tt
-  uimacnew09/build/Default/Unison.app}.
-\end{enumerate}
-
+  uimac14/build/Default/Unison.app} to wherever you want it.
 
 \SUBSUBSECTION{Windows}{build-win}
 
