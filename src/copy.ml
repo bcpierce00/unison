@@ -187,11 +187,16 @@ let paranoidCheck fspathTo pathTo realPathTo desc fp ress =
   if Os.isPseudoFingerprint fp then begin
     Lwt.return (TransferNeedsDoubleCheckAgainstCurrentSource (info,fp'))
   end else if fp' <> fp then begin
+    debug (fun() -> Util.msg "Fingerprints differ: %s vs %s\n"
+      (Os.fullfingerprint_to_string fp)
+      (Os.fullfingerprint_to_string fp'));
     Lwt.return (TransferFailed (Os.reasonForFingerprintMismatch fp fp'))
   end else
     Lwt.return (TransferSucceeded info)
 
 let saveTempFileLocal (fspathTo, (pathTo, realPathTo, reason)) =
+  debug (fun() -> Util.msg "Failed (%s): Saving old temp file %s\n"
+         reason (Path.toString pathTo));
   let savepath =
     Os.tempPath ~fresh:true fspathTo
       (match Path.deconstructRev realPathTo with
@@ -199,7 +204,10 @@ let saveTempFileLocal (fspathTo, (pathTo, realPathTo, reason)) =
                            (Path.child Path.empty nm) "-bad"
        | None         -> Path.fromString "bad")
   in
-  Os.rename "save temp" fspathTo pathTo fspathTo savepath;
+  (* BCP: 12/17: Added a try around this call so that, if we're in the middle of failing
+     when we do this, we don't fail again and confuse the user about the reason for the
+     failure! *)
+  begin try Os.rename "save temp" fspathTo pathTo fspathTo savepath with Util.Transient _ -> () end;
   Lwt.fail
     (Util.Transient
        (Printf.sprintf
@@ -593,6 +601,8 @@ let transferResourceForkAndSetFileinfo
       connFrom fspathFrom pathFrom fspathTo pathTo realPathTo
       update desc fp ress id =
   (* Resource fork *)
+  debug (fun() -> Util.msg "transferResourceForkAndSetFileinfo %s\n"
+    (Path.toString pathTo));
   let ressLength = Osx.ressLength ress in
   begin if ressLength > Uutil.Filesize.zero then
     transferFileContents
@@ -602,6 +612,8 @@ let transferResourceForkAndSetFileinfo
     Lwt.return ()
   end >>= fun () ->
   setFileinfo fspathTo pathTo realPathTo update desc;
+  debug (fun() -> Util.msg "Resource fork transferred for %s; doing last paranoid check\n"
+    (Path.toString realPathTo));
   paranoidCheck fspathTo pathTo realPathTo desc fp ress
 
 let reallyTransferFile
@@ -870,6 +882,7 @@ let transferFileLocal connFrom
              Xferhint.insertEntry fspathTo pathTo fp;
              Lwt.return (`DONE (TransferSucceeded info, Some msg))
          | None ->
+             debug (fun() -> Util.msg "tryCopyMovedFile didn't do it -- actually transfer\n");
              if shouldUseExternalCopyprog update desc then
                Lwt.return (`EXTERNAL (prepareExternalTransfer fspathTo pathTo))
              else begin
@@ -970,6 +983,8 @@ let file rootFrom pathFrom rootTo fspathTo pathTo realPathTo
         >>= (fun () ->
       Lwt.return info)
   | TransferFailed reason ->
+      debug (fun() -> Util.msg "TRANSFER FAILED (%s) for %s (real path: %s)\n"
+        reason (Path.toString pathTo) (Path.toString realPathTo));
       (* Maybe we failed because the source file was modified.
          We check this before reporting a failure *)
       checkForChangesToSource rootFrom pathFrom desc fp stamp ress None true
