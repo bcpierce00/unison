@@ -225,7 +225,7 @@ let displayri ri =
 
 type proceed = ConfirmBeforeProceeding | ProceedImmediately
 
-let interact rilist =
+let interact pilist rilist =
   let (r1,r2) = Globals.roots() in
   let (host1, host2) = root2hostname r1, root2hostname r2 in
   if not (Prefs.read Globals.batch) then display ("\n" ^ Uicommon.roots2string() ^ "\n");
@@ -378,8 +378,8 @@ let interact rilist =
                 ]
                 (fun () -> displayri ri)
   in
-    loop [] rilist
-
+    loop pilist rilist
+    
 let verifyMerge title text =
   Printf.printf "%s\n" text;
   if Prefs.read Globals.batch then
@@ -539,10 +539,10 @@ let formatStatus major minor =
     lastMajor := major;
     s
 
-let rec interactAndPropagateChanges reconItemList
+let rec interactAndPropagateChanges prevItemList reconItemList
             : bool * bool * bool * (Path.t list)
               (* anySkipped?, anyPartial?, anyFailures?, failingPaths *) =
-  let (proceed,newReconItemList) = interact reconItemList in
+  let (proceed,newReconItemList) = interact prevItemList reconItemList in
   let (updatesToDo, skipped) =
     Safelist.fold_left
       (fun (howmany, skipped) ri ->
@@ -645,7 +645,18 @@ let rec interactAndPropagateChanges reconItemList
         (fun () ->
            Prefs.set Uicommon.auto false;
            newLine();
-           interactAndPropagateChanges reconItemList));
+           interactAndPropagateChanges []
+             (Safelist.rev_append prevItemList reconItemList)));
+       (["p";"b"],
+        "go back to previous item",
+        (fun () ->
+           newLine();
+           match Safelist.rev_append reconItemList prevItemList with
+             [] -> (* do as "n" *)
+               Prefs.set Uicommon.auto false;
+               newLine();
+               interactAndPropagateChanges [] []
+           | lastri::prev -> interactAndPropagateChanges prev [lastri]));
        (["q"],
         ("exit " ^ Uutil.myName ^ " without propagating any changes"),
         fun () -> raise Sys.Break)
@@ -715,7 +726,7 @@ let synchronizeOnce ?wantWatcher ?skipRecentFiles pathsOpt =
   end else begin
     checkForDangerousPath dangerousPaths;
     let (anySkipped, anyPartial, anyFailures, failedPaths) =
-      interactAndPropagateChanges reconItemList in
+      interactAndPropagateChanges [] reconItemList in
     let exitStatus = Uicommon.exitCode(anySkipped || anyPartial,anyFailures) in
     (exitStatus, failedPaths)
   end
