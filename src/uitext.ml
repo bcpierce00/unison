@@ -371,6 +371,11 @@ let interact prilist rilist =
                   (fun () ->
                      newLine();
                      previous prev ril));
+                 (["s";"n"],
+                  ("stop the selection"),
+                  (fun() ->
+                     newLine();
+                     (ConfirmBeforeProceeding, Safelist.rev_append prev ril)));
                  (["g"],
                   ("proceed immediately to propagating changes"),
                   (fun() ->
