@@ -645,13 +645,12 @@ let rec interactAndPropagateChanges prevItemList reconItemList
         (fun () ->
            Prefs.set Uicommon.auto false;
            newLine();
-           interactAndPropagateChanges []
-             (Safelist.rev_append prevItemList reconItemList)));
+           interactAndPropagateChanges [] newReconItemList));
        (["p";"b"],
         "go back to previous item",
         (fun () ->
            newLine();
-           match Safelist.rev_append reconItemList prevItemList with
+           match Safelist.rev newReconItemList with
              [] -> (* do as "n" *)
                Prefs.set Uicommon.auto false;
                newLine();
