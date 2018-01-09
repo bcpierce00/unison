@@ -354,6 +354,10 @@ let interact pilist rilist =
                   ("proceed immediately to propagating changes"),
                   (fun() ->
                      (ProceedImmediately, Safelist.rev_append prev ril)));
+                 (["s";"n"],
+                  ("stop the selection"),
+                  (fun() ->
+                     (ConfirmBeforeProceeding, Safelist.rev_append prev ril)));
                  (["q"],
                   ("exit " ^ Uutil.myName ^ " without propagating any changes"),
                   fun () -> raise Sys.Break);
