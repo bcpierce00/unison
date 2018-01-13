@@ -232,7 +232,9 @@ let interact rilist =
   let rec loop prev =
     let rec previous prev ril =
       match prev with
-        ({ replicas = Problem _ } as pri)::pril -> previous pril (pri::ril)
+        ({ replicas = Problem s } as pri)::pril ->
+          displayri pri; display "\n"; display s; display "\n";
+          previous pril (pri::ril)
       | pri::pril -> loop pril (pri::ril)
       | [] -> loop prev ril in
     function
