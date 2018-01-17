@@ -177,7 +177,17 @@ let rec selectAction batch actions tryagain =
   doAction (match batch with
     None   ->
       summarizeChoices();
-      getInput ()
+      begin try getInput () with e ->
+        (* Simply print a slightly more informative message than the exception
+         * itself (e.g. "Uncaught unix error: read failed: Resource temporarily
+         * unavailable" or "Uncaught exception End_of_file") and make sure the
+         * error messages start on their own lines. *)
+        Util.msg "\nError while reading from the standard input\n";
+        (* FIX: Unison should or may have a better or standard way to treat
+         * such exceptions; maybe a cleanup (e.g. restoreTerminal()) should be
+         * made at some point. *)
+        raise e
+      end
   | Some i -> i)
 
 let alwaysDisplayErrors prefix l =
