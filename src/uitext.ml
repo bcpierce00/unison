@@ -836,11 +836,7 @@ let handleException e =
   restoreTerminal();
   let msg = Uicommon.exn2string e in
   Trace.log (msg ^ "\n");
-  if not !Trace.sendLogMsgsToStderr then begin
-    alwaysDisplay "\n";
-    alwaysDisplay msg;
-    alwaysDisplay "\n";
-  end
+  if not !Trace.sendLogMsgsToStderr then alwaysDisplay ("\n" ^ msg ^ "\n")
 
 let rec start interface =
   if interface <> Uicommon.Text then
