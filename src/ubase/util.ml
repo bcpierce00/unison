@@ -388,16 +388,18 @@ let removeTrailingCR s =
   if l = 0 || s.[l - 1] <> '\r' then s else
   String.sub s 0 (l - 1)
 
-(* FIX: quadratic! *)
-let rec trimWhitespace s =
+let trimWhitespace s =
   let l = String.length s in
-  if l=0 then s
-  else if s.[0]=' ' || s.[0]='\t' || s.[0]='\n' || s.[0]='\r' then
-    trimWhitespace (String.sub s 1 (l-1))
-  else if s.[l-1]=' ' || s.[l-1]='\t' || s.[l-1]='\n' || s.[l-1]='\r' then
-    trimWhitespace (String.sub s 0 (l-1))
-  else
-    s
+  let rec loop lp rp =
+    if lp > rp then ""
+    else if s.[lp]=' ' || s.[lp]='\t' || s.[lp]='\n' || s.[lp]='\r' then
+      loop (lp+1) rp
+    else if s.[rp]=' ' || s.[rp]='\t' || s.[rp]='\n' || s.[rp]='\r' then
+      loop lp (rp-1)
+    else
+      String.sub s lp (rp+1-lp)
+   in
+   loop 0 (l-1)
 
 let splitIntoWords ?esc:(e='\\') (s:string) (c:char) =
   let rec inword acc eacc start pos =
