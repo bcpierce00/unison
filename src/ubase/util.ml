@@ -388,26 +388,38 @@ let removeTrailingCR s =
   if l = 0 || s.[l - 1] <> '\r' then s else
   String.sub s 0 (l - 1)
 
-(* FIX: quadratic! *)
-let rec trimWhitespace s =
+let trimWhitespace s =
   let l = String.length s in
-  if l=0 then s
-  else if s.[0]=' ' || s.[0]='\t' || s.[0]='\n' || s.[0]='\r' then
-    trimWhitespace (String.sub s 1 (l-1))
-  else if s.[l-1]=' ' || s.[l-1]='\t' || s.[l-1]='\n' || s.[l-1]='\r' then
-    trimWhitespace (String.sub s 0 (l-1))
-  else
-    s
+  let rec loop lp rp =
+    if lp > rp then ""
+    else if s.[lp]=' ' || s.[lp]='\t' || s.[lp]='\n' || s.[lp]='\r' then
+      loop (lp+1) rp
+    else if s.[rp]=' ' || s.[rp]='\t' || s.[rp]='\n' || s.[rp]='\r' then
+      loop lp (rp-1)
+    else
+      String.sub s lp (rp+1-lp)
+   in
+   loop 0 (l-1)
 
-let splitIntoWords (s:string) (c:char) =
-  let rec inword acc start pos =
-    if pos >= String.length(s) || s.[pos] = c then
-      betweenwords ((String.sub s start (pos-start)) :: acc) pos
-    else inword acc start (pos+1)
+let splitIntoWords ?esc:(e='\\') (s:string) (c:char) =
+  let rec inword acc eacc start pos =
+    if pos >= String.length s || s.[pos] = c then
+      let word =
+        String.concat "" (Safelist.rev (String.sub s start (pos-start)::eacc)) in
+      betweenwords (word::acc) pos
+    else if s.[pos] = e then inescape acc eacc start pos
+    else inword acc eacc start (pos+1)
+  and inescape acc eacc start pos =
+    let eword = String.sub s start (pos-start) in
+    if pos+1 >= String.length s
+    then inword acc (eword::eacc) (pos+1) (pos+1) (* ignore final esc *)
+    else (* take any following char *)
+      let echar = String.make 1 (String.get s (pos+1)) in
+      inword acc (echar::eword::eacc) (pos+2) (pos+2)
   and betweenwords acc pos =
-    if pos >= (String.length s) then (Safelist.rev acc)
+    if pos >= String.length s then (Safelist.rev acc)
     else if s.[pos]=c then betweenwords acc (pos+1)
-    else inword acc pos pos
+    else inword acc [] pos pos
   in betweenwords [] 0
 
 let rec splitIntoWordsByString s sep =

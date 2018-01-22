@@ -177,7 +177,19 @@ let rec selectAction batch actions tryagain =
   doAction (match batch with
     None   ->
       summarizeChoices();
-      getInput ()
+      let handleExn s =
+        (* Make sure that the error messages start on their own lines and not
+         * after the prompt. *)
+        alwaysDisplay "\n";
+        raise (Util.Fatal ("Failure reading from the standard input ("^s^")\n"))
+      in
+      begin try getInput () with
+        (* Simply print a slightly more informative message than the exception
+         * itself (e.g. "Uncaught unix error: read failed: Resource temporarily
+         * unavailable" or "Uncaught exception End_of_file"). *)
+          End_of_file -> handleExn "End of file"
+        | Unix.Unix_error (err, _, _) -> handleExn (Unix.error_message err)
+      end
   | Some i -> i)
 
 let alwaysDisplayErrors prefix l =
@@ -230,6 +242,13 @@ let interact rilist =
   let (host1, host2) = root2hostname r1, root2hostname r2 in
   if not (Prefs.read Globals.batch) then display ("\n" ^ Uicommon.roots2string() ^ "\n");
   let rec loop prev =
+    let rec previous prev ril =
+      match prev with
+        ({ replicas = Problem s } as pri)::pril ->
+          displayri pri; display "\n"; display s; display "\n";
+          previous pril (pri::ril)
+      | pri::pril -> loop pril (pri::ril)
+      | [] -> loop prev ril in
     function
       [] -> (ConfirmBeforeProceeding, Safelist.rev prev)
     | ri::rest as ril ->
@@ -347,9 +366,7 @@ let interact rilist =
                   ("go back to previous item"),
                   (fun () ->
                      newLine();
-                     match prev with
-                       [] -> repeat()
-                     | prevri::prevprev -> loop prevprev (prevri :: ril)));
+                     previous prev ril));
                  (["g"],
                   ("proceed immediately to propagating changes"),
                   (fun() ->
@@ -824,11 +841,7 @@ let handleException e =
   restoreTerminal();
   let msg = Uicommon.exn2string e in
   Trace.log (msg ^ "\n");
-  if not !Trace.sendLogMsgsToStderr then begin
-    alwaysDisplay "\n";
-    alwaysDisplay msg;
-    alwaysDisplay "\n";
-  end
+  if not !Trace.sendLogMsgsToStderr then alwaysDisplay ("\n" ^ msg ^ "\n")
 
 let rec start interface =
   if interface <> Uicommon.Text then
