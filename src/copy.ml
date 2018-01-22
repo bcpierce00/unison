@@ -986,7 +986,6 @@ let file rootFrom pathFrom rootTo fspathTo pathTo realPathTo
   | TransferFailed reason ->
       debug (fun() -> Util.msg "TRANSFER FAILED (%s) for %s (real path: %s)\n"
         reason (Path.toString pathTo) (Path.toString realPathTo));
-exit 1;
       (* Maybe we failed because the source file was modified.
          We check this before reporting a failure *)
       checkForChangesToSource rootFrom pathFrom desc fp stamp ress None true
