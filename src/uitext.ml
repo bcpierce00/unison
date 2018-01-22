@@ -242,6 +242,13 @@ let interact rilist =
   let (host1, host2) = root2hostname r1, root2hostname r2 in
   if not (Prefs.read Globals.batch) then display ("\n" ^ Uicommon.roots2string() ^ "\n");
   let rec loop prev =
+    let rec previous prev ril =
+      match prev with
+        ({ replicas = Problem s } as pri)::pril ->
+          displayri pri; display "\n"; display s; display "\n";
+          previous pril (pri::ril)
+      | pri::pril -> loop pril (pri::ril)
+      | [] -> loop prev ril in
     function
       [] -> (ConfirmBeforeProceeding, Safelist.rev prev)
     | ri::rest as ril ->
@@ -359,9 +366,7 @@ let interact rilist =
                   ("go back to previous item"),
                   (fun () ->
                      newLine();
-                     match prev with
-                       [] -> repeat()
-                     | prevri::prevprev -> loop prevprev (prevri :: ril)));
+                     previous prev ril));
                  (["g"],
                   ("proceed immediately to propagating changes"),
                   (fun() ->
