@@ -83,8 +83,13 @@ else
   ifeq ($(wildcard $(LABLGTK2LIB)),$(LABLGTK2LIB))
     UISTYLE=gtk2
   else
-    UISTYLE=text
-endif
+    LABLGTK2LIB=$(abspath $(OCAMLLIBDIR)/../lablgtk2)
+    ifeq ($(wildcard $(LABLGTK2LIB)),$(LABLGTK2LIB))
+      UISTYLE=gtk2
+    else
+      UISTYLE=text
+    endif
+  endif
 endif
 buildexecutable::
 	@echo UISTYLE = $(UISTYLE)

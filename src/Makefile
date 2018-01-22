@@ -79,7 +79,9 @@ installtext:
 text: 
 	$(MAKE) -C .. text
 
-doinstall: $(NAME)$(EXEC_EXT)
+# Note that this is not needed (and doesn't work) for the OSX GUI version.
+# Just copy $(UIMACDIR)/build/Default/Unison.app to where you want it.
+doinstall: buildexecutable
 	@if [ ! $(NAME) ]; then \
 	    echo "makefile variable NAME not bound"; \
 	    exit 1 \
@@ -87,7 +89,6 @@ doinstall: $(NAME)$(EXEC_EXT)
 	-mv $(INSTALLDIR)/$(NAME)$(EXEC_EXT) /tmp/$(NAME)-$(shell echo $$$$)
 	cp $(NAME)$(EXEC_EXT) $(INSTALLDIR)
 	cp $(NAME)$(EXEC_EXT) $(INSTALLDIR)$(NAME)-$(MAJORVERSION)$(EXEC_EXT)
-
 
 ######################################################################
 # Demo
