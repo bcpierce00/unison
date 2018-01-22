@@ -495,11 +495,12 @@ let openRessIn fspath path =
 let openRessOut fspath path length =
   Util.convertUnixErrorsToTransient "writing resource fork" (fun () ->
     try
+      let p = Fspath.concat fspath (ressPath path) in
+      debug (fun () -> Util.msg "openRessOut %s\n" (Fspath.toString p));
       Unix.out_channel_of_descr
-        (Fs.openfile
-           (Fspath.concat fspath (ressPath path))
-           [Unix.O_WRONLY;Unix.O_TRUNC] 0o600)
+        (Fs.openfile p [Unix.O_WRONLY;Unix.O_CREAT] 0o600)
     with Unix.Unix_error ((Unix.ENOENT | Unix.ENOTDIR), _, _) ->
+      debug (fun () -> Util.msg "Opening AppleDouble file for resource fork\n");
       let path = Fspath.appleDouble (Fspath.concat fspath path) in
       let outch =
         Fs.open_out_gen

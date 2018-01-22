@@ -187,11 +187,16 @@ let paranoidCheck fspathTo pathTo realPathTo desc fp ress =
   if Os.isPseudoFingerprint fp then begin
     Lwt.return (TransferNeedsDoubleCheckAgainstCurrentSource (info,fp'))
   end else if fp' <> fp then begin
+    debug (fun() -> Util.msg "Fingerprints differ: %s vs %s\n"
+      (Os.fullfingerprint_to_string fp)
+      (Os.fullfingerprint_to_string fp'));
     Lwt.return (TransferFailed (Os.reasonForFingerprintMismatch fp fp'))
   end else
     Lwt.return (TransferSucceeded info)
 
 let saveTempFileLocal (fspathTo, (pathTo, realPathTo, reason)) =
+  debug (fun() -> Util.msg "Failed (%s): Saving old temp file %s\n"
+         reason (Path.toString pathTo));
   let savepath =
     Os.tempPath ~fresh:true fspathTo
       (match Path.deconstructRev realPathTo with
@@ -199,7 +204,10 @@ let saveTempFileLocal (fspathTo, (pathTo, realPathTo, reason)) =
                            (Path.child Path.empty nm) "-bad"
        | None         -> Path.fromString "bad")
   in
-  Os.rename "save temp" fspathTo pathTo fspathTo savepath;
+  (* BCP: 12/17: Added a try around this call so that, if we're in the middle of failing
+     when we do this, we don't fail again and confuse the user about the reason for the
+     failure! *)
+  begin try Os.rename "save temp" fspathTo pathTo fspathTo savepath with Util.Transient _ -> () end;
   Lwt.fail
     (Util.Transient
        (Printf.sprintf
@@ -216,7 +224,7 @@ let saveTempFileOnRoot =
 
 let removeOldTempFile fspathTo pathTo =
   if Os.exists fspathTo pathTo then begin
-    debug (fun() -> Util.msg "Removing old temp file %s / %s\n"
+    debug (fun() -> Util.msg "Removing old %s / %s\n"
            (Fspath.toDebugString fspathTo) (Path.toString pathTo));
     Os.delete fspathTo pathTo
   end
@@ -572,6 +580,7 @@ let transferFileContents
     let file_id = Remote.newMsgId () in
     Lwt.catch
       (fun () ->
+         debug (fun () -> Util.msg "Starting the actual transfer\n");
          decompressor := Remote.MsgIdMap.add file_id decompr !decompressor;
          compressRemotely connFrom
            (bi, fspathFrom, pathFrom, fileKind, srcFileSize, id, file_id)
@@ -593,15 +602,21 @@ let transferResourceForkAndSetFileinfo
       connFrom fspathFrom pathFrom fspathTo pathTo realPathTo
       update desc fp ress id =
   (* Resource fork *)
+  debug (fun() -> Util.msg "transferResourceForkAndSetFileinfo %s\n"
+    (Path.toString pathTo));
   let ressLength = Osx.ressLength ress in
-  begin if ressLength > Uutil.Filesize.zero then
+  begin if ressLength > Uutil.Filesize.zero then begin
+    debug (fun() -> Util.msg "starting resource fork transfer for %s\n"
+      (Path.toString pathTo));
     transferFileContents
       connFrom fspathFrom pathFrom fspathTo pathTo realPathTo update
       `RESS ressLength id
-  else
+  end else
     Lwt.return ()
   end >>= fun () ->
   setFileinfo fspathTo pathTo realPathTo update desc;
+  debug (fun() -> Util.msg "Resource fork transferred for %s; doing last paranoid check\n"
+    (Path.toString realPathTo));
   paranoidCheck fspathTo pathTo realPathTo desc fp ress
 
 let reallyTransferFile
@@ -767,8 +782,8 @@ let prepareExternalTransfer fspathTo pathTo =
       true
   | `ABSENT ->
       false
-  | _ ->
-      debug (fun() -> Util.msg "Removing old temp file %s / %s\n"
+  | t ->
+      debug (fun() -> Util.msg "Removing existing %s / %s\n"
                (Fspath.toDebugString fspathTo) (Path.toString pathTo));
       Os.delete fspathTo pathTo;
       false
@@ -847,13 +862,11 @@ let transferFileLocal connFrom
     fileIsTransferred fspathTo pathTo desc fp ress in
   if isTransferred then begin
     (* File is already fully transferred (from some interrupted
-       previous transfer). *)
-    (* Make sure permissions are right. *)
+       previous transfer).  So just make sure permissions are right. *)
     let msg =
       Printf.sprintf
         "%s/%s has already been transferred\n"
-        (Fspath.toDebugString fspathTo) (Path.toString realPathTo)
-    in
+        (Fspath.toDebugString fspathTo) (Path.toString realPathTo) in
     let len = Uutil.Filesize.add (Props.length desc) (Osx.ressLength ress) in
     Uutil.showProgress id len "alr";
     setFileinfo fspathTo pathTo realPathTo update desc;
@@ -870,6 +883,7 @@ let transferFileLocal connFrom
              Xferhint.insertEntry fspathTo pathTo fp;
              Lwt.return (`DONE (TransferSucceeded info, Some msg))
          | None ->
+             debug (fun() -> Util.msg "tryCopyMovedFile didn't work, so now we actually transfer\n");
              if shouldUseExternalCopyprog update desc then
                Lwt.return (`EXTERNAL (prepareExternalTransfer fspathTo pathTo))
              else begin
@@ -970,6 +984,9 @@ let file rootFrom pathFrom rootTo fspathTo pathTo realPathTo
         >>= (fun () ->
       Lwt.return info)
   | TransferFailed reason ->
+      debug (fun() -> Util.msg "TRANSFER FAILED (%s) for %s (real path: %s)\n"
+        reason (Path.toString pathTo) (Path.toString realPathTo));
+exit 1;
       (* Maybe we failed because the source file was modified.
          We check this before reporting a failure *)
       checkForChangesToSource rootFrom pathFrom desc fp stamp ress None true
