@@ -184,10 +184,13 @@ let rec selectAction batch actions tryagain =
         raise (Util.Fatal ("Failure reading from the standard input ("^s^")\n"))
       in
       begin try getInput () with
+        (* Restart an interrupted system call (which can happen notably when
+         * the process is put in the background by SIGTSTP). *)
+          Unix.Unix_error (Unix.EINTR, _, _) -> getInput ()
         (* Simply print a slightly more informative message than the exception
          * itself (e.g. "Uncaught unix error: read failed: Resource temporarily
          * unavailable" or "Uncaught exception End_of_file"). *)
-          End_of_file -> handleExn "End of file"
+        | End_of_file -> handleExn "End of file"
         | Unix.Unix_error (err, _, _) -> handleExn (Unix.error_message err)
       end
   | Some i -> i)
