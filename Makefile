@@ -216,10 +216,10 @@ clean::
 	$(MAKE) -C src clean
 
 install:
-	$(MAKE) -C src install
+	(cd src; $(MAKE) install)
 
 installtext:
-	$(MAKE) -C src install UISTYLE=text
+	(cd src; $(MAKE) install UISTYLE=text)
 
 src/$(NAME):
 	$(MAKE) -C src
