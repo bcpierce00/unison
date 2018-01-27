@@ -66,25 +66,26 @@ endif
 DOWNLOADDIR=/tmp/$(NAME)-$(VERSION)
 # DOWNLOADDIR=$(REALDOWNLOADDIR)
 
+# OLD
 # Do this when it's time to create a new beta-release from the development trunk
-beta: 
-	@echo "Makefile needs fixing"
-	@exit 1
-	@tools/ask tools/exportmsg.txt
-	(cd ..; svn copy trunk branches/$(BRANCH))
-	(cd ../branches/$(BRANCH); svn commit -m "New release branch")
-	@echo
-	@echo "Press RETURN to export it... "
-	@read JUNK
-	$(MAKE) -C ../branches/$(BRANCH) export
+#beta: 
+#	@echo "Makefile needs fixing"
+#	@exit 1
+#	@tools/ask tools/exportmsg.txt
+#	(cd ..; svn copy trunk branches/$(BRANCH))
+#	(cd ../branches/$(BRANCH); svn commit -m "New release branch")
+#	@echo
+#	@echo "Press RETURN to export it... "
+#	@read JUNK
+#	$(MAKE) -C ../branches/$(BRANCH) export
 
 # Do this in a release branch to export a new tarball (e.g., after fixing a bug)
+# (builds a beta release)
 export:
 	@echo
 	@echo "CHECKLIST:"
-	@echo "  - Bump version number in src/Makefile.ProjectInfo"
+	@echo "  - Bump minor version number in src/Makefile.ProjectInfo"
 	@echo "  - Move everything interesting from src/RECENTNEWS to doc/changes.tex"
-	@echo "  - Do 'make checkin'"
 	@echo ""
 	@echo "If all this is done, hit RETURN (otherwise Ctrl-C and do it)"
 	@read JUNK

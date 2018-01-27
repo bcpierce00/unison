@@ -4,7 +4,7 @@
 let docs =
     ("about", ("About Unison", 
      "Unison File Synchronizer\n\
-      Version 2.49.543\n\
+      Version 2.51.2\n\
       \n\
       "))
 ::
@@ -107,7 +107,7 @@ let docs =
       \n\
       \032  Unison is no longer under active development as a research project.\n\
       \032  (Our research efforts are now focused on a follow-on project called\n\
-      \032  Harmony, described at http://www.cis.upenn.edu/~bcpierce/harmony.) At\n\
+      \032  Boomerang, described at http://www.cis.upenn.edu/~bcpierce/harmony.) At\n\
       \032  this point, there is no one whose job it is to maintain Unison, fix\n\
       \032  bugs, or answer questions.\n\
       \n\
@@ -180,7 +180,7 @@ let docs =
       \032  Unison can be used with either of two user interfaces:\n\
       \032   1. a simple textual interface, suitable for dumb terminals (and\n\
       \032      running from scripts), and\n\
-      \032   2. a more sophisticated grapical interface, based on Gtk2 (on\n\
+      \032   2. a more sophisticated graphical interface, based on Gtk2 (on\n\
       \032      Linux/Windows) or the native UI framework (on OSX).\n\
       \n\
       \032  You will need to install a copy of Unison on every machine that you\n\
@@ -207,10 +207,10 @@ let docs =
       \032  textual interface.\n\
       \n\
       \032  If you don't see a pre-built executable for your architecture, you'll\n\
-      \032  need to build it yourself. See the section \"Building Unison\" . There\n\
-      \032  are also a small number of contributed ports to other architectures\n\
-      \032  that are not maintained by us. See the Contributed Ports page\n\
-      \032  (http://www.cis.upenn.edu/~bcpierce/unison/download.html) to check\n\
+      \032  need to build it yourself. See the section \"Building Unison from\n\
+      \032  Scratch\" . There are also a small number of contributed ports to other\n\
+      \032  architectures that are not maintained by us. See the Contributed Ports\n\
+      \032  page (http://www.cis.upenn.edu/~bcpierce/unison/download.html) to check\n\
       \032  what's available.\n\
       \n\
       \032  Check to make sure that what you have downloaded is really executable.\n\
@@ -270,10 +270,9 @@ let docs =
       \032  sequence of commands will get you a working and installed compiler:\n\
       \032  first do make world opt, then su to root and do make install.)\n\
       \n\
-      \032  You'll also need the GNU make utility, standard on many Unix systems.\n\
-      \032  (Type \"make -version\" to check that you've got the GNU version.)\n\
-      \032  Unison's build system is not parallelizable, so don't use make flags\n\
-      \032  which cause it to start processes in parallel, e.g. -j for GNU make.\n\
+      \032  You'll also need the GNU make utility, which is standard on most Unix\n\
+      \032  systems. Unison's build system is not parallelizable, so don't use\n\
+      \032  flags that cause it to start processes in parallel (e.g. -j).\n\
       \n\
       \032  Once you've got OCaml installed, grab a copy of the Unison sources,\n\
       \032  unzip and untar them, change to the new \"unison\" directory, and type\n\
@@ -310,18 +309,9 @@ let docs =
       \n\
       \032  To build the basic GUI version, you'll first need to download and\n\
       \032  install the XCode developer tools from Apple. Once this is done, just\n\
-      \032  type make UISTYLE=macnew in the src directory, and if things go well\n\
-      \032  you should get an application that you can move from\n\
-      \032  uimacnew/build/Default/Unison.app to wherever you want it.\n\
-      \n\
-      \032  There is also an experimental GUI with a somewhat smoother look and\n\
-      \032  feel. To compile this one (once you've got the basic one working),\n\
-      \032  proceed as follows:\n\
-      \032   1. Go to the uimacnew09 directory and double-click the file\n\
-      \032      BWToolkit.ibplugin.\n\
-      \032   2. Go back up to the src directory and type make UISTYLE=macnew09.\n\
-      \032   3. You should get an application built for you at\n\
-      \032      uimacnew09/build/Default/Unison.app.\n\
+      \032  type make in the src directory, and if things go well you should get an\n\
+      \032  application that you can move from uimac14/build/Default/Unison.app to\n\
+      \032  wherever you want it.\n\
       \n\
       Windows\n\
       \n\
@@ -589,9 +579,9 @@ let docs =
       \032      server by using the command-line option \"-servercmd\n\
       \032      /full/path/name/of/unison\" or adding\n\
       \032      \"servercmd=/full/path/name/of/unison\" to your profile (see the\n\
-      \032      section \"Profile\" ). Similarly, you can specify a explicit path for\n\
-      \032      the ssh program using the \"-sshcmd\" option. Extra arguments can be\n\
-      \032      passed to ssh by setting the -sshargs preference.\n\
+      \032      section \"Profiles\" ). Similarly, you can specify a explicit path\n\
+      \032      for the ssh program using the \"-sshcmd\" option. Extra arguments can\n\
+      \032      be passed to ssh by setting the -sshargs preference.\n\
       \n\
       Socket Method\n\
       \n\
@@ -642,8 +632,8 @@ let docs =
       \032  find yourself wanting to use it regularly to synchronize your commonly\n\
       \032  used files. There are several possible ways of going about this:\n\
       \032   1. Synchronize your whole home directory, using the Ignore facility\n\
-      \032      (see the section \"Ignore\" ) to avoid synchronizing temporary files\n\
-      \032      and things that only belong on one host.\n\
+      \032      (see the section \"Ignoring Paths\" ) to avoid synchronizing\n\
+      \032      temporary files and things that only belong on one host.\n\
       \032   2. Create a subdirectory called shared (or current, or whatever) in\n\
       \032      your home directory on each host, and put all the files you want to\n\
       \032      synchronize into this directory.\n\
@@ -675,7 +665,7 @@ let docs =
       \032  laptop.) This is a bit different from the usual situation with\n\
       \032  asymmetric mirroring programs like rdist, where the mirroring operation\n\
       \032  typically needs to be initiated from the machine with the most recent\n\
-      \032  changes. the section \"Profile\" covers the syntax of Unison profiles,\n\
+      \032  changes. the section \"Profiles\" covers the syntax of Unison profiles,\n\
       \032  together with some sample profiles.\n\
       \n\
       \032  Some tips on improving Unison's performance can be found on the\n\
@@ -709,7 +699,7 @@ let docs =
       \n\
       \032  If you use Unison regularly, you should subscribe to one of the mailing\n\
       \032  lists, to receive announcements of new versions. See the section\n\
-      \032  \"Mailing Lists\" .\n\
+      \032  \"Mailing Lists and Bug Reporting\" .\n\
       \n\
       "))
 ::
@@ -1114,8 +1104,12 @@ let docs =
       \n\
       \032  Some preferences are boolean-valued; these are often called flags.\n\
       \032  Others take numeric or string arguments, indicated in the preferences\n\
-      \032  list by n or xxx. Most of the string preferences can be given several\n\
-      \032  times; the arguments are accumulated into a list internally.\n\
+      \032  list by n or xxx. Some string arguments take the backslash as an escape\n\
+      \032  to include the next character literally; this is mostly useful to\n\
+      \032  escape a space or the backslash; a trailing backslash is ignored and is\n\
+      \032  useful to protect a trailing whitespace in the string that would\n\
+      \032  otherwise be trimmed. Most of the string preferences can be given\n\
+      \032  several times; the arguments are accumulated into a list internally.\n\
       \n\
       \032  There are two ways to set the values of preferences: temporarily, by\n\
       \032  providing command-line arguments to a particular run of Unison, or\n\
@@ -1185,7 +1179,7 @@ let docs =
       \032-debug xxx         debug module xxx ('all' -> everything, 'verbose' -> more)\n\
       \032-diff xxx          set command for showing differences between files\n\
       \032-dontchmod         when set, never use the chmod system call\n\
-      \032-dumbtty           do not change terminal settings in text UI (default true)\n\
+      \032-dumbtty           do not change terminal settings in text UI\n\
       \032-fastcheck xxx     do fast update detection (true/false/default)\n\
       \032-fastercheckUNSAFE skip computing fingerprints for new files (experts only!)\n\
       \032-follow xxx        add a pattern to the follow list\n\
@@ -1246,22 +1240,27 @@ let docs =
       \n\
       \032  Here, in more detail, is what they do. Many are discussed in greater\n\
       \032  detail in other sections of the manual.\n\
+      \n\
       \032  addprefsto xxx\n\
       \032         By default, new preferences added by Unison (e.g., new ignore\n\
       \032         clauses) will be appended to whatever preference file Unison was\n\
       \032         told to load at the beginning of the run. Setting the preference\n\
       \032         addprefsto filename makes Unison add new preferences to the file\n\
       \032         named filename instead.\n\
+      \n\
       \032  addversionno\n\
       \032         When this flag is set to true, Unison will use\n\
-      \032         unison-currentversionnumber instead of just unison as the remote\n\
-      \032         server command. This allows multiple binaries for different\n\
-      \032         versions of unison to coexist conveniently on the same server:\n\
-      \032         whichever version is run on the client, the same version will be\n\
-      \032         selected on the server.\n\
+      \032         unison-currentmajorversionnumber instead of just unison as the\n\
+      \032         remote server command (note that the minor version number is\n\
+      \032         dropped - e.g., unison-2.51). This allows multiple binaries for\n\
+      \032         different versions of unison to coexist conveniently on the same\n\
+      \032         server: whichever version is run on the client, the same version\n\
+      \032         will be selected on the server.\n\
+      \n\
       \032  atomic xxx\n\
       \032         This preference specifies paths for directories whose contents\n\
       \032         will be considered as a group rather than individually.\n\
+      \n\
       \032  auto\n\
       \032         When set to true, this flag causes the user interface to skip\n\
       \032         asking for confirmations on non-conflicting changes. (More\n\
@@ -1269,6 +1268,7 @@ let docs =
       \032         propagation direction for one entry and is about to move to the\n\
       \032         next, it will skip over all non-conflicting entries and go\n\
       \032         directly to the next conflict.)\n\
+      \n\
       \032  backup xxx\n\
       \032         Including the preference -backup pathspec causes Unison to keep\n\
       \032         backup files for each path that matches pathspec. These backup\n\
@@ -1276,8 +1276,10 @@ let docs =
       \032         preference. The backups are named according to the backupprefix\n\
       \032         and backupsuffix preferences. The number of versions that are\n\
       \032         kept is determined by the maxbackups preference.\n\
+      \n\
       \032         The syntax of pathspec is described in the section \"Path\n\
       \032         Specification\" .\n\
+      \n\
       \032  backupcurr xxx\n\
       \032         Including the preference -backupcurr pathspec causes Unison to\n\
       \032         keep a backup of the current version of every file matching\n\
@@ -1286,27 +1288,33 @@ let docs =
       \032         merging programs, for instance. See the documentatation for the\n\
       \032         merge preference. For more details, see the section \"Merging\n\
       \032         Conflicting Versions\" .\n\
+      \n\
       \032         The syntax of pathspec is described in the section \"Path\n\
       \032         Specification\" .\n\
+      \n\
       \032  backupcurrnot xxx\n\
       \032         Exceptions to backupcurr, like the ignorenot preference.\n\
+      \n\
       \032  backupdir xxx\n\
       \032         If this preference is set, Unison will use it as the name of the\n\
       \032         directory used to store backup files specified by the backup\n\
       \032         preference, when backuplocation is set to central. It is checked\n\
       \032         after the UNISONBACKUPDIR environment variable.\n\
+      \n\
       \032  backuploc xxx\n\
       \032         This preference determines whether backups should be kept\n\
       \032         locally, near the original files, or in a central directory\n\
       \032         specified by the backupdir preference. If set to local, backups\n\
       \032         will be kept in the same directory as the original files, and if\n\
       \032         set to central, backupdir will be used instead.\n\
+      \n\
       \032  backupnot xxx\n\
       \032         The values of this preference specify paths or individual files\n\
       \032         or regular expressions that should not be backed up, even if the\n\
       \032         backup preference selects them--i.e., it selectively overrides\n\
       \032         backup. The same caveats apply here as with ignore and\n\
       \032         ignorenot.\n\
+      \n\
       \032  backupprefix xxx\n\
       \032         When a backup for a file NAME is created, it is stored in a\n\
       \032         directory specified by backuplocation, in a file called\n\
@@ -1320,24 +1328,30 @@ let docs =
       \032         prefix; if it does not appear anywhere in the prefix or the\n\
       \032         suffix, it will be automatically placed at the beginning of the\n\
       \032         suffix.\n\
+      \n\
       \032         One thing to be careful of: If the backuploc preference is set\n\
       \032         to local, Unison will automatically ignore all files whose\n\
       \032         prefix and suffix match backupprefix and backupsuffix. So be\n\
       \032         careful to choose values for these preferences that are\n\
       \032         sufficiently different from the names of your real files.\n\
+      \n\
       \032  backups\n\
       \032         Setting this flag to true is equivalent to setting\n\
       \032         backuplocation to local and backup to Name *.\n\
+      \n\
       \032  backupsuffix xxx\n\
       \032         See backupprefix for full documentation.\n\
+      \n\
       \032  batch\n\
       \032         When this is set to true, the user interface will ask no\n\
       \032         questions at all. Non-conflicting changes will be propagated;\n\
       \032         conflicts will be skipped.\n\
+      \n\
       \032  clientHostName xxx\n\
       \032         When specified, the host name of the client will not be\n\
       \032         guessedand the provided host name will be used to find the\n\
       \032         archive.\n\
+      \n\
       \032  confirmbigdel\n\
       \032         When this is set to true, Unison will request an extra\n\
       \032         confirmation if it appears that the entire replica has been\n\
@@ -1346,6 +1360,7 @@ let docs =
       \032         preference is used, the same confirmation will be requested for\n\
       \032         top-level paths. (At the moment, this flag only affects the text\n\
       \032         user interface.) See also the mountpoint preference.\n\
+      \n\
       \032  confirmmerge\n\
       \032         Setting this preference causes both the text and graphical\n\
       \032         interfaces to ask the user if the results of a merge command may\n\
@@ -1354,12 +1369,15 @@ let docs =
       \032         effects of applying the merge if it turns out that the result is\n\
       \032         not satisfactory. In batch-mode, this preference has no effect.\n\
       \032         Default is false.\n\
+      \n\
       \032  contactquietly\n\
       \032         If this flag is set, Unison will skip displaying the `Contacting\n\
       \032         server' message (which some users find annoying) during startup.\n\
+      \n\
       \032  copymax n\n\
       \032         A number indicating how many instances of the external copying\n\
       \032         utility Unison is allowed to run simultaneously (default to 1).\n\
+      \n\
       \032  copyonconflict\n\
       \032         When this flag is set, Unison will make a copy of files that\n\
       \032         would otherwise be overwritten or deleted in case of conflicting\n\
@@ -1368,19 +1386,22 @@ let docs =
       \032         conflicts in a fairly safe way when synchronizing continuously,\n\
       \032         in combination with the -repeat watch and -prefer newer\n\
       \032         preferences.\n\
+      \n\
       \032  copyprog xxx\n\
       \032         A string giving the name of an external program that can be used\n\
       \032         to copy large files efficiently (plus command-line switches\n\
       \032         telling it to copy files in-place). The default setting invokes\n\
       \032         rsync with appropriate options--most users should not need to\n\
       \032         change it.\n\
+      \n\
       \032  copyprogrest xxx\n\
       \032         A variant of copyprog that names an external program that should\n\
       \032         be used to continue the transfer of a large file that has\n\
       \032         already been partially transferred. Typically, copyprogrest will\n\
-      \032         just be copyprog with one extra option (e.g., -partial, for\n\
+      \032         just be copyprog with one extra option (e.g., --partial, for\n\
       \032         rsync). The default setting invokes rsync with appropriate\n\
       \032         options--most users should not need to change it.\n\
+      \n\
       \032  copyquoterem xxx\n\
       \032         When set to true, this flag causes Unison to add an extra layer\n\
       \032         of quotes to the remote path passed to the external copy\n\
@@ -1389,6 +1410,7 @@ let docs =
       \032         paths containing spaces. When this flag is set to default, extra\n\
       \032         quotes are added if the value of copyprog contains the string\n\
       \032         rsync.\n\
+      \n\
       \032  copythreshold n\n\
       \032         A number indicating above what filesize (in kilobytes) Unison\n\
       \032         should use the external copying utility specified by copyprog.\n\
@@ -1396,6 +1418,7 @@ let docs =
       \032         a negative number will prevent any files from using it. The\n\
       \032         default is -1. See the section \"Making Unison Faster on Large\n\
       \032         Files\" for more information.\n\
+      \n\
       \032  debug xxx\n\
       \032         This preference is used to make Unison print various sorts of\n\
       \032         information about what it is doing internally on the standard\n\
@@ -1409,6 +1432,7 @@ let docs =
       \032         -debug verbose turns on some additional debugging output from\n\
       \032         some modules (e.g., it will show exactly what bytes are being\n\
       \032         sent across the network).\n\
+      \n\
       \032  diff xxx\n\
       \032         This preference can be used to control the name and command-line\n\
       \032         arguments of the system utility used to generate displays of\n\
@@ -1417,6 +1441,7 @@ let docs =
       \032         and CURRENT2, these will be replaced by the names of the files\n\
       \032         to be diffed. If not, the two filenames will be appended to the\n\
       \032         command. In both cases, the filenames are suitably quoted.\n\
+      \n\
       \032  doc xxx\n\
       \032         The command-line argument -doc secname causes unison to display\n\
       \032         section secname of the manual on the standard output and then\n\
@@ -1424,27 +1449,33 @@ let docs =
       \032         exactly the same information as the printed and HTML manuals,\n\
       \032         modulo formatting. Use -doc topics to obtain a list of the names\n\
       \032         of the various sections that can be printed.\n\
+      \n\
       \032  dontchmod\n\
       \032         By default, Unison uses the 'chmod' system call to set the\n\
       \032         permission bits of files after it has copied them. But in some\n\
       \032         circumstances (and under some operating systems), the chmod call\n\
       \032         always fails. Setting this preference completely prevents Unison\n\
       \032         from ever calling chmod.\n\
+      \n\
       \032  dumbtty\n\
       \032         When set to true, this flag makes the text mode user interface\n\
       \032         avoid trying to change any of the terminal settings. (Normally,\n\
       \032         Unison puts the terminal in `raw mode', so that it can do things\n\
       \032         like overwriting the current line.) This is useful, for example,\n\
       \032         when Unison runs in a shell inside of Emacs.\n\
+      \n\
       \032         When dumbtty is set, commands to the user interface need to be\n\
       \032         followed by a carriage return before Unison will execute them.\n\
       \032         (When it is off, Unison recognizes keystrokes as soon as they\n\
       \032         are typed.)\n\
+      \n\
       \032         This preference has no effect on the graphical user interface.\n\
+      \n\
       \032  dumparchives\n\
       \032         When this preference is set, Unison will create a file\n\
       \032         unison.dump on each host, containing a text summary of the\n\
       \032         archive, immediately after loading it.\n\
+      \n\
       \032  fastcheck xxx\n\
       \032         When this preference is set to true, Unison will use the\n\
       \032         modification time and length of a file as a `pseudo inode\n\
@@ -1461,11 +1492,13 @@ let docs =
       \032         Unison once with fastcheck set to false, if you are worried that\n\
       \032         Unison may have overlooked an update. For backward\n\
       \032         compatibility, yes, no, and default can be used in place of\n\
-      \032         true, false, and auto. See the section \"Fast Checking\" for more\n\
-      \032         information.\n\
+      \032         true, false, and auto. See the section \"Fast Update Detection\"\n\
+      \032         for more information.\n\
+      \n\
       \032  fastercheckUNSAFE\n\
       \032         THIS FEATURE IS STILL EXPERIMENTAL AND SHOULD BE USED WITH\n\
       \032         EXTREME CAUTION.\n\
+      \n\
       \032         When this flag is set to true, Unison will compute a\n\
       \032         'pseudo-fingerprint' the first time it sees a file (either\n\
       \032         because the file is new or because Unison is running for the\n\
@@ -1477,12 +1510,14 @@ let docs =
       \032         notice the presence of a conflict. If, later, one of the files\n\
       \032         is changed, the changed file will be propagated, overwriting the\n\
       \032         other.\n\
+      \n\
       \032         Moreover, even when the files are initially identical, setting\n\
       \032         this flag can lead to potentially confusing behavior: if a newly\n\
       \032         created file is later touched without being modified, Unison\n\
       \032         will treat this conservatively as a potential change (since it\n\
       \032         has no record of the earlier contents) and show it as needing to\n\
       \032         be propagated to the other replica.\n\
+      \n\
       \032         Most users should leave this flag off - the small time savings\n\
       \032         of not fingerprinting new files is not worth the cost in terms\n\
       \032         of safety. However, it can be very useful for power users with\n\
@@ -1493,6 +1528,7 @@ let docs =
       \032         it is recommended that this flag be set only for the initial run\n\
       \032         of Unison, so that new archives can be created quickly, and then\n\
       \032         turned off for normal use.\n\
+      \n\
       \032  fat\n\
       \032         When this is set to true, Unison will use appropriate options to\n\
       \032         synchronize efficiently and without error a replica located on a\n\
@@ -1503,6 +1539,7 @@ let docs =
       \032         inode number changes when detecting updates (ignoreinodenumbers\n\
       \032         = true). Any of these change can be overridden by explicitly\n\
       \032         setting the corresponding preference in the profile.\n\
+      \n\
       \032  follow xxx\n\
       \032         Including the preference -follow pathspec causes Unison to treat\n\
       \032         symbolic links matching pathspec as `invisible' and behave as if\n\
@@ -1510,33 +1547,42 @@ let docs =
       \032         position in the replica. See the section \"Symbolic Links\" for\n\
       \032         more details. The syntax of pathspec is described in the section\n\
       \032         \"Path Specification\" .\n\
+      \n\
       \032  force xxx\n\
       \032         Including the preference -force root causes Unison to resolve\n\
       \032         all differences (even non-conflicting changes) in favor of root.\n\
       \032         This effectively changes Unison from a synchronizer into a\n\
       \032         mirroring utility.\n\
+      \n\
       \032         You can also specify -force newer (or -force older) to force\n\
       \032         Unison to choose the file with the later (earlier) modtime. In\n\
       \032         this case, the -times preference must also be enabled.\n\
+      \n\
       \032         This preference is overridden by the forcepartial preference.\n\
+      \n\
       \032         This preference should be used only if you are sure you know\n\
       \032         what you are doing!\n\
+      \n\
       \032  forcepartial xxx\n\
       \032         Including the preference forcepartial = PATHSPEC -> root causes\n\
       \032         Unison to resolve all differences (even non-conflicting changes)\n\
       \032         in favor of root for the files in PATHSPEC (see the section\n\
       \032         \"Path Specification\" for more information). This effectively\n\
       \032         changes Unison from a synchronizer into a mirroring utility.\n\
+      \n\
       \032         You can also specify forcepartial PATHSPEC -> newer (or\n\
       \032         forcepartial PATHSPEC older) to force Unison to choose the file\n\
       \032         with the later (earlier) modtime. In this case, the -times\n\
       \032         preference must also be enabled.\n\
+      \n\
       \032         This preference should be used only if you are sure you know\n\
       \032         what you are doing!\n\
+      \n\
       \032  group\n\
       \032         When this flag is set to true, the group attributes of the files\n\
       \032         are synchronized. Whether the group names or the group\n\
       \032         identifiers are synchronized depends on the preference numerids.\n\
+      \n\
       \032  halfduplex\n\
       \032         When this flag is set to true, Unison network communication is\n\
       \032         forced to be half duplex (the client and the server never\n\
@@ -1545,9 +1591,11 @@ let docs =
       \032         half-duplex when synchronizing with a Windows machine due to a\n\
       \032         limitation of Unison current implementation that could result in\n\
       \032         a deadlock.\n\
+      \n\
       \032  height n\n\
       \032         Used to set the height (in lines) of the main window in the\n\
       \032         graphical user interface.\n\
+      \n\
       \032  ignore xxx\n\
       \032         Including the preference -ignore pathspec causes Unison to\n\
       \032         completely ignore paths that match pathspec (as well as their\n\
@@ -1555,11 +1603,13 @@ let docs =
       \032         files, object files, etc. The syntax of pathspec is described in\n\
       \032         the section \"Path Specification\" , and further details on\n\
       \032         ignoring paths is found in the section \"Ignoring Paths\" .\n\
+      \n\
       \032  ignorearchives\n\
       \032         When this preference is set, Unison will ignore any existing\n\
       \032         archive files and behave as though it were being run for the\n\
       \032         first time on these replicas. It is not a good idea to set this\n\
       \032         option in a profile: it is intended for command-line use.\n\
+      \n\
       \032  ignorecase xxx\n\
       \032         When set to true, this flag causes Unison to treat filenames as\n\
       \032         case insensitive--i.e., files in the two replicas whose names\n\
@@ -1569,12 +1619,14 @@ let docs =
       \032         default, filenames are automatically taken to be\n\
       \032         case-insensitive if either host is running Windows or OSX. In\n\
       \032         rare circumstances it may be useful to set the flag manually.\n\
+      \n\
       \032  ignoreinodenumbers\n\
       \032         When set to true, this preference makes Unison not take\n\
       \032         advantage of inode numbers during fast update detection. This\n\
       \032         switch should be used with care, as it is less safe than the\n\
       \032         standard update detection method, but it can be useful with\n\
       \032         filesystems which do not support inode numbers.\n\
+      \n\
       \032  ignorelocks\n\
       \032         When this preference is set, Unison will ignore any lock files\n\
       \032         that may have been left over from a previous run of Unison that\n\
@@ -1587,11 +1639,13 @@ let docs =
       \032         crashed or you have just killed it). It is probably not a good\n\
       \032         idea to set this option in a profile: it is intended for\n\
       \032         command-line use.\n\
+      \n\
       \032  ignorenot xxx\n\
       \032         This preference overrides the preference ignore. It gives a list\n\
       \032         of patterns (in the same format as ignore) for paths that should\n\
       \032         definitely not be ignored, whether or not they happen to match\n\
       \032         one of the ignore patterns.\n\
+      \n\
       \032         Note that the semantics of ignore and ignorenot is a little\n\
       \032         counter-intuitive. When detecting updates, Unison examines paths\n\
       \032         in depth-first order, starting from the roots of the replicas\n\
@@ -1604,6 +1658,7 @@ let docs =
       \032         your profile and then using ignorenot to select particular paths\n\
       \032         to be synchronized will not work. Instead, you should use the\n\
       \032         path preference to choose particular paths to synchronize.\n\
+      \n\
       \032  immutable xxx\n\
       \032         This preference specifies paths for directories whose immediate\n\
       \032         children are all immutable files -- i.e., once a file has been\n\
@@ -1611,12 +1666,15 @@ let docs =
       \032         Unison does not check whether these files have been modified;\n\
       \032         this can speed update detection significantly (in particular,\n\
       \032         for mail directories).\n\
+      \n\
       \032  immutablenot xxx\n\
       \032         This preference overrides immutable.\n\
+      \n\
       \032  key xxx\n\
       \032         Used in a profile to define a numeric key (0-9) that can be used\n\
       \032         in the graphical user interface to switch immediately to this\n\
       \032         profile.\n\
+      \n\
       \032  killserver\n\
       \032         When set to true, this flag causes Unison to kill the remote\n\
       \032         server process when the synchronization is finished. This\n\
@@ -1626,11 +1684,13 @@ let docs =
       \032         Unison, rather than waiting to accept future connections. (Some\n\
       \032         users prefer to start a remote socket server for each run of\n\
       \032         Unison, rather than leaving one running all the time.)\n\
+      \n\
       \032  label xxx\n\
       \032         Used in a profile to provide a descriptive string documenting\n\
       \032         its settings. (This is useful for users that switch between\n\
       \032         several profiles, especially using the `fast switch' feature of\n\
       \032         the graphical user interface.)\n\
+      \n\
       \032  links xxx\n\
       \032         When set to true, this flag causes Unison to synchronize\n\
       \032         symbolic links. When the flag is set to false, symbolic links\n\
@@ -1638,17 +1698,21 @@ let docs =
       \032         when the flag is set to default, symbolic links are synchronized\n\
       \032         except when one of the hosts is running Windows. In rare\n\
       \032         circumstances it may be useful to set the flag manually.\n\
+      \n\
       \032  log\n\
       \032         When this flag is set, Unison will log all changes to the\n\
       \032         filesystems on a file.\n\
+      \n\
       \032  logfile xxx\n\
       \032         By default, logging messages will be appended to the file\n\
       \032         unison.log in your HOME directory. Set this preference if you\n\
       \032         prefer another file.\n\
+      \n\
       \032  maxbackups n\n\
       \032         This preference specifies the number of backup versions that\n\
       \032         will be kept by unison, for each path that matches the predicate\n\
       \032         backup. The default is 2.\n\
+      \n\
       \032  maxerrors n\n\
       \032         This preference controls after how many errors Unison aborts a\n\
       \032         directory transfer. Setting it to a large number allows Unison\n\
@@ -1656,12 +1720,14 @@ let docs =
       \032         copied. The default is 1. If the preference is set too high,\n\
       \032         Unison may take a long time to abort in case of repeated\n\
       \032         failures (for instance, when the disk is full).\n\
+      \n\
       \032  maxsizethreshold n\n\
       \032         A number indicating above what filesize (in kilobytes) Unison\n\
       \032         should flag a conflict instead of transferring the file. This\n\
       \032         conflict remains even in the presence of force or prefer\n\
       \032         options. A negative number will allow every transfer\n\
       \032         independently of the size. The default is -1.\n\
+      \n\
       \032  maxthreads n\n\
       \032         This preference controls how much concurrency is allowed during\n\
       \032         the transport phase. Normally, it should be set reasonably high\n\
@@ -1671,6 +1737,7 @@ let docs =
       \032         default is the special value 0, which mean 20 threads when file\n\
       \032         content streaming is desactivated and 1000 threads when it is\n\
       \032         activated.\n\
+      \n\
       \032  merge xxx\n\
       \032         This preference can be used to run a merge program which will\n\
       \032         create a new version for each of the files and the backup, with\n\
@@ -1678,55 +1745,70 @@ let docs =
       \032         preference for a path will also cause this path to be backed up,\n\
       \032         just like t backup. The syntax of pathspec>cmd is described in\n\
       \032         the section \"Path Specification\" , and further details on\n\
-      \032         Merging functions are present in the section \"Merging files\" .\n\
+      \032         Merging functions are present in the section \"Merging\n\
+      \032         Conflicting Versions\" .\n\
+      \n\
       \032  mountpoint xxx\n\
       \032         Including the preference -mountpoint PATH causes Unison to\n\
       \032         double-check, at the end of update detection, that PATH exists\n\
       \032         and abort if it does not. This is useful when Unison is used to\n\
       \032         synchronize removable media. This preference can be given more\n\
-      \032         than once. See the section \"Mount Points\" .\n\
+      \032         than once. See the section \"Mount Points and Removable Media\" .\n\
+      \n\
       \032  nocreation xxx\n\
       \032         Including the preference -nocreation root prevents Unison from\n\
       \032         performing any file creation on root root.\n\
+      \n\
       \032         This preference can be included twice, once for each root, if\n\
       \032         you want to prevent any creation.\n\
+      \n\
       \032  nocreationpartial xxx\n\
       \032         Including the preference nocreationpartial = PATHSPEC -> root\n\
       \032         prevents Unison from performing any file creation in PATHSPEC on\n\
       \032         root root (see the section \"Path Specification\" for more\n\
       \032         information). It is recommended to use BelowPath patterns when\n\
       \032         selecting a directory and all its contents.\n\
+      \n\
       \032  nodeletion xxx\n\
       \032         Including the preference -nodeletion root prevents Unison from\n\
       \032         performing any file deletion on root root.\n\
+      \n\
       \032         This preference can be included twice, once for each root, if\n\
       \032         you want to prevent any deletion.\n\
+      \n\
       \032  nodeletionpartial xxx\n\
       \032         Including the preference nodeletionpartial = PATHSPEC -> root\n\
       \032         prevents Unison from performing any file deletion in PATHSPEC on\n\
       \032         root root (see the section \"Path Specification\" for more\n\
       \032         information). It is recommended to use BelowPath patterns when\n\
       \032         selecting a directory and all its contents.\n\
+      \n\
       \032  noupdate xxx\n\
       \032         Including the preference -noupdate root prevents Unison from\n\
       \032         performing any file update or deletion on root root.\n\
+      \n\
       \032         This preference can be included twice, once for each root, if\n\
       \032         you want to prevent any update.\n\
+      \n\
       \032  noupdatepartial xxx\n\
       \032         Including the preference noupdatepartial = PATHSPEC -> root\n\
       \032         prevents Unison from performing any file update or deletion in\n\
       \032         PATHSPEC on root root (see the section \"Path Specification\" for\n\
       \032         more information). It is recommended to use BelowPath patterns\n\
       \032         when selecting a directory and all its contents.\n\
+      \n\
       \032  numericids\n\
       \032         When this flag is set to true, groups and users are synchronized\n\
       \032         numerically, rather than by name.\n\
+      \n\
       \032         The special uid 0 and the special group 0 are never mapped via\n\
       \032         user/group names even if this preference is not set.\n\
+      \n\
       \032  owner\n\
       \032         When this flag is set to true, the owner attributes of the files\n\
       \032         are synchronized. Whether the owner names or the owner\n\
       \032         identifiers are synchronizeddepends on the preference numerids.\n\
+      \n\
       \032  path xxx\n\
       \032         When no path preference is given, Unison will simply synchronize\n\
       \032         the two entire replicas, beginning from the given pair of roots.\n\
@@ -1735,6 +1817,7 @@ let docs =
       \032         for doing a fast sync of just one directory, for example.) Note\n\
       \032         that path preferences are intepreted literally--they are not\n\
       \032         regular expressions.\n\
+      \n\
       \032  perms n\n\
       \032         The integer value of this preference is a mask indicating which\n\
       \032         permission bits should be synchronized. It is set by default to\n\
@@ -1746,14 +1829,18 @@ let docs =
       \032         preference instead of this preference. If you need Unison not to\n\
       \032         set permissions at all, set the value of this preference to 0\n\
       \032         and set the preference t dontchmod to t true.\n\
+      \n\
       \032  prefer xxx\n\
       \032         Including the preference -prefer root causes Unison always to\n\
       \032         resolve conflicts in favor of root, rather than asking for\n\
       \032         guidance from the user. (The syntax of root is the same as for\n\
       \032         the root preference, plus the special values newer and older.)\n\
+      \n\
       \032         This preference is overridden by the preferpartial preference.\n\
+      \n\
       \032         This preference should be used only if you are sure you know\n\
       \032         what you are doing!\n\
+      \n\
       \032  preferpartial xxx\n\
       \032         Including the preference preferpartial = PATHSPEC -> root causes\n\
       \032         Unison always to resolve conflicts in favor of root, rather than\n\
@@ -1761,8 +1848,10 @@ let docs =
       \032         (see the section \"Path Specification\" for more information).\n\
       \032         (The syntax of root is the same as for the root preference, plus\n\
       \032         the special values newer and older.)\n\
+      \n\
       \032         This preference should be used only if you are sure you know\n\
       \032         what you are doing!\n\
+      \n\
       \032  repeat xxx\n\
       \032         Setting this preference causes the text-mode interface to\n\
       \032         synchronize repeatedly, rather than doing it just once and\n\
@@ -1770,10 +1859,12 @@ let docs =
       \032         that many seconds before beginning again. When the argument is\n\
       \032         watch, Unison relies on an external file monitoring process to\n\
       \032         synchronize whenever a change happens.\n\
+      \n\
       \032  retry n\n\
       \032         Setting this preference causes the text-mode interface to try\n\
       \032         again to synchronize updated paths where synchronization fails.\n\
       \032         Each such path will be tried N times.\n\
+      \n\
       \032  root xxx\n\
       \032         Each use of this preference names the root of one of the\n\
       \032         replicas for Unison to synchronize. Exactly two roots are\n\
@@ -1781,24 +1872,29 @@ let docs =
       \032         for root in the profile, or to give no values in the profile and\n\
       \032         provide two on the command line. Details of the syntax of roots\n\
       \032         can be found in the section \"Roots\" .\n\
+      \n\
       \032         The two roots can be given in either order; Unison will sort\n\
       \032         them into a canonical order before doing anything else. It also\n\
       \032         tries to `canonize' the machine names and paths that appear in\n\
       \032         the roots, so that, if Unison is invoked later with a slightly\n\
       \032         different name for the same root, it will be able to locate the\n\
       \032         correct archives.\n\
+      \n\
       \032  rootalias xxx\n\
       \032         When calculating the name of the archive files for a given pair\n\
       \032         of roots, Unison replaces any roots matching the left-hand side\n\
       \032         of any rootalias rule by the corresponding right-hand side.\n\
+      \n\
       \032  rshargs xxx\n\
       \032         The string value of this preference will be passed as additional\n\
       \032         arguments (besides the host name and the name of the Unison\n\
       \032         executable on the remote system) to the rsh command used to\n\
-      \032         invoke the remote server.\n\
+      \032         invoke the remote server. The backslash is an escape character.\n\
+      \n\
       \032  rshcmd xxx\n\
       \032         This preference can be used to explicitly set the name of the\n\
       \032         rsh executable (e.g., giving a full path name), if necessary.\n\
+      \n\
       \032  rsrc xxx\n\
       \032         When set to true, this flag causes Unison to synchronize\n\
       \032         resource forks and HFS meta-data. On filesystems that do not\n\
@@ -1808,6 +1904,7 @@ let docs =
       \032         flag is set to default, and these data are automatically\n\
       \032         synchronized if either host is running OSX. In rare\n\
       \032         circumstances it is useful to set the flag manually.\n\
+      \n\
       \032  rsync\n\
       \032         Unison uses the 'rsync algorithm' for 'diffs-only' transfer of\n\
       \032         updates to large files. Setting this flag to false makes Unison\n\
@@ -1815,6 +1912,7 @@ let docs =
       \032         there is no reason to do this, but if you are having trouble\n\
       \032         with repeated 'rsync failure' errors, setting it to false should\n\
       \032         permit you to synchronize the offending files.\n\
+      \n\
       \032  selftest\n\
       \032         Run internal tests and exit. This option is mostly for\n\
       \032         developers and must be used carefully: in particular, it will\n\
@@ -1828,49 +1926,60 @@ let docs =
       \032         be aborted. (If these are not given on the command line, dummy\n\
       \032         subdirectories in the current directory will be created\n\
       \032         automatically.)\n\
+      \n\
       \032  servercmd xxx\n\
       \032         This preference can be used to explicitly set the name of the\n\
       \032         Unison executable on the remote server (e.g., giving a full path\n\
       \032         name), if necessary.\n\
+      \n\
       \032  showarchive\n\
       \032         When this preference is set, Unison will print out the 'true\n\
       \032         names'of the roots, in the same form as is expected by the\n\
       \032         rootaliaspreference.\n\
+      \n\
       \032  silent\n\
       \032         When this preference is set to true, the textual user interface\n\
       \032         will print nothing at all, except in the case of errors. Setting\n\
       \032         silent to true automatically sets the batch preference to true.\n\
+      \n\
       \032  sortbysize\n\
       \032         When this flag is set, the user interface will list changed\n\
       \032         files by size (smallest first) rather than by name. This is\n\
       \032         useful, for example, for synchronizing over slow links, since it\n\
       \032         puts very large files at the end of the list where they will not\n\
       \032         prevent smaller files from being transferred quickly.\n\
+      \n\
       \032         This preference (as well as the other sorting flags, but not the\n\
       \032         sorting preferences that require patterns as arguments) can be\n\
       \032         set interactively and temporarily using the 'Sort' menu in the\n\
       \032         graphical user interface.\n\
+      \n\
       \032  sortfirst xxx\n\
       \032         Each argument to sortfirst is a pattern pathspec, which\n\
       \032         describes a set of paths. Files matching any of these patterns\n\
       \032         will be listed first in the user interface. The syntax of\n\
       \032         pathspec is described in the section \"Path Specification\" .\n\
+      \n\
       \032  sortlast xxx\n\
       \032         Similar to sortfirst, except that files matching one of these\n\
       \032         patterns will be listed at the very end.\n\
+      \n\
       \032  sortnewfirst\n\
       \032         When this flag is set, the user interface will list newly\n\
       \032         created files before all others. This is useful, for example,\n\
       \032         for checking that newly created files are not `junk', i.e., ones\n\
       \032         that should be ignored or deleted rather than synchronized.\n\
+      \n\
       \032  sshargs xxx\n\
       \032         The string value of this preference will be passed as additional\n\
       \032         arguments (besides the host name and the name of the Unison\n\
       \032         executable on the remote system) to the ssh command used to\n\
-      \032         invoke the remote server.\n\
+      \032         invoke the remote server. The backslash is an escape character.\n\
+      \n\
       \032  sshcmd xxx\n\
       \032         This preference can be used to explicitly set the name of the\n\
       \032         ssh executable (e.g., giving a full path name), if necessary.\n\
+      \n\
       \032  sshversion xxx\n\
       \032         This preference can be used to control which version of ssh\n\
       \032         should be used to connect to the server. Legal values are 1 and\n\
@@ -1878,30 +1987,38 @@ let docs =
       \032         just ssh to invoke ssh. The default value is empty, which will\n\
       \032         make unison use whatever version of ssh is installed as the\n\
       \032         default `ssh' command.\n\
+      \n\
       \032  stream\n\
       \032         When this preference is set, Unison will use an experimental\n\
       \032         streaming protocol for transferring file contents more\n\
       \032         efficiently. The default value is true.\n\
+      \n\
       \032  terse\n\
       \032         When this preference is set to true, the user interface will not\n\
       \032         print status messages.\n\
+      \n\
       \032  testserver\n\
       \032         Setting this flag on the command line causes Unison to attempt\n\
       \032         to connect to the remote server and, if successful, print a\n\
       \032         message and immediately exit. Useful for debugging installation\n\
       \032         problems. Should not be set in preference files.\n\
+      \n\
       \032  times\n\
       \032         When this flag is set to true, file modification times (but not\n\
       \032         directory modtimes) are propagated.\n\
+      \n\
       \032  ui xxx\n\
       \032         This preference selects either the graphical or the textual user\n\
       \032         interface. Legal values are graphic or text.\n\
+      \n\
       \032         Because this option is processed specially during Unison's\n\
       \032         start-up sequence, it can only be used on the command line. In\n\
       \032         preference files it has no effect.\n\
+      \n\
       \032         If the Unison executable was compiled with only a textual\n\
       \032         interface, this option has no effect. (The pre-compiled binaries\n\
       \032         are all compiled with both interfaces available.)\n\
+      \n\
       \032  unicode xxx\n\
       \032         When set to true, this flag causes Unison to perform case\n\
       \032         insensitive file comparisons assuming Unicode encoding. This is\n\
@@ -1912,14 +2029,17 @@ let docs =
       \032         8bit Windows API for accessing the filesystem. Under Mac OS X,\n\
       \032         it selects whether comparing the filenames up to decomposition,\n\
       \032         or byte-for-byte.\n\
+      \n\
       \032  version\n\
       \032         Print the current version number and exit. (This option only\n\
       \032         makes sense on the command line.)\n\
+      \n\
       \032  watch\n\
       \032         Unison uses a file watcher process, when available, to detect\n\
       \032         filesystem changes; this is used to speed up update detection,\n\
       \032         and for continuous synchronization (-repeat watch preference.\n\
       \032         Setting this flag to false disable the use of this process.\n\
+      \n\
       \032  xferbycopying\n\
       \032         When this preference is set, Unison will try to avoid\n\
       \032         transferring file contents across the network by recognizing\n\
@@ -1961,6 +2081,7 @@ let docs =
       \032  directory) to be read at the point, and included as if its contents,\n\
       \032  instead of the include line, was part of the profile. Include lines\n\
       \032  allows settings common to several profiles to be stored in one place.\n\
+      \032  In name the backslash is an escape character.\n\
       \n\
       \032  A profile may include a preference `label = desc' to provide a\n\
       \032  description of the options selected in this profile. The string desc is\n\
@@ -2057,7 +2178,7 @@ let docs =
       \n\
       \032   # If any new preferences are added by Unison (e.g. 'ignore'\n\
       \032   # preferences added via the graphical UI), then store them in the\n\
-      \032   # file 'common' rathen than in the top-level preference file\n\
+      \032   # file 'common' rather than in the top-level preference file\n\
       \032   addprefsto = common\n\
       \n\
       \032   # Names and paths to ignore:\n\
@@ -2174,7 +2295,7 @@ let docs =
       \032   merge = <PATHSPEC> -> <MERGECMD>\n\
       \n\
       \032  The <PATHSPEC> here has exactly the same format as for the ignore\n\
-      \032  preference (see the section \"Path specification\" ). For example, using\n\
+      \032  preference (see the section \"Path Specification\" ). For example, using\n\
       \032  \"Name *.txt\" as the <PATHSPEC> tells Unison that this command should be\n\
       \032  used whenever a file with extension .txt needs to be merged.\n\
       \n\
@@ -2329,7 +2450,7 @@ let docs =
       \032      Setting the dumbtty preference will force Unison to leave the\n\
       \032      terminal alone and process input a line at a time.\n\
       \n\
-      Exit code\n\
+      Exit Code\n\
       \n\
       \032  When running in the textual mode, Unison returns an exit status, which\n\
       \032  describes whether, and at which level, the synchronization was\n\
@@ -2344,7 +2465,7 @@ let docs =
       \032  The graphical interface does not return any useful information through\n\
       \032  the exit status.\n\
       \n\
-      Path specification\n\
+      Path Specification\n\
       \n\
       \032  Several Unison preferences (e.g., ignore/ignorenot, follow,\n\
       \032  sortfirst/sortlast, backup, merge, etc.) specify individual paths or\n\
@@ -2398,7 +2519,7 @@ let docs =
       \032  files that they don't ever want to synchronize -- temporary files, very\n\
       \032  large files, old stuff, architecture-specific binaries, etc. They can\n\
       \032  instruct Unison to ignore these paths using patterns introduced in the\n\
-      \032  section \"Path Patterns\" .\n\
+      \032  section \"Path Specification\" .\n\
       \n\
       \032  For example, the following pattern will make Unison ignore any path\n\
       \032  containing the name CVS or a name ending in .cmo:\n\
@@ -2407,7 +2528,7 @@ let docs =
       \032  The next pattern makes Unison ignore the path a/b:\n\
       \032            ignore = Path a/b\n\
       \n\
-      \032  Path patterns do not skip filesnames beginning with . (as Name patterns\n\
+      \032  Path patterns do not skip filenames beginning with . (as Name patterns\n\
       \032  do). For example,\n\
       \032            ignore = Path */tmp\n\
       \n\
@@ -2422,7 +2543,7 @@ let docs =
       \032  the whole path, not just a substring of the path.\n\
       \n\
       \032  Here are a few extra points regarding the ignore preference.\n\
-      \032    * If a directory is ignored, all its descendents will be too.\n\
+      \032    * If a directory is ignored, all its descendants will be too.\n\
       \032    * The user interface provides some convenient commands for adding new\n\
       \032      patterns to be ignored. To ignore a particular file, select it and\n\
       \032      press \"i\". To ignore all files with the same extension, select it\n\
@@ -2477,7 +2598,7 @@ let docs =
       \032            follow = pathspec\n\
       \n\
       \032  to the profile, where pathspec is a path pattern as described in the\n\
-      \032  section \"Path Patterns\" .\n\
+      \032  section \"Path Specification\" .\n\
       \n\
       \032  Windows file systems do not support symbolic links; Unison will refuse\n\
       \032  to propagate an opaque symbolic link from Unix to Windows and flag the\n\
@@ -2488,7 +2609,7 @@ let docs =
       Permissions\n\
       \n\
       \032  Synchronizing the permission bits of files is slightly tricky when two\n\
-      \032  different filesytems are involved (e.g., when synchronizing a Windows\n\
+      \032  different filesystems are involved (e.g., when synchronizing a Windows\n\
       \032  client and a Unix server). In detail, here's how it works:\n\
       \032    * When the permission bits of an existing file or directory are\n\
       \032      changed, the values of those bits that make sense on both operating\n\
@@ -2525,7 +2646,7 @@ let docs =
       \032  disregard Unison's warning message, and go ahead with the\n\
       \032  synchronization; Unison won't touch those files. If you don't want to\n\
       \032  see the warning on each synchronization, you can tell Unison to ignore\n\
-      \032  the files (see the section \"Ignore\" ).\n\
+      \032  the files (see the section \"Ignoring Paths\" ).\n\
       \n\
       \032  Illegal filenames. Unix allows some filenames that are illegal in\n\
       \032  Windows. For example, colons (`:') are not allowed in Windows\n\
@@ -2575,8 +2696,8 @@ let docs =
       \032  than a megabyte).\n\
       \n\
       \032  If you want to use a different external copy utility, set both the\n\
-      \032  copyprog and copyprogrest preferences--the former is used for the\n\
-      \032  first transfer of a file, while the latter is used when Unison sees a\n\
+      \032  copyprog and copyprogrest preferences--the former is used for the first\n\
+      \032  transfer of a file, while the latter is used when Unison sees a\n\
       \032  partially transferred temp file on the receiving host. Be careful here:\n\
       \032  Your external tool needs to be instructed to copy files in place\n\
       \032  (otherwise if the transfer is interrupted Unison will not notice that\n\
@@ -2655,7 +2776,7 @@ let docs =
       \032  On Windows NT/2k/XP systems, the graphical version of Unison can be\n\
       \032  invoked directly by clicking on its icon. On Windows 95/98 systems,\n\
       \032  click-starting also works, as long as you are not using ssh. Due to an\n\
-      \032  incompatibility with ocaml and Windows 95/98 that is not under our\n\
+      \032  incompatibility with OCaml and Windows 95/98 that is not under our\n\
       \032  control, you must start Unison from a DOS window in Windows 95/98 if\n\
       \032  you want to use ssh.\n\
       \n\
@@ -2668,7 +2789,7 @@ let docs =
       \032  and you will type your password in the DOS window you were using.\n\
       \n\
       \032  To use Unison in this mode, you must first create a profile (see the\n\
-      \032  section \"Profile\" ). Use your favorite editor for this.\n\
+      \032  section \"Profiles\" ). Use your favorite editor for this.\n\
       \n\
       "))
 ::
@@ -2698,7 +2819,7 @@ let docs =
       \032   1. Download an ssh executable.\n\
       \032      Warning: there are many implementations and ports of ssh for\n\
       \032      Windows, and not all of them will work with Unison. We have gotten\n\
-      \032      Unison to work with Cygwin's port of openssh, and we suggest you\n\
+      \032      Unison to work with Cygwin's port of OpenSSH, and we suggest you\n\
       \032      try that one first. Here's how to install it:\n\
       \032        a. First, create a new folder on your desktop to hold temporary\n\
       \032           installation files. It can have any name you like, but in\n\
@@ -2778,8 +2899,30 @@ let docs =
       \n\
       "))
 ::
-    ("news", ("Changes in Version 2.49.543", 
-     "Changes in Version 2.49.543\n\
+    ("news", ("Changes in Version 2.51.2", 
+     "Changes in Version 2.51.2\n\
+      \n\
+      \032  Changes since 2.48:\n\
+      \032    * Repository transplanted from SVN to Git and moved to GitHub ()\n\
+      \032      (https://github.com/bcpierce00/unison).\n\
+      \032    * Add a new preference, 'atomic', for specifying directories that\n\
+      \032      should be treated atomically: if there are changes within such a\n\
+      \032      directory in both replicase, the whole directory is marked as a\n\
+      \032      conflict instead of propagating any of the changes. Thanks to\n\
+      \032      Julian Squires for submitting this patch!\n\
+      \032    * OSX / macOS\n\
+      \032         + Ported to 10.13, High Sierra, and Apple's new APFS (earlier\n\
+      \032           versions of Unison break because of new behavior of\n\
+      \032           AppleDouble files)\n\
+      \032         + Replaced Growl with OS X native notification center.\n\
+      \032    * Miscellaneous:\n\
+      \032         + The OCaml compiler version is now included in the \"connection\n\
+      \032           header -- the string that's printed when connecting to a\n\
+      \032           remote server -- to facilitate debugging version mismatch\n\
+      \032           issues.\n\
+      \032         + Compatible with OCaml 4.06.\n\
+      \032         + Added a DockerFile for the convenience of Docker users.\n\
+      \032         + Many small bugfixes and UI improvements.\n\
       \n\
       \032  Changes since 2.45:\n\
       \032    * Incorporated a patch from Christopher Zimmermann to replace the\n\
@@ -3955,7 +4098,6 @@ let docs =
       \032      and on the command line.\n\
       \032      You can achieve a similar effect, though, by breaking your profile\n\
       \032      into two:\n\
-      \n\
       \032 default.prf =\n\
       \032     root = blah\n\
       \032     root = foo\n\
@@ -4545,8 +4687,8 @@ let docs =
       \n\
       References\n\
       \n\
-      \032  1. file:///Users/bcpierce/home/unison/doc/temp.html#ssh-win\n\
-      \032  2. http://pauillac.inria.fr/~maranget/hevea/index.html\n\
+      \032  1. file:///Users/bcpierce/home1/unison/doc/temp.html#ssh-win\n\
+      \032  2. http://hevea.inria.fr/index.html\n\
       "))
 ::
     [];;
