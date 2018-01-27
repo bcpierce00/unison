@@ -558,10 +558,10 @@ let formatStatus major minor =
     lastMajor := major;
     s
 
-let rec interactAndPropagateChanges reconItemList
+let rec interactAndPropagateChanges prevItemList reconItemList
             : bool * bool * bool * (Path.t list)
               (* anySkipped?, anyPartial?, anyFailures?, failingPaths *) =
-  let (proceed,newReconItemList) = interact [] reconItemList in
+  let (proceed,newReconItemList) = interact prevItemList reconItemList in
   let (updatesToDo, skipped) =
     Safelist.fold_left
       (fun (howmany, skipped) ri ->
@@ -664,7 +664,7 @@ let rec interactAndPropagateChanges reconItemList
         (fun () ->
            Prefs.set Uicommon.auto false;
            newLine();
-           interactAndPropagateChanges newReconItemList));
+           interactAndPropagateChanges [] newReconItemList));
        (["q"],
         ("exit " ^ Uutil.myName ^ " without propagating any changes"),
         fun () -> raise Sys.Break)
@@ -734,7 +734,7 @@ let synchronizeOnce ?wantWatcher ?skipRecentFiles pathsOpt =
   end else begin
     checkForDangerousPath dangerousPaths;
     let (anySkipped, anyPartial, anyFailures, failedPaths) =
-      interactAndPropagateChanges reconItemList in
+      interactAndPropagateChanges [] reconItemList in
     let exitStatus = Uicommon.exitCode(anySkipped || anyPartial,anyFailures) in
     (exitStatus, failedPaths)
   end
