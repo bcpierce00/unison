@@ -252,7 +252,7 @@ let interact prilist rilist =
           displayri pri; display "\n"; display s; display "\n";
           previous pril (pri::ril)
       | pri::pril -> loop pril (pri::ril)
-      | [] -> loop prev ril in
+      | [] -> display ("\n" ^ Uicommon.roots2string() ^ "\n"); loop prev ril in
     function
       [] -> (ConfirmBeforeProceeding, Safelist.rev prev)
     | ri::rest as ril ->
