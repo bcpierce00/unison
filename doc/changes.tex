@@ -1,5 +1,16 @@
 \begin{changesfromversion}{2.48}
 \item Repository transplanted from SVN to Git and moved to GitHub (\URL{https://github.com/bcpierce00/unison}).
+\item Add a new preference, '{\tt atomic}', for specifying directories that
+  should be treated atomically: if there are changes within such a
+  directory in both replicase, the whole directory is marked as a
+  conflict instead of propagating any of the changes.  Thanks to
+  Julian Squires for submitting this patch!
+\item OSX / macOS
+  \begin{itemize}
+    \item Ported to 10.13, High Sierra, and Apple's new APFS (earlier
+    versions of Unison break because of new behavior of AppleDouble files)
+    \item Replaced Growl with OS X native notification center.
+\end{itemioze}
 \item Miscellaneous:
 \begin{itemize}
 \item The OCaml compiler version is now included in the ``connection header

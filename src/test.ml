@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/test.ml *)
-(* Copyright 1999-2017, Benjamin C. Pierce
+(* Copyright 1999-2018, Benjamin C. Pierce
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -526,7 +526,7 @@ let test() =
       check "1" R2 orig;
     );
 
-    (* Check for the bug reported by Sebastian Elsner (Jan 2017) *)
+    (* Check for the bug reported by Sebastian Elsner (Jan 2018) *)
     (* NOT POSSIBLE because the test API does not enable one to play with file
        owners, but I put the test here anyway. *)
     (*
