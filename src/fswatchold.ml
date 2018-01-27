@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/fswatcherold.ml *)
-(* Copyright 1999-2017, Benjamin C. Pierce
+(* Copyright 1999-2018, Benjamin C. Pierce
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

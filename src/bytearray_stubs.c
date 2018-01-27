@@ -1,5 +1,5 @@
 /* Unison file synchronizer: src/bytearray_stubs.c */
-/* Copyright 1999-2017 (see COPYING for details) */
+/* Copyright 1999-2018 (see COPYING for details) */
 
 #include <string.h>
 

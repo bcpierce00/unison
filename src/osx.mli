@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/osx.mli *)
-(* Copyright 1999-2017, Benjamin C. Pierce (see COPYING for details) *)
+(* Copyright 1999-2018, Benjamin C. Pierce (see COPYING for details) *)
 
 val init : bool -> unit
 val isMacOSX : bool
