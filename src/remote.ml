@@ -922,10 +922,16 @@ let connectionHeader =
     Scanf.sscanf Sys.ocaml_version "%d.%d.%d" (fun x y z -> (x,y,z)) in
   let compiler =
     if    major < 4 
-       || major = 4 && minor <= 2
+       || major = 4 && minor < 2
        || major = 4 && minor = 2 && patchlevel <= 1
     then "<= 4.01.1"
     else ">= 4.01.2"
+    (* BCP: These strings seem wrong -- they should say 4.02,
+       not 4.01, according to my understanding of when the breaking
+       change happened.  However, I'm nervous about breaking installations
+       that are working, so I'm going to leave it.  Hopefully we are
+       far enough beyond these OCaml versions that it doesn't matter 
+       anyway. *)
   in "Unison " ^ Uutil.myMajorVersion ^ " with OCaml " ^ compiler ^ "\n"
 
 let rec checkHeader conn buffer pos len =
