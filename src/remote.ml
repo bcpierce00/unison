@@ -922,8 +922,8 @@ let connectionHeader =
     Scanf.sscanf Sys.ocaml_version "%d.%d.%d" (fun x y z -> (x,y,z)) in
   let compiler =
     if    major < 4 
-       || major = 4 && minor <= 2
-       || major = 4 && minor = 2 && patchlevel <= 1
+       || major = 4 && minor < 1
+       || major = 4 && minor = 1 && patchlevel <= 1
     then "<= 4.01.1"
     else ">= 4.01.2"
   in "Unison " ^ Uutil.myMajorVersion ^ " with OCaml " ^ compiler ^ "\n"
