@@ -276,7 +276,7 @@ let interact prilist rilist =
         displayri ri;
         match ri.replicas with
           Problem s -> display "\n"; display s; display "\n"; next()
-        | Different ({rc1 = rc1; rc2 = rc2; direction = dir} as diff) ->
+        | Different ({rc1 = _; rc2 = _; direction = dir} as diff) ->
             if Prefs.read Uicommon.auto && not (isConflict dir) then begin
               display "\n"; next()
             end else
