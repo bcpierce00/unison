@@ -665,6 +665,14 @@ let rec interactAndPropagateChanges prevItemList reconItemList
            Prefs.set Uicommon.auto false;
            newLine();
            interactAndPropagateChanges [] newReconItemList));
+       (["p";"b"],
+        "go back to the last item of the selection",
+        (fun () ->
+           Prefs.set Uicommon.auto false;
+           newLine();
+           match Safelist.rev newReconItemList with
+             [] -> interactAndPropagateChanges [] []
+           | lastri::prev -> interactAndPropagateChanges prev [lastri]));
        (["q"],
         ("exit " ^ Uutil.myName ^ " without propagating any changes"),
         fun () -> raise Sys.Break)
