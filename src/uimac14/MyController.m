@@ -123,12 +123,14 @@ static MyController *me; // needed by reloadTable and displayStatus, below
         OCamlValue *clprofile = (id)ocamlCall("@", "unisonInit0");
 
         BOOL areRootsSet = (long)ocamlCall("i", "areRootsSet") ? YES : NO;
+        /*
         if (areRootsSet) {
                 NSLog(@"Roots are on the command line");
         }
         else {
                 NSLog(@"Roots are not set on the command line");
         }
+        */
 
   /* Add toolbar */
   toolbar = [[[UnisonToolbar alloc]
@@ -361,7 +363,7 @@ static MyController *me; // needed by reloadTable and displayStatus, below
 - (void)connect:(NSString *)profileName
 {
   // contact server, propagate prefs
-  NSLog(@"Connecting to %@...", profileName);
+  /* NSLog(@"Connecting to %@...", profileName); */
 
   // Switch to ConnectingView
   [mainWindow setContentView:blankView];
@@ -388,7 +390,7 @@ CAMLprim value unisonInit1Complete(value v)
 {
   id pool = [[NSAutoreleasePool alloc] init];
   if (v == Val_unit) {
-    NSLog(@"Connected.");
+    /* NSLog(@"Connected."); */
     [me->connectingAnimation stopAnimation:me];
                 [me->preconn release];
                 me->preconn = NULL;
@@ -409,7 +411,7 @@ CAMLprim value unisonInit1Complete(value v)
                 if (!prompt) {
                         // turns out, no prompt needed, but must finish opening connection
                         ocamlCall("x@", "openConnectionEnd", preconn);
-                        NSLog(@"Connected.");
+                        // NSLog(@"Connected.");
                         waitingForPassword = NO;
                         [self afterOpen];
                         return;
@@ -423,13 +425,13 @@ CAMLprim value unisonInit1Complete(value v)
                 return;
         }
 
-    NSLog(@"Connected.");
+        // NSLog(@"Connected.");
 }
 
 - (void)raisePasswordWindow:(NSString *)prompt
 {
     // FIX: some prompts don't ask for password, need to look at it
-    NSLog(@"Got the prompt: '%@'",prompt);
+    /* NSLog(@"Got the prompt: '%@'",prompt); */
     if ((long)ocamlCall("iS", "unisonPasswordMsg", prompt)) {
         [passwordPrompt setStringValue:@"Please enter your password"];
         [NSApp beginSheet:passwordWindow
@@ -601,12 +603,14 @@ CAMLprim value unisonInit1Complete(value v)
         [self updateTableViewWithReset:([reconItems count] > 0)];
         [self updateToolbar];
         isBatchSet = (long)ocamlCall("i", "isBatchSet") ? YES : NO;
+        /*
         if (isBatchSet) {
                 NSLog(@"batch set on the command line");
         }
         else {
                 NSLog(@"batch not set on the command line");
         }
+        */
 
         if (isBatchSet) {
                 [self doSync];
@@ -669,7 +673,7 @@ CAMLprim value unisonInit2Complete(value v)
 - (void)quitIfBatch:(id)ignore
 {
         if (isBatchSet) {
-                NSLog(@"Automatically quitting because of -batch");
+          // NSLog(@"Automatically quitting because of -batch");
                 _timeoutAlert = [NSAlert alertWithMessageText: @"" defaultButton: @"Quit" alternateButton: @"Cancel" otherButton: nil informativeTextWithFormat: @""];
 
                 _secondsRemaining = 10;
@@ -904,7 +908,7 @@ static NSDictionary *_SmallGreyAttributes = nil;
 - (id)updateForIgnore:(id)item
 {
     long j = (long)ocamlCall("ii", "unisonUpdateForIgnore", [reconItems indexOfObjectIdenticalTo:item]);
-        NSLog(@"Updating for ignore...");
+    // NSLog(@"Updating for ignore...");
     [self updateReconItems:(OCamlValue *)ocamlCall("@", "unisonState")];
     return [reconItems objectAtIndex:j];
 }
