@@ -237,7 +237,7 @@ let displayri ri =
 
 type proceed = ConfirmBeforeProceeding | ProceedImmediately
 
-let interact rilist =
+let interact pilist rilist =
   let (r1,r2) = Globals.roots() in
   let (host1, host2) = root2hostname r1, root2hostname r2 in
   if not (Prefs.read Globals.batch) then display ("\n" ^ Uicommon.roots2string() ^ "\n");
@@ -371,6 +371,10 @@ let interact rilist =
                   ("proceed immediately to propagating changes"),
                   (fun() ->
                      (ProceedImmediately, Safelist.rev_append prev ril)));
+                 (["s";"n"],
+                  ("stop the selection"),
+                  (fun() ->
+                     (ConfirmBeforeProceeding, Safelist.rev_append prev ril)));
                  (["q"],
                   ("exit " ^ Uutil.myName ^ " without propagating any changes"),
                   fun () -> raise Sys.Break);
@@ -395,8 +399,8 @@ let interact rilist =
                 ]
                 (fun () -> displayri ri)
   in
-    loop [] rilist
-
+    loop pilist rilist
+    
 let verifyMerge title text =
   Printf.printf "%s\n" text;
   if Prefs.read Globals.batch then
@@ -556,119 +560,131 @@ let formatStatus major minor =
     lastMajor := major;
     s
 
-let rec interactAndPropagateChanges reconItemList
+let interactAndPropagateChanges reconItemList
             : bool * bool * bool * (Path.t list)
               (* anySkipped?, anyPartial?, anyFailures?, failingPaths *) =
-  let (proceed,newReconItemList) = interact reconItemList in
-  let (updatesToDo, skipped) =
-    Safelist.fold_left
-      (fun (howmany, skipped) ri ->
-        if problematic ri then (howmany, skipped + 1)
-        else (howmany + 1, skipped))
-      (0, 0) newReconItemList in
-  let doit() =
-    if not (Prefs.read Globals.batch || Prefs.read Trace.terse) then newLine();
-    if not (Prefs.read Trace.terse) then Trace.status "Propagating updates";
-    let timer = Trace.startTimer "Transmitting all files" in
-    let (failedPaths, partialPaths) = doTransport newReconItemList in
-    let failures = Safelist.length failedPaths in
-    let partials = Safelist.length partialPaths in
-    Trace.showTimer timer;
-    if not (Prefs.read Trace.terse) then Trace.status "Saving synchronizer state";
-    Update.commitUpdates ();
-    let trans = updatesToDo - failures in
-    let summary =
-      Printf.sprintf
-       "Synchronization %s at %s  (%d item%s transferred, %s%d skipped, %d failed)"
-       (if failures=0 then "complete" else "incomplete")
-       (let tm = Util.localtime (Util.time()) in
-        Printf.sprintf "%02d:%02d:%02d"
-          tm.Unix.tm_hour tm.Unix.tm_min tm.Unix.tm_sec)
-       trans (if trans=1 then "" else "s")
-       (if partials <> 0 then
-          Format.sprintf "%d partially transferred, " partials
-        else
-          "")
-       skipped
-       failures in
-    Trace.log (summary ^ "\n");
-    if skipped>0 then
-      Safelist.iter
-        (fun ri ->
-         match ri.replicas with
-           Problem r
-         | Different {rc1 = _; rc2 = _; direction = Conflict r; default_direction = _} ->
-            alwaysDisplayAndLog (Printf.sprintf "  skipped: %s (%s)"
-                                                (Path.toString ri.path1) r)
-         | _ -> ())
-        newReconItemList;
-    if partials>0 then
-      Safelist.iter
-        (fun p ->
-           alwaysDisplayAndLog ("  partially transferred: " ^ Path.toString p))
-        partialPaths;
-    if failures>0 then
-      Safelist.iter
-        (fun p -> alwaysDisplayAndLog ("  failed: " ^ (Path.toString p)))
-        failedPaths;
-    (skipped > 0, partials > 0, failures > 0, failedPaths) in
-  if not !Update.foundArchives then Update.commitUpdates ();
-  if updatesToDo = 0 then begin
-    (* BCP (3/09): We need to commit the archives even if there are
-       no updates to propagate because some files (in fact, if we've
-       just switched to DST on windows, a LOT of files) might have new
-       modtimes in the archive. *)
-    (* JV (5/09): Don't save the archive in repeat mode as it has some
-       costs and its unlikely there is much change to the archives in
-       this mode. *)
-    if !Update.foundArchives && Prefs.read Uicommon.repeat = "" then
+  let rec loop prevItemList reconItemList =
+    let (proceed,newReconItemList) = interact prevItemList reconItemList in
+    let (updatesToDo, skipped) =
+      Safelist.fold_left
+        (fun (howmany, skipped) ri ->
+          if problematic ri then (howmany, skipped + 1)
+          else (howmany + 1, skipped))
+        (0, 0) newReconItemList in
+    let doit() =
+      if not (Prefs.read Globals.batch || Prefs.read Trace.terse) then newLine();
+      if not (Prefs.read Trace.terse) then Trace.status "Propagating updates";
+      let timer = Trace.startTimer "Transmitting all files" in
+      let (failedPaths, partialPaths) = doTransport newReconItemList in
+      let failures = Safelist.length failedPaths in
+      let partials = Safelist.length partialPaths in
+      Trace.showTimer timer;
+      if not (Prefs.read Trace.terse) then Trace.status "Saving synchronizer state";
       Update.commitUpdates ();
-    display "No updates to propagate\n";
-    if skipped > 0 then begin
+      let trans = updatesToDo - failures in
       let summary =
         Printf.sprintf
-          "Synchronization complete at %s  (0 item transferred, %d skipped, 0 failed)"
-          (let tm = Util.localtime (Util.time()) in
-           Printf.sprintf "%02d:%02d:%02d"
-                          tm.Unix.tm_hour tm.Unix.tm_min tm.Unix.tm_sec)
-          skipped in
+         "Synchronization %s at %s  (%d item%s transferred, %s%d skipped, %d failed)"
+         (if failures=0 then "complete" else "incomplete")
+         (let tm = Util.localtime (Util.time()) in
+          Printf.sprintf "%02d:%02d:%02d"
+            tm.Unix.tm_hour tm.Unix.tm_min tm.Unix.tm_sec)
+         trans (if trans=1 then "" else "s")
+         (if partials <> 0 then
+            Format.sprintf "%d partially transferred, " partials
+          else
+            "")
+         skipped
+         failures in
       Trace.log (summary ^ "\n");
-      Safelist.iter
-        (fun ri ->
-         match ri.replicas with
-           Problem r
-         | Different {rc1 = _; rc2 = _; direction = Conflict r; default_direction = _} ->
-            alwaysDisplayAndLog (Printf.sprintf "  skipped: %s (%s)"
-                                                (Path.toString ri.path1) r)
-         | _ -> ())
-        newReconItemList
-      end;
-    (skipped > 0, false, false, [])
-  end else if proceed=ProceedImmediately then begin
-    doit()
-  end else begin
-    displayWhenInteractive "\nProceed with propagating updates? ";
-    selectAction
-      (* BCP: I find it counterintuitive that every other prompt except this one
-         would expect <CR> as a default.  But I got talked out of offering a
-         default here, because of safety considerations (too easy to press
-         <CR> one time too many). *)
-      (if Prefs.read Globals.batch then Some "y" else None)
-      [(["y";"g"],
-        "Yes: proceed with updates as selected above",
-        doit);
-       (["n"],
-        "No: go through selections again",
-        (fun () ->
-           Prefs.set Uicommon.auto false;
-           newLine();
-           interactAndPropagateChanges reconItemList));
-       (["q"],
-        ("exit " ^ Uutil.myName ^ " without propagating any changes"),
-        fun () -> raise Sys.Break)
-     ]
-      (fun () -> display "Proceed with propagating updates? ")
-  end
+      if skipped>0 then
+        Safelist.iter
+          (fun ri ->
+           match ri.replicas with
+             Problem r
+           | Different {rc1 = _; rc2 = _; direction = Conflict r; default_direction = _} ->
+              alwaysDisplayAndLog (Printf.sprintf "  skipped: %s (%s)"
+                                                  (Path.toString ri.path1) r)
+           | _ -> ())
+          newReconItemList;
+      if partials>0 then
+        Safelist.iter
+          (fun p ->
+             alwaysDisplayAndLog ("  partially transferred: " ^ Path.toString p))
+          partialPaths;
+      if failures>0 then
+        Safelist.iter
+          (fun p -> alwaysDisplayAndLog ("  failed: " ^ (Path.toString p)))
+          failedPaths;
+      (skipped > 0, partials > 0, failures > 0, failedPaths) in
+    if not !Update.foundArchives then Update.commitUpdates ();
+    if updatesToDo = 0 then begin
+      (* BCP (3/09): We need to commit the archives even if there are
+         no updates to propagate because some files (in fact, if we've
+         just switched to DST on windows, a LOT of files) might have new
+         modtimes in the archive. *)
+      (* JV (5/09): Don't save the archive in repeat mode as it has some
+         costs and its unlikely there is much change to the archives in
+         this mode. *)
+      if !Update.foundArchives && Prefs.read Uicommon.repeat = "" then
+        Update.commitUpdates ();
+      display "No updates to propagate\n";
+      if skipped > 0 then begin
+        let summary =
+          Printf.sprintf
+            "Synchronization complete at %s  (0 item transferred, %d skipped, 0 failed)"
+            (let tm = Util.localtime (Util.time()) in
+             Printf.sprintf "%02d:%02d:%02d"
+                            tm.Unix.tm_hour tm.Unix.tm_min tm.Unix.tm_sec)
+            skipped in
+        Trace.log (summary ^ "\n");
+        Safelist.iter
+          (fun ri ->
+           match ri.replicas with
+             Problem r
+           | Different {rc1 = _; rc2 = _; direction = Conflict r; default_direction = _} ->
+              alwaysDisplayAndLog (Printf.sprintf "  skipped: %s (%s)"
+                                                  (Path.toString ri.path1) r)
+           | _ -> ())
+          newReconItemList
+        end;
+      (skipped > 0, false, false, [])
+    end else if proceed=ProceedImmediately then begin
+      doit()
+    end else begin
+      displayWhenInteractive "\nProceed with propagating updates? ";
+      selectAction
+        (* BCP: I find it counterintuitive that every other prompt except this one
+           would expect <CR> as a default.  But I got talked out of offering a
+           default here, because of safety considerations (too easy to press
+           <CR> one time too many). *)
+        (if Prefs.read Globals.batch then Some "y" else None)
+        [(["y";"g"],
+          "Yes: proceed with updates as selected above",
+          doit);
+         (["n"],
+          "No: go through selections again",
+          (fun () ->
+             Prefs.set Uicommon.auto false;
+             newLine();
+             loop [] newReconItemList));
+         (["p";"b"],
+          "go back to previous item",
+          (fun () ->
+             newLine();
+             match Safelist.rev newReconItemList with
+               [] -> (* do as "n" *)
+                 Prefs.set Uicommon.auto false;
+                 newLine();
+                 loop [] []
+             | lastri::prev -> loop prev [lastri]));
+         (["q"],
+          ("exit " ^ Uutil.myName ^ " without propagating any changes"),
+          fun () -> raise Sys.Break)
+       ]
+        (fun () -> display "Proceed with propagating updates? ")
+    end in
+  loop [] reconItemList
 
 let checkForDangerousPath dangerousPaths =
   if Prefs.read Globals.confirmBigDeletes then begin
