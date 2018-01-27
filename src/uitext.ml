@@ -240,6 +240,7 @@ let displayri ri =
 
 type proceed = ConfirmBeforeProceeding | ProceedImmediately
 
+(* "interact [] rilist" interactively reconciles each list item *)
 let interact prilist rilist =
   let (r1,r2) = Globals.roots() in
   let (host1, host2) = root2hostname r1, root2hostname r2 in
