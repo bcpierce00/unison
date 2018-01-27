@@ -513,8 +513,9 @@ let addversionno =
   Prefs.createBool "addversionno" false
     ("!add version number to name of " ^ Uutil.myName ^ " on server")
     ("When this flag is set to {\\tt true}, Unison "
-     ^ "will use \\texttt{unison-\\ARG{currentversionnumber}} instead of "
-     ^ "just \\verb|unison| as the remote server command.  This allows "
+     ^ "will use \\texttt{unison-\\ARG{currentmajorversionnumber}} instead of "
+     ^ "just \\verb|unison| as the remote server command (note that the minor "
+     ^ "version number is dropped -- e.g., unison-2.51).  This allows "
      ^ "multiple binaries for different versions of unison to coexist "
      ^ "conveniently on the same server: whichever version is run "
      ^ "on the client, the same version will be selected on the server.")
