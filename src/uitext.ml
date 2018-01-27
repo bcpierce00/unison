@@ -242,9 +242,9 @@ type proceed = ConfirmBeforeProceeding | ProceedImmediately
 
 (* "interact [] rilist" interactively reconciles each list item *)
 let interact prilist rilist =
+  if not (Prefs.read Globals.batch) then display ("\n" ^ Uicommon.roots2string() ^ "\n");
   let (r1,r2) = Globals.roots() in
   let (host1, host2) = root2hostname r1, root2hostname r2 in
-  if not (Prefs.read Globals.batch) then display ("\n" ^ Uicommon.roots2string() ^ "\n");
   let rec loop prev =
     let rec previous prev ril =
       match prev with
