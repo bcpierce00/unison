@@ -240,7 +240,7 @@ let displayri ri =
 
 type proceed = ConfirmBeforeProceeding | ProceedImmediately
 
-let interact rilist =
+let interact prilist rilist =
   let (r1,r2) = Globals.roots() in
   let (host1, host2) = root2hostname r1, root2hostname r2 in
   if not (Prefs.read Globals.batch) then display ("\n" ^ Uicommon.roots2string() ^ "\n");
@@ -397,8 +397,7 @@ let interact rilist =
                     next()))
                 ]
                 (fun () -> displayri ri)
-  in
-    loop [] rilist
+  in loop prilist rilist
 
 let verifyMerge title text =
   Printf.printf "%s\n" text;
@@ -562,7 +561,7 @@ let formatStatus major minor =
 let rec interactAndPropagateChanges reconItemList
             : bool * bool * bool * (Path.t list)
               (* anySkipped?, anyPartial?, anyFailures?, failingPaths *) =
-  let (proceed,newReconItemList) = interact reconItemList in
+  let (proceed,newReconItemList) = interact [] reconItemList in
   let (updatesToDo, skipped) =
     Safelist.fold_left
       (fun (howmany, skipped) ri ->
