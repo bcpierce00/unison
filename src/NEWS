@@ -1,5 +1,27 @@
 
-Changes in Version 2.49.543
+Changes in Version 2.51.2
+
+   Changes since 2.48:
+     * Repository transplanted from SVN to Git and moved to GitHub ()
+       (https://github.com/bcpierce00/unison).
+     * Add a new preference, 'atomic', for specifying directories that
+       should be treated atomically: if there are changes within such a
+       directory in both replicase, the whole directory is marked as a
+       conflict instead of propagating any of the changes. Thanks to
+       Julian Squires for submitting this patch!
+     * OSX / macOS
+          + Ported to 10.13, High Sierra, and Apple's new APFS (earlier
+            versions of Unison break because of new behavior of
+            AppleDouble files)
+          + Replaced Growl with OS X native notification center.
+     * Miscellaneous:
+          + The OCaml compiler version is now included in the "connection
+            header -- the string that's printed when connecting to a
+            remote server -- to facilitate debugging version mismatch
+            issues.
+          + Compatible with OCaml 4.06.
+          + Added a DockerFile for the convenience of Docker users.
+          + Many small bugfixes and UI improvements.
 
    Changes since 2.45:
      * Incorporated a patch from Christopher Zimmermann to replace the
@@ -1175,7 +1197,6 @@ Changes in Version 2.49.543
        and on the command line.
        You can achieve a similar effect, though, by breaking your profile
        into two:
-
   default.prf =
       root = blah
       root = foo
