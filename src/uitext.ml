@@ -655,6 +655,9 @@ let rec interactAndPropagateChanges prevItemList reconItemList
   end else if proceed=ProceedImmediately then begin
     doit()
   end else begin
+    let filterRestart f =
+      newLine(); interactAndPropagateChanges [] (f newReconItemList)
+    in
     displayWhenInteractive "\nProceed with propagating updates? ";
     selectAction
       (* BCP: I find it counterintuitive that every other prompt except this one
@@ -679,6 +682,20 @@ let rec interactAndPropagateChanges prevItemList reconItemList
            match Safelist.rev newReconItemList with
              [] -> interactAndPropagateChanges [] []
            | lastri::prev -> interactAndPropagateChanges prev [lastri]));
+       (["N"],
+        "sort by Name",
+        (fun () -> Sortri.sortByName(); filterRestart Sortri.sortReconItems));
+       (["S"],
+        "sort by Size",
+        (fun () -> Sortri.sortBySize(); filterRestart Sortri.sortReconItems));
+       (["W"],
+        "sort neW first (toggle)",
+        (fun () -> Sortri.sortNewFirst(); filterRestart Sortri.sortReconItems));
+       (["D"],
+        "Default ordering",
+        (fun () ->
+           Sortri.restoreDefaultSettings();
+           filterRestart Sortri.sortReconItems));
        (["q"],
         ("exit " ^ Uutil.myName ^ " without propagating any changes"),
         fun () -> raise Sys.Break)
