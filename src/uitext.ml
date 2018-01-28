@@ -400,6 +400,18 @@ let interact prilist rilist =
                   (fun () ->
                      diff.direction <- Replica2ToReplica1;
                      redisplayri();
+                     next()));
+                 (["]";"\""],
+                  ("resolve conflicts in favor of the newer file"),
+                  (fun () ->
+                     Recon.setDirection ri `Newer `Prefer;
+                     redisplayri();
+                     next()));
+                 (["[";"'"],
+                  ("resolve conflicts in favor of the older file"),
+                  (fun () ->
+                     Recon.setDirection ri `Older `Prefer;
+                     redisplayri();
                      next()))
                 ]
                 (fun () -> displayri ri)
