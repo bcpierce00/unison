@@ -3480,7 +3480,7 @@ lst_store#set ~row ~column:c_path path;
        ~callback:(fun () -> getLock (fun () ->
           Sortri.sortNewFirst();
           sortAndRedisplay()))
-       "Sort Ne_w Entries First");
+       "Sort Ne_w Entries First (toggle)");
   grAdd grRescan
     (sortMenu#add_item
        ~callback:(fun () -> getLock (fun () ->
