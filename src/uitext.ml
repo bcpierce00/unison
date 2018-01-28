@@ -390,7 +390,7 @@ let interact prilist rilist =
                   ("exit " ^ Uutil.myName ^ " without propagating any changes"),
                   (fun () -> newLine();
                      raise Sys.Break));
-                 (["/"],
+                 (["/";":"],
                   ("skip"),
                   (fun () ->
                      if not (isConflict dir) then diff.direction <- Conflict "skip requested";
