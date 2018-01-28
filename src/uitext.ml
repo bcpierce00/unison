@@ -392,6 +392,10 @@ let interact prilist rilist =
                      if not (isConflict dir) then diff.direction <- Conflict "skip requested";
                      redisplayri();
                      next()));
+                 (["-"],
+                  ("skip and discard for this session"),
+                  (fun () -> newLine();
+                     loop prev rest));
                  ([">";"."],
                   ("propagate from " ^ descr),
                   (fun () ->
