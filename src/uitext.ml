@@ -347,10 +347,10 @@ let interact rilist =
                      repeat()));
                  (["x"],
                   ("show details"),
-                  (fun () -> display "\n"; displayDetails ri; repeat()));
+                  (fun () -> newLine(); displayDetails ri; repeat()));
                  (["L"],
                   ("list all suggested changes tersely"),
-                  (fun () -> display "\n";
+                  (fun () -> newLine();
                      Safelist.iter
                        (fun ri -> displayri ri; display "\n  ")
                        ril;
@@ -358,7 +358,7 @@ let interact rilist =
                      repeat()));
                  (["l"],
                   ("list all suggested changes with details"),
-                  (fun () -> display "\n";
+                  (fun () -> newLine();
                      Safelist.iter
                        (fun ri -> displayri ri; display "\n  ";
                                   alwaysDisplayDetails ri)
