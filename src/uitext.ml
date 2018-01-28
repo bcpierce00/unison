@@ -682,7 +682,7 @@ let rec interactAndPropagateChanges prevItemList reconItemList
        (["q"],
         ("exit " ^ Uutil.myName ^ " without propagating any changes"),
         fun () -> raise Sys.Break)
-     ]
+      ]
       (fun () -> display "Proceed with propagating updates? ")
   end
 
