@@ -654,54 +654,58 @@ let rec interactAndPropagateChanges prevItemList reconItemList
     (skipped > 0, false, false, [])
   end else if proceed=ProceedImmediately then begin
     doit()
-  end else begin
-    let filterRestart f =
-      newLine(); interactAndPropagateChanges [] (f newReconItemList)
-    in
-    displayWhenInteractive "\nProceed with propagating updates? ";
-    selectAction
-      (* BCP: I find it counterintuitive that every other prompt except this one
-         would expect <CR> as a default.  But I got talked out of offering a
-         default here, because of safety considerations (too easy to press
-         <CR> one time too many). *)
-      (if Prefs.read Globals.batch then Some "y" else None)
-      [(["y";"g"],
-        "Yes: proceed with updates as selected above",
-        doit);
-       (["n"],
-        "No: go through selections again",
-        (fun () ->
-           Prefs.set Uicommon.auto false;
-           newLine();
-           interactAndPropagateChanges [] newReconItemList));
-       (["p";"b"],
-        "go back to the last item of the selection",
-        (fun () ->
-           Prefs.set Uicommon.auto false;
-           newLine();
-           match Safelist.rev newReconItemList with
-             [] -> interactAndPropagateChanges [] []
-           | lastri::prev -> interactAndPropagateChanges prev [lastri]));
-       (["N"],
-        "sort by Name",
-        (fun () -> Sortri.sortByName(); filterRestart Sortri.sortReconItems));
-       (["S"],
-        "sort by Size",
-        (fun () -> Sortri.sortBySize(); filterRestart Sortri.sortReconItems));
-       (["W"],
-        "sort neW first (toggle)",
-        (fun () -> Sortri.sortNewFirst(); filterRestart Sortri.sortReconItems));
-       (["D"],
-        "Default ordering",
-        (fun () ->
-           Sortri.restoreDefaultSettings();
-           filterRestart Sortri.sortReconItems));
-       (["q"],
-        ("exit " ^ Uutil.myName ^ " without propagating any changes"),
-        fun () -> raise Sys.Break)
-      ]
-      (fun () -> display "Proceed with propagating updates? ")
-  end
+  end else
+    let rec askagain newReconItemList =
+      displayWhenInteractive "\nProceed with propagating updates? ";
+      selectAction
+        (* BCP: I find it counterintuitive that every other prompt except this one
+           would expect <CR> as a default.  But I got talked out of offering a
+           default here, because of safety considerations (too easy to press
+           <CR> one time too many). *)
+        (if Prefs.read Globals.batch then Some "y" else None)
+        [(["y";"g"],
+          "Yes: proceed with updates as selected above",
+          doit);
+         (["n"],
+          "No: go through selections again",
+          (fun () ->
+             Prefs.set Uicommon.auto false;
+             newLine();
+             interactAndPropagateChanges [] newReconItemList));
+         (["p";"b"],
+          "go back to the last item of the selection",
+          (fun () ->
+             Prefs.set Uicommon.auto false;
+             newLine();
+             match Safelist.rev newReconItemList with
+               [] -> interactAndPropagateChanges [] []
+             | lastri::prev -> interactAndPropagateChanges prev [lastri]));
+         (["N"],
+          "sort by Name",
+          (fun () ->
+             Sortri.sortByName();
+             askagain (Sortri.sortReconItems newReconItemList)));
+         (["S"],
+          "sort by Size",
+          (fun () ->
+             Sortri.sortBySize();
+             askagain (Sortri.sortReconItems newReconItemList)));
+         (["W"],
+          "sort neW first (toggle)",
+          (fun () ->
+             Sortri.sortNewFirst();
+             askagain (Sortri.sortReconItems newReconItemList)));
+         (["D"],
+          "Default ordering",
+          (fun () ->
+             Sortri.restoreDefaultSettings();
+             askagain (Sortri.sortReconItems newReconItemList)));
+         (["q"],
+          ("exit " ^ Uutil.myName ^ " without propagating any changes"),
+          fun () -> raise Sys.Break)
+        ]
+        (fun () -> display "Proceed with propagating updates? ")
+    in askagain newReconItemList
 
 let checkForDangerousPath dangerousPaths =
   if Prefs.read Globals.confirmBigDeletes then begin
