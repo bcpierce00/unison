@@ -700,6 +700,9 @@ let rec interactAndPropagateChanges prevItemList reconItemList
           (fun () ->
              Sortri.restoreDefaultSettings();
              askagain (Sortri.sortReconItems newReconItemList)));
+         (["R"],
+          "Reverse the sort order",
+          (fun () -> askagain (Safelist.rev newReconItemList)));
          (["q"],
           ("exit " ^ Uutil.myName ^ " without propagating any changes"),
           fun () -> raise Sys.Break)
