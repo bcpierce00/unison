@@ -295,6 +295,9 @@ let interact prilist rilist =
             if Prefs.read Uicommon.auto && not (isConflict dir) then begin
               display "\n"; next()
             end else
+              let setDirectionIfConflict ndir =
+                if isConflict dir then Recon.setDirection ri ndir `Force
+                else Recon.setDirection ri ndir `Prefer in
               let (descr, descl) =
                 if host1 = host2 then
                   "left to right", "right to left"
@@ -404,13 +407,13 @@ let interact prilist rilist =
                  (["]";"\""],
                   ("resolve conflicts in favor of the newer file"),
                   (fun () ->
-                     Recon.setDirection ri `Newer `Prefer;
+                     setDirectionIfConflict `Newer;
                      redisplayri();
                      next()));
                  (["[";"'"],
                   ("resolve conflicts in favor of the older file"),
                   (fun () ->
-                     Recon.setDirection ri `Older `Prefer;
+                     setDirectionIfConflict `Older;
                      redisplayri();
                      next()))
                 ]
