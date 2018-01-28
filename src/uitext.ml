@@ -124,6 +124,8 @@ let getInput () =
       c
 
 let newLine () =
+  (* If in dumb mode (i.e. not in cbreak mode) the newline is entered by the
+     user to validate the input *)
   if !cbreakMode <> None then display "\n"
 
 let overwrite () =
