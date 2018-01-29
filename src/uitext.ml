@@ -395,22 +395,10 @@ let interact prilist rilist =
                   ("go back to previous item"),
                   (fun () -> newLine();
                      previous prev ril));
-                 (["s"],
-                  ("stop reconciling and go to the proceed menu"),
-                  (fun () -> newLine();
-                     (ConfirmBeforeProceeding, Safelist.rev_append prev ril)));
                  (["R"],
                   ("reverse the list"),
                   (fun () -> newLine();
                      loop rest (ri::prev)));
-                 (["g"],
-                  ("proceed immediately to propagating changes"),
-                  (fun () -> newLine();
-                     (ProceedImmediately, Safelist.rev_append prev ril)));
-                 (["q"],
-                  ("exit " ^ Uutil.myName ^ " without propagating any changes"),
-                  (fun () -> newLine();
-                     raise Sys.Break));
                  (["/";":"],
                   ("skip"),
                   (fun () ->
@@ -453,7 +441,19 @@ let interact prilist rilist =
                   (fun () ->
                      setDirectionIfConflict `Older;
                      redisplayri();
-                     next()))
+                     next()));
+                 (["s"],
+                  ("stop reconciling and go to the proceed menu"),
+                  (fun () -> newLine();
+                     (ConfirmBeforeProceeding, Safelist.rev_append prev ril)));
+                 (["g"],
+                  ("proceed immediately to propagating changes"),
+                  (fun () -> newLine();
+                     (ProceedImmediately, Safelist.rev_append prev ril)));
+                 (["q"],
+                  ("exit " ^ Uutil.myName ^ " without propagating any changes"),
+                  (fun () -> newLine();
+                     raise Sys.Break))
                 ]
                 (fun () -> displayri ri)
   in loop prilist rilist
