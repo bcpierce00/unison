@@ -401,10 +401,19 @@ let interact prilist rilist =
                      setskip ri;
                      redisplayri();
                      next()));
+                 (["%"],
+                  ("skip all the following"),
+                  (fun () -> newLine();
+                     Safelist.iter setskip rest;
+                     repeat()));
                  (["-"],
                   ("skip and discard for this session"),
                   (fun () -> newLine();
                      loop prev rest));
+                 (["+"],
+                  ("skip and discard for this session all the following"),
+                  (fun () -> newLine();
+                     loop prev [ri]));
                  ([">";"."],
                   ("propagate from " ^ descr),
                   (fun () ->
