@@ -335,6 +335,31 @@ let interact prilist rilist =
                   ("next"),
                   (fun () -> newLine();
                      next()));
+                 (["d"],
+                  ("show differences"),
+                  (fun () -> newLine();
+                     showdiffs ri;
+                     repeat()));
+                 (["x"],
+                  ("show details"),
+                  (fun () -> newLine();
+                     displayDetails ri;
+                     repeat()));
+                 (["L"],
+                  ("list all following changes tersely"),
+                  (fun () -> newLine();
+                     Safelist.iter
+                       (fun ri -> display "  "; displayri ri; display "\n")
+                       ril;
+                     repeat()));
+                 (["l"],
+                  ("list all following changes with details"),
+                  (fun () -> newLine();
+                     Safelist.iter
+                       (fun ri -> display "  "; displayri ri; display "\n";
+                                  alwaysDisplayDetails ri)
+                       ril;
+                     repeat()));
                  (["r"],
                   ("revert to " ^ Uutil.myName ^ "'s default recommendation"),
                   (fun () ->
@@ -366,31 +391,6 @@ let interact prilist rilist =
                      diff.direction <- Merge;
                      redisplayri();
                      next()));
-                 (["d"],
-                  ("show differences"),
-                  (fun () -> newLine();
-                     showdiffs ri;
-                     repeat()));
-                 (["x"],
-                  ("show details"),
-                  (fun () -> newLine();
-                     displayDetails ri;
-                     repeat()));
-                 (["L"],
-                  ("list all following changes tersely"),
-                  (fun () -> newLine();
-                     Safelist.iter
-                       (fun ri -> display "  "; displayri ri; display "\n")
-                       ril;
-                     repeat()));
-                 (["l"],
-                  ("list all following changes with details"),
-                  (fun () -> newLine();
-                     Safelist.iter
-                       (fun ri -> display "  "; displayri ri; display "\n";
-                                  alwaysDisplayDetails ri)
-                       ril;
-                     repeat()));
                  (["p";"b"],
                   ("go back to previous item"),
                   (fun () -> newLine();
