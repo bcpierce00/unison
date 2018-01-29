@@ -381,10 +381,11 @@ let interact prilist rilist =
                  (["g"],
                   ("proceed immediately to propagating changes"),
                   (fun() ->
+                     newLine();
                      (ProceedImmediately, Safelist.rev_append prev ril)));
                  (["q"],
                   ("exit " ^ Uutil.myName ^ " without propagating any changes"),
-                  fun () -> raise Sys.Break);
+                  fun () -> newLine(); raise Sys.Break);
                  (["/"],
                   ("skip"),
                   (fun () ->
@@ -707,7 +708,7 @@ let rec interactAndPropagateChanges prevItemList reconItemList
           (fun () -> askagain (Safelist.rev newReconItemList)));
          (["q"],
           ("exit " ^ Uutil.myName ^ " without propagating any changes"),
-          fun () -> raise Sys.Break)
+          fun () -> newLine(); raise Sys.Break)
         ]
         (fun () -> display "Proceed with propagating updates? ")
     in askagain newReconItemList
