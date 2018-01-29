@@ -384,17 +384,6 @@ let interact prilist rilist =
                      diff.direction <- Merge;
                      redisplayri();
                      next()));
-                 (["/";":"],
-                  ("skip"),
-                  (fun () ->
-                     setskip ri;
-                     redisplayri();
-                     next()));
-                 (["%"],
-                  ("skip all the following"),
-                  (fun () -> newLine();
-                     Safelist.iter setskip rest;
-                     repeat()));
                  ([">";"."],
                   ("propagate from " ^ descr),
                   (fun () ->
@@ -419,6 +408,17 @@ let interact prilist rilist =
                      setDirectionIfConflict `Older;
                      redisplayri();
                      next()));
+                 (["/";":"],
+                  ("skip"),
+                  (fun () ->
+                     setskip ri;
+                     redisplayri();
+                     next()));
+                 (["%"],
+                  ("skip all the following"),
+                  (fun () -> newLine();
+                     Safelist.iter setskip rest;
+                     repeat()));
                  (["-"],
                   ("skip and discard for this session"),
                   (fun () -> newLine();
