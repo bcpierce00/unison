@@ -665,7 +665,7 @@ let rec interactAndPropagateChanges reconItemList
         (fun () ->
            Prefs.set Uicommon.auto false;
            newLine();
-           interactAndPropagateChanges reconItemList));
+           interactAndPropagateChanges newReconItemList));
        (["q"],
         ("exit " ^ Uutil.myName ^ " without propagating any changes"),
         fun () -> raise Sys.Break)
