@@ -124,6 +124,8 @@ let getInput () =
       c
 
 let newLine () =
+  (* If in dumb mode (i.e. not in cbreak mode) the newline is entered by the
+     user to validate the input *)
   if !cbreakMode <> None then display "\n"
 
 let overwrite () =
@@ -348,10 +350,10 @@ let interact prilist rilist =
                      repeat()));
                  (["x"],
                   ("show details"),
-                  (fun () -> display "\n"; displayDetails ri; repeat()));
+                  (fun () -> newLine(); displayDetails ri; repeat()));
                  (["L"],
                   ("list all suggested changes tersely"),
-                  (fun () -> display "\n";
+                  (fun () -> newLine();
                      Safelist.iter
                        (fun ri -> displayri ri; display "\n  ")
                        ril;
@@ -359,7 +361,7 @@ let interact prilist rilist =
                      repeat()));
                  (["l"],
                   ("list all suggested changes with details"),
-                  (fun () -> display "\n";
+                  (fun () -> newLine();
                      Safelist.iter
                        (fun ri -> displayri ri; display "\n  ";
                                   alwaysDisplayDetails ri)
