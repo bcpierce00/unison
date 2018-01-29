@@ -1,9 +1,9 @@
 (* Unison file synchronizer: src/sortri.mli *)
 (* Copyright 1999-2018, Benjamin C. Pierce (see COPYING for details) *)
 
-(* Sort a list of recon items according to the current setting of
-   various preferences (defined in sort.ml, and accessible from the
-   profile and via the functions below) *)
+(* Sort a list (with a stable sort algorithm) of recon items according to the
+   current setting of various preferences (accessible from the profile and via
+   the functions below) *)
 val sortReconItems : Common.reconItem list -> Common.reconItem list
 
 (* The underlying comparison function for sortReconItems (in case we

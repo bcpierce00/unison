@@ -32,8 +32,8 @@ let bysize =
      ^ "smaller files from being transferred quickly.\n\n"
      ^ "This preference (as well as the other sorting flags, but not the "
      ^ "sorting preferences that require patterns as arguments) can be "
-     ^ "set interactively and temporarily using the  'Sort' menu in the "
-     ^ "graphical user interface.")
+     ^ "set interactively and temporarily using the 'Sort' menu in the "
+     ^ "graphical and text user interfaces.")
 
 let newfirst =
   Prefs.createBool "sortnewfirst" false
