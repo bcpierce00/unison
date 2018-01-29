@@ -354,18 +354,16 @@ let interact prilist rilist =
                   ("list all suggested changes tersely"),
                   (fun () -> newLine();
                      Safelist.iter
-                       (fun ri -> displayri ri; display "\n  ")
+                       (fun ri -> display "  "; displayri ri; display "\n")
                        ril;
-                     display "\n";
                      repeat()));
                  (["l"],
                   ("list all suggested changes with details"),
                   (fun () -> newLine();
                      Safelist.iter
-                       (fun ri -> displayri ri; display "\n  ";
+                       (fun ri -> display "  "; displayri ri; display "\n";
                                   alwaysDisplayDetails ri)
                        ril;
-                     display "\n";
                      repeat()));
                  (["p";"b"],
                   ("go back to previous item"),
