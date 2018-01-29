@@ -247,6 +247,20 @@ let interact prilist rilist =
   if not (Prefs.read Globals.batch) then display ("\n" ^ Uicommon.roots2string() ^ "\n");
   let (r1,r2) = Globals.roots() in
   let (host1, host2) = root2hostname r1, root2hostname r2 in
+  let showdiffs ri =
+    Uicommon.showDiffs ri
+      (fun title text ->
+         try
+           let pager = System.getenv "PAGER" in
+           restoreTerminal ();
+           let out = System.open_process_out pager in
+           Printf.fprintf out "\n%s\n\n%s\n\n" title text;
+           let _ = System.close_process_out out in
+           setupTerminal ()
+         with Not_found ->
+           Printf.printf "\n%s\n\n%s\n\n" title text)
+      (fun s -> Printf.printf "%s\n" s)
+      Uutil.File.dummy in
   let rec loop prev =
     let rec previous prev ril =
       match prev with
@@ -331,19 +345,7 @@ let interact prilist rilist =
                  (["d"],
                   ("show differences"),
                   (fun () -> newLine();
-                     Uicommon.showDiffs ri
-                       (fun title text ->
-                          try
-                            let pager = System.getenv "PAGER" in
-                            restoreTerminal ();
-                            let out = System.open_process_out pager in
-                            Printf.fprintf out "\n%s\n\n%s\n\n" title text;
-                            let _ = System.close_process_out out in
-                            setupTerminal ()
-                          with Not_found ->
-                            Printf.printf "\n%s\n\n%s\n\n" title text)
-                       (fun s -> Printf.printf "%s\n" s)
-                       Uutil.File.dummy;
+                     showdiffs ri;
                      repeat()));
                  (["x"],
                   ("show details"),
