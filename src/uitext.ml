@@ -377,14 +377,14 @@ let interact prilist rilist =
                      displayDetails ri;
                      repeat()));
                  (["L"],
-                  ("list all suggested changes tersely"),
+                  ("list all following changes tersely"),
                   (fun () -> newLine();
                      Safelist.iter
                        (fun ri -> display "  "; displayri ri; display "\n")
                        ril;
                      repeat()));
                  (["l"],
-                  ("list all suggested changes with details"),
+                  ("list all following changes with details"),
                   (fun () -> newLine();
                      Safelist.iter
                        (fun ri -> display "  "; displayri ri; display "\n";
@@ -396,7 +396,7 @@ let interact prilist rilist =
                   (fun () -> newLine();
                      previous prev ril));
                  (["s"],
-                  ("stop the selection"),
+                  ("stop reconciling and go to the proceed menu"),
                   (fun () -> newLine();
                      (ConfirmBeforeProceeding, Safelist.rev_append prev ril)));
                  (["R"],
@@ -427,7 +427,7 @@ let interact prilist rilist =
                   (fun () -> newLine();
                      loop prev rest));
                  (["+"],
-                  ("skip and discard for this session all the following"),
+                  ("skip and discard all the following"),
                   (fun () -> newLine();
                      loop prev [ri]));
                  ([">";"."],
