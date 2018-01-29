@@ -378,6 +378,10 @@ let interact prilist rilist =
                   ("stop the selection"),
                   (fun () -> newLine();
                      (ConfirmBeforeProceeding, Safelist.rev_append prev ril)));
+                 (["R"],
+                  ("reverse the list"),
+                  (fun () -> newLine();
+                     loop rest (ri::prev)));
                  (["g"],
                   ("proceed immediately to propagating changes"),
                   (fun () -> newLine();
