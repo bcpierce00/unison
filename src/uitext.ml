@@ -297,18 +297,17 @@ let interact prilist rilist =
               selectAction
                 (if Prefs.read Globals.batch then Some " " else None)
                 [((if (isConflict dir) && not (Prefs.read Globals.batch)
-                     then ["f"]  (* Offer no default behavior if we've got
-                                    a conflict and we're in interactive mode *)
-                     else ["";"f";" "]),
+                   then ["f"]  (* Offer no default behavior if we've got a
+                                  conflict and we're in interactive mode *)
+                   else ["";"f";" "]),
                   ("follow " ^ Uutil.myName ^ "'s recommendation (if any)"),
-                  fun ()->
-                    newLine ();
-                    if (isConflict dir) && not (Prefs.read Globals.batch)
-                    then begin
-                      display "No default action [type '?' for help]\n";
-                      repeat()
-                    end else
-                      next());
+                  (fun () -> newLine();
+                     if (isConflict dir) && not (Prefs.read Globals.batch)
+                     then begin
+                       display "No default action [type '?' for help]\n";
+                       repeat()
+                     end else
+                       next()));
                  (["I"],
                   ("ignore this path permanently"),
                   (fun () ->
@@ -327,13 +326,13 @@ let interact prilist rilist =
                  (["m"],
                   ("merge the versions"),
                   (fun () ->
-                    diff.direction <- Merge;
-                    redisplayri();
-                    next()));
+                     diff.direction <- Merge;
+                     redisplayri();
+                     next()));
                  (["d"],
                   ("show differences"),
                   (fun () ->
-                     newLine ();
+                     newLine();
                      Uicommon.showDiffs ri
                        (fun title text ->
                           try
@@ -375,35 +374,35 @@ let interact prilist rilist =
                      previous prev ril));
                  (["s";"n"],
                   ("stop the selection"),
-                  (fun() ->
+                  (fun () ->
                      newLine();
                      (ConfirmBeforeProceeding, Safelist.rev_append prev ril)));
                  (["g"],
                   ("proceed immediately to propagating changes"),
-                  (fun() ->
+                  (fun () ->
                      newLine();
                      (ProceedImmediately, Safelist.rev_append prev ril)));
                  (["q"],
                   ("exit " ^ Uutil.myName ^ " without propagating any changes"),
-                  fun () -> newLine(); raise Sys.Break);
+                  (fun () -> newLine(); raise Sys.Break));
                  (["/"],
                   ("skip"),
                   (fun () ->
-                    if not (isConflict dir) then diff.direction <- Conflict "skip requested";
-                    redisplayri();
-                    next()));
+                     if not (isConflict dir) then diff.direction <- Conflict "skip requested";
+                     redisplayri();
+                     next()));
                  ([">";"."],
                   ("propagate from " ^ descr),
                   (fun () ->
-                    diff.direction <- Replica1ToReplica2;
-                    redisplayri();
-                    next()));
+                     diff.direction <- Replica1ToReplica2;
+                     redisplayri();
+                     next()));
                  (["<";","],
                   ("propagate from " ^ descl),
                   (fun () ->
-                    diff.direction <- Replica2ToReplica1;
-                    redisplayri();
-                    next()))
+                     diff.direction <- Replica2ToReplica1;
+                     redisplayri();
+                     next()))
                 ]
                 (fun () -> displayri ri)
   in loop prilist rilist
@@ -538,24 +537,24 @@ let setWarnPrinterForInitialization()=
 
 let setWarnPrinter() =
   Util.warnPrinter :=
-     Some(fun s ->
-            alwaysDisplay "Warning: ";
-            alwaysDisplay s;
-            if not (Prefs.read Globals.batch) then begin
-              display "Press return to continue.";
-              selectAction None
-                [(["";" ";"y"],
-                    ("Continue"),
-                    fun()->());
-                 (["n";"q";"x"],
-                    ("Exit"),
-                    fun()->
-                      alwaysDisplay "\n";
-                      restoreTerminal ();
-                      Lwt_unix.run (Update.unlockArchives ());
-                      exit Uicommon.fatalExit)]
-                (fun()-> display  "Press return to continue.")
-            end)
+    Some(fun s ->
+           alwaysDisplay "Warning: ";
+           alwaysDisplay s;
+           if not (Prefs.read Globals.batch) then begin
+             display "Press return to continue.";
+             selectAction None
+               [(["";" ";"y"],
+                 ("Continue"),
+                 (fun () -> ()));
+                (["n";"q";"x"],
+                 ("Exit"),
+                 (fun () ->
+                     alwaysDisplay "\n";
+                     restoreTerminal ();
+                     Lwt_unix.run (Update.unlockArchives ());
+                     exit Uicommon.fatalExit))]
+               (fun () -> display  "Press return to continue.")
+           end)
 
 let lastMajor = ref ""
 
@@ -708,7 +707,7 @@ let rec interactAndPropagateChanges prevItemList reconItemList
           (fun () -> askagain (Safelist.rev newReconItemList)));
          (["q"],
           ("exit " ^ Uutil.myName ^ " without propagating any changes"),
-          fun () -> newLine(); raise Sys.Break)
+          (fun () -> newLine(); raise Sys.Break))
         ]
         (fun () -> display "Proceed with propagating updates? ")
     in askagain newReconItemList
@@ -726,8 +725,8 @@ let checkForDangerousPath dangerousPaths =
           None
           [(["y"],
             "Continue",
-            (fun() -> ()));
-           (["n"; "q"; "x"; ""],
+            (fun () -> ()));
+           (["n";"q";"x";""],
             "Exit",
             (fun () -> alwaysDisplay "\n"; restoreTerminal ();
                        exit Uicommon.fatalExit))]
