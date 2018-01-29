@@ -516,7 +516,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "echo \"Building unison-blob.o...\"\nif [ -x /usr/libexec/path_helper ]; then\n  eval `/usr/libexec/path_helper -s`\nfi\ncd ${PROJECT_DIR}/..\nmake unison-blob.o\necho \"done\"";
+			shellScript = "echo \"Building unison-blob.o...\"\nif [ -x /usr/libexec/path_helper ]; then\n  eval `/usr/libexec/path_helper -s`\nfi\nif [ -x `which opam` ]; then\neval `opam config env`\nfi\ncd ${PROJECT_DIR}/..\nmake unison-blob.o\necho \"done\"";
 		};
 /* End PBXShellScriptBuildPhase section */
 
