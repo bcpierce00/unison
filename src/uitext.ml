@@ -261,7 +261,6 @@ let interact prilist rilist =
         let next() = loop (ri::prev) rest in
         let repeat() = loop prev ril in
         let ignore pat rest what =
-          if !cbreakMode <> None then display "\n";
           display "  ";
           Uicommon.addIgnorePattern pat;
           display ("  Permanently ignoring " ^ what ^ "\n");
@@ -310,17 +309,17 @@ let interact prilist rilist =
                        next()));
                  (["I"],
                   ("ignore this path permanently"),
-                  (fun () ->
+                  (fun () -> newLine();
                      ignore (Uicommon.ignorePath ri.path1) rest
                        "this path"));
                  (["E"],
                   ("permanently ignore files with this extension"),
-                  (fun () ->
+                  (fun () -> newLine();
                      ignore (Uicommon.ignoreExt ri.path1) rest
                        "files with this extension"));
                  (["N"],
                   ("permanently ignore paths ending with this name"),
-                  (fun () ->
+                  (fun () -> newLine();
                      ignore (Uicommon.ignoreName ri.path1) rest
                        "files with this name"));
                  (["m"],
@@ -331,8 +330,7 @@ let interact prilist rilist =
                      next()));
                  (["d"],
                   ("show differences"),
-                  (fun () ->
-                     newLine();
+                  (fun () -> newLine();
                      Uicommon.showDiffs ri
                        (fun title text ->
                           try
@@ -349,7 +347,9 @@ let interact prilist rilist =
                      repeat()));
                  (["x"],
                   ("show details"),
-                  (fun () -> newLine(); displayDetails ri; repeat()));
+                  (fun () -> newLine();
+                     displayDetails ri;
+                     repeat()));
                  (["L"],
                   ("list all suggested changes tersely"),
                   (fun () -> newLine();
@@ -369,22 +369,20 @@ let interact prilist rilist =
                      repeat()));
                  (["p";"b"],
                   ("go back to previous item"),
-                  (fun () ->
-                     newLine();
+                  (fun () -> newLine();
                      previous prev ril));
                  (["s";"n"],
                   ("stop the selection"),
-                  (fun () ->
-                     newLine();
+                  (fun () -> newLine();
                      (ConfirmBeforeProceeding, Safelist.rev_append prev ril)));
                  (["g"],
                   ("proceed immediately to propagating changes"),
-                  (fun () ->
-                     newLine();
+                  (fun () -> newLine();
                      (ProceedImmediately, Safelist.rev_append prev ril)));
                  (["q"],
                   ("exit " ^ Uutil.myName ^ " without propagating any changes"),
-                  (fun () -> newLine(); raise Sys.Break));
+                  (fun () -> newLine();
+                     raise Sys.Break));
                  (["/"],
                   ("skip"),
                   (fun () ->
@@ -670,15 +668,13 @@ let rec interactAndPropagateChanges prevItemList reconItemList
           doit);
          (["n"],
           "No: go through selections again",
-          (fun () ->
+          (fun () -> newLine();
              Prefs.set Uicommon.auto false;
-             newLine();
              interactAndPropagateChanges [] newReconItemList));
          (["p";"b"],
           "go back to the last item of the selection",
-          (fun () ->
+          (fun () -> newLine();
              Prefs.set Uicommon.auto false;
-             newLine();
              match Safelist.rev newReconItemList with
                [] -> interactAndPropagateChanges [] []
              | lastri::prev -> interactAndPropagateChanges prev [lastri]));
@@ -707,7 +703,8 @@ let rec interactAndPropagateChanges prevItemList reconItemList
           (fun () -> askagain (Safelist.rev newReconItemList)));
          (["q"],
           ("exit " ^ Uutil.myName ^ " without propagating any changes"),
-          (fun () -> newLine(); raise Sys.Break))
+          (fun () -> newLine();
+             raise Sys.Break))
         ]
         (fun () -> display "Proceed with propagating updates? ")
     in askagain newReconItemList
@@ -728,8 +725,9 @@ let checkForDangerousPath dangerousPaths =
             (fun () -> ()));
            (["n";"q";"x";""],
             "Exit",
-            (fun () -> alwaysDisplay "\n"; restoreTerminal ();
-                       exit Uicommon.fatalExit))]
+            (fun () -> alwaysDisplay "\n";
+               restoreTerminal ();
+               exit Uicommon.fatalExit))]
           (fun () -> display "Do you really want to proceed? ")
       end
     end
