@@ -188,7 +188,7 @@ let rec selectAction batch actions tryagain =
   with
     (* Restart an interrupted system call (which can happen notably when
      * the process is put in the background by SIGTSTP). *)
-    Unix.Unix_error (Unix.EINTR, _, _) -> selectAction batch actions tryagain
+    Unix.Unix_error (Unix.EINTR, _, _) -> tryagainOrLoop()
     (* Simply print a slightly more informative message than the exception
      * itself (e.g. "Uncaught unix error: read failed: Resource temporarily
      * unavailable" or "Uncaught exception End_of_file"). *)
