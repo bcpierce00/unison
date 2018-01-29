@@ -378,21 +378,6 @@ let interact prilist rilist =
                   (fun () ->
                      Recon.revertToDefaultDirection ri; redisplayri();
                      next()));
-                 (["I"],
-                  ("ignore this path permanently"),
-                  (fun () -> newLine();
-                     ignore (Uicommon.ignorePath ri.path1) rest
-                       "this path"));
-                 (["E"],
-                  ("permanently ignore files with this extension"),
-                  (fun () -> newLine();
-                     ignore (Uicommon.ignoreExt ri.path1) rest
-                       "files with this extension"));
-                 (["N"],
-                  ("permanently ignore paths ending with this name"),
-                  (fun () -> newLine();
-                     ignore (Uicommon.ignoreName ri.path1) rest
-                       "files with this name"));
                  (["m"],
                   ("merge the versions"),
                   (fun () ->
@@ -410,14 +395,6 @@ let interact prilist rilist =
                   (fun () -> newLine();
                      Safelist.iter setskip rest;
                      repeat()));
-                 (["-"],
-                  ("skip and discard for this session"),
-                  (fun () -> newLine();
-                     loop prev rest));
-                 (["+"],
-                  ("skip and discard all the following"),
-                  (fun () -> newLine();
-                     loop prev [ri]));
                  ([">";"."],
                   ("propagate from " ^ descr),
                   (fun () ->
@@ -442,6 +419,29 @@ let interact prilist rilist =
                      setDirectionIfConflict `Older;
                      redisplayri();
                      next()));
+                 (["-"],
+                  ("skip and discard for this session"),
+                  (fun () -> newLine();
+                     loop prev rest));
+                 (["+"],
+                  ("skip and discard all the following"),
+                  (fun () -> newLine();
+                     loop prev [ri]));
+                 (["I"],
+                  ("ignore this path permanently"),
+                  (fun () -> newLine();
+                     ignore (Uicommon.ignorePath ri.path1) rest
+                       "this path"));
+                 (["E"],
+                  ("permanently ignore files with this extension"),
+                  (fun () -> newLine();
+                     ignore (Uicommon.ignoreExt ri.path1) rest
+                       "files with this extension"));
+                 (["N"],
+                  ("permanently ignore paths ending with this name"),
+                  (fun () -> newLine();
+                     ignore (Uicommon.ignoreName ri.path1) rest
+                       "files with this name"));
                  (["s"],
                   ("stop reconciling and go to the proceed menu"),
                   (fun () -> newLine();
