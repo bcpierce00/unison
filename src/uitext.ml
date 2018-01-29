@@ -260,7 +260,12 @@ let interact prilist rilist =
          with Not_found ->
            Printf.printf "\n%s\n\n%s\n\n" title text)
       (fun s -> Printf.printf "%s\n" s)
-      Uutil.File.dummy in
+      Uutil.File.dummy
+  and setskip = function
+      {replicas = Different ({direction = Conflict _})} -> ()
+    | {replicas = Different diff} -> diff.direction <- Conflict "skip requested"
+    | _ -> ()
+  in
   let rec loop prev =
     let rec previous prev ril =
       match prev with
@@ -393,7 +398,7 @@ let interact prilist rilist =
                  (["/";":"],
                   ("skip"),
                   (fun () ->
-                     if not (isConflict dir) then diff.direction <- Conflict "skip requested";
+                     setskip ri;
                      redisplayri();
                      next()));
                  (["-"],
