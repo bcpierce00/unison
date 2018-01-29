@@ -240,10 +240,11 @@ let displayri ri =
 
 type proceed = ConfirmBeforeProceeding | ProceedImmediately
 
-let interact rilist =
+(* "interact [] rilist" interactively reconciles each list item *)
+let interact prilist rilist =
+  if not (Prefs.read Globals.batch) then display ("\n" ^ Uicommon.roots2string() ^ "\n");
   let (r1,r2) = Globals.roots() in
   let (host1, host2) = root2hostname r1, root2hostname r2 in
-  if not (Prefs.read Globals.batch) then display ("\n" ^ Uicommon.roots2string() ^ "\n");
   let rec loop prev =
     let rec previous prev ril =
       match prev with
@@ -251,7 +252,7 @@ let interact rilist =
           displayri pri; display "\n"; display s; display "\n";
           previous pril (pri::ril)
       | pri::pril -> loop pril (pri::ril)
-      | [] -> loop prev ril in
+      | [] -> display ("\n" ^ Uicommon.roots2string() ^ "\n"); loop prev ril in
     function
       [] -> (ConfirmBeforeProceeding, Safelist.rev prev)
     | ri::rest as ril ->
@@ -275,7 +276,7 @@ let interact rilist =
         displayri ri;
         match ri.replicas with
           Problem s -> display "\n"; display s; display "\n"; next()
-        | Different ({rc1 = rc1; rc2 = rc2; direction = dir} as diff) ->
+        | Different ({rc1 = _; rc2 = _; direction = dir} as diff) ->
             if Prefs.read Uicommon.auto && not (isConflict dir) then begin
               display "\n"; next()
             end else
@@ -370,6 +371,11 @@ let interact rilist =
                   (fun () ->
                      newLine();
                      previous prev ril));
+                 (["s";"n"],
+                  ("stop the selection"),
+                  (fun() ->
+                     newLine();
+                     (ConfirmBeforeProceeding, Safelist.rev_append prev ril)));
                  (["g"],
                   ("proceed immediately to propagating changes"),
                   (fun() ->
@@ -397,8 +403,7 @@ let interact rilist =
                     next()))
                 ]
                 (fun () -> displayri ri)
-  in
-    loop [] rilist
+  in loop prilist rilist
 
 let verifyMerge title text =
   Printf.printf "%s\n" text;
@@ -559,10 +564,10 @@ let formatStatus major minor =
     lastMajor := major;
     s
 
-let rec interactAndPropagateChanges reconItemList
+let rec interactAndPropagateChanges prevItemList reconItemList
             : bool * bool * bool * (Path.t list)
               (* anySkipped?, anyPartial?, anyFailures?, failingPaths *) =
-  let (proceed,newReconItemList) = interact reconItemList in
+  let (proceed,newReconItemList) = interact prevItemList reconItemList in
   let (updatesToDo, skipped) =
     Safelist.fold_left
       (fun (howmany, skipped) ri ->
@@ -665,11 +670,19 @@ let rec interactAndPropagateChanges reconItemList
         (fun () ->
            Prefs.set Uicommon.auto false;
            newLine();
-           interactAndPropagateChanges newReconItemList));
+           interactAndPropagateChanges [] newReconItemList));
+       (["p";"b"],
+        "go back to the last item of the selection",
+        (fun () ->
+           Prefs.set Uicommon.auto false;
+           newLine();
+           match Safelist.rev newReconItemList with
+             [] -> interactAndPropagateChanges [] []
+           | lastri::prev -> interactAndPropagateChanges prev [lastri]));
        (["q"],
         ("exit " ^ Uutil.myName ^ " without propagating any changes"),
         fun () -> raise Sys.Break)
-     ]
+      ]
       (fun () -> display "Proceed with propagating updates? ")
   end
 
@@ -735,7 +748,7 @@ let synchronizeOnce ?wantWatcher ?skipRecentFiles pathsOpt =
   end else begin
     checkForDangerousPath dangerousPaths;
     let (anySkipped, anyPartial, anyFailures, failedPaths) =
-      interactAndPropagateChanges reconItemList in
+      interactAndPropagateChanges [] reconItemList in
     let exitStatus = Uicommon.exitCode(anySkipped || anyPartial,anyFailures) in
     (exitStatus, failedPaths)
   end
