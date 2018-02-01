@@ -720,12 +720,12 @@ let rec interactAndPropagateChanges prevItemList reconItemList
           "Yes: proceed with updates as selected above",
           doit);
          (["n"],
-          "No: go through selections again",
+          "No: go through reconciliation process again",
           (fun () -> newLine();
              Prefs.set Uicommon.auto false;
              interactAndPropagateChanges [] newReconItemList));
          (["p";"b"],
-          "go back to the last item of the selection",
+          "go back to the last item of the reconciliation",
           (fun () -> newLine();
              Prefs.set Uicommon.auto false;
              match Safelist.rev newReconItemList with
