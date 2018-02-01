@@ -117,7 +117,7 @@ let logfile =
     "!logfile name"
     "By default, logging messages will be appended to the file
      \\verb|unison.log| in your HOME directory.  Set this preference if
-     you prefer another file."
+     you prefer another file.  It can be relative to your HOME directory."
 
 let logch = ref None
 
@@ -125,7 +125,8 @@ let rec getLogch() =
   Util.convertUnixErrorsToFatal "getLogch" (fun() ->
   match !logch with
     None ->
-      let file = Prefs.read logfile in
+      let prefstr = System.fspathToString (Prefs.read logfile) in
+      let file = Util.fileMaybeRelToHomeDir prefstr in
       let ch =
         System.open_out_gen [Open_wronly; Open_creat; Open_append] 0o600 file in
       logch := Some (ch, file);
