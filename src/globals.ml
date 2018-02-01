@@ -284,7 +284,14 @@ let merge =
      ^ "details on Merging functions are present in "
      ^ "\\sectionref{merge}{Merging Conflicting Versions}.")
 
-let shouldMerge p = Pred.test merge (Path.toString p)
+let mergenot =
+  Pred.create "mergenot" ~advanced:true
+    ("This preference overrides {\\tt merge}: the specified paths are "
+    ^ "{\\em not} merged, even if the {\\tt merge} preference selects them.")
+
+let shouldMerge p =
+  let p = Path.toString p in
+  Pred.test merge p && not (Pred.test mergenot p)
 
 let mergeCmdForPath p = Pred.assoc merge (Path.toString p)
 
