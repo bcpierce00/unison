@@ -55,6 +55,7 @@ val replacesubstrings : string -> (string * string) list -> string
 val concatmap : string -> ('a -> string) -> 'a list -> string
 val removeTrailingCR : string -> string
 val trimWhitespace : string -> string
+val splitAtFirstChar : string -> char -> string list
 val splitIntoWords : ?esc:char -> string -> char -> string list
 val splitIntoWordsByString : string -> string -> string list
 val padto : int -> string -> string

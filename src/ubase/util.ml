@@ -401,6 +401,14 @@ let trimWhitespace s =
    in
    loop 0 (l-1)
 
+let splitAtFirstChar (s:string) (c:char) =
+  try
+    let i = String.index s c in
+    match String.length s with
+      l when l=i+1 -> [String.sub s 0 i] (* do not include the empty string *)
+    | l -> [String.sub s 0 i; String.sub s (i+1) (l-i-1)]
+  with Not_found -> [s]
+
 let splitIntoWords ?esc:(e='\\') (s:string) (c:char) =
   let rec inword acc eacc start pos =
     if pos >= String.length s || s.[pos] = c then
