@@ -69,7 +69,7 @@ let parse speclist anonfun errmsg =
   while !current < l do
     let ss = argv.(!current) in
     if String.length ss >= 1 & String.get ss 0 = '-' then begin
-      let args = Util.splitIntoWords ss '=' in
+      let args = Util.splitAtFirstChar ss '=' in
       let s = Safelist.nth args 0 in
       let arg conv mesg =
         match args with
@@ -79,7 +79,7 @@ let parse speclist anonfun errmsg =
              incr current;
              (try conv a with Failure _ -> stop (Wrong (s, a, mesg)))
         | [_;a] -> (try conv a with Failure _ -> stop (Wrong (s, a, mesg)))
-        | _ -> stop (Message (sprintf "Garbled argument %s" s)) in
+        | _ -> assert false in
       let action =
         try assoc3 s speclist
         with Not_found -> stop (Unknown s)
