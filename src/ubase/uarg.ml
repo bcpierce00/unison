@@ -83,6 +83,9 @@ let parse speclist anonfun errmsg =
       let action =
         try assoc3 s speclist
         with Not_found -> stop (Unknown s)
+      and catch f a =
+        try f a
+        with Invalid_argument s -> raise (Failure s)
       in
       begin try
         match action with
@@ -92,11 +95,11 @@ let parse speclist anonfun errmsg =
         | Bool f ->
             begin match args with
               [_] -> f true
-            | _   -> f (arg bool_of_string "a boolean")
+            | _   -> f (arg (catch bool_of_string) "a boolean")
             end
         | String f -> f (arg (fun s-> s) "")
-        | Int f    -> f (arg int_of_string "an integer")
-        | Float f  -> f (arg float_of_string "a float")
+        | Int f    -> f (arg (catch int_of_string) "an integer")
+        | Float f  -> f (arg (catch float_of_string) "a float")
         | Rest f ->
             while !current < l-1 do
               f argv.(!current+1);
