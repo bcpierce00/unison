@@ -403,10 +403,10 @@ let trimWhitespace s =
 
 let splitAtFirstChar (s:string) (c:char) =
   try
-    let i = String.index s c in
-    match String.length s with
-      l when l=i+1 -> [String.sub s 0 i] (* do not include the empty string *)
-    | l -> [String.sub s 0 i; String.sub s (i+1) (l-i-1)]
+    let i = String.index s c
+    and l= String.length s in
+    (* rest is possibly the empty string *)
+    [String.sub s 0 i; String.sub s (i+1) (l-i-1)]
   with Not_found -> [s]
 
 let splitIntoWords ?esc:(e='\\') (s:string) (c:char) =
