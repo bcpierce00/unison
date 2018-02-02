@@ -216,7 +216,10 @@ let batch =
   Prefs.createBool "batch" false "batch mode: ask no questions at all"
     ("When this is set to {\\tt true}, the user "
      ^ "interface will ask no questions at all.  Non-conflicting changes "
-     ^ "will be propagated; conflicts will be skipped.")
+     ^ "will be propagated; conflicts will be skipped.  Note that the "
+     ^ "preference {\\tt merge} remains active; some additional "
+     ^ "{\\tt -mergenot} can prevent interactive and/or risky merge "
+     ^ "operations from happening.")
 
 let confirmBigDeletes =
   Prefs.createBool "confirmbigdel" true
