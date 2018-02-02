@@ -329,6 +329,10 @@ let interact prilist rilist =
                        repeat()
                      end else
                        next()));
+                 (["n"],
+                  ("next"),
+                  (fun () -> newLine();
+                     next()));
                  (["I"],
                   ("ignore this path permanently"),
                   (fun () -> newLine();
@@ -379,7 +383,7 @@ let interact prilist rilist =
                   ("go back to previous item"),
                   (fun () -> newLine();
                      previous prev ril));
-                 (["s";"n"],
+                 (["s"],
                   ("stop the selection"),
                   (fun () -> newLine();
                      (ConfirmBeforeProceeding, Safelist.rev_append prev ril)));
