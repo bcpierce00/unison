@@ -268,6 +268,9 @@ let interact prilist rilist =
       {replicas = Different ({direction = Conflict _})} -> ()
     | {replicas = Different diff} -> diff.direction <- Conflict "skip requested"
     | _ -> ()
+  and setmerge = function
+      {replicas = Different diff} -> begin diff.direction <- Merge; true end
+    | _ -> true
   in
   let ripred = ref None in
   let rec loop prev =
@@ -412,14 +415,12 @@ let interact prilist rilist =
                  (["r"],
                   ("revert to " ^ Uutil.myName ^ "'s default recommendation"),
                   (fun () ->
-                     Recon.revertToDefaultDirection ri; redisplayri();
-                     next()));
+                     actOnMatching
+                       (fun ri->Recon.revertToDefaultDirection ri; true)));
                  (["m"],
                   ("merge the versions"),
                   (fun () ->
-                     diff.direction <- Merge;
-                     redisplayri();
-                     next()));
+                     actOnMatching setmerge));
                  ([">";"."],
                   ("propagate from " ^ descr),
                   (fun () ->
