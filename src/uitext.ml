@@ -268,6 +268,7 @@ let interact prilist rilist =
     | {replicas = Different diff} -> diff.direction <- Conflict "skip requested"
     | _ -> ()
   in
+  let ripred = ref None in
   let rec loop prev =
     let rec previous prev ril =
       match prev with
@@ -295,6 +296,16 @@ let interact prilist rilist =
           loop (nukeIgnoredRis (ri::prev)) (nukeIgnoredRis ril) in
         (* This should work on most terminals: *)
         let redisplayri() = overwrite (); displayri ri; display "\n" in
+        let actOnMatching f =
+          (* [f] can have effects on the ri and return false to discard it *)
+          match !ripred with
+          | None -> if f ri
+              then begin redisplayri(); next() end
+              else begin newLine(); loop prev rest end
+          | Some test -> newLine();
+              let filt = fun ri -> if test ri then f ri else true in
+              loop prev (ri::Safelist.filter filt rest)
+        in
         displayri ri;
         match ri.replicas with
           Problem s -> display "\n"; display s; display "\n"; next()
