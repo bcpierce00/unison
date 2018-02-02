@@ -262,7 +262,8 @@ let interact prilist rilist =
          with Not_found ->
            Printf.printf "\n%s\n\n%s\n\n" title text)
       (fun s -> Printf.printf "%s\n" s)
-      Uutil.File.dummy
+      Uutil.File.dummy;
+      true
   and setskip = function
       {replicas = Different ({direction = Conflict _})} -> ()
     | {replicas = Different diff} -> diff.direction <- Conflict "skip requested"
@@ -361,14 +362,12 @@ let interact prilist rilist =
                      loop rest (ri::prev)));
                  (["d"],
                   ("show differences"),
-                  (fun () -> newLine();
-                     showdiffs ri;
-                     repeat()));
+                  (fun () ->
+                     actOnMatching showdiffs));
                  (["x"],
                   ("show details"),
-                  (fun () -> newLine();
-                     displayDetails ri;
-                     repeat()));
+                  (fun () ->
+                     actOnMatching (fun ri -> displayDetails ri; true)));
                  (["L"],
                   ("list all following changes tersely"),
                   (fun () -> newLine();
