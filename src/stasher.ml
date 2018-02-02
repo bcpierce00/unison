@@ -39,7 +39,8 @@ let backup =
   Pred.create "backup" ~advanced:true
     ("Including the preference \\texttt{-backup \\ARG{pathspec}} "
      ^ "causes Unison to keep backup files for each path that matches "
-     ^ "\\ARG{pathspec}.  These backup files are kept in the "
+     ^ "\\ARG{pathspec}; directories (nor their permissions or any other "
+     ^ " metadata) are not backed up.  These backup files are kept in the "
      ^ "directory specified by the \\verb|backuplocation| preference. The backups are named "
      ^ "according to the \\verb|backupprefix| and \\verb|backupsuffix| preferences."
      ^ " The number of versions that are kept is determined by the "
