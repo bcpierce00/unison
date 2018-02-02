@@ -438,6 +438,13 @@ let interact prilist rilist =
                           {replicas = Different ({direction = Merge})} -> true
                         | _ -> false);
                      repeat()));
+                 (["X";"!"],
+                  ("invert the matching condition"),
+                  (fun () -> newLine();
+                     ripred := begin match !ripred with
+                         None -> display "Matching condition not enabled\n"; None
+                       | Some p -> Some (fun i -> not (p i)) end;
+                     repeat()));
                  (["U"],
                   ("unmatch all (select current)"),
                   (fun () -> newLine();
