@@ -364,6 +364,16 @@ let interact prilist rilist =
                   (fun () ->
                      Recon.revertToDefaultDirection ri; redisplayri();
                      previous prev ril));
+                 (["0"],
+                  ("go to the start of the list"),
+                  (fun () -> newLine();
+                     loop [] (Safelist.rev_append prev ril)));
+                 (["9"],
+                  ("go to the end of the list"),
+                  (fun () -> newLine();
+                     match Safelist.rev_append ril prev with
+                       [] -> loop [] []
+                     | lri::prev -> loop prev [lri]));
                  (["R"],
                   ("reverse the list"),
                   (fun () -> newLine();
