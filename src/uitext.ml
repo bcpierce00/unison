@@ -393,6 +393,22 @@ let interact prilist rilist =
                   (fun () -> newLine();
                      ripred := Some (fun _ -> true);
                      repeat()));
+                 (["1"],
+                  ("match all the following that propagate " ^ descr),
+                  (fun () -> newLine();
+                     ripred := Some
+                       (function
+                          {replicas = Different ({direction = Replica1ToReplica2})} -> true
+                        | _ -> false);
+                     repeat()));
+                 (["2"],
+                  ("match all the following that propagate " ^ descl),
+                  (fun () -> newLine();
+                     ripred := Some
+                       (function
+                          {replicas = Different ({direction = Replica2ToReplica1})} -> true
+                        | _ -> false);
+                     repeat()));
                  (["C"],
                   ("match all the following conflicts"),
                   (fun () -> newLine();
