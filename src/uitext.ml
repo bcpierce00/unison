@@ -271,6 +271,10 @@ let interact prilist rilist =
   and setdir dir = function
       {replicas = Different diff} -> begin diff.direction <- dir; true end
     | _ -> true
+  and setDirectionIfConflict dir = function
+      {replicas = Different ({direction = Conflict _})} as ri ->
+        begin Recon.setDirection ri dir `Force; true end
+    | ri -> begin Recon.setDirection ri dir `Prefer; true end
   in
   let ripred = ref None in
   let rec loop prev =
@@ -317,9 +321,6 @@ let interact prilist rilist =
             if Prefs.read Uicommon.auto && not (isConflict dir) then begin
               display "\n"; next()
             end else
-              let setDirectionIfConflict ndir =
-                if isConflict dir then Recon.setDirection ri ndir `Force
-                else Recon.setDirection ri ndir `Prefer in
               let (descr, descl) =
                 if host1 = host2 then
                   "left to right", "right to left"
@@ -432,15 +433,11 @@ let interact prilist rilist =
                  (["]";"\""],
                   ("resolve conflicts in favor of the newer file"),
                   (fun () ->
-                     setDirectionIfConflict `Newer;
-                     redisplayri();
-                     next()));
+                     actOnMatching (setDirectionIfConflict `Newer)));
                  (["[";"'"],
                   ("resolve conflicts in favor of the older file"),
                   (fun () ->
-                     setDirectionIfConflict `Older;
-                     redisplayri();
-                     next()));
+                     actOnMatching (setDirectionIfConflict `Older)));
                  (["/";":"],
                   ("skip"),
                   (fun () ->
