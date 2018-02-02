@@ -276,9 +276,7 @@ let merge =
   Pred.create "merge" ~advanced:true
     ("This preference can be used to run a merge program which will create "
      ^ "a new version for each of the files and the backup, "
-     ^ "with the last backup and the both replicas.  Setting the {\\tt merge} "
-     ^ "preference for a path will also cause this path to be backed up, "
-     ^ "just like {\tt backup}.  "
+     ^ "with the last backup and the both replicas. "
      ^ "The syntax of \\ARG{pathspec>cmd} is "
      ^ "described in \\sectionref{pathspec}{Path Specification}, and further "
      ^ "details on Merging functions are present in "
