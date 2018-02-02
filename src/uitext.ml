@@ -278,6 +278,9 @@ let interact prilist rilist =
     | ri -> begin Recon.setDirection ri dir `Prefer; true end
   in
   let ripred = ref None in
+  let ritest ri = match !ripred with
+      None -> true
+    | Some test -> test ri in
   let rec loop prev =
     let rec previous prev ril =
       match prev with
@@ -374,19 +377,19 @@ let interact prilist rilist =
                   (fun () ->
                      actOnMatching (fun ri -> displayDetails ri; true)));
                  (["L"],
-                  ("list all following changes tersely"),
+                  ("list all (or matching) following changes tersely"),
                   (fun () -> newLine();
                      Safelist.iter
                        (fun ri -> display "  "; displayri ri; display "\n")
-                       ril;
+                       (Safelist.filter ritest ril);
                      repeat()));
                  (["l"],
-                  ("list all following changes with details"),
+                  ("list all (or matching) following changes with details"),
                   (fun () -> newLine();
                      Safelist.iter
                        (fun ri -> display "  "; displayri ri; display "\n";
                                   alwaysDisplayDetails ri)
-                       ril;
+                       (Safelist.filter ritest ril);
                      repeat()));
                  (["A"],
                   ("match all the following"),
