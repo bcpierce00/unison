@@ -333,6 +333,11 @@ let interact prilist rilist =
                   ("next"),
                   (fun () -> newLine();
                      next()));
+                 (["r"],
+                  ("revert to " ^ Uutil.myName ^ "'s default recommendation"),
+                  (fun () ->
+                     Recon.revertToDefaultDirection ri; redisplayri();
+                     next()));
                  (["I"],
                   ("ignore this path permanently"),
                   (fun () -> newLine();
