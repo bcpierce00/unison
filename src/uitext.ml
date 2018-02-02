@@ -265,9 +265,10 @@ let interact prilist rilist =
       Uutil.File.dummy;
       true
   and setskip = function
-      {replicas = Different ({direction = Conflict _})} -> ()
-    | {replicas = Different diff} -> diff.direction <- Conflict "skip requested"
-    | _ -> ()
+      {replicas = Different ({direction = Conflict _})} -> true
+    | {replicas = Different diff} ->
+        begin diff.direction <- Conflict "skip requested"; true end
+    | _ -> true
   and setdir dir = function
       {replicas = Different diff} -> begin diff.direction <- dir; true end
     | _ -> true
@@ -441,18 +442,16 @@ let interact prilist rilist =
                  (["/";":"],
                   ("skip"),
                   (fun () ->
-                     setskip ri;
-                     redisplayri();
-                     next()));
+                     actOnMatching setskip));
                  (["%"],
                   ("skip all the following"),
                   (fun () -> newLine();
-                     Safelist.iter setskip rest;
+                     Safelist.iter (fun ri -> setskip ri; ()) rest;
                      repeat()));
                  (["-"],
                   ("skip and discard for this session"),
-                  (fun () -> newLine();
-                     loop prev rest));
+                  (fun () ->
+                     actOnMatching (fun _->false)));
                  (["+"],
                   ("skip and discard all the following"),
                   (fun () -> newLine();
