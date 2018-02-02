@@ -332,9 +332,22 @@ let interact prilist rilist =
                      end else
                        next()));
                  (["n"],
-                  ("next"),
+                  ("go to the next item"),
                   (fun () -> newLine();
                      next()));
+                 (["p";"b"],
+                  ("go back to previous item"),
+                  (fun () -> newLine();
+                     previous prev ril));
+                 (["\x7f";"\b"],
+                  ("revert then go back to previous item"),
+                  (fun () ->
+                     Recon.revertToDefaultDirection ri; redisplayri();
+                     previous prev ril));
+                 (["R"],
+                  ("reverse the list"),
+                  (fun () -> newLine();
+                     loop rest (ri::prev)));
                  (["d"],
                   ("show differences"),
                   (fun () -> newLine();
@@ -365,11 +378,6 @@ let interact prilist rilist =
                   (fun () ->
                      Recon.revertToDefaultDirection ri; redisplayri();
                      next()));
-                 (["\x7f";"\b"],
-                  ("revert then go back to previous item"),
-                  (fun () ->
-                     Recon.revertToDefaultDirection ri; redisplayri();
-                     previous prev ril));
                  (["I"],
                   ("ignore this path permanently"),
                   (fun () -> newLine();
@@ -391,14 +399,6 @@ let interact prilist rilist =
                      diff.direction <- Merge;
                      redisplayri();
                      next()));
-                 (["p";"b"],
-                  ("go back to previous item"),
-                  (fun () -> newLine();
-                     previous prev ril));
-                 (["R"],
-                  ("reverse the list"),
-                  (fun () -> newLine();
-                     loop rest (ri::prev)));
                  (["/";":"],
                   ("skip"),
                   (fun () ->
