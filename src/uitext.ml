@@ -135,6 +135,8 @@ let rec selectAction batch actions tryagain =
   let formatname = function
       "" -> "<ret>"
     | " " -> "<spc>"
+    | "\x7f" -> "<del>"
+    | "\b" -> "<bsp>"
     | n -> n in
   let summarizeChoices() =
     display "[";
@@ -338,6 +340,11 @@ let interact prilist rilist =
                   (fun () ->
                      Recon.revertToDefaultDirection ri; redisplayri();
                      next()));
+                 (["\x7f";"\b"],
+                  ("revert then go back to previous item"),
+                  (fun () ->
+                     Recon.revertToDefaultDirection ri; redisplayri();
+                     previous prev ril));
                  (["I"],
                   ("ignore this path permanently"),
                   (fun () -> newLine();
