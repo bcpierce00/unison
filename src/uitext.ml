@@ -268,8 +268,8 @@ let interact prilist rilist =
       {replicas = Different ({direction = Conflict _})} -> ()
     | {replicas = Different diff} -> diff.direction <- Conflict "skip requested"
     | _ -> ()
-  and setmerge = function
-      {replicas = Different diff} -> begin diff.direction <- Merge; true end
+  and setdir dir = function
+      {replicas = Different diff} -> begin diff.direction <- dir; true end
     | _ -> true
   in
   let ripred = ref None in
@@ -420,19 +420,15 @@ let interact prilist rilist =
                  (["m"],
                   ("merge the versions"),
                   (fun () ->
-                     actOnMatching setmerge));
+                     actOnMatching (setdir Merge)));
                  ([">";"."],
                   ("propagate from " ^ descr),
                   (fun () ->
-                     diff.direction <- Replica1ToReplica2;
-                     redisplayri();
-                     next()));
+                     actOnMatching (setdir Replica1ToReplica2)));
                  (["<";","],
                   ("propagate from " ^ descl),
                   (fun () ->
-                     diff.direction <- Replica2ToReplica1;
-                     redisplayri();
-                     next()));
+                     actOnMatching (setdir Replica2ToReplica1)));
                  (["]";"\""],
                   ("resolve conflicts in favor of the newer file"),
                   (fun () ->
