@@ -384,6 +384,32 @@ let interact prilist rilist =
                                   alwaysDisplayDetails ri)
                        ril;
                      repeat()));
+                 (["A"],
+                  ("match all the following"),
+                  (fun () -> newLine();
+                     ripred := Some (fun _ -> true);
+                     repeat()));
+                 (["C"],
+                  ("match all the following conflicts"),
+                  (fun () -> newLine();
+                     ripred := Some
+                       (function
+                          {replicas = Different ({direction = Conflict _})} -> true
+                        | _ -> false);
+                     repeat()));
+                 (["M"],
+                  ("match all the following merges"),
+                  (fun () -> newLine();
+                     ripred := Some
+                       (function
+                          {replicas = Different ({direction = Merge})} -> true
+                        | _ -> false);
+                     repeat()));
+                 (["U"],
+                  ("unmatch all (select current)"),
+                  (fun () -> newLine();
+                     ripred := None;
+                     repeat()));
                  (["r"],
                   ("revert to " ^ Uutil.myName ^ "'s default recommendation"),
                   (fun () ->
