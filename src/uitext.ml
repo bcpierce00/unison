@@ -366,11 +366,11 @@ let interact prilist rilist =
                   (fun () -> newLine();
                      loop rest (ri::prev)));
                  (["d"],
-                  ("show differences"),
+                  ("show differences (curr or match)"),
                   (fun () ->
                      actOnMatching showdiffs));
                  (["x"],
-                  ("show details"),
+                  ("show details (curr or match)"),
                   (fun () ->
                      actOnMatching (fun ri -> displayDetails ri; true)));
                  (["L"],
@@ -431,28 +431,28 @@ let interact prilist rilist =
                      ripred := None;
                      repeat()));
                  (["r"],
-                  ("revert to " ^ Uutil.myName ^ "'s default recommendation"),
+                  ("revert to " ^ Uutil.myName ^ "'s default recommendation (curr or match)"),
                   (fun () ->
                      actOnMatching
                        (fun ri->Recon.revertToDefaultDirection ri; true)));
                  (["m"],
-                  ("merge the versions"),
+                  ("merge the versions (curr or match)"),
                   (fun () ->
                      actOnMatching (setdir Merge)));
                  ([">";"."],
-                  ("propagate from " ^ descr),
+                  ("propagate from " ^ descr ^ " (curr or match)"),
                   (fun () ->
                      actOnMatching (setdir Replica1ToReplica2)));
                  (["<";","],
-                  ("propagate from " ^ descl),
+                  ("propagate from " ^ descl ^ " (curr or match)"),
                   (fun () ->
                      actOnMatching (setdir Replica2ToReplica1)));
                  (["]";"\""],
-                  ("resolve conflicts in favor of the newer file"),
+                  ("resolve conflicts in favor of the newer (curr or match)"),
                   (fun () ->
                      actOnMatching (setDirectionIfConflict `Newer)));
                  (["[";"'"],
-                  ("resolve conflicts in favor of the older file"),
+                  ("resolve conflicts in favor of the older (curr or match)"),
                   (fun () ->
                      actOnMatching (setDirectionIfConflict `Older)));
                  (["/";":"],
@@ -465,7 +465,7 @@ let interact prilist rilist =
                      Safelist.iter (fun ri -> setskip ri; ()) rest;
                      repeat()));
                  (["-"],
-                  ("skip and discard for this session"),
+                  ("skip and discard for this session (curr or match)"),
                   (fun () ->
                      actOnMatching (fun _->false)));
                  (["+"],
