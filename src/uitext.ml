@@ -367,11 +367,11 @@ let interact prilist rilist =
                        repeat()
                      end else
                        next()));
-                 (["n"],
+                 (["n";"j"],
                   ("go to the next item"),
                   (fun () -> newLine();
                      next()));
-                 (["p";"b"],
+                 (["p";"b";"k"],
                   ("go back to previous item"),
                   (fun () -> newLine();
                      previous prev ril));
@@ -472,7 +472,7 @@ let interact prilist rilist =
                   (fun () -> newLine();
                      ripred := None;
                      repeat()));
-                 (["r"],
+                 (["r";"u"],
                   ("revert to " ^ Uutil.myName ^ "'s default recommendation (curr or match)"),
                   (fun () ->
                      actOnMatching
