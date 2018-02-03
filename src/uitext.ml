@@ -513,7 +513,9 @@ let interact prilist rilist =
                  (["i"],
                   ("invert direction of propagation and go to next item"),
                   (fun () ->
-                     actOnMatching invertdir));
+                     actOnMatching
+                       ~fail:(Some (fun()->display "Cannot invert direction\n"))
+                       invertdir));
                  (["/";":"],
                   ("skip"),
                   (fun () ->
