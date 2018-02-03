@@ -264,6 +264,13 @@ let interact prilist rilist =
       (fun s -> Printf.printf "%s\n" s)
       Uutil.File.dummy;
       true
+  and ispropschanged = function
+      {replicas = Different {rc1 = rc1; rc2 = rc2}}
+      when rc1.status = `PropsChanged &&
+           (rc2.status = `PropsChanged || rc2.status = `Unchanged) -> true
+    | {replicas = Different {rc1 = rc1; rc2 = rc2}}
+      when rc1.status = `Unchanged && rc2.status = `PropsChanged -> true
+    | _ -> false
   and setskip = function
       {replicas = Different ({direction = Conflict _})} -> true
     | {replicas = Different diff} ->
