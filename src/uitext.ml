@@ -447,6 +447,11 @@ let interact prilist rilist =
                           {replicas = Different ({direction = Conflict _})} -> true
                         | _ -> false);
                      repeat()));
+                 (["P"],
+                  ("match all the following with only props changes"),
+                  (fun () -> newLine();
+                     ripred := Some ispropschanged;
+                     repeat()));
                  (["M"],
                   ("match all the following merges"),
                   (fun () -> newLine();
