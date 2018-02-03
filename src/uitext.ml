@@ -279,6 +279,12 @@ let interact prilist rilist =
   and setdir dir = function
       {replicas = Different diff} -> begin diff.direction <- dir; true end
     | _ -> true
+  and invertdir = function
+      {replicas = Different ({direction = Replica1ToReplica2} as diff)}
+        -> diff.direction <- Replica2ToReplica1; true
+    | {replicas = Different ({direction = Replica2ToReplica1} as diff)}
+        -> diff.direction <- Replica1ToReplica2; true
+    | _ -> true
   and setDirectionIfConflict dir = function
       {replicas = Different ({direction = Conflict _})} as ri ->
         begin Recon.setDirection ri dir `Force; true end
