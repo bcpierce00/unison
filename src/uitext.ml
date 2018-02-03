@@ -308,12 +308,21 @@ let interact prilist rilist =
           loop (nukeIgnoredRis (ri::prev)) (nukeIgnoredRis ril) in
         (* This should work on most terminals: *)
         let redisplayri() = overwrite (); displayri ri; display "\n" in
-        let actOnMatching f =
+        let actOnMatching ?(change=true) f =
           (* [f] can have effects on the ri and return false to discard it *)
+          (* Disabling [change] avoids to redisplay the item, allows [f] to
+             print a message (info or error) on a separate line and repeats
+             instead of going to the next item *)
           match !ripred with
-          | None -> if f ri
-              then begin redisplayri(); next() end
-              else begin newLine(); loop prev rest end
+          | None -> if not change then newLine();
+              if f ri
+              then begin
+                if change then begin redisplayri(); next() end
+                else repeat()
+              end else begin
+                if change then newLine();
+                loop prev rest
+              end
           | Some test -> newLine();
               let filt = fun ri -> if test ri then f ri else true in
               loop prev (ri::Safelist.filter filt rest)
