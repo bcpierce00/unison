@@ -390,11 +390,12 @@ let interact prilist rilist =
                  (["d"],
                   ("show differences (curr or match)"),
                   (fun () ->
-                     actOnMatching showdiffs));
+                     actOnMatching ~change:false showdiffs));
                  (["x"],
                   ("show details (curr or match)"),
                   (fun () ->
-                     actOnMatching (fun ri -> displayDetails ri; true)));
+                      actOnMatching ~change:false
+                        (fun ri -> displayDetails ri; true)));
                  (["L"],
                   ("list all (or matching) following changes tersely"),
                   (fun () -> newLine();
