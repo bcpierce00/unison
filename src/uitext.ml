@@ -322,19 +322,22 @@ let interact prilist rilist =
           loop (nukeIgnoredRis (ri::prev)) (nukeIgnoredRis ril) in
         (* This should work on most terminals: *)
         let redisplayri() = overwrite (); displayri ri; display "\n" in
-        let actOnMatching ?(change=true) ?(discard=false) f =
+        let actOnMatching ?(change=true) ?(fail=Some(fun()->())) f =
           (* [f] can have effects on the ri and return false to discard it *)
           (* Disabling [change] avoids to redisplay the item, allows [f] to
              print a message (info or error) on a separate line and repeats
              instead of going to the next item *)
-          (* When [discard] is true if [f] returns false then instead of
-             repeating we discard the item (and go to the next) *)
+          (* When [fail] is [None] if [f] returns false then instead of
+             executing [fail] and repeating we discard the item and go to the next *)
+          let discard, err =
+            match fail with Some e -> false, e | None -> true, fun()->() in
           match !ripred with
           | None -> if not change then newLine();
               let t = f ri in
               if t || not discard
               then begin
                 if change then redisplayri();
+                if not t then err();
                 if t && change then next() else repeat()
               end else begin
                 if change then newLine();
@@ -523,7 +526,7 @@ let interact prilist rilist =
                  (["-"],
                   ("skip and discard for this session (curr or match)"),
                   (fun () ->
-                     actOnMatching ~discard:true (fun _->false)));
+                     actOnMatching ~fail:None (fun _->false)));
                  (["+"],
                   ("skip and discard all the following"),
                   (fun () -> newLine();
