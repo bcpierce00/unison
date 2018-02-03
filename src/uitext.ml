@@ -326,12 +326,15 @@ let interact prilist rilist =
           (* Disabling [change] avoids to redisplay the item, allows [f] to
              print a message (info or error) on a separate line and repeats
              instead of going to the next item *)
+          (* When [discard] is true if [f] returns false then instead of
+             repeating we discard the item (and go to the next) *)
           match !ripred with
           | None -> if not change then newLine();
-              if f ri || not discard
+              let t = f ri in
+              if t || not discard
               then begin
-                if change then begin redisplayri(); next() end
-                else repeat()
+                if change then redisplayri();
+                if t && change then next() else repeat()
               end else begin
                 if change then newLine();
                 loop prev rest
