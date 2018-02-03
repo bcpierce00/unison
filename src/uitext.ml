@@ -284,6 +284,7 @@ let interact prilist rilist =
         -> diff.direction <- Replica2ToReplica1; true
     | {replicas = Different ({direction = Replica2ToReplica1} as diff)}
         -> diff.direction <- Replica1ToReplica2; true
+    | {replicas = Different _} -> false
     | _ -> true
   and setDirectionIfConflict dir = function
       {replicas = Different ({direction = Conflict _})} as ri ->
