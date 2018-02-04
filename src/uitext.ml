@@ -271,6 +271,15 @@ let interact prilist rilist =
     | {replicas = Different {rc1 = rc1; rc2 = rc2}}
       when rc1.status = `Unchanged && rc2.status = `PropsChanged -> true
     | _ -> false
+  and setdirchanged = function
+      {replicas = Different ({rc1 = rc1; rc2 = rc2} as diff)}
+      when rc1.status = `Modified && rc2.status = `PropsChanged ->
+        diff.direction <- Replica1ToReplica2; true
+    | {replicas = Different ({rc1 = rc1; rc2 = rc2} as diff)}
+      when rc1.status = `PropsChanged && rc2.status = `Modified ->
+        diff.direction <- Replica2ToReplica1; true
+    | {replicas = Different _} -> false
+    | _ -> true
   and setskip = function
       {replicas = Different ({direction = Conflict _})} -> true
     | {replicas = Different diff} ->
