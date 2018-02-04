@@ -519,6 +519,12 @@ let interact prilist rilist =
                   ("resolve conflicts in favor of the older (curr or match)"),
                   (fun () ->
                      actOnMatching (setDirectionIfConflict `Older)));
+                 (["c"],
+                  ("resolve conflicts in favor of changed (curr or match)"),
+                  (fun () ->
+                     actOnMatching
+                       ~fail:(Some (fun()->display "Cannot set direction\n"))
+                       setdirchanged));
                  (["i"],
                   ("invert direction of propagation and go to next item"),
                   (fun () ->
