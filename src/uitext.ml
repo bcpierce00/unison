@@ -348,6 +348,8 @@ let interact prilist rilist =
             | `Push rp, p -> rp::p
             | _, [] -> display "Matching condition not enabled\n"; []
             | `Op1 op, p::t -> (fun ri -> op (p ri))::t
+            | `Op2 op, [p] -> display "Missing previous matching condition\n"; [p]
+            | `Op2 op, p::pp::t -> (fun ri -> op (p ri) (pp ri))::t
             | _ -> assert false in
         let actOnMatching ?(change=true) ?(fail=Some(fun()->())) f =
           (* [f] can have effects on the ri and return false to discard it *)
@@ -508,6 +510,16 @@ let interact prilist rilist =
                   ("invert the matching condition"),
                   (fun () -> newLine();
                      setripred (`Op1 not);
+                     repeat()));
+                 (["&"],
+                  ("and the last two matching conditions"),
+                  (fun () -> newLine();
+                     setripred (`Op2 (&&));
+                     repeat()));
+                 (["|"],
+                  ("or the last two matching conditions"),
+                  (fun () -> newLine();
+                     setripred (`Op2 (||));
                      repeat()));
                  (["U";"$"],
                   ("unmatch all (select current)"),
