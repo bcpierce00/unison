@@ -340,10 +340,9 @@ let interact prilist rilist =
           loop (nukeIgnoredRis (ri::prev)) (nukeIgnoredRis ril) in
         (* This should work on most terminals: *)
         let redisplayri() = overwrite (); displayri ri; display "\n" in
-        let setripred p =
-          begin match !ripred with
-            [] -> display "  Enabling matching condition\n" | _ -> () end;
-          ripred := [p] in
+        let setripred p = ripred := match !ripred with
+            [] -> display "  Enabling matching condition\n"; [p]
+          | h::_ -> [p;h] in
         let actOnMatching ?(change=true) ?(fail=Some(fun()->())) f =
           (* [f] can have effects on the ri and return false to discard it *)
           (* Disabling [change] avoids to redisplay the item, allows [f] to
