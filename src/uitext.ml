@@ -331,6 +331,10 @@ let interact prilist rilist =
           loop (nukeIgnoredRis (ri::prev)) (nukeIgnoredRis ril) in
         (* This should work on most terminals: *)
         let redisplayri() = overwrite (); displayri ri; display "\n" in
+        let setripred p =
+          begin match !ripred with
+            None -> display "  Enabling matching condition\n" | _ -> () end;
+          ripred := Some p in
         let actOnMatching ?(change=true) ?(fail=Some(fun()->())) f =
           (* [f] can have effects on the ri and return false to discard it *)
           (* Disabling [change] avoids to redisplay the item, allows [f] to
@@ -443,12 +447,12 @@ let interact prilist rilist =
                  (["A"],
                   ("match all the following"),
                   (fun () -> newLine();
-                     ripred := Some (fun _ -> true);
+                     setripred (fun _ -> true);
                      repeat()));
                  (["1"],
                   ("match all the following that propagate " ^ descr),
                   (fun () -> newLine();
-                     ripred := Some
+                     setripred
                        (function
                           {replicas = Different ({direction = Replica1ToReplica2})} -> true
                         | _ -> false);
@@ -456,7 +460,7 @@ let interact prilist rilist =
                  (["2"],
                   ("match all the following that propagate " ^ descl),
                   (fun () -> newLine();
-                     ripred := Some
+                     setripred
                        (function
                           {replicas = Different ({direction = Replica2ToReplica1})} -> true
                         | _ -> false);
@@ -464,7 +468,7 @@ let interact prilist rilist =
                  (["C"],
                   ("match all the following conflicts"),
                   (fun () -> newLine();
-                     ripred := Some
+                     setripred
                        (function
                           {replicas = Different ({direction = Conflict _})} -> true
                         | _ -> false);
@@ -472,12 +476,12 @@ let interact prilist rilist =
                  (["P"],
                   ("match all the following with only props changes"),
                   (fun () -> newLine();
-                     ripred := Some ispropschanged;
+                     setripred ispropschanged;
                      repeat()));
                  (["M"],
                   ("match all the following merges"),
                   (fun () -> newLine();
-                     ripred := Some
+                     setripred
                        (function
                           {replicas = Different ({direction = Merge})} -> true
                         | _ -> false);
@@ -492,7 +496,9 @@ let interact prilist rilist =
                  (["U"],
                   ("unmatch all (select current)"),
                   (fun () -> newLine();
-                     ripred := None;
+                     begin match !ripred with
+                       None -> display "Matching condition already disabled\n"
+                     | Some _ -> display "  Disabling matching condition\n"; ripred := None end;
                      repeat()));
                  (["r";"u"],
                   ("revert to " ^ Uutil.myName ^ "'s default recommendation (curr or match)"),
