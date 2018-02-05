@@ -343,7 +343,8 @@ let interact prilist rilist =
         let setripred cmd =
           ripred := match cmd, !ripred with
               `Unset, [] -> display "Matching condition already disabled\n"; []
-            | `Unset, _ -> display "  Disabling matching condition\n"; []
+            | `Unset, _ | `Pop, [_] -> display "  Disabling matching condition\n"; []
+            | `Pop, p::pp::t -> pp::t
             | `Push rp, [] -> display "  Enabling matching condition\n"; [rp]
             | `Push rp, p -> rp::p
             | _, [] -> display "Matching condition not enabled\n"; []
@@ -521,8 +522,13 @@ let interact prilist rilist =
                   (fun () -> newLine();
                      setripred (`Op2 (||));
                      repeat()));
+                 (["D";"_"],
+                  ("delete/pop the active matching condition"),
+                  (fun () -> newLine();
+                     setripred `Pop;
+                     repeat()));
                  (["U";"$"],
-                  ("unmatch all (select current)"),
+                  ("unmatch (select current)"),
                   (fun () -> newLine();
                      setripred `Unset;
                      repeat()));
