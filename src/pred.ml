@@ -70,23 +70,20 @@ let compile_pattern clause =
                   ^ "Only one instance of " ^ mapSeparator ^ " allowed.")) in
   let compiled =
     begin try
+      let checkpath prefix str =
+        let msg =
+          "Malformed pattern: \"" ^ p ^ "\"\n"
+          ^ "'" ^ prefix ^ "' patterns may not begin with a slash; "
+          ^ "only relative paths are allowed." in
+        if str<>"" && str.[0] = '/' then
+          raise (Prefs.IllegalValue msg) in
       select p
         [("Name ", fun str -> Rx.seq [Rx.rx "(.*/)?"; Rx.globx str]);
          ("Path ", fun str ->
-            if str<>"" && str.[0] = '/' then
-              raise (Prefs.IllegalValue
-                       ("Malformed pattern: "
-                        ^ "\"" ^ p ^ "\"\n"
-                        ^ "'Path' patterns may not begin with a slash; "
-                        ^ "only relative paths are allowed."));
+            checkpath "Path" str;
             Rx.globx str);
          ("BelowPath ", fun str ->
-            if str<>"" && str.[0] = '/' then
-              raise (Prefs.IllegalValue
-                       ("Malformed pattern: "
-                        ^ "\"" ^ p ^ "\"\n"
-                        ^ "'BelowPath' patterns may not begin with a slash; "
-                        ^ "only relative paths are allowed."));
+            checkpath "BelowPath" str;
             Rx.seq [Rx.globx str; Rx.rx "(/.*)?"]);
          ("Regex ", Rx.rx)]
         (fun str -> raise (Prefs.IllegalValue (error_msg p)))
