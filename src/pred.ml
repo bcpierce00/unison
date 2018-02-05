@@ -80,14 +80,14 @@ let compile_pattern clause =
         if str<>"" && str.[0] = '/' then
           raise (Prefs.IllegalValue msg) in
       select (String.sub p 1 ((String.length p)-1)) (* Remove prepended space *)
-        [("Name ", fun str -> Rx.seq [Rx.rx "(.*/)?"; Rx.globx str]);
+        [("Name ", fun str -> `Alt (Rx.seq [Rx.rx "(.*/)?"; Rx.globx str]));
          ("Path ", fun str ->
             checkpath "Path" str;
-            Rx.globx str);
+            `Alt (Rx.globx str));
          ("BelowPath ", fun str ->
             checkpath "BelowPath" str;
-            Rx.seq [Rx.globx str; Rx.rx "(/.*)?"]);
-         ("Regex ", Rx.rx)]
+            `Alt (Rx.seq [Rx.globx str; Rx.rx "(/.*)?"]));
+         ("Regex ", fun str -> `Alt (Rx.rx str))]
         (fun str -> raise (Prefs.IllegalValue (error_msg p)))
     with
       Rx.Parse_error | Rx.Not_supported ->
@@ -117,13 +117,13 @@ let alias p n = Prefs.alias p.pref n
 let recompile mode p =
   let pref = Prefs.read p.pref in
   let compiledList = Safelist.map compile_pattern (Safelist.append p.default pref) in
-  let compiled = Rx.alt (Safelist.map fst compiledList) in
+  let compiled = Rx.alt (Safelist.map (fun (`Alt rx, _) -> rx) compiledList) in
   let handleCase rx =
     if (Case.ops())#caseInsensitiveMatch then Rx.case_insensitive rx
     else rx
   in
   let strings = Safelist.filterMap
-                  (fun (rx,vo) ->
+                  (fun (`Alt rx, vo) ->
                      match vo with
                        None -> None
                      | Some v -> Some (handleCase rx,v))
