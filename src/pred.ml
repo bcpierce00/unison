@@ -72,23 +72,20 @@ let compile_pattern clause =
     | (p, Some v) -> (p, Some (Util.trimWhitespace v)) in
   let compiled =
     begin try
+      let checkpath prefix str =
+        let msg =
+          "Malformed pattern: \"" ^ p ^ "\"\n"
+          ^ "'" ^ prefix ^ "' patterns may not begin with a slash; "
+          ^ "only relative paths are allowed." in
+        if str<>"" && str.[0] = '/' then
+          raise (Prefs.IllegalValue msg) in
       select (String.sub p 1 ((String.length p)-1)) (* Remove prepended space *)
         [("Name ", fun str -> Rx.seq [Rx.rx "(.*/)?"; Rx.globx str]);
          ("Path ", fun str ->
-            if str<>"" && str.[0] = '/' then
-              raise (Prefs.IllegalValue
-                       ("Malformed pattern: "
-                        ^ "\"" ^ p ^ "\"\n"
-                        ^ "'Path' patterns may not begin with a slash; "
-                        ^ "only relative paths are allowed."));
+            checkpath "Path" str;
             Rx.globx str);
          ("BelowPath ", fun str ->
-            if str<>"" && str.[0] = '/' then
-              raise (Prefs.IllegalValue
-                       ("Malformed pattern: "
-                        ^ "\"" ^ p ^ "\"\n"
-                        ^ "'BelowPath' patterns may not begin with a slash; "
-                        ^ "only relative paths are allowed."));
+            checkpath "BelowPath" str;
             Rx.seq [Rx.globx str; Rx.rx "(/.*)?"]);
          ("Regex ", Rx.rx)]
         (fun str -> raise (Prefs.IllegalValue (error_msg p)))
