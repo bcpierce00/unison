@@ -444,7 +444,7 @@ let interact prilist rilist =
                                   alwaysDisplayDetails ri)
                        (Safelist.filter ritest ril);
                      repeat()));
-                 (["A"],
+                 (["A";"*"],
                   ("match all the following"),
                   (fun () -> newLine();
                      setripred (fun _ -> true);
@@ -473,7 +473,7 @@ let interact prilist rilist =
                           {replicas = Different ({direction = Conflict _})} -> true
                         | _ -> false);
                      repeat()));
-                 (["P"],
+                 (["P";"="],
                   ("match all the following with only props changes"),
                   (fun () -> newLine();
                      setripred ispropschanged;
@@ -493,7 +493,7 @@ let interact prilist rilist =
                          None -> display "Matching condition not enabled\n"; None
                        | Some p -> Some (fun i -> not (p i)) end;
                      repeat()));
-                 (["U"],
+                 (["U";"$"],
                   ("unmatch all (select current)"),
                   (fun () -> newLine();
                      begin match !ripred with
