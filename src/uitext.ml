@@ -312,6 +312,13 @@ let interact prilist rilist =
           previous pril (pri::ril)
       | pri::pril -> loop pril (pri::ril)
       | [] -> display ("\n" ^ Uicommon.roots2string() ^ "\n"); loop prev ril in
+    let rec forward n prev ril =
+      match n, prev, ril with
+        n, _, _ when n < 0 -> assert false
+      | 0, prev, ril -> loop prev ril
+      | _, [], [] -> loop [] []
+      | _, pri::pril, [] -> loop pril [pri]
+      | n, prev, ri::rest -> forward (n-1) (ri::prev) rest in
     function
       [] -> (ConfirmBeforeProceeding, Safelist.rev prev)
     | ri::rest as ril ->
@@ -416,6 +423,10 @@ let interact prilist rilist =
                      match Safelist.rev_append ril prev with
                        [] -> loop [] []
                      | lri::prev -> loop prev [lri]));
+                 (["5"],
+                  ("go forward to the middle of the following items"),
+                  (fun () -> newLine();
+                     forward ((Safelist.length ril)/2) prev ril));
                  (["R"],
                   ("reverse the list"),
                   (fun () -> newLine();
