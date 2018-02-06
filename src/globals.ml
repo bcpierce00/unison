@@ -260,8 +260,9 @@ let ignorenotPred =
      preference to choose particular paths to synchronize.")
 
 let atomic = Pred.create "atomic" ~advanced:true
-  ("This preference specifies paths for directories whose \
-     contents will be considered as a group rather than individually.")
+  ("This preference specifies paths for directories whose "
+   ^ "contents will be considered as a group rather than individually.  "
+   ^ "The backups are also made atomically.")
 
 let shouldIgnore p =
   let p = Path.toString p in
