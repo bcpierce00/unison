@@ -261,8 +261,9 @@ let ignorenotPred =
 
 let atomic = Pred.create "atomic" ~advanced:true
   ("This preference specifies paths for directories whose "
-   ^ "contents will be considered as a group rather than individually.  "
-   ^ "The backups are also made atomically.  The option "
+   ^ "contents will be considered as a group rather than individually when "
+   ^ "they are both modified.  "
+   ^ "The backups are also made atomically in this case.  The option "
    ^ "\\texttt{backupcurr} however has no effect on atomic directories.")
 
 let shouldIgnore p =
