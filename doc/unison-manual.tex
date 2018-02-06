@@ -1703,6 +1703,13 @@ program exits:
   merge program has already made them as similar as it is able to.)
 \end{itemize}
 
+You can disable a merge by setting a \verb|<MERGECMD>| that does nothing.  For
+example you can override the merging of text files specified in a profile by
+typing on the command line:
+\begin{verbatim}
+    unison profile -merge 'Name *.txt -> echo SKIP'
+\end{verbatim}
+
 If the \verb|confirmmerge| preference is set and Unison is not run in
 batch mode, then Unison will always ask for confirmation before
 actually committing the results of the merge to the replicas.
