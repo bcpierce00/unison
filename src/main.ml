@@ -131,7 +131,7 @@ let catch_all f =
     f ();
     (* Util.msg "Done catch_all...\n"; *)
   with e ->
-    Util.msg "Unison failed: %s\n" (Uicommon.exn2string e); exit 1;;
+    Util.msg "Unison server failed: %s\n" (Uicommon.exn2string e); exit 1;;
 
 let init () = begin
   ignore (Gc.set {(Gc.get ()) with Gc.max_overhead = 150});
