@@ -1717,6 +1717,12 @@ If the \verb|confirmmerge| preference is set and Unison is not run in
 batch mode, then Unison will always ask for confirmation before
 actually committing the results of the merge to the replicas.
 
+You can detect batch mode by testing \verb|BATCHMODE|; for
+example to avoid a merge completely do nothing:
+\begin{verbatim}
+    merge = Name *.txt -> [ -z "BATCHMODE" ] && mergecmd CURRENT1 CURRENT2
+\end{verbatim}
+
 A large number of external merging programs are available.
 For example, on Unix systems setting the \verb|merge| preference to
 \begin{verbatim}
