@@ -55,9 +55,7 @@ let backupnot =
     ("The values of this preference specify paths or individual files or"
      ^ " regular expressions that should {\\em not} "
      ^ "be backed up, even if the {\\tt backup} preference selects "
-     ^ "them---i.e., "
-     ^ "it selectively overrides {\\tt backup}.  The same caveats apply here "
-     ^ "as with {\\tt ignore} and {\\tt ignorenot}.")
+     ^ "them---i.e., it selectively overrides {\\tt backup}.")
 
 let _ = Pred.alias backupnot "mirrornot"
 
