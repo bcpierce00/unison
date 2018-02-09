@@ -436,11 +436,15 @@ let interact prilist rilist =
                  (["5"],
                   ("go forward to the middle of the following items"),
                   (fun () -> newLine();
-                     forward ((Safelist.length ril)/2) prev ril));
+                     let l = (Safelist.length ril)/2 in
+                     display ("  Moving "^(string_of_int l)^" items forward\n");
+                     forward l prev ril));
                  (["6"],
                   ("go backward to the middle of the preceding items"),
                   (fun () -> newLine();
-                     forward (-((Safelist.length prev)+1)/2) prev ril));
+                     let l = -((Safelist.length prev)+1)/2 in
+                     display ("  Moving "^(string_of_int l)^" items backward\n");
+                     forward l prev ril));
                  (["R"],
                   ("reverse the list"),
                   (fun () -> newLine();
