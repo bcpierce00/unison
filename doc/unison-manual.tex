@@ -1886,6 +1886,14 @@ matched paths can be selected again by following (positive) patterns.  However
 a negative pattern in a negative preference can only make a path selected by a
 positive preference if the path has also been explicitely selected with the
 positive preference.
+
+A negative pattern does not remove the string associated with a path, so that
+this string need not be given again when reenabling a path.  For example:
+\begin{verbatim}
+        preferpartial = Name *.txt -> /local/path
+        preferpartial = del Path prefix*.txt
+        preferpartial = Path prefix.txt
+\end{verbatim}
 \end{itemize}
 Some examples of path patterns appear in \sectionref{ignore}{Ignoring
   Paths}.
