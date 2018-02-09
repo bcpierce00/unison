@@ -39,7 +39,8 @@ let backup =
   Pred.create "backup" ~advanced:true
     ("Including the preference \\texttt{-backup \\ARG{pathspec}} "
      ^ "causes Unison to keep backup files for each path that matches "
-     ^ "\\ARG{pathspec}.  These backup files are kept in the "
+     ^ "\\ARG{pathspec}; directories (nor their permissions or any other "
+     ^ " metadata) are not backed up.  These backup files are kept in the "
      ^ "directory specified by the \\verb|backuplocation| preference. The backups are named "
      ^ "according to the \\verb|backupprefix| and \\verb|backupsuffix| preferences."
      ^ " The number of versions that are kept is determined by the "
@@ -54,9 +55,7 @@ let backupnot =
     ("The values of this preference specify paths or individual files or"
      ^ " regular expressions that should {\\em not} "
      ^ "be backed up, even if the {\\tt backup} preference selects "
-     ^ "them---i.e., "
-     ^ "it selectively overrides {\\tt backup}.  The same caveats apply here "
-     ^ "as with {\\tt ignore} and {\\tt ignorenot}.")
+     ^ "them---i.e., it selectively overrides {\\tt backup}.")
 
 let _ = Pred.alias backupnot "mirrornot"
 
@@ -159,10 +158,6 @@ let backupcurrentnot =
    "Exceptions to \\verb|backupcurr|, like the \\verb|ignorenot| preference."
 
 let shouldBackupCurrent p =
-     (* BCP: removed next line [Apr 2007]: causes ALL mergeable files to be backed
-        up, which is probably not what users want -- the backupcurrent
-        switch should be used instead.
-     Globals.shouldMerge p || *)
   (let s = Path.toString p in
       Pred.test backupcurrent s && not (Pred.test backupcurrentnot s))
 
