@@ -135,6 +135,8 @@ let rec selectAction batch actions tryagain =
   let formatname = function
       "" -> "<ret>"
     | " " -> "<spc>"
+    | "\x7f" -> "<del>"
+    | "\b" -> "<bsp>"
     | n -> n in
   let summarizeChoices() =
     display "[";
@@ -247,6 +249,61 @@ let interact prilist rilist =
   if not (Prefs.read Globals.batch) then display ("\n" ^ Uicommon.roots2string() ^ "\n");
   let (r1,r2) = Globals.roots() in
   let (host1, host2) = root2hostname r1, root2hostname r2 in
+  let showdiffs ri =
+    Uicommon.showDiffs ri
+      (fun title text ->
+         try
+           let pager = System.getenv "PAGER" in
+           restoreTerminal ();
+           let out = System.open_process_out pager in
+           Printf.fprintf out "\n%s\n\n%s\n\n" title text;
+           let _ = System.close_process_out out in
+           setupTerminal ()
+         with Not_found ->
+           Printf.printf "\n%s\n\n%s\n\n" title text)
+      (fun s -> Printf.printf "%s\n" s)
+      Uutil.File.dummy;
+      true
+  and ispropschanged = function
+      {replicas = Different {rc1 = rc1; rc2 = rc2}}
+      when rc1.status = `PropsChanged &&
+           (rc2.status = `PropsChanged || rc2.status = `Unchanged) -> true
+    | {replicas = Different {rc1 = rc1; rc2 = rc2}}
+      when rc1.status = `Unchanged && rc2.status = `PropsChanged -> true
+    | _ -> false
+  and setdirchanged = function
+      {replicas = Different ({rc1 = rc1; rc2 = rc2} as diff)}
+      when rc1.status = `Modified && rc2.status = `PropsChanged ->
+        diff.direction <- Replica1ToReplica2; true
+    | {replicas = Different ({rc1 = rc1; rc2 = rc2} as diff)}
+      when rc1.status = `PropsChanged && rc2.status = `Modified ->
+        diff.direction <- Replica2ToReplica1; true
+    | {replicas = Different _} -> false
+    | _ -> true
+  and setskip = function
+      {replicas = Different ({direction = Conflict _})} -> true
+    | {replicas = Different diff} ->
+        begin diff.direction <- Conflict "skip requested"; true end
+    | _ -> true
+  and setdir dir = function
+      {replicas = Different diff} -> begin diff.direction <- dir; true end
+    | _ -> true
+  and invertdir = function
+      {replicas = Different ({direction = Replica1ToReplica2} as diff)}
+        -> diff.direction <- Replica2ToReplica1; true
+    | {replicas = Different ({direction = Replica2ToReplica1} as diff)}
+        -> diff.direction <- Replica1ToReplica2; true
+    | {replicas = Different _} -> false
+    | _ -> true
+  and setDirectionIfConflict dir = function
+      {replicas = Different ({direction = Conflict _})} as ri ->
+        begin Recon.setDirection ri dir `Force; true end
+    | ri -> begin Recon.setDirection ri dir `Prefer; true end
+  in
+  let ripred = ref [] in
+  let ritest ri = match !ripred with
+      [] -> true
+    | test::_ -> test ri in
   let rec loop prev =
     let rec previous prev ril =
       match prev with
@@ -255,13 +312,21 @@ let interact prilist rilist =
           previous pril (pri::ril)
       | pri::pril -> loop pril (pri::ril)
       | [] -> display ("\n" ^ Uicommon.roots2string() ^ "\n"); loop prev ril in
+    let rec forward n prev ril =
+      match n, prev, ril with
+        0, prev, ril -> loop prev ril
+      | n, [], ril when n < 0 -> loop [] ril
+      | n, pri::pril, ril when n < 0 -> forward (n+1) pril (pri::ril)
+      | _, [], [] -> loop [] []
+      | n, pri::pril, [] when n > 0 -> loop pril [pri]
+      | n, prev, ri::rest when n > 0 -> forward (n-1) (ri::prev) rest
+      | _ -> assert false (* to silence the compiler *) in
     function
       [] -> (ConfirmBeforeProceeding, Safelist.rev prev)
     | ri::rest as ril ->
         let next() = loop (ri::prev) rest in
         let repeat() = loop prev ril in
         let ignore pat rest what =
-          if !cbreakMode <> None then display "\n";
           display "  ";
           Uicommon.addIgnorePattern pat;
           display ("  Permanently ignoring " ^ what ^ "\n");
@@ -275,6 +340,43 @@ let interact prilist rilist =
           loop (nukeIgnoredRis (ri::prev)) (nukeIgnoredRis ril) in
         (* This should work on most terminals: *)
         let redisplayri() = overwrite (); displayri ri; display "\n" in
+        let setripred cmd =
+          ripred := match cmd, !ripred with
+              `Unset, [] -> display "Matching condition already disabled\n"; []
+            | `Unset, _ | `Pop, [_] -> display "  Disabling matching condition\n"; []
+            | `Pop, p::pp::t -> pp::t
+            | `Push rp, [] -> display "  Enabling matching condition\n"; [rp]
+            | `Push rp, p -> rp::p
+            | _, [] -> display "Matching condition not enabled\n"; []
+            | `Op1 op, p::t -> (fun ri -> op (p ri))::t
+            | `Op2 op, [p] -> display "Missing previous matching condition\n"; [p]
+            | `Op2 op, p::pp::t -> (fun ri -> op (p ri) (pp ri))::t
+            | _ -> assert false in
+        let actOnMatching ?(change=true) ?(fail=Some(fun()->())) f =
+          (* [f] can have effects on the ri and return false to discard it *)
+          (* Disabling [change] avoids to redisplay the item, allows [f] to
+             print a message (info or error) on a separate line and repeats
+             instead of going to the next item *)
+          (* When [fail] is [None] if [f] returns false then instead of
+             executing [fail] and repeating we discard the item and go to the next *)
+          let discard, err =
+            match fail with Some e -> false, e | None -> true, fun()->() in
+          match !ripred with
+          | [] -> if not change then newLine();
+              let t = f ri in
+              if t || not discard
+              then begin
+                if change then redisplayri();
+                if not t then err();
+                if t && change then next() else repeat()
+              end else begin
+                if change then newLine();
+                loop prev rest
+              end
+          | test::_ -> newLine();
+              let filt = fun ri -> if test ri then f ri || not discard else true in
+              loop prev (ri::Safelist.filter filt rest)
+        in
         displayri ri;
         match ri.replicas with
           Problem s -> display "\n"; display s; display "\n"; next()
@@ -297,112 +399,220 @@ let interact prilist rilist =
               selectAction
                 (if Prefs.read Globals.batch then Some " " else None)
                 [((if (isConflict dir) && not (Prefs.read Globals.batch)
-                     then ["f"]  (* Offer no default behavior if we've got
-                                    a conflict and we're in interactive mode *)
-                     else ["";"f";" "]),
+                   then ["f"]  (* Offer no default behavior if we've got a
+                                  conflict and we're in interactive mode *)
+                   else ["";"f";" "]),
                   ("follow " ^ Uutil.myName ^ "'s recommendation (if any)"),
-                  fun ()->
-                    newLine ();
-                    if (isConflict dir) && not (Prefs.read Globals.batch)
-                    then begin
-                      display "No default action [type '?' for help]\n";
-                      repeat()
-                    end else
-                      next());
+                  (fun () -> newLine();
+                     if (isConflict dir) && not (Prefs.read Globals.batch)
+                     then begin
+                       display "No default action [type '?' for help]\n";
+                       repeat()
+                     end else
+                       next()));
+                 (["n";"j"],
+                  ("go to the next item"),
+                  (fun () -> newLine();
+                     next()));
+                 (["p";"b";"k"],
+                  ("go back to previous item"),
+                  (fun () -> newLine();
+                     previous prev ril));
+                 (["\x7f";"\b"],
+                  ("revert then go back to previous item"),
+                  (fun () ->
+                     Recon.revertToDefaultDirection ri; redisplayri();
+                     previous prev ril));
+                 (["0"],
+                  ("go to the start of the list"),
+                  (fun () -> newLine();
+                     loop [] (Safelist.rev_append prev ril)));
+                 (["9"],
+                  ("go to the end of the list"),
+                  (fun () -> newLine();
+                     match Safelist.rev_append ril prev with
+                       [] -> loop [] []
+                     | lri::prev -> loop prev [lri]));
+                 (["5"],
+                  ("go forward to the middle of the following items"),
+                  (fun () -> newLine();
+                     forward ((Safelist.length ril)/2) prev ril));
+                 (["6"],
+                  ("go backward to the middle of the preceding items"),
+                  (fun () -> newLine();
+                     forward (-((Safelist.length prev)+1)/2) prev ril));
+                 (["R"],
+                  ("reverse the list"),
+                  (fun () -> newLine();
+                     loop rest (ri::prev)));
+                 (["d"],
+                  ("show differences (curr or match)"),
+                  (fun () ->
+                     actOnMatching ~change:false showdiffs));
+                 (["x"],
+                  ("show details (curr or match)"),
+                  (fun () ->
+                      actOnMatching ~change:false
+                        (fun ri -> displayDetails ri; true)));
+                 (["L"],
+                  ("list all (or matching) following changes tersely"),
+                  (fun () -> newLine();
+                     Safelist.iter
+                       (fun ri -> display "  "; displayri ri; display "\n")
+                       (Safelist.filter ritest ril);
+                     repeat()));
+                 (["l"],
+                  ("list all (or matching) following changes with details"),
+                  (fun () -> newLine();
+                     Safelist.iter
+                       (fun ri -> display "  "; displayri ri; display "\n";
+                                  alwaysDisplayDetails ri)
+                       (Safelist.filter ritest ril);
+                     repeat()));
+                 (["A";"*"],
+                  ("match all the following"),
+                  (fun () -> newLine();
+                     setripred (`Push (fun _ -> true));
+                     repeat()));
+                 (["1"],
+                  ("match all the following that propagate " ^ descr),
+                  (fun () -> newLine();
+                     setripred (`Push (function
+                         {replicas = Different ({direction = Replica1ToReplica2})} -> true
+                       | _ -> false));
+                     repeat()));
+                 (["2"],
+                  ("match all the following that propagate " ^ descl),
+                  (fun () -> newLine();
+                     setripred (`Push (function
+                         {replicas = Different ({direction = Replica2ToReplica1})} -> true
+                       | _ -> false));
+                     repeat()));
+                 (["C"],
+                  ("match all the following conflicts"),
+                  (fun () -> newLine();
+                     setripred (`Push (function
+                         {replicas = Different ({direction = Conflict _})} -> true
+                       | _ -> false));
+                     repeat()));
+                 (["P";"="],
+                  ("match all the following with only props changes"),
+                  (fun () -> newLine();
+                     setripred (`Push ispropschanged);
+                     repeat()));
+                 (["M"],
+                  ("match all the following merges"),
+                  (fun () -> newLine();
+                     setripred (`Push (function
+                         {replicas = Different ({direction = Merge})} -> true
+                       | _ -> false));
+                     repeat()));
+                 (["X";"!"],
+                  ("invert the matching condition"),
+                  (fun () -> newLine();
+                     setripred (`Op1 not);
+                     repeat()));
+                 (["&"],
+                  ("and the last two matching conditions"),
+                  (fun () -> newLine();
+                     setripred (`Op2 (&&));
+                     repeat()));
+                 (["|"],
+                  ("or the last two matching conditions"),
+                  (fun () -> newLine();
+                     setripred (`Op2 (||));
+                     repeat()));
+                 (["D";"_"],
+                  ("delete/pop the active matching condition"),
+                  (fun () -> newLine();
+                     setripred `Pop;
+                     repeat()));
+                 (["U";"$"],
+                  ("unmatch (select current)"),
+                  (fun () -> newLine();
+                     setripred `Unset;
+                     repeat()));
+                 (["r";"u"],
+                  ("revert to " ^ Uutil.myName ^ "'s default recommendation (curr or match)"),
+                  (fun () ->
+                     actOnMatching
+                       (fun ri->Recon.revertToDefaultDirection ri; true)));
+                 (["m"],
+                  ("merge the versions (curr or match)"),
+                  (fun () ->
+                     actOnMatching (setdir Merge)));
+                 ([">";"."],
+                  ("propagate from " ^ descr ^ " (curr or match)"),
+                  (fun () ->
+                     actOnMatching (setdir Replica1ToReplica2)));
+                 (["<";","],
+                  ("propagate from " ^ descl ^ " (curr or match)"),
+                  (fun () ->
+                     actOnMatching (setdir Replica2ToReplica1)));
+                 (["]";"\""],
+                  ("resolve conflicts in favor of the newer (curr or match)"),
+                  (fun () ->
+                     actOnMatching (setDirectionIfConflict `Newer)));
+                 (["[";"'"],
+                  ("resolve conflicts in favor of the older (curr or match)"),
+                  (fun () ->
+                     actOnMatching (setDirectionIfConflict `Older)));
+                 (["c"],
+                  ("resolve conflicts in favor of changed (curr or match)"),
+                  (fun () ->
+                     actOnMatching
+                       ~fail:(Some (fun()->display "Cannot set direction\n"))
+                       setdirchanged));
+                 (["i"],
+                  ("invert direction of propagation and go to next item"),
+                  (fun () ->
+                     actOnMatching
+                       ~fail:(Some (fun()->display "Cannot invert direction\n"))
+                       invertdir));
+                 (["/";":"],
+                  ("skip"),
+                  (fun () ->
+                     actOnMatching setskip));
+                 (["%"],
+                  ("skip all the following"),
+                  (fun () -> newLine();
+                     Safelist.iter (fun ri -> setskip ri; ()) rest;
+                     repeat()));
+                 (["-"],
+                  ("skip and discard for this session (curr or match)"),
+                  (fun () ->
+                     actOnMatching ~fail:None (fun _->false)));
+                 (["+"],
+                  ("skip and discard all the following"),
+                  (fun () -> newLine();
+                     loop prev [ri]));
                  (["I"],
                   ("ignore this path permanently"),
-                  (fun () ->
+                  (fun () -> newLine();
                      ignore (Uicommon.ignorePath ri.path1) rest
                        "this path"));
                  (["E"],
                   ("permanently ignore files with this extension"),
-                  (fun () ->
+                  (fun () -> newLine();
                      ignore (Uicommon.ignoreExt ri.path1) rest
                        "files with this extension"));
                  (["N"],
                   ("permanently ignore paths ending with this name"),
-                  (fun () ->
+                  (fun () -> newLine();
                      ignore (Uicommon.ignoreName ri.path1) rest
                        "files with this name"));
-                 (["m"],
-                  ("merge the versions"),
-                  (fun () ->
-                    diff.direction <- Merge;
-                    redisplayri();
-                    next()));
-                 (["d"],
-                  ("show differences"),
-                  (fun () ->
-                     newLine ();
-                     Uicommon.showDiffs ri
-                       (fun title text ->
-                          try
-                            let pager = System.getenv "PAGER" in
-                            restoreTerminal ();
-                            let out = System.open_process_out pager in
-                            Printf.fprintf out "\n%s\n\n%s\n\n" title text;
-                            let _ = System.close_process_out out in
-                            setupTerminal ()
-                          with Not_found ->
-                            Printf.printf "\n%s\n\n%s\n\n" title text)
-                       (fun s -> Printf.printf "%s\n" s)
-                       Uutil.File.dummy;
-                     repeat()));
-                 (["x"],
-                  ("show details"),
-                  (fun () -> newLine(); displayDetails ri; repeat()));
-                 (["L"],
-                  ("list all suggested changes tersely"),
+                 (["s"],
+                  ("stop reconciling and go to the proceed menu"),
                   (fun () -> newLine();
-                     Safelist.iter
-                       (fun ri -> displayri ri; display "\n  ")
-                       ril;
-                     display "\n";
-                     repeat()));
-                 (["l"],
-                  ("list all suggested changes with details"),
-                  (fun () -> newLine();
-                     Safelist.iter
-                       (fun ri -> displayri ri; display "\n  ";
-                                  alwaysDisplayDetails ri)
-                       ril;
-                     display "\n";
-                     repeat()));
-                 (["p";"b"],
-                  ("go back to previous item"),
-                  (fun () ->
-                     newLine();
-                     previous prev ril));
-                 (["s";"n"],
-                  ("stop the selection"),
-                  (fun() ->
-                     newLine();
                      (ConfirmBeforeProceeding, Safelist.rev_append prev ril)));
                  (["g"],
                   ("proceed immediately to propagating changes"),
-                  (fun() ->
+                  (fun () -> newLine();
                      (ProceedImmediately, Safelist.rev_append prev ril)));
                  (["q"],
                   ("exit " ^ Uutil.myName ^ " without propagating any changes"),
-                  fun () -> raise Sys.Break);
-                 (["/"],
-                  ("skip"),
-                  (fun () ->
-                    if not (isConflict dir) then diff.direction <- Conflict "skip requested";
-                    redisplayri();
-                    next()));
-                 ([">";"."],
-                  ("propagate from " ^ descr),
-                  (fun () ->
-                    diff.direction <- Replica1ToReplica2;
-                    redisplayri();
-                    next()));
-                 (["<";","],
-                  ("propagate from " ^ descl),
-                  (fun () ->
-                    diff.direction <- Replica2ToReplica1;
-                    redisplayri();
-                    next()))
+                  (fun () -> newLine();
+                     raise Sys.Break))
                 ]
                 (fun () -> displayri ri)
   in loop prilist rilist
@@ -537,24 +747,24 @@ let setWarnPrinterForInitialization()=
 
 let setWarnPrinter() =
   Util.warnPrinter :=
-     Some(fun s ->
-            alwaysDisplay "Warning: ";
-            alwaysDisplay s;
-            if not (Prefs.read Globals.batch) then begin
-              display "Press return to continue.";
-              selectAction None
-                [(["";" ";"y"],
-                    ("Continue"),
-                    fun()->());
-                 (["n";"q";"x"],
-                    ("Exit"),
-                    fun()->
-                      alwaysDisplay "\n";
-                      restoreTerminal ();
-                      Lwt_unix.run (Update.unlockArchives ());
-                      exit Uicommon.fatalExit)]
-                (fun()-> display  "Press return to continue.")
-            end)
+    Some(fun s ->
+           alwaysDisplay "Warning: ";
+           alwaysDisplay s;
+           if not (Prefs.read Globals.batch) then begin
+             display "Press return to continue.";
+             selectAction None
+               [(["";" ";"y"],
+                 ("Continue"),
+                 (fun () -> ()));
+                (["n";"q";"x"],
+                 ("Exit"),
+                 (fun () ->
+                     alwaysDisplay "\n";
+                     restoreTerminal ();
+                     Lwt_unix.run (Update.unlockArchives ());
+                     exit Uicommon.fatalExit))]
+               (fun () -> display  "Press return to continue.")
+           end)
 
 let lastMajor = ref ""
 
@@ -669,16 +879,14 @@ let rec interactAndPropagateChanges prevItemList reconItemList
           "Yes: proceed with updates as selected above",
           doit);
          (["n"],
-          "No: go through selections again",
-          (fun () ->
+          "No: go through reconciliation process again",
+          (fun () -> newLine();
              Prefs.set Uicommon.auto false;
-             newLine();
              interactAndPropagateChanges [] newReconItemList));
          (["p";"b"],
-          "go back to the last item of the selection",
-          (fun () ->
+          "go back to the last item of the reconciliation",
+          (fun () -> newLine();
              Prefs.set Uicommon.auto false;
-             newLine();
              match Safelist.rev newReconItemList with
                [] -> interactAndPropagateChanges [] []
              | lastri::prev -> interactAndPropagateChanges prev [lastri]));
@@ -707,7 +915,8 @@ let rec interactAndPropagateChanges prevItemList reconItemList
           (fun () -> askagain (Safelist.rev newReconItemList)));
          (["q"],
           ("exit " ^ Uutil.myName ^ " without propagating any changes"),
-          fun () -> raise Sys.Break)
+          (fun () -> newLine();
+             raise Sys.Break))
         ]
         (fun () -> display "Proceed with propagating updates? ")
     in askagain newReconItemList
@@ -725,11 +934,12 @@ let checkForDangerousPath dangerousPaths =
           None
           [(["y"],
             "Continue",
-            (fun() -> ()));
-           (["n"; "q"; "x"; ""],
+            (fun () -> ()));
+           (["n";"q";"x";""],
             "Exit",
-            (fun () -> alwaysDisplay "\n"; restoreTerminal ();
-                       exit Uicommon.fatalExit))]
+            (fun () -> alwaysDisplay "\n";
+               restoreTerminal ();
+               exit Uicommon.fatalExit))]
           (fun () -> display "Do you really want to proceed? ")
       end
     end
