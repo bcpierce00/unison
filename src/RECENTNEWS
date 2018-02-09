@@ -1,0 +1,17 @@
+* Some nontrivial changes to profile parsing (G.raud Meyer)
+    - '=' has been considered whitespace until now: several following
+      chars are considered as only one; trailing chars are discarded;
+      any non emty sequence of char is splitting. This is non standard
+      and leads to confusion, for example -ignore== 'Name .*=*' is
+      valid when -ignore='Name .*=*' is not, and worse -ignore='Name
+      *=' is the same as -ignore='Name *'.  The parser now takes just
+      a single '=' as delimiter after the option name.  Other =
+      characters are considered as part of the value being assigned to
+      the option.
+
+* Numerous improvements to the text user-interface (G.raud Meyer)
+    - New key-commands that restrict the display to a set of
+      "matching" items: ones that are offering to propagate changes in
+      a particular direction, conflicts, files to be merged, etc.,
+      plus several more useful key-commands.  Type "?" to Unison to
+      see all available commands.
