@@ -117,7 +117,7 @@ let logfile =
     "!logfile name"
     "By default, logging messages will be appended to the file
      \\verb|unison.log| in your HOME directory.  Set this preference if
-     you prefer another file.  It can be relative to your HOME directory."
+     you prefer another file.  It can be a path relative to your HOME directory."
 
 let logch = ref None
 
