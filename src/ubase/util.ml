@@ -460,6 +460,11 @@ let homeDir () =
 
 let fileInHomeDir n = System.fspathConcat (homeDir ()) n
 
+let fileMaybeRelToHomeDir n =
+  if Filename.is_relative n
+  then fileInHomeDir n
+  else System.fspathFromString n
+
 (*****************************************************************************)
 (*           "Upcall" for building pathnames in the .unison dir              *)
 (*****************************************************************************)
