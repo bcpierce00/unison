@@ -392,16 +392,15 @@ and parseLines filename lines =
           | _ -> raise (Util.Fatal(Printf.sprintf
                                      "File \"%s\", line %d:\nGarbled 'include' directive: %s"
                                      filename lineNum theLine))
-        else try
-          let pos = String.index theLine '=' in
-          let varName = Util.trimWhitespace (String.sub theLine 0 pos) in
-          let theResult =
-            Util.trimWhitespace (String.sub theLine (pos+1)
-                              (String.length theLine - pos - 1)) in
-          loop rest (lineNum+1) ((filename, lineNum, varName, theResult)::res)
-        with Not_found -> (* theLine does not contain '=' *)
-          raise(Util.Fatal(Printf.sprintf
-                             "File \"%s\", line %d:\nGarbled line (no '='):\n%s" filename lineNum theLine)) in
+        else
+          let l = Util.splitAtFirstChar theLine '=' in
+          match Safelist.map Util.trimWhitespace l with
+            [varName;theResult] ->
+              loop rest (lineNum+1) ((filename, lineNum, varName, theResult)::res)
+          | _ -> (* theLine does not contain '=' *)
+              raise (Util.Fatal(Printf.sprintf
+                                  "File \"%s\", line %d:\nGarbled line (no '='):\n%s"
+                                  filename lineNum theLine)) in
   loop lines 1 []
 
 let processLines lines =
