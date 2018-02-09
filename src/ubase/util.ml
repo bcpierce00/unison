@@ -398,15 +398,25 @@ let rec trimWhitespace s =
   else
     s
 
-let splitIntoWords (s:string) (c:char) =
-  let rec inword acc start pos =
-    if pos >= String.length(s) || s.[pos] = c then
-      betweenwords ((String.sub s start (pos-start)) :: acc) pos
-    else inword acc start (pos+1)
+let splitIntoWords ?esc:(e='\\') (s:string) (c:char) =
+  let rec inword acc eacc start pos =
+    if pos >= String.length s || s.[pos] = c then
+      let word =
+        String.concat "" (Safelist.rev (String.sub s start (pos-start)::eacc)) in
+      betweenwords (word::acc) pos
+    else if s.[pos] = e then inescape acc eacc start pos
+    else inword acc eacc start (pos+1)
+  and inescape acc eacc start pos =
+    let eword = String.sub s start (pos-start) in
+    if pos+1 >= String.length s
+    then inword acc (eword::eacc) (pos+1) (pos+1) (* ignore final esc *)
+    else (* take any following char *)
+      let echar = String.make 1 (String.get s (pos+1)) in
+      inword acc (echar::eword::eacc) (pos+2) (pos+2)
   and betweenwords acc pos =
-    if pos >= (String.length s) then (Safelist.rev acc)
+    if pos >= String.length s then (Safelist.rev acc)
     else if s.[pos]=c then betweenwords acc (pos+1)
-    else inword acc pos pos
+    else inword acc [] pos pos
   in betweenwords [] 0
 
 let rec splitIntoWordsByString s sep =

@@ -1317,9 +1317,12 @@ Many details of Unison's behavior are configurable by user-settable
 
 Some preferences are boolean-valued; these are often called {\em flags}.
 Others take numeric or string arguments, indicated in the preferences
-list by {\tt n} or {\tt xxx}.  Most of the string preferences can be
-given several times; the arguments are accumulated into a list
-internally.
+list by {\tt n} or {\tt xxx}.  Some string arguments take the backslash as
+an escape to include the next character literally; this is mostly useful
+to escape a space or the backslash; a trailing backslash is ignored and is
+useful to protect a trailing whitespace in the string that would otherwise
+be trimmed.  Most of the string preferences can be given several times;
+the arguments are accumulated into a list internally.
 
 There are two ways to set the values of preferences: temporarily, by
 providing command-line arguments to a particular run of Unison, or
@@ -1383,7 +1386,8 @@ Profiles may also include lines of the form \texttt{include
 \verb+.unison+ directory) to be read at the point, and included as if
 its contents, instead of the \texttt{include} line, was part of the
 profile.  Include lines allows settings common to several profiles to
-be stored in one place.
+be stored in one place.  In \ARG{name} the backslash is an escape
+character.
 
 A profile may include a preference `\texttt{label = \ARG{desc}}' to
 provide a description of the options selected in this profile.  The
