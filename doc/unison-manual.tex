@@ -1709,6 +1709,11 @@ typing on the command line:
 \begin{verbatim}
     unison profile -merge 'Name *.txt -> echo SKIP'
 \end{verbatim}
+Note that unsetting the merge preference by \verb|-merge 'del Name *.txt'| is
+not exactly the same: in the case where the preference \verb|prefer| or
+\verb|preferpartial| for the path is set, this extra setting does not make the
+path be skipped but let it be updated without merging; the preference
+\verb|preferpartial| can be unset at the same time to avoid that.
 
 If the \verb|confirmmerge| preference is set and Unison is not run in
 batch mode, then Unison will always ask for confirmation before
