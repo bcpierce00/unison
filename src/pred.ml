@@ -120,6 +120,11 @@ let recompile mode p =
     | (`Dif rl :: t), `Dif rx -> `Dif (rx::rl) :: t
     | _             , `Alt rx -> `Alt [rx]     :: acc
     | _             , `Dif rx -> `Dif [rx]     :: acc
+  (* Combine newer positive or negative pathspec regexps with the older ones *)
+  and combine_alt_or_dif rx = function
+      `Alt rl -> Rx.alt [Rx.alt rl; rx]
+    | `Dif rl -> Rx.diff rx (Rx.alt rl)
+        (* A negative pattern is diff'ed from the former ones only *)
   in
   let pref = Prefs.read p.pref in
   let compiledList = Safelist.map compile_pattern (Safelist.append p.default pref) in
