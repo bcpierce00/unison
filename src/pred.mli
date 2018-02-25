@@ -24,6 +24,9 @@
    "Path <path>": <path>, not starting with "/" (using globx)
    "BelowPath <path>": <path>, not starting with "/" (using globx)
    "Regex <regex>": <regex> (using rx)
+
+   Four negative patterns "del <TYPE>" are also recognized that prevent a
+   matching string from matching a former pattern.
 *)
 
 

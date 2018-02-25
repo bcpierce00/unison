@@ -36,7 +36,7 @@ type t =
 let error_msg s =
    Printf.sprintf "bad pattern: %s\n\
     A pattern must be introduced by one of the following keywords:\n\
- \032   Name, Path, BelowPath or Regex." s
+ \032   Name, Path, BelowPath or Regex (or del <KEYWORD>)." s
 
 (* [select str [(p1, f1), ..., (pN, fN)] fO]: (roughly) *)
 (* match str with                                       *)
@@ -79,13 +79,21 @@ let compile_pattern clause =
           raise (Prefs.IllegalValue msg) in
       select p
         [("Name ", fun str -> `Alt (Rx.seq [Rx.rx "(.*/)?"; Rx.globx str]));
+         ("del Name ", fun str -> `Dif (Rx.seq [Rx.rx "(.*/)?"; Rx.globx str]));
          ("Path ", fun str ->
             checkpath "Path" str;
             `Alt (Rx.globx str));
+         ("del Path ", fun str ->
+            checkpath "Path" str;
+            `Dif (Rx.globx str));
          ("BelowPath ", fun str ->
             checkpath "BelowPath" str;
             `Alt (Rx.seq [Rx.globx str; Rx.rx "(/.*)?"]));
-         ("Regex ", fun str -> `Alt (Rx.rx str))]
+         ("del BelowPath ", fun str ->
+            checkpath "BelowPath" str;
+            `Dif (Rx.seq [Rx.globx str; Rx.rx "(/.*)?"]));
+         ("Regex ", fun str -> `Alt (Rx.rx str));
+         ("del Regex ", fun str -> `Dif (Rx.rx str))]
         (fun str -> raise (Prefs.IllegalValue (error_msg p)))
     with
       Rx.Parse_error | Rx.Not_supported ->
@@ -127,18 +135,21 @@ let recompile mode p =
         (* A negative pattern is diff'ed from the former ones only *)
   in
   let pref = Prefs.read p.pref in
-  let compiledList = Safelist.map compile_pattern (Safelist.append p.default pref) in
-  let compiled = Rx.alt (Safelist.map (fun (`Alt rx, _) -> rx) compiledList) in
+  let compiledList = Safelist.append p.default pref
+    |> Safelist.map compile_pattern in
+  let compiled = compiledList
+    |> Safelist.fold_left (fun a (r, _) -> rev_acc_alt_or_dif a r) []
+    |> Safelist.fold_left combine_alt_or_dif Rx.empty in
+         (* The patterns are processed in order of appearance so that later
+            preferences override the previous ones. *)
   let handleCase rx =
     if (Case.ops())#caseInsensitiveMatch then Rx.case_insensitive rx
     else rx
   in
-  let strings = Safelist.filterMap
-                  (fun (`Alt rx, vo) ->
-                     match vo with
-                       None -> None
-                     | Some v -> Some (handleCase rx,v))
-                  compiledList in
+  let altonly_string = function
+      `Alt rx, Some v -> Some (handleCase rx, v)
+    | _ -> None in
+  let strings = Safelist.filterMap altonly_string compiledList in
   p.compiled <- handleCase compiled;
   p.associated_strings <- strings;
   p.last_pref <- pref;
