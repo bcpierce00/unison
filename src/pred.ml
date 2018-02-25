@@ -136,8 +136,8 @@ let recompile mode p =
   in
   let pref = Prefs.read p.pref in
   let compiledList = Safelist.append p.default pref
-    |> Safelist.map compile_pattern in
-  let compiled = compiledList
+    |> Safelist.rev_map compile_pattern in
+  let compiled = Safelist.rev compiledList
     |> Safelist.fold_left (fun a (r, _) -> rev_acc_alt_or_dif a r) []
     |> Safelist.fold_left combine_alt_or_dif Rx.empty in
          (* The patterns are processed in order of appearance so that later
@@ -149,7 +149,7 @@ let recompile mode p =
   let altonly_string = function
       `Alt rx, Some v -> Some (handleCase rx, v)
     | _ -> None in
-  let strings = Safelist.filterMap altonly_string compiledList in
+  let strings = Safelist.rev_filterMap altonly_string compiledList in
   p.compiled <- handleCase compiled;
   p.associated_strings <- strings;
   p.last_pref <- pref;
