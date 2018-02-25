@@ -113,6 +113,14 @@ let addDefaultPatterns p pats =
 let alias p n = Prefs.alias p.pref n
 
 let recompile mode p =
+  (* Accumulate consecutive pathspec regexps with the same sign *)
+  let rev_acc_alt_or_dif acc r =
+    match acc, r with
+      (`Alt rl :: t), `Alt rx -> `Alt (rx::rl) :: t
+    | (`Dif rl :: t), `Dif rx -> `Dif (rx::rl) :: t
+    | _             , `Alt rx -> `Alt [rx]     :: acc
+    | _             , `Dif rx -> `Dif [rx]     :: acc
+  in
   let pref = Prefs.read p.pref in
   let compiledList = Safelist.map compile_pattern (Safelist.append p.default pref) in
   let compiled = Rx.alt (Safelist.map (fun (`Alt rx, _) -> rx) compiledList) in
