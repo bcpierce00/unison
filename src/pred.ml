@@ -78,15 +78,18 @@ let compile_pattern clause =
           ^ "only relative paths are allowed." in
         if str<>"" && str.[0] = '/' then
           raise (Prefs.IllegalValue msg) in
+      let name rx = Rx.seq [Rx.rx "(.*/)?"; rx]
+      and below rx = Rx.seq [rx; Rx.rx "(/.*)?"]
+      in
       select_pattern p
-        [("Name ", fun realpref str -> Rx.seq [Rx.rx "(.*/)?"; Rx.globx str]);
-         ("Path ", fun realpref str ->
-            checkpath realpref str;
+        [("Name ", fun realpref str ->
+            name (Rx.globx str));
+         ("Path ", fun realpref str -> checkpath realpref str;
             Rx.globx str);
-         ("BelowPath ", fun realpref str ->
-            checkpath realpref str;
-            Rx.seq [Rx.globx str; Rx.rx "(/.*)?"]);
-         ("Regex ", fun realpref str -> Rx.rx str)]
+         ("BelowPath ", fun realpref str -> checkpath realpref str;
+            below (Rx.globx str));
+         ("Regex ", fun realpref str ->
+            Rx.rx str)]
         (fun str -> raise (Prefs.IllegalValue (error_msg p)))
     with
       Rx.Parse_error | Rx.Not_supported ->
