@@ -25,7 +25,12 @@
    "BelowPath <path>": <path>, not starting with "/" (using globx)
    "Regex <regex>": <regex> (using rx)
 
-   Four negative patterns "del <TYPE>" are also recognized that prevent a
+   Three additional forms of <TYPE>/<FIXED_STRING> are recognized:
+   "NameString <name>": ..../<name> (using fixed string)
+   "String <path>": <path>, not starting with "/" (using fixed string)
+   "BelowString <path>": <path>, not starting with "/" (using fixed string)
+
+   Seven negative patterns "del <TYPE>" are also recognized that prevent a
    matching string from matching a former pattern.
 *)
 

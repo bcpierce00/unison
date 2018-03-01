@@ -36,7 +36,7 @@ type t =
 let error_msg s =
    Printf.sprintf "bad pattern: %s\n\
     A pattern must be introduced by one of the following keywords:\n\
- \032   Name, Path, BelowPath or Regex (or del <KEYWORD>)." s
+ \032   Regex, Name, Path, BelowPath, NameString, String, BelowString (or del <KEYWORD>)." s
 
 (* [select_pattern str [(p1, f1), ..., (pN, fN)] fO]: (roughly) *)
 (* match str with                                               *)
@@ -88,6 +88,12 @@ let compile_pattern clause =
             Rx.globx str);
          ("BelowPath ", fun realpref str -> checkpath realpref str;
             below (Rx.globx str));
+         ("NameString ", fun realpref str ->
+            name (Rx.str str));
+         ("String ", fun realpref str -> checkpath realpref str;
+            Rx.str str);
+         ("BelowString ", fun realpref str -> checkpath realpref str;
+            below (Rx.str str));
          ("Regex ", fun realpref str ->
             Rx.rx str)]
         (fun str -> raise (Prefs.IllegalValue (error_msg p)))
