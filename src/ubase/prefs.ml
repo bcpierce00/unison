@@ -251,6 +251,7 @@ let prefArg = function
   | Uarg.String(_) -> "xxx"
   | _             -> assert false
 
+(* [argspecs hook] returns a list of specs for [Uarg.parse] *)
 let argspecs hook =
   Util.StringMap.fold
     (fun name (doc, pspec, _) l ->
@@ -259,6 +260,7 @@ let argspecs hook =
 
 let oneLineDocs u =
   let formatOne name pspec doc p =
+    (* if [p] format a one line message documenting a preference *)
     if not p then "" else
     let doc = if doc.[0] = '!'
                 then String.sub doc 1 ((String.length doc) - 1)
@@ -269,13 +271,15 @@ let oneLineDocs u =
       String.make (max 1 (18 - String.length (name ^ arg))) ' ' in
     " -" ^ name ^ arg ^ spaces ^ doc ^ "\n" in
   let formatAll p =
-    String.concat ""
-      (Safelist.rev
-         (Util.StringMap.fold
-            (fun name (doc, pspec, _) l ->
-               (formatOne name pspec doc
-                  (String.length doc > 0 && doc.[0] <> '*' && p doc)) :: l)
-            !prefs []))
+    (* format a message documenting non hidden preferences matching [p] *)
+    String.concat "" @@
+    Safelist.rev @@
+    (fun f i l -> Util.StringMap.fold f l i)
+       (fun name (doc, pspec, _) l ->
+          (formatOne name pspec doc
+             (String.length doc > 0 && doc.[0] <> '*' && p doc)) :: l)
+       [] @@
+    !prefs
   in
     u ^ "\n"
   ^ "Basic options: \n"
