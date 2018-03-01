@@ -80,6 +80,11 @@ let compile_pattern clause =
           raise (Prefs.IllegalValue msg) in
       let name rx = Rx.seq [Rx.rx "(.*/)?"; rx]
       and below rx = Rx.seq [rx; Rx.rx "(/.*)?"]
+      and del_quotes c str =
+        let l = String.length str in
+        if l >= 2 && str.[0] = c && str.[l-1] = c
+        then String.sub str 1 (l-2)
+        else str
       in
       select_pattern p
         [("Name ", fun realpref str ->
@@ -89,11 +94,11 @@ let compile_pattern clause =
          ("BelowPath ", fun realpref str -> checkpath realpref str;
             below (Rx.globx str));
          ("NameString ", fun realpref str ->
-            name (Rx.str str));
-         ("String ", fun realpref str -> checkpath realpref str;
-            Rx.str str);
-         ("BelowString ", fun realpref str -> checkpath realpref str;
-            below (Rx.str str));
+            name (Rx.str (del_quotes '\'' str)));
+         ("String ", fun realpref str -> checkpath realpref (del_quotes '\'' str);
+            Rx.str (del_quotes '\'' str));
+         ("BelowString ", fun realpref str -> checkpath realpref (del_quotes '\'' str);
+            below (Rx.str (del_quotes '\'' str)));
          ("Regex ", fun realpref str ->
             Rx.rx str)]
         (fun str -> raise (Prefs.IllegalValue (error_msg p)))
