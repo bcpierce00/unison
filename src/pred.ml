@@ -87,19 +87,19 @@ let compile_pattern clause =
         else str
       in
       select_pattern p
-        [("Name ", fun realpref str ->
+        [("Name ", fun realpref str -> checkpath realpref str;
             name (Rx.globx str));
          ("Path ", fun realpref str -> checkpath realpref str;
             Rx.globx str);
          ("BelowPath ", fun realpref str -> checkpath realpref str;
             below (Rx.globx str));
-         ("NameString ", fun realpref str ->
+         ("NameString ", fun realpref str -> checkpath realpref (del_quotes '\'' str);
             name (Rx.str (del_quotes '\'' str)));
          ("String ", fun realpref str -> checkpath realpref (del_quotes '\'' str);
             Rx.str (del_quotes '\'' str));
          ("BelowString ", fun realpref str -> checkpath realpref (del_quotes '\'' str);
             below (Rx.str (del_quotes '\'' str)));
-         ("Regex ", fun realpref str ->
+         ("Regex ", fun realpref str -> checkpath realpref str;
             Rx.rx str)]
         (fun str -> raise (Prefs.IllegalValue (error_msg p)))
     with
