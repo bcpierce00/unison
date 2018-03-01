@@ -387,18 +387,24 @@ and parseLines filename lines =
     | theLine :: rest ->
         let theLine = Util.removeTrailingCR theLine in
         let l = Util.trimWhitespace theLine in
-        if l = "" || l.[0]='#' then
-          loop rest (lineNum+1) res
-        else if Util.startswith theLine "include " ||
-                Util.startswith theLine "include? " then
+        let includes ~fail ~add_ext =
           match Util.splitIntoWords theLine ' ' with
             [_;f] ->
-              let sublines = readAFile f
-                  ~fail:(Util.startswith theLine "include ") in
+              let sublines = readAFile f ~fail:fail ~add_ext:add_ext in
               loop rest (lineNum+1) (Safelist.append sublines res)
           | _ -> raise (Util.Fatal(Printf.sprintf
                                      "File \"%s\", line %d:\nGarbled 'include' directive: %s"
-                                     filename lineNum theLine))
+                                     filename lineNum theLine)) in
+        if l = "" || l.[0]='#' then
+          loop rest (lineNum+1) res
+        else if Util.startswith theLine "include " then
+          includes ~fail:true ~add_ext:true
+        else if Util.startswith theLine "source " then
+          includes ~fail:true ~add_ext:false
+        else if Util.startswith theLine "include? " then
+          includes ~fail:false ~add_ext:true
+        else if Util.startswith theLine "source? " then
+          includes ~fail:false ~add_ext:false
         else
           let l = Util.splitAtFirstChar theLine '=' in
           match Safelist.map Util.trimWhitespace l with
