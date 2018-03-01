@@ -38,23 +38,24 @@ let error_msg s =
     A pattern must be introduced by one of the following keywords:\n\
  \032   Name, Path, BelowPath or Regex (or del <KEYWORD>)." s
 
-(* [select str [(p1, f1), ..., (pN, fN)] fO]: (roughly) *)
-(* match str with                                       *)
-(*  p1 p' -> f1 p'                                      *)
-(*  ...		       	       	       	       	       	*)
-(*  pN p' -> fN p'   					*)
-(*  otherwise -> fO str	       	       	       	        *)
-let rec select str l f =
+(* [select_pattern str [(p1, f1), ..., (pN, fN)] fO]: (roughly) *)
+(* match str with                                               *)
+(*  p1 p' -> f1 p'                                              *)
+(*  ...                                                         *)
+(*  pN p' -> fN p'                                              *)
+(*  otherwise -> fO str                                         *)
+let rec select_pattern str l err =
+  let rest realpref g =
+    let l = String.length realpref in
+    let s =
+      Util.trimWhitespace (String.sub str l (String.length str - l)) in
+    g (Util.trimWhitespace realpref) ((Case.ops())#normalizePattern s) in
   match l with
-    [] -> f str
+    [] -> err str
   | (pref, g)::r ->
-      if Util.startswith str pref then
-        let l = String.length pref in
-        let s =
-          Util.trimWhitespace (String.sub str l (String.length str - l)) in
-        g ((Case.ops())#normalizePattern s)
-      else
-        select str r f
+      if Util.startswith str pref then `Alt (rest pref g)
+      else if Util.startswith str ("del "^pref) then `Dif (rest ("del "^pref) g)
+      else select_pattern str r err
 
 let mapSeparator = "->"
 
@@ -77,23 +78,15 @@ let compile_pattern clause =
           ^ "only relative paths are allowed." in
         if str<>"" && str.[0] = '/' then
           raise (Prefs.IllegalValue msg) in
-      select p
-        [("Name ", fun str -> `Alt (Rx.seq [Rx.rx "(.*/)?"; Rx.globx str]));
-         ("del Name ", fun str -> `Dif (Rx.seq [Rx.rx "(.*/)?"; Rx.globx str]));
-         ("Path ", fun str ->
-            checkpath "Path" str;
-            `Alt (Rx.globx str));
-         ("del Path ", fun str ->
-            checkpath "Path" str;
-            `Dif (Rx.globx str));
-         ("BelowPath ", fun str ->
-            checkpath "BelowPath" str;
-            `Alt (Rx.seq [Rx.globx str; Rx.rx "(/.*)?"]));
-         ("del BelowPath ", fun str ->
-            checkpath "BelowPath" str;
-            `Dif (Rx.seq [Rx.globx str; Rx.rx "(/.*)?"]));
-         ("Regex ", fun str -> `Alt (Rx.rx str));
-         ("del Regex ", fun str -> `Dif (Rx.rx str))]
+      select_pattern p
+        [("Name ", fun realpref str -> Rx.seq [Rx.rx "(.*/)?"; Rx.globx str]);
+         ("Path ", fun realpref str ->
+            checkpath realpref str;
+            Rx.globx str);
+         ("BelowPath ", fun realpref str ->
+            checkpath realpref str;
+            Rx.seq [Rx.globx str; Rx.rx "(/.*)?"]);
+         ("Regex ", fun realpref str -> Rx.rx str)]
         (fun str -> raise (Prefs.IllegalValue (error_msg p)))
     with
       Rx.Parse_error | Rx.Not_supported ->
