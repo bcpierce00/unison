@@ -388,10 +388,12 @@ and parseLines filename lines =
         let l = Util.trimWhitespace theLine in
         if l = "" || l.[0]='#' then
           loop rest (lineNum+1) res
-        else if Util.startswith theLine "include " then
+        else if Util.startswith theLine "include " ||
+                Util.startswith theLine "include? " then
           match Util.splitIntoWords theLine ' ' with
             [_;f] ->
-              let sublines = readAFile f in
+              let sublines = readAFile f
+                  ~fail:(Util.startswith theLine "include ") in
               loop rest (lineNum+1) (Safelist.append sublines res)
           | _ -> raise (Util.Fatal(Printf.sprintf
                                      "File \"%s\", line %d:\nGarbled 'include' directive: %s"
