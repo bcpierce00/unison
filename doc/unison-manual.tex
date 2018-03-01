@@ -1838,14 +1838,14 @@ that match any one of the path pattern.
 \end{alltt}
 adds \ARG{pattern} to the list of patterns to be ignored.
 
-\item Each \ARG{pattern} can have one of four forms.  The most
+\item Each \ARG{pattern} can have one of seven forms.  The most
 general form is a Posix extended regular expression introduced by the
 keyword \verb|Regex|.  (The collating sequences and character classes of
 full Posix regexps are not currently supported).
 \begin{alltt}
                  Regex \ARG{regexp}
 \end{alltt}
-For convenience, three other styles of pattern are also recognized:
+For convenience, three other styles of globbing patterns are also recognized:
 \begin{alltt}
                  Name \ARG{name}
 \end{alltt}
@@ -1877,6 +1877,17 @@ standard ``globbing'' conventions can be used in \ARG{name} and
   these will be interpreted literally as part of the strings to be matched!)
 \item a \verb|\| escapes the following character
 \end{itemize}
+To match fixed string names three other styles of string patterns are
+recognized, maching a fixed string against the same path components as the
+corresponding globbing pattern:
+\begin{alltt}
+                 NameString \ARG{string}
+                 String \ARG{string}
+                 BelowString \ARG{string}
+                 String '\ARG{string}'
+\end{alltt}
+If the given string is surrounded by single quotes, they are removed and not
+matched against; they can protect leading and trailing whitespace.
 \item
 The path separator in path patterns is always the
 forward-slash character ``/'' --- even when the client or server is
