@@ -1870,10 +1870,12 @@ standard ``globbing'' conventions can be used in \ARG{name} and
 \item a \verb|?| matches any single character except \verb|/| (and leading
   \verb|.|)
 \item \verb|[xyz]| matches any character from the set $\{{\tt x},
-  {\tt y}, {\tt z} \}$
+  {\tt y}, {\tt z} \}$ (you can negate the set by the forms \verb|[!xyz]| or
+  \verb|[^xyz]| and you can give ranges of the form \verb|[x-z]|)
 \item \verb|{a,bb,ccc}| matches any one of \verb|a|, \verb|bb|, or
   \verb|ccc|.  (Be careful not to put extra spaces after the commas:
   these will be interpreted literally as part of the strings to be matched!)
+\item a \verb|\| escapes the following character
 \end{itemize}
 \item
 The path separator in path patterns is always the

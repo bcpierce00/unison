@@ -784,10 +784,12 @@ let glob_parse init s =
           Sequence [beg_start; Set (csingle c)]),
        if c = '/' then init else Mid)
   and bracket s =
-    if s <> [] && accept ']' then s else begin
+    if s <> [] && accept ']' then s
+    else begin
       let c = char () in
       if accept '-' then begin
-        if accept ']' then (cadd c (cadd '-' s)) else begin
+        if accept ']' then (cadd c (cadd '-' s))
+        else begin
           let c' = char () in
           bracket (cunion (cseq c c') s)
         end
