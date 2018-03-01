@@ -26,9 +26,9 @@ let rawPref default name =
 let profileName = ref None
 let profileFiles = ref []
 
-let profilePathname n =
+let profilePathname ?(add_ext=true) n =
   let f = Util.fileInUnisonDir n in
-  if System.file_exists f then f
+  if (not add_ext) || System.file_exists f then f
   else Util.fileInUnisonDir (n ^ ".prf")
 
 let thePrefsFile () =
@@ -348,7 +348,8 @@ let string2int name string =
 (* Takes a filename and returns a list of "parsed lines" containing
       (filename, lineno, varname, value)
    in the same order as in the file. *)
-let rec readAFile ?(fail=true) filename : (string * int * string * string) list =
+let rec readAFile ?(fail=true) ?(add_ext=true) filename
+    : (string * int * string * string) list =
   let bom = "\xef\xbb\xbf" in (* BOM: UTF-8 byte-order mark *)
   let rec loop chan lines =
     match (try Some(input_line chan) with End_of_file -> None) with
@@ -366,7 +367,7 @@ let rec readAFile ?(fail=true) filename : (string * int * string * string) list 
   in
   let chan =
     try
-      let path = profilePathname filename in
+      let path = profilePathname ~add_ext:add_ext filename in
       profileFiles := (path, System.stat path) :: !profileFiles;
       Some (System.open_in_bin path)
     with Unix.Unix_error _ | Sys_error _ -> None
