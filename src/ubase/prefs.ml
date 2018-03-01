@@ -348,17 +348,9 @@ let string2int name string =
 (* Takes a filename and returns a list of "parsed lines" containing
       (filename, lineno, varname, value)
    in the same order as in the file. *)
-let rec readAFile filename : (string * int * string * string) list =
-  let chan =
-    try
-      let path = profilePathname filename in
-        profileFiles := (path, System.stat path) :: !profileFiles;
-        System.open_in_bin path
-    with Unix.Unix_error _ | Sys_error _ ->
-      raise(Util.Fatal(Printf.sprintf "Preference file %s not found" filename))
-  in
+let rec readAFile ?(fail=true) filename : (string * int * string * string) list =
   let bom = "\xef\xbb\xbf" in (* BOM: UTF-8 byte-order mark *)
-  let rec loop lines =
+  let rec loop chan lines =
     match (try Some(input_line chan) with End_of_file -> None) with
       None -> close_in chan; parseLines filename lines
     | Some(theLine) ->
@@ -370,8 +362,20 @@ let rec readAFile filename : (string * int * string * string) list =
           else
             theLine
         in
-        loop (theLine::lines) in
-  loop []
+        loop chan (theLine::lines)
+  in
+  let chan =
+    try
+      let path = profilePathname filename in
+      profileFiles := (path, System.stat path) :: !profileFiles;
+      Some (System.open_in_bin path)
+    with Unix.Unix_error _ | Sys_error _ -> None
+  in
+  match chan, fail with
+    None, true ->
+      raise(Util.Fatal(Printf.sprintf "Preference file %s not found" filename))
+  | None, false -> []
+  | Some chan, _ -> loop chan []
 
 (* Takes a list of strings in reverse order and yields a list of "parsed lines"
    in correct order *)

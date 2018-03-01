@@ -119,7 +119,7 @@ val addComment : string -> unit
 
 (* Scan a given preferences file and return a list of tuples of the form     *)
 (* (fileName, lineno, name, value), without changing any of the preferences  *)
-val readAFile : string -> (string * int * string * string) list
+val readAFile : ?fail:bool -> string -> (string * int * string * string) list
 
 (* Parse the preferences file, raising Fatal if there are any problems       *)
 val loadTheFile : unit -> unit
