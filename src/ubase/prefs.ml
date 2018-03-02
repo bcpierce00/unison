@@ -363,6 +363,14 @@ let loadStrings l =
 (*                      Command-line parsing                                 *)
 (*****************************************************************************)
 
+let opts = ref
+    [("source",
+      Uarg.String (fun s -> processLines @@ readAFile ~add_ext:false s),
+      "include a file's preferences");
+     ("include",
+      Uarg.String (fun s -> processLines @@ readAFile s),
+      "include a profile file's preferences")]
+
 let prefArg = function
     Uarg.Bool(_)   -> ""
   | Uarg.Int(_)    -> "n"
