@@ -413,6 +413,9 @@ let oneLineDocs u =
   ^ formatAll (fun doc -> doc.[0] <> '!')
   ^ "\nAdvanced options: \n"
   ^ formatAll (fun doc -> doc.[0] = '!')
+  ^ Safelist.fold_right
+      (fun (name, pspec, doc) msg -> msg ^ formatOne name pspec doc true)
+      !opts "\nSpecial command line options: \n"
 
 let printUsage usage = Uarg.usage (argspecs (fun _ s -> s))
                          (oneLineDocs usage)
