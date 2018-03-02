@@ -379,10 +379,11 @@ let prefArg = function
 
 (* [argspecs hook] returns a list of specs for [Uarg.parse] *)
 let argspecs hook =
-  Util.StringMap.fold
-    (fun name (doc, pspec, _) l ->
-       ("-" ^ name, hook name pspec, "")::l)
-    !prefs []
+  let f (name, pspec, doc) l =
+    ("-" ^ name, hook name pspec, "") :: l in
+  Safelist.fold_right f !opts @@
+  Util.StringMap.fold (fun name (doc, pspec, _) -> f (name, pspec, doc)) !prefs
+    []
 
 let oneLineDocs u =
   let formatOne name pspec doc p =
