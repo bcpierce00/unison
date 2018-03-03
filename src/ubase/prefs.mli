@@ -94,6 +94,8 @@ val parseCmdLine :
   -> unit
 
 (* Make a preliminary scan without setting any preferences                   *)
+(* Note: Command line include options are not processed; they will appear in *)
+(* the map.                                                                  *)
 val scanCmdLine : string -> (string list) Util.StringMap.t
 
 val printUsage : string -> unit
