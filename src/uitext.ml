@@ -345,12 +345,14 @@ let interact prilist rilist =
             None -> display "  Enabling matching condition\n" | _ -> () end;
           ripred := Some p in
         let actOnMatching ?(change=true) ?(fail=Some(fun()->())) f =
-          (* [f] can have effects on the ri and return false to discard it *)
+          (* [f] can have effects on the ri and return false to run [fail] (if
+             the matching condition is disabled) *)
+          (* When [fail] is [None] if [f] returns false then instead of
+             executing [fail] and repeating we discard the item (even when the
+             matching condition is disabled) and go to the next *)
           (* Disabling [change] avoids to redisplay the item, allows [f] to
              print a message (info or error) on a separate line and repeats
              instead of going to the next item *)
-          (* When [fail] is [None] if [f] returns false then instead of
-             executing [fail] and repeating we discard the item and go to the next *)
           let discard, err =
             match fail with Some e -> false, e | None -> true, fun()->() in
           match !ripred with
@@ -438,7 +440,7 @@ let interact prilist rilist =
                      display ("  Moving "^(string_of_int l)^" items backward\n");
                      forward l prev ril));
                  (["R"],
-                  ("reverse the list"),
+                  ("reverse the list of paths"),
                   (fun () -> newLine();
                      loop rest (ri::prev)));
                  (["d"],
@@ -553,13 +555,13 @@ let interact prilist rilist =
                        ~fail:(Some (fun()->display "Cannot set direction\n"))
                        setdirchanged));
                  (["i"],
-                  ("invert direction of propagation and go to next item"),
+                  ("invert direction of propagation (curr or match)"),
                   (fun () ->
                      actOnMatching
                        ~fail:(Some (fun()->display "Cannot invert direction\n"))
                        invertdir));
                  (["/";":"],
-                  ("skip"),
+                  ("skip (curr or match)"),
                   (fun () ->
                      actOnMatching setskip));
                  (["%"],
