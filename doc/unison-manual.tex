@@ -1211,8 +1211,16 @@ for synchronization (or create a new one, if necessary).
 
 Unison stores a variety of information in a private directory on each
 host.  If the environment variable {\tt UNISON} is defined, then its
-value will be used as the name of this directory.  If {\tt UNISON} is
-not defined, then the name of the directory depends on which
+value will be used as the path/folder name for this directory.
+This can be just a name, or a path. 
+
+A name on it's own, for example {\tt UNISON=mytestname} will
+place a folder in the same directory that the Unison binary was run
+in, with that name. Using a path like {\tt UNISON=../mytestname2}
+will place that folder in the folder above where the Unison binary was
+run from.
+
+If {\tt UNISON} is not defined, then the directory depends on which
 operating system you are using.  In Unix, the default is to use
 {\tt \$HOME/.unison}.
 In Windows, if the environment variable
