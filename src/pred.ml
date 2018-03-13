@@ -61,14 +61,11 @@ let mapSeparator = "->"
 (* Compile a pattern (in string form) to a regular expression *)
 let compile_pattern clause =
   let (p,v) =
-    match Util.splitIntoWordsByString clause mapSeparator with
+    match Util.splitAtString ~reverse:true clause mapSeparator with
       ""::_ -> raise (Prefs.IllegalValue "Empty pattern")
     | [p] -> (p,None)
     | [p;v] -> (p, Some (Util.trimWhitespace v))
-    | [] -> assert false
-    | _ -> raise (Prefs.IllegalValue ("Malformed pattern: "
-                  ^ "\"" ^ clause ^ "\"\n"
-                  ^ "Only one instance of " ^ mapSeparator ^ " allowed.")) in
+    | _ -> assert false in
   let compiled =
     begin try
       select p
