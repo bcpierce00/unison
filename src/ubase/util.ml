@@ -401,10 +401,10 @@ let trimWhitespace s =
    in
    loop 0 (l-1)
 
-let splitAtFirstChar (s:string) (c:char) =
+let splitAtChar ?reverse:(rev=false) (s:string) (c:char) =
   try
-    let i = String.index s c
-    and l= String.length s in
+    let i = if rev then String.rindex s c else String.index s c
+    and l = String.length s in
     (* rest is possibly the empty string *)
     [String.sub s 0 i; String.sub s (i+1) (l-i-1)]
   with Not_found -> [s]

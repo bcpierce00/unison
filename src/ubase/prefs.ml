@@ -393,7 +393,7 @@ and parseLines filename lines =
                                      "File \"%s\", line %d:\nGarbled 'include' directive: %s"
                                      filename lineNum theLine))
         else
-          let l = Util.splitAtFirstChar theLine '=' in
+          let l = Util.splitAtChar theLine '=' in
           match Safelist.map Util.trimWhitespace l with
             [varName;theResult] ->
               loop rest (lineNum+1) ((filename, lineNum, varName, theResult)::res)
