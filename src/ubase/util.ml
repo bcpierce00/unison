@@ -336,14 +336,14 @@ let truncateString string length =
   else if actualLength < 3 then string
   else (String.sub string 0 (length - 3))^ "..."
 
-let findsubstring s1 s2 =
+let findsubstring ?reverse:(rev=false) s1 s2 =
   let l1 = String.length s1 in
   let l2 = String.length s2 in
   let rec loop i =
-    if i+l1 > l2 then None
+    if i+l1 > l2 || i < 0 then None
     else if s1 = String.sub s2 i l1 then Some(i)
-    else loop (i+1)
-  in loop 0
+    else loop (if rev then i-1 else i+1)
+  in loop (if rev then l2-l1 else 0)
 
 let rec replacesubstring s fromstring tostring =
   match findsubstring fromstring s with
