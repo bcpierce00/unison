@@ -32,6 +32,10 @@
 
    Seven negative patterns "del <TYPE>" are also recognized that prevent a
    matching string from matching a former pattern.
+
+   Seven assoc only patterns "assoc <TYPE>" are also recognized that record the
+   associated string but do not set the preference for the paths matching the
+   given pattern.
 *)
 
 

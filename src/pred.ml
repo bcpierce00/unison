@@ -36,7 +36,11 @@ type t =
 let error_msg s =
    Printf.sprintf "bad pattern: %s\n\
     A pattern must be introduced by one of the following keywords:\n\
- \032   Regex, Name, Path, BelowPath, NameString, String, BelowString (or del <KEYWORD>)." s
+ \032   Regex, Name, Path, BelowPath, NameString, String, BelowString\n\
+ \032   (or del <KEYWORD> or assoc <KEYWORD>)." s
+
+let delPref = "del "
+let assocPref = "assoc "
 
 (* [select_pattern str [(p1, f1), ..., (pN, fN)] fO]: (roughly) *)
 (* match str with                                               *)
@@ -54,7 +58,8 @@ let rec select_pattern str l err =
     [] -> err str
   | (pref, g)::r ->
       if Util.startswith str pref then `Alt (rest pref g)
-      else if Util.startswith str ("del "^pref) then `Dif (rest ("del "^pref) g)
+      else if Util.startswith str (delPref^pref) then `Dif (rest (delPref^pref) g)
+      else if Util.startswith str (assocPref^pref) then `Nul (rest (assocPref^pref) g)
       else select_pattern str r err
 
 let mapSeparator = "->"
@@ -128,13 +133,15 @@ let addDefaultPatterns p pats =
 let alias p n = Prefs.alias p.pref n
 
 let recompile mode p =
-  (* Accumulate consecutive pathspec regexps with the same sign *)
+  (* Accumulate consecutive pathspec regexps with the same sign and discard
+     null patterns *)
   let rev_acc_alt_or_dif acc r =
     match acc, r with
       (`Alt rl :: t), `Alt rx -> `Alt (rx::rl) :: t
     | (`Dif rl :: t), `Dif rx -> `Dif (rx::rl) :: t
     | _             , `Alt rx -> `Alt [rx]     :: acc
     | _             , `Dif rx -> `Dif [rx]     :: acc
+    | _             , `Nul rx ->                  acc
   (* Combine newer positive or negative pathspec regexps with the older ones *)
   and combine_alt_or_dif rx = function
       `Alt rl -> Rx.alt [Rx.alt rl; rx]
@@ -153,10 +160,10 @@ let recompile mode p =
     if (Case.ops())#caseInsensitiveMatch then Rx.case_insensitive rx
     else rx
   in
-  let altonly_string = function
-      `Alt rx, Some v -> Some (handleCase rx, v)
+  let nodif_string = function
+      `Alt rx, Some v | `Nul rx, Some v -> Some (handleCase rx, v)
     | _ -> None in
-  let strings = Safelist.rev_filterMap altonly_string compiledList in
+  let strings = Safelist.rev_filterMap nodif_string compiledList in
   p.compiled <- handleCase compiled;
   p.associated_strings <- strings;
   p.last_pref <- pref;
