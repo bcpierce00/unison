@@ -37,8 +37,9 @@ let error_msg s =
    Printf.sprintf "bad pattern: %s\n\
     A pattern must be introduced by one of the following keywords:\n\
  \032   Regex, Name, Path, BelowPath, NameString, String, BelowString\n\
- \032   (or del <KEYWORD> or assoc <KEYWORD>)." s
+ \032   (or add <KEYWORD> or del <KEYWORD> or assoc <KEYWORD>)." s
 
+let addPref = "add "
 let delPref = "del "
 let assocPref = "assoc "
 
@@ -58,6 +59,7 @@ let rec select_pattern str l err =
     [] -> err str
   | (pref, g)::r ->
       if Util.startswith str pref then `Alt (rest pref g)
+      else if Util.startswith str (addPref^pref) then `Alt (rest (addPref^pref) g)
       else if Util.startswith str (delPref^pref) then `Dif (rest (delPref^pref) g)
       else if Util.startswith str (assocPref^pref) then `Nul (rest (assocPref^pref) g)
       else select_pattern str r err

@@ -36,6 +36,9 @@
    Seven assoc only patterns "assoc <TYPE>" are also recognized that record the
    associated string but do not set the preference for the paths matching the
    given pattern.
+
+   Seven patterns "add <TYPE>" are also recognized that are equivalent to the
+   non prefixed patterns.
 *)
 
 
