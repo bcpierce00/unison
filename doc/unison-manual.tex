@@ -1912,6 +1912,20 @@ this string need not be given again when reenabling a path.  For example:
         preferpartial = del Path prefix*.txt
         preferpartial = Path prefix.txt
 \end{verbatim}
+\item
+An associated string can also be defined and recorded without setting the
+corresponding preference by an assoc pattern, that is any pattern prefixed by
+\texttt{assoc} separated exactly by one space.  Any (preceding or following)
+(positive) pattern can set the preference independently without having to
+specify an associated string.
+
+For example one can define a generic merge command without enbaling the
+\verb|merge| preference, then select some paths to merge without having to give
+the merge command again and again:
+\begin{verbatim}
+        merge = assoc Name *.txt -> mergecmd CURRENT1 CURRENT2
+        merge = Path prefix*.txt
+\end{verbatim}
 \end{itemize}
 Some examples of path patterns appear in \sectionref{ignore}{Ignoring
   Paths}.
