@@ -371,11 +371,14 @@ let globx_quote s =
 let quote =
   let escape_mapSeparator s =
     let sep = Util.trimWhitespace Pred.mapSeparator in
-    assert ((String.length sep > 0) &&
+    assert ((String.length sep >= 2) &&
         (sep.[0]='-'||sep.[0]='='||sep.[0]='>'||sep.[0]='<'||sep.[0]='_'));
     let esc = "[" ^ (String.make 1 sep.[0]) ^ "]" ^
               (String.sub sep 1 ((String.length sep)-1)) in
-    String.concat esc (Util.splitIntoWordsByString s sep) in
+    let rec loop s =
+      let e = String.concat esc (Util.splitIntoWordsByString s sep) in
+      if e = s then e else loop e in
+    loop s in
   fun s -> escape_mapSeparator (globx_quote s)
 
 let ignorePath path = "Path " ^ quote (Path.toString path)
