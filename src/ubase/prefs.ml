@@ -393,9 +393,9 @@ and parseLines filename lines =
                                      "File \"%s\", line %d:\nGarbled 'include' directive: %s"
                                      filename lineNum theLine))
         else
-          let l = Util.splitAtChar theLine '=' in
-          match Safelist.map Util.trimWhitespace l with
-            [varName;theResult] ->
+          match Util.splitAtChar theLine '=' with
+            i, Some j -> let (varName, theResult) = (fun f (i,j) -> (f i,f j))
+                  Util.trimWhitespace (i,j) in
               loop rest (lineNum+1) ((filename, lineNum, varName, theResult)::res)
           | _ -> (* theLine does not contain '=' *)
               raise (Util.Fatal(Printf.sprintf

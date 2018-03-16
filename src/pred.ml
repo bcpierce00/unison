@@ -67,10 +67,9 @@ let compile_pattern clause =
         (* Actually find "(^| )mapSep( |$)" (by surrounding [clause] by spaces
            possibly removed by previous trimming) to detect an empty pattern
            and/or an empty string *)
-      ""::_ -> raise (Prefs.IllegalValue "Empty pattern")
-    | [p] -> (p,None)
-    | [p;v] -> (p, Some (Util.trimWhitespace v))
-    | _ -> assert false in
+      ("", _)     -> raise (Prefs.IllegalValue "Empty pattern")
+    | (p, None)   -> (p, None)
+    | (p, Some v) -> (p, Some (Util.trimWhitespace v)) in
   let compiled =
     begin try
       select (String.sub p 1 ((String.length p)-1)) (* Remove prepended space *)

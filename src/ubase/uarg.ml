@@ -69,17 +69,15 @@ let parse speclist anonfun errmsg =
   while !current < l do
     let ss = argv.(!current) in
     if String.length ss >= 1 & String.get ss 0 = '-' then begin
-      let args = Util.splitAtChar ss '=' in
-      let s = Safelist.nth args 0 in
+      let (s, v) = Util.splitAtChar ss '=' in
       let arg conv mesg =
-        match args with
-          [_] ->
+        match v with
+          None ->
             if !current + 1 >= l then stop (Missing s) else
              let a = argv.(!current+1) in
              incr current;
              (try conv a with Failure _ -> stop (Wrong (s, a, mesg)))
-        | [_;a] -> (try conv a with Failure _ -> stop (Wrong (s, a, mesg)))
-        | _ -> assert false in
+        | Some a -> (try conv a with Failure _ -> stop (Wrong (s, a, mesg))) in
       let action =
         try assoc3 s speclist
         with Not_found -> stop (Unknown s)
@@ -93,9 +91,9 @@ let parse speclist anonfun errmsg =
         | Set r -> r := true;
         | Clear r -> r := false;
         | Bool f ->
-            begin match args with
-              [_] -> f true
-            | _   -> f (arg (catch bool_of_string) "a boolean")
+            begin match v with
+              None -> f true
+            | Some _ -> f (arg (catch bool_of_string) "a boolean")
             end
         | String f -> f (arg (fun s-> s) "")
         | Int f    -> f (arg (catch int_of_string) "an integer")

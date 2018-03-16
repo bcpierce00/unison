@@ -406,8 +406,8 @@ let splitAtChar ?reverse:(rev=false) (s:string) (c:char) =
     let i = if rev then String.rindex s c else String.index s c
     and l = String.length s in
     (* rest is possibly the empty string *)
-    [String.sub s 0 i; String.sub s (i+1) (l-i-1)]
-  with Not_found -> [s]
+    (String.sub s 0 i, Some (String.sub s (i+1) (l-i-1)))
+  with Not_found -> (s, None)
 
 let splitIntoWords ?esc:(e='\\') (s:string) (c:char) =
   let rec inword acc eacc start pos =
@@ -432,19 +432,18 @@ let splitIntoWords ?esc:(e='\\') (s:string) (c:char) =
 
 let splitAtString ?(reverse=false) s sep =
   match findsubstring ~reverse:reverse sep s with
-    None -> [s]
+    None -> (s, None)
   | Some(i) ->
       let before = String.sub s 0 i in
       let afterpos = i + (String.length sep) in
       let after = String.sub s afterpos ((String.length s) - afterpos) in
       (* rest is possibly the empty string *)
-      [before; after]
+      (before, Some after)
 
 let rec splitIntoWordsByString s sep =
   match splitAtString s sep with
-    [s] -> [s]
-  | [before; after] -> before :: (splitIntoWordsByString after sep)
-  | _ -> assert false
+    (s, None) -> [s]
+  | (before, Some after) -> before :: (splitIntoWordsByString after sep)
 
 let padto n s = s ^ (String.make (max 0 (n - String.length s)) ' ')
 
