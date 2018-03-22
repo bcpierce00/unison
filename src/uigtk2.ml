@@ -3752,7 +3752,7 @@ lst_store#set ~row ~column:c_path path;
       done
     end
   in
-  let doAction f =
+  let doAction ?(next=fun _->true) f =
     (* FIX: when the window does not have the focus, we are not notified
        immediately from changes to the list of selected items.  So, we
        update our view of the current selection here. *)
@@ -3760,7 +3760,7 @@ lst_store#set ~row ~column:c_path path;
     match currentRow () with
       Some i ->
         doActionOnRow f i;
-        nextInteresting ()
+        if next !theState.(i) then nextInteresting ()
     | None ->
         (* FIX: this is quadratic when all items are selected.
            We could trigger a redisplay instead, but it may be tricky
@@ -3779,7 +3779,12 @@ lst_store#set ~row ~column:c_path path;
   let rightAction _ =
     doAction (fun _ diff -> diff.direction <- Replica1ToReplica2) in
   let questionAction _ = doAction (fun _ diff -> diff.direction <- Conflict "") in
-  let mergeAction    _ = doAction (fun _ diff -> diff.direction <- Merge) in
+  let mergeAction    _ =
+    let checkAndMerge ri diff = if Globals.shouldMerge ri.path1
+      then diff.direction <- Merge
+      else okBox ~parent:toplevelWindow ~title:"Cannot merge" ~typ:`ERROR
+          ~message:(Uicommon.cannotMergeMsg ~path:(Some ri.path1)) in
+    doAction ~next:(fun i->Globals.shouldMerge i.ri.path1) checkAndMerge in
 
 (*  actionBar#insert_space ();*)
   grAdd grAction
