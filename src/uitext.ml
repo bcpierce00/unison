@@ -544,7 +544,11 @@ let interact prilist rilist =
                  (["m"],
                   ("merge the versions (curr or match)"),
                   (fun () ->
-                     actOnMatching (setdir Merge)));
+                     actOnMatching
+                       ~fail:(Some (fun() ->
+                           display ((Uicommon.cannotMergeMsg ~path:None)^"\n")))
+                       (fun ri -> if Globals.shouldMerge ri.path1
+                                  then setdir Merge ri else false)));
                  ([">";"."],
                   ("propagate from " ^ descr ^ " (curr or match)"),
                   (fun () ->
