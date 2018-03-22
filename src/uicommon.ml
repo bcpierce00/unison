@@ -352,6 +352,10 @@ let dangerousPathMsg dangerousPaths =
          (Safelist.map (fun p -> "'" ^ (Path.toString p) ^ "'")
             dangerousPaths))
 
+let cannotMergeMsg ~path = match path with
+      None -> "'merge' preference not set for this path"
+    | Some p -> "'merge' preference not set for "^(Path.toString p)
+
 (**********************************************************************
                   Useful patterns for ignoring paths
  **********************************************************************)

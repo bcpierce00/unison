@@ -74,6 +74,7 @@ val showDiffs :
   -> unit
 
 val dangerousPathMsg : Path.t list -> string
+val cannotMergeMsg : path:(Path.t option) -> string
 
 (* Utilities for adding ignore patterns *)
 val ignorePath : Path.t -> string
