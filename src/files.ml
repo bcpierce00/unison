@@ -757,8 +757,7 @@ let ls dir pattern =
 ************************************************************************)
 
 let formatMergeCmd p f1 f2 backup out1 out2 outarch =
-  if not (Globals.shouldMerge p) then
-    raise (Util.Transient ("'merge' preference not set for "^(Path.toString p)));
+  assert (Globals.shouldMerge p); (* the UI should guarantee that *)
   let raw =
     try Globals.mergeCmdForPath p
     with Not_found ->
