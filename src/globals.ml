@@ -285,7 +285,9 @@ let merge =
      ^ "details on Merging functions are present in "
      ^ "\\sectionref{merge}{Merging Conflicting Versions}.")
 
-let shouldMerge p = Pred.test merge (Path.toString p)
+let shouldMerge p =
+  Pred.test merge (Path.toString p) &&
+  try let _ = mergeCmdForPath p in true with Not_found -> false
 
 let mergeCmdForPath p = Pred.assoc merge (Path.toString p)
 
