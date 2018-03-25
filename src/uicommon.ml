@@ -353,8 +353,8 @@ let dangerousPathMsg dangerousPaths =
             dangerousPaths))
 
 let cannotMergeMsg ~path = match path with
-      None -> "'merge' preference not set for this path"
-    | Some p -> "'merge' preference not set for "^(Path.toString p)
+      None -> "'merge' command not provided for this path"
+    | Some p -> "'merge' command not provided for "^(Path.toString p)
 
 (**********************************************************************
                   Useful patterns for ignoring paths

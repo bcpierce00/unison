@@ -547,7 +547,7 @@ let interact prilist rilist =
                      actOnMatching
                        ~fail:(Some (fun() ->
                            display ((Uicommon.cannotMergeMsg ~path:None)^"\n")))
-                       (fun ri -> if Globals.shouldMerge ri.path1
+                       (fun ri -> if Globals.mayMerge ri.path1
                                   then setdir Merge ri else false)));
                  ([">";"."],
                   ("propagate from " ^ descr ^ " (curr or match)"),

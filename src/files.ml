@@ -757,12 +757,10 @@ let ls dir pattern =
 ************************************************************************)
 
 let formatMergeCmd p f1 f2 backup out1 out2 outarch =
-  assert (Globals.shouldMerge p); (* the UI should guarantee that *)
+  assert (Globals.mayMerge p); (* the UI should guarantee that *)
   let raw =
     try Globals.mergeCmdForPath p
-    with Not_found ->
-      raise (Util.Transient ("'merge' preference does not provide a command "
-                             ^ "template for " ^ (Path.toString p)))
+    with Not_found -> assert false (* mayMerge guarantees that *)
   in
   let cooked = raw in
   let cooked = Util.replacesubstring cooked "CURRENT1" f1 in

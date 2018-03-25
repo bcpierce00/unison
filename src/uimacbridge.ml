@@ -320,7 +320,7 @@ Callback.register "unisonRiSetConflict" unisonRiSetConflict;;
 let unisonRiSetMerge ri =
   match ri.ri.replicas with
     Problem _ -> ()
-  | Different diff -> if Globals.shouldMerge ri.path1
+  | Different diff -> if Globals.mayMerge ri.path1
       then diff.direction <- Merge
       else Util.warn (Uicommon.cannotMergeMsg ~path:(Some ri.path1));;
 Callback.register "unisonRiSetMerge" unisonRiSetMerge;;

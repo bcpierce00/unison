@@ -3780,7 +3780,7 @@ lst_store#set ~row ~column:c_path path;
     doAction (fun _ diff -> diff.direction <- Replica1ToReplica2) in
   let questionAction _ = doAction (fun _ diff -> diff.direction <- Conflict "") in
   let mergeAction    _ =
-    let checkAndMerge ri diff = if Globals.shouldMerge ri.path1
+    let checkAndMerge ri diff = if Globals.mayMerge ri.path1
       then diff.direction <- Merge
       else okBox ~parent:toplevelWindow ~title:"Cannot merge" ~typ:`ERROR
           ~message:(Uicommon.cannotMergeMsg ~path:(Some ri.path1)) in
