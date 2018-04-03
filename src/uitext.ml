@@ -622,6 +622,7 @@ let interact prilist rilist =
   in loop prilist rilist
 
 let verifyMerge title text =
+  Util.set_infos "";
   Printf.printf "%s\n" text;
   if Prefs.read Globals.batch then
     true
