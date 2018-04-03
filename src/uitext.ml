@@ -632,10 +632,12 @@ let verifyMerge title text =
         None   (* Maybe better: (Some "n") *)
         [(["y";"g"],
           "Yes: commit",
-          (fun() -> true));
-          (["n"],
-           "No: leave this file unchanged",
-           (fun () -> false));
+          (fun() -> newLine();
+             true));
+         (["n"],
+          "No: leave this file unchanged",
+          (fun () -> newLine();
+             false));
         ]
         (fun () -> display "Commit results of merge? ")
     end else
