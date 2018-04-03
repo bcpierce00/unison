@@ -706,6 +706,7 @@ let doTransport reconItemList =
             if rem <> Uutil.Filesize.zero then
               showProgress (Uutil.File.ofLine i) rem "done";
             let m = "[" ^ (Path.toString item.ri.path1)  ^ "]: " ^ s in
+            Util.set_infos "";
             alwaysDisplay ("Failed " ^ m ^ "\n");
             fFailedPaths := item.ri.path1 :: !fFailedPaths;
             return ()
