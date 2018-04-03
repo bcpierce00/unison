@@ -745,25 +745,23 @@ let setWarnPrinterForInitialization()=
   Util.warnPrinter :=
      Some(fun s ->
             alwaysDisplay "Error: ";
-            alwaysDisplay s;
-            alwaysDisplay "\n";
+            alwaysDisplay (s^"\n");
             exit Uicommon.fatalExit)
 
 let setWarnPrinter() =
   Util.warnPrinter :=
     Some(fun s ->
            alwaysDisplay "Warning: ";
-           alwaysDisplay s;
+           alwaysDisplay (s^"\n");
            if not (Prefs.read Globals.batch) then begin
              display "Press return to continue.";
              selectAction None
                [(["";" ";"y"],
                  ("Continue"),
-                 (fun () -> ()));
+                 (fun () -> newLine()));
                 (["n";"q";"x"],
                  ("Exit"),
-                 (fun () ->
-                     alwaysDisplay "\n";
+                 (fun () -> newLine();
                      restoreTerminal ();
                      Lwt_unix.run (Update.unlockArchives ());
                      exit Uicommon.fatalExit))]
