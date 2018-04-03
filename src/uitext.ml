@@ -751,6 +751,7 @@ let setWarnPrinterForInitialization()=
 let setWarnPrinter() =
   Util.warnPrinter :=
     Some(fun s ->
+           Util.set_infos "";
            alwaysDisplay "Warning: ";
            alwaysDisplay (s^"\n");
            if not (Prefs.read Globals.batch) then begin
