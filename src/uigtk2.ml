@@ -4308,7 +4308,9 @@ let start = function
         try System.getenv "DISPLAY" <> "" with Not_found -> false
       in
       if displayAvailable then Private.start Uicommon.Graphic
-      else Uitext.Body.start Uicommon.Text
+      else
+        Util.warn "DISPLAY not set or empty; starting the Text UI\n";
+        Uitext.Body.start Uicommon.Text
 
 let defaultUi = Uicommon.Graphic
 
