@@ -94,7 +94,8 @@ val debugPrinter : ((string -> (unit->unit) -> unit) option) ref
 (* A synonym for Trace.debug *)
 val debug : string -> (unit->unit) -> unit
 
-(* The UI must supply a function to warn the user *)
+(* The UI must supply a function to warn the user; a default calling Util.msg
+   is set up initially. *)
 val warnPrinter : (string -> unit) option ref
 val warn : string -> unit
 
