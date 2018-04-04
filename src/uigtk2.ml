@@ -141,7 +141,7 @@ let setToplevelWindow w = theToplevelWindow := Some w
 let toplevelWindow () =
   match !theToplevelWindow with
     Some w -> w
-  | None   -> assert false
+  | None   -> raise (Util.Fatal "Main window not initialized; check your DISPLAY setup")
 
 (*********************************************************************
   Lock management
