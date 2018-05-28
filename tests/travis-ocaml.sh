@@ -90,6 +90,7 @@ install_on_osx () {
   # sudo hdiutil attach XQuartz-2.7.6.dmg
   # sudo installer -verbose -pkg /Volumes/XQuartz-2.7.6/XQuartz.pkg -target /
   brew update >/dev/null
+  brew upgrade python
   case "$OCAML_VERSION,$OPAM_VERSION" in
     3.12,1.2.2) OPAM_SWITCH=3.12.1; brew install opam ;;
     4.00,1.2.2) OPAM_SWITCH=4.00.1; brew install opam ;;
