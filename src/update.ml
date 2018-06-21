@@ -246,7 +246,7 @@ let rec checkArchive
           raise
             (Util.Fatal (Printf.sprintf
                            "Corrupted archive: the files %s and %s are not \
-                            correctely ordered in directory %s"
+                            correctly ordered in directory %s"
                            (Name.toString nm) (Name.toString nm')
                            (Path.toString path)));
       end;
