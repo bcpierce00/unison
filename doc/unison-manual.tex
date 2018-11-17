@@ -678,6 +678,8 @@ daemon process on the server.  This process runs continuously,
 waiting for connections over a given socket from client machines
 running Unison and processing their requests in turn.
 
+Note that socket mode cannot be started from a profile. It should be started as a command-line argument only.
+
 To start the daemon, type
 \begin{verbatim}
        unison -socket NNNN
@@ -1338,6 +1340,8 @@ Here are all the preferences supported by Unison.  This list can be
 \end{quote}
 Here, in more detail, is what they do.  Many are discussed in greater detail
 in other sections of the manual.
+
+It should be noted that some command-line arguments are handled specially during startup, including \verb|-doc|, \verb|-help|, \verb|-version|, \verb|-server|, \verb|-socket|, and \verb|-ui|. They are expected to appear on the command-line only, not in a profile. In particular, \verb|-version| and \verb|-doc| will print to the standard output, so they only make sense if invoked from the command-line (and not a click-launched gui that has no standard output). Furthermore, the actions associated with these command-line arguments are executed without loading a profile or doing the usual command-line parsing. This is because we want to run the actions without loading a profile; and then we can't do command-line parsing because it is intertwined with profile loading.
 %
 \input{prefsdocs.tmp}
 
