@@ -1,0 +1,19 @@
+; Not possible to refine more
+(rule
+ (targets projectInfo.ml)
+ (deps ../Makefile.ProjectInfo)
+ (action
+   (with-outputs-to projectInfo.ml
+    (bash
+      ". ../Makefile.ProjectInfo && \
+       echo \"let myName = \\\"$NAME\\\";;\" && \
+       echo \"let myVersion = \\\"$VERSION\\\";;\" && \
+       echo \"let myMajorVersion = \\\"00\\\";;\""))))
+
+; echo 'let myName = "'$(NAME)'";;' > $@
+; echo 'let myVersion = "'$(VERSION)'";;' >> $@
+; echo 'let myMajorVersion = "'$(MAJORVERSION)'";;' >> $@
+
+; (library
+;  (name ubase)
+;  (flags :standard -warn-error -9-27-32-39-50))

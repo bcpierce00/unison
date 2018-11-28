@@ -1,0 +1,16 @@
+(copy_files# ../watchercommon.ml{,i})
+
+(library
+ (name fswatcher)
+ (wrapped false)
+ (modules :standard \ watcher)
+ (flags :standard -w -3-27-39 -unsafe-string)
+ (c_names inotify_stubs)
+ (libraries unix lwt_lib))
+
+(executable
+ (name watcher)
+ (public_name unison-fsmonitor)
+ (modules watcher)
+ (flags :standard -w -27)
+ (libraries fswatcher))
