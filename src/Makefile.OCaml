@@ -173,7 +173,7 @@ else
   buildexecutable:: $(NAME)$(EXEC_EXT)
 endif
 
-MINOSXVERSION=10.5
+MINOSXVERSION=10.6
 # XCODEFLAGS=-sdk macosx$(MINOSXVERSION)
 ifeq ($(OSARCH),osx)
   CAMLFLAGS+=-ccopt -mmacosx-version-min=$(MINOSXVERSION)
