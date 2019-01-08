@@ -356,7 +356,10 @@ let dangerousPathMsg dangerousPaths =
                   Useful patterns for ignoring paths
  **********************************************************************)
 
-let quote s =
+(* Generate a glob pattern (string) that matches only the input fixed string *)
+(* Note: The newer String pathspec patterns are deliberately not generated
+   below to keep compatibility with unison <= 2.51. *)
+let globx_quote s =
   let len = String.length s in
   let buf = Bytes.create (2 * len) in
   let pos = ref 0 in
@@ -369,11 +372,11 @@ let quote s =
   done;
   "{" ^ String.sub buf 0 !pos ^ "}"
 
-let ignorePath path = "Path " ^ quote (Path.toString path)
+let ignorePath path = "Path " ^ globx_quote (Path.toString path)
 
 let ignoreName path =
   match Path.finalName path with
-    Some name -> "Name " ^ quote (Name.toString name)
+    Some name -> "Name " ^ globx_quote (Name.toString name)
   | None      -> assert false
 
 let ignoreExt path =
@@ -383,9 +386,9 @@ let ignoreExt path =
       begin try
         let pos = String.rindex str '.' in
         let ext = String.sub str pos (String.length str - pos) in
-        "Name {,.}*" ^ quote ext
+        "Name {,.}*" ^ globx_quote ext
       with Not_found -> (* str does not contain '.' *)
-        "Name " ^ quote str
+        "Name " ^ globx_quote str
       end
   | None ->
       assert false

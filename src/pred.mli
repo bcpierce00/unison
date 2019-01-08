@@ -19,10 +19,26 @@
      <TYPE> <PAT> [ -> <ASSOCIATED STRING> ]
    The associated string is ignored by [test] but can be looked up by [assoc].
 
-   Three forms of <TYPE>/<PAT> are recognized:
+   Four forms of <TYPE>/<PAT> are recognized:
    "Name <name>": ..../<name> (using globx)
    "Path <path>": <path>, not starting with "/" (using globx)
+   "BelowPath <path>": <path>, not starting with "/" (using globx)
    "Regex <regex>": <regex> (using rx)
+
+   Three additional forms of <TYPE>/<FIXED_STRING> are recognized:
+   "NameString <name>": ..../<name> (using fixed string)
+   "String <path>": <path>, not starting with "/" (using fixed string)
+   "BelowString <path>": <path>, not starting with "/" (using fixed string)
+
+   Seven negative patterns "del <TYPE>" are also recognized that prevent a
+   matching string from matching a former pattern.
+
+   Seven assoc only patterns "assoc <TYPE>" are also recognized that record the
+   associated string but do not set the preference for the paths matching the
+   given pattern.
+
+   Seven patterns "add <TYPE>" are also recognized that are equivalent to the
+   non prefixed patterns.
 *)
 
 

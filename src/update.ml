@@ -2100,9 +2100,19 @@ let findUpdatesOnPaths ?wantWatcher pathList subpaths =
      Lwt.return result))))
 
 let findUpdates ?wantWatcher subpaths =
-  (* TODO: We should filter the paths to remove duplicates (including prefixes)
-     and ignored paths *)
-  findUpdatesOnPaths ?wantWatcher (Prefs.read Globals.paths) subpaths
+  try
+    (* TODO: We should filter the paths to remove duplicates (including
+       prefixes) and ignored paths *)
+    findUpdatesOnPaths ?wantWatcher (Prefs.read Globals.paths) subpaths
+  (* Append a message (so that it can be seen in the graphical UI) to point out
+     that a server failure can be caused by a discrepancy in features' support
+     between a client and a server having compatible version numbers. *)
+  with Util.Fatal ("Lost connection with the server" as msg) ->
+    if Uutil.myMajorVersion = "2.51"
+    then raise (Util.Fatal (msg^"\nMaybe the server does not support "
+                               ^"negative pathspec patterns"
+                               ^"\n(see the standard error of the server)"))
+    else raise (Util.Fatal msg)
 
 
 (*****************************************************************************)

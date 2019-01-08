@@ -8,6 +8,8 @@ val rx : string -> t
 
 (* File globbing *)
 val glob : string -> t
+   (* Recognize ?, * and [] (which supports ranges - and negations ! and ^)
+      with the escape \ *)
 val glob' : bool -> string -> t
    (* Same, but allows to choose whether dots at the beginning of a
       file name need to be explicitly matched (true) or not (false) *)
