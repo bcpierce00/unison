@@ -2139,7 +2139,7 @@ let commitUpdates () =
      Remote.Thread.unwindProtect
        (fun () ->
           let magic =
-            Format.sprintf "%s\000%.f.%d"
+            Format.sprintf "%s\000%.0f.%d"
               ((Case.ops ())#modeDesc) (Unix.gettimeofday ()) (Unix.getpid ())
           in
           Globals.allRootsMap (fun r -> prepareCommitOnRoot r magic)

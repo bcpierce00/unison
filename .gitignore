@@ -34,3 +34,7 @@ TAGS
 build
 logmsg
 xcuserdata
+
+_build
+.merlin
+*.install
