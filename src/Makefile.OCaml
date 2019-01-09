@@ -174,24 +174,15 @@ else
 endif
 
 MINOSXVERSION=10.6
-# XCODEFLAGS=-sdk macosx$(MINOSXVERSION)
 ifeq ($(OSARCH),osx)
   CAMLFLAGS+=-ccopt -mmacosx-version-min=$(MINOSXVERSION)
 endif
 
-# NOTE: the OCAMLLIBDIR is not getting passed correctly?
-# The two cases for cltool are needed because Xcode 2.1+
-# builds in build/Default/, and earlier versions use build/
 .PHONY: macexecutable
 macexecutable:
-#	sed -e's/@@VERSION@@/$(VERSION)/' $(UIMACDIR)/Info.plist.template > $(UIMACDIR)/Info.plist
-	(cd $(UIMACDIR) ; rm -f ExternalSettings.xcconfig ; echo MARKETING_VERSION = $(VERSION) > ExternalSettings.xcconfig ; echo OCAMLLIBDIR = $(OCAMLLIBDIR) >> ExternalSettings.xcconfig )
-	(cd $(UIMACDIR); xcodebuild $(XCODEFLAGS) OCAMLLIBDIR="$(OCAMLLIBDIR)" SYMROOT=build)
-	if [ -e $(UIMACDIR)/build/Default ]; then \
-	  gcc -mmacosx-version-min=$(MINOSXVERSION) $(UIMACDIR)/cltool.c -o $(UIMACDIR)/build/Default/Unison.app/Contents/MacOS/cltool -framework Carbon; \
-	else \
-	  gcc -mmacosx-version-min=$(MINOSXVERSION) $(UIMACDIR)/cltool.c -o $(UIMACDIR)/build/Unison.app/Contents/MacOS/cltool -framework Carbon; \
-	fi
+	(cd $(UIMACDIR); $(RM) -f ExternalSettings.xcconfig ; echo MARKETING_VERSION = $(VERSION) > ExternalSettings.xcconfig ; echo OCAMLLIBDIR = $(OCAMLLIBDIR) >> ExternalSettings.xcconfig)
+	(cd $(UIMACDIR); xcodebuild $(XCODEFLAGS) SYMROOT=build)
+	$(CC) $(CFLAGS) -mmacosx-version-min=$(MINOSXVERSION) $(UIMACDIR)/cltool.c -o $(UIMACDIR)/build/Default/Unison.app/Contents/MacOS/cltool -framework Carbon
 
 # OCaml objects for the bytecode version
 # File extensions will be substituted for the native code version
