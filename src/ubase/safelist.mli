@@ -38,9 +38,7 @@ val sort : ('a -> 'a -> int) -> 'a list -> 'a list
 
 (* Other useful list-processing functions *)
 val filterMap : ('a -> 'b option) -> 'a list -> 'b list
-val rev_filterMap : ('a -> 'b option) -> 'a list -> 'b list
 val filterMap2 : ('a -> 'b option * 'c option) -> 'a list -> 'b list * 'c list
-val rev_filterMap2 : ('a -> 'b option * 'c option) -> 'a list -> 'b list * 'c list
 val transpose : 'a list list -> 'a list list
 val filterBoth : ('a -> bool) -> 'a list -> ('a list * 'a list)
 val allElementsEqual : 'a list -> bool

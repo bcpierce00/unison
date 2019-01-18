@@ -36,26 +36,25 @@ type t =
 let error_msg s =
    Printf.sprintf "bad pattern: %s\n\
     A pattern must be introduced by one of the following keywords:\n\
- \032   Name, Path, BelowPath or Regex (or del <KEYWORD>)." s
+ \032   Name, Path, BelowPath or Regex." s
 
-(* [select_pattern str [(p1, f1), ..., (pN, fN)] fO]: (roughly) *)
-(* match str with                                               *)
-(*  p1 p' -> f1 p'                                              *)
-(*  ...                                                         *)
-(*  pN p' -> fN p'                                              *)
-(*  otherwise -> fO str                                         *)
-let rec select_pattern str l err =
-  let rest realpref g =
-    let l = String.length realpref in
-    let s =
-      Util.trimWhitespace (String.sub str l (String.length str - l)) in
-    g (Util.trimWhitespace realpref) ((Case.ops())#normalizePattern s) in
+(* [select str [(p1, f1), ..., (pN, fN)] fO]: (roughly) *)
+(* match str with                                       *)
+(*  p1 p' -> f1 p'                                      *)
+(*  ...		       	       	       	       	       	*)
+(*  pN p' -> fN p'   					*)
+(*  otherwise -> fO str	       	       	       	        *)
+let rec select str l f =
   match l with
-    [] -> err str
+    [] -> f str
   | (pref, g)::r ->
-      if Util.startswith str pref then `Alt (rest pref g)
-      else if Util.startswith str ("del "^pref) then `Dif (rest ("del "^pref) g)
-      else select_pattern str r err
+      if Util.startswith str pref then
+        let l = String.length pref in
+        let s =
+          Util.trimWhitespace (String.sub str l (String.length str - l)) in
+        g ((Case.ops())#normalizePattern s)
+      else
+        select str r f
 
 let mapSeparator = "->"
 
@@ -71,22 +70,25 @@ let compile_pattern clause =
                   ^ "Only one instance of " ^ mapSeparator ^ " allowed.")) in
   let compiled =
     begin try
-      let checkpath prefix str =
-        let msg =
-          "Malformed pattern: \"" ^ p ^ "\"\n"
-          ^ "'" ^ prefix ^ "' patterns may not begin with a slash; "
-          ^ "only relative paths are allowed." in
-        if str<>"" && str.[0] = '/' then
-          raise (Prefs.IllegalValue msg) in
-      select_pattern p
-        [("Name ", fun realpref str -> Rx.seq [Rx.rx "(.*/)?"; Rx.globx str]);
-         ("Path ", fun realpref str ->
-            checkpath realpref str;
+      select p
+        [("Name ", fun str -> Rx.seq [Rx.rx "(.*/)?"; Rx.globx str]);
+         ("Path ", fun str ->
+            if str<>"" && str.[0] = '/' then
+              raise (Prefs.IllegalValue
+                       ("Malformed pattern: "
+                        ^ "\"" ^ p ^ "\"\n"
+                        ^ "'Path' patterns may not begin with a slash; "
+                        ^ "only relative paths are allowed."));
             Rx.globx str);
-         ("BelowPath ", fun realpref str ->
-            checkpath realpref str;
+         ("BelowPath ", fun str ->
+            if str<>"" && str.[0] = '/' then
+              raise (Prefs.IllegalValue
+                       ("Malformed pattern: "
+                        ^ "\"" ^ p ^ "\"\n"
+                        ^ "'BelowPath' patterns may not begin with a slash; "
+                        ^ "only relative paths are allowed."));
             Rx.seq [Rx.globx str; Rx.rx "(/.*)?"]);
-         ("Regex ", fun realpref str -> Rx.rx str)]
+         ("Regex ", Rx.rx)]
         (fun str -> raise (Prefs.IllegalValue (error_msg p)))
     with
       Rx.Parse_error | Rx.Not_supported ->
@@ -114,35 +116,19 @@ let addDefaultPatterns p pats =
 let alias p n = Prefs.alias p.pref n
 
 let recompile mode p =
-  (* Accumulate consecutive pathspec regexps with the same sign *)
-  let rev_acc_alt_or_dif acc r =
-    match acc, r with
-      (`Alt rl :: t), `Alt rx -> `Alt (rx::rl) :: t
-    | (`Dif rl :: t), `Dif rx -> `Dif (rx::rl) :: t
-    | _             , `Alt rx -> `Alt [rx]     :: acc
-    | _             , `Dif rx -> `Dif [rx]     :: acc
-  (* Combine newer positive or negative pathspec regexps with the older ones *)
-  and combine_alt_or_dif rx = function
-      `Alt rl -> Rx.alt [Rx.alt rl; rx]
-    | `Dif rl -> Rx.diff rx (Rx.alt rl)
-        (* A negative pattern is diff'ed from the former ones only *)
-  in
   let pref = Prefs.read p.pref in
-  let compiledList = Safelist.append p.default pref
-    |> Safelist.rev_map compile_pattern in
-  let compiled = Safelist.rev compiledList
-    |> Safelist.fold_left (fun a (r, _) -> rev_acc_alt_or_dif a r) []
-    |> Safelist.fold_left combine_alt_or_dif Rx.empty in
-         (* The patterns are processed in order of appearance so that later
-            preferences override the previous ones. *)
+  let compiledList = Safelist.map compile_pattern (Safelist.append p.default pref) in
+  let compiled = Rx.alt (Safelist.map fst compiledList) in
   let handleCase rx =
     if (Case.ops())#caseInsensitiveMatch then Rx.case_insensitive rx
     else rx
   in
-  let altonly_string = function
-      `Alt rx, Some v -> Some (handleCase rx, v)
-    | _ -> None in
-  let strings = Safelist.rev_filterMap altonly_string compiledList in
+  let strings = Safelist.filterMap
+                  (fun (rx,vo) ->
+                     match vo with
+                       None -> None
+                     | Some v -> Some (handleCase rx,v))
+                  compiledList in
   p.compiled <- handleCase compiled;
   p.associated_strings <- strings;
   p.last_pref <- pref;
