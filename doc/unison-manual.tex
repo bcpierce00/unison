@@ -1721,11 +1721,6 @@ typing on the command line:
 \begin{verbatim}
     unison profile -merge 'Name *.txt -> echo SKIP'
 \end{verbatim}
-Note that unsetting the merge preference by \verb|-merge 'del Name *.txt'| is
-not exactly the same: in the case where the preference \verb|prefer| or
-\verb|preferpartial| for the path is set, this extra setting does not make the
-path be skipped but let it be updated without merging; the preference
-\verb|preferpartial| can be unset at the same time to avoid that.
 
 If the \verb|confirmmerge| preference is set and Unison is not run in
 batch mode, then Unison will always ask for confirmation before
@@ -1850,7 +1845,7 @@ that match any one of the path pattern.
 \end{alltt}
 adds \ARG{pattern} to the list of patterns to be ignored.
 
-\item Each \ARG{pattern} can have one of four forms.  The most
+\item Each \ARG{pattern} can have one of three forms.  The most
 general form is a Posix extended regular expression introduced by the
 keyword \verb|Regex|.  (The collating sequences and character classes of
 full Posix regexps are not currently supported).
@@ -1893,24 +1888,6 @@ forward-slash character ``/'' --- even when the client or server is
 running under Windows, where the normal separator character is a
 backslash.  This makes it possible to use the same set of path
 patterns for both Unix and Windows file systems.
-\item
-The matching of a path by preceding patterns can be removed by a negative
-pattern, that is any pattern prefixed by \texttt{del} separated exactly by one
-space.  Any subsequent (positive) pattern can select the path again.  A
-negative pattern is similar to a positive pattern in the corresponding
-negative preference (one whose name ends with \texttt{not}), except that the
-matched paths can be selected again by following (positive) patterns.  However
-a negative pattern in a negative preference can only make a path selected by a
-positive preference if the path has also been explicitely selected with the
-positive preference.
-
-A negative pattern does not remove the string associated with a path, so that
-this string need not be given again when reenabling a path.  For example:
-\begin{verbatim}
-        preferpartial = Name *.txt -> /local/path
-        preferpartial = del Path prefix*.txt
-        preferpartial = Path prefix.txt
-\end{verbatim}
 \end{itemize}
 Some examples of path patterns appear in \sectionref{ignore}{Ignoring
   Paths}.

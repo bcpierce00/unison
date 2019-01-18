@@ -24,21 +24,19 @@ let filterBoth f l =
       else loop r1 (hd::r2) tl
   in loop [] [] l
 
-let rev_filterMap f l =
+let filterMap f l =
   let rec loop r = function
-    [] -> r
+    [] -> List.rev r
   | hd::tl -> begin
       match f hd with
         None -> loop r tl
       | Some x -> loop (x::r) tl
     end
   in loop [] l
-let filterMap f l =
-  List.rev (rev_filterMap f l)
 
-let rev_filterMap2 f l =
+let filterMap2 f l =
   let rec loop r s = function
-    [] -> r, s
+    [] -> List.rev r, List.rev s
   | hd::tl -> begin
       let (a, b) = f hd in
       let r' = match a with None -> r | Some x -> x::r in
@@ -46,8 +44,6 @@ let rev_filterMap2 f l =
       loop r' s' tl
     end
   in loop [] [] l
-let filterMap2 f l =
-  match rev_filterMap2 f l with r, s -> List.rev r, List.rev s
 
 (* These are tail-recursive versions of the standard ones from the
    List module *)
