@@ -45,3 +45,7 @@ doc/unison-manual.htoc
 doc/unison-manual.pdf
 doc/unison-manual.ps
 doc/unisonversion.tex
+
+_build
+.merlin
+*.install
