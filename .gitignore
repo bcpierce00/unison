@@ -34,6 +34,17 @@ TAGS
 build
 logmsg
 xcuserdata
+doc/docs
+doc/junk.ps
+doc/postproc
+doc/postproc.ml
+doc/unison-manual.dtxt
+doc/unison-manual.dvi
+doc/unison-manual.html
+doc/unison-manual.htoc
+doc/unison-manual.pdf
+doc/unison-manual.ps
+doc/unisonversion.tex
 
 _build
 .merlin
