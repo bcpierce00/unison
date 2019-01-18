@@ -285,9 +285,11 @@ let merge =
      ^ "details on Merging functions are present in "
      ^ "\\sectionref{merge}{Merging Conflicting Versions}.")
 
-let shouldMerge p = Pred.test merge (Path.toString p)
-
 let mergeCmdForPath p = Pred.assoc merge (Path.toString p)
+
+let mayMerge p = try let _ = mergeCmdForPath p in true with Not_found -> false
+
+let shouldMerge p = Pred.test merge (Path.toString p) && mayMerge p
 
 let someHostIsRunningWindows =
   Prefs.createBool "someHostIsRunningWindows" false "*" ""

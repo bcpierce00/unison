@@ -471,7 +471,9 @@ Callback.register "unisonRiSetConflict" unisonRiSetConflict;;
 let unisonRiSetMerge ri =
   match ri.ri.replicas with
     Problem _ -> ()
-  | Different diff -> diff.direction <- Merge;;
+  | Different diff -> if Globals.mayMerge ri.path1
+      then diff.direction <- Merge
+      else Util.warn (Uicommon.cannotMergeMsg ~path:(Some ri.path1));;
 Callback.register "unisonRiSetMerge" unisonRiSetMerge;;
 let unisonRiForceOlder ri =
   Recon.setDirection ri.ri `Older `Force;;
