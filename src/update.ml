@@ -246,7 +246,7 @@ let rec checkArchive
           raise
             (Util.Fatal (Printf.sprintf
                            "Corrupted archive: the files %s and %s are not \
-                            correctely ordered in directory %s"
+                            correctly ordered in directory %s"
                            (Name.toString nm) (Name.toString nm')
                            (Path.toString path)));
       end;
@@ -2139,7 +2139,7 @@ let commitUpdates () =
      Remote.Thread.unwindProtect
        (fun () ->
           let magic =
-            Format.sprintf "%s\000%.f.%d"
+            Format.sprintf "%s\000%.0f.%d"
               ((Case.ops ())#modeDesc) (Unix.gettimeofday ()) (Unix.getpid ())
           in
           Globals.allRootsMap (fun r -> prepareCommitOnRoot r magic)

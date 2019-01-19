@@ -300,10 +300,10 @@ let interact prilist rilist =
         begin Recon.setDirection ri dir `Force; true end
     | ri -> begin Recon.setDirection ri dir `Prefer; true end
   in
-  let ripred = ref None in
+  let ripred = ref [] in
   let ritest ri = match !ripred with
-      None -> true
-    | Some test -> test ri in
+      [] -> true
+    | test::_ -> test ri in
   let rec loop prev =
     let rec previous prev ril =
       match prev with
@@ -340,10 +340,18 @@ let interact prilist rilist =
           loop (nukeIgnoredRis (ri::prev)) (nukeIgnoredRis ril) in
         (* This should work on most terminals: *)
         let redisplayri() = overwrite (); displayri ri; display "\n" in
-        let setripred p =
-          begin match !ripred with
-            None -> display "  Enabling matching condition\n" | _ -> () end;
-          ripred := Some p in
+        let setripred cmd =
+          ripred := match cmd, !ripred with
+              `Unset, [] -> display "Matching condition already disabled\n"; []
+            | `Unset, _ | `Pop, [_] -> display "  Disabling matching condition\n"; []
+            | `Pop, p::pp::t -> pp::t
+            | `Push rp, [] -> display "  Enabling matching condition\n"; [rp]
+            | `Push rp, p -> rp::p
+            | _, [] -> display "Matching condition not enabled\n"; []
+            | `Op1 op, p::t -> (fun ri -> op (p ri))::t
+            | `Op2 op, [p] -> display "Missing previous matching condition\n"; [p]
+            | `Op2 op, p::pp::t -> (fun ri -> op (p ri) (pp ri))::t
+            | _ -> assert false in
         let actOnMatching ?(change=true) ?(fail=Some(fun()->())) f =
           (* [f] can have effects on the ri and return false to run [fail] (if
              the matching condition is disabled) *)
@@ -356,7 +364,7 @@ let interact prilist rilist =
           let discard, err =
             match fail with Some e -> false, e | None -> true, fun()->() in
           match !ripred with
-          | None -> if not change then newLine();
+          | [] -> if not change then newLine();
               let t = f ri in
               if t || not discard
               then begin
@@ -367,7 +375,7 @@ let interact prilist rilist =
                 if change then newLine();
                 loop prev rest
               end
-          | Some test -> newLine();
+          | test::_ -> newLine();
               let filt = fun ri -> if test ri then f ri || not discard else true in
               loop prev (ri::Safelist.filter filt rest)
         in
@@ -470,58 +478,65 @@ let interact prilist rilist =
                  (["A";"*"],
                   ("match all the following"),
                   (fun () -> newLine();
-                     setripred (fun _ -> true);
+                     setripred (`Push (fun _ -> true));
                      repeat()));
                  (["1"],
                   ("match all the following that propagate " ^ descr),
                   (fun () -> newLine();
-                     setripred
-                       (function
-                          {replicas = Different ({direction = Replica1ToReplica2})} -> true
-                        | _ -> false);
+                     setripred (`Push (function
+                         {replicas = Different ({direction = Replica1ToReplica2})} -> true
+                       | _ -> false));
                      repeat()));
                  (["2"],
                   ("match all the following that propagate " ^ descl),
                   (fun () -> newLine();
-                     setripred
-                       (function
-                          {replicas = Different ({direction = Replica2ToReplica1})} -> true
-                        | _ -> false);
+                     setripred (`Push (function
+                         {replicas = Different ({direction = Replica2ToReplica1})} -> true
+                       | _ -> false));
                      repeat()));
                  (["C"],
                   ("match all the following conflicts"),
                   (fun () -> newLine();
-                     setripred
-                       (function
-                          {replicas = Different ({direction = Conflict _})} -> true
-                        | _ -> false);
+                     setripred (`Push (function
+                         {replicas = Different ({direction = Conflict _})} -> true
+                       | _ -> false));
                      repeat()));
                  (["P";"="],
                   ("match all the following with only props changes"),
                   (fun () -> newLine();
-                     setripred ispropschanged;
+                     setripred (`Push ispropschanged);
                      repeat()));
                  (["M"],
                   ("match all the following merges"),
                   (fun () -> newLine();
-                     setripred
-                       (function
-                          {replicas = Different ({direction = Merge})} -> true
-                        | _ -> false);
+                     setripred (`Push (function
+                         {replicas = Different ({direction = Merge})} -> true
+                       | _ -> false));
                      repeat()));
                  (["X";"!"],
                   ("invert the matching condition"),
                   (fun () -> newLine();
-                     ripred := begin match !ripred with
-                         None -> display "Matching condition not enabled\n"; None
-                       | Some p -> Some (fun i -> not (p i)) end;
+                     setripred (`Op1 not);
+                     repeat()));
+                 (["&"],
+                  ("and the last two matching conditions"),
+                  (fun () -> newLine();
+                     setripred (`Op2 (&&));
+                     repeat()));
+                 (["|"],
+                  ("or the last two matching conditions"),
+                  (fun () -> newLine();
+                     setripred (`Op2 (||));
+                     repeat()));
+                 (["D";"_"],
+                  ("delete/pop the active matching condition"),
+                  (fun () -> newLine();
+                     setripred `Pop;
                      repeat()));
                  (["U";"$"],
-                  ("unmatch all (select current)"),
+                  ("unmatch (select current)"),
                   (fun () -> newLine();
-                     begin match !ripred with
-                       None -> display "Matching condition already disabled\n"
-                     | Some _ -> display "  Disabling matching condition\n"; ripred := None end;
+                     setripred `Unset;
                      repeat()));
                  (["r";"u"],
                   ("revert to " ^ Uutil.myName ^ "'s default recommendation (curr or match)"),

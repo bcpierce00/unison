@@ -401,6 +401,14 @@ let trimWhitespace s =
    in
    loop 0 (l-1)
 
+let splitAtFirstChar (s:string) (c:char) =
+  try
+    let i = String.index s c
+    and l= String.length s in
+    (* rest is possibly the empty string *)
+    [String.sub s 0 i; String.sub s (i+1) (l-i-1)]
+  with Not_found -> [s]
+
 let splitIntoWords ?esc:(e='\\') (s:string) (c:char) =
   let rec inword acc eacc start pos =
     if pos >= String.length s || s.[pos] = c then
@@ -449,7 +457,10 @@ let homeDirStr =
 *)
        try System.getenv "USERPROFILE" (* Windows NT/2K standard *)
        with Not_found ->
-       try System.getenv "UNISON" (* Use UNISON dir if it is set *)
+       try System.getenv "UNISON" 
+          (* Use custom UNISON dir if it is set.  This can be a path 
+             or just the name of the folder you want to use in the 
+             current directory *)
        with Not_found ->
        "c:/" (* Default *)
      else
@@ -459,6 +470,11 @@ let homeDir () =
   System.fspathFromString homeDirStr
 
 let fileInHomeDir n = System.fspathConcat (homeDir ()) n
+
+let fileMaybeRelToHomeDir n =
+  if Filename.is_relative n
+  then fileInHomeDir n
+  else System.fspathFromString n
 
 (*****************************************************************************)
 (*           "Upcall" for building pathnames in the .unison dir              *)

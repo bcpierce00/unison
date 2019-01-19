@@ -678,6 +678,8 @@ daemon process on the server.  This process runs continuously,
 waiting for connections over a given socket from client machines
 running Unison and processing their requests in turn.
 
+Note that socket mode cannot be started from a profile. It should be started as a command-line argument only.
+
 To start the daemon, type
 \begin{verbatim}
        unison -socket NNNN
@@ -1211,8 +1213,16 @@ for synchronization (or create a new one, if necessary).
 
 Unison stores a variety of information in a private directory on each
 host.  If the environment variable {\tt UNISON} is defined, then its
-value will be used as the name of this directory.  If {\tt UNISON} is
-not defined, then the name of the directory depends on which
+value will be used as the path/folder name for this directory.
+This can be just a name, or a path. 
+
+A name on it's own, for example {\tt UNISON=mytestname} will
+place a folder in the same directory that the Unison binary was run
+in, with that name. Using a path like {\tt UNISON=../mytestname2}
+will place that folder in the folder above where the Unison binary was
+run from.
+
+If {\tt UNISON} is not defined, then the directory depends on which
 operating system you are using.  In Unix, the default is to use
 {\tt \$HOME/.unison}.
 In Windows, if the environment variable
@@ -1330,6 +1340,8 @@ Here are all the preferences supported by Unison.  This list can be
 \end{quote}
 Here, in more detail, is what they do.  Many are discussed in greater detail
 in other sections of the manual.
+
+It should be noted that some command-line arguments are handled specially during startup, including \verb|-doc|, \verb|-help|, \verb|-version|, \verb|-server|, \verb|-socket|, and \verb|-ui|. They are expected to appear on the command-line only, not in a profile. In particular, \verb|-version| and \verb|-doc| will print to the standard output, so they only make sense if invoked from the command-line (and not a click-launched gui that has no standard output). Furthermore, the actions associated with these command-line arguments are executed without loading a profile or doing the usual command-line parsing. This is because we want to run the actions without loading a profile; and then we can't do command-line parsing because it is intertwined with profile loading.
 %
 \input{prefsdocs.tmp}
 
@@ -1366,14 +1378,19 @@ When Unison starts, it first reads the profile and then the command
 line, so command-line options will override settings from the
 profile.
 
-Profiles may also include lines of the form \texttt{include
-  \ARG{name}}, which will cause the file \ARG{name} (or
-\texttt{\ARG{name}.prf}, if \ARG{name} does not exist in the
-\verb+.unison+ directory) to be read at the point, and included as if
-its contents, instead of the \texttt{include} line, was part of the
-profile.  Include lines allows settings common to several profiles to
-be stored in one place.  In \ARG{name} the backslash is an escape
-character.
+Profiles may also include lines of the form \texttt{include \ARG{name}},
+which will cause the file \ARG{name} (or \texttt{\ARG{name}.prf}, if
+\ARG{name} does not exist in the \verb+.unison+ directory) to be read at
+the point, and included as if its contents, instead of the \texttt{include}
+line, was part of the profile.  Include lines allows settings common to
+several profiles to be stored in one place.
+A similar line of the form \texttt{source \ARG{name}} does the same except
+that it does not attempt to add a suffix to \ARG{name}.
+Similar lines of the form \texttt{include\mbox{?} \ARG{name}} or
+\texttt{source\mbox{?} \ARG{name}} do the same as their respective lines
+without the question mark except that it does not constitue an error to
+specify a non-existing file \ARG{name}.
+In \ARG{name} the backslash is an escape character.
 
 A profile may include a preference `\texttt{label = \ARG{desc}}' to
 provide a description of the options selected in this profile.  The
@@ -1661,6 +1678,9 @@ the command.
   replica; \verb|NEWARCH|, if present, will be used as the ``last common
   state'' of the replicas.  (These three options are provided for
   later compatibility with the Harmony data synchronizer.)
+\item \relax\verb|BATCHMODE| is replaced according to the batch mode of
+  Unison; if it is in \texttt{batch} mode, then a non empty string
+  (``\verb|batch|'') is substituted, otherwise the empty string is substituted.
 \end{itemize}
 To accommodate the wide variety of programs that users might want to use for
 merging, Unison checks for several possible situations when the merge
@@ -1703,9 +1723,22 @@ program exits:
   merge program has already made them as similar as it is able to.)
 \end{itemize}
 
+You can disable a merge by setting a \verb|<MERGECMD>| that does nothing.  For
+example you can override the merging of text files specified in a profile by
+typing on the command line:
+\begin{verbatim}
+    unison profile -merge 'Name *.txt -> echo SKIP'
+\end{verbatim}
+
 If the \verb|confirmmerge| preference is set and Unison is not run in
 batch mode, then Unison will always ask for confirmation before
 actually committing the results of the merge to the replicas.
+
+You can detect batch mode by testing \verb|BATCHMODE|; for
+example to avoid a merge completely do nothing:
+\begin{verbatim}
+    merge = Name *.txt -> [ -z "BATCHMODE" ] && mergecmd CURRENT1 CURRENT2
+\end{verbatim}
 
 A large number of external merging programs are available.
 For example, on Unix systems setting the \verb|merge| preference to

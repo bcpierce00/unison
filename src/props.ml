@@ -708,7 +708,7 @@ let strip p =
 
 let toString p =
   Printf.sprintf
-    "modified on %s  size %-9.f %s%s%s%s"
+    "modified on %s  size %-9.0f %s%s%s%s"
     (Time.toString p.time)
     (Uutil.Filesize.toFloat p.length)
     (Perm.toString p.perm)
@@ -719,7 +719,7 @@ let toString p =
 let syncedPartsToString p =
   let tm = Time.syncedPartsToString p.time in
   Printf.sprintf
-    "%s%s  size %-9.f %s%s%s%s"
+    "%s%s  size %-9.0f %s%s%s%s"
     (if tm = "" then "" else "modified at ")
     tm
     (Uutil.Filesize.toFloat p.length)

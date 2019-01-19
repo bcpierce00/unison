@@ -260,8 +260,11 @@ let ignorenotPred =
      preference to choose particular paths to synchronize.")
 
 let atomic = Pred.create "atomic" ~advanced:true
-  ("This preference specifies paths for directories whose \
-     contents will be considered as a group rather than individually.")
+  ("This preference specifies paths for directories whose "
+   ^ "contents will be considered as a group rather than individually when "
+   ^ "they are both modified.  "
+   ^ "The backups are also made atomically in this case.  The option "
+   ^ "\\texttt{backupcurr} however has no effect on atomic directories.")
 
 let shouldIgnore p =
   let p = Path.toString p in
@@ -276,10 +279,8 @@ let merge =
   Pred.create "merge" ~advanced:true
     ("This preference can be used to run a merge program which will create "
      ^ "a new version for each of the files and the backup, "
-     ^ "with the last backup and the both replicas.  Setting the {\\tt merge} "
-     ^ "preference for a path will also cause this path to be backed up, "
-     ^ "just like {\tt backup}.  "
-     ^ "The syntax of \\ARG{pathspec>cmd} is "
+     ^ "with the last backup and both replicas. "
+     ^ "The syntax of \\ARG{pathspec -> cmd} is "
      ^ "described in \\sectionref{pathspec}{Path Specification}, and further "
      ^ "details on Merging functions are present in "
      ^ "\\sectionref{merge}{Merging Conflicting Versions}.")

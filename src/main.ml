@@ -127,11 +127,13 @@ let interface =
 
 let catch_all f =
   try
-    (* Util.msg "Starting catch_all...\n"; *)
-    f ();
-    (* Util.msg "Done catch_all...\n"; *)
+    try
+      (* Util.msg "Starting catch_all...\n"; *)
+      f ();
+      (* Util.msg "Done catch_all...\n"; *)
+    with Prefs.IllegalValue str -> raise (Util.Fatal str)
   with e ->
-    Util.msg "Unison failed: %s\n" (Uicommon.exn2string e); exit 1;;
+    Util.msg "Unison server failed: %s\n" (Uicommon.exn2string e); exit 1;;
 
 let init () = begin
   ignore (Gc.set {(Gc.get ()) with Gc.max_overhead = 150});
