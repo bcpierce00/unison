@@ -96,7 +96,7 @@ let debug s th =
   | Some p -> p s th
 
 (* This should be set by the UI to a function that can be used to warn users *)
-let warnPrinter = ref None
+let warnPrinter = ref (Some (msg "Warning: %s"))
 
 (* The rest of the program invokes this function to warn users.              *)
 let warn message =

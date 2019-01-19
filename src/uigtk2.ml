@@ -141,7 +141,7 @@ let setToplevelWindow w = theToplevelWindow := Some w
 let toplevelWindow () =
   match !theToplevelWindow with
     Some w -> w
-  | None   -> assert false
+  | None   -> raise (Util.Fatal "Main window not initialized; check your DISPLAY setup")
 
 (*********************************************************************
   Lock management
@@ -4308,7 +4308,9 @@ let start = function
         try System.getenv "DISPLAY" <> "" with Not_found -> false
       in
       if displayAvailable then Private.start Uicommon.Graphic
-      else Uitext.Body.start Uicommon.Text
+      else
+        Util.warn "DISPLAY not set or empty; starting the Text UI\n";
+        Uitext.Body.start Uicommon.Text
 
 let defaultUi = Uicommon.Graphic
 
