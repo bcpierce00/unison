@@ -242,93 +242,6 @@ let createBoolWithDefault name ?(local=false) doc fulldoc =
             set cell v))
 
 (*****************************************************************************)
-(*                      Command-line parsing                                 *)
-(*****************************************************************************)
-
-let prefArg = function
-    Uarg.Bool(_)   -> ""
-  | Uarg.Int(_)    -> "n"
-  | Uarg.String(_) -> "xxx"
-  | _             -> assert false
-
-let argspecs hook =
-  Util.StringMap.fold
-    (fun name (doc, pspec, _) l ->
-       ("-" ^ name, hook name pspec, "")::l)
-    !prefs []
-
-let oneLineDocs u =
-  let formatOne name pspec doc p =
-    if not p then "" else
-    let doc = if doc.[0] = '!'
-                then String.sub doc 1 ((String.length doc) - 1)
-                else doc in
-    let arg = prefArg pspec in
-    let arg = if arg = "" then "" else " " ^ arg in
-    let spaces =
-      String.make (max 1 (18 - String.length (name ^ arg))) ' ' in
-    " -" ^ name ^ arg ^ spaces ^ doc ^ "\n" in
-  let formatAll p =
-    String.concat ""
-      (Safelist.rev
-         (Util.StringMap.fold
-            (fun name (doc, pspec, _) l ->
-               (formatOne name pspec doc
-                  (String.length doc > 0 && doc.[0] <> '*' && p doc)) :: l)
-            !prefs []))
-  in
-    u ^ "\n"
-  ^ "Basic options: \n"
-  ^ formatAll (fun doc -> doc.[0] <> '!')
-  ^ "\nAdvanced options: \n"
-  ^ formatAll (fun doc -> doc.[0] = '!')
-
-let printUsage usage = Uarg.usage (argspecs (fun _ s -> s))
-                         (oneLineDocs usage)
-
-let processCmdLine usage hook =
-  Uarg.current := 0;
-  let argspecs = argspecs hook in
-  let defaultanonfun _ =
-    print_string "Anonymous arguments not allowed\n";
-    Uarg.usage argspecs (oneLineDocs usage);
-    exit 2
-  in
-  let anonfun =
-    try
-      let (_, p, _) = Util.StringMap.find "rest" !prefs in
-      match hook "rest" p with
-        Uarg.String stringFunction -> stringFunction
-      | _                         -> defaultanonfun
-    with
-      Not_found -> defaultanonfun
-  in
-  try
-    Uarg.parse argspecs anonfun (oneLineDocs usage)
-  with IllegalValue str ->
-    raise(Util.Fatal(Printf.sprintf "%s \n%s\n" (oneLineDocs usage) str))
-
-let parseCmdLine usage =
-  processCmdLine usage (fun _ sp -> sp)
-
-(* Scan command line without actually setting any preferences; return a      *)
-(* string map associating a list of strings with each option appearing on    *)
-(* the command line.                                                         *)
-let scanCmdLine usage =
-  let m = ref (Util.StringMap.empty : (string list) Util.StringMap.t) in
-  let insert name s =
-    let old = try Util.StringMap.find name !m with Not_found -> [] in
-    m := Util.StringMap.add name (s :: old) !m   in
-  processCmdLine usage
-    (fun name p ->
-       match p with
-         Uarg.Bool _   -> Uarg.Bool   (fun b -> insert name (string_of_bool b))
-       | Uarg.Int _    -> Uarg.Int    (fun i -> insert name (string_of_int i))
-       | Uarg.String _ -> Uarg.String (fun s -> insert name s)
-       | _             -> assert false);
-  !m
-
-(*****************************************************************************)
 (*                     Preferences file parsing                              *)
 (*****************************************************************************)
 
@@ -445,6 +358,109 @@ let loadTheFile () =
 
 let loadStrings l =
   processLines (parseLines "<internal>" l)
+
+(*****************************************************************************)
+(*                      Command-line parsing                                 *)
+(*****************************************************************************)
+
+let opts = ref
+    [("source",
+      Uarg.String (fun s -> processLines @@ readAFile ~add_ext:false s),
+      "include a file's preferences");
+     ("include",
+      Uarg.String (fun s -> processLines @@ readAFile s),
+      "include a profile file's preferences")]
+
+let prefArg = function
+    Uarg.Bool(_)   -> ""
+  | Uarg.Int(_)    -> "n"
+  | Uarg.String(_) -> "xxx"
+  | _             -> assert false
+
+(* [argspecs hook] returns a list of specs for [Uarg.parse] *)
+let argspecs hook =
+  let f (name, pspec, doc) l =
+    ("-" ^ name, hook name pspec, "") :: l in
+  Safelist.fold_right f !opts @@
+  Util.StringMap.fold (fun name (doc, pspec, _) -> f (name, pspec, doc)) !prefs
+    []
+
+let oneLineDocs u =
+  let formatOne name pspec doc p =
+    (* if [p] format a one line message documenting a preference *)
+    if not p then "" else
+    let doc = if doc.[0] = '!'
+                then String.sub doc 1 ((String.length doc) - 1)
+                else doc in
+    let arg = prefArg pspec in
+    let arg = if arg = "" then "" else " " ^ arg in
+    let spaces =
+      String.make (max 1 (18 - String.length (name ^ arg))) ' ' in
+    " -" ^ name ^ arg ^ spaces ^ doc ^ "\n" in
+  let formatAll p =
+    (* format a message documenting non hidden preferences matching [p] *)
+    String.concat "" @@
+    Safelist.rev @@
+    (fun f i l -> Util.StringMap.fold f l i)
+       (fun name (doc, pspec, _) l ->
+          (formatOne name pspec doc
+             (String.length doc > 0 && doc.[0] <> '*' && p doc)) :: l)
+       [] @@
+    !prefs
+  in
+    u ^ "\n"
+  ^ "Basic options: \n"
+  ^ formatAll (fun doc -> doc.[0] <> '!')
+  ^ "\nAdvanced options: \n"
+  ^ formatAll (fun doc -> doc.[0] = '!')
+  ^ Safelist.fold_right
+      (fun (name, pspec, doc) msg -> msg ^ formatOne name pspec doc true)
+      !opts "\nSpecial command line options: \n"
+
+let printUsage usage = Uarg.usage (argspecs (fun _ s -> s))
+                         (oneLineDocs usage)
+
+let processCmdLine usage hook =
+  Uarg.current := 0;
+  let argspecs = argspecs hook in
+  let defaultanonfun _ =
+    print_string "Anonymous arguments not allowed\n";
+    Uarg.usage argspecs (oneLineDocs usage);
+    exit 2
+  in
+  let anonfun =
+    try
+      let (_, p, _) = Util.StringMap.find "rest" !prefs in
+      match hook "rest" p with
+        Uarg.String stringFunction -> stringFunction
+      | _                         -> defaultanonfun
+    with
+      Not_found -> defaultanonfun
+  in
+  try
+    Uarg.parse argspecs anonfun (oneLineDocs usage)
+  with IllegalValue str ->
+    raise(Util.Fatal(Printf.sprintf "%s \n%s\n" (oneLineDocs usage) str))
+
+let parseCmdLine usage =
+  processCmdLine usage (fun _ sp -> sp)
+
+(* Scan command line without actually setting any preferences; return a      *)
+(* string map associating a list of strings with each option appearing on    *)
+(* the command line.                                                         *)
+let scanCmdLine usage =
+  let m = ref (Util.StringMap.empty : (string list) Util.StringMap.t) in
+  let insert name s =
+    let old = try Util.StringMap.find name !m with Not_found -> [] in
+    m := Util.StringMap.add name (s :: old) !m   in
+  processCmdLine usage
+    (fun name p ->
+       match p with
+         Uarg.Bool _   -> Uarg.Bool   (fun b -> insert name (string_of_bool b))
+       | Uarg.Int _    -> Uarg.Int    (fun i -> insert name (string_of_int i))
+       | Uarg.String _ -> Uarg.String (fun s -> insert name s)
+       | _             -> assert false);
+  !m
 
 (*****************************************************************************)
 (*                            Printing                                       *)
