@@ -1,6 +1,12 @@
 language: c
 sudo: required
-script: ./tests/travis-run.sh
+before_install:
+    - curl -L https://raw.githubusercontent.com/ocaml/ocaml-ci-scripts/master/.travis-ocaml.sh | sh
+    - eval $(opam config env)
+install:
+    make
+script:
+    make test
 
 cache:
   directories:
@@ -13,4 +19,7 @@ env:
 
 os:
   - linux
-  - osx
+#  - osx
+
+# BCP and brabalan, 1/19: We took away the OSX build because it is
+# horribly slow and 98% redundant...

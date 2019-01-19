@@ -1,0 +1,10 @@
+(include_subdirs no)
+(copy_files# generic/lwt_unix_impl.ml)
+
+(library
+ (name lwt_lib)
+ (wrapped false)
+ (flags :standard -warn-error -3-27-39 -no-strict-sequence -unsafe-string)
+ ; (modules :standard \ editor relay)
+ (libraries))
+

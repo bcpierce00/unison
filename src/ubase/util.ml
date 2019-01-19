@@ -457,7 +457,10 @@ let homeDirStr =
 *)
        try System.getenv "USERPROFILE" (* Windows NT/2K standard *)
        with Not_found ->
-       try System.getenv "UNISON" (* Use UNISON dir if it is set *)
+       try System.getenv "UNISON" 
+          (* Use custom UNISON dir if it is set.  This can be a path 
+             or just the name of the folder you want to use in the 
+             current directory *)
        with Not_found ->
        "c:/" (* Default *)
      else
