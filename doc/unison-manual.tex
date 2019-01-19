@@ -1678,6 +1678,9 @@ the command.
   replica; \verb|NEWARCH|, if present, will be used as the ``last common
   state'' of the replicas.  (These three options are provided for
   later compatibility with the Harmony data synchronizer.)
+\item \relax\verb|BATCHMODE| is replaced according to the batch mode of
+  Unison; if it is in \texttt{batch} mode, then a non empty string
+  (``\verb|batch|'') is substituted, otherwise the empty string is substituted.
 \end{itemize}
 To accommodate the wide variety of programs that users might want to use for
 merging, Unison checks for several possible situations when the merge
@@ -1730,6 +1733,12 @@ typing on the command line:
 If the \verb|confirmmerge| preference is set and Unison is not run in
 batch mode, then Unison will always ask for confirmation before
 actually committing the results of the merge to the replicas.
+
+You can detect batch mode by testing \verb|BATCHMODE|; for
+example to avoid a merge completely do nothing:
+\begin{verbatim}
+    merge = Name *.txt -> [ -z "BATCHMODE" ] && mergecmd CURRENT1 CURRENT2
+\end{verbatim}
 
 A large number of external merging programs are available.
 For example, on Unix systems setting the \verb|merge| preference to
