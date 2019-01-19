@@ -624,6 +624,7 @@ let interact prilist rilist =
   in loop prilist rilist
 
 let verifyMerge title text =
+  Util.set_infos "";
   Printf.printf "%s\n" text;
   if Prefs.read Globals.batch then
     true
@@ -634,10 +635,12 @@ let verifyMerge title text =
         None   (* Maybe better: (Some "n") *)
         [(["y";"g"],
           "Yes: commit",
-          (fun() -> true));
-          (["n"],
-           "No: leave this file unchanged",
-           (fun () -> false));
+          (fun() -> newLine();
+             true));
+         (["n"],
+          "No: leave this file unchanged",
+          (fun () -> newLine();
+             false));
         ]
         (fun () -> display "Commit results of merge? ")
     end else
@@ -708,6 +711,7 @@ let doTransport reconItemList =
             if rem <> Uutil.Filesize.zero then
               showProgress (Uutil.File.ofLine i) rem "done";
             let m = "[" ^ (Path.toString item.ri.path1)  ^ "]: " ^ s in
+            Util.set_infos "";
             alwaysDisplay ("Failed " ^ m ^ "\n");
             fFailedPaths := item.ri.path1 :: !fFailedPaths;
             return ()
@@ -747,25 +751,24 @@ let setWarnPrinterForInitialization()=
   Util.warnPrinter :=
      Some(fun s ->
             alwaysDisplay "Error: ";
-            alwaysDisplay s;
-            alwaysDisplay "\n";
+            alwaysDisplay (s^"\n");
             exit Uicommon.fatalExit)
 
 let setWarnPrinter() =
   Util.warnPrinter :=
     Some(fun s ->
+           Util.set_infos "";
            alwaysDisplay "Warning: ";
-           alwaysDisplay s;
+           alwaysDisplay (s^"\n");
            if not (Prefs.read Globals.batch) then begin
              display "Press return to continue.";
              selectAction None
                [(["";" ";"y"],
                  ("Continue"),
-                 (fun () -> ()));
+                 (fun () -> newLine()));
                 (["n";"q";"x"],
                  ("Exit"),
-                 (fun () ->
-                     alwaysDisplay "\n";
+                 (fun () -> newLine();
                      restoreTerminal ();
                      Lwt_unix.run (Update.unlockArchives ());
                      exit Uicommon.fatalExit))]
