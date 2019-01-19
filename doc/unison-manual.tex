@@ -1902,9 +1902,21 @@ forward-slash character ``/'' --- even when the client or server is
 running under Windows, where the normal separator character is a
 backslash.  This makes it possible to use the same set of path
 patterns for both Unix and Windows file systems.
+\item
+A path specification may be followed by the separator ``\verb| -> |'' itself
+followed by a string which will be associated to the matching paths:
+\begin{alltt}
+                 Path \ARG{path} -> \ARG{associated string}
+\end{alltt}
+Not all pathspec preferences use these associated strings but all pathspec
+preferences are parsed identically and the strings may be ignored.  Only the
+last match of the separator string on the line is used as a delimiter.  Thus
+to allow a path specification to contain the separator string, append an
+associated string to it, even if it is not used.  The associated string cannot
+contain the separator string.
 \end{itemize}
-Some examples of path patterns appear in \sectionref{ignore}{Ignoring
-  Paths}.
+Some examples of path patterns appear in \sectionref{ignore}{Ignoring Paths}.
+Associated strings are used by the preference \texttt{merge}.
 
 \SUBSECTION{Ignoring Paths}{ignore}
 

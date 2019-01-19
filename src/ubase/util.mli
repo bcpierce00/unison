@@ -49,15 +49,16 @@ val stringSetFromList : string list -> StringSet.t
 val truncateString : string -> int -> string
 val startswith : string -> string -> bool  (* STR,PREFIX *)
 val endswith : string -> string -> bool
-val findsubstring : string -> string -> int option
+val findsubstring : ?reverse:bool -> string -> string -> int option
 val replacesubstring : string -> string -> string -> string (* IN,FROM,TO *)
 val replacesubstrings : string -> (string * string) list -> string
 val concatmap : string -> ('a -> string) -> 'a list -> string
 val removeTrailingCR : string -> string
 val trimWhitespace : string -> string
-val splitAtFirstChar : string -> char -> string list
+val splitAtChar : ?reverse:bool -> string -> char -> (string * string option)
 val splitIntoWords : ?esc:char -> string -> char -> string list
   (* Empty words are not returned; escaped whitespace is non splitting *)
+val splitAtString : ?reverse:bool -> string -> string -> (string * string option)
 val splitIntoWordsByString : string -> string -> string list (* IN,SEP *)
   (* Invariant: [s = concat sep (splitIntoWords s sep)] *)
 val padto : int -> string -> string

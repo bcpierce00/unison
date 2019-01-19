@@ -336,14 +336,14 @@ let truncateString string length =
   else if actualLength < 3 then string
   else (String.sub string 0 (length - 3))^ "..."
 
-let findsubstring s1 s2 =
+let findsubstring ?reverse:(rev=false) s1 s2 =
   let l1 = String.length s1 in
   let l2 = String.length s2 in
   let rec loop i =
-    if i+l1 > l2 then None
+    if i+l1 > l2 || i < 0 then None
     else if s1 = String.sub s2 i l1 then Some(i)
-    else loop (i+1)
-  in loop 0
+    else loop (if rev then i-1 else i+1)
+  in loop (if rev then l2-l1 else 0)
 
 let rec replacesubstring s fromstring tostring =
   match findsubstring fromstring s with
@@ -401,13 +401,13 @@ let trimWhitespace s =
    in
    loop 0 (l-1)
 
-let splitAtFirstChar (s:string) (c:char) =
+let splitAtChar ?reverse:(rev=false) (s:string) (c:char) =
   try
-    let i = String.index s c
-    and l= String.length s in
+    let i = if rev then String.rindex s c else String.index s c
+    and l = String.length s in
     (* rest is possibly the empty string *)
-    [String.sub s 0 i; String.sub s (i+1) (l-i-1)]
-  with Not_found -> [s]
+    (String.sub s 0 i, Some (String.sub s (i+1) (l-i-1)))
+  with Not_found -> (s, None)
 
 let splitIntoWords ?esc:(e='\\') (s:string) (c:char) =
   let rec inword acc eacc start pos =
@@ -430,14 +430,20 @@ let splitIntoWords ?esc:(e='\\') (s:string) (c:char) =
     else inword acc [] pos pos
   in betweenwords [] 0
 
-let rec splitIntoWordsByString s sep =
-  match findsubstring sep s with
-    None -> [s]
+let splitAtString ?(reverse=false) s sep =
+  match findsubstring ~reverse:reverse sep s with
+    None -> (s, None)
   | Some(i) ->
       let before = String.sub s 0 i in
       let afterpos = i + (String.length sep) in
       let after = String.sub s afterpos ((String.length s) - afterpos) in
-      before :: (splitIntoWordsByString after sep)
+      (* rest is possibly the empty string *)
+      (before, Some after)
+
+let rec splitIntoWordsByString s sep =
+  match splitAtString s sep with
+    (s, None) -> [s]
+  | (before, Some after) -> before :: (splitIntoWordsByString after sep)
 
 let padto n s = s ^ (String.make (max 0 (n - String.length s)) ' ')
 
