@@ -62,9 +62,10 @@ let mapSeparator = "->"
 let compile_pattern clause =
   let (p,v) =
     match Util.splitIntoWordsByString clause mapSeparator with
-      [p] -> (p,None)
+      ""::_ -> raise (Prefs.IllegalValue "Empty pattern")
+    | [p] -> (p,None)
     | [p;v] -> (p, Some (Util.trimWhitespace v))
-    | [] -> raise (Prefs.IllegalValue "Empty pattern")
+    | [] -> assert false
     | _ -> raise (Prefs.IllegalValue ("Malformed pattern: "
                   ^ "\"" ^ clause ^ "\"\n"
                   ^ "Only one instance of " ^ mapSeparator ^ " allowed.")) in
