@@ -107,21 +107,14 @@ CAMLFLAGS+=-I system/$(SYSTEM) -I lwt/$(SYSTEM)
 ifeq ($(OSARCH),win32)
   # Win32 system
   EXEC_EXT=.exe
-  OBJ_EXT=.obj
-  OUTPUT_SEL=/Fo
+  OBJ_EXT=.o
+  OUTPUT_SEL=-o
   CWD=.
-#  Fix suggested by Karl M, Jan 2009:
-#    "The new flexlink wrapper that OCaml 3.11 uses was gagging on the res
-#    file. So the res file has to be passed through flexlink untouched to
-#    the linker.  I only touched the MSVC side, but mingw may have the same
-#    issue."
-#  CLIBS+=-cclib win32rc/unison.res
-#  STATICLIBS+=-cclib win32rc/unison.res
   COBJS+=system/system_win_stubs$(OBJ_EXT) lwt/lwt_unix_stubs$(OBJ_EXT)
   WINOBJS=system/system_win.cmo
   SYSTEM=win
-  CLIBS+=-cclib "-link win32rc/unison.res" shell32.lib
-  STATICLIBS+=-cclib "-link win32rc/unison.res" shell32.lib
+  CLIBS+=-cclib "-link win32rc/unison.res.lib"
+  STATICLIBS+=-cclib "-link win32rc/unison.res.lib"
   buildexecutable::
 	@echo Building for Windows
 else
@@ -180,7 +173,7 @@ else
   buildexecutable:: $(NAME)$(EXEC_EXT)
 endif
 
-MINOSXVERSION=10.5
+MINOSXVERSION=10.6
 # XCODEFLAGS=-sdk macosx$(MINOSXVERSION)
 ifeq ($(OSARCH),osx)
   CAMLFLAGS+=-ccopt -mmacosx-version-min=$(MINOSXVERSION)
@@ -192,6 +185,7 @@ endif
 .PHONY: macexecutable
 macexecutable:
 #	sed -e's/@@VERSION@@/$(VERSION)/' $(UIMACDIR)/Info.plist.template > $(UIMACDIR)/Info.plist
+	(cd $(UIMACDIR) ; rm -f ExternalSettings.xcconfig ; echo MARKETING_VERSION = $(VERSION) > ExternalSettings.xcconfig ; echo OCAMLLIBDIR = $(OCAMLLIBDIR) >> ExternalSettings.xcconfig )
 	(cd $(UIMACDIR); xcodebuild $(XCODEFLAGS) OCAMLLIBDIR="$(OCAMLLIBDIR)" SYMROOT=build)
 	if [ -e $(UIMACDIR)/build/Default ]; then \
 	  gcc -mmacosx-version-min=$(MINOSXVERSION) $(UIMACDIR)/cltool.c -o $(UIMACDIR)/build/Default/Unison.app/Contents/MacOS/cltool -framework Carbon; \
@@ -298,6 +292,10 @@ ifeq ($(OSARCH),Linux)
 endif
 
 ifeq ($(OSARCH),win32gnuc)
+-include fsmonitor/windows/Makefile src/fsmonitor/windows/Makefile
+endif
+
+ifeq ($(OSARCH),win32)
 -include fsmonitor/windows/Makefile src/fsmonitor/windows/Makefile
 endif
 

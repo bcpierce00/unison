@@ -140,7 +140,7 @@ Section 2 - Compiling Unison
 * if .depend is not provided, create one using
   'ocamldep *.mli *.ml > .depend'; you will have to convert this file
   to Unix text format (see Appendix A).
-* the minor 'etags' error is reported when 'emacs' is missing; you may
+* the minor 'etags' error is reported when 'ctags' is missing; you may
   want to install it.
 
 2.2 Gtk user interface
