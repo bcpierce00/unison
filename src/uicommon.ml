@@ -356,7 +356,7 @@ let dangerousPathMsg dangerousPaths =
                   Useful patterns for ignoring paths
  **********************************************************************)
 
-let quote s =
+let globx_quote s =
   let len = String.length s in
   let buf = Bytes.create (2 * len) in
   let pos = ref 0 in
@@ -368,6 +368,18 @@ let quote s =
         buf.[!pos] <- c; pos := !pos + 1
   done;
   "{" ^ String.sub buf 0 !pos ^ "}"
+let quote =
+  let escape_mapSeparator s =
+    let sep = Util.trimWhitespace Pred.mapSeparator in
+    assert ((String.length sep >= 2) &&
+        (sep.[0]='-'||sep.[0]='='||sep.[0]='>'||sep.[0]='<'||sep.[0]='_'));
+    let esc = "[" ^ (String.make 1 sep.[0]) ^ "]" ^
+              (String.sub sep 1 ((String.length sep)-1)) in
+    let rec loop s =
+      let e = String.concat esc (Util.splitIntoWordsByString s sep) in
+      if e = s then e else loop e in
+    loop s in
+  fun s -> escape_mapSeparator (globx_quote s)
 
 let ignorePath path = "Path " ^ quote (Path.toString path)
 

@@ -57,8 +57,10 @@ val removeTrailingCR : string -> string
 val trimWhitespace : string -> string
 val splitAtChar : ?reverse:bool -> string -> char -> (string * string option)
 val splitIntoWords : ?esc:char -> string -> char -> string list
+  (* Empty words are not returned; escaped whitespace is non splitting *)
 val splitAtString : ?reverse:bool -> string -> string -> (string * string option)
-val splitIntoWordsByString : string -> string -> string list
+val splitIntoWordsByString : string -> string -> string list (* IN,SEP *)
+  (* Invariant: [s = concat sep (splitIntoWords s sep)] *)
 val padto : int -> string -> string
 
 (* ---------------------------------------------------------------------- *)
@@ -95,7 +97,8 @@ val debugPrinter : ((string -> (unit->unit) -> unit) option) ref
 (* A synonym for Trace.debug *)
 val debug : string -> (unit->unit) -> unit
 
-(* The UI must supply a function to warn the user *)
+(* The UI must supply a function to warn the user; a default calling Util.msg
+   is set up initially. *)
 val warnPrinter : (string -> unit) option ref
 val warn : string -> unit
 
