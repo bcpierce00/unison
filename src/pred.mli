@@ -28,6 +28,8 @@
 
 type t
 
+val mapSeparator : string
+
 (* Create a new predicate and register it with the preference module.  The first
    arg is the name of the predicate; the second is full (latex) documentation. *)
 val create : string -> ?local:bool -> ?advanced:bool -> string -> t

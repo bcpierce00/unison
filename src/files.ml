@@ -787,6 +787,7 @@ let formatMergeCmd p f1 f2 backup out1 out2 outarch =
   let cooked = Util.replacesubstring cooked "NEW2"     out2 in
   let cooked = Util.replacesubstring cooked "NEWARCH"  outarch in
   let cooked = Util.replacesubstring cooked "NEW" out1 in
+  let cooked = Util.replacesubstring cooked "BATCHMODE" batchmode in
   let cooked = Util.replacesubstring cooked "PATH"
                 (Uutil.quotes (Path.toString p)) in
   cooked
@@ -926,7 +927,8 @@ let merge root1 path1 ui1 root2 path2 ui2 id showMergeFn =
           (match arch with None -> None | Some f -> Some(Fspath.quotes f))
           (Fspath.quotes (Fspath.concat workingDirForMerge new1))
           (Fspath.quotes (Fspath.concat workingDirForMerge new2))
-          (Fspath.quotes (Fspath.concat workingDirForMerge newarch)) in
+          (Fspath.quotes (Fspath.concat workingDirForMerge newarch))
+          (if Prefs.read Globals.batch then "batch" else "") in
       Trace.log (Printf.sprintf "Merge command: %s\n" cmd);
 
       let returnValue, mergeResultLog =

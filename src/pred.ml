@@ -61,16 +61,18 @@ let mapSeparator = "->"
 (* Compile a pattern (in string form) to a regular expression *)
 let compile_pattern clause =
   let (p,v) =
-    match Util.splitIntoWordsByString clause mapSeparator with
-      [p] -> (p,None)
-    | [p;v] -> (p, Some (Util.trimWhitespace v))
-    | [] -> raise (Prefs.IllegalValue "Empty pattern")
-    | _ -> raise (Prefs.IllegalValue ("Malformed pattern: "
-                  ^ "\"" ^ clause ^ "\"\n"
-                  ^ "Only one instance of " ^ mapSeparator ^ " allowed.")) in
+    let sep = " "^mapSeparator^" " in
+      (* Surround by spaces to make it less likely to appear in a pathspec *)
+    match Util.splitAtString ~reverse:true (" "^clause^" ") sep with
+        (* Actually find "(^| )mapSep( |$)" (by surrounding [clause] by spaces
+           possibly removed by previous trimming) to detect an empty pattern
+           and/or an empty string *)
+      ("", _)     -> raise (Prefs.IllegalValue "Empty pattern")
+    | (p, None)   -> (p, None)
+    | (p, Some v) -> (p, Some (Util.trimWhitespace v)) in
   let compiled =
     begin try
-      select p
+      select (String.sub p 1 ((String.length p)-1)) (* Remove prepended space *)
         [("Name ", fun str -> Rx.seq [Rx.rx "(.*/)?"; Rx.globx str]);
          ("Path ", fun str ->
             if str<>"" && str.[0] = '/' then
