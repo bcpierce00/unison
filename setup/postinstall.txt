@@ -1,0 +1,1 @@
+Create a SSH configuration named "Unison" using Putty from the installation directory or edit "plink.bat" file and replace "Unison" by an existing configuration name.
