@@ -353,12 +353,14 @@ let interact prilist rilist =
             | `Op2 op, p::pp::t -> (fun ri -> op (p ri) (pp ri))::t
             | _ -> assert false in
         let actOnMatching ?(change=true) ?(fail=Some(fun()->())) f =
-          (* [f] can have effects on the ri and return false to discard it *)
+          (* [f] can have effects on the ri and return false to run [fail] (if
+             the matching condition is disabled) *)
+          (* When [fail] is [None] if [f] returns false then instead of
+             executing [fail] and repeating we discard the item (even when the
+             matching condition is disabled) and go to the next *)
           (* Disabling [change] avoids to redisplay the item, allows [f] to
              print a message (info or error) on a separate line and repeats
              instead of going to the next item *)
-          (* When [fail] is [None] if [f] returns false then instead of
-             executing [fail] and repeating we discard the item and go to the next *)
           let discard, err =
             match fail with Some e -> false, e | None -> true, fun()->() in
           match !ripred with
@@ -446,7 +448,7 @@ let interact prilist rilist =
                      display ("  Moving "^(string_of_int l)^" items backward\n");
                      forward l prev ril));
                  (["R"],
-                  ("reverse the list"),
+                  ("reverse the list of paths"),
                   (fun () -> newLine();
                      loop rest (ri::prev)));
                  (["d"],
@@ -568,13 +570,13 @@ let interact prilist rilist =
                        ~fail:(Some (fun()->display "Cannot set direction\n"))
                        setdirchanged));
                  (["i"],
-                  ("invert direction of propagation and go to next item"),
+                  ("invert direction of propagation (curr or match)"),
                   (fun () ->
                      actOnMatching
                        ~fail:(Some (fun()->display "Cannot invert direction\n"))
                        invertdir));
                  (["/";":"],
-                  ("skip"),
+                  ("skip (curr or match)"),
                   (fun () ->
                      actOnMatching setskip));
                  (["%"],
@@ -622,6 +624,7 @@ let interact prilist rilist =
   in loop prilist rilist
 
 let verifyMerge title text =
+  Util.set_infos "";
   Printf.printf "%s\n" text;
   if Prefs.read Globals.batch then
     true
@@ -632,10 +635,12 @@ let verifyMerge title text =
         None   (* Maybe better: (Some "n") *)
         [(["y";"g"],
           "Yes: commit",
-          (fun() -> true));
-          (["n"],
-           "No: leave this file unchanged",
-           (fun () -> false));
+          (fun() -> newLine();
+             true));
+         (["n"],
+          "No: leave this file unchanged",
+          (fun () -> newLine();
+             false));
         ]
         (fun () -> display "Commit results of merge? ")
     end else
@@ -706,6 +711,7 @@ let doTransport reconItemList =
             if rem <> Uutil.Filesize.zero then
               showProgress (Uutil.File.ofLine i) rem "done";
             let m = "[" ^ (Path.toString item.ri.path1)  ^ "]: " ^ s in
+            Util.set_infos "";
             alwaysDisplay ("Failed " ^ m ^ "\n");
             fFailedPaths := item.ri.path1 :: !fFailedPaths;
             return ()
@@ -745,25 +751,24 @@ let setWarnPrinterForInitialization()=
   Util.warnPrinter :=
      Some(fun s ->
             alwaysDisplay "Error: ";
-            alwaysDisplay s;
-            alwaysDisplay "\n";
+            alwaysDisplay (s^"\n");
             exit Uicommon.fatalExit)
 
 let setWarnPrinter() =
   Util.warnPrinter :=
     Some(fun s ->
+           Util.set_infos "";
            alwaysDisplay "Warning: ";
-           alwaysDisplay s;
+           alwaysDisplay (s^"\n");
            if not (Prefs.read Globals.batch) then begin
              display "Press return to continue.";
              selectAction None
                [(["";" ";"y"],
                  ("Continue"),
-                 (fun () -> ()));
+                 (fun () -> newLine()));
                 (["n";"q";"x"],
                  ("Exit"),
-                 (fun () ->
-                     alwaysDisplay "\n";
+                 (fun () -> newLine();
                      restoreTerminal ();
                      Lwt_unix.run (Update.unlockArchives ());
                      exit Uicommon.fatalExit))]

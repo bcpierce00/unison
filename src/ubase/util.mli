@@ -57,7 +57,9 @@ val removeTrailingCR : string -> string
 val trimWhitespace : string -> string
 val splitAtFirstChar : string -> char -> string list
 val splitIntoWords : ?esc:char -> string -> char -> string list
-val splitIntoWordsByString : string -> string -> string list
+  (* Empty words are not returned; escaped whitespace is non splitting *)
+val splitIntoWordsByString : string -> string -> string list (* IN,SEP *)
+  (* Invariant: [s = concat sep (splitIntoWords s sep)] *)
 val padto : int -> string -> string
 
 (* ---------------------------------------------------------------------- *)
