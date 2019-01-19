@@ -1378,14 +1378,19 @@ When Unison starts, it first reads the profile and then the command
 line, so command-line options will override settings from the
 profile.
 
-Profiles may also include lines of the form \texttt{include
-  \ARG{name}}, which will cause the file \ARG{name} (or
-\texttt{\ARG{name}.prf}, if \ARG{name} does not exist in the
-\verb+.unison+ directory) to be read at the point, and included as if
-its contents, instead of the \texttt{include} line, was part of the
-profile.  Include lines allows settings common to several profiles to
-be stored in one place.  In \ARG{name} the backslash is an escape
-character.
+Profiles may also include lines of the form \texttt{include \ARG{name}},
+which will cause the file \ARG{name} (or \texttt{\ARG{name}.prf}, if
+\ARG{name} does not exist in the \verb+.unison+ directory) to be read at
+the point, and included as if its contents, instead of the \texttt{include}
+line, was part of the profile.  Include lines allows settings common to
+several profiles to be stored in one place.
+A similar line of the form \texttt{source \ARG{name}} does the same except
+that it does not attempt to add a suffix to \ARG{name}.
+Similar lines of the form \texttt{include\mbox{?} \ARG{name}} or
+\texttt{source\mbox{?} \ARG{name}} do the same as their respective lines
+without the question mark except that it does not constitue an error to
+specify a non-existing file \ARG{name}.
+In \ARG{name} the backslash is an escape character.
 
 A profile may include a preference `\texttt{label = \ARG{desc}}' to
 provide a description of the options selected in this profile.  The

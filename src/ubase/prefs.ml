@@ -26,9 +26,9 @@ let rawPref default name =
 let profileName = ref None
 let profileFiles = ref []
 
-let profilePathname n =
+let profilePathname ?(add_ext=true) n =
   let f = Util.fileInUnisonDir n in
-  if System.file_exists f then f
+  if (not add_ext) || System.file_exists f then f
   else Util.fileInUnisonDir (n ^ ".prf")
 
 let thePrefsFile () =
@@ -348,17 +348,10 @@ let string2int name string =
 (* Takes a filename and returns a list of "parsed lines" containing
       (filename, lineno, varname, value)
    in the same order as in the file. *)
-let rec readAFile filename : (string * int * string * string) list =
-  let chan =
-    try
-      let path = profilePathname filename in
-        profileFiles := (path, System.stat path) :: !profileFiles;
-        System.open_in_bin path
-    with Unix.Unix_error _ | Sys_error _ ->
-      raise(Util.Fatal(Printf.sprintf "Preference file %s not found" filename))
-  in
+let rec readAFile ?(fail=true) ?(add_ext=true) filename
+    : (string * int * string * string) list =
   let bom = "\xef\xbb\xbf" in (* BOM: UTF-8 byte-order mark *)
-  let rec loop lines =
+  let rec loop chan lines =
     match (try Some(input_line chan) with End_of_file -> None) with
       None -> close_in chan; parseLines filename lines
     | Some(theLine) ->
@@ -370,8 +363,20 @@ let rec readAFile filename : (string * int * string * string) list =
           else
             theLine
         in
-        loop (theLine::lines) in
-  loop []
+        loop chan (theLine::lines)
+  in
+  let chan =
+    try
+      let path = profilePathname ~add_ext:add_ext filename in
+      profileFiles := (path, System.stat path) :: !profileFiles;
+      Some (System.open_in_bin path)
+    with Unix.Unix_error _ | Sys_error _ -> None
+  in
+  match chan, fail with
+    None, true ->
+      raise(Util.Fatal(Printf.sprintf "Preference file %s not found" filename))
+  | None, false -> []
+  | Some chan, _ -> loop chan []
 
 (* Takes a list of strings in reverse order and yields a list of "parsed lines"
    in correct order *)
@@ -382,16 +387,24 @@ and parseLines filename lines =
     | theLine :: rest ->
         let theLine = Util.removeTrailingCR theLine in
         let l = Util.trimWhitespace theLine in
-        if l = "" || l.[0]='#' then
-          loop rest (lineNum+1) res
-        else if Util.startswith theLine "include " then
+        let includes ~fail ~add_ext =
           match Util.splitIntoWords theLine ' ' with
             [_;f] ->
-              let sublines = readAFile f in
+              let sublines = readAFile f ~fail:fail ~add_ext:add_ext in
               loop rest (lineNum+1) (Safelist.append sublines res)
           | _ -> raise (Util.Fatal(Printf.sprintf
                                      "File \"%s\", line %d:\nGarbled 'include' directive: %s"
-                                     filename lineNum theLine))
+                                     filename lineNum theLine)) in
+        if l = "" || l.[0]='#' then
+          loop rest (lineNum+1) res
+        else if Util.startswith theLine "include " then
+          includes ~fail:true ~add_ext:true
+        else if Util.startswith theLine "source " then
+          includes ~fail:true ~add_ext:false
+        else if Util.startswith theLine "include? " then
+          includes ~fail:false ~add_ext:true
+        else if Util.startswith theLine "source? " then
+          includes ~fail:false ~add_ext:false
         else
           let l = Util.splitAtFirstChar theLine '=' in
           match Safelist.map Util.trimWhitespace l with

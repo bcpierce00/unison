@@ -104,7 +104,7 @@ val printUsage : string -> unit
 val profileName : string option ref
 
 (* Calculate the full pathname of a preference file                          *)
-val profilePathname : string -> System.fspath
+val profilePathname : ?add_ext:bool -> string -> System.fspath
 
 (* Check whether the profile file is unchanged                               *)
 val profileUnchanged : unit -> bool
@@ -119,7 +119,8 @@ val addComment : string -> unit
 
 (* Scan a given preferences file and return a list of tuples of the form     *)
 (* (fileName, lineno, name, value), without changing any of the preferences  *)
-val readAFile : string -> (string * int * string * string) list
+val readAFile : ?fail:bool -> ?add_ext:bool -> string
+     -> (string * int * string * string) list
 
 (* Parse the preferences file, raising Fatal if there are any problems       *)
 val loadTheFile : unit -> unit
