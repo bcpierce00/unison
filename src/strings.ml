@@ -310,7 +310,7 @@ let docs =
       \032  To build the basic GUI version, you'll first need to download and\n\
       \032  install the XCode developer tools from Apple. Once this is done, just\n\
       \032  type make in the src directory, and if things go well you should get an\n\
-      \032  application that you can move from uimac14/build/Default/Unison.app to\n\
+      \032  application that you can move from uimac/build/Default/Unison.app to\n\
       \032  wherever you want it.\n\
       \n\
       Windows\n\
