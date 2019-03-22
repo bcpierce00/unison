@@ -734,7 +734,7 @@ let get_files_in_directory dir =
   with End_of_file ->
     dirh.System.closedir ()
   end;
-  Sort.list (<) !files
+  List.sort String.compare !files
 
 let ls dir pattern =
   Util.convertUnixErrorsToTransient
