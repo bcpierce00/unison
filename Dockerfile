@@ -1,14 +1,14 @@
 FROM debian:stable-slim as builder
 
+ENV VERSION 2.51.2
+
 RUN set -ex; \
   apt-get -y update; \
-  apt-get -y install build-essential opam; \
-  eval $(opam config env)
-
-ADD . /usr/src/unison
-
-RUN set -ex; \
-  cd /usr/src/unison; \
+  apt-get -y install curl build-essential opam; \
+  \
+  mkdir /usr/src/unison && cd /usr/src/unison; \
+  curl -Ls https://github.com/bcpierce00/unison/archive/v${VERSION}.tar.gz |tar xz --strip 1; \
+  \
   make
 
 FROM debian:stable-slim
