@@ -255,7 +255,7 @@ let unisonInit2 () =
       reconItemList in
   theState := Array.of_list stateItemList;
   unsynchronizedPaths :=
-    Some (List.map (fun ri -> ri.path1) reconItemList, []);
+    Some (Safelist.map (fun ri -> ri.path1) reconItemList, []);
   if dangerousPaths <> [] then begin
     Prefs.set Globals.batch false;
     Util.warn (Uicommon.dangerousPathMsg dangerousPaths)
@@ -452,7 +452,7 @@ let unisonSynchronize () =
       [Printf.sprintf "%d skipped" skippedCount]
     in
     unsynchronizedPaths :=
-      Some (List.map (fun (si, _, _) -> si.ri.path1)
+      Some (Safelist.map (fun (si, _, _) -> si.ri.path1)
               (failureList @ partialList @ skippedList),
             []);
     Trace.status
