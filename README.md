@@ -15,3 +15,15 @@ your architecture either on your favorite package manager or here:
 
 If you want to play with the internals, have a look at the file
 src/ROADMAP.txt for some basic orientation.
+
+Here's how to choose which version to use: 
+
+  - The most recent public release (2.51, as of Summer 2019) is the default
+    recommendation and should work well for most circumstances.  Data-loss
+    bugs, if any should come up (they have been rare, historically) will be
+    fixed in this version, and it will be updated as necessary so that it
+    always compiles with the latest OCaml release.
+  - Previous public releases are still stable and useable, but they will not
+    be updated to new OCaml versions or have bugs fixed.
+  - The "master" branch of the github repo is generally extremely stable and
+    safe to use, for those that don't mind compiling from source.
