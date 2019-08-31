@@ -6,7 +6,7 @@ RUN set -ex; \
 
 COPY . /usr/src/unison
 
-RUN et -ex; \
+RUN set -ex; \
   cd /usr/src/unison; \
   make
 
