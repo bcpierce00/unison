@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/fingerprint.mli *)
-(* Copyright 1999-2018, Benjamin C. Pierce (see COPYING for details) *)
+(* Copyright 1999-2020, Benjamin C. Pierce (see COPYING for details) *)
 
 type t
 
