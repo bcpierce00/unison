@@ -1,3 +1,8 @@
+[UPDATE 1/2019: The instructions below are rather old, and there may
+be simpler ways now.  For example, on some systems, just doing "opam
+install lablgtk" seems to be enough to get all the support ibraries
+installed.]
+
 We are happy to announce a new version of Unison with a user interface
 based on Gtk 2.2, enabling display of filenames with any locale encoding.
 
