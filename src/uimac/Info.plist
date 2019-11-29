@@ -7,7 +7,7 @@
 	<key>CFBundleExecutable</key>
 	<string>Unison</string>
 	<key>CFBundleGetInfoString</key>
-	<string>${MARKETING_VERSION}, ©1999-2016, licensed under GNU GPL.</string>
+	<string>$(MARKETING_VERSION), ©1999–2019, licensed under GNU GPL.</string>
 	<key>CFBundleIconFile</key>
 	<string>Unison.icns</string>
 	<key>CFBundleIdentifier</key>
@@ -20,10 +20,8 @@
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
 	<string>$(MARKETING_VERSION)</string>
-	<key>CFBundleSignature</key>
-	<string>????</string>
 	<key>NSHumanReadableCopyright</key>
-	<string>©1999-2016, licensed under GNU GPL v3.</string>
+	<string>©1999–2019, licensed under GNU GPL v3.</string>
 	<key>NSMainNibFile</key>
 	<string>MainMenu</string>
 	<key>NSPrincipalClass</key>

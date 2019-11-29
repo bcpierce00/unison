@@ -3,24 +3,13 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 47;
+	objectVersion = 46;
 	objects = {
 
 /* Begin PBXBuildFile section */
 		2A3C3F7D09922D4900E404E9 /* NotificationController.m in Sources */ = {isa = PBXBuildFile; fileRef = 2A3C3F7B09922D4900E404E9 /* NotificationController.m */; };
 		2E282CC80D9AE2B000439D01 /* unison-blob.o in Frameworks */ = {isa = PBXBuildFile; fileRef = 2E282CC70D9AE2B000439D01 /* unison-blob.o */; };
 		44042CB60BE4FC9B00A6BBB2 /* ProgressCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 44042CB40BE4FC9B00A6BBB2 /* ProgressCell.m */; };
-		44042D1B0BE52AED00A6BBB2 /* ProgressBarAdvanced.png in Resources */ = {isa = PBXBuildFile; fileRef = 44042D100BE52AED00A6BBB2 /* ProgressBarAdvanced.png */; };
-		44042D1C0BE52AEE00A6BBB2 /* ProgressBarBlue.png in Resources */ = {isa = PBXBuildFile; fileRef = 44042D110BE52AED00A6BBB2 /* ProgressBarBlue.png */; };
-		44042D1D0BE52AEE00A6BBB2 /* ProgressBarEndAdvanced.png in Resources */ = {isa = PBXBuildFile; fileRef = 44042D120BE52AED00A6BBB2 /* ProgressBarEndAdvanced.png */; };
-		44042D1E0BE52AEE00A6BBB2 /* ProgressBarEndBlue.png in Resources */ = {isa = PBXBuildFile; fileRef = 44042D130BE52AED00A6BBB2 /* ProgressBarEndBlue.png */; };
-		44042D1F0BE52AEE00A6BBB2 /* ProgressBarEndGray.png in Resources */ = {isa = PBXBuildFile; fileRef = 44042D140BE52AED00A6BBB2 /* ProgressBarEndGray.png */; };
-		44042D200BE52AEE00A6BBB2 /* ProgressBarEndGreen.png in Resources */ = {isa = PBXBuildFile; fileRef = 44042D150BE52AED00A6BBB2 /* ProgressBarEndGreen.png */; };
-		44042D210BE52AEE00A6BBB2 /* ProgressBarEndWhite.png in Resources */ = {isa = PBXBuildFile; fileRef = 44042D160BE52AED00A6BBB2 /* ProgressBarEndWhite.png */; };
-		44042D220BE52AEE00A6BBB2 /* ProgressBarGray.png in Resources */ = {isa = PBXBuildFile; fileRef = 44042D170BE52AED00A6BBB2 /* ProgressBarGray.png */; };
-		44042D230BE52AEE00A6BBB2 /* ProgressBarGreen.png in Resources */ = {isa = PBXBuildFile; fileRef = 44042D180BE52AED00A6BBB2 /* ProgressBarGreen.png */; };
-		44042D240BE52AEE00A6BBB2 /* ProgressBarLightGreen.png in Resources */ = {isa = PBXBuildFile; fileRef = 44042D190BE52AED00A6BBB2 /* ProgressBarLightGreen.png */; };
-		44042D250BE52AEE00A6BBB2 /* ProgressBarWhite.png in Resources */ = {isa = PBXBuildFile; fileRef = 44042D1A0BE52AED00A6BBB2 /* ProgressBarWhite.png */; };
 		440EEAF30C03EC3D00ACAAB0 /* Change_Created.png in Resources */ = {isa = PBXBuildFile; fileRef = 440EEAF20C03EC3D00ACAAB0 /* Change_Created.png */; };
 		440EEAF90C03F0B800ACAAB0 /* Change_Deleted.png in Resources */ = {isa = PBXBuildFile; fileRef = 440EEAF60C03F0B800ACAAB0 /* Change_Deleted.png */; };
 		440EEAFA0C03F0B800ACAAB0 /* Change_Modified.png in Resources */ = {isa = PBXBuildFile; fileRef = 440EEAF70C03F0B800ACAAB0 /* Change_Modified.png */; };
@@ -34,7 +23,17 @@
 		44A797F40BE3F9B70069680C /* table-mixed.tif in Resources */ = {isa = PBXBuildFile; fileRef = 44A797F10BE3F9B70069680C /* table-mixed.tif */; };
 		44F472B10C0DB735006428EF /* Change_Absent.png in Resources */ = {isa = PBXBuildFile; fileRef = 44F472AF0C0DB735006428EF /* Change_Absent.png */; };
 		44F472B20C0DB735006428EF /* Change_Unmodified.png in Resources */ = {isa = PBXBuildFile; fileRef = 44F472B00C0DB735006428EF /* Change_Unmodified.png */; };
-		69C625E70664EC3300B3C46A /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 089C165CFE840E0CC02AAC07 /* InfoPlist.strings */; };
+		4C5E1ED321E5E9C500F98F8C /* ProgressBarGreen.png in Resources */ = {isa = PBXBuildFile; fileRef = 4C5E1EC821E5E9C500F98F8C /* ProgressBarGreen.png */; };
+		4C5E1ED421E5E9C500F98F8C /* ProgressBarAdvanced.png in Resources */ = {isa = PBXBuildFile; fileRef = 4C5E1EC921E5E9C500F98F8C /* ProgressBarAdvanced.png */; };
+		4C5E1ED521E5E9C500F98F8C /* ProgressBarBlue.png in Resources */ = {isa = PBXBuildFile; fileRef = 4C5E1ECA21E5E9C500F98F8C /* ProgressBarBlue.png */; };
+		4C5E1ED621E5E9C500F98F8C /* ProgressBarGray.png in Resources */ = {isa = PBXBuildFile; fileRef = 4C5E1ECB21E5E9C500F98F8C /* ProgressBarGray.png */; };
+		4C5E1ED721E5E9C500F98F8C /* ProgressBarEndGray.png in Resources */ = {isa = PBXBuildFile; fileRef = 4C5E1ECC21E5E9C500F98F8C /* ProgressBarEndGray.png */; };
+		4C5E1ED821E5E9C500F98F8C /* ProgressBarEndGreen.png in Resources */ = {isa = PBXBuildFile; fileRef = 4C5E1ECD21E5E9C500F98F8C /* ProgressBarEndGreen.png */; };
+		4C5E1ED921E5E9C500F98F8C /* ProgressBarEndWhite.png in Resources */ = {isa = PBXBuildFile; fileRef = 4C5E1ECE21E5E9C500F98F8C /* ProgressBarEndWhite.png */; };
+		4C5E1EDA21E5E9C500F98F8C /* ProgressBarEndAdvanced.png in Resources */ = {isa = PBXBuildFile; fileRef = 4C5E1ECF21E5E9C500F98F8C /* ProgressBarEndAdvanced.png */; };
+		4C5E1EDB21E5E9C500F98F8C /* ProgressBarWhite.png in Resources */ = {isa = PBXBuildFile; fileRef = 4C5E1ED021E5E9C500F98F8C /* ProgressBarWhite.png */; };
+		4C5E1EDC21E5E9C500F98F8C /* ProgressBarLightGreen.png in Resources */ = {isa = PBXBuildFile; fileRef = 4C5E1ED121E5E9C500F98F8C /* ProgressBarLightGreen.png */; };
+		4C5E1EDD21E5E9C500F98F8C /* ProgressBarEndBlue.png in Resources */ = {isa = PBXBuildFile; fileRef = 4C5E1ED221E5E9C500F98F8C /* ProgressBarEndBlue.png */; };
 		69C625E80664EC3300B3C46A /* Unison.icns in Resources */ = {isa = PBXBuildFile; fileRef = 69C625CA0664E94E00B3C46A /* Unison.icns */; };
 		69C625EA0664EC3300B3C46A /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 29B97316FDCFA39411CA2CEA /* main.m */; settings = {ATTRIBUTES = (); }; };
 		69C625EB0664EC3300B3C46A /* MyController.m in Sources */ = {isa = PBXBuildFile; fileRef = 69660DC704F08CC100CF23A4 /* MyController.m */; };
@@ -72,48 +71,15 @@
 		DE2444D610C294EA007E1546 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = DE2444D410C294EA007E1546 /* MainMenu.xib */; };
 /* End PBXBuildFile section */
 
-/* Begin PBXCopyFilesBuildPhase section */
-		2A3C3F3709922AA600E404E9 /* CopyFiles */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 10;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		BB6E50CF10CAA57600E23F8A /* CopyFiles */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 7;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXCopyFilesBuildPhase section */
-
 /* Begin PBXFileReference section */
-		089C165DFE840E0CC02AAC07 /* English */ = {isa = PBXFileReference; fileEncoding = 10; lastKnownFileType = text.plist.strings; name = English; path = English.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		1058C7A1FEA54F0111CA2CBB /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = /System/Library/Frameworks/Cocoa.framework; sourceTree = "<absolute>"; };
 		29B97316FDCFA39411CA2CEA /* main.m */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		2A3C3F7A09922D4900E404E9 /* NotificationController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NotificationController.h; sourceTree = "<group>"; };
 		2A3C3F7B09922D4900E404E9 /* NotificationController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = NotificationController.m; sourceTree = "<group>"; };
-		2E282CC70D9AE2B000439D01 /* unison-blob.o */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.objfile"; name = "unison-blob.o"; path = "../unison-blob.o"; sourceTree = SOURCE_ROOT; };
+		2E282CC70D9AE2B000439D01 /* unison-blob.o */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.objfile"; name = "unison-blob.o"; path = "../unison-blob.o"; sourceTree = "<group>"; };
 		2E282CCC0D9AE2E800439D01 /* ExternalSettings.xcconfig */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xcconfig; path = ExternalSettings.xcconfig; sourceTree = "<group>"; };
 		44042CB30BE4FC9B00A6BBB2 /* ProgressCell.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ProgressCell.h; sourceTree = "<group>"; };
 		44042CB40BE4FC9B00A6BBB2 /* ProgressCell.m */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.objc; path = ProgressCell.m; sourceTree = "<group>"; };
-		44042D100BE52AED00A6BBB2 /* ProgressBarAdvanced.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = ProgressBarAdvanced.png; path = progressicons/ProgressBarAdvanced.png; sourceTree = "<group>"; };
-		44042D110BE52AED00A6BBB2 /* ProgressBarBlue.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = ProgressBarBlue.png; path = progressicons/ProgressBarBlue.png; sourceTree = "<group>"; };
-		44042D120BE52AED00A6BBB2 /* ProgressBarEndAdvanced.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = ProgressBarEndAdvanced.png; path = progressicons/ProgressBarEndAdvanced.png; sourceTree = "<group>"; };
-		44042D130BE52AED00A6BBB2 /* ProgressBarEndBlue.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = ProgressBarEndBlue.png; path = progressicons/ProgressBarEndBlue.png; sourceTree = "<group>"; };
-		44042D140BE52AED00A6BBB2 /* ProgressBarEndGray.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = ProgressBarEndGray.png; path = progressicons/ProgressBarEndGray.png; sourceTree = "<group>"; };
-		44042D150BE52AED00A6BBB2 /* ProgressBarEndGreen.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = ProgressBarEndGreen.png; path = progressicons/ProgressBarEndGreen.png; sourceTree = "<group>"; };
-		44042D160BE52AED00A6BBB2 /* ProgressBarEndWhite.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = ProgressBarEndWhite.png; path = progressicons/ProgressBarEndWhite.png; sourceTree = "<group>"; };
-		44042D170BE52AED00A6BBB2 /* ProgressBarGray.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = ProgressBarGray.png; path = progressicons/ProgressBarGray.png; sourceTree = "<group>"; };
-		44042D180BE52AED00A6BBB2 /* ProgressBarGreen.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = ProgressBarGreen.png; path = progressicons/ProgressBarGreen.png; sourceTree = "<group>"; };
-		44042D190BE52AED00A6BBB2 /* ProgressBarLightGreen.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = ProgressBarLightGreen.png; path = progressicons/ProgressBarLightGreen.png; sourceTree = "<group>"; };
-		44042D1A0BE52AED00A6BBB2 /* ProgressBarWhite.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; name = ProgressBarWhite.png; path = progressicons/ProgressBarWhite.png; sourceTree = "<group>"; };
 		440EEAF20C03EC3D00ACAAB0 /* Change_Created.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Change_Created.png; sourceTree = "<group>"; };
 		440EEAF60C03F0B800ACAAB0 /* Change_Deleted.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Change_Deleted.png; sourceTree = "<group>"; };
 		440EEAF70C03F0B800ACAAB0 /* Change_Modified.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Change_Modified.png; sourceTree = "<group>"; };
@@ -129,6 +95,17 @@
 		44A797F10BE3F9B70069680C /* table-mixed.tif */ = {isa = PBXFileReference; lastKnownFileType = image.tiff; path = "table-mixed.tif"; sourceTree = "<group>"; };
 		44F472AF0C0DB735006428EF /* Change_Absent.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Change_Absent.png; sourceTree = "<group>"; };
 		44F472B00C0DB735006428EF /* Change_Unmodified.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Change_Unmodified.png; sourceTree = "<group>"; };
+		4C5E1EC821E5E9C500F98F8C /* ProgressBarGreen.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = ProgressBarGreen.png; sourceTree = "<group>"; };
+		4C5E1EC921E5E9C500F98F8C /* ProgressBarAdvanced.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = ProgressBarAdvanced.png; sourceTree = "<group>"; };
+		4C5E1ECA21E5E9C500F98F8C /* ProgressBarBlue.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = ProgressBarBlue.png; sourceTree = "<group>"; };
+		4C5E1ECB21E5E9C500F98F8C /* ProgressBarGray.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = ProgressBarGray.png; sourceTree = "<group>"; };
+		4C5E1ECC21E5E9C500F98F8C /* ProgressBarEndGray.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = ProgressBarEndGray.png; sourceTree = "<group>"; };
+		4C5E1ECD21E5E9C500F98F8C /* ProgressBarEndGreen.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = ProgressBarEndGreen.png; sourceTree = "<group>"; };
+		4C5E1ECE21E5E9C500F98F8C /* ProgressBarEndWhite.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = ProgressBarEndWhite.png; sourceTree = "<group>"; };
+		4C5E1ECF21E5E9C500F98F8C /* ProgressBarEndAdvanced.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = ProgressBarEndAdvanced.png; sourceTree = "<group>"; };
+		4C5E1ED021E5E9C500F98F8C /* ProgressBarWhite.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = ProgressBarWhite.png; sourceTree = "<group>"; };
+		4C5E1ED121E5E9C500F98F8C /* ProgressBarLightGreen.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = ProgressBarLightGreen.png; sourceTree = "<group>"; };
+		4C5E1ED221E5E9C500F98F8C /* ProgressBarEndBlue.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = ProgressBarEndBlue.png; sourceTree = "<group>"; };
 		690F564404F11EC300CF23A4 /* ProfileController.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ProfileController.h; sourceTree = "<group>"; };
 		690F564504F11EC300CF23A4 /* ProfileController.m */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.objc; path = ProfileController.m; sourceTree = "<group>"; };
 		691CE180051BB44A00CF23A4 /* ProfileTableView.h */ = {isa = PBXFileReference; fileEncoding = 30; lastKnownFileType = sourcecode.c.h; path = ProfileTableView.h; sourceTree = "<group>"; };
@@ -202,34 +179,25 @@
 		29B97314FDCFA39411CA2CEA /* uimac */ = {
 			isa = PBXGroup;
 			children = (
-				44042D0F0BE52AD700A6BBB2 /* progressicons */,
-				B5B44C1009DF61A4000DC7AF /* tableicons */,
-				B518071109D6652000B1B21F /* toolbar */,
 				44A795C90BE2B91B0069680C /* Classes */,
-				29B97315FDCFA39411CA2CEA /* Other Sources */,
 				29B97317FDCFA39411CA2CEA /* Resources */,
 				29B97323FDCFA39411CA2CEA /* Frameworks */,
-				19C28FACFE9D520D11CA2CBB /* Products */,
-				69C625F40664EC3300B3C46A /* Info.plist */,
 				2E282CCC0D9AE2E800439D01 /* ExternalSettings.xcconfig */,
-				2E282CB80D9AE16300439D01 /* External objects */,
+				69C625F40664EC3300B3C46A /* Info.plist */,
+				29B97316FDCFA39411CA2CEA /* main.m */,
+				2E282CC70D9AE2B000439D01 /* unison-blob.o */,
+				19C28FACFE9D520D11CA2CBB /* Products */,
 			);
 			name = uimac;
-			sourceTree = "<group>";
-		};
-		29B97315FDCFA39411CA2CEA /* Other Sources */ = {
-			isa = PBXGroup;
-			children = (
-				29B97316FDCFA39411CA2CEA /* main.m */,
-			);
-			name = "Other Sources";
 			sourceTree = "<group>";
 		};
 		29B97317FDCFA39411CA2CEA /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				44042D0F0BE52AD700A6BBB2 /* progressicons */,
+				B5B44C1009DF61A4000DC7AF /* tableicons */,
+				B518071109D6652000B1B21F /* toolbar */,
 				DE2444D410C294EA007E1546 /* MainMenu.xib */,
-				089C165CFE840E0CC02AAC07 /* InfoPlist.strings */,
 				69C625CA0664E94E00B3C46A /* Unison.icns */,
 			);
 			name = Resources;
@@ -245,30 +213,22 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		2E282CB80D9AE16300439D01 /* External objects */ = {
-			isa = PBXGroup;
-			children = (
-				2E282CC70D9AE2B000439D01 /* unison-blob.o */,
-			);
-			name = "External objects";
-			sourceTree = "<group>";
-		};
 		44042D0F0BE52AD700A6BBB2 /* progressicons */ = {
 			isa = PBXGroup;
 			children = (
-				44042D100BE52AED00A6BBB2 /* ProgressBarAdvanced.png */,
-				44042D110BE52AED00A6BBB2 /* ProgressBarBlue.png */,
-				44042D120BE52AED00A6BBB2 /* ProgressBarEndAdvanced.png */,
-				44042D130BE52AED00A6BBB2 /* ProgressBarEndBlue.png */,
-				44042D140BE52AED00A6BBB2 /* ProgressBarEndGray.png */,
-				44042D150BE52AED00A6BBB2 /* ProgressBarEndGreen.png */,
-				44042D160BE52AED00A6BBB2 /* ProgressBarEndWhite.png */,
-				44042D170BE52AED00A6BBB2 /* ProgressBarGray.png */,
-				44042D180BE52AED00A6BBB2 /* ProgressBarGreen.png */,
-				44042D190BE52AED00A6BBB2 /* ProgressBarLightGreen.png */,
-				44042D1A0BE52AED00A6BBB2 /* ProgressBarWhite.png */,
+				4C5E1EC921E5E9C500F98F8C /* ProgressBarAdvanced.png */,
+				4C5E1ECA21E5E9C500F98F8C /* ProgressBarBlue.png */,
+				4C5E1ECF21E5E9C500F98F8C /* ProgressBarEndAdvanced.png */,
+				4C5E1ED221E5E9C500F98F8C /* ProgressBarEndBlue.png */,
+				4C5E1ECC21E5E9C500F98F8C /* ProgressBarEndGray.png */,
+				4C5E1ECD21E5E9C500F98F8C /* ProgressBarEndGreen.png */,
+				4C5E1ECE21E5E9C500F98F8C /* ProgressBarEndWhite.png */,
+				4C5E1ECB21E5E9C500F98F8C /* ProgressBarGray.png */,
+				4C5E1EC821E5E9C500F98F8C /* ProgressBarGreen.png */,
+				4C5E1ED121E5E9C500F98F8C /* ProgressBarLightGreen.png */,
+				4C5E1ED021E5E9C500F98F8C /* ProgressBarWhite.png */,
 			);
-			name = progressicons;
+			path = progressicons;
 			sourceTree = "<group>";
 		};
 		44A795C90BE2B91B0069680C /* Classes */ = {
@@ -369,8 +329,6 @@
 				69C625E50664EC3300B3C46A /* Resources */,
 				69C625E90664EC3300B3C46A /* Sources */,
 				69C625F10664EC3300B3C46A /* Frameworks */,
-				2A3C3F3709922AA600E404E9 /* CopyFiles */,
-				BB6E50CF10CAA57600E23F8A /* CopyFiles */,
 			);
 			buildRules = (
 			);
@@ -388,10 +346,10 @@
 		29B97313FDCFA39411CA2CEA /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0810;
+				LastUpgradeCheck = 1010;
 			};
 			buildConfigurationList = 2A3C3F2C0992245300E404E9 /* Build configuration list for PBXProject "uimacnew" */;
-			compatibilityVersion = "Xcode 6.3";
+			compatibilityVersion = "Xcode 3.2";
 			developmentRegion = English;
 			hasScannedForEncodings = 1;
 			knownRegions = (
@@ -414,7 +372,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				69C625E70664EC3300B3C46A /* InfoPlist.strings in Resources */,
 				69C625E80664EC3300B3C46A /* Unison.icns in Resources */,
 				B518071C09D6652100B1B21F /* add.tif in Resources */,
 				B518071D09D6652100B1B21F /* diff.tif in Resources */,
@@ -422,8 +379,11 @@
 				B518071F09D6652100B1B21F /* left.tif in Resources */,
 				B518072009D6652100B1B21F /* merge.tif in Resources */,
 				B518072109D6652100B1B21F /* quit.tif in Resources */,
+				4C5E1ED521E5E9C500F98F8C /* ProgressBarBlue.png in Resources */,
+				4C5E1ED321E5E9C500F98F8C /* ProgressBarGreen.png in Resources */,
 				B518072209D6652100B1B21F /* restart.tif in Resources */,
 				B518072309D6652100B1B21F /* right.tif in Resources */,
+				4C5E1EDB21E5E9C500F98F8C /* ProgressBarWhite.png in Resources */,
 				B518072409D6652100B1B21F /* save.tif in Resources */,
 				B518072509D6652100B1B21F /* skip.tif in Resources */,
 				B5B44C1909DF61A4000DC7AF /* table-conflict.tif in Resources */,
@@ -431,32 +391,29 @@
 				B5B44C1B09DF61A4000DC7AF /* table-left-blue.tif in Resources */,
 				B5B44C1C09DF61A4000DC7AF /* table-left-green.tif in Resources */,
 				B5B44C1D09DF61A4000DC7AF /* table-merge.tif in Resources */,
+				4C5E1ED721E5E9C500F98F8C /* ProgressBarEndGray.png in Resources */,
 				B5B44C1E09DF61A4000DC7AF /* table-right-blue.tif in Resources */,
 				B5B44C1F09DF61A4000DC7AF /* table-right-green.tif in Resources */,
 				B5B44C2009DF61A4000DC7AF /* table-skip.tif in Resources */,
 				B5E03B3909E38B9E0058C7B9 /* rescan.tif in Resources */,
+				4C5E1EDC21E5E9C500F98F8C /* ProgressBarLightGreen.png in Resources */,
 				44A797F40BE3F9B70069680C /* table-mixed.tif in Resources */,
-				44042D1B0BE52AED00A6BBB2 /* ProgressBarAdvanced.png in Resources */,
-				44042D1C0BE52AEE00A6BBB2 /* ProgressBarBlue.png in Resources */,
-				44042D1D0BE52AEE00A6BBB2 /* ProgressBarEndAdvanced.png in Resources */,
-				44042D1E0BE52AEE00A6BBB2 /* ProgressBarEndBlue.png in Resources */,
-				44042D1F0BE52AEE00A6BBB2 /* ProgressBarEndGray.png in Resources */,
-				44042D200BE52AEE00A6BBB2 /* ProgressBarEndGreen.png in Resources */,
-				44042D210BE52AEE00A6BBB2 /* ProgressBarEndWhite.png in Resources */,
-				44042D220BE52AEE00A6BBB2 /* ProgressBarGray.png in Resources */,
-				44042D230BE52AEE00A6BBB2 /* ProgressBarGreen.png in Resources */,
-				44042D240BE52AEE00A6BBB2 /* ProgressBarLightGreen.png in Resources */,
-				44042D250BE52AEE00A6BBB2 /* ProgressBarWhite.png in Resources */,
 				445A291B0BFA5B3300E4E641 /* Outline-Deep.png in Resources */,
 				445A29270BFA5C1200E4E641 /* Outline-Flat.png in Resources */,
 				445A29290BFA5C1B00E4E641 /* Outline-Flattened.png in Resources */,
+				4C5E1ED921E5E9C500F98F8C /* ProgressBarEndWhite.png in Resources */,
 				440EEAF30C03EC3D00ACAAB0 /* Change_Created.png in Resources */,
 				440EEAF90C03F0B800ACAAB0 /* Change_Deleted.png in Resources */,
+				4C5E1ED821E5E9C500F98F8C /* ProgressBarEndGreen.png in Resources */,
 				440EEAFA0C03F0B800ACAAB0 /* Change_Modified.png in Resources */,
+				4C5E1EDA21E5E9C500F98F8C /* ProgressBarEndAdvanced.png in Resources */,
 				440EEAFB0C03F0B800ACAAB0 /* Change_PropsChanged.png in Resources */,
+				4C5E1ED621E5E9C500F98F8C /* ProgressBarGray.png in Resources */,
+				4C5E1EDD21E5E9C500F98F8C /* ProgressBarEndBlue.png in Resources */,
 				44F472B10C0DB735006428EF /* Change_Absent.png in Resources */,
 				44F472B20C0DB735006428EF /* Change_Unmodified.png in Resources */,
 				DE2444D610C294EA007E1546 /* MainMenu.xib in Resources */,
+				4C5E1ED421E5E9C500F98F8C /* ProgressBarAdvanced.png in Resources */,
 				849BE4FF191AC10E001B6FBF /* README in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -473,10 +430,12 @@
 			);
 			name = "Run Script (make unison-blob.o)";
 			outputPaths = (
+				"../unison-blob.o",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "echo \"Building unison-blob.o...\"\nif [ -x /usr/libexec/path_helper ]; then\n  eval `/usr/libexec/path_helper -s`\nfi\nif [ -x `which opam` ]; then\neval `opam config env`\nfi\ncd ${PROJECT_DIR}/..\nmake unison-blob.o\necho \"done\"";
+			shellScript = "echo \"Building unison-blob.o...\"\nif [ -x /usr/libexec/path_helper ]; then\n    eval `/usr/libexec/path_helper -s`\nfi\nif [ -x `which opam` ]; then\n    eval `opam config env`\nfi\nmake -C .. unison-blob.o\necho \"done\"\n";
+			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -506,14 +465,6 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXVariantGroup section */
-		089C165CFE840E0CC02AAC07 /* InfoPlist.strings */ = {
-			isa = PBXVariantGroup;
-			children = (
-				089C165DFE840E0CC02AAC07 /* English */,
-			);
-			name = InfoPlist.strings;
-			sourceTree = "<group>";
-		};
 		DE2444D410C294EA007E1546 /* MainMenu.xib */ = {
 			isa = PBXVariantGroup;
 			children = (
@@ -528,13 +479,7 @@
 		2A3C3F290992245300E404E9 /* Development */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				COMBINE_HIDPI_IMAGES = YES;
 				COPY_PHASE_STRIP = NO;
-				FRAMEWORK_SEARCH_PATHS = (
-					"$(FRAMEWORK_SEARCH_PATHS)",
-					"$(SRCROOT)",
-					"$(FRAMEWORK_SEARCH_PATHS_QUOTED_FOR_TARGET_1)",
-				);
 				FRAMEWORK_SEARCH_PATHS_QUOTED_FOR_TARGET_1 = "";
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
@@ -543,7 +488,6 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				INFOPLIST_FILE = Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
-				LIBRARY_SEARCH_PATHS = "";
 				NSZombieEnabled = YES;
 				OTHER_CFLAGS = "";
 				OTHER_LDFLAGS = (
@@ -570,20 +514,13 @@
 		2A3C3F2A0992245300E404E9 /* Deployment */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				COMBINE_HIDPI_IMAGES = YES;
 				COPY_PHASE_STRIP = YES;
-				FRAMEWORK_SEARCH_PATHS = (
-					"$(FRAMEWORK_SEARCH_PATHS)",
-					"$(SRCROOT)",
-					"$(FRAMEWORK_SEARCH_PATHS_QUOTED_FOR_TARGET_1)",
-				);
 				FRAMEWORK_SEARCH_PATHS_QUOTED_FOR_TARGET_1 = "";
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_WARN_FOUR_CHARACTER_CONSTANTS = YES;
 				INFOPLIST_FILE = Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
-				LIBRARY_SEARCH_PATHS = "";
 				OTHER_CFLAGS = "";
 				OTHER_LDFLAGS = (
 					"-L$(OCAMLLIBDIR)",
@@ -609,18 +546,11 @@
 		2A3C3F2B0992245300E404E9 /* Default */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				COMBINE_HIDPI_IMAGES = YES;
-				FRAMEWORK_SEARCH_PATHS = (
-					"$(FRAMEWORK_SEARCH_PATHS)",
-					"$(SRCROOT)",
-					"$(FRAMEWORK_SEARCH_PATHS_QUOTED_FOR_TARGET_1)",
-				);
 				FRAMEWORK_SEARCH_PATHS_QUOTED_FOR_TARGET_1 = "";
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				INFOPLIST_FILE = Info.plist;
 				INSTALL_PATH = "$(HOME)/Applications";
-				LIBRARY_SEARCH_PATHS = "";
 				OTHER_CFLAGS = "";
 				OTHER_LDFLAGS = (
 					"-L$(OCAMLLIBDIR)",
@@ -647,14 +577,20 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 2E282CCC0D9AE2E800439D01 /* ExternalSettings.xcconfig */;
 			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
 				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
 				CLANG_WARN_EMPTY_BODY = YES;
 				CLANG_WARN_ENUM_CONVERSION = YES;
 				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
-				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -671,7 +607,7 @@
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_BUNDLE_IDENTIFIER = edu.upenn.cis.Unison;
 				SDKROOT = macosx;
-				USER_HEADER_SEARCH_PATHS = $OCAMLLIBDIR;
+				SYSTEM_HEADER_SEARCH_PATHS = "$(OCAMLLIBDIR)";
 			};
 			name = Development;
 		};
@@ -679,14 +615,20 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 2E282CCC0D9AE2E800439D01 /* ExternalSettings.xcconfig */;
 			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
 				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
 				CLANG_WARN_EMPTY_BODY = YES;
 				CLANG_WARN_ENUM_CONVERSION = YES;
 				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
-				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -701,7 +643,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				PRODUCT_BUNDLE_IDENTIFIER = edu.upenn.cis.Unison;
 				SDKROOT = macosx;
-				USER_HEADER_SEARCH_PATHS = $OCAMLLIBDIR;
+				SYSTEM_HEADER_SEARCH_PATHS = "$(OCAMLLIBDIR)";
 			};
 			name = Deployment;
 		};
@@ -709,14 +651,20 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 2E282CCC0D9AE2E800439D01 /* ExternalSettings.xcconfig */;
 			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
 				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
 				CLANG_WARN_EMPTY_BODY = YES;
 				CLANG_WARN_ENUM_CONVERSION = YES;
 				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
-				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -731,7 +679,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 10.6;
 				PRODUCT_BUNDLE_IDENTIFIER = edu.upenn.cis.Unison;
 				SDKROOT = macosx;
-				USER_HEADER_SEARCH_PATHS = $OCAMLLIBDIR;
+				SYSTEM_HEADER_SEARCH_PATHS = "$(OCAMLLIBDIR)";
 			};
 			name = Default;
 		};
