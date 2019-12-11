@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/stasher.mli *)
-(* Copyright 1999-2018 (see COPYING for details) *)
+(* Copyright 1999-2020 (see COPYING for details) *)
 
 (* This module maintains backups for general purpose and *)
 (* as archives for mergeable files. *)

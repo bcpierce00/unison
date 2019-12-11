@@ -758,7 +758,7 @@
                         <autoresizingMask key="autoresizingMask"/>
                         <textFieldCell key="cell" sendsActionOnEndEditing="YES" state="on" alignment="center" id="546">
                             <font key="font" metaFont="label"/>
-                            <string key="title">© Copyright 1999-2016.
+                            <string key="title">© Copyright 1999-2020.
 
 This software is licensed under the GNU General Public License.</string>
                             <color key="textColor" name="textColor" catalog="System" colorSpace="catalog"/>

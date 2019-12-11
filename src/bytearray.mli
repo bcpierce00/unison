@@ -1,5 +1,5 @@
 (* Unison file synchronizer: src/bytearray.mli *)
-(* Copyright 1999-2018, Benjamin C. Pierce (see COPYING for details) *)
+(* Copyright 1999-2020, Benjamin C. Pierce (see COPYING for details) *)
 
 type t =
   (char, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
