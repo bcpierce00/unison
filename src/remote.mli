@@ -87,19 +87,6 @@ val connectionToRoot : Common.root -> connection
 
 val registerServerCmd :
   string -> (connection -> 'a -> 'b Lwt.t) -> connection -> 'a -> 'b Lwt.t
-val registerSpecialServerCmd :
-  string ->
-  ('a ->
-   (Bytearray.t * int * int) list -> (Bytearray.t * int * int) list * int) *
-  (Bytearray.t -> int -> 'a) ->
-  ('b ->
-   (Bytearray.t * int * int) list -> (Bytearray.t * int * int) list * int) *
-  (Bytearray.t -> int -> 'b) ->
-  (connection -> 'a -> 'b Lwt.t) -> connection -> 'a -> 'b Lwt.t
-val defaultMarshalingFunctions :
-  ('a ->
-   (Bytearray.t * int * int) list -> (Bytearray.t * int * int) list * int) *
-  (Bytearray.t -> int -> 'b)
 val intSize : int
 val encodeInt : int -> Bytearray.t * int * int
 val decodeInt : Bytearray.t -> int -> int
