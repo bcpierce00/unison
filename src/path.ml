@@ -34,7 +34,7 @@ let concat p p' =
   String.blit p 0 p'' 0 l;
   Bytes.set p'' l pathSeparatorChar;
   String.blit p' 0 p'' (l + 1) l';
-  p''
+  Bytes.to_string p''
 
 let empty = ""
 
@@ -205,7 +205,7 @@ let addPrefixToFinalName path prefix =
     String.blit path 0 p 0 i;
     String.blit prefix 0 p i l';
     String.blit path i p (i + l') (l - i);
-    p
+    Bytes.to_string p
   with Not_found ->
     assert (not (isEmpty path));
     prefix ^ path

@@ -97,7 +97,7 @@ let appleDouble (Fspath f) =
     Bytes.set res i '.';
     Bytes.set res (i + 1) '_';
     String.blit f i res (i + 2) (len - i);
-    Fspath res
+    Fspath (Bytes.to_string res)
   with Not_found ->
     assert false
 
@@ -196,7 +196,7 @@ let concat fspath path =
       String.blit fspath 0 s 0 l;
       Bytes.set s l '/';
       String.blit p 0 s (l + 1) l';
-      Fspath s
+      Fspath (Bytes.to_string s)
   end
 
 (* Filename.dirname is screwed up in Windows so we use this function.  It    *)

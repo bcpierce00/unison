@@ -60,7 +60,7 @@ let doubleVersion = "\000\002\000\000"
 let doubleFiller = String.make 16 '\000'
 let resource_fork_empty_tag = "This resource fork intentionally left blank   "
 let finfoLength = 32L
-let emptyFinderInfo () = String.make 32 '\000'
+let emptyFinderInfo () = Bytes.make 32 '\000'
 let empty_resource_fork =
   "\000\000\001\000" ^
   "\000\000\001\000" ^
@@ -132,7 +132,7 @@ let readDouble dataFspath dataPath doubleFspath inch len =
   with End_of_file ->
     fail dataFspath dataPath doubleFspath "truncated"
   end;
-  buf
+  Bytes.to_string buf
 
 let readDoubleFromOffset dataFspath dataPath doubleFspath inch offset len =
   LargeFile.seek_in inch offset;
@@ -220,19 +220,19 @@ let trim s =
   trim_rec s (String.length s)
 
 let extractInfo typ info =
-  let flags = String.sub info 8 2 in
+  let flags = Bytes.of_string (String.sub info 8 2) in
   let xflags = String.sub info 24 2 in
   let typeCreator = String.sub info 0 8 in
   (* Ignore hasBeenInited flag *)
-  Bytes.set flags 0 (Char.chr (Char.code flags.[0] land 0xfe));
+  Bytes.set flags 0 (Char.chr (Char.code (Bytes.get flags 0) land 0xfe));
   (* If the extended flags should be ignored, clear them *)
   let xflags =
     if Char.code xflags.[0] land 0x80 <> 0 then "\000\000" else xflags
   in
   let info =
     match typ with
-      `FILE       -> "F" ^ typeCreator ^ flags ^ xflags
-    | `DIRECTORY  -> "D" ^ flags ^ xflags
+      `FILE       -> "F" ^ typeCreator ^ Bytes.to_string flags ^ xflags
+    | `DIRECTORY  -> "D" ^ Bytes.to_string flags ^ xflags
   in
   trim info
 
@@ -269,7 +269,7 @@ let getFileInfos dataFspath dataPath typ =
                      let len = String.length resource_fork_empty_tag in
                      let buf = Bytes.create len in
                      really_input inch buf 0 len;
-                     buf = resource_fork_empty_tag)
+                     Bytes.to_string buf = resource_fork_empty_tag)
                      (fun () -> close_in_noerr inch)
                 then
                   (0L, 0L)
@@ -336,7 +336,7 @@ let insertInfo fullInfo info =
   String.blit info offset fullInfo 8 2;
   (* Extended finder flags *)
   String.blit info (offset + 2) fullInfo 24 2;
-  fullInfo
+  Bytes.to_string fullInfo
 
 let setFileInfos dataFspath dataPath finfo =
   assert (finfo <> "");
@@ -344,7 +344,7 @@ let setFileInfos dataFspath dataPath finfo =
     try
       let p = Fspath.toSysPath (Fspath.concat dataFspath dataPath) in
       let (fullFinfo, _) = getFileInfosInternal p false in
-      setFileInfosInternal p (insertInfo fullFinfo finfo)
+      setFileInfosInternal p (insertInfo (Bytes.of_string fullFinfo) finfo)
     with Unix.Unix_error ((Unix.EOPNOTSUPP | Unix.ENOSYS), _, _) ->
       (* Not an HFS volume.  Look for an AppleDouble file *)
       let (workingDir, realPath) = Fspath.findWorkingDir dataFspath dataPath in
@@ -363,6 +363,7 @@ let setFileInfos dataFspath dataPath finfo =
                 close_in inch;
                 res)
               (fun () -> close_in_noerr inch)
+            |> Bytes.of_string
           in
           let outch =
             Fs.open_out_gen [Open_wronly; Open_binary] 0o600 doubleFspath in
@@ -517,9 +518,9 @@ let openRessOut fspath path length =
         output_string outch "\000\000\000\002"; (* Resource fork *)
         output_string outch "\000\000\014\226"; (* offset *)
 (* FIX: should check for overflow! *)
-        output_string outch (setInt4 (Uutil.Filesize.toInt64 length));
+        output_bytes outch (setInt4 (Uutil.Filesize.toInt64 length));
                                                 (* length *)
-        output_string outch (emptyFinderInfo ());
+        output_bytes outch (emptyFinderInfo ());
         output_string outch (empty_attribute_chunk ());
                                                 (* extended attributes *)
         flush outch)

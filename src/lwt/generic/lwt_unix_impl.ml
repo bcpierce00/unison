@@ -170,12 +170,15 @@ let rec run thread =
                `Write (buf, pos, len, res) ->
                   wrap_syscall outputs fd res
                     (fun () -> Unix.write fd buf pos len)
+             | `WriteSubstring (buf, pos, len, res) ->
+                  wrap_syscall outputs fd res
+                    (fun () -> Unix.write_substring fd buf pos len)
              | `CheckSocket res ->
                   wrap_syscall outputs fd res
                     (fun () ->
                        try ignore (Unix.getpeername fd) with
                          Unix.Unix_error (Unix.ENOTCONN, _, _) ->
-                           ignore (Unix.read fd " " 0 1))
+                           ignore (Unix.read fd (Bytes.create 1) 0 1))
              | `Wait res ->
                   wrap_syscall inputs fd res (fun () -> ())
            with Not_found ->
@@ -227,6 +230,19 @@ let write ch buf pos len =
     Unix.Unix_error ((Unix.EAGAIN | Unix.EWOULDBLOCK), _, _) ->
       let res = Lwt.wait () in
       outputs := (ch, `Write (buf, pos, len, res)) :: !outputs;
+      res
+  | e ->
+      Lwt.fail e
+
+let write_substring ch buf pos len =
+  try
+    if windows_hack && recent_ocaml then
+      raise (Unix.Unix_error (Unix.EAGAIN, "", ""));
+    Lwt.return (Unix.write_substring ch buf pos len)
+  with
+    Unix.Unix_error ((Unix.EAGAIN | Unix.EWOULDBLOCK), _, _) ->
+      let res = Lwt.wait () in
+      outputs := (ch, `WriteSubstring (buf, pos, len, res)) :: !outputs;
       res
   | e ->
       Lwt.fail e
@@ -364,7 +380,7 @@ let rec unsafe_really_input ic s ofs len =
   end
 
 let really_input ic s ofs len =
-  if ofs < 0 || len < 0 || ofs > String.length s - len
+  if ofs < 0 || len < 0 || ofs > Bytes.length s - len
   then Lwt.fail (Invalid_argument "really_input")
   else unsafe_really_input ic s ofs len
 
@@ -372,9 +388,9 @@ let input_line ic =
   let buf = ref (Bytes.create 128) in
   let pos = ref 0 in
   let rec loop () =
-    if !pos = String.length !buf then begin
+    if !pos = Bytes.length !buf then begin
       let newbuf = Bytes.create (2 * !pos) in
-      String.blit !buf 0 newbuf 0 !pos;
+      Bytes.blit !buf 0 newbuf 0 !pos;
       buf := newbuf
     end;
     Lwt.bind (input_char ic) (fun c ->
@@ -396,8 +412,8 @@ let input_line ic =
               Lwt.fail e))
     (fun () ->
        let res = Bytes.create !pos in
-       String.blit !buf 0 res 0 !pos;
-       Lwt.return res)
+       Bytes.blit !buf 0 res 0 !pos;
+       Lwt.return (Bytes.to_string res))
 
 (****)
 

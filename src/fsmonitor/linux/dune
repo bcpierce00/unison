@@ -4,7 +4,7 @@
  (name fswatcher)
  (wrapped false)
  (modules :standard \ watcher)
- (flags :standard -w -3-27-39 -unsafe-string)
+ (flags :standard -w -3-27-39)
  (c_names inotify_stubs)
  (libraries unix lwt_lib))
 

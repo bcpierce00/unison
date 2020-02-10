@@ -229,7 +229,7 @@ let rec termInput fdTerm fdInput =
       (* The remote end is dead *)
       Lwt.return None
     else
-      let query = String.sub buf 0 len in
+      let query = Bytes.sub_string buf 0 len in
       if query = "\r\n" then
         readPrompt ()
       else
@@ -251,12 +251,12 @@ let handlePasswordRequests fdTerm callback =
         (* The remote end is dead *)
         Lwt.return ()
       else
-        let query = String.sub buf 0 len in
+        let query = Bytes.sub_string buf 0 len in
         if query = "\r\n" then
           loop ()
         else begin
           let response = callback query in
-          Lwt_unix.write fdTerm
+          Lwt_unix.write_substring fdTerm
             (response ^ "\n") 0 (String.length response + 1)
               >>= (fun _ ->
           loop ())

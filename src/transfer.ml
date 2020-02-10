@@ -75,6 +75,9 @@ let reallyRead infd buffer pos length =
 let rec reallyWrite outfd buffer pos length =
   output outfd buffer pos length
 
+let rec reallyWriteSubstring outfd buffer pos length =
+  output_substring outfd buffer pos length
+
 (*************************************************************************)
 (*                            TOKEN QUEUE                                *)
 (*************************************************************************)
@@ -89,7 +92,7 @@ let rec reallyWrite outfd buffer pos length =
       (2 * comprBufSize + tokenQueueLimit) bytes at a time) *)
 
 type token =
-  | STRING   of string * int * int
+  | STRING   of bytes * int * int
   | BLOCK of int
   | EOF
 
@@ -167,7 +170,7 @@ let rec pushString q id transmit s pos len =
   assert (l > 0);
   q.data.{q.pos} <- 'S';
   encodeInt2 q.data (q.pos + 1) l;
-  Bytearray.blit_from_string s pos q.data (q.pos + 3) l;
+  Bytearray.blit_from_bytes s pos q.data (q.pos + 3) l;
   q.pos <- q.pos + l + 3;
   q.prog <- q.prog + l;
   q.previous <- `Str l;
@@ -182,7 +185,7 @@ let growString q id transmit len' s pos len =
       Util.msg "growing string (pos:%d/%d len:%d+%d)\n"
         q.pos queueSize len' len);
   let l = min (queueSize - q.pos) len in
-  Bytearray.blit_from_string s pos q.data q.pos l;
+  Bytearray.blit_from_bytes s pos q.data q.pos l;
   assert (q.pos - len' - 3 >= 0);
   assert (q.data.{q.pos - len' - 3} = 'S');
   assert (decodeInt2 q.data (q.pos - len' - 2) = len');
@@ -292,7 +295,7 @@ let rec receiveRec outfd showProgress data pos maxPos =
       let length = decodeInt2 data (pos + 1) in
       if Trace.enabled "generic" then debug (fun() -> Util.msg
           "receiving %d bytes\n" length);
-      reallyWrite outfd (Bytearray.sub data (pos + 3) length) 0 length;
+      reallyWriteSubstring outfd (Bytearray.sub data (pos + 3) length) 0 length;
       showProgress length;
       receiveRec outfd showProgress data (pos + length + 3) maxPos
   | 'E' ->
@@ -384,7 +387,7 @@ struct
           iter (count + 1) newOffset length
         end else if offset > 0 then begin
           let chunkSize = length - offset in
-          String.blit buffer offset buffer 0 chunkSize;
+          Bytes.blit buffer offset buffer 0 chunkSize;
           iter count 0 chunkSize
         end else begin
           let l = input infd buffer length (bufferSize - length) in
@@ -410,9 +413,9 @@ struct
       Bigarray.Array1.create Bigarray.int32 Bigarray.c_layout blockCount in
     let strongCs = Bytearray.create (blockCount * csSize) in
     let addBlock i buf offset =
-      weakCs.{i} <- Int32.of_int (Checksum.substring buf offset blockSize);
+      weakCs.{i} <- Int32.of_int (Checksum.subbytes buf offset blockSize);
       Bytearray.blit_from_string
-        (Digest.substring buf offset blockSize) 0 strongCs (i * csSize) csSize
+        (Digest.subbytes buf offset blockSize) 0 strongCs (i * csSize) csSize
     in
     (* Make sure we are at the beginning of the file
        (important for AppleDouble files *)
@@ -480,7 +483,7 @@ struct
           if Trace.enabled "rsynctoken" then
             debugToken (fun() ->
               Util.msg "decompressing string (%d bytes)\n" length);
-          reallyWrite outfd (Bytearray.sub data (pos + 3) length) 0 length;
+          reallyWriteSubstring outfd (Bytearray.sub data (pos + 3) length) 0 length;
           progress := !progress + length;
           decode (pos + length + 3)
       | 'B' ->
@@ -540,16 +543,16 @@ struct
 
   let sigFilter hashTableLength signatures =
     let len = hashTableLength lsl 2 in
-    let filter = String.make len '\000' in
+    let filter = Bytes.make len '\000' in
     for k = 0 to signatures.blockCount - 1 do
       let cs = Int32.to_int signatures.weakChecksum.{k} land 0x7fffffff in
       let h1 = cs lsr 28 in
       assert (h1 >= 0 && h1 < 8);
       let h2 = (cs lsr 5) land (len - 1) in
       let mask = 1 lsl h1 in
-      Bytes.set filter h2 (Char.chr (Char.code filter.[h2] lor mask))
+      Bytes.set filter h2 (Char.chr (Char.code (Bytes.get filter h2) lor mask))
     done;
-    filter
+    Bytes.to_string filter
 
   let filterMem filter hashTableLength checksum =
     let len = hashTableLength lsl 2 in
@@ -741,7 +744,7 @@ struct
         let chunkSize = st.length - st.offset in
         if chunkSize > 0 then begin
           assert(comprBufSize >= blockSize);
-          String.blit comprBuf st.offset comprBuf 0 chunkSize
+          Bytes.blit comprBuf st.offset comprBuf 0 chunkSize
         end;
         let rem = Uutil.Filesize.sub srcLength st.absolutePos in
         let avail = comprBufSize - chunkSize in
@@ -768,19 +771,19 @@ struct
       if miss then
         rollChecksum st
       else begin
-        let cksum = Checksum.substring comprBuf st.offset blockSize in
+        let cksum = Checksum.subbytes comprBuf st.offset blockSize in
         st.checksum <- cksum;
-        st.cksumOutgoing <- String.unsafe_get comprBuf st.offset;
+        st.cksumOutgoing <- Bytes.unsafe_get comprBuf st.offset;
         processBlock st
       end
 
     and rollChecksum st =
       let ingoingChar =
-        String.unsafe_get comprBuf (st.offset + blockSize - 1) in
+        Bytes.unsafe_get comprBuf (st.offset + blockSize - 1) in
       let cksum =
         Checksum.roll cksumTable st.checksum st.cksumOutgoing ingoingChar in
       st.checksum <- cksum;
-      st.cksumOutgoing <- String.unsafe_get comprBuf st.offset;
+      st.cksumOutgoing <- Bytes.unsafe_get comprBuf st.offset;
       if filterMem filter hashTableLength cksum then
         processBlock st
       else
@@ -811,7 +814,7 @@ struct
           -1
       | (k, cs) :: tl, None
         when cs = checksum ->
-          let fingerprint = Digest.substring comprBuf st.offset blockSize in
+          let fingerprint = Digest.subbytes comprBuf st.offset blockSize in
           findBlock st checksum entry (Some fingerprint)
       | (k, cs) :: tl, Some fingerprint
         when cs = checksum && fingerprintMatch k fingerprint ->

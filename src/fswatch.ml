@@ -88,6 +88,13 @@ let rec really_write o s pos len =
   else
     really_write o s (pos + l) (len - l)
 
+let rec really_write_substring o s pos len =
+  Lwt_unix.write_substring o s pos len >>= fun l ->
+  if l = len then
+    Lwt.return ()
+  else
+    really_write_substring o s (pos + l) (len - l)
+
 let split_on_space s =
   try
     let i = String.index s ' ' in
@@ -125,7 +132,7 @@ let quote s =
         incr j
       end
     done;
-    q
+    Bytes.to_string q
   end
 
 let unquote s =
@@ -152,7 +159,7 @@ let unquote s =
         incr j
       end
     done;
-    u
+    Bytes.to_string u
   end
 
 module Cond = struct
@@ -184,7 +191,7 @@ let printf o fmt =
        debugverbose (fun () -> Util.msg "<< %s" s);
        Util.convertUnixErrorsToFatal
          "sending command to filesystem watcher"
-         (fun () -> Lwt_unix.run (really_write o s 0 (String.length s))))
+         (fun () -> Lwt_unix.run (really_write_substring o s 0 (String.length s))))
     fmt
 
 let read_line i =
@@ -204,16 +211,16 @@ let read_line i =
         Lwt.return ()
     end >>= fun () ->
     try
-      let i = String.index_from buf !start '\n' in
+      let i = Bytes.index_from buf !start '\n' in
       if i >= !last then raise Not_found;
-      Buffer.add_substring b buf !start (i - !start);
+      Buffer.add_subbytes b buf !start (i - !start);
       start := i + 1;
       let s = Buffer.contents b in
       Buffer.clear b;
       debugverbose (fun() -> Util.msg ">> %s\n" s);
       Lwt.return s
     with Not_found ->
-      Buffer.add_substring b buf !start (!last - !start);
+      Buffer.add_subbytes b buf !start (!last - !start);
       start := 0; last := 0;
       read ()
   in

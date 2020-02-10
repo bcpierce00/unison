@@ -4,7 +4,7 @@
 (library
  (name lwt_lib)
  (wrapped false)
- (flags :standard -warn-error -3-27-39 -no-strict-sequence -unsafe-string)
+ (flags :standard -warn-error -3-27-39 -no-strict-sequence)
  ; (modules :standard \ editor relay)
  (libraries))
 

@@ -63,3 +63,11 @@ let substring s p l =
     cksum := (v lsl 14 - (v + v + v)) (* v * 16381 *)
   done;
   !cksum land 0x7fffffff
+
+let subbytes s p l =
+  let cksum = ref 0 in
+  for i = p to p + l - 1 do
+    let v = !cksum + Char.code (Bytes.unsafe_get s i) in
+    cksum := (v lsl 14 - (v + v + v)) (* v * 16381 *)
+  done;
+  !cksum land 0x7fffffff
