@@ -15,7 +15,7 @@ cache:
 
 env:
   # - OCAML_VERSION=4.01
-  - OCAML_VERSION=4.02
+  - OCAML_VERSION=4.08
 
 os:
   - linux
