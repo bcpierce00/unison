@@ -547,7 +547,7 @@ struct
       assert (h1 >= 0 && h1 < 8);
       let h2 = (cs lsr 5) land (len - 1) in
       let mask = 1 lsl h1 in
-      filter.[h2] <- Char.chr (Char.code filter.[h2] lor mask)
+      Bytes.set filter h2 (Char.chr (Char.code filter.[h2] lor mask))
     done;
     filter
 

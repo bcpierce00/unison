@@ -183,7 +183,7 @@ let logStart () =
     Printf.sprintf
       "%s%s started propagating changes at %02d:%02d:%02d.%02d on %02d %s %04d\n"
       (if Prefs.read Trace.terse || Prefs.read Globals.batch then "" else "\n\n")
-      (String.uppercase Uutil.myNameAndVersion)
+      (String.uppercase_ascii Uutil.myNameAndVersion)
       tm.Unix.tm_hour tm.Unix.tm_min tm.Unix.tm_sec
       (min 99 (truncate (mod_float t 1. *. 100.)))
       tm.Unix.tm_mday (Util.monthname tm.Unix.tm_mon)
@@ -196,7 +196,7 @@ let logFinish () =
   let m =
     Printf.sprintf
       "%s finished propagating changes at %02d:%02d:%02d.%02d on %02d %s %04d\n%s"
-      (String.uppercase Uutil.myNameAndVersion)
+      (String.uppercase_ascii Uutil.myNameAndVersion)
       tm.Unix.tm_hour tm.Unix.tm_min tm.Unix.tm_sec
       (min 99 (truncate (mod_float t 1. *. 100.)))
       tm.Unix.tm_mday (Util.monthname tm.Unix.tm_mon)

@@ -23,7 +23,7 @@ module Private = struct
 
 let debug = Trace.debug "ui"
 
-let myNameCapitalized = String.capitalize Uutil.myName
+let myNameCapitalized = String.capitalize_ascii Uutil.myName
 
 (**********************************************************************
                            LOW-LEVEL STUFF
@@ -844,7 +844,7 @@ let getSecondRoot () =
       let root = getRoot() in
       result := Some root;
       t#destroy ()
-    with Failure "int_of_string" ->
+    with Failure _ ->
       if portE#text="" then
         okBox ~parent:t ~title:"Error" ~typ:`ERROR ~message:"Please enter a port"
       else okBox ~parent:t ~title:"Error" ~typ:`ERROR
@@ -916,7 +916,7 @@ type profileInfo = {roots:string list; label:string option}
 
 (* ------ *)
 
-let profileKeymap = Array.create 10 None
+let profileKeymap = Array.make 10 None
 
 let provideProfileKey filename k profile info =
   try
@@ -935,7 +935,7 @@ let provideProfileKey filename k profile info =
         ("Error scanning profile "^ System.fspathToPrintString filename ^":\n"
          ^ "Value of 'key' preference must be a single digit (0-9), "
          ^ "not " ^ k))
-  with Failure "int_of_string" -> raise (Util.Fatal
+  with Failure _ -> raise (Util.Fatal
     ("Error scanning profile "^ System.fspathToPrintString filename ^":\n"
      ^ "Value of 'key' preference must be a single digit (0-9), "
      ^ "not " ^ k))
@@ -1956,7 +1956,7 @@ let documentPreference ~compact ~packing =
           tbl#misc#set_sensitive false;
           ("", "", false)
     in
-    shortDescr#set_text (String.capitalize short);
+    shortDescr#set_text (String.capitalize_ascii short);
     insertMarkup tags longDescr (formatDoc long)
 (*    longDescr#buffer#set_text (formatDoc long)*)
 

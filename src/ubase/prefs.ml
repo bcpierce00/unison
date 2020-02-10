@@ -254,7 +254,7 @@ let string2bool name = function
 let string2int name string =
  try
    int_of_string string
- with Failure "int_of_string" ->
+ with Failure _ ->
    raise (Util.Fatal (name ^ " expects an integer value, but\n"
                  ^ string ^ " is not an integer"))
 

@@ -68,7 +68,7 @@ let parse speclist anonfun errmsg =
   incr current;
   while !current < l do
     let ss = argv.(!current) in
-    if String.length ss >= 1 & String.get ss 0 = '-' then begin
+    if String.length ss >= 1 && String.get ss 0 = '-' then begin
       let (s, v) = Util.splitAtChar ss '=' in
       let arg conv mesg =
         match v with

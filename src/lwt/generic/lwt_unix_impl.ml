@@ -337,7 +337,7 @@ let wait_outchan oc = wait_write (Unix.descr_of_out_channel oc)
 
 let rec input_char ic =
   try
-    Lwt.return (Pervasives.input_char ic)
+    Lwt.return (Stdlib.input_char ic)
   with
     Sys_blocked_io ->
       Lwt.bind (wait_inchan ic) (fun () -> input_char ic)
@@ -346,7 +346,7 @@ let rec input_char ic =
 
 let rec input ic s ofs len =
   try
-    Lwt.return (Pervasives.input ic s ofs len)
+    Lwt.return (Stdlib.input ic s ofs len)
   with
     Sys_blocked_io ->
       Lwt.bind (wait_inchan ic) (fun () -> input ic s ofs len)
@@ -381,7 +381,7 @@ let input_line ic =
     if c = '\n' then
       Lwt.return ()
     else begin
-      !buf.[!pos] <- c;
+      Bytes.set !buf !pos c;
       incr pos;
       loop ()
     end)
