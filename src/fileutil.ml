@@ -28,7 +28,7 @@ let backslashes2forwardslashes s0 =
       then Bytes.set s i '/'
       else Bytes.set s i c
     done;
-    s
+    Bytes.to_string s
   with Not_found -> s0
 
 let rec removeTrailingSlashes s =

@@ -131,7 +131,7 @@ let readfs p =
   let rec loop p =
     let s = Fs.lstat p in
     match s.Unix.LargeFile.st_kind with
-      | Unix.S_REG -> File (read p)
+      | Unix.S_REG -> File (Bytes.to_string (read p))
       | Unix.S_LNK -> Link (Fs.readlink p)
       | Unix.S_DIR -> Dir (Safelist.map (fun x -> (x, loop (extend p x))) (read_dir p))
       | _ -> assert false

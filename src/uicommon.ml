@@ -367,7 +367,7 @@ let globx_quote s =
     | c ->
         Bytes.set buf !pos c; pos := !pos + 1
   done;
-  "{" ^ String.sub buf 0 !pos ^ "}"
+  "{" ^ Bytes.sub_string buf 0 !pos ^ "}"
 let quote =
   let escape_mapSeparator s =
     let sep = Util.trimWhitespace Pred.mapSeparator in
