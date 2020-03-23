@@ -137,6 +137,7 @@ let unisonInit1 profileName =
      have checked that the named one exists). *)
    if not(System.file_exists (Prefs.profilePathname profileName)) then
      Prefs.addComment "Unison preferences file";
+     Prefs.addComment "ignore = Name unison.log";
 
   (* Load the profile *)
   (Trace.debug "" (fun() -> Util.msg "about to load prefs");
