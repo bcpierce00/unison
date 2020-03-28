@@ -57,4 +57,27 @@ this build to work with 'STATIC=true'.
 -----------------------------
 WINDOWS:
 
-(Anybody want to contribute instructions??)
+1) Install 32-bit OCaml for Windows 
+   from https://fdopen.github.io/opam-repository-mingw/installation/
+	   Grab the graphical installer if your build does not require an older version of OCaml
+
+2) Download glib, pango, and gtk
+   Download the Cygwin setup tool
+   from https://cygwin.com/
+   
+   target your OCaml install directory
+
+   install the mingw64-i686-glib2, mingw64-i686-gtk2, and mingw64-i686-pango packages
+   
+3) Install lablgtk
+   Open Cygwin
+   
+   Follow https://fdopen.github.io/opam-repository-mingw/depext-cygwin/ to install depext
+
+   To install lablgtk, run
+      opam depext -i lablgtk
+
+4) Grab a copy of Unison and cd into it
+
+5) Build Unison by running
+   make src OSTYPE=cygwin OSARCH=win32 UISTYLE=gtk2
