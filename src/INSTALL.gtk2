@@ -61,7 +61,7 @@ WINDOWS:
    from https://fdopen.github.io/opam-repository-mingw/installation/
 	   Grab the graphical installer if your build does not require an older version of OCaml
 
-2) Download glib, pango, and gtk
+2) Install glib, pango, and gtk
    Download the Cygwin setup tool
    from https://cygwin.com/
    
