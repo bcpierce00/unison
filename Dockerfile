@@ -13,5 +13,12 @@ RUN set -ex; \
 FROM debian:stable-slim
 COPY --from=builder /usr/src/unison/src/unison* /usr/local/bin/
 
+ENV HOME /home/user
+RUN useradd --create-home --home-dir $HOME user \
+	&& mkdir $HOME/documents && chown -R user:user $HOME
+
+WORKDIR $HOME
+USER user
+
 ENTRYPOINT ["unison"]
 CMD ["-doc", "about"]
