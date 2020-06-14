@@ -113,7 +113,7 @@ let getUser s =
   else (None,s)
 
 (*ipv6 support*)
-let hostWithBracketsRegexp = Str.regexp "\[.*\]"
+let hostWithBracketsRegexp = Str.regexp "\\[.*\\]"
 let hostRegexp = Str.regexp "[-_a-zA-Z0-9.]+"
 let getHost s =
   if Str.string_match hostWithBracketsRegexp s 0

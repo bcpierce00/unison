@@ -363,9 +363,9 @@ let globx_quote s =
   for i = 0 to len - 1 do
     match s.[i] with
       '*' | '?' | '[' | '{' | '}' | ',' | '\\' as c ->
-        buf.[!pos] <- '\\'; buf.[!pos + 1] <- c; pos := !pos + 2
+        Bytes.set buf !pos '\\'; Bytes.set buf (!pos + 1) c; pos := !pos + 2
     | c ->
-        buf.[!pos] <- c; pos := !pos + 1
+        Bytes.set buf !pos c; pos := !pos + 1
   done;
   "{" ^ String.sub buf 0 !pos ^ "}"
 let quote =
@@ -439,7 +439,7 @@ let debug = Trace.debug "startup"
 
 (*FIX: remove when Unison version > 2.40 *)
 let _ =
-Remote.registerRootCmd "_unicodeCaseSensitive_" (fun _ -> Lwt.return ())
+fun r x -> Remote.registerRootCmd "_unicodeCaseSensitive_" (fun _ -> Lwt.return ()) r x
 let supportUnicodeCaseSensitive () =
   if Uutil.myMajorVersion > "2.40" (* The test is correct until 2.99... *) then
     Lwt.return true

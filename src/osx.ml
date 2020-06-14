@@ -110,9 +110,9 @@ let getID buf ofs =
 let setInt4 v =
   let s = Bytes.create 4 in
   let set i =
-    s.[i] <-
-      Char.chr (Int64.to_int (Int64.logand 255L
-                               (Int64.shift_right v (24 - 8 * i)))) in
+    Bytes.set s i
+      (Char.chr (Int64.to_int (Int64.logand 255L
+                               (Int64.shift_right v (24 - 8 * i))))) in
   set 0; set 1; set 2; set 3;
   s
 
@@ -224,7 +224,7 @@ let extractInfo typ info =
   let xflags = String.sub info 24 2 in
   let typeCreator = String.sub info 0 8 in
   (* Ignore hasBeenInited flag *)
-  flags.[0] <- Char.chr (Char.code flags.[0] land 0xfe);
+  Bytes.set flags 0 (Char.chr (Char.code flags.[0] land 0xfe));
   (* If the extended flags should be ignored, clear them *)
   let xflags =
     if Char.code xflags.[0] land 0x80 <> 0 then "\000\000" else xflags

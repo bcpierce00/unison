@@ -27,7 +27,7 @@ let nocase_cmp a b =
     if i>=minlen then compare alen blen
     else
       let c =
-        compare (Char.lowercase(String.get a i)) (Char.lowercase(String.get b i)) in
+        compare (Char.lowercase_ascii(String.get a i)) (Char.lowercase_ascii(String.get b i)) in
       if c<>0 then c else loop (i+1) in
   loop 0
 let nocase_eq a b = (0 = (nocase_cmp a b))

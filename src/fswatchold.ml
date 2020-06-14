@@ -60,7 +60,7 @@ let watchercmd archHash root =
 module StringSet= Set.Make (String)
 module RootMap = Map.Make (String)
 type watcherinfo = {file: System.fspath;
-                    mutable ch:Pervasives.in_channel option;
+                    mutable ch:Stdlib.in_channel option;
                     chars: Buffer.t;
                     mutable lines: string list}
 let watchers : watcherinfo RootMap.t ref = ref RootMap.empty
