@@ -52,12 +52,12 @@ let quote s =
     for i = 0 to l - 1 do
       let c = s.[i] in
       if disallowed_char s.[i] then begin
-        q.[!j] <- '%';
-        q.[!j + 1] <- hex.[Char.code c lsr 4];
-        q.[!j + 2] <- hex.[Char.code c land 15];
+        Bytes.set q !j '%';
+        Bytes.set q (!j + 1) hex.[Char.code c lsr 4];
+        Bytes.set q (!j + 2) hex.[Char.code c land 15];
         j := !j + 3
       end else begin
-        q.[!j] <- c;
+        Bytes.set q !j c;
         incr j
       end
     done;
@@ -81,10 +81,10 @@ let unquote s =
     for i = 0 to l - 2 * !n - 1 do
       let c = s.[!j] in
       if c = '%' then begin
-        u.[i] <- Char.chr ((hex_char s.[!j + 1]) lsl 4 + hex_char s.[!j + 2]);
+        Bytes.set u i (Char.chr ((hex_char s.[!j + 1]) lsl 4 + hex_char s.[!j + 2]));
         j := !j + 3
       end else begin
-        u.[i] <- c;
+        Bytes.set u i c;
         incr j
       end
     done;

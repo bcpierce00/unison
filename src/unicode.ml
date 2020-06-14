@@ -22,7 +22,7 @@ exception Invalid
 let fail () = raise Invalid
 
 let get s i = Char.code (String.unsafe_get s i)
-let set s i v = String.unsafe_set s i (Char.unsafe_chr v)
+let set s i v = Bytes.unsafe_set s i (Char.unsafe_chr v)
 
 (****)
 
@@ -938,7 +938,7 @@ let normalize s =
        also with non-unicode strings.  The optimization below assumes
        a case-insensitive comparison on ASCII characters, thus we
        translate the string to lowercase *)
-    String.lowercase s
+    String.lowercase_ascii s
 
 (****)
 
@@ -1584,7 +1584,7 @@ and compose_rec s i l v =
     (v, i)
 
 let compose s =
-  try scan (0, 0) (String.copy s) 0 (String.length s) with Invalid -> s
+  try scan (0, 0) (Bytes.copy s) 0 (String.length s) with Invalid -> s
 
 (***)
 

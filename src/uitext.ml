@@ -382,7 +382,7 @@ let interact prilist rilist =
         displayri ri;
         match ri.replicas with
           Problem s -> display "\n"; display s; display "\n"; next()
-        | Different ({rc1 = _; rc2 = _; direction = dir} as diff) ->
+        | Different {rc1 = _; rc2 = _; direction = dir} ->
             if Prefs.read Uicommon.auto && not (isConflict dir) then begin
               display "\n"; next()
             end else
@@ -582,7 +582,7 @@ let interact prilist rilist =
                  (["%"],
                   ("skip all the following"),
                   (fun () -> newLine();
-                     Safelist.iter (fun ri -> setskip ri; ()) rest;
+                     Safelist.iter (fun ri -> Stdlib.ignore (setskip ri); ()) rest;
                      repeat()));
                  (["-"],
                   ("skip and discard for this session (curr or match)"),

@@ -78,8 +78,8 @@ let toString md5 =
     let string = Bytes.create (length * 2) in
     for i=0 to (length - 1) do
       let c1, c2 =  hexaCode (md5.[i]) in
-      string.[2*i] <- c1;
-      string.[2*i + 1] <- c2;
+      Bytes.set string (2*i) c1;
+      Bytes.set string (2*i + 1) c2;
     done;
     string
   end
