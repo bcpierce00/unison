@@ -2,6 +2,7 @@ Unison File Synchronizer
 ========================
 
 [![Build Status](https://travis-ci.org/bcpierce00/unison.svg?branch=master)](https://travis-ci.org/bcpierce00/unison)
+![Main workflow](https://github.com/bcpierce00/unison/workflows/Main%20workflow/badge.svg)
 
 Unison is a file-synchronization tool for OSX, Unix, and Windows. It allows two
 replicas of a collection of files and directories to be stored on different
