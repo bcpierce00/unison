@@ -14,12 +14,11 @@ cache:
   - /usr/local
 
 env:
-  # - OCAML_VERSION=4.01
-  - OCAML_VERSION=4.08
+  - OCAML_VERSION=4.10
 
 os:
   - linux
-#  - osx
+  - osx
 
 # BCP and brabalan, 1/19: We took away the OSX build because it is
 # horribly slow and 98% redundant...
