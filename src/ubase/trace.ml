@@ -149,9 +149,14 @@ let rec getLogch() =
         logch := None; getLogch ()
       end)
 
+let ansiColorRegexp = Str.regexp "\o033\\[[0-9;:]*m"
+
+let stripColorEscapes s =
+  Str.global_replace ansiColorRegexp "" s
+
 let sendLogMsgsToStderr = ref true
 
-let writeLog s =
+let writeLog s stripColor =
   if !sendLogMsgsToStderr then begin
       match !traceprinter with
       | `Stdout -> Printf.printf "%s" s
@@ -163,9 +168,10 @@ let writeLog s =
       | `Stderr -> Util.msg "%s" s
       | `FormatStdout -> Format.printf "%s " s);
   if Prefs.read logging then begin
+    let clean = if stripColor then stripColorEscapes s else s in
     let ch = getLogch() in
     begin try
-      output_string ch s;
+      output_string ch clean;
       flush ch
     with Sys_error _ -> () end
   end
@@ -178,7 +184,7 @@ let terse =
     ("When this preference is set to {\\tt true}, the user "
      ^ "interface will not print status messages.")
 
-type msgtype = Msg | StatusMajor | StatusMinor | Log
+type msgtype = Msg | StatusMajor | StatusMinor | Log | LogColor
 type msg = msgtype * string
 
 let defaultMessageDisplayer s =
@@ -205,7 +211,8 @@ let displayMessageLocally (mt,s) =
     Msg -> display s
   | StatusMajor -> statusMsgMajor := s; statusMsgMinor := ""; displayStatus()
   | StatusMinor -> statusMsgMinor := s; displayStatus()
-  | Log -> writeLog s
+  | Log      -> writeLog s false
+  | LogColor -> writeLog s true
 
 let messageForwarder = ref None
 
@@ -229,6 +236,8 @@ let statusDetail s =
   displayMessage (StatusMinor, ss)
 
 let log s = displayMessage (Log, s)
+
+let log_color s = displayMessage (LogColor, s)
 
 let logverbose s =
   let temp = !sendLogMsgsToStderr in
