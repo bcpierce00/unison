@@ -912,36 +912,6 @@ let termInteract = Some getPassword
 
 (* ------ *)
 
-type profileInfo = {roots:string list; label:string option}
-
-(* ------ *)
-
-let profileKeymap = Array.make 10 None
-
-let provideProfileKey filename k profile info =
-  try
-    let i = int_of_string k in
-    if 0<=i && i<=9 then
-      match profileKeymap.(i) with
-        None -> profileKeymap.(i) <- Some(profile,info)
-      | Some(otherProfile,_) ->
-          raise (Util.Fatal
-            ("Error scanning profile "^
-                System.fspathToPrintString filename ^":\n"
-             ^ "shortcut key "^k^" is already bound to profile "
-             ^ otherProfile))
-    else
-      raise (Util.Fatal
-        ("Error scanning profile "^ System.fspathToPrintString filename ^":\n"
-         ^ "Value of 'key' preference must be a single digit (0-9), "
-         ^ "not " ^ k))
-  with Failure _ -> raise (Util.Fatal
-    ("Error scanning profile "^ System.fspathToPrintString filename ^":\n"
-     ^ "Value of 'key' preference must be a single digit (0-9), "
-     ^ "not " ^ k))
-
-(* ------ *)
-
 module React = struct
   type 'a t = { mutable state : 'a; mutable observers : ('a -> unit) list }
 
@@ -2310,33 +2280,6 @@ TODO:
 
 (* ------ *)
 
-let profilesAndRoots = ref []
-
-let scanProfiles () =
-  Array.iteri (fun i _ -> profileKeymap.(i) <- None) profileKeymap;
-  profilesAndRoots :=
-    (Safelist.map
-       (fun f ->
-          let f = Filename.chop_suffix f ".prf" in
-          let filename = Prefs.profilePathname f in
-          let fileContents = Safelist.map (fun (_, _, n, v) -> (n, v)) (Prefs.readAFile f) in
-          let roots =
-            Safelist.map snd
-              (Safelist.filter (fun (n, _) -> n = "root") fileContents) in
-          let label =
-            try Some(Safelist.assoc "label" fileContents)
-            with Not_found -> None in
-          let info = {roots=roots; label=label} in
-          (* If this profile has a 'key' binding, put it in the keymap *)
-          (try
-             let k = Safelist.assoc "key" fileContents in
-             provideProfileKey filename k f info
-           with Not_found -> ());
-          (f, info))
-       (Safelist.filter (fun name -> not (   Util.startswith name ".#"
-                                          || Util.startswith name Os.tempFilePrefix))
-          (Files.ls Os.unisonDir "*.prf")))
-
 let getProfile quit =
   let ok = ref false in
 
@@ -2417,12 +2360,12 @@ let getProfile quit =
       ~xalign:0. ~selectable:true () in
 
   let fillLst default =
-    scanProfiles();
+    Uicommon.scanProfiles();
     lst_store#clear ();
     Safelist.iter
       (fun (profile, info) ->
          let labeltext =
-           match info.label with None -> "" | Some l -> l in
+           match info.Uicommon.label with None -> "" | Some l -> l in
          let row = lst_store#append () in
          lst_store#set ~row ~column:c_name (Unicode.protect profile);
          lst_store#set ~row ~column:c_label (Unicode.protect labeltext);
@@ -2431,7 +2374,7 @@ let getProfile quit =
            lst#selection#select_iter row;
            lst#scroll_to_cell (lst_store#get_path row) vc_name
          end)
-      (Safelist.sort (fun (p, _) (p', _) -> compare p p') !profilesAndRoots)
+      (Safelist.sort (fun (p, _) (p', _) -> compare p p') !Uicommon.profilesAndRoots)
   in
   let selection = GtkReact.tree_view_selection lst in
   let hasSel = selection >> fun l -> l <> [] in
@@ -2445,7 +2388,7 @@ let getProfile quit =
     (fun info ->
        match info with
          Some ((profile, info), _) ->
-           begin match info.roots with
+           begin match info.Uicommon.roots with
              [r1; r2] -> root1#set_text (Unicode.protect r1);
                          root2#set_text (Unicode.protect r2);
                          tbl#misc#set_sensitive true
@@ -4172,7 +4115,7 @@ lst_store#set ~row ~column:c_path path;
       None -> ()
     | Some(profile, info) ->
         fastProf profile fastKeysyms.(i))
-    profileKeymap;
+    Uicommon.profileKeymap;
 
   ignore (fileMenu#add_separator ());
   ignore (fileMenu#add_item
@@ -4263,7 +4206,7 @@ let start _ =
     ignore_result (tick ());
 
     Os.createUnisonDir();
-    scanProfiles();
+    Uicommon.scanProfiles();
     let detectCmd = createToplevelWindow() in
 
     Uicommon.uiInit

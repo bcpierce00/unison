@@ -70,7 +70,7 @@ let profileKey =
   Prefs.createString "key" ""
     "!define a keyboard shortcut for this profile (in some UIs)"
     ("Used in a profile to define a numeric key (0-9) that can be used in "
-     ^ "the graphical user interface to switch immediately to this profile.")
+     ^ "the user interface to switch immediately to this profile.")
 (* This preference is not actually referred to in the code anywhere, since
    the keyboard shortcuts are constructed by a separate scan of the preference
    file in uigtk.ml, but it must be present to prevent the preferences module
@@ -489,6 +489,64 @@ let validateAndFixupPrefs () =
   Prefs.set Globals.someHostIsRunningWindows someHostIsRunningWindows;
   Prefs.set Globals.allHostsAreRunningWindows allHostsAreRunningWindows;
   return ())
+
+(* ---- *)
+
+type profileInfo = {roots:string list; label:string option; key:string option}
+
+let profileKeymap = Array.make 10 None
+
+let provideProfileKey filename k profile info =
+  try
+    let i = int_of_string k in
+    if 0<=i && i<=9 then
+      match profileKeymap.(i) with
+        None -> profileKeymap.(i) <- Some(profile,info)
+      | Some(otherProfile,_) ->
+          raise (Util.Fatal
+            ("Error scanning profile "^
+                System.fspathToPrintString filename ^":\n"
+             ^ "shortcut key "^k^" is already bound to profile "
+             ^ otherProfile))
+    else
+      raise (Util.Fatal
+        ("Error scanning profile "^ System.fspathToPrintString filename ^":\n"
+         ^ "Value of 'key' preference must be a single digit (0-9), "
+         ^ "not " ^ k))
+  with Failure _ -> raise (Util.Fatal
+    ("Error scanning profile "^ System.fspathToPrintString filename ^":\n"
+     ^ "Value of 'key' preference must be a single digit (0-9), "
+     ^ "not " ^ k))
+
+let profilesAndRoots = ref []
+
+let scanProfiles () =
+  Array.iteri (fun i _ -> profileKeymap.(i) <- None) profileKeymap;
+  profilesAndRoots :=
+    (Safelist.map
+       (fun f ->
+          let f = Filename.chop_suffix f ".prf" in
+          let filename = Prefs.profilePathname f in
+          let fileContents = Safelist.map (fun (_, _, n, v) -> (n, v)) (Prefs.readAFile f) in
+          let roots =
+            Safelist.map snd
+              (Safelist.filter (fun (n, _) -> n = "root") fileContents) in
+          let label =
+            try Some(Safelist.assoc "label" fileContents)
+            with Not_found -> None in
+          let key =
+            try Some (Safelist.assoc "key" fileContents)
+            with Not_found -> None in
+          let info = {roots=roots; label=label; key=key} in
+          (* If this profile has a 'key' binding, put it in the keymap *)
+          (try
+             let k = Safelist.assoc "key" fileContents in
+             provideProfileKey filename k f info
+           with Not_found -> ());
+          (f, info))
+       (Safelist.filter (fun name -> not (   Util.startswith name ".#"
+                                          || Util.startswith name Os.tempFilePrefix))
+          (Files.ls Os.unisonDir "*.prf")))
 
 (* ---- *)
 

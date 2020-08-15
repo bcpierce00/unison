@@ -867,7 +867,7 @@ The scroll bar is not usable during transport: every time a line changes
   user to control the colors of all the arrows individually.
 
 Text mode user interface should be brought up to date with graphical
-  interface (it should prompt for profile selection, creation, root
+  interface (it should prompt for profile creation, root
   entry, etc.; command characters should be the same; ...)
 
 Since the manual is pretty big, it would be nice if the on-line version

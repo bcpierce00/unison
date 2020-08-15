@@ -1166,6 +1166,119 @@ let rec synchronizeUntilDone () =
 
 (* ----------------- Startup ---------------- *)
 
+let profmgrPrefName = "i"
+let profmgrPref =
+  Prefs.createBool profmgrPrefName false ~local:true
+    "interactive profile mode (text UI); command-line only"
+    ("Provide this preference in the command line arguments to enable "
+     ^ "interactive profile manager in the text user interface. Currently "
+     ^ "only profile listing and interactive selection are available. "
+     ^ "Preferences like \\texttt{batch} and \\texttt{silent} remain "
+     ^ "applicable to synchronization functionality.")
+let profmgrUsageMsg = "To start interactive profile selection, type \""
+  ^ Uutil.myName ^ " -" ^ profmgrPrefName ^ "\"."
+
+let addProfileKeys list default =
+  let rec nextAvailKey i =
+    let n = i + 1 in
+    if n >= (Array.length Uicommon.profileKeymap) then
+      n
+    else
+      match Uicommon.profileKeymap.(n) with
+          None   -> n
+        | Some _ -> nextAvailKey n
+  in
+  let keyAndNext (p, info) i =
+    match info.Uicommon.key with
+      Some k -> (k, i)
+    | None   -> if p = default then ("d", i)
+                else ((string_of_int i), (nextAvailKey i))
+  in
+  let rec addKey i acc = function
+  | []           -> []
+  | [prof]       -> let (key, _) = keyAndNext prof i in
+                      (key, prof) :: acc
+  | prof :: rest -> let (key, next) = keyAndNext prof i in
+                      addKey next ((key, prof) :: acc) rest
+  in
+  addKey 0 [] list
+
+let getProfile default =
+  let cmdArgs = Prefs.scanCmdLine Uicommon.shortUsageMsg in
+  Uicommon.scanProfiles ();
+  if Util.StringMap.mem Uicommon.runTestsPrefName cmdArgs ||
+    not (Util.StringMap.mem profmgrPrefName cmdArgs) then
+    Some default
+  else
+  if (List.length !Uicommon.profilesAndRoots) > 10 then begin
+    Trace.log (Format.sprintf "You have too many profiles in %s \
+                for interactive selection. Please specify profile \
+                or roots on command line.\n"
+                (System.fspathToPrintString Os.unisonDir));
+    Trace.log "The profile names are:\n";
+    Safelist.iter (fun (p, _) -> Trace.log (Format.sprintf "  %s\n" p))
+      !Uicommon.profilesAndRoots;
+    Trace.log "\n";
+    Some default
+  end else if (List.length !Uicommon.profilesAndRoots) = 0 then
+    Some default
+  else
+
+  let keyedProfileList = addProfileKeys
+    (Safelist.sort (fun (p, _) (p', _) -> compare p p')
+      !Uicommon.profilesAndRoots)
+    default in
+  let profileList = (Safelist.sort (fun (k, _) (k', _) -> compare k k')
+                      keyedProfileList)
+  in
+
+  (* Must parse command line to get dumbtty and color preferences *)
+  Prefs.parseCmdLine Uicommon.shortUsageMsg;
+  setupTerminal(); setColorPreference ();
+  Prefs.resetToDefaults();
+
+  display "Available profiles:\n key:  profilename         label\n";
+  Safelist.iteri
+    (fun n (key, (profile, info)) ->
+      let labeltext =
+          match info.Uicommon.label with None -> "" | Some l -> l in
+      display (Format.sprintf "  %s%s%s :"
+                (color `Focus) key (color `Reset));
+      display (Format.sprintf "  %s%-18s%s  %s%s%s\n"
+                (color `Focus) profile (color `Reset)
+                (color `Information) labeltext (color `Reset));
+      Safelist.iteri
+          (fun i root -> display (Format.sprintf "         root %i = %s\n"
+                                   (i + 1) root))
+          info.Uicommon.roots
+    )
+    profileList;
+  display "\n";
+
+  let selection = ref (Some default) in
+  let actions = Safelist.append
+    [(["";"n";"/"],
+      "Don't select any profile",
+      (fun () -> selection := None; newLine();
+                   display "\nNo profile selected\n\n"));
+     (["q"],
+      ("exit " ^ Uutil.myName),
+      (fun () -> newLine(); raise Sys.Break))]
+    (Safelist.map (fun (key, (profile, info)) ->
+        ([key],
+        "Profile: " ^ profile,
+        (fun () -> selection := Some profile; newLine();
+                     display ("\nProfile " ^ profile ^ " selected\n\n")))
+      )
+      profileList);
+  in
+  let rec askProfile () =
+    display "Select a profile ";
+    selectAction None actions (fun () -> display "Select a profile ")
+  in
+  askProfile ();
+  !selection
+
 let handleException e =
   restoreTerminal();
   let msg = Uicommon.exn2string e in
@@ -1179,15 +1292,15 @@ let rec start interface =
     (* Just to make sure something is there... *)
     setWarnPrinterForInitialization();
     Uicommon.uiInit
-      (fun s -> Util.msg "%s\n%s\n" Uicommon.shortUsageMsg s; exit 1)
+      (fun s -> Util.msg "%s%s\n\n%s\n" Uicommon.shortUsageMsg profmgrUsageMsg s; exit 1)
       (fun s -> Util.msg "%s" Uicommon.shortUsageMsg; exit 1)
       (fun () -> setWarnPrinter();
                  if Prefs.read silent then Prefs.set Trace.terse true;
                  if not (Prefs.read silent)
                  then Util.msg "%s\n" (Uicommon.contactingServerMsg()))
-      (fun () -> Some "default")
-      (fun () -> Util.msg "%s" Uicommon.shortUsageMsg; exit 1)
-      (fun () -> Util.msg "%s" Uicommon.shortUsageMsg; exit 1)
+      (fun () -> let prof = getProfile "default" in restoreTerminal(); prof)
+      (fun () -> Util.msg "%s%s\n" Uicommon.shortUsageMsg profmgrUsageMsg; exit 1)
+      (fun () -> Util.msg "%s%s\n" Uicommon.shortUsageMsg profmgrUsageMsg; exit 1)
       None;
 
     (* Some preference settings imply others... *)
