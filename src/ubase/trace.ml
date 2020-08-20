@@ -121,6 +121,16 @@ let logfile =
 
 let logch = ref None
 
+let closelog _ =
+  match !logch with
+    None -> ()
+  | Some(ch,file) ->
+      close_out ch;
+      logch := None;
+  ;;
+
+Sys.signal Sys.sigusr1 (Signal_handle closelog);;
+
 let rec getLogch() =
   Util.convertUnixErrorsToFatal "getLogch" (fun() ->
   match !logch with
