@@ -534,7 +534,8 @@ let set fspath path kind t =
                Util.finalize
                  (fun()->
                     Fs.chmod abspath 0o600;
-                    Fs.utimes abspath v v)
+                    Fs.utimes abspath (if v = 0. then 1e-12 else v) v)
+                    (* See comment about this statement further below *)
                  (fun()-> Fs.chmod abspath oldPerms)
              end
            else if false then begin
@@ -557,7 +558,14 @@ let set fspath path kind t =
              let (r,_) = Lwt_unix.run (External.runExternalProgram cmd) in
              if r<>(Unix.WEXITED 0) then raise (Util.Transient "External time-setting command failed")
            end else
-             Fs.utimes abspath v v)
+             Fs.utimes abspath (if v = 0. then 1e-12 else v) v)
+             (* If atime and mtime arguments are both 0 then Unix.utimes
+                will set actual atime and mtime on the file to be the
+                current timestamp, which is not the desired result.
+                To sync the exact mtime value of 0, atime must be non-zero.
+                Setting atime to be different from zero by less than a
+                nanosecond allows to achieve the desired result.
+                https://github.com/bcpierce00/unison/issues/223 *)
   | _ ->
       ()
 
