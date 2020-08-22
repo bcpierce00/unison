@@ -6,7 +6,7 @@
  (flags :standard
         -w -3-6-9-10-26-27-32-34-35-38-39-50-52
         -warn-error -3-6-9-10-26-27-32-34-35-39-50-52
-        -unsafe-string -no-strict-sequence)
+        -no-strict-sequence)
  (c_names bytearray_stubs osxsupport pty)
  (c_library_flags -lutil)
  (libraries str unix lwt_lib bigarray))
@@ -22,6 +22,6 @@
 (executable
  (name linkgtk2)
  (public_name unison-gtk2)
- (flags :standard -w -3-6-9-27-32-52 -unsafe-string)
+ (flags :standard -w -3-6-9-27-32-52)
  (modules linkgtk2 uigtk2)
  (libraries threads unison_lib lablgtk2))

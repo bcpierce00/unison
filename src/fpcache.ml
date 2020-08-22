@@ -53,6 +53,7 @@ let decompress st i path =
   let s = Bytes.create (l + i) in
   String.blit !st 0 s 0 i;
   String.blit path 0 s i l;
+  let s = Bytes.to_string s in
   st := s;
   s
 
@@ -76,19 +77,19 @@ let read st ic =
   let headerSize = Marshal.header_size in
   let header = Bytes.create headerSize in
   really_input ic header 0 headerSize;
-  if fp1 <> Digest.string header then begin
+  if fp1 <> Digest.bytes header then begin
     debug (fun () -> Util.msg "bad header checksum\n");
     raise End_of_file
   end;
   let dataSize = Marshal.data_size header 0 in
   let s = Bytes.create (headerSize + dataSize) in
-  String.blit header 0 s 0 headerSize;
+  Bytes.blit header 0 s 0 headerSize;
   really_input ic s headerSize dataSize;
-  if fp2 <> Digest.string s then begin
+  if fp2 <> Digest.bytes s then begin
     debug (fun () -> Util.msg "bad chunk checksum\n");
     raise End_of_file
   end;
-  let q : entry list = Marshal.from_string s 0 in
+  let q : entry list = Marshal.from_bytes s 0 in
   debug (fun () -> Util.msg "read chunk of %d files\n" (List.length q));
   List.iter (fun (l, p, i) -> PathTbl.add tbl (decompress st l p) i) q
 

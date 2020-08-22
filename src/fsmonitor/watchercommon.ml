@@ -61,7 +61,7 @@ let quote s =
         incr j
       end
     done;
-    q
+    Bytes.to_string q
   end
 
 let unquote s =
@@ -88,7 +88,7 @@ let unquote s =
         incr j
       end
     done;
-    u
+    Bytes.to_string u
   end
 
 let split_on_space s =
@@ -108,6 +108,13 @@ let rec really_write o s pos len =
   else
     really_write o s (pos + l) (len - l)
 
+let rec really_write_substring o s pos len =
+  Lwt_unix.write_substring o s pos len >>= fun l ->
+  if l = len then
+    Lwt.return ()
+  else
+    really_write_substring o s (pos + l) (len - l)
+
 let format_exc e =
   match e with
     Unix.Unix_error (code, funct, arg) ->
@@ -126,7 +133,7 @@ let _in = (*Lwt_unix.stdin*) Lwt_unix.of_unix_file_descr Unix.stdin
 let _out = (*Lwt_unix.stdout*) Lwt_unix.of_unix_file_descr Unix.stdout
 
 let printf fmt =
-  Printf.ksprintf (fun s -> really_write _out s 0 (String.length s)) fmt
+  Printf.ksprintf (fun s -> really_write_substring _out s 0 (String.length s)) fmt
 
 let read_line =
   let b = Buffer.create 160 in
@@ -143,15 +150,15 @@ let read_line =
       Lwt.return ()
     end >>= fun () ->
     try
-      let i = String.index_from buf !start '\n' in
+      let i = Bytes.index_from buf !start '\n' in
       if i >= !last then raise Not_found;
-      Buffer.add_substring b buf !start (i - !start);
+      Buffer.add_subbytes b buf !start (i - !start);
       start := i + 1;
       let s = Buffer.contents b in
       Buffer.clear b;
       Lwt.return s
     with Not_found ->
-      Buffer.add_substring b buf !start (!last - !start);
+      Buffer.add_subbytes b buf !start (!last - !start);
       start := 0; last := 0;
       read_line ()
   in

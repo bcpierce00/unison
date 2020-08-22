@@ -81,7 +81,7 @@ let toString md5 =
       Bytes.set string (2*i) c1;
       Bytes.set string (2*i + 1) c2;
     done;
-    string
+    Bytes.to_string string
   end
 
 let string = Digest.string

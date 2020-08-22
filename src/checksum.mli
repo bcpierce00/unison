@@ -12,6 +12,11 @@ val substring : string
              -> int        (* substring length *)
              -> t
 
+val subbytes : bytes
+             -> int        (* offset in string *)
+             -> int        (* substring length *)
+             -> t
+
 val roll : u               (* string length *)
         -> t               (* previous checksum *)
         -> char            (* outgoing char *)

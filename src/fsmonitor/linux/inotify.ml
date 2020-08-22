@@ -94,20 +94,20 @@ let read fd =
         let toread = to_read fd in
 
         let ret = ref [] in
-        let buf = String.make toread '\000' in
+        let buf = Bytes.make toread '\000' in
         let toread = Unix.read fd buf 0 toread in
 
         let read_c_string offset len =
                 let index = ref 0 in
-                while !index < len && buf.[offset + !index] <> '\000' do incr index done;
-                String.sub buf offset !index
+                while !index < len && Bytes.get buf (offset + !index) <> '\000' do incr index done;
+                Bytes.sub_string buf offset !index
                 in
 
         let i = ref 0 in
 
         while !i < toread
         do
-                let wd, l, cookie, len = convert (String.sub buf !i ss) in
+                let wd, l, cookie, len = convert (Bytes.sub_string buf !i ss) in
                 let s = if len > 0 then Some (read_c_string (!i + ss) len) else None in
                 ret := (wd, l, cookie, s) :: !ret;
                 i := !i + (ss + len);

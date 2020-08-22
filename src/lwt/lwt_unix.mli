@@ -34,8 +34,9 @@ type file_descr
 
 val of_unix_file_descr : Unix.file_descr -> file_descr
 
-val read : file_descr -> string -> int -> int -> int Lwt.t
-val write : file_descr -> string -> int -> int -> int Lwt.t
+val read : file_descr -> bytes -> int -> int -> int Lwt.t
+val write : file_descr -> bytes -> int -> int -> int Lwt.t
+val write_substring : file_descr -> string -> int -> int -> int Lwt.t
 val wait_read : file_descr -> unit Lwt.t
 val wait_write : file_descr -> unit Lwt.t
 val pipe_in : unit -> file_descr * Unix.file_descr

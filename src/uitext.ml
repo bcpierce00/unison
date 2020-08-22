@@ -113,8 +113,8 @@ let getInput () =
         let s = Bytes.create 1 in
         let n = Unix.read Unix.stdin s 0 1 in
         if n = 0 then raise End_of_file;
-        if s.[0] = '\003' then raise Sys.Break;
-        s.[0]
+        if Bytes.get s 0 = '\003' then raise Sys.Break;
+        Bytes.get s 0
       in
       funs.System.startReading ();
       let c = input_char () in
