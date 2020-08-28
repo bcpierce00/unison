@@ -46,3 +46,8 @@ jobs:
       - run: opam exec -- make
 
       - run: make test
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: binary for ${{ matrix.os }} OCaml ${{ matrix.ocaml-version }}
+          path: src/unison
