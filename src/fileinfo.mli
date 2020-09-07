@@ -17,6 +17,8 @@ type stamp =
     InodeStamp of int         (* inode number, for Unix systems *)
   | CtimeStamp of float       (* creation time, for windows systems *)
 
+val mstamp : stamp Umarshal.t
+
 val stamp : t -> stamp
 
 val ressStamp : t -> Osx.ressStamp

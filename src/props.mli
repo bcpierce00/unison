@@ -4,6 +4,7 @@
 (* File properties: time, permission, length, etc. *)
 
 type t
+val m : t Umarshal.t
 val dummy : t
 val hash : t -> int -> int
 val similar : t -> t -> bool

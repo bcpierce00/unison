@@ -18,6 +18,7 @@ val hash : 'a -> int
 
 module type FILESIZE = sig
   type t
+  val m : t Umarshal.t
   val zero : t
   val dummy : t
   val add : t -> t -> t

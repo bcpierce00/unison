@@ -3,6 +3,8 @@
 
 type t
 
+val m : t Umarshal.t
+
 (* Os.safeFingerprint should usually be used rather than these functions *)
 val file : Fspath.t -> Path.local -> t
 val subfile : Fspath.t -> Int64.t -> Uutil.Filesize.t -> t

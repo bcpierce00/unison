@@ -181,6 +181,17 @@ type 'a ressInfo =
 
 type ressStamp = unit ressInfo
 
+let mressStamp = Umarshal.(sum3 unit Uutil.Filesize.m
+                             (prod4 int float float Uutil.Filesize.m id id)
+                             (function
+                              | NoRess -> I31 ()
+                              | HfsRess a -> I32 a
+                              | AppleDoubleRess (a, b, c, d, ()) -> I33 (a, b, c, d))
+                             (function
+                              | I31 () -> NoRess
+                              | I32 a -> HfsRess a
+                              | I33 (a, b, c, d) -> AppleDoubleRess (a, b, c, d, ())))
+
 let ressStampToString r =
   match r with
     NoRess         ->

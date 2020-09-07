@@ -148,6 +148,14 @@ type stamp =
       fastcheck expects ctime to be preserved by renaming.  Thus, we should
       probably not use any stamp under Windows. *)
 
+let mstamp = Umarshal.(sum2 int float
+                         (function
+                          | InodeStamp a -> I21 a
+                          | CtimeStamp a -> I22 a)
+                         (function
+                          | I21 a -> InodeStamp a
+                          | I22 a -> CtimeStamp a))
+
 let ignoreInodeNumbers =
   Prefs.createBool "ignoreinodenumbers" false
     "!ignore inode number changes when detecting updates"

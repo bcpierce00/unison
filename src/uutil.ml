@@ -44,6 +44,7 @@ let hash x = hash_param 10 100 x
 
 module type FILESIZE = sig
   type t
+  val m : t Umarshal.t
   val zero : t
   val dummy : t
   val add : t -> t -> t
@@ -62,6 +63,7 @@ end
 
 module Filesize : FILESIZE = struct
   type t = int64
+  let m = Umarshal.int64
   let zero = 0L
   let dummy = -1L
   let add = Int64.add

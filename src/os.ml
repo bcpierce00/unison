@@ -238,6 +238,8 @@ let createDir fspath path props =
 
 type fullfingerprint = Fingerprint.t * Fingerprint.t
 
+let mfullfingerprint = Umarshal.(prod2 Fingerprint.m Fingerprint.m id id)
+
 let fingerprint fspath path info =
   (Fingerprint.file fspath path,
    Osx.ressFingerprint fspath path info.Fileinfo.osX)
