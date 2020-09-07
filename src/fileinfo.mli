@@ -2,9 +2,12 @@
 (* Copyright 1999-2020, Benjamin C. Pierce (see COPYING for details) *)
 
 type typ = [`ABSENT | `FILE | `DIRECTORY | `SYMLINK]
+val mtyp : typ Umarshal.t
 val type2string : typ -> string
 
 type t = { typ : typ; inode : int; desc : Props.t; osX : Osx.info}
+
+val m : t Umarshal.t
 
 val get : bool (* fromRoot *) -> Fspath.t -> Path.local -> t
 val set : Fspath.t -> Path.local ->

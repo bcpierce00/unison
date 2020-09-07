@@ -40,6 +40,18 @@ let init b =
 
 type typ = [ `ABSENT | `FILE | `DIRECTORY | `SYMLINK ]
 
+let mtyp = Umarshal.(sum4 unit unit unit unit
+                       (function
+                        | `ABSENT -> I41 ()
+                        | `FILE -> I42 ()
+                        | `DIRECTORY -> I43 ()
+                        | `SYMLINK -> I44 ())
+                       (function
+                        | I41 () -> `ABSENT
+                        | I42 () -> `FILE
+                        | I43 () -> `DIRECTORY
+                        | I44 () -> `SYMLINK))
+
 let type2string = function
     `ABSENT    -> "nonexistent"
   | `FILE      -> "file"
@@ -47,6 +59,10 @@ let type2string = function
   | `SYMLINK   -> "symlink"
 
 type t = { typ : typ; inode : int; desc : Props.t; osX : Osx.info}
+
+let m = Umarshal.(prod4 mtyp int Props.m Osx.minfo
+                    (fun {typ; inode; desc; osX} -> typ, inode, desc, osX)
+                    (fun (typ, inode, desc, osX) -> {typ; inode; desc; osX}))
 
 (* Stat function that pays attention to pref for following links             *)
 let statFn fromRoot fspath path =

@@ -42,6 +42,7 @@ module Filesize : FILESIZE
 module File :
   sig
     type t
+    val m : t Umarshal.t
     val ofLine : int -> t
     val toLine : t -> int
     val toString : t -> string

@@ -104,6 +104,18 @@ type fs =
   | Link of string
   | Dir of (string * fs) list
 
+let mfs_rec fs = Umarshal.(sum3 string string (list (prod2 string fs id id))
+                             (function
+                              | File a -> I31 a
+                              | Link a -> I32 a
+                              | Dir a -> I33 a)
+                             (function
+                              | I31 a -> File a
+                              | I32 a -> Link a
+                              | I33 a -> Dir a))
+
+let mfs = Umarshal.rec1 mfs_rec
+
 let rec equal fs1 fs2 =
   match fs1,fs2 with
     | File s1, File s2 -> s1=s2

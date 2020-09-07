@@ -22,6 +22,10 @@ type 'a path = string
 type t = string
 type local = string
 
+let mpath = Umarshal.string
+let m = mpath
+let mlocal = mpath
+
 let pathSeparatorChar = '/'
 let pathSeparatorString = "/"
 

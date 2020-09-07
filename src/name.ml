@@ -20,6 +20,8 @@
    INCREMENT "UPDATE.ARCHIVEFORMAT" *)
 type t = string
 
+let m = Umarshal.string
+
 let compare n1 n2 = (Case.ops())#compare n1 n2
 
 let eq a b = (0 = (compare a b))

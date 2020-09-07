@@ -61,6 +61,29 @@ let from_bytes m buffer offset =
       )
     )
 
+let rec1 a =
+  let rec fa =
+    {
+      read = (fun recv -> (a fa).read recv);
+      write = (fun send x -> (a fa).write send x);
+    }
+  in
+  fa
+
+let rec2 a b =
+  let rec fa =
+    {
+      read = (fun recv -> (a fb).read recv);
+      write = (fun send x -> (a fb).write send x);
+    }
+  and fb =
+    {
+      read = (fun recv -> (b fa).read recv);
+      write = (fun send x -> (b fa).write send x);
+    }
+  in
+  (fb, fa)
+
 let unit =
   {
     read = (fun _ -> ());
@@ -79,6 +102,21 @@ let char =
         let res = Bytes.create 1 in
         Bytes.unsafe_set res 0 x;
         send res 0 1
+      );
+  }
+
+let bool =
+  {
+    read =
+      (fun recv ->
+        match char.read recv with
+        | '\000' -> false
+        | '\001' -> true
+        | _ -> raise (Error "bool: invalid value")
+      );
+    write =
+      (fun send x ->
+        char.write send (if x then '\001' else '\000')
       );
   }
 
@@ -235,6 +273,28 @@ let prod4 ma mb mc md f g =
       );
   }
 
+let prod5 ma mb mc md me f g =
+  {
+    read =
+      (fun recv ->
+        let a = ma.read recv in
+        let b = mb.read recv in
+        let c = mc.read recv in
+        let d = md.read recv in
+        let e = me.read recv in
+        g (a, b, c, d, e)
+      );
+    write =
+      (fun send x ->
+        let a, b, c, d, e = f x in
+        ma.write send a;
+        mb.write send b;
+        mc.write send c;
+        md.write send d;
+        me.write send e
+      );
+  }
+
 let prod6 ma mb mc md me mf f g =
   {
     read =
@@ -257,6 +317,12 @@ let prod6 ma mb mc md me mf f g =
         me.write send e;
         mf.write send f
       );
+  }
+
+let sum1 ma f g =
+  {
+    read = (fun recv -> g (ma.read recv));
+    write = (fun send x -> ma.write send (f x));
   }
 
 type ('a, 'b) sum2 = I21 of 'a | I22 of 'b
@@ -305,5 +371,80 @@ let sum3 ma mb mc f g =
         | I31 a -> char.write send '\000'; ma.write send a
         | I32 a -> char.write send '\001'; mb.write send a
         | I33 a -> char.write send '\002'; mc.write send a
+      );
+  }
+
+type ('a, 'b, 'c, 'd) sum4 = I41 of 'a | I42 of 'b | I43 of 'c | I44 of 'd
+
+let sum4 ma mb mc md f g =
+  {
+    read =
+      (fun recv ->
+        g (match char.read recv with
+           | '\000' -> I41 (ma.read recv)
+           | '\001' -> I42 (mb.read recv)
+           | '\002' -> I43 (mc.read recv)
+           | '\003' -> I44 (md.read recv)
+           | _ -> raise (Error "sum4: invalid tag"))
+      );
+    write =
+      (fun send x ->
+        match f x with
+        | I41 a -> char.write send '\000'; ma.write send a
+        | I42 a -> char.write send '\001'; mb.write send a
+        | I43 a -> char.write send '\002'; mc.write send a
+        | I44 a -> char.write send '\003'; md.write send a
+      );
+  }
+
+type ('a, 'b, 'c, 'd, 'e) sum5 = I51 of 'a | I52 of 'b | I53 of 'c | I54 of 'd | I55 of 'e
+
+let sum5 ma mb mc md me f g =
+  {
+    read =
+      (fun recv ->
+        g (match char.read recv with
+           | '\000' -> I51 (ma.read recv)
+           | '\001' -> I52 (mb.read recv)
+           | '\002' -> I53 (mc.read recv)
+           | '\003' -> I54 (md.read recv)
+           | '\004' -> I55 (me.read recv)
+           | _ -> raise (Error "sum5: invalid tag"))
+      );
+    write =
+      (fun send x ->
+        match f x with
+        | I51 a -> char.write send '\000'; ma.write send a
+        | I52 a -> char.write send '\001'; mb.write send a
+        | I53 a -> char.write send '\002'; mc.write send a
+        | I54 a -> char.write send '\003'; md.write send a
+        | I55 a -> char.write send '\004'; me.write send a
+      );
+  }
+
+type ('a, 'b, 'c, 'd, 'e, 'f) sum6 = I61 of 'a | I62 of 'b | I63 of 'c | I64 of 'd | I65 of 'e | I66 of 'f
+
+let sum6 ma mb mc md me mf f g =
+  {
+    read =
+      (fun recv ->
+        g (match char.read recv with
+           | '\000' -> I61 (ma.read recv)
+           | '\001' -> I62 (mb.read recv)
+           | '\002' -> I63 (mc.read recv)
+           | '\003' -> I64 (md.read recv)
+           | '\004' -> I65 (me.read recv)
+           | '\005' -> I66 (mf.read recv)
+           | _ -> raise (Error "sum6: invalid tag"))
+      );
+    write =
+      (fun send x ->
+        match f x with
+        | I61 a -> char.write send '\000'; ma.write send a
+        | I62 a -> char.write send '\001'; mb.write send a
+        | I63 a -> char.write send '\002'; mc.write send a
+        | I64 a -> char.write send '\003'; md.write send a
+        | I65 a -> char.write send '\004'; me.write send a
+        | I66 a -> char.write send '\005'; mf.write send a
       );
   }

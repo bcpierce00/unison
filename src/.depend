@@ -50,6 +50,7 @@ clroot.cmi :
 common.cmo : \
     uutil.cmi \
     ubase/util.cmi \
+    ubase/umarshal.cmi \
     ubase/safelist.cmi \
     props.cmi \
     path.cmi \
@@ -62,6 +63,7 @@ common.cmo : \
 common.cmx : \
     uutil.cmx \
     ubase/util.cmx \
+    ubase/umarshal.cmx \
     ubase/safelist.cmx \
     props.cmx \
     path.cmx \
@@ -73,6 +75,7 @@ common.cmx : \
     common.cmi
 common.cmi : \
     uutil.cmi \
+    ubase/umarshal.cmi \
     props.cmi \
     path.cmi \
     osx.cmi \
@@ -85,6 +88,7 @@ copy.cmo : \
     uutil.cmi \
     ubase/util.cmi \
     update.cmi \
+    ubase/umarshal.cmi \
     transfer.cmi \
     ubase/trace.cmi \
     ubase/safelist.cmi \
@@ -113,6 +117,7 @@ copy.cmx : \
     uutil.cmx \
     ubase/util.cmx \
     update.cmx \
+    ubase/umarshal.cmx \
     transfer.cmx \
     ubase/trace.cmx \
     ubase/safelist.cmx \
@@ -392,6 +397,7 @@ fsmonitor/windows/watcher.cmx : \
 fspath.cmo : \
     uutil.cmi \
     ubase/util.cmi \
+    ubase/umarshal.cmi \
     system.cmi \
     ubase/rx.cmi \
     path.cmi \
@@ -401,6 +407,7 @@ fspath.cmo : \
 fspath.cmx : \
     uutil.cmx \
     ubase/util.cmx \
+    ubase/umarshal.cmx \
     system.cmx \
     ubase/rx.cmx \
     path.cmx \
@@ -408,6 +415,7 @@ fspath.cmx : \
     fileutil.cmx \
     fspath.cmi
 fspath.cmi : \
+    ubase/umarshal.cmi \
     system.cmi \
     path.cmi \
     name.cmi
@@ -610,15 +618,18 @@ main.cmx : \
     os.cmx
 name.cmo : \
     ubase/util.cmi \
+    ubase/umarshal.cmi \
     ubase/rx.cmi \
     case.cmi \
     name.cmi
 name.cmx : \
     ubase/util.cmx \
+    ubase/umarshal.cmx \
     ubase/rx.cmx \
     case.cmx \
     name.cmi
-name.cmi :
+name.cmi : \
+    ubase/umarshal.cmi
 os.cmo : \
     uutil.cmi \
     ubase/util.cmi \
@@ -699,6 +710,7 @@ osx.cmi : \
     fingerprint.cmi
 path.cmo : \
     ubase/util.cmi \
+    ubase/umarshal.cmi \
     ubase/safelist.cmi \
     ubase/rx.cmi \
     pred.cmi \
@@ -708,6 +720,7 @@ path.cmo : \
     path.cmi
 path.cmx : \
     ubase/util.cmx \
+    ubase/umarshal.cmx \
     ubase/safelist.cmx \
     ubase/rx.cmx \
     pred.cmx \
@@ -716,6 +729,7 @@ path.cmx : \
     case.cmx \
     path.cmi
 path.cmi : \
+    ubase/umarshal.cmi \
     pred.cmi \
     name.cmi
 pixmaps.cmo :
@@ -807,6 +821,7 @@ recon.cmi : \
 remote.cmo : \
     uutil.cmi \
     ubase/util.cmi \
+    ubase/umarshal.cmi \
     ubase/trace.cmi \
     terminal.cmi \
     system.cmi \
@@ -826,6 +841,7 @@ remote.cmo : \
 remote.cmx : \
     uutil.cmx \
     ubase/util.cmx \
+    ubase/umarshal.cmx \
     ubase/trace.cmx \
     terminal.cmx \
     system.cmx \
@@ -970,6 +986,7 @@ test.cmo : \
     uutil.cmi \
     ubase/util.cmi \
     update.cmi \
+    ubase/umarshal.cmi \
     uicommon.cmi \
     transport.cmi \
     ubase/trace.cmi \
@@ -993,6 +1010,7 @@ test.cmx : \
     uutil.cmx \
     ubase/util.cmx \
     update.cmx \
+    ubase/umarshal.cmx \
     uicommon.cmx \
     transport.cmx \
     ubase/trace.cmx \
@@ -1072,31 +1090,40 @@ transport.cmi : \
     lwt/lwt.cmi \
     common.cmi
 tree.cmo : \
+    ubase/umarshal.cmi \
     ubase/safelist.cmi \
     tree.cmi
 tree.cmx : \
+    ubase/umarshal.cmx \
     ubase/safelist.cmx \
     tree.cmi
-tree.cmi :
+tree.cmi : \
+    ubase/umarshal.cmi
 ubase/myMap.cmo : \
+    ubase/umarshal.cmi \
     ubase/myMap.cmi
 ubase/myMap.cmx : \
+    ubase/umarshal.cmx \
     ubase/myMap.cmi
-ubase/myMap.cmi :
+ubase/myMap.cmi : \
+    ubase/umarshal.cmi
 ubase/prefs.cmo : \
     ubase/util.cmi \
+    ubase/umarshal.cmi \
     ubase/uarg.cmi \
     system.cmi \
     ubase/safelist.cmi \
     ubase/prefs.cmi
 ubase/prefs.cmx : \
     ubase/util.cmx \
+    ubase/umarshal.cmx \
     ubase/uarg.cmx \
     system.cmx \
     ubase/safelist.cmx \
     ubase/prefs.cmi
 ubase/prefs.cmi : \
     ubase/util.cmi \
+    ubase/umarshal.cmi \
     system.cmi
 ubase/projectInfo.cmo :
 ubase/projectInfo.cmx :
@@ -1119,17 +1146,20 @@ ubase/safelist.cmx : \
 ubase/safelist.cmi :
 ubase/trace.cmo : \
     ubase/util.cmi \
+    ubase/umarshal.cmi \
     system.cmi \
     ubase/safelist.cmi \
     ubase/prefs.cmi \
     ubase/trace.cmi
 ubase/trace.cmx : \
     ubase/util.cmx \
+    ubase/umarshal.cmx \
     system.cmx \
     ubase/safelist.cmx \
     ubase/prefs.cmx \
     ubase/trace.cmi
 ubase/trace.cmi : \
+    ubase/umarshal.cmi \
     ubase/prefs.cmi
 ubase/uarg.cmo : \
     ubase/util.cmi \
@@ -1441,6 +1471,7 @@ update.cmo : \
     xferhint.cmi \
     uutil.cmi \
     ubase/util.cmi \
+    ubase/umarshal.cmi \
     tree.cmi \
     ubase/trace.cmi \
     system.cmi \
@@ -1472,6 +1503,7 @@ update.cmx : \
     xferhint.cmx \
     uutil.cmx \
     ubase/util.cmx \
+    ubase/umarshal.cmx \
     tree.cmx \
     ubase/trace.cmx \
     system.cmx \
@@ -1501,6 +1533,7 @@ update.cmx : \
     update.cmi
 update.cmi : \
     uutil.cmi \
+    ubase/umarshal.cmi \
     tree.cmi \
     props.cmi \
     path.cmi \

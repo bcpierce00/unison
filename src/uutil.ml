@@ -91,6 +91,7 @@ end
 module File =
   struct
     type t = int
+    let m = Umarshal.int
     let dummy = -1
     let ofLine l = l
     let toLine l = assert (l <> dummy); l

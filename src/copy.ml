@@ -173,6 +173,19 @@ type transferStatus =
   | TransferNeedsDoubleCheckAgainstCurrentSource of Fileinfo.t * Os.fullfingerprint
   | TransferFailed of string
 
+let mtransferStatus = Umarshal.(sum3
+                                  Fileinfo.m
+                                  (prod2 Fileinfo.m Os.mfullfingerprint id id)
+                                  string
+                                  (function
+                                   | TransferSucceeded a -> I31 a
+                                   | TransferNeedsDoubleCheckAgainstCurrentSource (a, b) -> I32 (a, b)
+                                   | TransferFailed a -> I33 a)
+                                  (function
+                                   | I31 a -> TransferSucceeded a
+                                   | I32 (a, b) -> TransferNeedsDoubleCheckAgainstCurrentSource (a, b)
+                                   | I33 a -> TransferFailed a))
+
 (* Paranoid check: recompute the transferred file's fingerprint to match it
    with the archive's.  If the old
    fingerprint was a pseudo-fingerprint, we can't tell just from looking at the

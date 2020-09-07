@@ -62,6 +62,24 @@ type archive =
   | ArchiveSymlink of string
   | NoArchive
 
+let marchive_rec marchive =
+  Umarshal.(sum4
+              (prod2 Props.m (NameMap.m marchive) id id)
+              (prod4 Props.m Os.mfullfingerprint Fileinfo.mstamp Osx.mressStamp id id)
+              string unit
+              (function
+               | ArchiveDir (a, b) -> I41 (a, b)
+               | ArchiveFile (a, b, c, d) -> I42 (a, b, c, d)
+               | ArchiveSymlink a -> I43 a
+               | NoArchive -> I44 ())
+              (function
+               | I41 (a, b) -> ArchiveDir (a, b)
+               | I42 (a, b, c, d) -> ArchiveFile (a, b, c, d)
+               | I43 a -> ArchiveSymlink a
+               | I44 () -> NoArchive))
+
+let marchive = Umarshal.rec1 marchive_rec
+
 (* For directories, only the permissions part of the file description (desc)
    is used for synchronization at the moment. *)
 
@@ -172,6 +190,20 @@ let thisRootsGlobalName (fspath: Fspath.t): string =
 
 (* The status of an archive *)
 type archiveVersion = MainArch | NewArch | ScratchArch | Lock | FPCache
+
+let marchiveVersion = Umarshal.(sum5 unit unit unit unit unit
+                                  (function
+                                   | MainArch -> I51 ()
+                                   | NewArch -> I52 ()
+                                   | ScratchArch -> I53 ()
+                                   | Lock -> I54 ()
+                                   | FPCache -> I55 ())
+                                  (function
+                                   | I51 () -> MainArch
+                                   | I52 () -> NewArch
+                                   | I53 () -> ScratchArch
+                                   | I54 () -> Lock
+                                   | I55 () -> FPCache))
 
 let showArchiveName =
   Prefs.createBool "showarchive" false

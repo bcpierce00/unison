@@ -830,6 +830,8 @@ let validatePrefs = Perm.validatePrefs
 
 type dirChangedStamp = Uutil.Filesize.t
 
+let mdirChangedStamp = Uutil.Filesize.m
+
 let freshDirStamp () =
   let t =
     (Unix.gettimeofday () +. sqrt 2. *. float (Unix.getpid ())) *. 1000.

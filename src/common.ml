@@ -72,11 +72,37 @@ type prevState =
     Previous of Fileinfo.typ * Props.t * Os.fullfingerprint * Osx.ressStamp
   | New
 
+let mprevState = Umarshal.(sum2
+                             (prod4 Fileinfo.mtyp Props.m Os.mfullfingerprint Osx.mressStamp id id)
+                             unit
+                             (function
+                              | Previous (a, b, c, d) -> I21 (a, b, c, d)
+                              | New -> I22 ())
+                             (function
+                              | I21 (a, b, c, d) -> Previous (a, b, c, d)
+                              | I22 () -> New))
+
 type contentschange =
     ContentsSame
   | ContentsUpdated of Os.fullfingerprint * Fileinfo.stamp * Osx.ressStamp
 
+let mcontentschange = Umarshal.(sum2 unit (prod3 Os.mfullfingerprint Fileinfo.mstamp Osx.mressStamp id id)
+                                  (function
+                                   | ContentsSame -> I21 ()
+                                   | ContentsUpdated (a, b, c) -> I22 (a, b, c))
+                                  (function
+                                   | I21 () -> ContentsSame
+                                   | I22 (a, b, c) -> ContentsUpdated (a, b, c)))
+
 type permchange     = PropsSame    | PropsUpdated
+
+let mpermchange = Umarshal.(sum2 unit unit
+                              (function
+                               | PropsSame -> I21 ()
+                               | PropsUpdated -> I22 ())
+                              (function
+                               | I21 () -> PropsSame
+                               | I22 () -> PropsUpdated))
 
 type updateItem =
     NoUpdates                         (* Path not changed *)
@@ -99,6 +125,37 @@ and updateContent =
        * bool                         (*   - is the directory now empty? *)
   | Symlink                           (* Path refers to a symbolic link *)
       of string                       (*   - link text *)
+
+let mupdateItem_rec mupdateContent =
+  Umarshal.(sum3 unit (prod2 mupdateContent mprevState id id) string
+              (function
+               | NoUpdates -> I31 ()
+               | Updates (a, b) -> I32 (a, b)
+               | Error a -> I33 a)
+              (function
+               | I31 () -> NoUpdates
+               | I32 (a, b) -> Updates (a, b)
+               | I33 a -> Error a))
+
+let mupdateContent_rec mupdateItem =
+  Umarshal.(sum4
+              unit
+              (prod2 Props.m mcontentschange id id)
+              (prod4 Props.m (list (prod2 Name.m mupdateItem id id)) mpermchange bool id id)
+              string
+              (function
+               | Absent -> I41 ()
+               | File (a, b) -> I42 (a, b)
+               | Dir (a, b, c, d) -> I43 (a, b, c, d)
+               | Symlink a -> I44 a)
+              (function
+               | I41 () -> Absent
+               | I42 (a, b) -> File (a, b)
+               | I43 (a, b, c, d) -> Dir (a, b, c, d)
+               | I44 a -> Symlink a))
+
+let mupdateContent, mupdateItem =
+  Umarshal.rec2 mupdateItem_rec mupdateContent_rec
 
 (* ------------------------------------------------------------------------- *)
 

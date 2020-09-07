@@ -80,6 +80,8 @@ let resetToDefaults () =
 
 type dumpedPrefs = (string * bool * string) list
 
+let mdumpedPrefs = Umarshal.(list (prod3 string bool string id id))
+
 let dumpers = ref ([] : (string * bool * (unit->string)) list)
 let loaders = ref (Util.StringMap.empty : (string->unit) Util.StringMap.t)
 

@@ -12,6 +12,10 @@ type t = [`Global] path
    sensitive filesystem) *)
 type local = [`Local] path
 
+val mpath : 'a path Umarshal.t
+val m : t Umarshal.t
+val mlocal : local Umarshal.t
+
 val empty : 'a path
 val length : t -> int
 val isEmpty : local -> bool

@@ -48,6 +48,8 @@ val statusFormatter : (string -> string -> string) ref
    types of the following) *)
 type msg
 
+val mmsg : msg Umarshal.t
+
 (* The internal routine used for formatting a message to be displayed
    locally.  It calls !messageDisplayer to do the actual work. *)
 val displayMessageLocally : msg -> unit

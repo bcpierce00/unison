@@ -13,6 +13,7 @@ type info =
     finfo : string }
 
 val mressStamp : ressStamp Umarshal.t
+val minfo : info Umarshal.t
 
 val defaultInfos :  [> `DIRECTORY | `FILE ] -> info
 

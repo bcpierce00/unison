@@ -9,6 +9,8 @@ type archive =
   | ArchiveSymlink of string
   | NoArchive
 
+val marchive : archive Umarshal.t
+
 (* Calculate a canonical name for the set of roots to be synchronized.  This
    will be used in constructing the archive name for each root. Note, all
    the roots in this canonical name will contain hostnames, even local

@@ -134,6 +134,8 @@ val loadStrings : string list -> unit
 
 type dumpedPrefs
 
+val mdumpedPrefs : dumpedPrefs Umarshal.t
+
 (* Dump current values of all preferences into a value that can be
    marshalled and sent over the network or stored in a file for fast
    retrieval *)

@@ -20,6 +20,19 @@ type ('a, 'b) t =
     Node of ('a * ('a, 'b) t) list * 'b option
   | Leaf of 'b
 
+let m_rec ma mb m =
+  Umarshal.(sum2
+              (prod2 (list (prod2 ma m id id)) (option mb) id id)
+              mb
+              (function
+               | Node (a, b) -> I21 (a, b)
+               | Leaf a -> I22 a)
+              (function
+               | I21 (a, b) -> Node (a, b)
+               | I22 a -> Leaf a))
+
+let m ma mb = Umarshal.rec1 (m_rec ma mb)
+
 type ('a, 'b) u =
   { anc: (('a, 'b) u * 'a) option;
     node: 'b option;

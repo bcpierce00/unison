@@ -74,6 +74,8 @@ and updateContent =
   | Symlink                           (* Path refers to a symbolic link *)
       of string                       (*   - link text *)
 
+val mupdateItem : updateItem Umarshal.t
+val mupdateContent : updateContent Umarshal.t
 
 (*****************************************************************************)
 (*            COMMON TYPES SHARED BY RECONCILER AND TRANSPORT AGENT          *)

@@ -7,6 +7,8 @@ type ('a, 'b) t =
     Node of ('a * ('a, 'b) t) list * 'b option
   | Leaf of 'b
 
+val m : 'a Umarshal.t -> 'b Umarshal.t -> ('a, 'b) t Umarshal.t
+
 (* An "unfinished" tree                                                      *)
 type ('a, 'b) u
 

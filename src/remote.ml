@@ -617,6 +617,22 @@ type header =
   | Stream of string
   | StreamAbort
 
+let mheader = Umarshal.(sum6 unit string string string string unit
+                          (function
+                           | NormalResult -> I61 ()
+                           | TransientExn a -> I62 a
+                           | FatalExn a -> I63 a
+                           | Request a -> I64 a
+                           | Stream a -> I65 a
+                           | StreamAbort -> I66 ())
+                          (function
+                           | I61 () -> NormalResult
+                           | I62 a -> TransientExn a
+                           | I63 a -> FatalExn a
+                           | I64 a -> Request a
+                           | I65 a -> Stream a
+                           | I66 () -> StreamAbort))
+
 let ((marshalHeader, unmarshalHeader) : header marshalingFunctions) =
   makeMarshalingFunctions defaultMarshalingFunctions "rsp"
 
