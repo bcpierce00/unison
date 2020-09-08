@@ -19,8 +19,19 @@ val unit : unit t
 val bool : bool t
 val int : int t
 val int64 : int64 t
-val string : string t
 val float : float t
+
+val string : string t
+
+type bytearray =
+  (char, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
+
+val bytearray : bytearray t
+
+type int32bigarray =
+  (int32, Bigarray.int32_elt, Bigarray.c_layout) Bigarray.Array1.t
+
+val int32bigarray : int32bigarray t
 
 val option : 'a t -> 'a option t
 val list : 'a t -> 'a list t

@@ -19,6 +19,8 @@ open Bigarray
 
 type t = (char, int8_unsigned_elt, c_layout) Array1.t
 
+let m = Umarshal.bytearray
+
 let length = Bigarray.Array1.dim
 
 let create l = Bigarray.Array1.create Bigarray.char Bigarray.c_layout l

@@ -13,10 +13,13 @@ abort.cmx : \
 abort.cmi : \
     uutil.cmi
 bytearray.cmo : \
+    ubase/umarshal.cmi \
     bytearray.cmi
 bytearray.cmx : \
+    ubase/umarshal.cmx \
     bytearray.cmi
-bytearray.cmi :
+bytearray.cmi : \
+    ubase/umarshal.cmi
 case.cmo : \
     uutil.cmi \
     ubase/util.cmi \
@@ -1034,6 +1037,7 @@ test.cmi :
 transfer.cmo : \
     uutil.cmi \
     ubase/util.cmi \
+    ubase/umarshal.cmi \
     ubase/trace.cmi \
     ubase/safelist.cmi \
     lwt/lwt.cmi \
@@ -1043,6 +1047,7 @@ transfer.cmo : \
 transfer.cmx : \
     uutil.cmx \
     ubase/util.cmx \
+    ubase/umarshal.cmx \
     ubase/trace.cmx \
     ubase/safelist.cmx \
     lwt/lwt.cmx \
@@ -1051,6 +1056,7 @@ transfer.cmx : \
     transfer.cmi
 transfer.cmi : \
     uutil.cmi \
+    ubase/umarshal.cmi \
     lwt/lwt.cmi \
     bytearray.cmi
 transport.cmo : \

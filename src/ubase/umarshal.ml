@@ -120,6 +120,21 @@ let bool =
       );
   }
 
+let int32 =
+  {
+    read =
+      (fun recv ->
+        let buffer, offset = recv 4 in
+        Bytes.get_int32_be buffer offset
+      );
+    write =
+      (fun send x ->
+        let res = Bytes.create 4 in
+        Bytes.set_int32_be res 0 x;
+        send res 0 4
+      );
+  }
+
 let int64 =
   {
     read =
@@ -186,6 +201,73 @@ let string =
         let length = String.length x in
         int.write send length;
         send (Bytes.of_string x) 0 length
+      );
+  }
+
+type bytearray =
+  (char, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
+
+external unsafe_blit_from_bytes : bytes -> int -> bytearray -> int -> int -> unit
+  = "ml_blit_string_to_bigarray" [@@noalloc]
+
+external unsafe_blit_to_bytes : bytearray -> int -> bytes -> int -> int -> unit
+  = "ml_blit_bigarray_to_string" [@@noalloc]
+
+let bytearray =
+  {
+    read =
+      (fun recv ->
+        let length = int.read recv in
+        let res = Bigarray.(Array1.create char c_layout length) in
+        let rec loop offset length =
+          if length > 0 then (
+            let sub_length = min length Sys.max_string_length in
+            let buffer, offset' = recv sub_length in
+            unsafe_blit_from_bytes buffer offset' res offset sub_length;
+            loop (offset + sub_length) (length - sub_length)
+          )
+        in
+        loop 0 length;
+        res
+      );
+    write =
+      (fun send x ->
+        let length = Bigarray.Array1.dim x in
+        int.write send length;
+        let buffer = Bytes.create (min length Sys.max_string_length) in
+        let rec loop offset length =
+          if length > 0 then (
+            let sub_length = min length Sys.max_string_length in
+            unsafe_blit_to_bytes x offset buffer 0 sub_length;
+            send buffer 0 sub_length;
+            loop (offset + sub_length) (length - sub_length)
+          )
+        in
+        loop 0 length
+      );
+  }
+
+type int32bigarray =
+  (int32, Bigarray.int32_elt, Bigarray.c_layout) Bigarray.Array1.t
+
+let int32bigarray =
+  {
+    read =
+      (fun recv ->
+        let length = int.read recv in
+        let res = Bigarray.(Array1.create int32 c_layout length) in
+        for i = 0 to length - 1 do
+          res.{i} <- int32.read recv
+        done;
+        res
+      );
+    write =
+      (fun send x ->
+        let length = Bigarray.Array1.dim x in
+        int.write send length;
+        for i = 0 to length - 1 do
+          int32.write send x.{i}
+        done
       );
   }
 
