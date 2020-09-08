@@ -18,6 +18,7 @@
 module type Core = sig
 
 type fspath
+val mfspath : fspath Umarshal.t
 type dir_handle = { readdir : unit -> string; closedir : unit -> unit }
 
 val symlink : string -> fspath -> unit

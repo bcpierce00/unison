@@ -61,6 +61,9 @@ let from_bytes m buffer offset =
       )
     )
 
+let from_string m buffer offset =
+  from_bytes m (Bytes.of_string buffer) offset
+
 let rec1 a =
   let rec fa =
     {

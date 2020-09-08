@@ -743,6 +743,7 @@ pixmaps.cmo :
 pixmaps.cmx :
 pred.cmo : \
     ubase/util.cmi \
+    ubase/umarshal.cmi \
     ubase/safelist.cmi \
     ubase/rx.cmi \
     ubase/prefs.cmi \
@@ -750,6 +751,7 @@ pred.cmo : \
     pred.cmi
 pred.cmx : \
     ubase/util.cmx \
+    ubase/umarshal.cmx \
     ubase/safelist.cmx \
     ubase/rx.cmx \
     ubase/prefs.cmx \
@@ -960,10 +962,14 @@ system/generic/system_impl.cmo : \
     system/system_generic.cmo
 system/generic/system_impl.cmx : \
     system/system_generic.cmx
-system/system_generic.cmo :
-system/system_generic.cmx :
-system/system_intf.cmo :
-system/system_intf.cmx :
+system/system_generic.cmo : \
+    ubase/umarshal.cmi
+system/system_generic.cmx : \
+    ubase/umarshal.cmx
+system/system_intf.cmo : \
+    ubase/umarshal.cmi
+system/system_intf.cmx : \
+    ubase/umarshal.cmx
 system/system_win.cmo : \
     unicode.cmi \
     system/system_generic.cmo \

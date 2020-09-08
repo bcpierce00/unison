@@ -160,6 +160,7 @@ let paths =
      ^ "are not regular expressions.")
     (fun oldpaths string -> Safelist.append oldpaths [Path.fromString string])
     (fun l -> Safelist.map Path.toString l)
+    Umarshal.(list Path.m)
 
 (* FIX: this does weird things in case-insensitive mode... *)
 let globPath lr p =

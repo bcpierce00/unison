@@ -107,7 +107,7 @@ let create name ?(local=false) ?(advanced=false) fulldoc =
       (fun oldList string ->
          ignore (compile_pattern string); (* Check well-formedness *)
         string :: oldList)
-      (fun l -> l) in
+      (fun l -> l) Umarshal.(list string) in
   {pref = pref; name = name;
    last_pref = []; default = []; last_def = []; last_mode = (Case.ops())#mode;
    compiled = Rx.empty; associated_strings = []}

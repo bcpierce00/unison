@@ -181,50 +181,57 @@ let registerPref name typ pspec doc fulldoc =
   if doc = "" || doc.[0] <> '*' then
     prefType := Util.StringMap.add name typ !prefType
 
-let createPrefInternal name typ local default doc fulldoc printer parsefn =
+let createPrefInternal name typ local default doc fulldoc printer parsefn m =
+  let m = Umarshal.(prod2 m (list string) id id) in
   let newCell = rawPref default name in
   registerPref name typ (parsefn newCell) doc fulldoc;
   adddumper name local
-    (fun () -> Marshal.to_string (newCell.value, newCell.names) []);
+    (fun () -> Umarshal.to_string m (newCell.value, newCell.names));
   addprinter name (fun () -> printer newCell.value);
   addresetter
     (fun () ->
        newCell.setInProfile <- false; newCell.value <- newCell.defaultValue);
   addloader name
     (fun s ->
-       let (value, names) = Marshal.from_string s 0 in
+       let (value, names) = Umarshal.from_string m s 0 in
        newCell.value <- value);
   newCell
 
-let create name ?(local=false) default doc fulldoc intern printer =
+let create name ?(local=false) default doc fulldoc intern printer m =
   createPrefInternal name `CUSTOM local default doc fulldoc printer
     (fun cell -> Uarg.String (fun s -> set cell (intern (read cell) s)))
+    m
 
 let createBool name ?(local=false) default doc fulldoc =
   let doc = if default then doc ^ " (default true)" else doc in
   createPrefInternal name `BOOL local default doc fulldoc
     (fun v -> [if v then "true" else "false"])
     (fun cell -> Uarg.Bool (fun b -> set cell b))
+    Umarshal.bool
 
 let createInt name ?(local=false) default doc fulldoc =
   createPrefInternal name `INT local default doc fulldoc
     (fun v -> [string_of_int v])
     (fun cell -> Uarg.Int (fun i -> set cell i))
+    Umarshal.int
 
 let createString name ?(local=false) default doc fulldoc =
   createPrefInternal name `STRING local default doc fulldoc
     (fun v -> [v])
     (fun cell -> Uarg.String (fun s -> set cell s))
+    Umarshal.string
 
 let createFspath name ?(local=false) default doc fulldoc =
   createPrefInternal name `STRING local default doc fulldoc
     (fun v -> [System.fspathToString v])
     (fun cell -> Uarg.String (fun s -> set cell (System.fspathFromString s)))
+    System.mfspath
 
 let createStringList name ?(local=false) doc fulldoc =
   createPrefInternal name `STRING_LIST local [] doc fulldoc
     (fun v -> v)
     (fun cell -> Uarg.String (fun s -> set cell (s:: read cell)))
+    Umarshal.(list string)
 
 let createBoolWithDefault name ?(local=false) doc fulldoc =
   createPrefInternal name `BOOLDEF local `Default doc fulldoc
@@ -242,6 +249,15 @@ let createBoolWithDefault name ?(local=false) doc fulldoc =
               | _                  -> `False
             in
             set cell v))
+    Umarshal.(sum3 unit unit unit
+                (function
+                 | `True -> I31 ()
+                 | `False -> I32 ()
+                 | `Default -> I33 ())
+                (function
+                 | I31 () -> `True
+                 | I32 () -> `False
+                 | I33 () -> `Default))
 
 (*****************************************************************************)
 (*                     Preferences file parsing                              *)
