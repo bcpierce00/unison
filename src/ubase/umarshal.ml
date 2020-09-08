@@ -64,6 +64,23 @@ let from_bytes m buffer offset =
 let from_string m buffer offset =
   from_bytes m (Bytes.of_string buffer) offset
 
+let from_channel m ic =
+  let header = Bytes.create header_size in
+  really_input ic header 0 header_size;
+  m.read (really_input ic)
+
+let to_channel m oc x =
+  let header = Bytes.create header_size in
+  let header_pos = pos_out oc in
+  output oc header 0 header_size;
+  m.write (output oc) x;
+  let end_pos = pos_out oc in
+  let data_size = end_pos - header_pos - header_size in
+  Bytes.set_int64_be header 0 (Int64.of_int data_size);
+  seek_out oc header_pos;
+  output oc header 0 header_size;
+  seek_out oc end_pos
+
 let rec1 a =
   let rec fa =
     {

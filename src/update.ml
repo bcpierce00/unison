@@ -51,8 +51,8 @@ let ignoreArchives =
    for this file on the next sync. *)
 (*FIX: consider changing the way case-sensitivity mode is stored in
   the archive *)
-(*FIX: we should use only one Marshal.from_channel *)
-let archiveFormat = 22
+(*FIX: we should use only one Umarshal.from_channel *)
+let archiveFormat = 23
 
 module NameMap = MyMap.Make (Name)
 
@@ -327,6 +327,8 @@ let verboseArchiveName thisRoot =
   Printf.sprintf "Archive for root %s synchronizing roots %s"
     thisRoot (Prefs.read rootsName)
 
+let mpayload = Umarshal.(prod3 marchive int string id id)
+
 (* Load in the archive in [fspath]; check that archiveFormat (first line)
    and roots (second line) match skip the third line (time stamp), and read
    in the archive *)
@@ -364,17 +366,17 @@ let loadArchiveLocal fspath (thisRoot: string) :
         (* Load the datastructure *)
         try
           let ((archive, hash, magic) : archive * int * string) =
-            Marshal.from_channel c in
+            Umarshal.from_channel mpayload c in
           let properties =
             try
               ignore (input_char c); (* Marker *)
-              Marshal.from_channel c
+              Umarshal.from_channel Proplist.m c
             with End_of_file ->
               Proplist.empty
           in
           close_in c;
           Some (archive, hash, magic, properties)
-        with Failure s -> raise (Util.Fatal (Printf.sprintf
+        with Failure s | Umarshal.Error s -> raise (Util.Fatal (Printf.sprintf
            "Archive file seems damaged (%s): \
             throw away archives on both machines and try again" s))
     else
@@ -400,10 +402,10 @@ let storeArchiveLocal fspath thisRoot archive hash magic properties =
    output_string c (Printf.sprintf "Written at %s - %s mode\n"
                       (Util.time2string (Util.time()))
                       ((Case.ops())#modeDesc));
-   Marshal.to_channel c (archive, hash, magic) [Marshal.No_sharing];
+   Umarshal.to_channel mpayload c (archive, hash, magic);
    output_char c '\000'; (* Marker that indicates that the archive
                             is followed by a property list *)
-   Marshal.to_channel c properties [Marshal.No_sharing];
+   Umarshal.to_channel Proplist.m c properties;
    close_out c)
 
 (* Remove the archieve under the root path [fspath] with archiveVersion [v] *)
