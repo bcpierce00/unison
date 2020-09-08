@@ -58,3 +58,18 @@ val sum5 : 'a t -> 'b t -> 'c t -> 'd t -> 'e t -> ('r -> ('a, 'b, 'c, 'd, 'e) s
 
 type ('a, 'b, 'c, 'd, 'e, 'f) sum6 = I61 of 'a | I62 of 'b | I63 of 'c | I64 of 'd | I65 of 'e | I66 of 'f
 val sum6 : 'a t -> 'b t -> 'c t -> 'd t -> 'e t -> 'f t -> ('r -> ('a, 'b, 'c, 'd, 'e, 'f) sum6) -> (('a, 'b, 'c, 'd, 'e, 'f) sum6 -> 'r) -> 'r t
+
+module type PROPLIST_S = sig
+  type key = string
+  type value = Obj.t
+  type map
+  val cardinal : map -> int
+  val empty : map
+  val add : key -> value -> map -> map
+  val iter : (key -> value -> unit) -> map -> unit
+  val find_m : key -> value t
+end
+
+module Proplist (S : PROPLIST_S) : sig
+  val m : S.map t
+end

@@ -1135,11 +1135,14 @@ ubase/projectInfo.cmo :
 ubase/projectInfo.cmx :
 ubase/proplist.cmo : \
     ubase/util.cmi \
+    ubase/umarshal.cmi \
     ubase/proplist.cmi
 ubase/proplist.cmx : \
     ubase/util.cmx \
+    ubase/umarshal.cmx \
     ubase/proplist.cmi
-ubase/proplist.cmi :
+ubase/proplist.cmi : \
+    ubase/umarshal.cmi
 ubase/rx.cmo : \
     ubase/rx.cmi
 ubase/rx.cmx : \

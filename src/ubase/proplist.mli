@@ -4,7 +4,9 @@
 type 'a key
 type t
 
-val register : string -> 'a key
+val m : t Umarshal.t
+
+val register : string -> 'a Umarshal.t -> 'a key
 
 val empty : t
 val mem : 'a key -> t -> bool

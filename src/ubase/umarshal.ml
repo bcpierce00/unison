@@ -530,3 +530,40 @@ let sum6 ma mb mc md me mf f g =
         | I66 a -> char.write send '\005'; mf.write send a
       );
   }
+
+module type PROPLIST_S = sig
+  type key = string
+  type value = Obj.t
+  type map
+  val cardinal : map -> int
+  val empty : map
+  val add : key -> value -> map -> map
+  val iter : (key -> value -> unit) -> map -> unit
+  val find_m : key -> value t
+end
+
+module Proplist (S : PROPLIST_S) = struct
+  let m =
+    {
+      read =
+        (fun recv ->
+          let length = int.read recv in
+          let res = ref S.empty in
+          for _ = 1 to length do
+            let key = string.read recv in
+            let value = (S.find_m key).read recv in
+            res := S.add key value !res
+          done;
+          !res
+        );
+      write =
+        (fun send x ->
+          let length = S.cardinal x in
+          int.write send length;
+          S.iter (fun key value ->
+              string.write send key;
+              (S.find_m key).write send value
+            ) x
+        );
+    }
+end
