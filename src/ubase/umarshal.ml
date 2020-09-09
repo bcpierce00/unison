@@ -18,7 +18,7 @@
 exception Error of string
 
 type 'a t = {
-    read : (int -> bytes * int) -> 'a;
+    read : (bytes -> int -> int -> unit) -> 'a;
     write : (bytes -> int -> int -> unit) -> 'a -> unit;
 }
 
@@ -50,12 +50,12 @@ let to_string m x =
 
 let from_bytes m buffer offset =
   let length = Bytes.length buffer in
-  let pos = ref (offset + header_size) in
-  m.read (fun n ->
-      let i = !pos in
+  let offset = ref (offset + header_size) in
+  m.read (fun buffer' offset' n ->
+      let i = !offset in
       if i + n <= length then (
-        pos := i + n;
-        buffer, i
+        offset := i + n;
+        Bytes.blit buffer i buffer' offset' n
       ) else (
         raise (Error "from_bytes: end of input")
       )
@@ -97,8 +97,9 @@ let char =
   {
     read =
       (fun recv ->
-        let buffer, offset = recv 1 in
-        Bytes.unsafe_get buffer offset
+        let buffer = Bytes.create 1 in
+        recv buffer 0 1;
+        Bytes.unsafe_get buffer 0
       );
     write =
       (fun send x ->
@@ -127,8 +128,9 @@ let int32 =
   {
     read =
       (fun recv ->
-        let buffer, offset = recv 4 in
-        Bytes.get_int32_be buffer offset
+        let buffer = Bytes.create 4 in
+        recv buffer 0 4;
+        Bytes.get_int32_be buffer 0
       );
     write =
       (fun send x ->
@@ -143,8 +145,9 @@ let int64 =
     read =
       (fun recv ->
         let realize n get of_int =
-          let buffer, offset = recv n in
-          of_int (get buffer offset)
+          let buffer = Bytes.create n in
+          recv buffer 0 n;
+          of_int (get buffer 0)
         in
         match int_of_char (char.read recv) with
         | 0 -> 0L
@@ -196,8 +199,9 @@ let string =
     read =
       (fun recv ->
         let length = int.read recv in
-        let buffer, offset = recv length in
-        Bytes.sub_string buffer offset length
+        let buffer = Bytes.create length in
+        recv buffer 0 length;
+        Bytes.to_string buffer
       );
     write =
       (fun send x ->
@@ -225,8 +229,9 @@ let bytearray =
         let rec loop offset length =
           if length > 0 then (
             let sub_length = min length Sys.max_string_length in
-            let buffer, offset' = recv sub_length in
-            unsafe_blit_from_bytes buffer offset' res offset sub_length;
+            let buffer = Bytes.create sub_length in
+            recv buffer 0 sub_length;
+            unsafe_blit_from_bytes buffer 0 res offset sub_length;
             loop (offset + sub_length) (length - sub_length)
           )
         in
@@ -274,14 +279,12 @@ let marshal_to_bytearray m x =
 
 let unmarshal_from_bytearray m x offset =
   let length = Bigarray.Array1.dim x in
-  let buffer = Bytes.create (min length Sys.max_string_length) in
-  let pos = ref (offset + header_size) in
-  m.read (fun n ->
-      let i = !pos in
+  let offset = ref (offset + header_size) in
+  m.read (fun buffer' offset' n ->
+      let i = !offset in
       if i + n <= length then (
-        unsafe_blit_to_bytes x i buffer 0 n;
-        pos := i + n;
-        buffer, 0
+        offset := i + n;
+        unsafe_blit_to_bytes x i buffer' offset' n
       ) else (
         raise (Error "unmarshal_from_bytearray: end of input")
       )
