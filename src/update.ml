@@ -51,7 +51,6 @@ let ignoreArchives =
    for this file on the next sync. *)
 (*FIX: consider changing the way case-sensitivity mode is stored in
   the archive *)
-(*FIX: we should use only one Umarshal.from_channel *)
 let archiveFormat = 23
 
 module NameMap = MyMap.Make (Name)
@@ -327,7 +326,9 @@ let verboseArchiveName thisRoot =
   Printf.sprintf "Archive for root %s synchronizing roots %s"
     thisRoot (Prefs.read rootsName)
 
-let mpayload = Umarshal.(prod3 marchive int string id id)
+let mpayload = Umarshal.prod4
+                 marchive Umarshal.int Umarshal.string Proplist.m
+                 Umarshal.id Umarshal.id
 
 (* Load in the archive in [fspath]; check that archiveFormat (first line)
    and roots (second line) match skip the third line (time stamp), and read
@@ -365,15 +366,8 @@ let loadArchiveLocal fspath (thisRoot: string) :
         let _ = input_line c in
         (* Load the datastructure *)
         try
-          let ((archive, hash, magic) : archive * int * string) =
+          let ((archive, hash, magic, properties) : archive * int * string * Proplist.t) =
             Umarshal.from_channel mpayload c in
-          let properties =
-            try
-              ignore (input_char c); (* Marker *)
-              Umarshal.from_channel Proplist.m c
-            with End_of_file ->
-              Proplist.empty
-          in
           close_in c;
           Some (archive, hash, magic, properties)
         with Failure s | Umarshal.Error s -> raise (Util.Fatal (Printf.sprintf
@@ -402,10 +396,7 @@ let storeArchiveLocal fspath thisRoot archive hash magic properties =
    output_string c (Printf.sprintf "Written at %s - %s mode\n"
                       (Util.time2string (Util.time()))
                       ((Case.ops())#modeDesc));
-   Umarshal.to_channel mpayload c (archive, hash, magic);
-   output_char c '\000'; (* Marker that indicates that the archive
-                            is followed by a property list *)
-   Umarshal.to_channel Proplist.m c properties;
+   Umarshal.to_channel mpayload c (archive, hash, magic, properties);
    close_out c)
 
 (* Remove the archieve under the root path [fspath] with archiveVersion [v] *)
