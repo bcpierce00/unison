@@ -5,6 +5,7 @@
 *.cm[aiox]
 *.exe
 *.la
+*.lib
 *.libs
 *.lo
 *.log
@@ -14,6 +15,7 @@
 *.pyc
 *.pyo
 *.rej
+*.res
 *.so
 *.so.[0-9]*
 *.tmproj
