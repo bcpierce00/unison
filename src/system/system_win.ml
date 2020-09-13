@@ -38,10 +38,13 @@ let fspathAddSuffixToFinalName f suffix = f ^ suffix
 (****)
 
 let fixPath f =
-  for i = 0 to String.length f - 1 do
-    if f.[i] = '/' then f.[i] <- '\\'
+  let length = String.length f in
+  let buffer = Bytes.create length in
+  String.blit f 0 buffer 0 length;
+  for i = 0 to length - 1 do
+    if Bytes.get buffer i = '/' then Bytes.set buffer i '\\'
   done;
-  f
+  Bytes.to_string buffer
 let winRootRx = Rx.rx "[a-zA-Z]:[/\\].*"
 let winUncRx = Rx.rx "[/\\][/\\][^/\\]+[/\\][^/\\]+[/\\].*"
 let extendedPath f =
