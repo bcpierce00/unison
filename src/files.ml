@@ -91,32 +91,40 @@ let copyOnConflict = Prefs.createBool "copyonconflict" false
    with the \\verb|-repeat watch| and \\verb|-prefer newer| preferences."
 
 let prepareCopy workingDir path notDefault =
-  if notDefault
-     && Prefs.read copyOnConflict
-     && (Fileinfo.get true workingDir path).Fileinfo.typ <> `ABSENT
-  then begin
-    let tmpPath = Os.tempPath workingDir path in
-    Copy.recursively workingDir path workingDir tmpPath;
-    Some (workingDir, path, tmpPath)
+  if notDefault && Prefs.read copyOnConflict then begin
+    match (Fileinfo.get true workingDir path).Fileinfo.typ with
+    | `ABSENT -> Some (workingDir, path, None)
+    | _ ->
+      begin
+        let tmpPath = Os.tempPath workingDir path in
+        Copy.recursively workingDir path workingDir tmpPath;
+        Some (workingDir, path, Some tmpPath)
+      end
   end else
     None
 
 let finishCopy copyInfo =
   match copyInfo with
-    Some (workingDir, path, tmpPath) ->
+    Some (workingDir, path, tmpPathOpt) ->
       let tm = Unix.localtime (Unix.gettimeofday ()) in
       let rec copyPath n =
         let p =
           Path.addToFinalName path
-            (Format.sprintf " (conflict%s_on_%04d-%02d-%02d)"
+            (Format.sprintf " (conflict%s_on_%04d-%02d-%02d%s)"
                (if n = 0 then "" else " #" ^ string_of_int n)
-               (tm.Unix.tm_year + 1900) (tm.Unix.tm_mon + 1) tm.Unix.tm_mday)
+               (tm.Unix.tm_year + 1900) (tm.Unix.tm_mon + 1) tm.Unix.tm_mday
+               (if tmpPathOpt = None then "_was_deleted" else ""))
         in
         if Os.exists workingDir p then copyPath (n + 1) else p
-      in
-      Os.rename "keepCopy" workingDir tmpPath workingDir (copyPath 0)
+      in begin
+        match tmpPathOpt with
+        | Some tmpPath ->
+              Os.rename "keepCopy" workingDir tmpPath workingDir (copyPath 0);
+              None
+        | None -> Some (copyPath 0)
+      end
   | None ->
-      ()
+      None
 
 (* ------------------------------------------------------------ *)
 
@@ -129,7 +137,7 @@ let deleteLocal (fspathTo, (pathTo, ui, notDefault)) =
   (* Make sure the target is unchanged first *)
   (* (There is an unavoidable race condition here.) *)
   let prevArch = Update.checkNoUpdates fspathTo localPathTo ui in
-  finishCopy copyInfo;
+  ignore (finishCopy copyInfo);
   Stasher.backup fspathTo localPathTo `AndRemove prevArch;
   (* Archive update must be done last *)
   Update.replaceArchiveLocal fspathTo localPathTo Update.NoArchive;
@@ -324,7 +332,11 @@ let renameLocal
   (* Make sure the target is unchanged, then do the rename.
      (Note that there is an unavoidable race condition here...) *)
   let prevArch = Update.checkNoUpdates fspathTo localPathTo ui in
-  finishCopy copyInfo;
+  (* Create a conflict copy if the file was modified in one replica
+     and deleted in the other replica. *)
+  let pathTo = match finishCopy copyInfo with
+  | Some conflictPath -> conflictPath
+  | None -> pathTo in
   performRename fspathTo localPathTo workingDir pathFrom pathTo prevArch;
   begin match archOpt with
     Some archTo -> Stasher.stashCurrentVersion fspathTo localPathTo None;
