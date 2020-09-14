@@ -23,7 +23,7 @@ module Private = struct
 
 let debug = Trace.debug "ui"
 
-let myNameCapitalized = String.capitalize_ascii Uutil.myName
+let myNameCapitalized = String.capitalize Uutil.myName
 
 (**********************************************************************
                            LOW-LEVEL STUFF
@@ -1956,7 +1956,7 @@ let documentPreference ~compact ~packing =
           tbl#misc#set_sensitive false;
           ("", "", false)
     in
-    shortDescr#set_text (String.capitalize_ascii short);
+    shortDescr#set_text (String.capitalize short);
     insertMarkup tags longDescr (formatDoc long)
 (*    longDescr#buffer#set_text (formatDoc long)*)
 
