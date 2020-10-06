@@ -351,18 +351,20 @@ let intern_out_channel ch =
 let wait_inchan ic = wait_read (Unix.descr_of_in_channel ic)
 let wait_outchan oc = wait_write (Unix.descr_of_out_channel oc)
 
+let stdlib_input_char = input_char
 let rec input_char ic =
   try
-    Lwt.return (Stdlib.input_char ic)
+    Lwt.return (stdlib_input_char ic)
   with
     Sys_blocked_io ->
       Lwt.bind (wait_inchan ic) (fun () -> input_char ic)
   | e ->
       Lwt.fail e
 
+let stdlib_input = input
 let rec input ic s ofs len =
   try
-    Lwt.return (Stdlib.input ic s ofs len)
+    Lwt.return (stdlib_input ic s ofs len)
   with
     Sys_blocked_io ->
       Lwt.bind (wait_inchan ic) (fun () -> input ic s ofs len)
