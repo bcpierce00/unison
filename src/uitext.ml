@@ -326,7 +326,7 @@ let interact prilist rilist =
     | ri::rest as ril ->
         let next() = loop (ri::prev) rest in
         let repeat() = loop prev ril in
-        let ignore pat rest what =
+        let ignore_pref pat rest what =
           display "  ";
           Uicommon.addIgnorePattern pat;
           display ("  Permanently ignoring " ^ what ^ "\n");
@@ -582,7 +582,7 @@ let interact prilist rilist =
                  (["%"],
                   ("skip all the following"),
                   (fun () -> newLine();
-                     Safelist.iter (fun ri -> Stdlib.ignore (setskip ri); ()) rest;
+                     Safelist.iter (fun ri -> ignore (setskip ri); ()) rest;
                      repeat()));
                  (["-"],
                   ("skip and discard for this session (curr or match)"),
@@ -595,17 +595,17 @@ let interact prilist rilist =
                  (["I"],
                   ("ignore this path permanently"),
                   (fun () -> newLine();
-                     ignore (Uicommon.ignorePath ri.path1) rest
+                     ignore_pref (Uicommon.ignorePath ri.path1) rest
                        "this path"));
                  (["E"],
                   ("permanently ignore files with this extension"),
                   (fun () -> newLine();
-                     ignore (Uicommon.ignoreExt ri.path1) rest
+                     ignore_pref (Uicommon.ignoreExt ri.path1) rest
                        "files with this extension"));
                  (["N"],
                   ("permanently ignore paths ending with this name"),
                   (fun () -> newLine();
-                     ignore (Uicommon.ignoreName ri.path1) rest
+                     ignore_pref (Uicommon.ignoreName ri.path1) rest
                        "files with this name"));
                  (["s"],
                   ("stop reconciling and go to the proceed menu"),
