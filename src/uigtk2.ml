@@ -1034,7 +1034,7 @@ module GtkReact = struct
 
   let current_tree_view_selection (t : #GTree.view) =
     let m =t#model in
-    List.map (fun p -> m#get_row_reference p) t#selection#get_selected_rows
+    Safelist.map (fun p -> m#get_row_reference p) t#selection#get_selected_rows
 
   let tree_view_selection_changed t =
     let (res, trigger) = React.make_event () in
@@ -3398,7 +3398,7 @@ lst_store#set ~row ~column:c_path path;
                          whatHappened = None })
             reconItemList);
     unsynchronizedPaths :=
-      Some (List.map (fun ri -> ri.path1) reconItemList, []);
+      Some (Safelist.map (fun ri -> ri.path1) reconItemList, []);
     current := IntSet.empty;
     displayMain();
     progressBarPulse := false; sync_action := None; displayGlobalProgress 0.;
@@ -3649,7 +3649,7 @@ lst_store#set ~row ~column:c_path path;
         [Printf.sprintf "%d skipped" skippedCount]
       in
       unsynchronizedPaths :=
-        Some (List.map (fun (si, _, _) -> si.ri.path1)
+        Some (Safelist.map (fun (si, _, _) -> si.ri.path1)
                 (failureList @ partialList @ skippedList),
               []);
       Trace.status
