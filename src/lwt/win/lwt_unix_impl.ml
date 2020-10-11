@@ -16,8 +16,10 @@ let buffer_create l = Bigarray.Array1.create Bigarray.char Bigarray.c_layout l
 
 external unsafe_blit_string_to_buffer :
   string -> int -> buffer -> int -> int -> unit = "ml_blit_string_to_buffer"
-external unsafe_blit_buffer_to_string :
-  buffer -> int -> string -> int -> int -> unit = "ml_blit_buffer_to_string"
+external unsafe_blit_bytes_to_buffer :
+  bytes -> int -> buffer -> int -> int -> unit = "ml_blit_string_to_buffer"
+external unsafe_blit_buffer_to_bytes :
+  buffer -> int -> bytes -> int -> int -> unit = "ml_blit_buffer_to_string"
 
 let buffer_length = Bigarray.Array1.dim
 
@@ -27,11 +29,17 @@ let blit_string_to_buffer s i a j l =
   then invalid_arg "Lwt_unix.blit_string_to_buffer"
   else unsafe_blit_string_to_buffer s i a j l
 
-let blit_buffer_to_string a i s j l =
+let blit_bytes_to_buffer s i a j l =
+  if l < 0 || i < 0 || i > Bytes.length s - l
+           || j < 0 || j > buffer_length a - l
+  then invalid_arg "Lwt_unix.blit_bytes_to_buffer"
+  else unsafe_blit_bytes_to_buffer s i a j l
+
+let blit_buffer_to_bytes a i s j l =
   if l < 0 || i < 0 || i > buffer_length a - l
-           || j < 0 || j > String.length s - l
-  then invalid_arg "Lwt_unix.blit_buffer_to_string"
-  else unsafe_blit_buffer_to_string a i s j l
+           || j < 0 || j > Bytes.length s - l
+  then invalid_arg "Lwt_unix.blit_buffer_to_bytes"
+  else unsafe_blit_buffer_to_bytes a i s j l
 
 let buffer_size = 16384
 
@@ -159,7 +167,7 @@ if !d then Format.eprintf "Handling event %d (len %d)@." id len;
   in
   begin match action with
     `Write         -> ()
-  | `Read (s, pos) -> if len > 0 then blit_buffer_to_string buf 0 s pos len
+  | `Read (s, pos) -> if len > 0 then blit_buffer_to_bytes buf 0 s pos len
   | `Readdirectorychanges -> ()
   end;
   IntTbl.remove ioInFlight id;
@@ -310,6 +318,9 @@ if !d then prerr_endline "ACCEPT";
                `Write (buf, pos, len, res) ->
                   wrap_syscall outputs fd res
                     (fun () -> Unix.write fd buf pos len)
+             | `WriteSubstring (buf, pos, len, res) ->
+                  wrap_syscall outputs fd res
+                    (fun () -> Unix.write_substring fd buf pos len)
              | `Wait res ->
                   wrap_syscall inputs fd res (fun () -> ())
            with Not_found ->
@@ -352,6 +363,18 @@ if !d then Format.eprintf "Reading started@.";
   res
 
 let write ch s pos len =
+if !d then Format.eprintf "Start writing@.";
+  let id = acquire_id () in
+  let buf = acquire_buffer () in
+  let len = if len > buffer_size then buffer_size else len in
+  blit_bytes_to_buffer s pos buf 0 len;
+  let res = Lwt.wait () in
+  IntTbl.add ioInFlight id (`Write, buf, res);
+  start_write ch buf 0 len id;
+if !d then Format.eprintf "Writing started@.";
+  res
+
+let write_substring ch s pos len =
 if !d then Format.eprintf "Start writing@.";
   let id = acquire_id () in
   let buf = acquire_buffer () in
@@ -495,7 +518,7 @@ let rec unsafe_really_input ic s ofs len =
   end
 
 let really_input ic s ofs len =
-  if ofs < 0 || len < 0 || ofs > String.length s - len
+  if ofs < 0 || len < 0 || ofs > Bytes.length s - len
   then Lwt.fail (Invalid_argument "really_input")
   else unsafe_really_input ic s ofs len
 
@@ -503,16 +526,16 @@ let input_line ic =
   let buf = ref (Bytes.create 128) in
   let pos = ref 0 in
   let rec loop () =
-    if !pos = String.length !buf then begin
+    if !pos = Bytes.length !buf then begin
       let newbuf = Bytes.create (2 * !pos) in
-      String.blit !buf 0 newbuf 0 !pos;
+      Bytes.blit !buf 0 newbuf 0 !pos;
       buf := newbuf
     end;
     Lwt.bind (input_char ic) (fun c ->
     if c = '\n' then
       Lwt.return ()
     else begin
-      !buf.[!pos] <- c;
+      Bytes.set !buf !pos c;
       incr pos;
       loop ()
     end)
@@ -527,8 +550,8 @@ let input_line ic =
               Lwt.fail e))
     (fun () ->
        let res = Bytes.create !pos in
-       String.blit !buf 0 res 0 !pos;
-       Lwt.return res)
+       Bytes.blit !buf 0 res 0 !pos;
+       Lwt.return (Bytes.to_string res))
 *)
 (****)
 

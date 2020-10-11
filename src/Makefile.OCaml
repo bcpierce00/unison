@@ -14,10 +14,12 @@ else
 ifeq (${OSTYPE},cygwin32) # Cygwin Beta 19
   OSARCH=win32
   ETAGS=/bin/etags
+  buildexecutable:: win32rc/unison.res.lib
 else
 ifeq (${OSTYPE},cygwin)	  # Cygwin Beta 20
   OSARCH=win32
   ETAGS=/bin/etags
+  buildexecutable:: win32rc/unison.res.lib
 else
 
 # Unix system
@@ -278,8 +280,12 @@ endif
 ########################################################################
 ### Filesystem monitoring
 
+OCAMLSWITCH_IS_MUSL := $(shell opam switch show 2> /dev/null | grep -iF '+musl')
+
 ifeq ($(OSARCH),Linux)
+ifeq ($(OCAMLSWITCH_IS_MUSL),)
 -include fsmonitor/linux/Makefile src/fsmonitor/linux/Makefile
+endif
 endif
 
 ifeq ($(OSARCH),win32gnuc)
@@ -387,11 +393,14 @@ else
 
 endif
 
+WINDRES := $(or ${EXEC_PREFIX},$(filter i686-w64-mingw32- x86_64-w64-mingw32-,$(CC:gcc${EXEC_EXT}=)))windres
+##$(info windres='${WINDRES}')
+
 win32rc/unison.res: win32rc/unison.rc win32rc/U.ico
-	windres win32rc/unison.rc win32rc/unison.res
+	$(WINDRES) win32rc/unison.rc win32rc/unison.res
 
 win32rc/unison.res.lib: win32rc/unison.res
-	windres win32rc/unison.res win32rc/unison.res.lib
+	$(WINDRES) win32rc/unison.res win32rc/unison.res.lib
 
 %.ml: %.mll
 	-$(RM) $@
