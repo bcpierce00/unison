@@ -1738,7 +1738,9 @@ let docs =
       \032         By default, logging messages will be appended to the file\n\
       \032         unison.log in your HOME directory. Set this preference if you\n\
       \032         prefer another file. It can be a path relative to your HOME\n\
-      \032         directory.\n\
+      \032         directory. Sending SIGUSR1 to the unison process will close the\n\
+      \032         logfile; the logfile will be re-opened (and created, if needed)\n\
+      \032         automatically, to allow for log rotation.\n\
       \n\
       \032  maxbackups n\n\
       \032         This preference specifies the number of backup versions that\n\
