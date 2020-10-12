@@ -1,5 +1,10 @@
 name: Main workflow
 
+env:
+  PROJECT_NAME: unison
+  PROJECT_DESC: "`unison` file synchronizer"
+  PROJECT_EXES: "unison unison-fsmonitor"
+
 on:
   - pull_request
   - push
@@ -9,42 +14,196 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os:
-          - macos-latest
-          - ubuntu-latest
-        ocaml-version:
-          - 4.10.1
-          - 4.09.1
-          - 4.08.1
-          - 4.07.1
+        job:
+        - { os: macos-latest   , ocaml-version: 4.10.1 }
+        - { os: macos-latest   , ocaml-version: 4.09.1 }
+        - { os: macos-latest   , ocaml-version: 4.08.1 }
+        - { os: macos-latest   , ocaml-version: 4.07.1 }
+        - { os: ubuntu-latest  , ocaml-version: 4.10.1 }
+        - { os: ubuntu-latest  , ocaml-version: 4.10.0+musl+static+flambda }
+        - { os: ubuntu-latest  , ocaml-version: 4.09.1 }
+        - { os: ubuntu-latest  , ocaml-version: 4.08.1 }
+        - { os: ubuntu-latest  , ocaml-version: 4.07.1 }
+        - { os: windows-latest , ocaml-version: 4.10.1+mingw64 }
+        - { os: windows-latest , ocaml-version: 4.10.1+mingw32 }
+        - { os: windows-latest , ocaml-version: 4.09.1 }
+        - { os: windows-latest , ocaml-version: 4.08.1 }
+        - { os: windows-latest , ocaml-version: 4.07.1 }
 
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.job.os }}
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
+    - name: Checkout code
+      uses: actions/checkout@v2
 
-      - name: Retrieve opam cache
-        uses: actions/cache@v2
-        id: cache-opam
-        with:
-          path: ~/.opam
-          key: v1-${{ matrix.os }}-opam-${{ matrix.ocaml-version }}
+    - name: Initialize workflow variables
+      id: vars
+      shell: bash
+      run: |
+        outputs() { for var in "$@" ; do echo steps.vars.outputs.${var}="${!var}"; echo ::set-output name=${var}::${!var}; done; }
+        # normalize to pre-compiled ocaml compiler variants for windows/Cygwin (decreases OCaml install time by 50%)
+        OCAML_VARIANT='${{ matrix.job.ocaml-version }}'
+        OCAML_VARIANT="${OCAML_VARIANT/%+mingw32/+mingw32c}"
+        OCAML_VARIANT="${OCAML_VARIANT/%+mingw64/+mingw64c}"
+        OCAML_VARIANT="${OCAML_VARIANT/%+msvc32/+msvc32c}"
+        OCAML_VARIANT="${OCAML_VARIANT/%+msvc64/+msvc64c}"
+        outputs OCAML_VARIANT
+        # architecture/platform vars
+        EXE_suffix='' ; case '${{ matrix.job.os }}' in windows-*) EXE_suffix=".exe" ;; esac
+        MinGW_ARCH='x86_64' ; case '${{ matrix.job.ocaml-version }}' in *+mingw32*) MinGW_ARCH='i686' ;; *+mingw64*) MinGW_ARCH='x86_64' ;; esac
+        MSVC_ARCH='' ; case '${{ matrix.job.ocaml-version }}' in *+msvc32*) MSVC_ARCH='x86' ;; *+msvc64*) MSVC_ARCH='x64' ;; esac
+        STATIC='false' ; case '${{ matrix.job.ocaml-version }}' in *+musl*) STATIC='true' ;; esac
+        outputs EXE_suffix MinGW_ARCH MSVC_ARCH STATIC
+        # staging environment
+        STAGING_DIR='_staging'
+        outputs STAGING_DIR
+        # parse commit reference info
+        echo GITHUB_REF=${GITHUB_REF}
+        echo GITHUB_SHA=${GITHUB_SHA}
+        REF_NAME="${GITHUB_REF#refs/*/}"
+        unset REF_BRANCH ; case "${GITHUB_REF}" in refs/heads/*) REF_BRANCH="${GITHUB_REF#refs/heads/}" ;; esac;
+        unset REF_TAG ; case "${GITHUB_REF}" in refs/tags/*) REF_TAG="${GITHUB_REF#refs/tags/}" ;; esac;
+        REF_SHAS="${GITHUB_SHA:0:8}"
+        outputs REF_BRANCH REF_NAME REF_SHAS REF_TAG
+        # deployable tag? (ie, leading "vM" or "M"; M == version number)
+        unset DEPLOY ; if [[ $REF_TAG =~ ^[vV]?[0-9].* ]]; then DEPLOY='true' ; fi
+        outputs DEPLOY
+        # package name
+        PKG_suffix='.tar.gz' ; case '${{ matrix.job.os }}' in windows-*) PKG_suffix='.zip' ;; esac;
+        PKG_OS='linux' ; case '${{ matrix.job.os }}' in macos-*) PKG_OS='macos' ;; windows-*) PKG_OS='windows' ;; esac;
+        PKG_BASENAME="${PROJECT_NAME}-${REF_TAG:-$REF_SHAS}+ocaml-${{ matrix.job.ocaml-version }}.${PKG_OS}"
+        PKG_NAME="${PKG_BASENAME}${PKG_suffix}"
+        PKG_DIR="${STAGING_DIR}/${PKG_BASENAME}"
+        outputs PKG_BASENAME PKG_DIR PKG_NAME PKG_OS PKG_suffix
 
-      - name: Use OCaml ${{ matrix.ocaml-version }}
-        uses: avsm/setup-ocaml@v1
-        with:
-          ocaml-version: ${{ matrix.ocaml-version }}
+    - name: Create/configure any needed build/workspace
+      shell: bash
+      run: |
+        # create build/work space
+        mkdir -p '${{ steps.vars.outputs.STAGING_DIR }}'
+        mkdir -p '${{ steps.vars.outputs.PKG_DIR }}'
+        mkdir -p '${{ steps.vars.outputs.PKG_DIR }}'/bin
 
-      # Check the consistency of installed opam packages
-      - run: opam upgrade --fixup
-        if: steps.cache-opam.outputs.cache-hit == 'true'
+    - name: Enable/config MSVC environment (if/when needed)
+      uses: ilammy/msvc-dev-cmd@v1.3.0
+      with:
+        arch: "${{ steps.vars.outputs.MSVC_ARCH }}"
+      if: contains(matrix.job.ocaml-version, '+msvc')
 
-      - run: opam exec -- make
+    - name: Retrieve opam cache
+      uses: actions/cache@v2
+      id: cache-opam
+      with:
+        path: ~/.opam
+        key: v1-${{ matrix.job.os }}-opam-${{ matrix.job.ocaml-version }}
 
-      - run: opam exec -- make test
+    - name: Use OCaml ${{ matrix.job.ocaml-version }}
+      uses: CICD-tools/ghactions-ocaml.toolchain@dev
+      with:
+        ocaml-version: "${{ steps.vars.outputs.OCAML_VARIANT }}"
 
-      - uses: actions/upload-artifact@v2
-        with:
-          name: unison-${{ github.sha }}-${{ matrix.os }}-${{ matrix.ocaml-version }}
-          path: src/unison
+    ## note: at this point, after OCaml installation, windows platforms will use Cygwin bash as the default
+    ##   ... Cygwin bash cannot handle shell scripts containing CRLF EOLs (which are what is generated by GHA on windows platforms)
+    ##   ... so, for portable usage of bash, use `shell: bash --login --norc --noprofile -e -o pipefail -c "dos2unix '{0}' 2>/dev/null; source '{0}' ;"`
+
+    # Check the consistency of installed opam packages
+    - run: opam upgrade --fixup
+      if: steps.cache-opam.outputs.cache-hit == 'true'
+
+    - name: lablgtk install
+      ## [2020-09] non-working/unavailable for MSVC or musl OCaml variants ; also, non-working for 32bit OCaml variant (see [GH:garrigue/lablgtk#64](https://github.com/garrigue/lablgtk/issues/64))
+      if: ${{ ! ( contains(matrix.job.ocaml-version, '+msvc') || contains(matrix.job.ocaml-version, '+musl') || contains(matrix.job.ocaml-version, '+32bit') ) }}
+      shell: bash --login --norc --noprofile -e -o pipefail -c "dos2unix '{0}' 2>/dev/null ; source '{0}' ;"
+      run: |
+        ocaml-env-exec () { ocaml-env >/dev/null 2>&1 && ocaml-env exec -- $* || $* ; } ## `ocaml-env exec ...` is not available for all ocaml switches
+        eval "$(opam env)"
+        # install extra 'lablgtk' prerequisites
+        case '${{ matrix.job.os }}' in
+          macos-*) brew install gtk+ ;;
+          ubuntu-*) sudo apt-get install -qq -yy libexpat1-dev libgtk2.0-dev ;;
+          windows-*)
+            # ref: <https://www.reddit.com/r/ocaml/comments/5rt3gh/installing_lablgtk_on_windows> @@ <https://archive.is/6GSXF>
+            # * `cygwin-dl` and `cygwin-install` are from the 'depext-cygwinports' opam package (<https://github.com/fdopen/depext-cygwinports>)
+            cygwin-dl --wait --quiet-mode --no-admin --no-desktop --packages mingw64-${{ steps.vars.outputs.MINGW_ARCH }}-glib2.0,mingw64-${{ steps.vars.outputs.MINGW_ARCH }}-gtk2.0,mingw64-${{ steps.vars.outputs.MINGW_ARCH }}-pango1.0,libgtk2.0_0,libgtk2.0_devel
+            ;;
+        esac
+        # install 'lablgtk' package
+        ocaml-env-exec opam depext --install --verbose --yes lablgtk
+
+    - shell: bash --login --norc --noprofile -e -o pipefail -c "dos2unix '{0}' 2>/dev/null ; source '{0}' ;"
+      run: |
+        opam exec -- make src OSTYPE=$OSTYPE UISTYLE=text STATIC=${{ steps.vars.outputs.STATIC }}
+        # stage
+        # * notes: darwin/macos doesn't build `unison-fsmonitor` ; windows gtk2 build hangs at "looking for changes" when `unison-fsmonitor.exe` is present
+        for file in ${PROJECT_EXES} ; do
+          if [ -f "src/${file}${{ steps.vars.outputs.EXE_suffix }}" ]; then
+            case '${{ matrix.job.os }}' in windows-*) if [ "${file}" = "unison-fsmonitor" ]; then continue; fi ;; esac
+            cp "src/${file}${{ steps.vars.outputs.EXE_suffix }}" '${{ steps.vars.outputs.PKG_DIR }}/bin'
+            echo "'src/${file}${{ steps.vars.outputs.EXE_suffix }}' copied to '${{ steps.vars.outputs.PKG_DIR }}/bin'"
+          fi
+        done
+
+    - if: steps.vars.outputs.STATIC != 'true' ## unable to build static gtk for linux or windows/Cygwin MinGW platforms
+      shell: bash --login --norc --noprofile -e -o pipefail -c "dos2unix '{0}' 2>/dev/null ; source '{0}' ;"
+      run: |
+        opam exec -- make src OSTYPE=$OSTYPE UISTYLE=gtk2 STATIC=${{ steps.vars.outputs.STATIC }}
+        # stage
+        # * copy only main/first project binary
+        project_exe_stem=${PROJECT_EXES%% *}
+        cp "src/${project_exe_stem}${{ steps.vars.outputs.EXE_suffix }}" "${{ steps.vars.outputs.PKG_DIR }}/bin/${project_exe_stem}-gtk2${{ steps.vars.outputs.EXE_suffix }}"
+
+    - if: runner.os != 'Windows' ## [2020-09] Windows builds fail self-testing
+      shell: bash --login --norc --noprofile -e -o pipefail -c "dos2unix '{0}' 2>/dev/null ; source '{0}' ;"
+      run: opam exec -- make OSTYPE=$OSTYPE STATIC=${{ steps.vars.outputs.STATIC }} test
+
+    - uses: actions/upload-artifact@v2
+      with:
+        name: unison-${{ steps.vars.outputs.REF_SHAS }}.ocaml-${{ matrix.job.ocaml-version }}.${{ matrix.job.os }}
+        path: ${{ steps.vars.outputs.PKG_DIR }}/bin/*
+
+    - name: Package
+      # if: steps.vars.outputs.DEPLOY
+      shell: bash --login --norc --noprofile -e -o pipefail -c "dos2unix '{0}' 2>/dev/null ; source '{0}' ;"
+      run: |
+        ## package artifact(s)
+        PKG_DIR='${{ steps.vars.outputs.PKG_DIR }}'
+        # `strip` binaries
+        strip "${PKG_DIR}/bin"/*'${{ steps.vars.outputs.EXE_suffix }}'
+        # README and LICENSE
+        (shopt -s nullglob; for f in [R]'EADME'{,.*}; do cp $f "${PKG_DIR}"/ ; done)
+        (shopt -s nullglob; for f in [L]'ICENSE'{-*,}{,.*}; do cp $f "${PKG_DIR}"/ ; done)
+        # collect any needed dlls/libraries
+        case '${{ matrix.job.os }}' in
+          windows-*)
+            # dlls
+            dll_refs() { eval "$(opam env)" ; eval "$(ocaml-env cygwin)" ; objdump -x "$@" | grep -Po "\S+[.]dll$" | xargs -I{} 2>/dev/null which "{}" | sort -u ; }
+            filtered_dll_refs() { list="$(dll_refs "$@" | grep -vF "$(cygpath ${WINDIR})" | perl -lape '$_ = qq/@{[sort @F]}/')" ; echo "$list" ; }
+            recursive_filtered_dll_refs() { list="$(filtered_dll_refs "$@")" ; n=0 ; while [ $n -lt $(echo "$list" | wc -l) ]; do n=$(echo "$list" | wc -l) ; list="$(filtered_dll_refs $list)" ; done ; echo "$list" ; }
+            IFS=$'\n' DLL_list=( "$(recursive_filtered_dll_refs "${PKG_DIR}"/bin/*)" )
+            for dll in ${DLL_list[@]} ; do cp "${dll}" "${PKG_DIR}"/bin ; done
+            TARGET_ARCH_ID='x86_64'; case '${{ matrix.job.ocaml-version }}' in *+mingw32*|*+msvc32*) TARGET_ARCH_ID='i686' ;; esac
+            # required gdk support files
+            mkdir "${PKG_DIR}"/lib
+            cp -r /usr/${TARGET_ARCH_ID}-w64-mingw32/sys-root/mingw/lib/gdk-pixbuf-2.0 "${PKG_DIR}"/lib/
+            # update loader.cache to point to local relative installation
+            mv "${PKG_DIR}"/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache "${PKG_DIR}"/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache.original
+            cat "${PKG_DIR}"/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache.original | sed -E 's#([^"]*)(lib/gdk-pixbuf-2.0/2.10.0/loaders/[^"]*[.]dll)#../\2#' > "${PKG_DIR}"/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache
+            rm "${PKG_DIR}"/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache.original
+            ;;
+        esac
+        # create compressed package
+        pushd "${PKG_DIR}"/ >/dev/null
+        case '${{ matrix.job.os }}' in
+          windows-*) 7z -y a '../${{ steps.vars.outputs.PKG_NAME }}' * | tail -2 ;;
+          *) tar czf '../${{ steps.vars.outputs.PKG_NAME }}' * ;;
+        esac
+        popd >/dev/null
+
+    - name: Publish
+      if: steps.vars.outputs.DEPLOY
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          ${{ steps.vars.outputs.STAGING_DIR }}/${{ steps.vars.outputs.PKG_NAME }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
