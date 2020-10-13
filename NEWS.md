@@ -1,7 +1,8 @@
+# unison NEWS
 
 Changes in Version 2.51.3
 
-   Changes since 2.51.2:
+## Changes since 2.51.2:
      * Some nontrivial changes to profile parsing (G.raud Meyer)
           + ’=’ has been considered whitespace until now: several
             following chars are considered as only one; trailing chars are
@@ -19,7 +20,7 @@ Changes in Version 2.51.3
             etc., plus several more useful key-commands. Type "?" to
             Unison to see all available commands.
 
-   Changes since 2.48:
+## Changes since 2.48:
      * Repository transplanted from SVN to Git and moved to GitHub ()
        (https://github.com/bcpierce00/unison).
      * Add a new preference, ’atomic’, for specifying directories that
@@ -40,7 +41,7 @@ Changes in Version 2.51.3
           + Added a DockerFile for the convenience of Docker users.
           + Many small bugfixes and UI improvements.
 
-   Changes since 2.45:
+## Changes since 2.45:
      * Incorporated a patch from Christopher Zimmermann to replace the
        Uprintf module (which doesn’t work with OCaml 4.02, causing Unison
        to crash) with equivalent functionality from the standard library.
@@ -99,7 +100,7 @@ Changes in Version 2.51.3
           + Fixed Makefile for cross-compiling towards Windows (updated to
             MinGW-w64)
 
-   Changes since 2.40.63:
+## Changes since 2.40.63:
      * New preference fastercheckUNSAFE, which can be used (with care!) to
        achieve much faster update detection when all the common files in
        the two replicas are known to be identical. See the manual for more
@@ -156,7 +157,7 @@ Changes in Version 2.51.3
           + Lines added in profile files by unison always start at a new
             line
 
-   Changes since 2.40.1:
+## Changes since 2.40.1:
      * Added "BelowPath" patterns, that match a path as well as all paths
        below (convenient to use with nodeletion,update,creationpartial
        preferences)
@@ -176,7 +177,7 @@ Changes in Version 2.51.3
           + Make Unicode the default on all architectures (it was only the
             default when a Mac OS X or Windows machine was involved).
 
-   Changes since 2.32:
+## Changes since 2.32:
      * Major enhancement: Unicode support.
           + Unison should now handle unicode filenames correctly on all
             platforms.
@@ -361,7 +362,7 @@ Changes in Version 2.51.3
             bigarray.
           + Resume copy of partially transferred files.
 
-   Changes since 2.31:
+## Changes since 2.31:
      * Small user interface changes
           + Small change to text UI "scanning..." messages, to print just
             directories (hopefully making it clearer that individual files
@@ -389,7 +390,7 @@ Changes in Version 2.51.3
             transport for paths which point to non-existent locations in
             the destination replica.
 
-   Changes since 2.27:
+## Changes since 2.27:
      * If Unison is interrupted during a directory transfer, it will now
        leave the partially transferred directory intact in a temporary
        location. (This maintains the invariant that new files/directories
@@ -481,7 +482,7 @@ Changes in Version 2.51.3
             Crowell.)
           + Follow maxthreads preference when transferring directories.
 
-   Changes since 2.17:
+## Changes since 2.17:
      * Major rewrite and cleanup of the whole Mac OS X graphical user
        interface by Craig Federighi. Thanks, Craig!!!
      * Small fix to ctime (non-)handling in update detection under windows
@@ -592,7 +593,7 @@ Changes in Version 2.51.3
             shortcuts are applied and whether they succeed) just to the
             standard output of the Unison process, not to the log file.
 
-   Changes since 2.13.0:
+## Changes since 2.13.0:
      * The features for performing backups and for invoking external merge
        programs have been completely rewritten by Stephane Lescuyer
        (thanks, Stephane!). The user-visible functionality should not
@@ -610,7 +611,7 @@ Changes in Version 2.51.3
           + Fixed off by one error in month numbers (in printed dates)
             reported by Bob Burger
 
-   Changes since 2.12.0:
+## Changes since 2.12.0:
      * New convention for release numbering: Releases will continue to be
        given numbers of the form X.Y.Z, but, from now on, just the major
        version number (X.Y) will be considered significant when checking
@@ -690,7 +691,7 @@ Changes in Version 2.51.3
           + Improvements to syncing resource forks between Macs via a
             non-Mac system.
 
-   Changes since 2.10.2:
+## Changes since 2.10.2:
      * INCOMPATIBLE CHANGE: Archive format has changed.
      * Source code availability: The Unison sources are now managed using
        Subversion. One nice side-effect is that anonymous checkout is now
@@ -738,7 +739,7 @@ Changes in Version 2.51.3
             be diff’ed before the command is called.
           + Recognize password prompts in some newer versions of ssh.
 
-   Changes since 2.9.20:
+## Changes since 2.9.20:
      * INCOMPATIBLE CHANGE: Archive format has changed.
      * Major functionality changes:
           + Major tidying and enhancement of ’merge’ functionality. The
@@ -862,7 +863,7 @@ Changes in Version 2.51.3
           + Unison can now be installed easily on OSX systems using the
             Fink package manager
 
-   Changes since 2.9.1:
+## Changes since 2.9.1:
      * Added a preference maxthreads that can be used to limit the number
        of simultaneous file transfers.
      * Added a backupdir preference, which controls where backup files are
@@ -893,7 +894,7 @@ Changes in Version 2.51.3
             automatically, depending on whether it finds lablgtk installed
           + Unison should now compile “out of the box” under OSX
 
-   Changes since 2.8.1:
+## Changes since 2.8.1:
      * Changing profile works again under Windows
      * File movement optimization: Unison now tries to use local copy
        instead of transfer for moved or copied files. It is controled by a
@@ -921,12 +922,12 @@ Changes in Version 2.51.3
           + connection information is not stored in global variables
             anymore.
 
-   Changes since 2.7.78:
+## Changes since 2.7.78:
      * Small bugfix to textual user interface under Unix (to avoid leaving
        the terminal in a bad state where it would not echo inputs after
        Unison exited).
 
-   Changes since 2.7.39:
+## Changes since 2.7.39:
      * Improvements to the main web page (stable and beta version docs are
        now both accessible).
      * User manual revised.
@@ -960,7 +961,7 @@ Changes in Version 2.51.3
           + Made some improvements to the error messages.
           + Added some debugging messages to remote.ml.
 
-   Changes since 2.7.7:
+## Changes since 2.7.7:
      * Incorporated, once again, a multi-threaded transport sub-system. It
        transfers several files at the same time, thereby making much more
        effective use of available network bandwidth. Unlike the earlier
@@ -1019,11 +1020,11 @@ Changes in Version 2.51.3
             with Cygwin GNU C compiler. This option only supports building
             dynamically linked unison executables.
 
-   Changes since 2.7.4:
+## Changes since 2.7.4:
      * Fixed a silly (but debilitating) bug in the client startup
        sequence.
 
-   Changes since 2.7.1:
+## Changes since 2.7.1:
      * Added addprefsto preference, which (when set) controls which
        preference file new preferences (e.g. new ignore patterns) are
        added to.
@@ -1034,7 +1035,7 @@ Changes in Version 2.51.3
        of the server, since it would hang instead of giving an error
        message.)
 
-   Changes since 2.6.59:
+## Changes since 2.6.59:
      * Changed fastcheck from a boolean to a string preference. Its legal
        values are yes (for a fast check), no (for a safe check), or
        default (for a fast check—which also happens to be safe—when
@@ -1058,7 +1059,7 @@ Changes in Version 2.51.3
             a followed link.
           + Several other small fixes.
 
-   Changes since 2.6.38:
+## Changes since 2.6.38:
      * Major Windows performance improvement!
        We’ve added a preference fastcheck that makes Unison look only at a
        file’s creation time and last-modified time to check whether it has
@@ -1201,7 +1202,7 @@ Changes in Version 2.51.3
             distribution, in src/DEPENDENCIES.ps, to help new prospective
             developers with navigating the code.
 
-   Changes since 2.6.11:
+## Changes since 2.6.11:
      * INCOMPATIBLE CHANGE: Archive format has changed.
      * INCOMPATIBLE CHANGE: The startup sequence has been completely
        rewritten and greatly simplified. The main user-visible change is
@@ -1266,7 +1267,7 @@ Changes in Version 2.51.3
             in a path preference and ignored, it will be skipped.
           + Numerous other bugfixes and small improvements.
 
-   Changes since 2.6.1:
+## Changes since 2.6.1:
      * The synchronization of modification times has been disabled for
        directories.
      * Preference files may now include lines of the form include <name>,
@@ -1283,16 +1284,16 @@ Changes in Version 2.51.3
        values. (The former can be used to set a preference to false.)
      * Lot of small bugs fixed.
 
-   Changes since 2.5.31:
+## Changes since 2.5.31:
      * The log preference is now set to true by default, since the log
        file seems useful for most users.
      * Several miscellaneous bugfixes (most involving symlinks).
 
-   Changes since 2.5.25:
+## Changes since 2.5.25:
      * INCOMPATIBLE CHANGE: Archive format has changed (again).
      * Several significant bugs introduced in 2.5.25 have been fixed.
 
-   Changes since 2.5.1:
+## Changes since 2.5.1:
      * INCOMPATIBLE CHANGE: Archive format has changed. Make sure you
        synchronize your replicas before upgrading, to avoid spurious
        conflicts. The first sync after upgrading will be slow.
@@ -1408,7 +1409,7 @@ Changes in Version 2.51.3
             fixed.
           + Numerous smaller fixes.
 
-   Changes since 2.4.1:
+## Changes since 2.4.1:
      * Added a number of ’sorting modes’ for the user interface. By
        default, conflicting changes are displayed at the top, and the rest
        of the entries are sorted in alphabetical order. This behavior can
@@ -1456,7 +1457,7 @@ Changes in Version 2.51.3
             lines in profiles, for Windows compatibility.
           + All preferences are now fully documented in the user manual.
 
-   Changes since 2.3.12:
+## Changes since 2.3.12:
      * INCOMPATIBLE CHANGE: Archive format has changed. Make sure you
        synchronize your replicas before upgrading, to avoid spurious
        conflicts. The first sync after upgrading will be slow.
@@ -1539,12 +1540,12 @@ Changes in Version 2.51.3
             issues (case conflicts, illegal filenames)
      * Many small bug fixes and random improvements.
 
-   Changes since 2.3.1:
+## Changes since 2.3.1:
      * Several bug fixes. The most important is a bug in the rsync module
        that would occasionally cause change propagation to fail with a
        ’rename’ error.
 
-   Changes since 2.2:
+## Changes since 2.2:
      * The multi-threaded transport system is now disabled by default. (It
        is not stable enough yet.)
      * Various bug fixes.
@@ -1562,7 +1563,7 @@ Changes in Version 2.51.3
        interface – not the one listed first on the command line or in the
        preferences file.)
 
-   Changes since 2.1:
+## Changes since 2.1:
      * The transport subsystem now includes an implementation by Sylvain
        Gommier and Norman Ramsey of Tridgell and Mackerras’s rsync
        protocol. This protocol achieves much faster transfers when only a
@@ -1592,7 +1593,7 @@ Changes in Version 2.51.3
        file threads/threads.cma in the OCaml standard library directory
        contains the string -lpthread near the end.)
 
-   Changes since 1.292:
+## Changes since 1.292:
      * Reduced memory footprint (this is especially important during the
        first run of unison, where it has to gather information about all
        the files in both repositories).
@@ -1601,7 +1602,7 @@ Changes in Version 2.51.3
      * Added a SHIFT modifier to the Ignore menu shortcut keys in GTK
        interface (to avoid hitting them accidentally).
 
-   Changes since 1.231:
+## Changes since 1.231:
      * Tunneling over ssh is now supported in the Windows version. See the
        installation section of the manual for detailed instructions.
      * The transport subsystem now includes an implementation of the rsync
@@ -1635,7 +1636,7 @@ Changes in Version 2.51.3
        conveniently on the same server: whichever version is run on the
        client, the same version will be selected on the server.
 
-   Changes since 1.219:
+## Changes since 1.219:
      * INCOMPATIBLE CHANGE: Archive format has changed. Make sure you
        synchronize your replicas before upgrading, to avoid spurious
        conflicts. The first sync after upgrading will be slow.
@@ -1668,7 +1669,7 @@ Changes in Version 2.51.3
      * The organization of the export directory has changed — should be
        easier to find / download things now.
 
-   Changes since 1.200:
+## Changes since 1.200:
      * INCOMPATIBLE CHANGE: Archive format has changed. Make sure you
        synchronize your replicas before upgrading, to avoid spurious
        conflicts. The first sync after upgrading will be slow.
@@ -1677,7 +1678,7 @@ Changes in Version 2.51.3
        same time as the replicas are being changed by the user.
      * Internal performance improvements.
 
-   Changes since 1.190:
+## Changes since 1.190:
      * INCOMPATIBLE CHANGE: Archive format has changed. Make sure you
        synchronize your replicas before upgrading, to avoid spurious
        conflicts. The first sync after upgrading will be slow.
@@ -1690,7 +1691,7 @@ Changes in Version 2.51.3
        release.
      * Miscellaneous bug fixes.
 
-   Changes since 1.180:
+## Changes since 1.180:
      * INCOMPATIBLE CHANGE: Archive format has changed. Make sure you
        synchronize your replicas before upgrading, to avoid spurious
        conflicts. The first sync after upgrading will be slow.
@@ -1703,7 +1704,7 @@ Changes in Version 2.51.3
      * Fixed one more non-tail-recursive list processing function, which
        was causing stack overflows when synchronizing very large replicas.
 
-   Changes since 1.169:
+## Changes since 1.169:
      * The text user interface now provides commands for ignoring files.
      * We found and fixed some more non-tail-recursive list processing
        functions. Some power users have reported success with very large
@@ -1732,14 +1733,14 @@ Changes in Version 2.51.3
           + {a,bb,ccc} matches any one of a, bb, or ccc.
        See the user manual for some examples.
 
-   Changes since 1.146:
+## Changes since 1.146:
      * Some users were reporting stack overflows when synchronizing huge
        directories. We found and fixed some non-tail-recursive list
        processing functions, which we hope will solve the problem. Please
        give it a try and let us know.
      * Major additions to the documentation.
 
-   Changes since 1.142:
+## Changes since 1.142:
      * Major internal tidying and many small bugfixes.
      * Major additions to the user manual.
      * Unison can now be started with no arguments – it will prompt
@@ -1749,7 +1750,7 @@ Changes in Version 2.51.3
      * Fixed a small bug where the text UI on NT was raising a ’no such
        signal’ exception.
 
-   Changes since 1.139:
+## Changes since 1.139:
      * The precompiled windows binary in the last release was compiled
        with an old OCaml compiler, causing propagation of permissions not
        to work (and perhaps leading to some other strange behaviors we’ve
@@ -1761,7 +1762,7 @@ Changes in Version 2.51.3
      * Fixed a small bug where the text UI on NT was raising a ’no such
        signal’ exception.
 
-   Changes since 1.111:
+## Changes since 1.111:
      * INCOMPATIBLE CHANGE: The names and formats of the preference files
        in the .unison directory have changed. In particular:
           + the file “prefs” should be renamed to default.prf
