@@ -1,26 +1,43 @@
 # unison NEWS
 
-Changes in Version 2.51.3
+This file documents significant user-visible and packager-visible
+changes to unison.  All releases should be presumed to have bugfixes
+and minor improvements; this file intends to highlight changes that
+require changes in how unison is built or run.
 
-## Changes since 2.51.2:
-     * Some nontrivial changes to profile parsing (G.raud Meyer)
-          + ’=’ has been considered whitespace until now: several
-            following chars are considered as only one; trailing chars are
-            discarded; any non emty sequence of char is splitting. This is
-            non standard and leads to confusion, for example -ignore==
-            ’Name .*=*’ is valid when -ignore=’Name .*=*’ is not, and
-            worse -ignore=’Name *=’ is the same as -ignore=’Name *’. The
-            parser now takes just a single ’=’ as delimiter after the
-            option name. Other = characters are considered as part of the
-            value being assigned to the option.
-     * Numerous improvements to the text user-interface (G.raud Meyer)
-          + New key-commands that restrict the display to a set of
-            "matching" items: ones that are offering to propagate changes
-            in a particular direction, conflicts, files to be merged,
-            etc., plus several more useful key-commands. Type "?" to
-            Unison to see all available commands.
+Sections with just a version number follow the FSF NEWS convention of
+describing changes that first appear in that release.  Sections
+labeled "Changes since x.yy" describe changes in the first minor
+release after x.yy.
 
-## Changes since 2.48:
+## 2.51.3
+  * ocaml support is now from 4.05 to 4.11
+  * reduction of stack usage by proper tail recursion
+  * MS Windows build improvements
+  * Some nontrivial changes to profile parsing (G.raud Meyer)
+    ’=’ has been considered whitespace until now: several
+    following chars are considered as only one; trailing chars are
+    discarded; any non emty sequence of char is splitting. This is
+    non standard and leads to confusion, for example -ignore==
+    ’Name .*=*’ is valid when -ignore=’Name .*=*’ is not, and
+    worse -ignore=’Name *=’ is the same as -ignore=’Name *’. The
+    parser now takes just a single ’=’ as delimiter after the
+    option name. Other = characters are considered as part of the
+    value being assigned to the option.
+  * Numerous improvements to the text user-interface (G.raud Meyer)
+    New key-commands that restrict the display to a set of
+    "matching" items: ones that are offering to propagate changes
+    in a particular direction, conflicts, files to be merged,
+    etc., plus several more useful key-commands. Type "?" to
+    Unison to see all available commands.
+
+## 2.51.2
+   (minor fixes)
+
+## 2.51.1
+   (There was no 2.51.1 release)
+
+## 2.51.0 (since 2.48):
      * Repository transplanted from SVN to Git and moved to GitHub ()
        (https://github.com/bcpierce00/unison).
      * Add a new preference, ’atomic’, for specifying directories that
