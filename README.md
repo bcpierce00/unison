@@ -2,7 +2,7 @@ Unison File Synchronizer
 ========================
 
 [![Build Status](https://travis-ci.org/bcpierce00/unison.svg?branch=master)](https://travis-ci.org/bcpierce00/unison)
-[![Main workflow](https://github.com/bcpierce00/unison/workflows/Main%20workflow/badge.svg)](https://github.com/bcpierce00/unison/actions?query=workflow%3A+Main+Workflow)
+[![CICD](https://github.com/bcpierce00/unison/workflows/CICD/badge.svg)](https://github.com/bcpierce00/unison/actions?query=workflow%3ACICD)
 
 Unison is a file-synchronization tool for OSX, Unix, and Windows. It allows two
 replicas of a collection of files and directories to be stored on different
@@ -17,7 +17,7 @@ your architecture either on your favorite package manager or here:
 If you want to play with the internals, have a look at the file
 src/ROADMAP.txt for some basic orientation.
 
-Here's how to choose which version to use: 
+Here's how to choose which version to use:
 
   - The most recent public release (2.51, as of Summer 2019) is the default
     recommendation and should work well for most circumstances.  Data-loss
