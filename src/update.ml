@@ -770,7 +770,7 @@ let loadArchives (optimistic: bool) =
            (System.fspathToPrintString Os.unisonDir))
       ^ "     and have names of the form\n"
       ^ "       arXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n"
-      ^ "     where the X's are a hexidecimal number .\n"
+      ^ "     where the X's are hexadecimal numbers.\n"
       ^ "  c) Run unison again to synchronize from scratch.\n"));
   Lwt.return (identicals, checksums))
 
@@ -1152,7 +1152,7 @@ let fastcheck =
        when scanning replicas for updates, \
        instead of reading the full contents of every file.  (This does not \
        apply to the very first run, when Unison will always scan \
-       all files regarless of this switch).  Under \
+       all files regardless of this switch).  Under \
        Windows, this may cause Unison to miss propagating an update \
        if the modification time and length of the \
        file are both unchanged by the update.  However, Unison will never \

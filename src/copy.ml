@@ -681,7 +681,7 @@ let rec registerFileTransfer pathTo fp f =
       Hashtbl.add filesBeingTransferred fp q;
       executeTransfer fp f
   | Some q ->
-      debug (fun () -> Util.msg "delaying tranfer of file %s\n"
+      debug (fun () -> Util.msg "delaying transfer of file %s\n"
                (Path.toString pathTo));
       let res = Lwt.wait () in
       Queue.push res q;

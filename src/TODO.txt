@@ -856,7 +856,7 @@ It would be nice to have a command in the GUI that would allow a single
 
 The scroll bar is not usable during transport: every time a line changes
   in the list, the display jumps to that line; if many small files are
-  transfered, it makes browsing in the list quite impossible...
+  transferred, it makes browsing in the list quite impossible...
 
 [From Manuel Serrano] Would be nice to put the arrows in different
   directions in different colors, so that, e.g., you could quickly scan the

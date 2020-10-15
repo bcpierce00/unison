@@ -83,7 +83,7 @@ module Filesize : FILESIZE = struct
 end
 
 (*****************************************************************************)
-(*                       File tranfer progress display                       *)
+(*                       File transfer progress display                      *)
 (*****************************************************************************)
 
 module File =

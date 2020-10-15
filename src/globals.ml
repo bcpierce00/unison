@@ -156,7 +156,7 @@ let paths =
      ^ "If one or more \\verb|path| preferences are given, then Unison will "
      ^ "synchronize only these paths and their children.  (This is useful "
      ^ "for doing a fast sync of just one directory, for example.)  "
-     ^ "Note that {\\tt path} preferences are intepreted literally---they "
+     ^ "Note that {\\tt path} preferences are interpreted literally---they "
      ^ "are not regular expressions.")
     (fun oldpaths string -> Safelist.append oldpaths [Path.fromString string])
     (fun l -> Safelist.map Path.toString l)
