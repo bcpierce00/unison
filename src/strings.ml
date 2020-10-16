@@ -151,9 +151,9 @@ let docs =
       \032  FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License\n\
       \032  for more details.\n\
       \n\
-      \032  The GNU Public License can be found at http://www.gnu.org/licenses. A\n\
-      \032  copy is also included in the Unison source distribution in the file\n\
-      \032  COPYING.\n\
+      \032  The GNU General Public License can be found at\n\
+      \032  http://www.gnu.org/licenses. A copy is also included in the Unison\n\
+      \032  source distribution in the file COPYING.\n\
       \n\
       "))
 ::
@@ -1413,7 +1413,7 @@ let docs =
       \032         When this flag is set, Unison will make a copy of files that\n\
       \032         would otherwise be overwritten or deleted in case of conflicting\n\
       \032         changes, and more generally whenever the default behavior is\n\
-      \032         overriden. This makes it possible to automatically resolve\n\
+      \032         overridden. This makes it possible to automatically resolve\n\
       \032         conflicts in a fairly safe way when synchronizing continuously,\n\
       \032         in combination with the -repeat watch and -prefer newer\n\
       \032         preferences.\n\
@@ -1512,14 +1512,14 @@ let docs =
       \032         modification time and length of a file as a \226\128\152pseudo inode\n\
       \032         number\226\128\153 when scanning replicas for updates, instead of reading\n\
       \032         the full contents of every file. (This does not apply to the\n\
-      \032         very first run, when Unison will always scan all files regarless\n\
-      \032         of this switch). Under Windows, this may cause Unison to miss\n\
-      \032         propagating an update if the modification time and length of the\n\
-      \032         file are both unchanged by the update. However, Unison will\n\
-      \032         never overwrite such an update with a change from the other\n\
-      \032         replica, since it always does a safe check for updates just\n\
-      \032         before propagating a change. Thus, it is reasonable to use this\n\
-      \032         switch under Windows most of the time and occasionally run\n\
+      \032         very first run, when Unison will always scan all files\n\
+      \032         regardless of this switch). Under Windows, this may cause Unison\n\
+      \032         to miss propagating an update if the modification time and\n\
+      \032         length of the file are both unchanged by the update. However,\n\
+      \032         Unison will never overwrite such an update with a change from\n\
+      \032         the other replica, since it always does a safe check for updates\n\
+      \032         just before propagating a change. Thus, it is reasonable to use\n\
+      \032         this switch under Windows most of the time and occasionally run\n\
       \032         Unison once with fastcheck set to false, if you are worried that\n\
       \032         Unison may have overlooked an update. For backward\n\
       \032         compatibility, yes, no, and default can be used in place of\n\
@@ -1845,7 +1845,7 @@ let docs =
       \032         If one or more path preferences are given, then Unison will\n\
       \032         synchronize only these paths and their children. (This is useful\n\
       \032         for doing a fast sync of just one directory, for example.) Note\n\
-      \032         that path preferences are intepreted literally\226\128\148they are not\n\
+      \032         that path preferences are interpreted literally\226\128\148they are not\n\
       \032         regular expressions.\n\
       \n\
       \032  perms n\n\
@@ -2965,8 +2965,8 @@ let docs =
       \032    * Some nontrivial changes to profile parsing (G.raud Meyer)\n\
       \032         + \226\128\153=\226\128\153 has been considered whitespace until now: several\n\
       \032           following chars are considered as only one; trailing chars are\n\
-      \032           discarded; any non emty sequence of char is splitting. This is\n\
-      \032           non standard and leads to confusion, for example -ignore==\n\
+      \032           discarded; any non empty sequence of char is splitting. This\n\
+      \032           is non standard and leads to confusion, for example -ignore==\n\
       \032           \226\128\153Name .*=*\226\128\153 is valid when -ignore=\226\128\153Name .*=*\226\128\153 is not, and\n\
       \032           worse -ignore=\226\128\153Name *=\226\128\153 is the same as -ignore=\226\128\153Name *\226\128\153. The\n\
       \032           parser now takes just a single \226\128\153=\226\128\153 as delimiter after the\n\
@@ -3110,7 +3110,7 @@ let docs =
       \032           directories that don\226\128\153t exist (or maybe this is an issue with\n\
       \032           how it treats any kind of monitoring when the thing being\n\
       \032           monitored doesn\226\128\153t exist?). If we create a symlink to a\n\
-      \032           nonexistant directory, give Unison (hence fsmonitor.py) a\n\
+      \032           nonexistent directory, give Unison (hence fsmonitor.py) a\n\
       \032           \226\128\153follow\226\128\153 directive for the symlink, start unison, and then\n\
       \032           create the directory, fsmonitor.py misses the change.\n\
       \032         + Lines added in profile files by unison always start at a new\n\
@@ -3168,7 +3168,7 @@ let docs =
       \032           target replica)\n\
       \032    * Experimental streaming protocol for transferring file contents (can\n\
       \032      be disabled by setting the directive \"stream\" to false): file\n\
-      \032      contents is transfered asynchronously (without waiting for a\n\
+      \032      contents is transferred asynchronously (without waiting for a\n\
       \032      response from the destination after each chunk sent) rather than\n\
       \032      using the synchronous RPC mechanism. As a consequence:\n\
       \032         + Unison now transfers the contents of a single file at a time\n\
@@ -3178,7 +3178,7 @@ let docs =
       \032           and is not slowed done due to the connection latency anymore\n\
       \032         + we get performance improvement for small files as well by\n\
       \032           scheduling many files simultaneously (as scheduling a file for\n\
-      \032           transfer consume little ressource: it does not mean allocating\n\
+      \032           transfer consume little resource: it does not mean allocating\n\
       \032           a large buffer anymore)\n\
       \032    * Changes to the internal implementation of the rsync algorithm:\n\
       \032         + use longer blocks for large files (the size of a block is the\n\
@@ -3464,7 +3464,7 @@ let docs =
       \032         + The confirmation of \226\128\156big deletes\226\128\157 is now controlled by a\n\
       \032           boolean preference confirmbigdeletes. Default is true, which\n\
       \032           gives the same behavior as previously. (This functionality is\n\
-      \032           at least partly superceded by the mountpoint preference, but\n\
+      \032           at least partly superseded by the mountpoint preference, but\n\
       \032           it has been left in place in case it is useful to some\n\
       \032           people.)\n\
       \032         + If Unison is asked to \226\128\156follow\226\128\157 a symbolic link but there is\n\
@@ -3856,8 +3856,8 @@ let docs =
       \032  Changes since 2.8.1:\n\
       \032    * Changing profile works again under Windows\n\
       \032    * File movement optimization: Unison now tries to use local copy\n\
-      \032      instead of transfer for moved or copied files. It is controled by a\n\
-      \032      boolean option \226\128\156xferbycopying\226\128\157.\n\
+      \032      instead of transfer for moved or copied files. It is controlled by\n\
+      \032      a boolean option \226\128\156xferbycopying\226\128\157.\n\
       \032    * Network statistics window (transfer rate, amount of data\n\
       \032      transferred). [NB: not available in Windows-Cygwin version.]\n\
       \032    * symlinks work under the cygwin version (which is dynamically\n\
@@ -4408,7 +4408,7 @@ let docs =
       \032           now enabled by default).\n\
       \032         + In the text user interface, the arrows indicating which\n\
       \032           direction changes are being propagated are printed differently\n\
-      \032           when the user has overridded Unison\226\128\153s default recommendation\n\
+      \032           when the user has overridden Unison\226\128\153s default recommendation\n\
       \032           (====> instead of ---->). This matches the behavior of the\n\
       \032           graphical interface, which displays such arrows in a different\n\
       \032           color.\n\
@@ -4531,7 +4531,7 @@ let docs =
       \032      fast local area networks it can actually degrade performance\226\128\148so we\n\
       \032      have left it off by default. Start unison with the -rsync option\n\
       \032      (or put rsync=true in your preferences file) to turn it on.\n\
-      \032    * \226\128\156Progress bars\226\128\157 are now diplayed during remote file transfers,\n\
+      \032    * \226\128\156Progress bars\226\128\157 are now displayed during remote file transfers,\n\
       \032      showing what percentage of each file has been transferred so far.\n\
       \032    * The version numbering scheme has changed. New releases will now be\n\
       \032      have numbers like 2.2.30, where the second component is incremented\n\
@@ -4608,7 +4608,7 @@ let docs =
       \032         + Handling of warnings generated by the server.\n\
       \032         + Synchronizing a path whose parent is not a directory on both\n\
       \032           sides is now flagged as erroneous.\n\
-      \032         + Fixed some bugs related to symnbolic links and nonexistant\n\
+      \032         + Fixed some bugs related to symnbolic links and nonexistent\n\
       \032           roots.\n\
       \032              o When a change (deletion or new contents) is propagated\n\
       \032                onto a \226\128\153follow\226\128\153ed symlink, the file pointed to by the\n\
@@ -4616,7 +4616,7 @@ let docs =
       \032                which doesn\226\128\153t fit our assertion that \226\128\153follow\226\128\153 means the\n\
       \032                link is completely invisible)\n\
       \032              o When one root did not exist, propagating the other root\n\
-      \032                on top of it used to fail, becuase unison could not\n\
+      \032                on top of it used to fail, because unison could not\n\
       \032                calculate the working directory into which to write\n\
       \032                changes. This should be fixed.\n\
       \032    * A human-readable timestamp has been added to Unison\226\128\153s archive\n\
@@ -4746,7 +4746,7 @@ let docs =
       \032    * When started in \226\128\153socket server\226\128\153 mode, unison prints \226\128\153server\n\
       \032      started\226\128\153 on stderr when it is ready to accept connections. (This\n\
       \032      may be useful for scripts that want to tell when a socket-mode\n\
-      \032      server has finished initalization.)\n\
+      \032      server has finished initialization.)\n\
       \032    * We now make a nightly mirror of our current internal development\n\
       \032      tree, in case anyone wants an up-to-the-minute version to hack\n\
       \032      around with.\n\
@@ -4763,7 +4763,7 @@ let docs =
       \n\
       References\n\
       \n\
-      \032  1. file:///home/steph/software/unison/doc/temp.html#ssh-win\n\
+      \032  1. file:///localdisk/glondu/software/unison/doc/temp.html#ssh-win\n\
       \032  2. http://hevea.inria.fr/index.html\n\
       "))
 ::
