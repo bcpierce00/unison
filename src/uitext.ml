@@ -398,6 +398,7 @@ let interact prilist rilist =
                 if not (Prefs.read Trace.terse) then
                   displayDetails ri
               end;
+              if Prefs.read Globals.batch then next () else
               selectAction
                 (if Prefs.read Globals.batch then Some " " else None)
                 [((if (isConflict dir) && not (Prefs.read Globals.batch)
