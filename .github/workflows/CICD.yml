@@ -15,12 +15,12 @@ jobs:
       fail-fast: false
       matrix:
         job:
-        - { os: macos-latest   , ocaml-version: 4.11.1 }
-        - { os: macos-latest   , ocaml-version: 4.10.1 }
-        - { os: macos-latest   , ocaml-version: 4.09.1 }
-        - { os: macos-latest   , ocaml-version: 4.08.1 }
-        - { os: macos-latest   , ocaml-version: 4.07.1 }
-        - { os: macos-latest   , ocaml-version: 4.05.0 }
+        - { os: macos-10.15   , ocaml-version: 4.11.1 }
+        - { os: macos-10.15   , ocaml-version: 4.10.1 }
+        - { os: macos-10.15   , ocaml-version: 4.09.1 }
+        - { os: macos-10.15   , ocaml-version: 4.08.1 }
+        - { os: macos-10.15   , ocaml-version: 4.07.1 }
+        - { os: macos-10.15   , ocaml-version: 4.05.0 }
         - { os: ubuntu-latest  , ocaml-version: 4.11.1 }
         - { os: ubuntu-latest  , ocaml-version: 4.10.1 }
         - { os: ubuntu-latest  , ocaml-version: 4.10.0+musl+static+flambda }
@@ -76,8 +76,10 @@ jobs:
         outputs DEPLOY
         # package name
         PKG_suffix='.tar.gz' ; case '${{ matrix.job.os }}' in windows-*) PKG_suffix='.zip' ;; esac;
-        PKG_OS='linux' ; case '${{ matrix.job.os }}' in macos-*) PKG_OS='macos' ;; windows-*) PKG_OS='windows' ;; esac;
-        PKG_BASENAME="${PROJECT_NAME}-${REF_TAG:-$REF_SHAS}+ocaml-${{ matrix.job.ocaml-version }}.${PKG_OS}"
+        PKG_OS='linux' ; case '${{ matrix.job.os }}' in macos-*) PKG_OS='${{ matrix.job.os }}' ;; windows-*) PKG_OS='windows' ;; esac;
+        PKG_STATIC='' ; case '${{ matrix.job.ocaml-version }}' in *+static*) PKG_STATIC='.static' ;; esac;
+        PKG_ARCH='x86_64' ; case '${{ matrix.job.ocaml-version }}' in *+32bit* | *+mingw32*) PKG_ARCH='i386' ;; esac;
+        PKG_BASENAME="${PROJECT_NAME}-${REF_TAG:-$REF_SHAS}+ocaml-${OCAML_VARIANT/%+*/}+${PKG_ARCH}.${PKG_OS}${PKG_STATIC}"
         PKG_NAME="${PKG_BASENAME}${PKG_suffix}"
         PKG_DIR="${STAGING_DIR}/${PKG_BASENAME}"
         outputs PKG_BASENAME PKG_DIR PKG_NAME PKG_OS PKG_suffix
