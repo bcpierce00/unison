@@ -85,7 +85,7 @@ let copyOnConflict = Prefs.createBool "copyonconflict" false
   "!keep copies of conflicting files"
   "When this flag is set, Unison will make a copy of files that would \
    otherwise be overwritten or deleted in case of conflicting changes, \
-   and more generally whenever the default behavior is overriden. \
+   and more generally whenever the default behavior is overridden. \
    This makes it possible to automatically resolve conflicts in a \
    fairly safe way when synchronizing continuously, in combination \
    with the \\verb|-repeat watch| and \\verb|-prefer newer| preferences."
