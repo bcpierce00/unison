@@ -454,7 +454,7 @@ let defaultMarshalingFunctions =
       try Bytearray.unmarshal buf pos
       with Failure s -> raise (Util.Fatal (Printf.sprintf 
 "Fatal error during unmarshaling (%s),
-possibly because client and server have been compiled with different\
+possibly because client and server have been compiled with different \
 versions of the OCaml compiler." s)))
 
 let makeMarshalingFunctions payloadMarshalingFunctions string =
