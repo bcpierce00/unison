@@ -375,6 +375,7 @@ ifeq ($(NATIVE), true)
     CAMLFLAGS+=-p
     CLIBS+=-cclib -ldl
   endif
+  CAMLLDFLAGS=
 
   CAMLOBJS=$(subst .cmo,.cmx, $(subst .cma,.cmxa, $(OCAMLOBJS)))
   CAMLLIBS=$(subst .cma,.cmxa, $(OCAMLLIBS))
@@ -383,10 +384,10 @@ else
   ## Set up for bytecode compilation
 
   CAMLC=$(OCAMLC)
-  CAMLFLAGS+=-custom
   ifeq ($(DEBUGGING), true)
     CAMLFLAGS+=-g
   endif
+  CAMLLDFLAGS=-custom
 
   CAMLOBJS=$(OCAMLOBJS)
   CAMLLIBS=$(OCAMLLIBS)
@@ -426,7 +427,7 @@ fswatch.cmi : ubase/prefs.cmi
 
 $(NAME)$(EXEC_EXT): $(CAMLOBJS) $(COBJS)
 	@echo Linking $@
-	$(CAMLC) -verbose $(CAMLFLAGS) -o $@ $(CFLAGS) $(CAMLLIBS) $^ $(CLIBS)
+	$(CAMLC) -verbose $(CAMLFLAGS) $(CAMLLDFLAGS) -o $@ $(CFLAGS) $(CAMLLIBS) $^ $(CLIBS)
 
 # Unfortunately -output-obj does not put .o files into the output, only .cmx
 # files, so we have to use $(LD) to take care of COBJS.
