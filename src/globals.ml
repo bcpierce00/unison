@@ -195,7 +195,7 @@ let expandWildcardPaths() =
 
 let propagatePrefsTo =
   Remote.registerHostCmd
-    "installPrefs"
+    "installPrefs" Prefs.mdumpedPrefs Umarshal.unit
     (fun prefs -> return (Prefs.load prefs))
 
 let propagatePrefs () =

@@ -13,6 +13,7 @@ end
    requested by a remote client.) *)
 val registerHostCmd :
     string              (* command name *)
+ -> 'a Umarshal.t -> 'b Umarshal.t
  -> ('a -> 'b Lwt.t)    (* local command *)
  -> (   string          (* -> host *)
      -> 'a              (*    arguments *)
@@ -27,6 +28,7 @@ val registerHostCmd :
    <funcName>OnRoot and <funcName>Local *)
 val registerRootCmd :
     string                         (* command name *)
+ -> 'a Umarshal.t -> 'b Umarshal.t
  -> ((Fspath.t * 'a) -> 'b Lwt.t)  (* local command *)
  -> (   Common.root                (* -> root *)
      -> 'a                         (*    additional arguments *)
@@ -86,12 +88,16 @@ type connection
 val connectionToRoot : Common.root -> connection
 
 val registerServerCmd :
-  string -> (connection -> 'a -> 'b Lwt.t) -> connection -> 'a -> 'b Lwt.t
+  string
+ -> 'a Umarshal.t -> 'b Umarshal.t
+ -> (connection -> 'a -> 'b Lwt.t)
+ -> connection -> 'a -> 'b Lwt.t
 val intSize : int
 val encodeInt : int -> Bytearray.t * int * int
 val decodeInt : Bytearray.t -> int -> int
 val registerRootCmdWithConnection :
     string                          (* command name *)
+ -> 'a Umarshal.t -> 'b Umarshal.t
  -> (connection -> 'a -> 'b Lwt.t)  (* local command *)
  ->    Common.root                  (* root on which the command is executed *)
     -> Common.root                  (* other root *)

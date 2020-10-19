@@ -305,7 +305,7 @@ let (archiveNameOnRoot
        : Common.root ->  archiveVersion -> (string * string * bool) Lwt.t)
     =
   Remote.registerRootCmd
-    "archiveName"
+    "archiveName" marchiveVersion Umarshal.(prod3 string string bool id id)
       (fun (fspath, v) ->
        let (name,_) = archiveName fspath v in
        Lwt.return
@@ -420,7 +420,7 @@ let removeArchiveLocal ((fspath: Fspath.t), (v: archiveVersion)): unit Lwt.t =
 (* [removeArchiveOnRoot root v] invokes [removeArchive fspath v] on the
    server, where [fspath] is the path to root on the server *)
 let removeArchiveOnRoot: Common.root -> archiveVersion -> unit Lwt.t =
-  Remote.registerRootCmd "removeArchive" removeArchiveLocal
+  Remote.registerRootCmd "removeArchive" marchiveVersion Umarshal.unit removeArchiveLocal
 
 (* [commitArchive (fspath, ())] commits the archive for [fspath] by changing
    the filenames from ScratchArch-ones to a NewArch-ones *)
@@ -438,7 +438,7 @@ let commitArchiveLocal ((fspath: Fspath.t), ())
 (* [commitArchiveOnRoot root v] invokes [commitArchive fspath v] on the
    server, where [fspath] is the path to root on the server *)
 let commitArchiveOnRoot: Common.root -> unit -> unit Lwt.t =
-  Remote.registerRootCmd "commitArchive" commitArchiveLocal
+  Remote.registerRootCmd "commitArchive" Umarshal.unit Umarshal.unit commitArchiveLocal
 
 let archiveInfoCache = Hashtbl.create 7
 (* [postCommitArchive (fspath, v)] finishes the committing protocol by
@@ -477,7 +477,7 @@ let postCommitArchiveLocal (fspath,())
 (* [postCommitArchiveOnRoot root v] invokes [postCommitArchive fspath v] on
    the server, where [fspath] is the path to root on the server *)
 let postCommitArchiveOnRoot: Common.root -> unit -> unit Lwt.t =
-  Remote.registerRootCmd "postCommitArchive" postCommitArchiveLocal
+  Remote.registerRootCmd "postCommitArchive" Umarshal.unit Umarshal.unit postCommitArchiveLocal
 
 
 (*************************************************************************)
@@ -567,7 +567,7 @@ let dumpArchiveLocal (fspath,()) =
   Lwt.return ()
 
 let dumpArchiveOnRoot : Common.root -> unit -> unit Lwt.t =
-  Remote.registerRootCmd "dumpArchive" dumpArchiveLocal
+  Remote.registerRootCmd "dumpArchive" Umarshal.unit Umarshal.unit dumpArchiveLocal
 
 (*****************************************************************************)
 (*                          ARCHIVE CASE CONVERSION                          *)
@@ -611,7 +611,7 @@ let makeCaseSensitive thisRoot =
           (getArchiveProps thisRoot)))
 
 let makeCaseSensitiveOnRoot =
-  Remote.registerRootCmd "makeCaseSensitive"
+  Remote.registerRootCmd "makeCaseSensitive" Umarshal.unit Umarshal.unit
     (fun (fspath, ()) ->
        makeCaseSensitive (thisRootsGlobalName fspath);
        Lwt.return ())
@@ -721,7 +721,7 @@ let clearArchiveData thisRoot =
 (* Load (main) root archive and cache it on the given server *)
 let loadArchiveOnRoot: Common.root -> bool -> (int * string) option Lwt.t =
   Remote.registerRootCmd
-    "loadArchive"
+    "loadArchive" Umarshal.bool Umarshal.(option (prod2 int string id id))
     (fun (fspath, optimistic) ->
        let (arcName,thisRoot) = archiveName fspath MainArch in
        let arcFspath = Os.fileInUnisonDir arcName in
@@ -822,7 +822,7 @@ let lockArchiveLocal fspath =
 
 let lockArchiveOnRoot: Common.root -> unit -> string option Lwt.t =
   Remote.registerRootCmd
-    "lockArchive" (fun (fspath, ()) -> Lwt.return (lockArchiveLocal fspath))
+    "lockArchive" Umarshal.unit Umarshal.(option string) (fun (fspath, ()) -> Lwt.return (lockArchiveLocal fspath))
 
 let unlockArchiveLocal fspath =
   Lock.release
@@ -830,7 +830,7 @@ let unlockArchiveLocal fspath =
 
 let unlockArchiveOnRoot: Common.root -> unit -> unit Lwt.t =
   Remote.registerRootCmd
-    "unlockArchive"
+    "unlockArchive" Umarshal.unit Umarshal.unit
     (fun (fspath, ()) -> Lwt.return (unlockArchiveLocal fspath))
 
 let ignorelocks =
@@ -914,7 +914,7 @@ let unlockArchives () =
 
 let archivesExistOnRoot: Common.root -> unit -> (bool * bool) Lwt.t =
   Remote.registerRootCmd
-    "archivesExist"
+    "archivesExist" Umarshal.unit Umarshal.(prod2 bool bool id id)
     (fun (fspath,rootsName) ->
        let (oldname,_) = archiveName fspath MainArch in
        let oldexists =
@@ -1081,7 +1081,7 @@ let translatePathLocal fspath path =
   localPath
 
 let translatePath =
-  Remote.registerRootCmd "translatePath"
+  Remote.registerRootCmd "translatePath" Path.m Path.mlocal
     (fun (fspath, path) -> Lwt.return (translatePathLocal fspath path))
 
 (***********************************************************************
@@ -2085,6 +2085,8 @@ Format.eprintf "Update detection: %f@." (t2 -. t1);
 let findOnRoot =
   Remote.registerRootCmd
     "find"
+    Umarshal.(prod3 bool (list Path.m) (option (prod2 (list Path.m) (list Path.m) id id)) id id)
+    Umarshal.(list (prod3 Path.mlocal Common.mupdateItem (list Props.m) id id))
     (fun (fspath, (wantWatcher, pathList, subpaths)) ->
        Lwt.return (findLocal wantWatcher fspath pathList subpaths))
 
@@ -2159,7 +2161,7 @@ let prepareCommitLocal (fspath, magic) =
   Lwt.return (Some archiveHash)
 
 let prepareCommitOnRoot
-   = Remote.registerRootCmd "prepareCommit" prepareCommitLocal
+   = Remote.registerRootCmd "prepareCommit" Umarshal.string Umarshal.(option int) prepareCommitLocal
 
 (* To really commit, first prepare (write to scratch arch.), then make sure
    the checksum on all archives are equal, finally flip scratch to main.  In
@@ -2311,7 +2313,7 @@ let markEqualLocal fspath paths =
 
 let markEqualOnRoot =
   Remote.registerRootCmd
-    "markEqual"
+    "markEqual" (Tree.m Name.m Common.mupdateContent) Umarshal.unit
     (fun (fspath, paths) -> markEqualLocal fspath paths; Lwt.return ())
 
 let markEqual equals =
@@ -2338,7 +2340,7 @@ let replaceArchiveLocal fspath path newArch =
 
 let replaceArchiveOnRoot =
   Remote.registerRootCmd
-    "replaceArchive"
+    "replaceArchive" Umarshal.(prod2 Path.m marchive id id) Umarshal.unit
     (fun (fspath, (pathTo, arch)) ->
        replaceArchiveLocal fspath pathTo arch;
        Lwt.return ())
@@ -2613,5 +2615,5 @@ let rec iterFiles fspath path arch f =
 (* Hook for filesystem auto-detection (not implemented yet) *)
 let inspectFilesystem =
   Remote.registerRootCmd
-    "inspectFilesystem"
+    "inspectFilesystem" Umarshal.unit Proplist.m
     (fun _ -> Lwt.return Proplist.empty)

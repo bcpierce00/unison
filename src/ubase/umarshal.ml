@@ -247,6 +247,43 @@ let bytearray =
       );
   }
 
+let marshal_to_bytearray m x =
+  let data_size = ref 0 in
+  m.write (fun _ _ length -> data_size := !data_size + length) x;
+  let header = Bytes.create header_size in
+  Bytes.set_int64_be header 0 (Int64.of_int !data_size);
+  let total_size = header_size + !data_size in
+  let result = Bigarray.(Array1.create char c_layout total_size) in
+  unsafe_blit_from_bytes header 0 result 0 header_size;
+  let offset = ref header_size in
+  m.write (fun buffer offset' length ->
+      let i = !offset in
+      if i + length <= total_size then (
+        unsafe_blit_from_bytes buffer offset' result i length;
+        offset := i + length
+      ) else (
+        raise (Error "marshal_to_bytearray: length inconsistency")
+      )
+    ) x;
+  if !offset <> total_size then
+    raise (Error "marshal_to_bytearray: universe inconsistency");
+  result
+
+let unmarshal_from_bytearray m x offset =
+  let length = Bigarray.Array1.dim x in
+  let buffer = Bytes.create (min length Sys.max_string_length) in
+  let pos = ref (offset + header_size) in
+  m.read (fun n ->
+      let i = !pos in
+      if i + n <= length then (
+        unsafe_blit_to_bytes x i buffer 0 n;
+        pos := i + n;
+        buffer, 0
+      ) else (
+        raise (Error "unmarshal_from_bytearray: end of input")
+      )
+    )
+
 type int32bigarray =
   (int32, Bigarray.int32_elt, Bigarray.c_layout) Bigarray.Array1.t
 

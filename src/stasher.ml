@@ -491,7 +491,7 @@ let initBackupsLocal () =
 
 let initBackupsRoot: Common.root -> unit -> unit Lwt.t =
   Remote.registerRootCmd
-    "initBackups"
+    "initBackups" Umarshal.unit Umarshal.unit
     (fun (fspath, ()) ->
       Lwt.return (initBackupsLocal ()))
 

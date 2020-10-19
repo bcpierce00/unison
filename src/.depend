@@ -209,6 +209,7 @@ files.cmo : \
     uutil.cmi \
     ubase/util.cmi \
     update.cmi \
+    ubase/umarshal.cmi \
     ubase/trace.cmi \
     system.cmi \
     stasher.cmi \
@@ -239,6 +240,7 @@ files.cmx : \
     uutil.cmx \
     ubase/util.cmx \
     update.cmx \
+    ubase/umarshal.cmx \
     ubase/trace.cmx \
     system.cmx \
     stasher.cmx \
@@ -485,6 +487,7 @@ fswatchold.cmi : \
     fspath.cmi
 globals.cmo : \
     ubase/util.cmi \
+    ubase/umarshal.cmi \
     ubase/trace.cmi \
     ubase/safelist.cmi \
     remote.cmi \
@@ -501,6 +504,7 @@ globals.cmo : \
     globals.cmi
 globals.cmx : \
     ubase/util.cmx \
+    ubase/umarshal.cmx \
     ubase/trace.cmx \
     ubase/safelist.cmx \
     remote.cmx \
@@ -862,6 +866,7 @@ remote.cmx : \
     bytearray.cmx \
     remote.cmi
 remote.cmi : \
+    ubase/umarshal.cmi \
     ubase/prefs.cmi \
     lwt/lwt.cmi \
     fspath.cmi \
@@ -890,6 +895,7 @@ stasher.cmo : \
     xferhint.cmi \
     ubase/util.cmi \
     update.cmi \
+    ubase/umarshal.cmi \
     system.cmi \
     ubase/safelist.cmi \
     remote.cmi \
@@ -913,6 +919,7 @@ stasher.cmx : \
     xferhint.cmx \
     ubase/util.cmx \
     update.cmx \
+    ubase/umarshal.cmx \
     system.cmx \
     ubase/safelist.cmx \
     remote.cmx \
@@ -1202,6 +1209,7 @@ uicommon.cmo : \
     uutil.cmi \
     ubase/util.cmi \
     update.cmi \
+    ubase/umarshal.cmi \
     ubase/trace.cmi \
     system.cmi \
     stasher.cmi \
@@ -1230,6 +1238,7 @@ uicommon.cmx : \
     uutil.cmx \
     ubase/util.cmx \
     update.cmx \
+    ubase/umarshal.cmx \
     ubase/trace.cmx \
     system.cmx \
     stasher.cmx \
@@ -1427,6 +1436,7 @@ uitext.cmo : \
     uutil.cmi \
     ubase/util.cmi \
     update.cmi \
+    ubase/umarshal.cmi \
     uicommon.cmi \
     transport.cmi \
     ubase/trace.cmi \
@@ -1448,6 +1458,7 @@ uitext.cmx : \
     uutil.cmx \
     ubase/util.cmx \
     update.cmx \
+    ubase/umarshal.cmx \
     uicommon.cmx \
     transport.cmx \
     ubase/trace.cmx \

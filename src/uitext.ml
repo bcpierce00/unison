@@ -1008,7 +1008,7 @@ module PathMap = Map.Make (Path)
 
 let waitForChangesRoot: Common.root -> unit -> unit Lwt.t =
   Remote.registerRootCmd
-    "waitForChanges"
+    "waitForChanges" Umarshal.unit Umarshal.unit
     (fun (fspath, _) -> Fswatchold.wait (Update.archiveHash fspath))
 
 let waitForChanges t =

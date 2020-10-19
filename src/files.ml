@@ -73,7 +73,7 @@ let processCommitLog () =
     Lwt.return ()
 
 let processCommitLogOnHost =
-  Remote.registerHostCmd "processCommitLog" processCommitLog
+  Remote.registerHostCmd "processCommitLog" Umarshal.unit Umarshal.unit processCommitLog
 
 let processCommitLogs() =
   Lwt_unix.run
@@ -135,7 +135,7 @@ let deleteLocal (fspathTo, (pathTo, ui, notDefault)) =
   Update.replaceArchiveLocal fspathTo localPathTo Update.NoArchive;
   Lwt.return ()
 
-let deleteOnRoot = Remote.registerRootCmd "delete" deleteLocal
+let deleteOnRoot = Remote.registerRootCmd "delete" Umarshal.(prod3 Path.m Common.mupdateItem bool id id) Umarshal.unit deleteLocal
 
 let delete rootFrom pathFrom rootTo pathTo ui notDefault =
   deleteOnRoot rootTo (pathTo, ui, notDefault) >>= fun _ ->
@@ -159,11 +159,13 @@ let setPropLocal (fspath, (path, ui, newDesc, oldDesc)) =
   Update.updateProps fspath localPath (Some newDesc) ui;
   Lwt.return ()
 
-let setPropOnRoot = Remote.registerRootCmd "setProp" setPropLocal
+let setPropOnRoot = Remote.registerRootCmd "setProp" Umarshal.(prod4 Path.m Common.mupdateItem Props.m Props.m id id) Umarshal.unit setPropLocal
 
 let updatePropsOnRoot =
   Remote.registerRootCmd
    "updateProps"
+   Umarshal.(prod3 Path.m (option Props.m) Common.mupdateItem id id)
+   Umarshal.unit
      (fun (fspath, (path, propOpt, ui)) ->
         let localPath = Update.translatePathLocal fspath path in
         (* Archive update must be done first *)
@@ -193,6 +195,8 @@ let setProp rootFrom pathFrom rootTo pathTo newDesc oldDesc uiFrom uiTo =
 let mkdirOnRoot =
   Remote.registerRootCmd
     "mkdir"
+    Umarshal.(prod2 Fspath.m Path.mlocal id id)
+    Umarshal.(prod2 bool Props.m id id)
     (fun (fspath,(workingDir,path)) ->
        let info = Fileinfo.get false workingDir path in
        if info.Fileinfo.typ = `DIRECTORY then begin
@@ -212,6 +216,8 @@ let mkdirOnRoot =
 let setDirPropOnRoot =
   Remote.registerRootCmd
     "setDirProp"
+    Umarshal.(prod4 Fspath.m Path.mlocal Props.m Props.m id id)
+    Umarshal.unit
     (fun (_, (workingDir, path, initialDesc, newDesc)) ->
       Fileinfo.set workingDir path (`Set initialDesc) newDesc;
       Lwt.return ())
@@ -219,6 +225,8 @@ let setDirPropOnRoot =
 let makeSymlink =
   Remote.registerRootCmd
     "makeSymlink"
+    Umarshal.(prod3 Fspath.m Path.mlocal string id id)
+    Umarshal.unit
     (fun (fspath, (workingDir, path, l)) ->
        if Os.exists workingDir path then
          Os.delete workingDir path;
@@ -319,7 +327,7 @@ let performRename fspathTo localPathTo workingDir pathFrom pathTo prevArch =
    either locally or on the other side. *)
 let renameLocal
       (fspathTo,
-       (localPathTo, workingDir, pathFrom, pathTo, ui, archOpt, notDefault)) =
+       ((localPathTo, workingDir, pathFrom, pathTo), (ui, archOpt, notDefault))) =
   let copyInfo = prepareCopy workingDir pathTo notDefault in
   (* Make sure the target is unchanged, then do the rename.
      (Note that there is an unavoidable race condition here...) *)
@@ -336,7 +344,12 @@ let renameLocal
   end;
   Lwt.return ()
 
-let renameOnHost = Remote.registerRootCmd "rename" renameLocal
+let mrename = Umarshal.(prod2
+                          (prod4 Path.mlocal Fspath.m Path.mlocal Path.mlocal id id)
+                          (prod3 Common.mupdateItem (option Update.marchive) bool id id)
+                          id id)
+
+let renameOnHost = Remote.registerRootCmd "rename" mrename Umarshal.unit renameLocal
 
 let rename root localPath workingDir pathOld pathNew ui archOpt notDefault =
   debug (fun() ->
@@ -345,7 +358,7 @@ let rename root localPath workingDir pathOld pathNew ui archOpt notDefault =
       (Path.toString localPath)
       (Path.toString pathOld) (Path.toString pathNew));
   renameOnHost root
-    (localPath, workingDir, pathOld, pathNew, ui, archOpt, notDefault)
+    ((localPath, workingDir, pathOld, pathNew), (ui, archOpt, notDefault))
 
 (* ------------------------------------------------------------ *)
 
@@ -371,8 +384,10 @@ let setupTargetPathsLocal (fspath, path) =
   let tempPath = Os.tempPath ~fresh:false workingDir realPath in
   Lwt.return (workingDir, realPath, tempPath, localPath)
 
+let msetupTargetPaths = Umarshal.(prod4 Fspath.m Path.mlocal Path.mlocal Path.mlocal id id)
+
 let setupTargetPaths =
-  Remote.registerRootCmd "setupTargetPaths" setupTargetPathsLocal
+  Remote.registerRootCmd "setupTargetPaths" Path.m msetupTargetPaths setupTargetPathsLocal
 
 let rec createDirectories fspath localPath props =
   match props with
@@ -403,6 +418,8 @@ let setupTargetPathsAndCreateParentDirectoryLocal (fspath, (path, props)) =
 
 let setupTargetPathsAndCreateParentDirectory =
   Remote.registerRootCmd "setupTargetPathsAndCreateParentDirectory"
+    Umarshal.(prod2 Path.m (list Props.m) id id)
+    Umarshal.(prod4 Fspath.m Path.mlocal Path.mlocal Path.mlocal id id)
     setupTargetPathsAndCreateParentDirectoryLocal
 
 (* ------------------------------------------------------------ *)
@@ -424,7 +441,7 @@ let updateSourceArchiveLocal (fspathFrom, (localPathFrom, uiFrom, errPaths)) =
   Lwt.return ()
 
 let updateSourceArchive =
-  Remote.registerRootCmd "updateSourceArchive" updateSourceArchiveLocal
+  Remote.registerRootCmd "updateSourceArchive" Umarshal.(prod3 Path.mlocal Common.mupdateItem (list Path.mlocal) id id) Umarshal.unit updateSourceArchiveLocal
 
 (* ------------------------------------------------------------ *)
 
@@ -460,7 +477,7 @@ let deleteSpuriousChildrenLocal (_, (fspathTo, pathTo, archChildren)) =
   Lwt.return ()
 
 let deleteSpuriousChildren =
-  Remote.registerRootCmd "deleteSpuriousChildren" deleteSpuriousChildrenLocal
+  Remote.registerRootCmd "deleteSpuriousChildren" Umarshal.(prod3 Fspath.m Path.mlocal (list Name.m) id id) Umarshal.unit deleteSpuriousChildrenLocal
 
 let rec normalizeProps propsFrom propsTo =
   match propsFrom, propsTo with

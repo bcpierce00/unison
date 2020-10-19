@@ -9,6 +9,7 @@ external id : 'a -> 'a = "%identity"
 
 val header_size : int
 val data_size : bytes -> int -> int
+
 val to_string : 'a t -> 'a -> string
 val from_bytes : 'a t -> bytes -> int -> 'a
 
@@ -27,6 +28,9 @@ type bytearray =
   (char, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
 
 val bytearray : bytearray t
+
+val marshal_to_bytearray : 'a t -> 'a -> bytearray
+val unmarshal_from_bytearray : 'a t -> bytearray -> int -> 'a
 
 type int32bigarray =
   (int32, Bigarray.int32_elt, Bigarray.c_layout) Bigarray.Array1.t

@@ -439,7 +439,7 @@ let debug = Trace.debug "startup"
 
 (*FIX: remove when Unison version > 2.40 *)
 let _ =
-fun r x -> Remote.registerRootCmd "_unicodeCaseSensitive_" (fun _ -> Lwt.return ()) r x
+fun r x -> Remote.registerRootCmd "_unicodeCaseSensitive_" Umarshal.unit Umarshal.unit (fun _ -> Lwt.return ()) r x
 let supportUnicodeCaseSensitive () =
   if Uutil.myMajorVersion > "2.40" (* The test is correct until 2.99... *) then
     Lwt.return true
@@ -454,6 +454,8 @@ let supportUnicodeCaseSensitive () =
 let architecture =
   Remote.registerRootCmd
     "architecture"
+    Umarshal.unit
+    Umarshal.(prod3 bool bool bool id id)
     (fun (_,()) -> return (Util.osType = `Win32, Osx.isMacOSX, Util.isCygwin))
 
 (* During startup the client determines the case sensitivity of each root.

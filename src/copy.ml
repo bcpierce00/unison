@@ -101,11 +101,18 @@ let checkForChangesToSourceLocal
            Transfer aborted."
           (Fspath.toPrintString (Fspath.concat fspathFrom pathFrom))))
 
+let mcheckForChangesToSource =
+  Umarshal.(prod2
+              (prod4 Path.mlocal Props.m Os.mfullfingerprint (option Fileinfo.mstamp) id id)
+              (prod3 Osx.mressStamp (option Os.mfullfingerprint) bool id id)
+              id id)
+
 let checkForChangesToSourceOnRoot =
   Remote.registerRootCmd
     "checkForChangesToSource"
+    mcheckForChangesToSource Umarshal.unit
     (fun (fspathFrom,
-          (pathFrom, archDesc, archFp, archStamp, archRess, newFpOpt, paranoid)) ->
+          ((pathFrom, archDesc, archFp, archStamp), (archRess, newFpOpt, paranoid))) ->
       checkForChangesToSourceLocal
         fspathFrom pathFrom archDesc archFp archStamp archRess newFpOpt paranoid;
       Lwt.return ())
@@ -113,7 +120,7 @@ let checkForChangesToSourceOnRoot =
 let checkForChangesToSource
       root pathFrom archDesc archFp archStamp archRess newFpOpt paranoid =
   checkForChangesToSourceOnRoot
-    root (pathFrom, archDesc, archFp, archStamp, archRess, newFpOpt, paranoid)
+    root ((pathFrom, archDesc, archFp, archStamp), (archRess, newFpOpt, paranoid))
 
 (****)
 
@@ -146,6 +153,8 @@ let rec fingerprintPrefix fspath path offset len accu =
 let fingerprintPrefixRemotely =
   Remote.registerServerCmd
     "fingerprintSubfile"
+    Umarshal.(prod3 Fspath.m Path.mlocal Uutil.Filesize.m id id)
+    Umarshal.(list Fingerprint.m)
     (fun _ (fspath, path, len) ->
        Lwt.return (fingerprintPrefix fspath path 0L len []))
 
@@ -231,7 +240,7 @@ let saveTempFileLocal (fspathTo, (pathTo, realPathTo, reason)) =
         (Fspath.toDebugString (Fspath.concat fspathTo savepath))))
 
 let saveTempFileOnRoot =
-  Remote.registerRootCmd "saveTempFile" saveTempFileLocal
+  Remote.registerRootCmd "saveTempFile" Umarshal.(prod3 Path.mlocal Path.mlocal string id id) Fileinfo.m saveTempFileLocal
 
 (****)
 
@@ -439,7 +448,7 @@ let showPrefixProgress id kind =
   | _                -> ()
 
 let compress conn
-     (biOpt, fspathFrom, pathFrom, fileKind, sizeFrom, id, file_id) =
+     ((biOpt, fspathFrom, pathFrom, fileKind), (sizeFrom, id, file_id)) =
   Lwt.catch
     (fun () ->
        streamTransferInstruction conn
@@ -474,7 +483,22 @@ let compress conn
        Util.convertUnixErrorsToTransient "transferring file contents"
          (fun () -> raise e))
 
-let compressRemotely = Remote.registerServerCmd "compress" compress
+let mdata = Umarshal.(sum3 unit Uutil.Filesize.m unit
+                        (function
+                         | `DATA -> I31 ()
+                         | `DATA_APPEND a -> I32 a
+                         | `RESS -> I33 ())
+                        (function
+                         | I31 () -> `DATA
+                         | I32 a -> `DATA_APPEND a
+                         | I33 () -> `RESS))
+
+let mcompress = Umarshal.(prod2
+                            (prod4 (option Transfer.Rsync.mrsync_block_info) Fspath.m Path.mlocal mdata id id)
+                            (prod3 Uutil.Filesize.m Uutil.File.m int id id)
+                            id id)
+
+let compressRemotely = Remote.registerServerCmd "compress" mcompress Umarshal.unit compress
 
 let close_all infd outfd =
   Util.convertUnixErrorsToTransient
@@ -596,7 +620,7 @@ let transferFileContents
          debug (fun () -> Util.msg "Starting the actual transfer\n");
          decompressor := Remote.MsgIdMap.add file_id decompr !decompressor;
          compressRemotely connFrom
-           (bi, fspathFrom, pathFrom, fileKind, srcFileSize, id, file_id)
+           ((bi, fspathFrom, pathFrom, fileKind), (srcFileSize, id, file_id))
            >>= fun () ->
          decompressor :=
            Remote.MsgIdMap.remove file_id !decompressor; (* For GC *)
@@ -802,8 +826,8 @@ let prepareExternalTransfer fspathTo pathTo =
       false
 
 let finishExternalTransferLocal connFrom
-      (fspathFrom, pathFrom, fspathTo, pathTo, realPathTo,
-       update, desc, fp, ress, id) =
+      ((fspathFrom, pathFrom, fspathTo, pathTo, realPathTo),
+       (update, desc, fp, ress, id)) =
   let info = Fileinfo.get false fspathTo pathTo in
   if
     info.Fileinfo.typ <> `FILE ||
@@ -818,9 +842,22 @@ let finishExternalTransferLocal connFrom
   Xferhint.insertEntry fspathTo pathTo fp;
   Lwt.return res
 
+let mcopyOrUpdate = Umarshal.(sum2 unit (prod2 Uutil.Filesize.m Uutil.Filesize.m id id)
+                                (function
+                                 | `Copy -> I21 ()
+                                 | `Update (a, b) -> I22 (a, b))
+                                (function
+                                 | I21 () -> `Copy
+                                 | I22 (a, b) -> `Update (a, b)))
+
+let mfinishExternalTransfer = Umarshal.(prod2
+                                          (prod5 Fspath.m Path.mlocal Fspath.m Path.mlocal Path.mlocal id id)
+                                          (prod5 mcopyOrUpdate Props.m Os.mfullfingerprint Osx.mressStamp Uutil.File.m id id)
+                                          id id)
+
 let finishExternalTransferOnRoot =
   Remote.registerRootCmdWithConnection
-    "finishExternalTransfer" finishExternalTransferLocal
+    "finishExternalTransfer" mfinishExternalTransfer mtransferStatus finishExternalTransferLocal
 
 let copyprogReg = Lwt_util.make_region 1
 
@@ -863,14 +900,14 @@ let transferFileUsingExternalCopyprog
              l (if l="" then "" else "\n"));
   Uutil.showProgress id (Props.length desc) "ext";
   finishExternalTransferOnRoot rootTo rootFrom
-    (snd rootFrom, pathFrom, fspathTo, pathTo, realPathTo,
-     update, desc, fp, ress, id)
+    ((snd rootFrom, pathFrom, fspathTo, pathTo, realPathTo),
+     (update, desc, fp, ress, id))
 
 (****)
 
 let transferFileLocal connFrom
-      (fspathFrom, pathFrom, fspathTo, pathTo, realPathTo,
-       update, desc, fp, ress, id) =
+      ((fspathFrom, pathFrom, fspathTo, pathTo, realPathTo),
+       (update, desc, fp, ress, id)) =
   let (tempInfo, isTransferred) =
     fileIsTransferred fspathTo pathTo desc fp ress in
   if isTransferred then begin
@@ -907,8 +944,16 @@ let transferFileLocal connFrom
                Lwt.return (`DONE (status, None))
              end)
 
+let mtransferFile = Umarshal.(sum2 (prod2 mtransferStatus (option string) id id) bool
+                                (function
+                                 | `DONE (a, b) -> I21 (a, b)
+                                 | `EXTERNAL a -> I22 a)
+                                (function
+                                 | I21 (a, b) -> `DONE (a, b)
+                                 | I22 a -> `EXTERNAL a))
+
 let transferFileOnRoot =
-  Remote.registerRootCmdWithConnection "transferFile" transferFileLocal
+  Remote.registerRootCmdWithConnection "transferFile" mfinishExternalTransfer mtransferFile transferFileLocal
 
 (* We limit the size of the output buffers to about 512 KB
    (we cannot go above the limit below plus 64) *)
@@ -927,8 +972,8 @@ let transferFile
   let f () =
     Abort.check id;
     transferFileOnRoot rootTo rootFrom
-      (snd rootFrom, pathFrom, fspathTo, pathTo, realPathTo,
-       update, desc, fp, ress, id) >>= fun status ->
+      ((snd rootFrom, pathFrom, fspathTo, pathTo, realPathTo),
+       (update, desc, fp, ress, id)) >>= fun status ->
     match status with
       `DONE (status, msg) ->
          begin match msg with
