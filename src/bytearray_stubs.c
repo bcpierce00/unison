@@ -19,6 +19,10 @@ CAMLprim value ml_marshal_to_bigarray(value v, value flags)
 
 #define Array_data(a, i) (((char *) a->data) + Long_val(i))
 
+#ifndef Bytes_val
+#define Bytes_val(x) ((unsigned char *) Bp_val(x))
+#endif
+
 
 CAMLprim value ml_unmarshal_from_bigarray(value b, value ofs)
 {
@@ -33,17 +37,26 @@ CAMLprim value ml_unmarshal_from_bigarray(value b, value ofs)
 CAMLprim value ml_blit_string_to_bigarray
 (value s, value i, value a, value j, value l)
 {
-  char *src = String_val(s) + Long_val(i);
+  const char *src = String_val(s) + Long_val(i);
   char *dest = Array_data(Bigarray_val(a), j);
   memcpy(dest, src, Long_val(l));
   return Val_unit;
 }
 
-CAMLprim value ml_blit_bigarray_to_string
+CAMLprim value ml_blit_bytes_to_bigarray
+(value s, value i, value a, value j, value l)
+{
+  char *src = Bytes_val(s) + Long_val(i);
+  char *dest = Array_data(Bigarray_val(a), j);
+  memcpy(dest, src, Long_val(l));
+  return Val_unit;
+}
+
+CAMLprim value ml_blit_bigarray_to_bytes
 (value a, value i, value s, value j, value l)
 {
   char *src = Array_data(Bigarray_val(a), i);
-  char *dest = String_val(s) + Long_val(j);
+  char *dest = Bytes_val(s) + Long_val(j);
   memcpy(dest, src, Long_val(l));
   return Val_unit;
 }
