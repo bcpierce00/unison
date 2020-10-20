@@ -26,6 +26,8 @@ module M (P : sig val useLongUNCPaths : bool end) = struct
 
 type fspath = string
 
+let mfspath = Umarshal.string
+
 let fspathFromString f = f
 let fspathToPrintString f = f
 let fspathToString f = f
