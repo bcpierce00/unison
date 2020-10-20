@@ -19,22 +19,16 @@ jobs:
         - { os: macos-10.15   , ocaml-version: 4.10.1 }
         - { os: macos-10.15   , ocaml-version: 4.09.1 }
         - { os: macos-10.15   , ocaml-version: 4.08.1 }
-        - { os: macos-10.15   , ocaml-version: 4.07.1 }
-        - { os: macos-10.15   , ocaml-version: 4.05.0 }
         - { os: ubuntu-latest  , ocaml-version: 4.11.1 }
         - { os: ubuntu-latest  , ocaml-version: 4.10.1 }
         - { os: ubuntu-latest  , ocaml-version: 4.10.0+musl+static+flambda }
         - { os: ubuntu-latest  , ocaml-version: 4.09.1 }
         - { os: ubuntu-latest  , ocaml-version: 4.08.1 }
-        - { os: ubuntu-latest  , ocaml-version: 4.07.1 }
-        - { os: ubuntu-latest  , ocaml-version: 4.05.0 }
         - { os: windows-latest , ocaml-version: 4.11.1 }
         - { os: windows-latest , ocaml-version: 4.10.1 }
         - { os: windows-latest , ocaml-version: 4.10.1+mingw32 }
         - { os: windows-latest , ocaml-version: 4.09.1 }
         - { os: windows-latest , ocaml-version: 4.08.1 }
-        - { os: windows-latest , ocaml-version: 4.07.1 }
-        - { os: windows-latest , ocaml-version: 4.05.0 }
 
     runs-on: ${{ matrix.job.os }}
 
