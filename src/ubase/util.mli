@@ -39,6 +39,7 @@ val process_status_to_string : Unix.process_status -> string
 (* Case insensitive comparison *)
 val nocase_cmp : string -> string -> int
 val nocase_eq  : string -> string -> bool
+val lowercase_latin1 : char -> char
 
 (* Ready-build set and map implementations *)
 module StringSet : Set.S with type elt = string

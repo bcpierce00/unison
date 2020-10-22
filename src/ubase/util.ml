@@ -19,6 +19,16 @@
 (*****************************************************************************)
 (*                        CASE INSENSITIVE COMPARISON                        *)
 (*****************************************************************************)
+(* Latin1 (ISO 8859-1) string functions have been deprecated in OCaml. Latin1
+   being supported by Unison, the deprecated Stdlib has been replaced with
+   this lowercase_latin1 function. *)
+let lowercase_latin1 = function
+  | 'A' .. 'Z'
+  | '\192' .. '\214'
+  | '\216' .. '\222' as c ->
+    Char.chr(Char.code c + 32)
+  | c -> c
+
 let nocase_cmp a b =
   let alen = String.length a in
   let blen = String.length b in
@@ -27,7 +37,7 @@ let nocase_cmp a b =
     if i>=minlen then compare alen blen
     else
       let c =
-        compare (Char.lowercase(String.get a i)) (Char.lowercase(String.get b i)) in
+        compare (lowercase_latin1(String.get a i)) (lowercase_latin1(String.get b i)) in
       if c<>0 then c else loop (i+1) in
   loop 0
 let nocase_eq a b = (0 = (nocase_cmp a b))
