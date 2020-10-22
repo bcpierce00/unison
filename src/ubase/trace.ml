@@ -117,9 +117,21 @@ let logfile =
     "!logfile name"
     "By default, logging messages will be appended to the file
      \\verb|unison.log| in your HOME directory.  Set this preference if
-     you prefer another file.  It can be a path relative to your HOME directory."
+     you prefer another file.  It can be a path relative to your HOME directory.
+     Sending SIGUSR1 will close the logfile; the logfile will be re-opened (and
+     created, if needed) automatically, to allow for log rotation."
 
 let logch = ref None
+
+let closelog _ =
+  match !logch with
+    None -> ()
+  | Some(ch,file) ->
+      close_out ch;
+      logch := None;
+  ;;
+
+Sys.signal Sys.sigusr1 (Signal_handle closelog);;
 
 let rec getLogch() =
   Util.convertUnixErrorsToFatal "getLogch" (fun() ->
