@@ -45,20 +45,33 @@ extern void get_sockaddr (value mladdr,
 
 #define Array_data(a, i) (((char *) a->data) + Long_val(i))
 
+#ifndef Bytes_val
+#define Bytes_val(x) ((unsigned char *) Bp_val(x))
+#endif
+
 CAMLprim value ml_blit_string_to_buffer
 (value s, value i, value a, value j, value l)
 {
-  char *src = String_val(s) + Int_val(i);
+  const char *src = String_val(s) + Int_val(i);
   char *dest = Array_data(Bigarray_val(a), j);
   memcpy(dest, src, Long_val(l));
   return Val_unit;
 }
 
-CAMLprim value ml_blit_buffer_to_string
+CAMLprim value ml_blit_bytes_to_buffer
+(value s, value i, value a, value j, value l)
+{
+  char *src = Bytes_val(s) + Int_val(i);
+  char *dest = Array_data(Bigarray_val(a), j);
+  memcpy(dest, src, Long_val(l));
+  return Val_unit;
+}
+
+CAMLprim value ml_blit_buffer_to_bytes
 (value a, value i, value s, value j, value l)
 {
   char *src = Array_data(Bigarray_val(a), i);
-  char *dest = String_val(s) + Long_val(j);
+  char *dest = Bytes_val(s) + Long_val(j);
   memcpy(dest, src, Long_val(l));
   return Val_unit;
 }

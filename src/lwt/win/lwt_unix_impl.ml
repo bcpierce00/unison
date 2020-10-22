@@ -17,9 +17,9 @@ let buffer_create l = Bigarray.Array1.create Bigarray.char Bigarray.c_layout l
 external unsafe_blit_string_to_buffer :
   string -> int -> buffer -> int -> int -> unit = "ml_blit_string_to_buffer"
 external unsafe_blit_bytes_to_buffer :
-  bytes -> int -> buffer -> int -> int -> unit = "ml_blit_string_to_buffer"
+  bytes -> int -> buffer -> int -> int -> unit = "ml_blit_bytes_to_buffer"
 external unsafe_blit_buffer_to_bytes :
-  buffer -> int -> bytes -> int -> int -> unit = "ml_blit_buffer_to_string"
+  buffer -> int -> bytes -> int -> int -> unit = "ml_blit_buffer_to_bytes"
 
 let buffer_length = Bigarray.Array1.dim
 

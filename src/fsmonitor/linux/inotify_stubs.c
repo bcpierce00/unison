@@ -58,7 +58,7 @@ static int inotify_return_table[] = {
 
 static void raise_inotify_error(char const *msg)
 {
-        static value *inotify_err = NULL;
+        static const value *inotify_err = NULL;
         value args[2];
 
         if (!inotify_err)
