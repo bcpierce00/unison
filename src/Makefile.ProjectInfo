@@ -1,6 +1,5 @@
 MAJORVERSION=2.51
 
-# Updated in Nov 2019:
-VERSION=2.51.3
+VERSION=2.51.3.70
 
 NAME=unison
