@@ -2522,7 +2522,6 @@ let documentation sect =
   ignore (t#event#connect#delete ~callback:(fun _ -> dismiss (); true));
 
   let (name, docstr) = Safelist.assoc sect Strings.docs in
-  let docstr = transcodeDoc docstr in
   let hb = GPack.hbox ~packing:(t#vbox#pack ~expand:false ~padding:2) () in
   let optionmenu =
     GMenu.option_menu ~packing:(hb#pack ~expand:true ~fill:false) () in
@@ -2541,7 +2540,6 @@ let documentation sect =
       if shortname = sect then sect_idx := !idx;
       incr idx;
       let item = GMenu.menu_item ~label:name ~packing:menu#append () in
-      let docstr = transcodeDoc docstr in
       ignore
         (item#connect#activate ~callback:(fun () -> t_text#insert docstr))
     end
