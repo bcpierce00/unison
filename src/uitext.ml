@@ -86,6 +86,68 @@ let setupTerminal() =
     with Unix.Unix_error _ ->
       restoreTerminal ()
 
+let colorMode =
+  Prefs.createBoolWithDefault "color" ~local:true
+    "!use color output for text UI (true/false/default)"
+    ("When set to {\\tt true}, this flag enables color output in "
+     ^ "text mode user interface. When set to {\\tt false}, all "
+     ^ "color output is disabled. Default is to enable color if "
+     ^ "the {\\tt NO\\_COLOR} environment variable is not set.")
+
+let colorEnabled = ref false
+
+let setColorPreference () =
+  let envOk = try let _ = System.getenv "NO_COLOR" in false
+    with Not_found -> true
+  and termOk = try System.getenv "TERM" <> "dumb" with Not_found -> true
+  and ttyOk = (Unix.isatty Unix.stdin) && (Unix.isatty Unix.stderr) in
+  let colorOk = envOk && termOk && ttyOk && not (Prefs.read dumbtty) in
+  colorEnabled :=
+    match Prefs.read colorMode with
+    | `True    -> true
+    | `False   -> false
+    | `Default -> colorOk
+
+let color t =
+  if not !colorEnabled then "" else
+  match t with
+    `Reset       -> "\o033[0m"
+  | `Focus       -> "\o033[1m"
+  | `Success     -> "\o033[1;32m"
+  | `Information -> "\o033[1;34m"
+  | `Warning     -> "\o033[1;33m"
+  | `Failure     -> "\o033[1;31m"
+  | `AError      -> "\o033[31m"
+  | `ASkip       -> "\o033[1;35m"
+  | `ALtoRf      -> "\o033[1;32m"
+  | `ALtoRt      -> "\o033[1;33m"
+  | `ARtoLf      -> "\o033[1;34m"
+  | `ARtoLt      -> "\o033[1;33m"
+  | `AMerge      -> "\o033[1;36m"
+  | `DiffHead    -> "\o033[1m"
+  | `DiffAdd     -> "\o033[32m"
+  | `DiffDel     -> "\o033[31m"
+  | `DiffLoc     -> "\o033[36m"
+  | _            -> ""
+
+let lineRegexp = Str.regexp "^"
+
+let colorDiff text =
+  let result = Buffer.create (String.length text) in
+  let a s = Buffer.add_string result s in
+  let p = Str.full_split lineRegexp text in
+  Safelist.iter (fun t ->
+              match t with
+                Str.Delim s -> a s
+              | Str.Text s -> (let lineSt = s.[0] in
+                               match lineSt with
+                               | '+' -> a (color `DiffAdd); a s; a (color `Reset)
+                               | '-' -> a (color `DiffDel); a s; a (color `Reset)
+                               | '@' -> a (color `DiffLoc); a s; a (color `Reset)
+                               | _   -> a s)
+            ) p;
+  Buffer.contents result
+
 let alwaysDisplay message =
   print_string message;
   flush stdout
@@ -224,13 +286,13 @@ let displayri ri =
   in
   let (defaultAction, forcedAction) =
     match action with
-      Uicommon.AError      -> ("error", "error")
-    | Uicommon.ASkip _     -> ("<-?->", "<=?=>")
-    | Uicommon.ALtoR false -> ("---->", "====>")
-    | Uicommon.ALtoR true  -> ("--?->", "==?=>")
-    | Uicommon.ARtoL false -> ("<----", "<====")
-    | Uicommon.ARtoL true  -> ("<-?--", "<=?==")
-    | Uicommon.AMerge      -> ("<-M->", "<=M=>")
+      Uicommon.AError      -> ((color `AError) ^ "error" ^ (color `Reset), (color `AError) ^ "error" ^ (color `Reset))
+    | Uicommon.ASkip _     -> ((color `ASkip)  ^ "<-?->" ^ (color `Reset), (color `ASkip)  ^ "<=?=>" ^ (color `Reset))
+    | Uicommon.ALtoR false -> ((color `ALtoRf) ^ "---->" ^ (color `Reset), (color `ALtoRf) ^ "====>" ^ (color `Reset))
+    | Uicommon.ALtoR true  -> ((color `ALtoRt) ^ "--?->" ^ (color `Reset), (color `ALtoRt) ^ "==?=>" ^ (color `Reset))
+    | Uicommon.ARtoL false -> ((color `ARtoLf) ^ "<----" ^ (color `Reset), (color `ARtoLf) ^ "<====" ^ (color `Reset))
+    | Uicommon.ARtoL true  -> ((color `ARtoLt) ^ "<-?--" ^ (color `Reset), (color `ARtoLt) ^ "<=?==" ^ (color `Reset))
+    | Uicommon.AMerge      -> ((color `AMerge) ^ "<-M->" ^ (color `Reset), (color `AMerge) ^ "<=M=>" ^ (color `Reset))
   in
   let action = if forced then forcedAction else defaultAction in
   let s = Format.sprintf "%s %s %s   %s  " r1 action r2 path in
@@ -252,15 +314,16 @@ let interact prilist rilist =
   let showdiffs ri =
     Uicommon.showDiffs ri
       (fun title text ->
+         let colorText = colorDiff text in
          try
            let pager = System.getenv "PAGER" in
            restoreTerminal ();
            let out = System.open_process_out pager in
-           Printf.fprintf out "\n%s\n\n%s\n\n" title text;
+           Printf.fprintf out "\n%s\n\n%s\n\n" title colorText;
            let _ = System.close_process_out out in
            setupTerminal ()
          with Not_found ->
-           Printf.printf "\n%s\n\n%s\n\n" title text)
+           Printf.printf "\n%s\n\n%s\n\n" title colorText)
       (fun s -> Printf.printf "%s\n" s)
       Uutil.File.dummy;
       true
@@ -808,8 +871,8 @@ let rec interactAndPropagateChanges prevItemList reconItemList
     let trans = updatesToDo - failures in
     let summary =
       Printf.sprintf
-       "Synchronization %s at %s  (%d item%s transferred, %s%d skipped, %d failed)"
-       (if failures=0 then "complete" else "incomplete")
+       "Synchronization %s at %s  (%d item%s transferred, %s%s, %s)"
+       (if failures = 0 then (color `Success) ^ "complete" ^ (color `Reset) else (color `Failure) ^ "incomplete" ^ (color `Reset))
        (let tm = Util.localtime (Util.time()) in
         Printf.sprintf "%02d:%02d:%02d"
           tm.Unix.tm_hour tm.Unix.tm_min tm.Unix.tm_sec)
@@ -818,9 +881,9 @@ let rec interactAndPropagateChanges prevItemList reconItemList
           Format.sprintf "%d partially transferred, " partials
         else
           "")
-       skipped
-       failures in
-    Trace.log (summary ^ "\n");
+       (if skipped = 0 then "0 skipped" else (color `Information) ^ (Printf.sprintf "%d skipped" skipped) ^ (color `Reset))
+       (if failures = 0 then "0 failed" else (color `Failure) ^ (Printf.sprintf "%d failed" failures) ^ (color `Reset)) in
+    Trace.log_color (summary ^ "\n");
     if skipped>0 then
       Safelist.iter
         (fun ri ->
@@ -856,12 +919,16 @@ let rec interactAndPropagateChanges prevItemList reconItemList
     if skipped > 0 then begin
       let summary =
         Printf.sprintf
-          "Synchronization complete at %s  (0 item transferred, %d skipped, 0 failed)"
+          "Synchronization %scomplete%s at %s  (0 items transferred, %s%d skipped%s, 0 failed)"
+          (color `Success)
+          (color `Reset)
           (let tm = Util.localtime (Util.time()) in
            Printf.sprintf "%02d:%02d:%02d"
                           tm.Unix.tm_hour tm.Unix.tm_min tm.Unix.tm_sec)
-          skipped in
-      Trace.log (summary ^ "\n");
+          (color `Information)
+          skipped
+          (color `Reset) in
+      Trace.log_color (summary ^ "\n");
       Safelist.iter
         (fun ri ->
          match ri.replicas with
@@ -1132,6 +1199,7 @@ let rec start interface =
     if Prefs.read Uicommon.repeat <> "" then begin
       Prefs.set Globals.batch true;
     end;
+    setColorPreference ();
 
     (* Tell OCaml that we want to catch Control-C ourselves, so that
        we get a chance to reset the terminal before exiting *)
