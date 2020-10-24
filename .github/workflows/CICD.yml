@@ -6,8 +6,20 @@ env:
   PROJECT_EXES: "unison unison-fsmonitor"
 
 on:
-  - pull_request
-  - push
+  pull_request:
+  push:
+  workflow_dispatch:
+    inputs:
+      os:
+        description: 'OS (e.g. ubuntu-18.04, ubuntu-latest, windows-latest, macos-10.15)'
+        required: false
+      ocaml:
+        description: 'OCaml version (e.g. 4.03.0, 4.11.1)'
+        required: false
+      target:
+        description: 'Make target (e.g. -C src test)'
+        required: false
+        default: 'test'
 
 jobs:
   build:
@@ -163,6 +175,9 @@ jobs:
     - if: runner.os != 'Windows' ## [2020-09] Windows builds fail self-testing
       shell: bash --login --norc --noprofile -e -o pipefail -c "dos2unix '{0}' 2>/dev/null ; source '{0}' ;"
       run: opam exec -- make OSTYPE=$OSTYPE STATIC=${{ steps.vars.outputs.STATIC }} test
+
+    - if: github.event_name == 'workflow_dispatch'
+      run: opam exec -- make ${{ github.event.inputs.target }}
 
     - uses: actions/upload-artifact@v2
       with:
