@@ -246,20 +246,29 @@ let rec selectAction batch actions tryagain =
     alwaysDisplay "\n";
     raise (Util.Fatal ("Failure reading from the standard input ("^s^")\n"))
   in
-  try doAction (match batch with
-    None   ->
+  let userInput () =
+    try
+      Some (getInput ())
+    with
+      (* Restart an interrupted system call (which can happen notably when
+       * the process is put in the background by SIGTSTP). *)
+    | Unix.Unix_error (Unix.EINTR, _, _) -> None
+      (* Simply print a slightly more informative message than the exception
+       * itself (e.g. "Uncaught unix error: read failed: Resource temporarily
+       * unavailable" or "Uncaught exception End_of_file"). *)
+    | End_of_file -> handleExn "End of file"
+    | Unix.Unix_error (err, _, _) -> handleExn (Unix.error_message err)
+  in
+  let a =
+    match batch with
+    | None ->
       summarizeChoices();
-      getInput ()
-  | Some i -> i)
-  with
-    (* Restart an interrupted system call (which can happen notably when
-     * the process is put in the background by SIGTSTP). *)
-    Unix.Unix_error (Unix.EINTR, _, _) -> tryagainOrLoop()
-    (* Simply print a slightly more informative message than the exception
-     * itself (e.g. "Uncaught unix error: read failed: Resource temporarily
-     * unavailable" or "Uncaught exception End_of_file"). *)
-  | End_of_file -> handleExn "End of file"
-  | Unix.Unix_error (err, _, _) -> handleExn (Unix.error_message err)
+      userInput ()
+    | _ -> batch
+  in
+  match a with
+  | Some a -> doAction a
+  | None -> tryagainOrLoop()
 
 let alwaysDisplayErrors prefix l =
   List.iter
