@@ -634,14 +634,17 @@ let copy
 let (>>=) = Lwt.bind
 
 let diffCmd =
-  Prefs.createString "diff" "diff -u CURRENT2 CURRENT1"
+  Prefs.createString "diff" "diff -u OLDER NEWER"
     "!set command for showing differences between files"
     ("This preference can be used to control the name and command-line "
      ^ "arguments of the system "
      ^ "utility used to generate displays of file differences.  The default "
-     ^ "is `\\verb|diff -u CURRENT2 CURRENT1|'.  If the value of this preference contains the substrings "
+     ^ "is `\\verb|diff -u OLDER NEWER|'.  If the value of this preference contains the substrings "
      ^ "CURRENT1 and CURRENT2, these will be replaced by the names of the files to be "
-     ^ "diffed.  If not, the two filenames will be appended to the command.  In both "
+     ^ "diffed.  If the value of this preference contains the substrings "
+     ^ "NEWER and OLDER, these will be replaced by the names of files to be "
+     ^ "diffed, NEWER being the most recently modified file of the two.  "
+     ^ "Without any of these substrings, the two filenames will be appended to the command.  In all "
      ^ "cases, the filenames are suitably quoted.")
 
 let tempName s = Os.tempFilePrefix ^ s
@@ -652,9 +655,20 @@ let rec diff root1 path1 ui1 root2 path2 ui2 showDiff id =
       "diff %s %s %s %s ...\n"
       (root2string root1) (Path.toString path1)
       (root2string root2) (Path.toString path2));
+  let (desc1, fp1, ress1, desc2, fp2, ress2) = Common.fileInfos ui1 ui2 in
   let displayDiff fspath1 fspath2 =
     let cmd =
-      if Util.findsubstring "CURRENT1" (Prefs.read diffCmd) = None then
+      if Util.findsubstring "NEWER" (Prefs.read diffCmd) <> None then
+        let newer1 = (Props.time desc1) > (Props.time desc2) in
+        let (newer, older) = if newer1 then
+          (fspath1, fspath2)
+        else
+          (fspath2, fspath1)
+        in
+        Util.replacesubstrings (Prefs.read diffCmd)
+          ["OLDER", Fspath.quotes older;
+           "NEWER", Fspath.quotes newer]
+      else if Util.findsubstring "CURRENT1" (Prefs.read diffCmd) = None then
           (Prefs.read diffCmd)
         ^ " " ^ (Fspath.quotes fspath1)
         ^ " " ^ (Fspath.quotes fspath2)
@@ -671,7 +685,6 @@ let rec diff root1 path1 ui1 root2 path2 ui2 showDiff id =
          cmd) in
     showDiff cmd (External.readChannelTillEof c);
     ignore (System.close_process_in c) in
-  let (desc1, fp1, ress1, desc2, fp2, ress2) = Common.fileInfos ui1 ui2 in
   match root1,root2 with
     (Local,fspath1),(Local,fspath2) ->
       Util.convertUnixErrorsToTransient
