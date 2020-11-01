@@ -128,10 +128,15 @@ let closelog _ =
     None -> ()
   | Some(ch,file) ->
       close_out ch;
-      logch := None;
-  ;;
+      logch := None
 
-Sys.signal Sys.sigusr1 (Signal_handle closelog);;
+let _ =
+  if Util.osType <> `Win32 || Util.isCygwin then
+    try
+      ignore (Sys.signal Sys.sigusr1 (Signal_handle closelog))
+    with e ->
+      Printf.eprintf "Warning: SIGUSR1 handler not set: %s\n"
+        (Printexc.to_string e)
 
 let rec getLogch() =
   Util.convertUnixErrorsToFatal "getLogch" (fun() ->
