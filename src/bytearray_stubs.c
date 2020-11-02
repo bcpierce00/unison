@@ -10,7 +10,7 @@
 CAMLprim value ml_marshal_to_bigarray(value v, value flags)
 {
   char *buf;
-  long len;
+  intnat len;
   output_value_to_malloc(v, flags, &buf, &len);
   return alloc_bigarray(BIGARRAY_UINT8 | BIGARRAY_C_LAYOUT | BIGARRAY_MANAGED,
                         1, buf, &len);
