@@ -79,10 +79,11 @@ jobs:
         PKG_OS='linux' ; case '${{ matrix.job.os }}' in macos-*) PKG_OS='${{ matrix.job.os }}' ;; windows-*) PKG_OS='windows' ;; esac;
         PKG_STATIC='' ; case '${{ matrix.job.ocaml-version }}' in *+static*) PKG_STATIC='.static' ;; esac;
         PKG_ARCH='x86_64' ; case '${{ matrix.job.ocaml-version }}' in *+32bit* | *+mingw32*) PKG_ARCH='i386' ;; esac;
-        PKG_BASENAME="${PROJECT_NAME}-${REF_TAG:-$REF_SHAS}+ocaml-${OCAML_VARIANT/%+*/}+${PKG_ARCH}.${PKG_OS}${PKG_STATIC}"
+        PKG_VER="${REF_TAG:-$REF_SHAS}"
+        PKG_BASENAME="${PROJECT_NAME}-${PKG_VER}+ocaml-${OCAML_VARIANT/%+*/}+${PKG_ARCH}.${PKG_OS}${PKG_STATIC}"
         PKG_NAME="${PKG_BASENAME}${PKG_suffix}"
         PKG_DIR="${STAGING_DIR}/${PKG_BASENAME}"
-        outputs PKG_BASENAME PKG_DIR PKG_NAME PKG_OS PKG_suffix
+        outputs PKG_VER PKG_BASENAME PKG_DIR PKG_NAME PKG_OS PKG_suffix
 
     - name: Create/configure any needed build/workspace
       shell: bash
@@ -213,5 +214,33 @@ jobs:
       with:
         files: |
           ${{ steps.vars.outputs.STAGING_DIR }}/${{ steps.vars.outputs.PKG_NAME }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - if: runner.os == 'macOS'
+      name: "macOS: Build and package Unison.app"
+      id: macapp
+      shell: bash --login --norc --noprofile -e -o pipefail -c "dos2unix '{0}' 2>/dev/null ; source '{0}' ;"
+      run: |
+        opam exec -- make src OSTYPE=$OSTYPE UISTYLE=mac
+
+        # package
+        APP_NAME=Unison-${{ steps.vars.outputs.PKG_VER }}.ocaml-${{ matrix.job.ocaml-version }}.${{ matrix.job.os }}.app.tar.gz
+        echo ::set-output name=APP_NAME::${APP_NAME}
+
+        tar czf ${APP_NAME} -C src/uimac/build/Default Unison.app
+
+    - if: runner.os == 'macOS'
+      name: "macOS: Upload Unison.app artifact"
+      uses: actions/upload-artifact@v2
+      with:
+        name: Unison-${{ steps.vars.outputs.REF_SHAS }}.ocaml-${{ matrix.job.ocaml-version }}.${{ matrix.job.os }}.app
+        path: ${{ steps.macapp.outputs.APP_NAME }}
+
+    - if: runner.os == 'macOS' && steps.vars.outputs.DEPLOY
+      name: "macOS: Publish Unison.app"
+      uses: softprops/action-gh-release@v1
+      with:
+        files: ${{ steps.macapp.outputs.APP_NAME }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
