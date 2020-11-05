@@ -420,7 +420,7 @@ CAMLprim value unisonInit1Complete(value v)
 
                 [self raisePasswordWindow:[prompt getField:0 withType:'S']];
         } @catch (NSException *ex) {
-            NSRunAlertPanel(@"Connection Error", [ex description], @"OK", nil, nil);
+            NSRunAlertPanel(@"Connection Error", @"%@", @"OK", nil, nil, [ex description]);
                 [self chooseProfiles];
                 return;
         }
@@ -451,7 +451,7 @@ CAMLprim value unisonInit1Complete(value v)
         return;
     }
     if ((long)ocamlCall("iS", "unisonAuthenticityMsg", prompt)) {
-        NSInteger i = NSRunAlertPanel(@"New host",prompt,@"Yes",@"No",nil);
+        NSInteger i = NSRunAlertPanel(@"New host",@"%@",@"Yes",@"No",nil,prompt);
         if (i == NSAlertDefaultReturn) {
                         ocamlCall("x@s", "openConnectionReply", preconn, "yes");
                         prompt = ocamlCall("S@", "openConnectionPrompt", preconn);
@@ -1193,7 +1193,7 @@ CAMLprim value fatalError(value s)
 }
 
 - (void)fatalError:(NSString *)msg {
-        NSRunAlertPanel(@"Fatal error", msg, @"Exit", nil, nil);
+        NSRunAlertPanel(@"Fatal error", @"%@", @"Exit", nil, nil, msg);
         exit(1);
 }
 
@@ -1213,7 +1213,7 @@ CAMLprim value warnPanel(value s)
 }
 
 - (void)warnPanel:(NSString *)msg {
-  NSInteger warnVal = NSRunAlertPanel(@"Warning", msg, @"Proceed", @"Exit", nil);
+  NSInteger warnVal = NSRunAlertPanel(@"Warning", @"%@", @"Proceed", @"Exit", nil, msg);
   NSLog(@"Warning Panel Returned %ld",(long)warnVal);
   if (warnVal == NSAlertAlternateReturn) {
     shouldExitAfterWarning = YES;

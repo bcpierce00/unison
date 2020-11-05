@@ -111,7 +111,7 @@ typedef unsigned int NSUInteger;
     NSString *msg = [NSString stringWithFormat:@"Uncaught exception: %@", [exception reason]];
     msg = [[msg componentsSeparatedByString:@"\n"] componentsJoinedByString:@" "];
     NSLog(@"%@", msg);
-    NSRunAlertPanel(@"Fatal error", msg, @"Exit", nil, nil);
+    NSRunAlertPanel(@"Fatal error", @"%@", @"Exit", nil, nil, msg);
         exit(1);
         return FALSE;
 }
