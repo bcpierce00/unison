@@ -183,6 +183,11 @@ endif
 .PHONY: macexecutable
 macexecutable:
 	(cd $(UIMACDIR); $(RM) -f ExternalSettings.xcconfig ; echo MARKETING_VERSION = $(VERSION) > ExternalSettings.xcconfig ; echo OCAMLLIBDIR = $(OCAMLLIBDIR) >> ExternalSettings.xcconfig)
+ifeq ($(word 1,$(sort 4.08 $(shell ocamlc -version))),4.08)
+	(cd $(UIMACDIR); echo LIB_BIGARRAY = >> ExternalSettings.xcconfig)
+else
+	(cd $(UIMACDIR); echo LIB_BIGARRAY = -lbigarray >> ExternalSettings.xcconfig)
+endif
 	(cd $(UIMACDIR); xcodebuild $(XCODEFLAGS) SYMROOT=build)
 	$(CC) $(CFLAGS) -mmacosx-version-min=$(MINOSXVERSION) $(UIMACDIR)/cltool.c -o $(UIMACDIR)/build/Default/Unison.app/Contents/MacOS/cltool -framework Carbon
 
