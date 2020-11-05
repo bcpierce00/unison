@@ -18,8 +18,8 @@ NSString *unisonDirectory()
 #else
     NSArray *files = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:directory error:nil];
 #endif
-    unsigned int count = [files count];
-    unsigned int i,j;
+    NSUInteger count = [files count];
+    NSUInteger i,j;
 
     [profiles release];
     profiles = [[NSMutableArray alloc] init];
@@ -55,7 +55,7 @@ NSString *unisonDirectory()
     [tableView reloadData];
 }
 
-- (int)numberOfRowsInTableView:(NSTableView *)aTableView
+- (NSUInteger)numberOfRowsInTableView:(NSTableView *)aTableView
 {
     if (!profiles) return 0;
     else return [profiles count];
@@ -72,7 +72,7 @@ NSString *unisonDirectory()
 
 - (NSString *)selected
 {
-    int rowIndex = [tableView selectedRow];
+    NSInteger rowIndex = [tableView selectedRow];
     if (rowIndex >= 0 && rowIndex < [profiles count])
         return [profiles objectAtIndex:rowIndex];
     else return nil;
