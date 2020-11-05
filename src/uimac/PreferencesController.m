@@ -21,25 +21,25 @@
 - (BOOL)validatePrefs
 {
     NSString *profileName = [profileNameText stringValue];
-    if (profileName == nil | [profileName isEqualTo:@""]) {
+    if ((profileName == nil) | [profileName isEqualTo:@""]) {
         // FIX: should check for already existing names too
         NSRunAlertPanel(@"Error",@"You must enter a profile name",@"OK",nil,nil);
         return NO;
     }
     NSString *firstRoot = [firstRootText stringValue];
-    if (firstRoot == nil | [firstRoot isEqualTo:@""]) {
+    if ((firstRoot == nil) | [firstRoot isEqualTo:@""]) {
         NSRunAlertPanel(@"Error",@"You must enter a first root",@"OK",nil,nil);
         return NO;
     }
     NSString *secondRoot;
     if ([remoteButtonCell state] == NSOnState) {
         NSString *user = [secondRootUser stringValue];
-        if (user == nil | [user isEqualTo:@""]) {
+        if ((user == nil) | [user isEqualTo:@""]) {
             NSRunAlertPanel(@"Error",@"You must enter a user",@"OK",nil,nil);
             return NO;
         }
         NSString *host = [secondRootHost stringValue];
-        if (host == nil | [host isEqualTo:@""]) {
+        if ((host == nil) | [host isEqualTo:@""]) {
             NSRunAlertPanel(@"Error",@"You must enter a host",@"OK",nil,nil);
             return NO;
         }
@@ -49,7 +49,7 @@
     }
     else {
         secondRoot = [secondRootText stringValue];
-        if (secondRoot == nil | [secondRoot isEqualTo:@""]) {
+        if ((secondRoot == nil) | [secondRoot isEqualTo:@""]) {
             NSRunAlertPanel(@"Error",@"You must enter a second root file",@"OK",nil,nil);
             return NO;
         }
