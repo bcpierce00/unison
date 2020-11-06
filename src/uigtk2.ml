@@ -1809,7 +1809,7 @@ let editPreference parent nm ty vl =
           (fun () -> [if trueB#active then "true" else "false"])
       | `INT | `STRING ->
            let valueEntry =
-             GEdit.entry ~text:(List.hd vl) ~width_chars: 40
+             GEdit.entry ~text:v ~width_chars: 40
                ~activates_default:true
                ~packing:(tbl#attach ~left:1 ~top:3 ~expand:`X) ()
            in
@@ -1824,12 +1824,12 @@ let editPreference parent nm ty vl =
     end
   in
 
-  let ok = ref false in
+  let res = ref None in
   let cancelCommand () = t#destroy () in
   let cancelButton =
     GButton.button ~stock:`CANCEL ~packing:t#action_area#add () in
   ignore (cancelButton#connect#clicked ~callback:cancelCommand);
-  let okCommand _ = ok := true; t#destroy () in
+  let okCommand _ = res := Some (newValue ()); t#destroy () in
   let okButton =
     GButton.button ~stock:`OK ~packing:t#action_area#add () in
   ignore (okButton#connect#clicked ~callback:okCommand);
@@ -1837,7 +1837,7 @@ let editPreference parent nm ty vl =
   ignore (t#connect#destroy ~callback:GMain.Main.quit);
   t#show ();
   GMain.Main.main ();
-  if !ok then Some (newValue ()) else None
+  !res
 
 
 let markupRe = Str.regexp "<\\([a-z]+\\)>\\|</\\([a-z]+\\)>\\|&\\([a-z]+\\);"
