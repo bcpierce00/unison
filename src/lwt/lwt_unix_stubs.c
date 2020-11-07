@@ -670,7 +670,7 @@ CAMLprim value win_parse_directory_changes (value buf_val) {
     entry = (FILE_NOTIFY_INFORMATION *)pos;
     elt = caml_alloc_tuple(2);
     filename = caml_alloc_string(entry->FileNameLength);
-    memmove(String_val(filename), entry->FileName, entry->FileNameLength);
+    memmove((char *)String_val(filename), entry->FileName, entry->FileNameLength);
     Store_field (elt, 0, filename);
     Store_field (elt, 1, Val_long(entry->Action - 1));
     tmp = caml_alloc_tuple(2);

@@ -64,8 +64,8 @@ CAMLprim value getFileInfos (value path, value need_size) {
       unix_error (EINVAL, "getattrlist", path);
   }
 
-  fInfo = alloc_string (32);
-  memcpy (String_val (fInfo), attrBuf.finderInfo, 32);
+  fInfo = caml_alloc_string (32);
+  memcpy ((char *) String_val (fInfo), attrBuf.finderInfo, 32);
   if (Bool_val (need_size))
     length = copy_int64 (attrBuf.rsrcLength);
   else

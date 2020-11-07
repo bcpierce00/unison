@@ -30,7 +30,7 @@ static value copy_wstring(LPCWSTR s)
 
   len = 2 * wcslen(s) + 2;  /* NULL character included */
   res = caml_alloc_string(len);
-  memmove(String_val(res), s, len);
+  memmove((char *)String_val(res), s, len);
   return res;
 }
 
