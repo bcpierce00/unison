@@ -506,10 +506,11 @@ let promptForRoots getFirstRoot getSecondRoot =
 (* ---- *)
 
 let makeTempDir pattern =
-  let ic = Unix.open_process_in (Printf.sprintf "(mktemp --tmpdir -d %s.XXXXXX || mktemp -d -t %s) 2>/dev/null" pattern pattern) in
-  let path = input_line ic in
-  ignore (Unix.close_process_in ic);
-  path
+  let path = Filename.temp_file pattern "" in
+  let fspath = System.fspathFromString path in
+  System.unlink fspath; (* Remove file created by [temp_file]... *)
+  System.mkdir fspath 0o755; (* ... and create a dir instead. *)
+  path ^ Filename.dir_sep
 
 (* The first time we load preferences, we also read the command line
    arguments; if we re-load prefs (because the user selected a new profile)

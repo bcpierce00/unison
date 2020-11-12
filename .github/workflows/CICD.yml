@@ -151,6 +151,9 @@ jobs:
           fi
         done
 
+    - shell: bash --login --norc --noprofile -e -o pipefail -c "dos2unix '{0}' 2>/dev/null ; source '{0}' ;"
+      run: opam exec -- make test
+
     - if: steps.vars.outputs.STATIC != 'true' ## unable to build static gtk for linux or windows/Cygwin MinGW platforms
       shell: bash --login --norc --noprofile -e -o pipefail -c "dos2unix '{0}' 2>/dev/null ; source '{0}' ;"
       run: |
@@ -159,10 +162,6 @@ jobs:
         # * copy only main/first project binary
         project_exe_stem=${PROJECT_EXES%% *}
         cp "src/${project_exe_stem}${{ steps.vars.outputs.EXE_suffix }}" "${{ steps.vars.outputs.PKG_DIR }}/bin/${project_exe_stem}-gtk2${{ steps.vars.outputs.EXE_suffix }}"
-
-    - if: runner.os != 'Windows' ## [2020-09] Windows builds fail self-testing
-      shell: bash --login --norc --noprofile -e -o pipefail -c "dos2unix '{0}' 2>/dev/null ; source '{0}' ;"
-      run: opam exec -- make OSTYPE=$OSTYPE STATIC=${{ steps.vars.outputs.STATIC }} test
 
     - uses: actions/upload-artifact@v2
       with:
