@@ -81,13 +81,6 @@ let debugverbose = Trace.debug "fswatch+"
 
 let (>>=) = Lwt.bind
 
-let rec really_write o s pos len =
-  Lwt_unix.write o s pos len >>= fun l ->
-  if l = len then
-    Lwt.return ()
-  else
-    really_write o s (pos + l) (len - l)
-
 let rec really_write_substring o s pos len =
   Lwt_unix.write_substring o s pos len >>= fun l ->
   if l = len then
