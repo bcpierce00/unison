@@ -35,8 +35,6 @@ THREADS=false
 
 all:: strings.ml buildexecutable
 
-all:: INSTALL
-
 .PHONY: all clean install doinstall installtext text \
 	setupdemo-old setupdemo modifydemo demo \
 	run runbatch runt rundebug runp runtext runsort runprefer \
@@ -46,10 +44,6 @@ all:: INSTALL
 
 .DELETE_ON_ERROR:
 # to avoid problems when something fails to run
-
-INSTALL: $(NAME)$(EXEC_EXT)
-# file isn't made for OS X, so check that it's there first
-	(if [ -f $(NAME) ]; then ./$(NAME) -doc install > INSTALLATION; fi)
 
 ########################################################################
 ## Miscellaneous developer-only switches
