@@ -15,7 +15,7 @@ your architecture either on your favorite package manager or here:
    http://www.cis.upenn.edu/~bcpierce/unison
 
 If you want to play with the internals, have a look at the file
-src/ROADMAP.txt for some basic orientation.
+ROADMAP.txt for some basic orientation.
 
 Here's how to choose which version to use:
 
