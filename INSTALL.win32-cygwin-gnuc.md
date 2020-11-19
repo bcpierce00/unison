@@ -31,9 +31,9 @@
 
 ### 1.1 · General requirements
 
-For a complete installation from scratch, you will need about 2 GiB of storage (essentially all of that space used for the Cygwin installation).
+For a complete installation from scratch, you will need about 2 GiB of storage (almost all of that space is used for the Cygwin installation).
 
-A Unix-like layer such as Cygwin is needed to be able to use the GNU toolset (including 'bash', 'make', 'sed', 'patch', etc).
+Cygwin, a unix-like layer, is required in order to make use of the GNU toolset (including 'bash', 'make', 'sed', 'patch', etc).
 
 The Cygwin port of OCaml distribution is required.
 
@@ -261,7 +261,7 @@ So, for portability between Windows hosts, the GTK-UI `unison` executable must b
 [GTK~windows-building-distributing]: https://www.gtk.org/docs/installations/windows#building-and-distributing-your-application
 
 1. The GTK-UI `unison` executable should be placed into a subdirectory named *bin* within TARGET_DIR.
-2. Find all required DLLs while filtering out any DLLs already included with Windows, copying the final list of DLLs into the same *bin* directory.
+2. Find all required DLLs (filtering out any DLLs already included with Windows) and copy those DLLs into the same *bin* directory.
 
 ```bash
 # Cygwin bash shell
@@ -276,7 +276,7 @@ IFS=$'\n' DLL_list=( "$(recursive_filtered_dll_refs "${TARGET_DIR}"/bin/*.exe)" 
 for dll in ${DLL_list[@]} ; do cp "${dll}" "${TARGET_DIR}"/bin ; done
 ```
 
-3. Copy the minimally needed library support files from the build host into a subdirectory named *lib* within the TARGET_DIR (*lib* is a sibling directory to *bin*). For this `unison` build, gdk-pixbuf-2.0 is the only required library; the TARGET_ARCH_ID must match the target host... . Plus, must rewrite the pixbuf *loaders.cache* file to point at the new relative location.
+3. Copy the minimally needed library support files from the build host into a subdirectory named *lib* within the TARGET_DIR (*lib* should be a sibling directory to *bin*). For the GTK-UI `unison` build, gdk-pixbuf-2.0 is the only required library; the TARGET_ARCH_ID must match the target host... . Plus, must rewrite the pixbuf *loaders.cache* file to point at the new relative location.
 
 ```bash
 # Cygwin bash shell
@@ -284,6 +284,7 @@ for dll in ${DLL_list[@]} ; do cp "${dll}" "${TARGET_DIR}"/bin ; done
 # [GTK+ Tutorial (for Windows)] ref: http://www.tarnyko.net/repo/gtk3_build_system/tutorial/gtk3_tutorial.htm
 # [gtk-rs ~ cross platform build/bundling] ref: https://gtk-rs.org/docs-src/tutorial/cross
 # ... + gdk-pixbuf; ref: https://github.com/gtk-rs/gtk/issues/422#issuecomment-686927113
+TARGET_ARCH_ID=...
 # * copy gdk-pixbuf lib/dlls
 cp -r /usr/${TARGET_ARCH_ID}-w64-mingw32/sys-root/mingw/lib/gdk-pixbuf-2.0 "${TARGET_DIR}"/lib/
 # * update loader.cache to point to local relative installation
