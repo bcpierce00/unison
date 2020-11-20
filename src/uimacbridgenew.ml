@@ -365,14 +365,14 @@ let do_unisonInit2 () =
   let (reconItemList, thereAreEqualUpdates, dangerousPaths) =
     reconcile (findUpdates ()) in
   if not !Update.foundArchives then commitUpdates ();
-  if reconItemList = [] then
-    if thereAreEqualUpdates then begin
-      if !Update.foundArchives then commitUpdates ();
+  if reconItemList = [] then begin
+    if !Update.foundArchives then commitUpdates ();
+    if thereAreEqualUpdates then
       Trace.status
         "Replicas have been changed only in identical ways since last sync"
-    end else
+    else
       Trace.status "Everything is up to date"
-  else
+  end else
     Trace.status "Check and/or adjust selected actions; then press Go";
   Trace.status (Printf.sprintf "There are %d reconitems" (Safelist.length reconItemList));
   let stateItemList =

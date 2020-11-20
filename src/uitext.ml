@@ -914,7 +914,6 @@ let rec interactAndPropagateChanges prevItemList reconItemList
         (fun p -> alwaysDisplayAndLog ("  failed: " ^ (Path.toString p)))
         failedPaths;
     (skipped > 0, partials > 0, failures > 0, failedPaths) in
-  if not !Update.foundArchives then Update.commitUpdates ();
   if updatesToDo = 0 then begin
     (* BCP (3/09): We need to commit the archives even if there are
        no updates to propagate because some files (in fact, if we've
@@ -1060,7 +1059,10 @@ let synchronizeOnce ?wantWatcher ?skipRecentFiles pathsOpt =
   let (reconItemList, anyEqualUpdates, dangerousPaths) =
     Recon.reconcileAll ~allowPartial:true updates in
 
+  if not !Update.foundArchives then Update.commitUpdates ();
   if reconItemList = [] then begin
+    if !Update.foundArchives && Prefs.read Uicommon.repeat = "" then
+      Update.commitUpdates ();
     (if anyEqualUpdates then
       Trace.status ("Nothing to do: replicas have been changed only "
                     ^ "in identical ways since last sync.")
