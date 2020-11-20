@@ -216,8 +216,8 @@ static MyController *me; // needed by reloadTable and displayStatus, below
 - (void) updateFontDisplay {
   NSFont *detailsFont = [detailsTextView font];
   NSFont *diffFont = [diffView font];
-  [detailsFontLabel setStringValue:[NSString stringWithFormat:@"%@ : %d", [detailsFont displayName], (NSInteger) [detailsFont pointSize]]];
-  [diffFontLabel setStringValue:[NSString stringWithFormat:@"%@ : %d", [diffFont displayName], (NSInteger) [diffFont pointSize]]];
+  [detailsFontLabel setStringValue:[NSString stringWithFormat:@"%@ : %ld", [detailsFont displayName], (long) [detailsFont pointSize]]];
+  [diffFontLabel setStringValue:[NSString stringWithFormat:@"%@ : %ld", [diffFont displayName], (long) [diffFont pointSize]]];
 }
 
 - (void)chooseProfiles
@@ -350,7 +350,7 @@ static MyController *me; // needed by reloadTable and displayStatus, below
 
 - (void)updateTableViewSelection
 {
-    int n = [tableView numberOfSelectedRows];
+    NSInteger n = [tableView numberOfSelectedRows];
     if (n == 1) [self displayDetails:[tableView itemAtRow:[tableView selectedRow]]];
     else [self clearDetails];
 }
@@ -420,7 +420,7 @@ CAMLprim value unisonInit1Complete(value v)
 
                 [self raisePasswordWindow:[prompt getField:0 withType:'S']];
         } @catch (NSException *ex) {
-            NSRunAlertPanel(@"Connection Error", [ex description], @"OK", nil, nil);
+            NSRunAlertPanel(@"Connection Error", @"%@", @"OK", nil, nil, [ex description]);
                 [self chooseProfiles];
                 return;
         }
@@ -451,7 +451,7 @@ CAMLprim value unisonInit1Complete(value v)
         return;
     }
     if ((long)ocamlCall("iS", "unisonAuthenticityMsg", prompt)) {
-        int i = NSRunAlertPanel(@"New host",prompt,@"Yes",@"No",nil);
+        NSInteger i = NSRunAlertPanel(@"New host",@"%@",@"Yes",@"No",nil,prompt);
         if (i == NSAlertDefaultReturn) {
                         ocamlCall("x@s", "openConnectionReply", preconn, "yes");
                         prompt = ocamlCall("S@", "openConnectionPrompt", preconn);
@@ -473,7 +473,7 @@ CAMLprim value unisonInit1Complete(value v)
             return;
         }
         else {
-            NSLog(@"Unrecognized response '%d' from NSRunAlertPanel",i);
+            NSLog(@"Unrecognized response '%ld' from NSRunAlertPanel",(long)i);
                         ocamlCall("x@", "openConnectionCancel", preconn);
             return;
         }
@@ -719,7 +719,7 @@ CAMLprim value reloadTable(value row)
   return Val_unit;
 }
 
-- (int)outlineView:(NSOutlineView *)outlineView numberOfChildrenOfItem:(id)item {
+- (NSUInteger)outlineView:(NSOutlineView *)outlineView numberOfChildrenOfItem:(id)item {
         if (item == nil) item = rootItem;
         return [[item children] count];
 }
@@ -796,7 +796,7 @@ static NSDictionary *_SmallGreyAttributes = nil;
     return reconItems;
 }
 
-- (int)tableMode
+- (NSInteger)tableMode
 {
         return [tableModeSelector selectedSegment];
 }
@@ -809,7 +809,7 @@ static NSDictionary *_SmallGreyAttributes = nil;
 
 - (void)initTableMode
 {
-        int mode = [[NSUserDefaults standardUserDefaults] integerForKey:@"TableLayout"] - 1;
+        long mode = [[NSUserDefaults standardUserDefaults] integerForKey:@"TableLayout"] - 1;
         if (mode == -1) mode = 1;
         [tableModeSelector setSelectedSegment:mode];
 }
@@ -833,7 +833,7 @@ static NSDictionary *_SmallGreyAttributes = nil;
                 // NSLog(@"Expanding conflictedParent: %@", [parent fullPath]);
                 [tableView expandItem:parent expandChildren:NO];
                 NSArray *children = [parent children];
-                int i = 0, count = [children count];
+                NSUInteger i = 0, count = [children count];
                 for (;i < count; i++) {
                         id child = [children objectAtIndex:i];
                         if ([child isKindOfClass:[ParentReconItem class]]) [self expandConflictedParent:child];
@@ -843,7 +843,7 @@ static NSDictionary *_SmallGreyAttributes = nil;
 
 - (void)updateForChangedItems
 {
-        int tableMode = [self tableMode];
+        NSInteger tableMode = [self tableMode];
 
         [rootItem release];
         ParentReconItem *root = rootItem = [[ParentReconItem alloc] init];
@@ -857,7 +857,7 @@ static NSDictionary *_SmallGreyAttributes = nil;
                 [root release];
         }
 
-    int j = 0, n =[reconItems count];
+    NSUInteger j = 0, n =[reconItems count];
     for (; j<n; j++) {
                 [root addChild:[reconItems objectAtIndex:j] nested:(tableMode != 0)];
     }
@@ -1193,7 +1193,7 @@ CAMLprim value fatalError(value s)
 }
 
 - (void)fatalError:(NSString *)msg {
-        NSRunAlertPanel(@"Fatal error", msg, @"Exit", nil, nil);
+        NSRunAlertPanel(@"Fatal error", @"%@", @"Exit", nil, nil, msg);
         exit(1);
 }
 
@@ -1213,8 +1213,8 @@ CAMLprim value warnPanel(value s)
 }
 
 - (void)warnPanel:(NSString *)msg {
-  int warnVal = NSRunAlertPanel(@"Warning", msg, @"Proceed", @"Exit", nil);
-  NSLog(@"Warning Panel Returned %d",warnVal);
+  NSInteger warnVal = NSRunAlertPanel(@"Warning", @"%@", @"Proceed", @"Exit", nil, msg);
+  NSLog(@"Warning Panel Returned %ld",(long)warnVal);
   if (warnVal == NSAlertAlternateReturn) {
     shouldExitAfterWarning = YES;
   } else {
@@ -1228,7 +1228,7 @@ CAMLprim value warnPanel(value s)
 - (NSString *)trim
 {
         NSCharacterSet *ws = [NSCharacterSet whitespaceCharacterSet];
-        int len = [self length], i = len;
+        NSUInteger len = [self length], i = len;
         while (i && [ws characterIsMember:[self characterAtIndex:i-1]]) i--;
         return (i == len) ? self : [self substringToIndex:i];
 }

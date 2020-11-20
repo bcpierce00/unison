@@ -27,9 +27,9 @@
 - (void)setSelectedObjects:(NSArray *)selectedObjects
 {
         NSMutableIndexSet *set = [NSMutableIndexSet indexSet];
-        int i = [selectedObjects count];
+        NSUInteger i = [selectedObjects count];
         while (i--) {
-                int index = [self rowForItem:[selectedObjects objectAtIndex:i]];
+                NSInteger index = [self rowForItem:[selectedObjects objectAtIndex:i]];
                 if (index >= 0)	[set addIndex:index];
         }
         [self selectRowIndexes:set byExtendingSelection:NO];
@@ -47,7 +47,7 @@
         return bodyHeight / ([self rowHeight] + 2.0);
 }
 
-- (BOOL)_canAcceptRowCountWithoutScrolling:(int)rows
+- (BOOL)_canAcceptRowCountWithoutScrolling:(NSInteger)rows
 {
         return ([self numberOfRows] + rows) <= [self rowCapacityWithoutScrolling];
 }
@@ -56,7 +56,7 @@
 {
         BOOL didExpand = NO;
         id dataSource = [self dataSource];
-        int count = [dataSource outlineView:self numberOfChildrenOfItem:parent];
+        NSInteger count = [dataSource outlineView:self numberOfChildrenOfItem:parent];
         if (level == 0) {
                 if (count && ([self isItemExpanded:parent] || [self _canAcceptRowCountWithoutScrolling:count])) {
                         [self expandItem:parent expandChildren:NO];
@@ -173,7 +173,7 @@
                 last = item;
     }
     if (numSelected>0) {
-                int nextRow = [self rowForItem:last] + 1;
+                long nextRow = [self rowForItem:last] + 1;
         if (numSelected == 1 && [self numberOfRows] > nextRow && c!='d') {
             // Move to next row, unless already at last row, or if more than one row selected
             [self selectRowIndexes:[NSIndexSet indexSetWithIndex:nextRow] byExtendingSelection:NO];
