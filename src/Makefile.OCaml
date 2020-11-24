@@ -427,7 +427,7 @@ fswatch.cmi : ubase/prefs.cmi
 	$(OCAMLOPT) $(CAMLFLAGS) -c $(CWD)/$<
 
 %.o %.obj: %.c
-	@echo "$(OCAMLOPT): $< ---> $@"
+	@echo "$(CAMLC): $< ---> $@"
 	$(CAMLC) $(CAMLFLAGS) -ccopt $(OUTPUT_SEL)$(CWD)/$@ -c $(CWD)/$<
 
 $(NAME)$(EXEC_EXT): $(CAMLOBJS) $(COBJS)
