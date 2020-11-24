@@ -142,11 +142,6 @@ Callback.register "unisonGetVersion" unisonGetVersion;;
 (* Returns a string option: command line profile, if any *)
 let unisonInit0() =
   ignore (Gc.set {(Gc.get ()) with Gc.max_overhead = 150});
-  (* Install an appropriate function for finding preference files.  (We put
-     this in Util just because the Prefs module lives below the Os module in the
-     dependency hierarchy, so Prefs can't call Os directly.) *)
-  Util.supplyFileInUnisonDirFn
-    (fun n -> Os.fileInUnisonDir(n));
   (* Display status in GUI instead of on stderr *)
   let formatStatus major minor = (Util.padto 30 (major ^ "  ")) ^ minor in
   Trace.messageDisplayer := displayStatus;

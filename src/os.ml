@@ -305,19 +305,10 @@ let fullfingerprintEqual (fp, rfp) (fp', rfp') =
 
 (* Gives the fspath of the archive directory on the machine, depending on    *)
 (* which OS we use                                                           *)
-let unisonDir =
-  try
-    System.fspathFromString (System.getenv "UNISON")
-  with Not_found ->
-    let genericName =
-      Util.fileInHomeDir (Printf.sprintf ".%s" Uutil.myName) in
-    if Osx.isMacOSX && not (System.file_exists genericName) then
-      Util.fileInHomeDir "Library/Application Support/Unison"
-    else
-      genericName
+let unisonDir = Util.unisonDir
 
 (* build a fspath representing an archive child path whose name is given     *)
-let fileInUnisonDir str = System.fspathConcat unisonDir str
+let fileInUnisonDir = Util.fileInUnisonDir
 
 (* Make sure archive directory exists                                        *)
 let createUnisonDir() =

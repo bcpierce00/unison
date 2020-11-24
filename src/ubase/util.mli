@@ -103,10 +103,7 @@ val debug : string -> (unit->unit) -> unit
 val warnPrinter : (string -> unit) option ref
 val warn : string -> unit
 
-(* Someone should supply a function here that will convert a simple filename
-   to a filename in the unison directory *)
-val supplyFileInUnisonDirFn : (string -> System.fspath) -> unit
-(* Use it like this: *)
+val unisonDir : System.fspath
 val fileInUnisonDir : string -> System.fspath
 
 (* Printing and formatting functions *)
