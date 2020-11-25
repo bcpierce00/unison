@@ -40,6 +40,8 @@ val retry : int Prefs.t
 (* User preference: confirmation before committing merge results *)
 val confirmmerge : bool Prefs.t
 
+val runTestsPrefName : string
+
 (* Format the information about current contents of a path in one replica (the second argument
    is used as a separator) *)
 val details2string : Common.reconItem -> string -> string
@@ -115,3 +117,12 @@ val exitCode: bool * bool -> int
 
 (* Initialization *)
 val testFunction : (unit->unit) ref
+
+(* Profile scanning and selection *)
+type profileInfo = {roots:string list; label:string option; key:string option}
+
+val profileKeymap : (string * profileInfo) option array
+
+val profilesAndRoots : (string * profileInfo) list ref
+
+val scanProfiles : unit -> unit
