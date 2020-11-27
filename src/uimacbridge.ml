@@ -19,7 +19,7 @@ type stateItem = { mutable ri : reconItem;
 let theState = ref [| |];;
 let unsynchronizedPaths = ref None;;
 
-let unisonDirectory() = System.fspathToPrintString Os.unisonDir
+let unisonDirectory() = System.fspathToPrintString Util.unisonDir
 ;;
 Callback.register "unisonDirectory" unisonDirectory;;
 

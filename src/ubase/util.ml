@@ -493,7 +493,7 @@ let fileMaybeRelToHomeDir n =
   else System.fspathFromString n
 
 (*****************************************************************************)
-(*           "Upcall" for building pathnames in the .unison dir              *)
+(*                       .unison dir                                         *)
 (*****************************************************************************)
 
 external isMacOSXPred : unit -> bool = "isMacOSX"

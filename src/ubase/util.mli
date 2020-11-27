@@ -103,7 +103,11 @@ val debug : string -> (unit->unit) -> unit
 val warnPrinter : (string -> unit) option ref
 val warn : string -> unit
 
+(* Gives the fspath of the archive directory on the machine, depending on    *)
+(* which OS we use                                                           *)
 val unisonDir : System.fspath
+
+(* build a fspath representing an archive child path whose name is given     *)
 val fileInUnisonDir : string -> System.fspath
 
 (* Printing and formatting functions *)

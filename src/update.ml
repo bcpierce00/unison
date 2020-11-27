@@ -279,7 +279,7 @@ let (archiveNameOnRoot
        Lwt.return
          (name,
           Os.myCanonicalHostName (),
-          System.file_exists (Os.fileInUnisonDir name)))
+          System.file_exists (Util.fileInUnisonDir name)))
 
 
 (*****************************************************************************)
@@ -378,7 +378,7 @@ let storeArchiveLocal fspath thisRoot archive hash magic properties =
 let removeArchiveLocal ((fspath: Fspath.t), (v: archiveVersion)): unit Lwt.t =
   Lwt.return
     (let (name,_) = archiveName fspath v in
-     let fspath = Os.fileInUnisonDir name in
+     let fspath = Util.fileInUnisonDir name in
      debug (fun() ->
        Util.msg "Removing archive %s\n" (System.fspathToDebugString fspath));
      Util.convertUnixErrorsToFatal "removing archive" (fun () ->
@@ -397,8 +397,8 @@ let commitArchiveLocal ((fspath: Fspath.t), ())
   Lwt.return
     (let (fromname,_) = archiveName fspath ScratchArch in
      let (toname,_) = archiveName fspath NewArch in
-     let ffrom = Os.fileInUnisonDir fromname in
-     let fto = Os.fileInUnisonDir toname in
+     let ffrom = Util.fileInUnisonDir fromname in
+     let fto = Util.fileInUnisonDir toname in
      Util.convertUnixErrorsToFatal
        "committing"
          (fun () -> System.rename ffrom fto))
@@ -416,8 +416,8 @@ let postCommitArchiveLocal (fspath,())
   Lwt.return
     (let (fromname,_) = archiveName fspath NewArch in
      let (toname, thisRoot) = archiveName fspath MainArch in
-     let ffrom = Os.fileInUnisonDir fromname in
-     let fto = Os.fileInUnisonDir toname in
+     let ffrom = Util.fileInUnisonDir fromname in
+     let fto = Util.fileInUnisonDir toname in
      debug (fun() ->
        Util.msg "Copying archive %s to %s\n"
          (System.fspathToDebugString ffrom)
@@ -438,7 +438,7 @@ let postCommitArchiveLocal (fspath,())
          close_in inFd;
          close_out outFd
        end;
-       let arcFspath = Os.fileInUnisonDir toname in
+       let arcFspath = Util.fileInUnisonDir toname in
        let info = Fileinfo.get' arcFspath in
        Hashtbl.replace archiveInfoCache thisRoot info))
 
@@ -660,7 +660,7 @@ let rec populateCacheFromArchiveRec path arch =
 
 let populateCacheFromArchive fspath arch =
   let (cacheFilename, _) = archiveName fspath FPCache in
-  let cacheFile = Os.fileInUnisonDir cacheFilename in
+  let cacheFile = Util.fileInUnisonDir cacheFilename in
   Fpcache.init true (Prefs.read ignoreArchives) cacheFile;
   populateCacheFromArchiveRec Path.empty arch;
   Fpcache.finish ()
@@ -692,7 +692,7 @@ let loadArchiveOnRoot: Common.root -> bool -> (int * string) option Lwt.t =
     "loadArchive"
     (fun (fspath, optimistic) ->
        let (arcName,thisRoot) = archiveName fspath MainArch in
-       let arcFspath = Os.fileInUnisonDir arcName in
+       let arcFspath = Util.fileInUnisonDir arcName in
 
        if Prefs.read ignoreArchives then begin
          foundArchives := false;
@@ -703,16 +703,16 @@ let loadArchiveOnRoot: Common.root -> bool -> (int * string) option Lwt.t =
            (* If the archive is not in a stable state, we need to
               perform archive recovery.  So, the optimistic loading
               fails. *)
-           System.file_exists (Os.fileInUnisonDir newArcName)
+           System.file_exists (Util.fileInUnisonDir newArcName)
              ||
            let (lockFilename, _) = archiveName fspath Lock in
-           let lockFile = Os.fileInUnisonDir lockFilename in
+           let lockFile = Util.fileInUnisonDir lockFilename in
            Lock.is_locked lockFile
          then
            Lwt.return None
          else
            let (arcName,thisRoot) = archiveName fspath MainArch in
-           let arcFspath = Os.fileInUnisonDir arcName in
+           let arcFspath = Util.fileInUnisonDir arcName in
            let info = Fileinfo.get' arcFspath in
            if archiveUnchanged fspath info then
              (* The archive is unchanged.  So, we don't need to do
@@ -767,7 +767,7 @@ let loadArchives (optimistic: bool) =
       ^ "     (in case they may be useful for debugging).\n"
       ^ "     The archive files on this machine are in the directory\n"
       ^ (Printf.sprintf "       %s\n"
-           (System.fspathToPrintString Os.unisonDir))
+           (System.fspathToPrintString Util.unisonDir))
       ^ "     and have names of the form\n"
       ^ "       arXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n"
       ^ "     where the X's are hexadecimal numbers.\n"
@@ -781,7 +781,7 @@ let loadArchives (optimistic: bool) =
 
 let lockArchiveLocal fspath =
   let (lockFilename, _) = archiveName fspath Lock in
-  let lockFile = Os.fileInUnisonDir lockFilename in
+  let lockFile = Util.fileInUnisonDir lockFilename in
   if Lock.acquire lockFile then
     None
   else
@@ -794,7 +794,7 @@ let lockArchiveOnRoot: Common.root -> unit -> string option Lwt.t =
 
 let unlockArchiveLocal fspath =
   Lock.release
-    (Os.fileInUnisonDir (fst (archiveName fspath Lock)))
+    (Util.fileInUnisonDir (fst (archiveName fspath Lock)))
 
 let unlockArchiveOnRoot: Common.root -> unit -> unit Lwt.t =
   Remote.registerRootCmd
@@ -886,10 +886,10 @@ let archivesExistOnRoot: Common.root -> unit -> (bool * bool) Lwt.t =
     (fun (fspath,rootsName) ->
        let (oldname,_) = archiveName fspath MainArch in
        let oldexists =
-         System.file_exists (Os.fileInUnisonDir oldname) in
+         System.file_exists (Util.fileInUnisonDir oldname) in
        let (newname,_) = archiveName fspath NewArch in
        let newexists =
-         System.file_exists (Os.fileInUnisonDir newname) in
+         System.file_exists (Util.fileInUnisonDir newname) in
        Lwt.return (oldexists, newexists))
 
 let forall = Safelist.for_all (fun x -> x)
@@ -1971,7 +1971,7 @@ let t1 = Unix.gettimeofday () in
       showStatus = not !Trace.runningasserver }
   in
   let (cacheFilename, _) = archiveName fspath FPCache in
-  let cacheFile = Os.fileInUnisonDir cacheFilename in
+  let cacheFile = Util.fileInUnisonDir cacheFilename in
   Fpcache.init scanInfo.fastCheck (Prefs.read ignoreArchives) cacheFile;
   let unchangedOptions =
     try
@@ -2123,7 +2123,7 @@ let prepareCommitLocal (fspath, magic) =
   let archiveHash = checkArchive true [] archive 0 in
   let props = getArchiveProps root in
   storeArchiveLocal
-    (Os.fileInUnisonDir newName) root archive archiveHash magic props;
+    (Util.fileInUnisonDir newName) root archive archiveHash magic props;
   Lwt.return (Some archiveHash)
 
 let prepareCommitOnRoot

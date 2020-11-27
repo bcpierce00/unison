@@ -303,22 +303,15 @@ let fullfingerprintEqual (fp, rfp) (fp', rfp') =
 (*                           UNISON DIRECTORY                                *)
 (*****************************************************************************)
 
-(* Gives the fspath of the archive directory on the machine, depending on    *)
-(* which OS we use                                                           *)
-let unisonDir = Util.unisonDir
-
-(* build a fspath representing an archive child path whose name is given     *)
-let fileInUnisonDir = Util.fileInUnisonDir
-
 (* Make sure archive directory exists                                        *)
 let createUnisonDir() =
-  try ignore (System.stat unisonDir)
+  try ignore (System.stat Util.unisonDir)
   with Unix.Unix_error(_) ->
     Util.convertUnixErrorsToFatal
       (Printf.sprintf "creating unison directory %s"
-         (System.fspathToPrintString unisonDir))
+         (System.fspathToPrintString Util.unisonDir))
       (fun () ->
-         ignore (System.mkdir unisonDir 0o700))
+         ignore (System.mkdir Util.unisonDir 0o700))
 
 (*****************************************************************************)
 (*                           TEMPORARY FILES                                 *)
