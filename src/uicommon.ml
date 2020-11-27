@@ -546,7 +546,7 @@ let scanProfiles () =
           (f, info))
        (Safelist.filter (fun name -> not (   Util.startswith name ".#"
                                           || Util.startswith name Os.tempFilePrefix))
-          (Files.ls Os.unisonDir "*.prf")))
+          (Files.ls Util.unisonDir "*.prf")))
 
 (* ---- *)
 

@@ -1225,7 +1225,7 @@ let getProfile default =
     Trace.log (Format.sprintf "You have too many profiles in %s \
                 for interactive selection. Please specify profile \
                 or roots on command line.\n"
-                (System.fspathToPrintString Os.unisonDir));
+                (System.fspathToPrintString Util.unisonDir));
     Trace.log "The profile names are:\n";
     Safelist.iter (fun (p, _) -> Trace.log (Format.sprintf "  %s\n" p))
       !Uicommon.profilesAndRoots;

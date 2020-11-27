@@ -191,12 +191,6 @@ let init () = begin
     exit 0
   with Not_found -> () end;
 
-  (* Install an appropriate function for finding preference files.  (We put
-     this here just because the Prefs module lives below the Os module in the
-     dependency hierarchy, so Prefs can't call Os directly.) *)
-  Util.supplyFileInUnisonDirFn
-    (fun n -> Os.fileInUnisonDir(n));
-
   (* Start a server if requested *)
   if Util.StringMap.mem serverPrefName argv then begin
     catch_all (fun () ->

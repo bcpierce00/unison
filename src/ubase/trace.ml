@@ -113,10 +113,10 @@ let logging =
 
 let logfile =
   Prefs.createFspath "logfile"
-    (Util.fileInHomeDir "unison.log")
+    (Util.fileInUnisonDir "unison.log")
     "!logfile name"
     "By default, logging messages will be appended to the file
-     \\verb|unison.log| in your HOME directory.  Set this preference if
+     \\verb|unison.log| in your .unison directory.  Set this preference if
      you prefer another file.  It can be a path relative to your HOME directory.
      Sending SIGUSR1 will close the logfile; the logfile will be re-opened (and
      created, if needed) automatically, to allow for log rotation."

@@ -493,14 +493,22 @@ let fileMaybeRelToHomeDir n =
   else System.fspathFromString n
 
 (*****************************************************************************)
-(*           "Upcall" for building pathnames in the .unison dir              *)
+(*                       .unison dir                                         *)
 (*****************************************************************************)
 
-let fileInUnisonDirFn = ref None
+external isMacOSXPred : unit -> bool = "isMacOSX"
 
-let supplyFileInUnisonDirFn f = fileInUnisonDirFn := Some(f)
+let isMacOSX = isMacOSXPred ()
 
-let fileInUnisonDir n =
-   match !fileInUnisonDirFn with
-     None -> assert false
-   | Some(f) -> f n
+let unisonDir =
+  try
+    System.fspathFromString (System.getenv "UNISON")
+  with Not_found ->
+    let genericName =
+      fileInHomeDir (Printf.sprintf ".%s" ProjectInfo.myName) in
+    if isMacOSX && not (System.file_exists genericName) then
+      fileInHomeDir "Library/Application Support/Unison"
+    else
+      genericName
+
+let fileInUnisonDir str = System.fspathConcat unisonDir str

@@ -139,7 +139,7 @@ let backupDirectory () =
         if Prefs.read backupdir <> ""
         then Fspath.canonize (Some (Prefs.read backupdir))
         else Fspath.canonize
-               (Some (System.fspathToString (Os.fileInUnisonDir "backup"))))
+               (Some (System.fspathToString (Util.fileInUnisonDir "backup"))))
 
 let backupcurrent =
   Pred.create "backupcurr" ~advanced:true
