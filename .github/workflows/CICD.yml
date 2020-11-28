@@ -92,6 +92,8 @@ jobs:
         mkdir -p '${{ steps.vars.outputs.STAGING_DIR }}'
         mkdir -p '${{ steps.vars.outputs.PKG_DIR }}'
         mkdir -p '${{ steps.vars.outputs.PKG_DIR }}'/bin
+        # initial opam config
+        echo "default-compiler: \"ocaml-system\" { = \"${{ steps.vars.outputs.OCAML_VARIANT }}\" } | \"ocaml-base-compiler\" { = \"${{ steps.vars.outputs.OCAML_VARIANT }}\" }" > ~/.opamrc
 
     - name: Enable/config MSVC environment (if/when needed)
       uses: ilammy/msvc-dev-cmd@v1.3.0
