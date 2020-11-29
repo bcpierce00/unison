@@ -106,7 +106,7 @@ jobs:
       id: cache-opam
       with:
         path: ~/.opam
-        key: v1-${{ matrix.job.os }}-opam-${{ matrix.job.ocaml-version }}
+        key: v2-${{ matrix.job.os }}-opam-${{ matrix.job.ocaml-version }}
 
     - name: Use OCaml ${{ matrix.job.ocaml-version }}
       uses: CICD-tools/ghactions-ocaml.toolchain@dev
