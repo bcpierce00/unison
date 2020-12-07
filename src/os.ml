@@ -39,7 +39,11 @@ let serverHostName = localCanonicalHostName
 let myCanonicalHostName () =
   if !Trace.runningasserver then serverHostName else Prefs.read clientHostName
 
-let tempFilePrefix = ".unison."
+let tempFilePrefix =
+  match Util.osType with
+  | `Win32 -> "~$unison."
+  | _ -> ".~unison."
+
 let tempFileSuffixFixed = ".unison.tmp"
 let tempFileSuffix = ref tempFileSuffixFixed
 let includeInTempNames s =
