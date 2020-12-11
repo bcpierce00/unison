@@ -178,6 +178,7 @@ endif
 MINOSXVERSION=10.6
 ifeq ($(OSARCH),osx)
   CAMLFLAGS+=-ccopt -mmacosx-version-min=$(MINOSXVERSION)
+  XCODEFLAGS=-arch $(shell uname -m)
 endif
 
 .PHONY: macexecutable
