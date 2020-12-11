@@ -93,6 +93,12 @@ jobs:
         mkdir -p '${{ steps.vars.outputs.PKG_DIR }}'
         mkdir -p '${{ steps.vars.outputs.PKG_DIR }}'/bin
 
+    - name: Select Xcode version 11.7 for OCaml 4.05 (macOS)
+      if: runner.os == 'macOS' && matrix.job.ocaml-version == '4.05.0'
+      ## Xcode >= 12 breaks building lablgtk with OCaml 4.05 (a bug fixed in OCaml >= 4.06)
+      run: |
+        sudo xcode-select -s "/Applications/Xcode_11.7.app"
+
     - name: Enable/config MSVC environment (if/when needed)
       uses: ilammy/msvc-dev-cmd@v1.3.0
       with:
