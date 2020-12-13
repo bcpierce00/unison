@@ -13,7 +13,7 @@
                 <outlet property="delegate" destination="209" id="571"/>
             </connections>
         </customObject>
-        <window title="Unison" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" visibleAtLaunch="NO" frameAutosaveName="mainWindow" animationBehavior="default" id="21" userLabel="Window">
+        <window title="Unison" allowsToolTipsWhenApplicationIsInactive="NO" autorecalculatesKeyViewLoop="NO" releasedWhenClosed="NO" visibleAtLaunch="NO" frameAutosaveName="mainWindow" animationBehavior="default" toolbarStyle="expanded" id="21" userLabel="Window">
             <windowStyleMask key="styleMask" titled="YES" closable="YES" miniaturizable="YES" resizable="YES"/>
             <windowPositionMask key="initialPositionMask" leftStrut="YES" topStrut="YES"/>
             <rect key="contentRect" x="0.0" y="364" width="480" height="360"/>
