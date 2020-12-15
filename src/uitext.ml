@@ -742,7 +742,7 @@ let doTransport reconItemList =
          Uutil.Filesize.zero items)
   in
   let t0 = Unix.gettimeofday () in
-  let showProgress i bytes dbg =
+  let calcProgress i bytes dbg =
     let i = Uutil.File.toLine i in
     let item = items.(i) in
     item.bytesTransferred <- Uutil.Filesize.add item.bytesTransferred bytes;
@@ -759,11 +759,27 @@ let doTransport reconItemList =
         let t = truncate ((t1 -. t0) *. (100. -. v) /. v +. 0.5) in
         Format.sprintf "%02d:%02d" (t / 60) (t mod 60)
     in
-    Util.set_infos
-      (Format.sprintf "%s  %s ETA" (Util.percent2string v) remTime)
+    t1, Format.sprintf "%s  %s ETA" (Util.percent2string v) remTime
   in
-  if not (Prefs.read Trace.terse) && (Prefs.read Trace.debugmods = []) then
-    Uutil.setProgressPrinter showProgress;
+  let logOnly s =
+    let temp = !Trace.sendLogMsgsToStderr in
+    Trace.sendLogMsgsToStderr := false;
+    Trace.log (s ^ "\n");
+    Trace.sendLogMsgsToStderr := temp
+  in
+  let tlog = ref t0 in
+  let showProgress i bytes dbg =
+    let t1, s = calcProgress i bytes dbg in
+    if not (Prefs.read Trace.terse) && (Prefs.read Trace.debugmods = []) then
+      Util.set_infos s;
+    if (Prefs.read Trace.terse) || (Prefs.read Globals.batch) then
+      if (t1 -. !tlog) >= 60. then
+      begin
+        logOnly s;
+        tlog := t1
+      end
+  in
+  Uutil.setProgressPrinter showProgress;
 
   Transport.logStart ();
   let fFailedPaths = ref [] in
