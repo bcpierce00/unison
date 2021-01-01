@@ -59,7 +59,8 @@ jobs:
         MinGW_ARCH='x86_64' ; case '${{ matrix.job.ocaml-version }}' in *+mingw32*) MinGW_ARCH='i686' ;; *+mingw64*) MinGW_ARCH='x86_64' ;; esac
         MSVC_ARCH='' ; case '${{ matrix.job.ocaml-version }}' in *+msvc32*) MSVC_ARCH='x86' ;; *+msvc64*) MSVC_ARCH='x64' ;; esac
         STATIC='false' ; case '${{ matrix.job.ocaml-version }}' in *+musl*) STATIC='true' ;; esac
-        outputs EXE_suffix MinGW_ARCH MSVC_ARCH STATIC
+        MACOSX_DEPLOYMENT_TARGET='' ; case '${{ matrix.job.os }}' in macos-*) MACOSX_DEPLOYMENT_TARGET='10.6' ;; esac
+        outputs EXE_suffix MinGW_ARCH MSVC_ARCH STATIC MACOSX_DEPLOYMENT_TARGET
         # staging environment
         STAGING_DIR='_staging'
         outputs STAGING_DIR
