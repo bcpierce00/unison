@@ -113,11 +113,11 @@ let logging =
 
 let logfile =
   Prefs.createFspath "logfile"
-    (Util.fileInUnisonDir "unison.log")
+    (System.fspathFromString "unison.log")
     "!logfile name"
     "By default, logging messages will be appended to the file
      \\verb|unison.log| in your .unison directory.  Set this preference if
-     you prefer another file.  It can be a path relative to your HOME directory.
+     you prefer another file.  It can be a path relative to your .unison directory.
      Sending SIGUSR1 will close the logfile; the logfile will be re-opened (and
      created, if needed) automatically, to allow for log rotation."
 
@@ -143,7 +143,7 @@ let rec getLogch() =
   match !logch with
     None ->
       let prefstr = System.fspathToString (Prefs.read logfile) in
-      let file = Util.fileMaybeRelToHomeDir prefstr in
+      let file = Util.fileMaybeRelToUnisonDir prefstr in
       let ch =
         System.open_out_gen [Open_wronly; Open_creat; Open_append] 0o600 file in
       logch := Some (ch, file);
