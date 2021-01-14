@@ -230,7 +230,7 @@ let rec termInput fdTerm fdInput =
       Lwt.return None
     else
       let query = Bytes.sub_string buf 0 len in
-      if query = "\r\n" then
+      if query = "\r\n" || query = "\n" || query = "\r" then
         readPrompt ()
       else
         Lwt.return (Some query)
@@ -252,7 +252,7 @@ let handlePasswordRequests fdTerm callback =
         Lwt.return ()
       else
         let query = Bytes.sub_string buf 0 len in
-        if query = "\r\n" then
+        if query = "\r\n" || query = "\n" || query = "\r" then
           loop ()
         else begin
           let response = callback query in
