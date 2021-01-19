@@ -93,6 +93,13 @@ let canSetTime f =
    have access to the lower 32 bits on 32bit systems... *)
 let hasInodeNumbers () = isNotWindows
 
+(* Cygwin can apparently provide correct ctime.
+ *
+ * With current OCaml Unix library, ctime is not correct on Win32.
+ * This can change in future, in which case [hasCorrectCTime] should
+ * be made dependent on OCaml version. *)
+let hasCorrectCTime = isNotWindows
+
 (****)
 
 type terminalStateFunctions =

@@ -230,16 +230,250 @@ CAMLprim value win_open (value path, value wpath, value flags, value perm) {
   CAMLreturn(win_alloc_handle(h));
 }
 
+
+/* Parts of code in the following section are originally copied from libuv.
+ *
+ * libuv
+ * Copyright Joyent, Inc. and other Node contributors. All rights reserved.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to
+ * deal in the Software without restriction, including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+ * sell copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+ * IN THE SOFTWARE.
+ */
+/* BEGIN section originally copied from libuv win/winapi.h */
+
+typedef struct _IO_STATUS_BLOCK {
+  union {
+    NTSTATUS Status;
+    PVOID Pointer;
+  };
+  ULONG_PTR Information;
+} IO_STATUS_BLOCK, *PIO_STATUS_BLOCK;
+
+typedef struct _FILE_BASIC_INFORMATION {
+  LARGE_INTEGER CreationTime;
+  LARGE_INTEGER LastAccessTime;
+  LARGE_INTEGER LastWriteTime;
+  LARGE_INTEGER ChangeTime;
+  DWORD FileAttributes;
+} FILE_BASIC_INFORMATION, *PFILE_BASIC_INFORMATION;
+
+typedef struct _FILE_STANDARD_INFORMATION {
+  LARGE_INTEGER AllocationSize;
+  LARGE_INTEGER EndOfFile;
+  ULONG         NumberOfLinks;
+  BOOLEAN       DeletePending;
+  BOOLEAN       Directory;
+} FILE_STANDARD_INFORMATION, *PFILE_STANDARD_INFORMATION;
+
+typedef struct _FILE_INTERNAL_INFORMATION {
+  LARGE_INTEGER IndexNumber;
+} FILE_INTERNAL_INFORMATION, *PFILE_INTERNAL_INFORMATION;
+
+typedef struct _FILE_EA_INFORMATION {
+  ULONG EaSize;
+} FILE_EA_INFORMATION, *PFILE_EA_INFORMATION;
+
+typedef struct _FILE_ACCESS_INFORMATION {
+  ACCESS_MASK AccessFlags;
+} FILE_ACCESS_INFORMATION, *PFILE_ACCESS_INFORMATION;
+
+typedef struct _FILE_POSITION_INFORMATION {
+  LARGE_INTEGER CurrentByteOffset;
+} FILE_POSITION_INFORMATION, *PFILE_POSITION_INFORMATION;
+
+typedef struct _FILE_MODE_INFORMATION {
+  ULONG Mode;
+} FILE_MODE_INFORMATION, *PFILE_MODE_INFORMATION;
+
+typedef struct _FILE_ALIGNMENT_INFORMATION {
+  ULONG AlignmentRequirement;
+} FILE_ALIGNMENT_INFORMATION, *PFILE_ALIGNMENT_INFORMATION;
+
+typedef struct _FILE_NAME_INFORMATION {
+  ULONG FileNameLength;
+  WCHAR FileName[1];
+} FILE_NAME_INFORMATION, *PFILE_NAME_INFORMATION;
+
+typedef struct _FILE_ALL_INFORMATION {
+  FILE_BASIC_INFORMATION     BasicInformation;
+  FILE_STANDARD_INFORMATION  StandardInformation;
+  FILE_INTERNAL_INFORMATION  InternalInformation;
+  FILE_EA_INFORMATION        EaInformation;
+  FILE_ACCESS_INFORMATION    AccessInformation;
+  FILE_POSITION_INFORMATION  PositionInformation;
+  FILE_MODE_INFORMATION      ModeInformation;
+  FILE_ALIGNMENT_INFORMATION AlignmentInformation;
+  FILE_NAME_INFORMATION      NameInformation;
+} FILE_ALL_INFORMATION, *PFILE_ALL_INFORMATION;
+
+typedef enum _FILE_INFORMATION_CLASS {
+  FileDirectoryInformation = 1,
+  FileFullDirectoryInformation,
+  FileBothDirectoryInformation,
+  FileBasicInformation,
+  FileStandardInformation,
+  FileInternalInformation,
+  FileEaInformation,
+  FileAccessInformation,
+  FileNameInformation,
+  FileRenameInformation,
+  FileLinkInformation,
+  FileNamesInformation,
+  FileDispositionInformation,
+  FilePositionInformation,
+  FileFullEaInformation,
+  FileModeInformation,
+  FileAlignmentInformation,
+  FileAllInformation,
+  FileAllocationInformation,
+  FileEndOfFileInformation,
+  FileAlternateNameInformation,
+  FileStreamInformation,
+  FilePipeInformation,
+  FilePipeLocalInformation,
+  FilePipeRemoteInformation,
+  FileMailslotQueryInformation,
+  FileMailslotSetInformation,
+  FileCompressionInformation,
+  FileObjectIdInformation,
+  FileCompletionInformation,
+  FileMoveClusterInformation,
+  FileQuotaInformation,
+  FileReparsePointInformation,
+  FileNetworkOpenInformation,
+  FileAttributeTagInformation,
+  FileTrackingInformation,
+  FileIdBothDirectoryInformation,
+  FileIdFullDirectoryInformation,
+  FileValidDataLengthInformation,
+  FileShortNameInformation,
+  FileIoCompletionNotificationInformation,
+  FileIoStatusBlockRangeInformation,
+  FileIoPriorityHintInformation,
+  FileSfioReserveInformation,
+  FileSfioVolumeInformation,
+  FileHardLinkInformation,
+  FileProcessIdsUsingFileInformation,
+  FileNormalizedNameInformation,
+  FileNetworkPhysicalNameInformation,
+  FileIdGlobalTxDirectoryInformation,
+  FileIsRemoteDeviceInformation,
+  FileAttributeCacheInformation,
+  FileNumaNodeInformation,
+  FileStandardLinkInformation,
+  FileRemoteProtocolInformation,
+  FileMaximumInformation
+} FILE_INFORMATION_CLASS, *PFILE_INFORMATION_CLASS;
+
+typedef NTSTATUS (NTAPI *sNtQueryInformationFile)
+                 (HANDLE FileHandle,
+                  PIO_STATUS_BLOCK IoStatusBlock,
+                  PVOID FileInformation,
+                  ULONG Length,
+                  FILE_INFORMATION_CLASS FileInformationClass);
+
+typedef ULONG (NTAPI *sRtlNtStatusToDosError)
+              (NTSTATUS Status);
+
+sNtQueryInformationFile pNtQueryInformationFile;
+
+sRtlNtStatusToDosError pRtlNtStatusToDosError;
+
+#ifndef NT_ERROR
+#define NT_ERROR(status) ((((ULONG) (status)) >> 30) == 3)
+#endif
+
+/* END section originally copied from libuv win/winapi.h */
+
+static int nt_init_done = 0;
+static int nt_api_available = 0;
+
+/* BEGIN section originally copied from libuv win/winapi.c */
+
+void win_init()
+{
+  HMODULE ntdll_module;
+
+  if (nt_init_done) return;
+
+  nt_init_done = 1;
+
+  ntdll_module = GetModuleHandleA("ntdll.dll");
+  if (ntdll_module == NULL) {
+    nt_api_available = 0;
+    return;
+  }
+
+  pNtQueryInformationFile = (sNtQueryInformationFile) GetProcAddress(
+      ntdll_module, "NtQueryInformationFile");
+  if (pNtQueryInformationFile == NULL) {
+    nt_api_available = 0;
+    return;
+  }
+
+  pRtlNtStatusToDosError = (sRtlNtStatusToDosError) GetProcAddress(
+      ntdll_module, "RtlNtStatusToDosError");
+  if (pRtlNtStatusToDosError == NULL) {
+    nt_api_available = 0;
+    return;
+  }
+
+  nt_api_available = 1;
+}
+
+/* END section originally copied from libuv win/winapi.c */
+
+CAMLprim value win_has_correct_ctime()
+{
+  CAMLparam0();
+
+  win_init();
+
+  CAMLreturn (nt_api_available ? Val_true : Val_false);
+}
+
 #define MAKEDWORDLONG(a,b) ((DWORDLONG)(((DWORD)(a))|(((DWORDLONG)((DWORD)(b)))<<32)))
-#define FILETIME_TO_TIME(ft) (((((ULONGLONG) ft.dwHighDateTime) << 32) + ft.dwLowDateTime) / 10000000ull - 11644473600ull)
+#define WINTIME_TO_TIME(t) (((ULONGLONG) t) / 10000000ull - 11644473600ull)
+#define FILETIME_TO_TIME(ft) WINTIME_TO_TIME((((ULONGLONG) ft.dwHighDateTime) << 32) + ft.dwLowDateTime)
+#define FILETIME_NT_TO_TIME(ft) WINTIME_TO_TIME(ft.QuadPart)
 
 CAMLprim value win_stat(value path, value wpath)
 {
-  int res, mode;
+  uintnat dev;
+  uintnat ino;
+  uintnat kind;
+  uintnat mode;
+  uintnat nlink;
+  uint64_t size;
+  double atime;
+  double mtime;
+  double ctime;
+
+  int res;
+  NTSTATUS nt_status;
   HANDLE h;
   BY_HANDLE_FILE_INFORMATION info;
+  IO_STATUS_BLOCK io_status;
+  FILE_ALL_INFORMATION file_info;
   CAMLparam2(path,wpath);
   CAMLlocal1 (v);
+
+  win_init();
 
   h = CreateFileW ((LPCWSTR) String_val (wpath), 0, 0, NULL, OPEN_EXISTING,
                    FILE_FLAG_BACKUP_SEMANTICS | FILE_ATTRIBUTE_READONLY, NULL);
@@ -247,6 +481,18 @@ CAMLprim value win_stat(value path, value wpath)
   if (h == INVALID_HANDLE_VALUE) {
     win32_maperr (GetLastError ());
     uerror("stat", path);
+  }
+
+  if (nt_api_available) {
+    nt_status = pNtQueryInformationFile(h, &io_status, &file_info,
+                                        sizeof file_info, FileAllInformation);
+
+    /* Buffer overflow (a warning status code) is expected here. */
+    if (NT_ERROR(nt_status)) {
+      win32_maperr(pRtlNtStatusToDosError(nt_status));
+      (void) CloseHandle(h);
+      uerror("stat", path);
+    }
   }
 
   res = GetFileInformationByHandle (h, &info);
@@ -262,38 +508,67 @@ CAMLprim value win_stat(value path, value wpath)
     uerror("stat", path);
   }
 
-  v = caml_alloc (12, 0);
-  Store_field (v, 0, Val_int (info.dwVolumeSerialNumber));
+  dev = info.dwVolumeSerialNumber;
 
-  // Apparently, we cannot trust the inode number to be stable when
-  // nFileIndexHigh is 0.
-  if (info.nFileIndexHigh == 0) info.nFileIndexLow = 0;
-  /* The ocaml code truncates inode numbers to 31 bits.  We hash the
-     low and high parts in order to lose as little information as
-     possible. */
-  Store_field
-    (v, 1, Val_int (MAKEDWORDLONG(info.nFileIndexLow,info.nFileIndexHigh)+155825701*((DWORDLONG)info.nFileIndexHigh)));
-  Store_field
-    (v, 2, Val_int (info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY
-                    ? 1: 0));
-  mode = 0000444;
-  if (info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-    mode |= 0000111;
-  if (!(info.dwFileAttributes & FILE_ATTRIBUTE_READONLY))
-    mode |= 0000222;
-  Store_field (v, 3, Val_int(mode));
-  Store_field (v, 4, Val_int (info.nNumberOfLinks));
-  Store_field (v, 5, Val_int (0));
-  Store_field (v, 6, Val_int (0));
-  Store_field (v, 7, Val_int (0));
-  Store_field
-    (v, 8, copy_int64(MAKEDWORDLONG(info.nFileSizeLow,info.nFileSizeHigh)));
-  Store_field
-    (v, 9, copy_double((double) FILETIME_TO_TIME(info.ftLastAccessTime)));
-  Store_field
-    (v, 10, copy_double((double) FILETIME_TO_TIME(info.ftLastWriteTime)));
-  Store_field
-    (v, 11, copy_double((double) FILETIME_TO_TIME(info.ftCreationTime)));
+  if (nt_api_available) {
+    /* Use the same hashing formula as the original code */
+    ino = ((DWORDLONG)file_info.InternalInformation.IndexNumber.QuadPart) +
+      155825701*((DWORDLONG)file_info.InternalInformation.IndexNumber.HighPart);
+
+    kind = file_info.BasicInformation.FileAttributes & FILE_ATTRIBUTE_DIRECTORY ? 1: 0;
+
+    mode = 0000444;
+    if (!(file_info.BasicInformation.FileAttributes & FILE_ATTRIBUTE_READONLY))
+      mode |= 0000222;
+    if (file_info.BasicInformation.FileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+      mode |= 0000111;
+
+    nlink = file_info.StandardInformation.NumberOfLinks;
+    size = file_info.StandardInformation.EndOfFile.QuadPart;
+    atime = (double) FILETIME_NT_TO_TIME(file_info.BasicInformation.LastAccessTime);
+    mtime = (double) FILETIME_NT_TO_TIME(file_info.BasicInformation.LastWriteTime);
+    if (file_info.BasicInformation.ChangeTime.QuadPart != 0) {
+      ctime = (double) FILETIME_NT_TO_TIME(file_info.BasicInformation.ChangeTime);
+    } else {
+      ctime = (double) FILETIME_NT_TO_TIME(file_info.BasicInformation.CreationTime);
+    }
+  } else {
+    // Apparently, we cannot trust the inode number to be stable when
+    // nFileIndexHigh is 0.
+    if (info.nFileIndexHigh == 0) info.nFileIndexLow = 0;
+    /* The ocaml code truncates inode numbers to 31 bits.  We hash the
+       low and high parts in order to lose as little information as
+       possible. */
+    ino = MAKEDWORDLONG(info.nFileIndexLow,info.nFileIndexHigh)+155825701*((DWORDLONG)info.nFileIndexHigh);
+
+    kind = info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY ? 1: 0;
+
+    mode = 0000444;
+    if (info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+      mode |= 0000111;
+    if (!(info.dwFileAttributes & FILE_ATTRIBUTE_READONLY))
+      mode |= 0000222;
+
+    nlink = info.nNumberOfLinks;
+    size = MAKEDWORDLONG(info.nFileSizeLow,info.nFileSizeHigh);
+    atime = (double) FILETIME_TO_TIME(info.ftLastAccessTime);
+    mtime = (double) FILETIME_TO_TIME(info.ftLastWriteTime);
+    ctime = (double) FILETIME_TO_TIME(info.ftCreationTime);
+  }
+
+  v = caml_alloc (12, 0);
+  Store_field(v, 0, Val_int(dev));
+  Store_field(v, 1, Val_int(ino));
+  Store_field(v, 2, Val_int(kind));
+  Store_field(v, 3, Val_int(mode));
+  Store_field(v, 4, Val_int(nlink));
+  Store_field(v, 5, Val_int(0));
+  Store_field(v, 6, Val_int(0));
+  Store_field(v, 7, Val_int(0));
+  Store_field(v, 8, copy_int64(size));
+  Store_field(v, 9, copy_double(atime));
+  Store_field(v, 10, copy_double(mtime));
+  Store_field(v, 11, copy_double(ctime));
 
   CAMLreturn (v);
 }
