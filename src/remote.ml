@@ -32,10 +32,6 @@ let _ =
   if Sys.os_type = "Unix" then
     ignore(Sys.set_signal Sys.sigpipe Sys.Signal_ignore)
 
-let _ =
-  if Sys.os_type = "Unix" then
-    ignore(Sys.set_signal Sys.sigpipe Sys.Signal_ignore)
-
 (*
    Flow-control mechanism (only active under Windows).
    Only one side is allowed to send messages at any given time.
