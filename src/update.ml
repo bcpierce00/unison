@@ -1696,15 +1696,8 @@ and buildUpdateRec archive currfspath path scanInfo =
         let (newChildren, childUpdates, _, _) =
           buildUpdateChildren
             currfspath path NameMap.empty false scanInfo in
-        (* Set the unchanged flag on directory after scanning the children.
-           This makes updates scanning faster the next time if there are no
-           changes. *)
-        let inode =
-          match Fileinfo.stamp info with Fileinfo.InodeStamp i -> i | _ -> 0 in
-        let desc, _ =
-          Props.setDirChangeFlag info.Fileinfo.desc scanInfo.dirStamp inode in
         (None,
-         Updates (Dir (desc, childUpdates, PropsUpdated, false),
+         Updates (Dir (info.Fileinfo.desc, childUpdates, PropsUpdated, false),
                   oldInfoOf archive))
   with
     Util.Transient(s) -> None, Error(s)
