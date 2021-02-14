@@ -290,6 +290,11 @@ ifeq ($(OSARCH),Linux)
 INCLFLAGS+=-I fsmonitor -I fsmonitor/linux
 endif
 
+ifeq ($(OSARCH),solaris)
+-include fsmonitor/solaris/Makefile src/fsmonitor/solaris/Makefile
+INCLFLAGS+=-I fsmonitor -I fsmonitor/solaris
+endif
+
 ifeq ($(OSARCH),win32gnuc)
 -include fsmonitor/windows/Makefile src/fsmonitor/windows/Makefile
 INCLFLAGS+=-I fsmonitor -I fsmonitor/windows
@@ -300,7 +305,7 @@ ifeq ($(OSARCH),win32)
 INCLFLAGS+=-I fsmonitor -I fsmonitor/windows
 endif
 
-DEP_INCLFLAGS+=-I fsmonitor -I fsmonitor/linux -I fsmonitor/windows
+DEP_INCLFLAGS+=-I fsmonitor -I fsmonitor/linux -I fsmonitor/solaris -I fsmonitor/windows
 
 ####################################################################
 ### Static build setup
