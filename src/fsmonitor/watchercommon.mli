@@ -24,7 +24,7 @@ module F (M : sig type watch end) : sig
   val signal_overflow : unit -> unit
 
   module type S = sig
-    val add_watch : string -> t -> unit
+    val add_watch : string -> t -> bool -> unit
     val release_watch : t -> unit
     val watch : unit -> unit
     val clear_event_memory : unit -> unit

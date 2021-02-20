@@ -220,9 +220,13 @@ let release_watch file =
 let selected_events =
   Inotify.([S_Attrib; S_Modify; S_Delete_self; S_Move_self;
             S_Create; S_Delete; S_Modify; S_Moved_from; S_Moved_to])
+let selected_events_nofollow = Inotify.S_Dont_follow :: selected_events
 
-let add_watch path file =
+let add_watch path file follow =
   try
+    let selected_events =
+      if follow then selected_events
+      else selected_events_nofollow in
     let id = Lwt_inotify.add_watch st path selected_events in
     begin match get_watch file with
       Some id' when id = id' ->
