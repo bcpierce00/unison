@@ -344,7 +344,7 @@ let loadArchiveLocal fspath (thisRoot: string) :
           Some (archive, hash, magic, properties)
         with Failure s -> raise (Util.Fatal (Printf.sprintf
            "Archive file seems damaged (%s): \
-            throw away archives on both machines and try again" s))
+            use the -ignorearchives option, or throw away archives on both machines and try again" s))
     else
       (debug (fun() ->
          Util.msg "Archive %s not found\n"
