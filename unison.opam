@@ -1,0 +1,23 @@
+opam-version: "2.0"
+maintainer: "juergen@hoetzel.info"
+authors: [
+  "Jürgen Hötzel <juergen@hoetzel.info>"
+  "Louis Gesbert <louis.gesbert@ocamlpro.com>"
+]
+homepage: "https://www.cis.upenn.edu/~bcpierce/unison/"
+bug-reports: "https://github.com/bcpierce00/unison/issues"
+dev-repo: "git://github.com/bcpierce00/unison.git"
+build: ["dune" "build" "-p" name "-j" jobs]
+depends: [
+  "ocaml" {>= "4.03" & < "4.12"}
+  "dune" {>= "1.3"}
+  "lablgtk" {>= "2.18.6"}
+]
+available: os-family != "alpine" # uses glibc-only macros
+synopsis: "File-synchronization tool for Unix and Windows"
+description: """
+Unison is a file-synchronization tool for Unix and Windows. It allows
+two replicas of a collection of files and directories to be stored on
+different hosts (or different disks on the same host), modified
+separately, and then brought up to date by propagating the changes in
+each replica to the other."""
