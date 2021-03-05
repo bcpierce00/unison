@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
+#include <sys/inotify.h>
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
 #include <caml/alloc.h>
@@ -28,18 +29,6 @@
 #include <caml/callback.h>
 
 #include <features.h>
-
-#if __GLIBC__ >= 2 && __GLIBC_MINOR__ >= 4
-#define GLIBC_SUPPORT_INOTIFY 1
-#else
-#define GLIBC_SUPPORT_INOTIFY 0
-#endif
-
-#if GLIBC_SUPPORT_INOTIFY
-#include <sys/inotify.h>
-#else
-#include "inotify_compat.h"
-#endif
 
 static int inotify_flag_table[] = {
         IN_ACCESS, IN_ATTRIB, IN_CLOSE_WRITE, IN_CLOSE_NOWRITE,
