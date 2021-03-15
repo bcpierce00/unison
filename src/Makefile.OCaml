@@ -286,12 +286,8 @@ endif
 ########################################################################
 ### Filesystem monitoring
 
-OCAMLSWITCH_IS_MUSL := $(shell opam switch show 2> /dev/null | grep -iF '+musl')
-
 ifeq ($(OSARCH),Linux)
-ifeq ($(OCAMLSWITCH_IS_MUSL),)
 -include fsmonitor/linux/Makefile src/fsmonitor/linux/Makefile
-endif
 endif
 
 ifeq ($(OSARCH),win32gnuc)
