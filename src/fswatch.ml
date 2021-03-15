@@ -231,8 +231,14 @@ let path =
 
 let search_in_path ?(path = path) name =
   System.fspathConcat
-    (List.find (fun dir -> System.file_exists (System.fspathConcat dir name))
-       path)
+    (List.find (fun dir ->
+       let p = System.fspathConcat dir name in
+       let found = System.file_exists p in
+       debug (fun () -> Util.msg "'%s' ...%s\n"
+         (System.fspathToString p)
+         (match found with true -> "found" | false -> "not found"));
+       found)
+    path)
     name
 
 let exec_path = [System.fspathFromString Sys.executable_name]
@@ -258,6 +264,7 @@ let exec_dir = List.map System.fspathDirname exec_path
 let watcher =
   lazy
     (let suffix = if Util.osType = `Win32 then ".exe" else "" in
+     debug (fun () -> Util.msg "File monitoring helper program...\n");
      System.fspathToString
        (try
           search_in_path ~path:(exec_dir @ path)
