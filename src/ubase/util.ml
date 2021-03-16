@@ -487,11 +487,6 @@ let homeDir () =
 
 let fileInHomeDir n = System.fspathConcat (homeDir ()) n
 
-let fileMaybeRelToHomeDir n =
-  if Filename.is_relative n
-  then fileInHomeDir n
-  else System.fspathFromString n
-
 (*****************************************************************************)
 (*                       .unison dir                                         *)
 (*****************************************************************************)
@@ -511,4 +506,11 @@ let unisonDir =
     else
       genericName
 
+let unisonDirStr = System.fspathToString unisonDir
+
 let fileInUnisonDir str = System.fspathConcat unisonDir str
+
+let fileMaybeRelToUnisonDir n =
+  if Filename.is_relative n
+  then fileInUnisonDir n
+  else System.fspathFromString n

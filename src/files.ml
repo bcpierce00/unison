@@ -25,7 +25,7 @@ let debugverbose = Trace.debug "files+"
 
 (* ------------------------------------------------------------ *)
 
-let commitLogName = Util.fileInHomeDir "DANGER.README"
+let commitLogName = Util.fileInUnisonDir "DANGER.README"
 
 let writeCommitLog source target tempname =
   let sourcename = Fspath.toDebugString source in
@@ -49,7 +49,7 @@ let writeCommitLog source target tempname =
 let clearCommitLog pathTo =
   debug (fun() -> (Util.msg "Deleting commit log\n"));
 
-  let tmpPathDir = Fspath.canonize (Some Util.homeDirStr) in  (* tmpPathDir is a Fspath.t *)
+  let tmpPathDir = Fspath.canonize (Some Util.unisonDirStr) in  (* tmpPathDir is a Fspath.t *)
   (* Use pathTo in the temporary name (instead of DANGER.README) to reduce chance of reuse *)
   let tmpPath = Os.tempPath tmpPathDir pathTo in  (* tmpPath is a Path.local *)
   let dangerFspath = Fspath.canonize (Some (System.fspathToString commitLogName)) in

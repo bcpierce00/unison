@@ -519,7 +519,7 @@ let rec showArchive = function
 let dumpArchiveLocal (fspath,()) =
   let (name, root) = archiveName fspath MainArch in
   let archive = getArchive root in
-  let f = Util.fileInHomeDir "unison.dump" in
+  let f = Util.fileInUnisonDir "unison.dump" in
   debug (fun () -> Printf.eprintf "Dumping archive into `%s'\n"
                      (System.fspathToDebugString f));
   let ch = System.open_out_gen [Open_wronly; Open_creat; Open_trunc] 0o600 f in

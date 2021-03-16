@@ -83,9 +83,6 @@ val percentageOfTotal :
   int        (* percentage of total *)
 val monthname : int -> string
 val percent2string : float -> string
-val fileInHomeDir : string -> System.fspath
-val fileMaybeRelToHomeDir : string -> System.fspath
-val homeDirStr : string
 
 (* Just like the versions in the Unix module, but raising Transient
    instead of Unix_error *)
@@ -109,6 +106,8 @@ val unisonDir : System.fspath
 
 (* build a fspath representing an archive child path whose name is given     *)
 val fileInUnisonDir : string -> System.fspath
+val fileMaybeRelToUnisonDir : string -> System.fspath
+val unisonDirStr : string
 
 (* Printing and formatting functions *)
 
