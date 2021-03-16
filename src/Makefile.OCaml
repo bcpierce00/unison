@@ -226,7 +226,7 @@ OCAMLOBJS+=main.cmo
 # File extensions will be substituted for the native code version
 OCAMLLIBS+=unix.cma str.cma bigarray.cma
 
-COBJS+=osxsupport$(OBJ_EXT) pty$(OBJ_EXT) bytearray_stubs$(OBJ_EXT)
+COBJS+=osxsupport$(OBJ_EXT) pty$(OBJ_EXT) bytearray_stubs$(OBJ_EXT) hash_compat$(OBJ_EXT)
 
 ########################################################################
 ### User Interface setup
