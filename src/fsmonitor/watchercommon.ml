@@ -366,7 +366,7 @@ let signal_overflow () =
 (****)
 
 module type S = sig
-  val add_watch : string -> t -> unit
+  val add_watch : string -> t -> bool -> unit
   val release_watch : t -> unit
   val watch : unit -> unit
   val clear_event_memory : unit -> unit
@@ -508,7 +508,7 @@ let start_watching hash fspath path =
   start_file.gen <- !current_gen;
   let fspath = concat fspath path in
 (*Format.eprintf ">>> %s@." fspath;*)
-  if is_root start_file then add_watch fspath start_file;
+  if is_root start_file then add_watch fspath start_file false;
   print_ack () >>= fun () ->
   let rec add_directories () =
     read_line () >>= fun l ->
@@ -522,7 +522,7 @@ let start_watching hash fspath path =
         clear_file_changes file;
         file.gen <- !current_gen;
 (*Format.eprintf "%s@." fullpath;*)
-        add_watch fullpath file;
+        add_watch fullpath file false;
         print_ack () >>= fun () ->
         add_directories ()
     | "LINK" ->
@@ -532,7 +532,7 @@ let start_watching hash fspath path =
         clear_file_changes file;
         file.gen <- !current_gen;
 (*Format.eprintf "%s@." fullpath;*)
-        add_watch fullpath file;
+        add_watch fullpath file true;
         print_ack () >>= fun () ->
         add_directories ()
     | "DONE" ->

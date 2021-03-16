@@ -178,7 +178,7 @@ let watch_root_directory path dir =
                    (Watchercommon.format_exc e); Lwt.return ()));
   h
 
-let add_watch path file =
+let add_watch path file _ =
   if get_watch file = None then begin
     let watch_info =
       { handle = None;
