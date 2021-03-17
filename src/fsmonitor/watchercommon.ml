@@ -393,11 +393,7 @@ let gather_changes hash time =
     (Hashtbl.fold
        (fun (hash', _, path) r l ->
           if hash' <> hash then l else
-          (* If this path is not watched (presumably, it does not exist),
-             we report that it should be scanned again. On the other hand,
-             this is not reported as a change by the WAIT function, so that
-             Unison does not loop checking this path. *)
-          if r.changed && r.watch = None then path :: l else
+          if r.changed then gather_rec path r (path :: l) else
           gather_rec path r l)
        roots [])
 
