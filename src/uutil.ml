@@ -34,7 +34,7 @@ let myNameAndVersion = myName ^ " " ^ myVersion
 
 let hash2 x y = (17 * x + 257 * y) land 0x3FFFFFFF
 
-external hash_param : int -> int -> 'a -> int = "unsn_hash_univ_param" [@@noalloc]
+external hash_param : int -> int -> 'a -> int = "caml_hash_univ_param" [@@noalloc]
 
 let hash x = hash_param 10 100 x
 
