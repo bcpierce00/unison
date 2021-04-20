@@ -711,6 +711,13 @@ let initPrefs ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
 
   firstTime := false
 
+let refreshConnection ~displayWaitMessage ~termInteract =
+  assert (Safelist.length (Globals.rootsList ()) > 1);
+  let numConn = ref 0 in
+  Lwt_unix.run (Globals.allRootsIter
+    (fun r -> if Remote.isRootConnected r then incr numConn; Lwt.return ()));
+  if !numConn < 2 then initRoots displayWaitMessage termInteract
+
 (**********************************************************************
                        Common startup sequence
  **********************************************************************)

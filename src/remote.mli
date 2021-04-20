@@ -52,6 +52,10 @@ val canonizeRoot :
   string -> Clroot.clroot -> (string -> string -> string) option ->
   Common.root Lwt.t
 
+(* Test if connection to the remote server (if any) corresponding
+   to the root is established. Always returns true for local roots *)
+val isRootConnected : Common.root -> bool
+
 (* Statistics *)
 val emittedBytes : float ref
 val receivedBytes : float ref

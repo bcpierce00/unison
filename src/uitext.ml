@@ -1060,6 +1060,10 @@ let synchronizeOnce ?wantWatcher ?skipRecentFiles pathsOpt =
     let c = "-\\|/".[truncate (mod_float (4. *. Unix.gettimeofday ()) 4.)] in
     Util.set_infos (Format.sprintf "%c %s" c path)
   in
+  Uicommon.refreshConnection
+    (fun () -> if not (Prefs.read silent)
+               then Util.msg "%s\n" (Uicommon.contactingServerMsg()))
+    None;
   Trace.status "Looking for changes";
   if not (Prefs.read Trace.terse) && (Prefs.read Trace.debugmods = []) then
     Uutil.setUpdateStatusPrinter (Some showStatus);
