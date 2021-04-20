@@ -652,6 +652,12 @@ let initPrefs ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
 
   Recon.checkThatPreferredRootIsValid();
 
+  (* If both roots are local, disable the xferhint table to save time *)
+  if numRemote = 0 then Prefs.set Xferhint.xferbycopying false;
+
+  (* If no paths were specified, then synchronize the whole replicas *)
+  if Prefs.read Globals.paths = [] then Prefs.set Globals.paths [Path.empty];
+
   (* The following step contacts the server, so warn the user it could take
      some time *)
   if not (Prefs.read contactquietly || Prefs.read Trace.terse) then
@@ -660,12 +666,6 @@ let initPrefs ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
   (* Canonize the names of the roots, sort them (with local roots first),
      and install them in Globals. *)
   Lwt_unix.run (Globals.installRoots termInteract);
-
-  (* If both roots are local, disable the xferhint table to save time *)
-  if numRemote = 0 then Prefs.set Xferhint.xferbycopying false;
-
-  (* If no paths were specified, then synchronize the whole replicas *)
-  if Prefs.read Globals.paths = [] then Prefs.set Globals.paths [Path.empty];
 
   (* Expand any "wildcard" paths [with final component *] *)
   Globals.expandWildcardPaths();
