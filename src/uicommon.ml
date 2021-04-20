@@ -550,6 +550,55 @@ let scanProfiles () =
 
 (* ---- *)
 
+let initRoots displayWaitMessage termInteract =
+  (* The following step contacts the server, so warn the user it could take
+     some time *)
+  if not (Prefs.read contactquietly || Prefs.read Trace.terse) then
+    displayWaitMessage();
+
+  (* Canonize the names of the roots, sort them (with local roots first),
+     and install them in Globals. *)
+  Lwt_unix.run (Globals.installRoots termInteract);
+
+  (* Expand any "wildcard" paths [with final component *] *)
+  Globals.expandWildcardPaths();
+
+  Update.storeRootsName ();
+
+  let hasRemote =
+    match Globals.rootsInCanonicalOrder () with
+    | _ :: (Remote _, _) :: [] -> true
+    | _ -> false in
+  if
+    hasRemote && not (Prefs.read contactquietly || Prefs.read Trace.terse)
+  then
+    Util.msg "Connected [%s]\n"
+      (Util.replacesubstring (Update.getRootsName()) ", " " -> ");
+
+  debug (fun() ->
+       Printf.eprintf "Roots: \n";
+       Safelist.iter (fun clr -> Printf.eprintf "        %s\n" clr)
+         (Globals.rawRoots ());
+       Printf.eprintf "  i.e. \n";
+       Safelist.iter (fun clr -> Printf.eprintf "        %s\n"
+                        (Clroot.clroot2string (Clroot.parseRoot clr)))
+         (Globals.rawRoots ());
+       Printf.eprintf "  i.e. (in canonical order)\n";
+       Safelist.iter (fun r ->
+                        Printf.eprintf "       %s\n" (root2string r))
+         (Globals.rootsInCanonicalOrder());
+       Printf.eprintf "\n");
+
+  Lwt_unix.run
+    (validateAndFixupPrefs () >>=
+     Globals.propagatePrefs);
+
+  (* Initializes some backups stuff according to the preferences just loaded from the profile.
+     Important to do it here, after prefs are propagated, because the function will also be
+     run on the server, if any. Also, this should be done each time a profile is reloaded
+     on this side, that's why it's here. *)
+  Stasher.initBackups ()
+
 let promptForRoots getFirstRoot getSecondRoot =
   (* Ask the user for the roots *)
   let r1 = match getFirstRoot() with None -> exit 0 | Some r -> r in
@@ -658,49 +707,7 @@ let initPrefs ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
   (* If no paths were specified, then synchronize the whole replicas *)
   if Prefs.read Globals.paths = [] then Prefs.set Globals.paths [Path.empty];
 
-  (* The following step contacts the server, so warn the user it could take
-     some time *)
-  if not (Prefs.read contactquietly || Prefs.read Trace.terse) then
-    displayWaitMessage();
-
-  (* Canonize the names of the roots, sort them (with local roots first),
-     and install them in Globals. *)
-  Lwt_unix.run (Globals.installRoots termInteract);
-
-  (* Expand any "wildcard" paths [with final component *] *)
-  Globals.expandWildcardPaths();
-
-  Update.storeRootsName ();
-
-  if
-    numRemote > 0 && not (Prefs.read contactquietly || Prefs.read Trace.terse)
-  then
-    Util.msg "Connected [%s]\n"
-      (Util.replacesubstring (Update.getRootsName()) ", " " -> ");
-
-  debug (fun() ->
-       Printf.eprintf "Roots: \n";
-       Safelist.iter (fun clr -> Printf.eprintf "        %s\n" clr)
-         (Globals.rawRoots ());
-       Printf.eprintf "  i.e. \n";
-       Safelist.iter (fun clr -> Printf.eprintf "        %s\n"
-                        (Clroot.clroot2string (Clroot.parseRoot clr)))
-         (Globals.rawRoots ());
-       Printf.eprintf "  i.e. (in canonical order)\n";
-       Safelist.iter (fun r ->
-                        Printf.eprintf "       %s\n" (root2string r))
-         (Globals.rootsInCanonicalOrder());
-       Printf.eprintf "\n");
-
-  Lwt_unix.run
-    (validateAndFixupPrefs () >>=
-     Globals.propagatePrefs);
-
-  (* Initializes some backups stuff according to the preferences just loaded from the profile.
-     Important to do it here, after prefs are propagated, because the function will also be
-     run on the server, if any. Also, this should be done each time a profile is reloaded
-     on this side, that's why it's here. *)
-  Stasher.initBackups ();
+  initRoots displayWaitMessage termInteract;
 
   firstTime := false
 
