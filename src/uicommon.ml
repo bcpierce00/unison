@@ -640,6 +640,16 @@ let initPrefs ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
     promptForRoots getFirstRoot getSecondRoot;
   end;
 
+  (* Check to be sure that there is at most one remote root *)
+  let numRemote =
+    Safelist.fold_left
+      (fun n r -> match Clroot.parseRoot r with
+        ConnectLocal _ -> n | ConnectByShell _ | ConnectBySocket _ -> n+1)
+      0
+      (Globals.rawRoots ()) in
+      if numRemote > 1 then
+        raise(Util.Fatal "cannot synchronize more than one remote root");
+
   Recon.checkThatPreferredRootIsValid();
 
   (* The following step contacts the server, so warn the user it could take
@@ -656,16 +666,6 @@ let initPrefs ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
     ((Local,_),(Local,_)) -> Prefs.set Xferhint.xferbycopying false
   | _ -> ()
   end;
-
-  (* FIX: This should be before Globals.installRoots *)
-  (* Check to be sure that there is at most one remote root *)
-  let numRemote =
-    Safelist.fold_left
-      (fun n (w,_) -> match w with Local -> n | Remote _ -> n+1)
-      0
-      (Globals.rootsList()) in
-      if numRemote > 1 then
-        raise(Util.Fatal "cannot synchronize more than one remote root");
 
   (* If no paths were specified, then synchronize the whole replicas *)
   if Prefs.read Globals.paths = [] then Prefs.set Globals.paths [Path.empty];
