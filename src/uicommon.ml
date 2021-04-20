@@ -662,10 +662,7 @@ let initPrefs ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
   Lwt_unix.run (Globals.installRoots termInteract);
 
   (* If both roots are local, disable the xferhint table to save time *)
-  begin match Globals.roots() with
-    ((Local,_),(Local,_)) -> Prefs.set Xferhint.xferbycopying false
-  | _ -> ()
-  end;
+  if numRemote = 0 then Prefs.set Xferhint.xferbycopying false;
 
   (* If no paths were specified, then synchronize the whole replicas *)
   if Prefs.read Globals.paths = [] then Prefs.set Globals.paths [Path.empty];
