@@ -289,16 +289,39 @@ let disableFlowControl q =
 
 let outputQueueIsEmpty q = q.available
 
+(* Setup IO with flow control initially disabled, to do the RPC version
+   handshake. Flow control is part of RPC protocol and must be enabled
+   only after RPC version handshake is complete. *)
 let makeOutputQueue isServer flush =
-  { available = true; canWrite = isServer; flowControl = true;
+  { available = true; canWrite = true; flowControl = false;
     writes = Queue.create (); urgentWrites = Queue.create ();
     idleWrites = Queue.create ();
     flush = flush }
 
 (****)
 
+(* IMPORTANT: the RPC version must be increased when the RPC mechanism itself
+   changes in a breaking way. Changes on the API level (functions and data
+   types) normally do not cause a breaking change at the RPC level. *)
+(* Supported RPC versions should be ordered from newest to oldest. *)
+let rpcSupportedVersions = [1]
+let rpcDefaultVersion = Safelist.hd rpcSupportedVersions
+
+let rpcSupportedVersionStr =
+  String.concat ", "
+    (Safelist.map (fun v -> "\"" ^ string_of_int v ^ "\"")
+       rpcSupportedVersions)
+
+let rpcSupportedVersionStrHdr =
+  String.concat " "
+    (Safelist.map (fun v -> string_of_int v)
+       rpcSupportedVersions)
+
+(****)
+
 type connection =
-  { inputBuffer : ioBuffer;
+  { mutable version : int;
+    inputBuffer : ioBuffer;
     outputBuffer : ioBuffer;
     outputQueue : outputQueue }
 
@@ -335,11 +358,15 @@ let maybeFlush pendingFlush q buf =
 let makeConnection isServer inCh outCh =
   let pendingFlush = ref false in
   let outputBuffer = makeBuffer outCh in
-  { inputBuffer = makeBuffer inCh;
+  { version = rpcDefaultVersion;
+    inputBuffer = makeBuffer inCh;
     outputBuffer = outputBuffer;
     outputQueue =
       makeOutputQueue isServer
         (fun q -> maybeFlush pendingFlush q outputBuffer) }
+
+let setConnectionVersion conn ver =
+  conn.version <- ver
 
 (* Send message [l] *)
 let dump conn l =
@@ -360,6 +387,15 @@ let dumpUrgent conn l =
     (fun () ->
        fillBuffer conn.outputBuffer l >>= fun () ->
        flushBuffer conn.outputBuffer)
+
+let enableFlowControl conn isServer =
+  let q = conn.outputQueue in
+  q.available <- false;
+  Lwt.ignore_result (flushBuffer conn.outputBuffer);
+  q.flowControl <- true;
+  q.canWrite <- isServer;
+  if q.canWrite then
+    Lwt.ignore_result (popOutputQueues q >>= Lwt_unix.yield)
 
 (****)
 
@@ -914,22 +950,189 @@ let commandAvailable =
                      BUILDING CONNECTIONS TO THE SERVER
  ****************************************************************************)
 
-let connectionHeader =
-  let (major,minor,patchlevel) =
-    Scanf.sscanf Sys.ocaml_version "%d.%d.%d" (fun x y z -> (x,y,z)) in
-  let compiler =
-    if    major < 4 
-       || major = 4 && minor < 2
-       || major = 4 && minor = 2 && patchlevel <= 1
-    then "<= 4.01.1"
-    else ">= 4.01.2"
-    (* BCP: These strings seem wrong -- they should say 4.02,
-       not 4.01, according to my understanding of when the breaking
-       change happened.  However, I'm nervous about breaking installations
-       that are working, so I'm going to leave it.  Hopefully we are
-       far enough beyond these OCaml versions that it doesn't matter 
-       anyway. *)
-  in "Unison " ^ Uutil.myMajorVersion ^ " with OCaml " ^ compiler ^ "\n"
+let receiveUntilSep ?(space=false) ?(nl=true) ?(includesep=false) conn =
+  assert (space || nl);
+  let inp = Buffer.create 32
+  and buf = Bytearray.create 1 in
+  let add () = Buffer.add_char inp buf.{0} in
+  let rec aux () =
+    grab conn.inputBuffer buf 1 >>= fun () ->
+    match buf.{0} with
+    | ' ' | '\t' when space ->
+        if includesep then add (); Lwt.return (Buffer.contents inp)
+    | '\n' when nl ->
+        if includesep then add (); Lwt.return (Buffer.contents inp)
+    | '\r' ->
+        aux () (* ignore *)
+    | _ ->
+        add (); aux ()
+  in aux ()
+
+(* Get input until newline (excluded), blocking *)
+let receiveUntilNewline conn =
+  receiveUntilSep ~nl:true conn
+
+(* Get input until space or newline, separator included by default; blocking *)
+let receiveUntilSpaceOrNl ?(includesep=true) conn =
+  receiveUntilSep ~space:true ~nl:true ~includesep conn
+
+(* Get input of fixed length, blocking *)
+let receiveString conn len =
+  let buf = Bytearray.create len in
+  grab conn.inputBuffer buf len >>= fun () ->
+  Lwt.return (Bytearray.to_string buf)
+
+(* Get input until newline (excluded), non-blocking *)
+let receiveUntilNewlineNb conn =
+  let e = Bytes.to_string (peekWithoutBlocking conn.inputBuffer) in
+  let len = try String.index e '\n' with Not_found -> String.length e in
+  receiveString conn len
+
+let sendStrings conn slist =
+  dump conn
+    (Safelist.map (fun s -> (Bytearray.of_string s, 0, String.length s)) slist)
+
+let sendString conn s = sendStrings conn [s]
+
+(****)
+
+let rpcOk = "OK\n"
+
+let rpcNokTag = "NOK "
+let rpcErr err = rpcNokTag ^ err ^ "\n"
+
+type handshakeMsg = Ok | Error of string | Unknown of string
+
+let receiveHandshakeMsg conn =
+  receiveUntilSpaceOrNl conn >>= fun msg ->
+  if msg = rpcOk then Lwt.return Ok
+  else if msg = rpcNokTag then begin
+    receiveUntilNewlineNb conn >>= fun msg -> Lwt.return (Error msg)
+  end else
+    Lwt.return (Unknown msg)
+
+type handshakeData = Data of string | Error of string | Unknown of string
+
+let receiveHandshakeData conn keyw =
+  receiveUntilSpaceOrNl conn >>= fun msg ->
+  if msg = keyw then
+    receiveUntilNewline conn >>= fun data -> Lwt.return (Data data)
+  else if msg = rpcNokTag then
+    receiveUntilNewlineNb conn >>= fun err -> Lwt.return (Error err)
+  else
+    Lwt.return (Unknown msg)
+
+let sendHandshakeMsg conn = function
+  | Ok -> sendString conn rpcOk
+  | Error err -> sendString conn (rpcErr err)
+  | Unknown _ -> assert false
+
+let sendHandshakeErr conn err =
+  sendHandshakeMsg conn (Error err)
+
+let sendHandshakeData conn keyw data =
+  let len = String.length keyw in
+  let keyw = if len > 0 && keyw.[len - 1] <> ' ' then keyw ^ " " else keyw in
+  sendString conn (keyw ^ data ^ "\n")
+
+(* RPC version negotiation process:
+   1. Server sends connectionHeader and supported RPC versions.
+
+   2. Client receives and verifies connectionHeader.
+      * If OK then proceeds.
+      * If NOK then closes connection.
+
+   3. Client receives and verifies RPC versions.
+      * If not correct verion tag or can't parse then closes connection.
+
+   4. Client selects a version (typically the most recent one) from the
+      intersection of its supported RPC versions and server's RPC versions.
+      * If interesection is empty then closes connection.
+
+   5. Client sends selected RPC version to the server.
+
+   6. Server receives and verifies proposed version.
+      * If OK then proceeds.
+      * If not correct version tag, can't parse or proposed version is
+        not supported then server sends "NOK".
+      ** Client receives "NOK" and closes connection.
+
+   7. Server selects proposed version and sends "OK".
+
+   8. Client receives "OK". Version negotiation is complete.
+*)
+
+let connectionHeader = "Unison RPC\n"
+
+let rpcVersionsTag = "VERSIONS "
+let rpcVersionsStr = rpcVersionsTag ^ rpcSupportedVersionStrHdr ^ "\n"
+
+let rpcVersionTag = "VERSION "
+let rpcVersionStr ver = rpcVersionTag ^ string_of_int ver ^ "\n"
+
+let verIsSupported ver =
+  Safelist.exists (fun v -> v = ver) rpcSupportedVersions
+
+let handshakeFail err =
+  Lwt.fail (Util.Fatal err)
+
+let handshakeError msg =
+  handshakeFail ("Received error from the server: \"" ^ msg ^ "\".")
+
+let handshakeUnknown msg =
+  handshakeFail ("Received unexpected header from the server: \""
+                 ^ String.escaped msg ^ "\".")
+
+let parseVersion side s =
+  let error e =
+    raise (Util.Transient
+            ("Unknown " ^ side ^ " RPC version: " ^ e
+             ^ ". Version received from " ^ side ^ ": \"" ^ String.escaped s
+             ^ "\". Supported RPC versions: " ^ rpcSupportedVersionStr))
+  in
+  if s = "" then
+    error "invalid format"
+  else
+    match int_of_string s with
+    | ver -> Some ver
+    | exception Failure _ -> error "parse error"
+
+let parseServerVersions inp =
+  let supported l = function
+    | "" -> l
+    | v -> match parseVersion "server" v with
+           | Some vi -> if verIsSupported vi then vi :: l else l
+           | None -> l
+  in
+  try
+    let vs = String.split_on_char ' ' inp in
+    if vs = [""] then ignore (parseVersion "server" ""); (* Trigger the error *)
+    let intersect = Safelist.fold_left supported [] vs in
+    Lwt.return (Safelist.rev (Safelist.sort compare intersect))
+  with
+  | Util.Transient e -> handshakeFail e
+
+let checkServerVersion conn () =
+  let getTheRest () = Bytes.to_string (peekWithoutBlocking conn.inputBuffer) in
+  receiveHandshakeData conn rpcVersionsTag >>= function
+  | Error msg -> handshakeError msg
+  | Unknown fromServ -> handshakeUnknown (fromServ ^ getTheRest ())
+  | Data versions ->
+      parseServerVersions versions >>= function
+      | [] ->
+          handshakeFail ("None of server's RPC versions are supported. "
+                         ^ "The server may be too old or too recent. "
+                         ^ "Versions received from server: \""
+                         ^ String.escaped versions ^ "\". "
+                         ^ "Supported RPC versions: " ^ rpcSupportedVersionStr)
+      | ver :: _ ->
+          setConnectionVersion conn ver;
+          debug (fun () -> Util.msg "Selected RPC version: %i\n" ver);
+          sendHandshakeData conn rpcVersionTag (string_of_int ver) >>= fun () ->
+          receiveHandshakeMsg conn >>= function
+          | Ok -> Lwt.return ()
+          | Error reply -> handshakeError reply
+          | Unknown reply -> handshakeUnknown (reply ^ getTheRest ())
 
 let rec checkHeader conn buffer pos len =
   if pos = len then
@@ -997,7 +1200,11 @@ let negociateFlowControl conn =
 let initConnection onClose in_ch out_ch =
   let conn = setupIO false in_ch out_ch in
   checkHeader
-    conn (Bytearray.create 1) 0 (String.length connectionHeader) >>= (fun () ->
+    conn (Bytearray.create 1) 0 (String.length connectionHeader) >>=
+  checkServerVersion conn >>= (fun () ->
+  (* From this moment forward, the RPC version has been selected. All
+     communication must now adhere to that version's specification. *)
+  enableFlowControl conn false;
   Lwt.ignore_result (Lwt.catch
     (fun () -> receive conn)
     (function
@@ -1466,6 +1673,36 @@ let openConnectionCancel (i1,i2,o1,o2,s,fdopt,clroot,pid) =
 (*                     SERVER-MODE COMMAND PROCESSING LOOP                  *)
 (****************************************************************************)
 
+let checkClientVersion conn () =
+  let reply msg = sendHandshakeMsg conn msg in
+  (* FIX: In future when gaining the ability to close connections from server
+     side, make errors close the connection, not just send to client. *)
+  let error = sendHandshakeErr conn in
+  receiveHandshakeData conn rpcVersionTag >>= function
+  | Error msg ->
+      error ("Could not negotiate RPC version. "
+             ^ "Received unexpected error from the client: \"" ^ msg ^ "\"")
+  | Unknown fromClient ->
+      error ("Could not negotiate RPC version. "
+             ^ "Received unexpected header from the client: \""
+             ^ String.escaped (fromClient
+             ^ Bytes.to_string (peekWithoutBlocking conn.inputBuffer)) ^ "\"")
+  | Data buf ->
+      match parseVersion "client" buf with
+      | Some clientVer ->
+          if verIsSupported clientVer then begin
+            setConnectionVersion conn clientVer;
+            reply Ok
+          end else
+            error ("Client RPC version not supported. "
+                   ^ "Version received from client: \""
+                   ^ string_of_int clientVer ^ "\". "
+                   ^ "Supported RPC versions: " ^ rpcSupportedVersionStr)
+      | None -> Lwt.return ()
+      | exception Util.Transient e -> error e
+
+(****)
+
 let showWarningOnClient =
     (registerServerCmd
        "showWarningOnClient"
@@ -1485,10 +1722,14 @@ let commandLoop in_ch out_ch =
      connected to the server *)
   let conn = setupIO true in_ch out_ch in
   Lwt.catch
-    (fun e ->
-       dump conn [(Bytearray.of_string connectionHeader, 0,
-                   String.length connectionHeader)]
-         >>= (fun () ->
+    (fun () ->
+       sendStrings conn [connectionHeader; rpcVersionsStr] >>=
+       checkClientVersion conn >>= (fun () ->
+       (* From this moment forward, the RPC version has been selected. All
+          communication must now adhere to that version's specification. *)
+       (* Flow control was disabled for RPC version handshake. Enable it
+          for flow control negotiation. *)
+       enableFlowControl conn true;
        (* Set the local warning printer to make an RPC to the client and
           show the warning there; ditto for the message printer *)
        Util.warnPrinter :=
