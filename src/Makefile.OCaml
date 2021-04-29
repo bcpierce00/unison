@@ -152,7 +152,6 @@ endif
 .PHONY: buildexecutable
 buildexecutable::
 	@echo NATIVE = $(NATIVE)
-	@echo THREADS = $(THREADS)
 	@echo STATIC = $(STATIC)
 	@echo OSTYPE = $(OSTYPE)
 	@echo OSARCH = $(OSARCH)
@@ -239,7 +238,6 @@ endif
 ## New Mac UI, 2014 version
 ifeq ($(UISTYLE),mac)
   OCAMLOBJS+=uimacbridgenew.cmo
-  THREADS=true
   OCAMLLIBS+=threads.cma
   INCLFLAGS+=-thread
 endif
