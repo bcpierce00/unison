@@ -303,6 +303,8 @@ let makeOutputQueue isServer flush =
 (* IMPORTANT: the RPC version must be increased when the RPC mechanism itself
    changes in a breaking way. Changes on the API level (functions and data
    types) normally do not cause a breaking change at the RPC level. *)
+(* Version 0 is special in that it must not be listed as a supported version.
+   It is used for 2.51-compatibility mode and is never negotiated. *)
 (* Supported RPC versions should be ordered from newest to oldest. *)
 let rpcSupportedVersions = [1]
 let rpcDefaultVersion = Safelist.hd rpcSupportedVersions
@@ -1063,6 +1065,9 @@ let sendHandshakeData conn keyw data =
 *)
 
 let connectionHeader = "Unison RPC\n"
+let compatConnectionHeader = "Unison 2.51 with OCaml >= 4.01.2\n"
+(* Every supported version released prior to the RPC version negotiation
+   mechanism uses this connection header string. *)
 
 let rpcVersionsTag = "VERSIONS "
 let rpcVersionsStr = rpcVersionsTag ^ rpcSupportedVersionStrHdr ^ "\n"
@@ -1112,7 +1117,7 @@ let parseServerVersions inp =
   with
   | Util.Transient e -> handshakeFail e
 
-let checkServerVersion conn () =
+let selectServerVersion conn =
   let getTheRest () = Bytes.to_string (peekWithoutBlocking conn.inputBuffer) in
   receiveHandshakeData conn rpcVersionsTag >>= function
   | Error msg -> handshakeError msg
@@ -1134,12 +1139,20 @@ let checkServerVersion conn () =
           | Error reply -> handshakeError reply
           | Unknown reply -> handshakeUnknown (reply ^ getTheRest ())
 
-let rec checkHeader conn buffer pos len =
+let checkServerVersion conn header =
+  if header = compatConnectionHeader then begin
+    setConnectionVersion conn 0;
+    debug (fun () -> Util.msg "Selected RPC version: 2.51-compatibility\n");
+    (* skip negotiation *) Lwt.return ()
+  end else
+    selectServerVersion conn
+
+let rec checkHeaderRec conn buffer pos len connectionHeader =
   if pos = len then
-    Lwt.return ()
+    Lwt.return connectionHeader
   else begin
     (grab conn.inputBuffer buffer 1 >>= (fun () ->
-    if buffer.{0} <> connectionHeader.[pos] then
+    if buffer.{0} <> connectionHeader.[pos] && buffer.{0} <> compatConnectionHeader.[pos] then
       let prefix =
         String.sub connectionHeader 0 pos ^ Bytearray.to_string buffer in
       let rest = peekWithoutBlocking conn.inputBuffer in
@@ -1157,8 +1170,19 @@ let rec checkHeader conn buffer pos len =
            ^ "message, or because your remote login shell is printing\n"
            ^ "something itself before starting Unison."))
     else
-      checkHeader conn buffer (pos + 1) len))
+    if buffer.{0} <> connectionHeader.[pos] && buffer.{0} = compatConnectionHeader.[pos] then
+      (* We make use of the fact that that the new header is almost a prefix
+         of the old header. It is not an exact comparison here but good
+         enough for this purpose. *)
+      checkHeaderRec conn buffer (pos + 1)
+        (String.length compatConnectionHeader) compatConnectionHeader
+    else
+      checkHeaderRec conn buffer (pos + 1) len connectionHeader))
   end
+
+let checkHeader conn =
+  checkHeaderRec conn (Bytearray.create 1) 0
+    (String.length connectionHeader) connectionHeader
 
 (****)
 
@@ -1199,8 +1223,7 @@ let negociateFlowControl conn =
 
 let initConnection onClose in_ch out_ch =
   let conn = setupIO false in_ch out_ch in
-  checkHeader
-    conn (Bytearray.create 1) 0 (String.length connectionHeader) >>=
+  checkHeader conn >>=
   checkServerVersion conn >>= (fun () ->
   (* From this moment forward, the RPC version has been selected. All
      communication must now adhere to that version's specification. *)
@@ -1714,6 +1737,29 @@ let forwardMsgToClient =
        (fun _ str -> (*msg "forwardMsgToClient: %s\n" str; *)
           Lwt.return (Trace.displayMessageLocally str)))
 
+let rpcCompatName = "compat251"
+let _ =
+  Prefs.createBool rpcCompatName false ~local:true
+    "![for server] use a compatibility mode for version 2.51 clients"
+    "When this preference is set on a server, Unison will force a special \
+     compatibility mode to allow a client with a 2.51.x version to connect. \
+     This preference has no effect when set on the client. \
+     Enable only for clients that are unable to connect otherwise. \
+     The default value is \\texttt{false}."
+
+(* Compatibility mode for 2.51 clients. *)
+let compatServer conn =
+  dump conn [(Bytearray.of_string compatConnectionHeader, 0,
+                String.length compatConnectionHeader)] >>= (fun () ->
+  (* Set the local warning printer to make an RPC to the client and
+     show the warning there; ditto for the message printer *)
+  Util.warnPrinter :=
+    Some (fun str -> Lwt_unix.run (showWarningOnClient conn str));
+  Trace.messageForwarder :=
+    Some (fun str -> Lwt_unix.run (forwardMsgToClient conn str));
+  receive conn >>=
+  Lwt.wait)
+
 (* This function loops, waits for commands, and passes them to
    the relevant functions. *)
 let commandLoop in_ch out_ch =
@@ -1723,6 +1769,12 @@ let commandLoop in_ch out_ch =
   let conn = setupIO true in_ch out_ch in
   Lwt.catch
     (fun () ->
+       if Util.StringMap.mem rpcCompatName (Prefs.scanCmdLine "") then
+         (* Must enable flow control because that is the default for 2.51 *)
+         let () = enableFlowControl conn true in
+         let () = setConnectionVersion conn 0 in
+         compatServer conn
+       else
        sendStrings conn [connectionHeader; rpcVersionsStr] >>=
        checkClientVersion conn >>= (fun () ->
        (* From this moment forward, the RPC version has been selected. All
