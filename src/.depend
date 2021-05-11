@@ -1526,11 +1526,13 @@ uutil.cmo : \
     ubase/util.cmi \
     ubase/trace.cmi \
     ubase/projectInfo.cmo \
+    features.cmi \
     uutil.cmi
 uutil.cmx : \
     ubase/util.cmx \
     ubase/trace.cmx \
     ubase/projectInfo.cmx \
+    features.cmx \
     uutil.cmi
 uutil.cmi :
 xferhint.cmo : \
