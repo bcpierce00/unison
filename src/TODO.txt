@@ -4,14 +4,10 @@ is no longer under active development [though it is still heavily used by
 its original developers], the presence of a suggestion in this file is not
 promise that anybody is going to implement it!)
 
-See the file BUGS.txt for a list of currently open bugs.
-
 ###########################################################################
 
 * CURRENT
 * =======
-
-* Update the copyright dates in the OSX GUI
 
 * Make some preferences per-host
      - file-system type
@@ -28,8 +24,6 @@ See the file BUGS.txt for a list of currently open bugs.
      - The confirmation step should offer to display the new merged file.
      - (There are some older merge issues documented below)
 
-* Makefile for fstest
-
 * Work on the Unison side
      - create temp file
      - start watcher based on watcherosx switch, passing all paths as args
@@ -43,27 +37,6 @@ See the file BUGS.txt for a list of currently open bugs.
            its path matches 'ignore' and doesn't match 'ignorenot'
      - bulletproof, handling fatal errors and restarting completely from
        scratch if necessary
-
-* Rsync debugging
-
-     - when using socket mode under windows, upon completion of the first
-       external rsync call, the connection to the server is dropped (the
-       server gets an EOF and closes the connection; the client sees a
-       broken connection)
-
-          - only with rsync, not scp
-          - only with socket mode connection by Unison, not ssh mode
-          - seems to have nothing to do with ssh tunneling
-
-          - calling Unix.open_process_in instead of
-            Lwt_unix.open_process_full seems to make no difference
-
-          - one difference we can see is that, at the end of the transfer,
-            the ssh started by rsync (when run with with -v -v) says
-            something like "FD1 clearing O_NONBLOCK".  The similar call to
-            ssh from scp does not print this.
-
-       We're running under Cygwin (which is needed to have rsync)
 
 * The directory scanning optimization is currently disabled under Windows,
   as FAT partitions do not have directory modification times.
@@ -123,89 +96,8 @@ See the file BUGS.txt for a list of currently open bugs.
     the first transfer messes up the second.  The fix would be to throw
     away -path arguments that are suffixes of other ones.
 
-*** Add the following to the Problems FAQ:
-
-  --- In unison-hackers@y..., "Matt Swift" <swift@a...> wrote: > I just
-  posted a msg to cygwin@c... detailing some very strange > behavior of
-  chmod when a file's owner is also the file's group.  It
-
-  I was right about the crucial circumstances of owner = group.  Moral:
-  do not let user=group under Cygwin.  I know it causes a problem when
-  you make unison use the full permissions model on Cygwin systems; I
-  think this may also explain similar problems I had using the default
-  unison behavior (which treats Cygwin files as read-only or read-write
-  only) -- though there are several possible causes of like failures to
-  syncrhonize permissions.
-
-  The answer is obvious, following from the basic handling of permissions
-  in Cygwin (in NT permissions mode), but I didn't see it.  Users and
-  groups to Windows are the same kind of object (SID), and permissions on
-  a file or directory are represented as a list of (any number of) SIDs
-  paired with permissions such as read, write, execute (and quite a few
-  more).  When you try to map this to the Unix model of user and group,
-  when the user and group happen to be the same, the user-permissions and
-  the group-permissions are operating on the same underlying Windows
-  object, and so they cannot be different.  I think the user-permissions
-  prevail.
-
-  For example, if you try to sync a Unix file with permissions rw-r--r--
-  with a Cygwin file with permissions rw-rw-r-- whose owner happens to be
-  the same as the group, unison will report success, but the actual
-  permissions will not be changed.  Moreover, during the next sync,
-  unison will by default propogate the Cygwin file back to the Unix file,
-  so that the degenerate permissions under Cygwin will migrate to the
-  Unix system unless you are careful to prevent unison from doing it.
-  (When you are trying to sync some 75,000 email and font files, this all
-  is more than a little exasperating!)
-
-  ---
-
-  Further important advice if you are going to synchronize Cygwin
-  filesystems with unison's full Unix permissions model (and perhaps it
-  is also important even with unison's default behavior):
-
-  Background:  the flags "ntsec" or "ntea" in the CYGWIN environment
-  variable signals Cygwin's libraries to use the richer NT permissions
-  model rather than a simplified Win95-98 model.  "ntsec" requires an
-  NTFS filesystem, "ntea" will work with FAT filesystems.  I use
-  "ntsec".
-
-  If unison does not have CYGWIN set appropriately in its environment,
-  some chmod calls will not do the expected thing, even though they
-  return with success.  This will result in the file coming up again in
-  the next synchronization, and unison will then by default propagate the
-  (wrong) permissions from the Cygwin file back to the Unix system.  (The
-  first chmod apparently succeeded, so unison records the new permissions
-  in its archive; the second time, when the file does not match the
-  archive, it seems to unison that the Cygwin file has been changed.)
-
-  If you run unison from the bash command line, you will most likely not
-  have a problem, since CYGWIN is probably set appropriately and exported
-  in the .bat script that launches bash.  Likewise, when the Cygwin
-  filesystem is the remote one, Cygwin's sshd is by default set up (by
-  /usr/bin/ssh-host-config) to establish and export an appropriate value
-  of CYGWIN to ssh clients.
-
-  If you launch unison directly from a Windows shortcut, however, you
-  must set CYGWIN in your Windows environment variables.  This is
-  certainly a convenient way to launch unison either with a particular
-  profile or generically.  The instructions for setting up Cygwin and the
-  discussions of the CYGWIN envariable in the user manual never mention
-  any need to put CYGWIN in the Windows envariables, however. (I'm
-  writing them to suggest they do.)
-
-  >From the unison standpoint, the code which chooses to use the full
-  permissions model on Cygwin hosts (right now I have it hacked simply to
-  always use full permissions, by commenting out a line) perhaps ought to
-  confirm that "ntsec" or "ntea" is in the CYGWIN envariable and issue a
-  big warning that permissions may not be properly synchronized if
-  neither value is there.
-
 ** add '<meta http-equiv="expires" content="0">'
    to the head section of all the unison web pages.
-
-** Peter Selinger has built an SHA256 implementation that should be usable
-   as a drop-in replacement for MD5, if we ever need to do that
 
 * There is no way of selecting files with wildchar. I had to use
      ignorenot = Name opt/root/.unison/*.prf
@@ -240,11 +132,6 @@ See the file BUGS.txt for a list of currently open bugs.
 
 should strip symbols from binary files in 'make exportnative'
 
-* [Joerg von den Hoff, 2009] OS X: make the destination directory for the CL
-  version selectable (instead of dumping it in the middle of a systems
-  directory :-)) something like /usr/local/bin or whatever might frequently be
-  more suitable
-
 
 * DOCUMENTATION
 * =============
@@ -274,7 +161,7 @@ should strip symbols from binary files in 'make exportnative'
     ===> document
   - the documentation is very good, but i couldn't find a description of how
     to respond to the prompts in the textual ui. is that explained
-    somewhere? a few typos i noticed: "with t fast", "nison", "off of".
+    somewhere?
 
 
 * SMALL FUNCTIONALITY IMPROVEMENTS
@@ -347,14 +234,6 @@ should strip symbols from binary files in 'make exportnative'
 *** When unison notices lock files in the archive directory, it should
     offer to delete them *for* the user, rather than forcing the user to
     delete them manually.
-
-*** A switch to delete files before replication. It's not something I
-    would have considered doing, and in normal replication, there have
-    already been pointed out good reasons why Unison works the way it
-    does, but Roman makes a good reason for why this is useful in CD-RW
-    backups, and why this could be useful on a general to do list. And
-    this is certainly *generic*, which my point is not (as it only applies
-    to the Microsoft Windows NTFS situation).
 
 *** A switch to include NTFS ACE/ACL file permissions to be copied when
     copying from one NTFS location to another NTFS location. As I
@@ -542,10 +421,6 @@ It would be nice if Unison could have the "power" to copy write-protected
 Update checking over NFS might be *much* faster if we use only relative
   pathnames (absolute paths may require an RPC per level!?)
 
-On one server (Saul), Unison seems to use HUGE amounts of memory (250Mb
-  resident), while on my laptop it's much less.  WTF?
-  ==> Is that real memory or virtual memory?
-
 [Ben Wong, Aug 2002] Why not make unison fall back to addversionno if it
   would otherwise bomb out with an incorrect version number? That way I
   wouldn't have to educate people on how to use Unison at my site; it'd
@@ -670,15 +545,6 @@ Perhaps we should interpret both / and the local separator as path
   Unix just /.  For Windows this will be fine, since / is not allowed in
   filenames.
 
-Maybe have an option to tell do not transfer toto.dvi if toto.tex exists (or
-  toto.ps if toto.dvi): something like
-          Ignore .dvi If .tex
-  ===> This is not a good idea -- would give different ignore results on
-  the two machines.  But maybe a variant would work:
-    - Have an option to execute a command if a given file exist like
-            Execute rm core If core
-            Execute make clean If Makefile
-
 Maybe we should never emit a conflict for modtimes; instead, we just
   propagate the largest one.
 
@@ -799,10 +665,6 @@ the local host and which side the remote host is.
   profile.  Would be better to skip this step and go straight into
   filling in its fields.
 
-* Another usability issue in the text UI: , and < should mean the same to
-  unison. It would be nice if both had the same representation on-screen
-  (ie, show a "<" even if I typed a ","). Similarly for . and >.
-
 * The menu help for left/right arrow both said `transfer local to local'.
   Not helpful.  The items in question are pathnames, which you might not
   have to abbreviate.  To save space one might consider replacing any
@@ -853,10 +715,6 @@ I'm watching it sync a very large file that I don't want anyway, and I'm in
 It would be nice to have a command in the GUI that would allow a single
   path within the replica to be selected from a file dialog and
   synchronized.
-
-The scroll bar is not usable during transport: every time a line changes
-  in the list, the display jumps to that line; if many small files are
-  transferred, it makes browsing in the list quite impossible...
 
 [From Manuel Serrano] Would be nice to put the arrows in different
   directions in different colors, so that, e.g., you could quickly scan the
@@ -991,12 +849,6 @@ What about invoking some user-specified operation on each file as it
   is transferred?  Or in each directory where things have changed?
   (This will require some careful design work.)
 
-Sync with archived directories (in tar / zip / gz format) would be
-  nice.  Seems a bit awkward to implement, though: at the moment there
-  are a lot of functions all over the place that investigate and
-  modify the file system, and these would all have to be replaced with
-  a layer that transparently parses, etc., etc.
-
 Consider using other authentication services (e.g. Kerberos) instead
   of / in addition to ssh.
 
@@ -1012,45 +864,6 @@ It might be nice to implement an (optional) safety check that detects
   we already know all the inode numbers.  (Even if it *is* expensive, it
   might be useful to allow users to do this occasionally, if they are
   paranoid.)
-
-
-* WINDOWS ISSUES
-* ==============
-
-Suggestion from Arnaud:
-  I have been using XP for a while and despite all the problems I have, there
-  is a very nice feature: being able to mount remote folders (nothing new), to
-  work with them offline and synchronize them. Really useful.
-  --
-  A good way to simulate this with Unison would be to package it as a shell
-  extension. From the desktop by clicking on the right button the user selects
-  "create new Unison mount point" and answers a few trivial question. And the
-  rest is done in the background. There are a lot of examples of shell
-  extensions and there is a really good book for O'Reilly about it.
-  --
-  A good project for a student :-)
-  --
-  PS: see http://www.simplythebest.net/shellenh.html for some examples.
-
-NTFS seems to have two ways of setting a file read-only!
-Comments from Karl Moerder:
-    Tonight I made some files read-only on my desktop at home. I did this by
-    setting global read and execute permissions (from the security tab of
-    properties). I ran Unison and it didn't notice the change. I then set
-    the permissions back to full control and then selected the read-only box
-    (from the general tab of properties). I ran Unison again and it noticed
-    and pushed the perms change to the server.
-    I understand that Windows is a bit squirrely here, but how do you decide
-    which permissions to look at? It seems like perhaps the ones on the
-    security tab would be more natural. (?)
-    --
-    I get similar results with both bits (they both cause read-only
-    behavior).
-    I believe that the origin of the two modes of setting is that the first
-    set is the old way of doing Windows protection (probably the interface
-    provided on FAT file systems) and the new way is the more Unix like way
-    (added for NTFS file systems). The new way has rwxdpo bits for each
-    group (and there can be several groups).
 
 Local Variables:
 mode: outline
