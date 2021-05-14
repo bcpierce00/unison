@@ -16,14 +16,6 @@ promise that anybody is going to implement it!)
      - backup
      - fs watcher command
 
-* Merge issues:
-     - It would be better to ignore the exit status of the external merge
-       tool and just look at what files it produced to decide what happened
-     - The function that runs the external program should not grab stdin /
-       stdout / stderr if Unison is running with the text UI.
-     - The confirmation step should offer to display the new merged file.
-     - (There are some older merge issues documented below)
-
 * Work on the Unison side
      - create temp file
      - start watcher based on watcherosx switch, passing all paths as args
@@ -62,17 +54,6 @@ promise that anybody is going to implement it!)
      that prevents mutation from outside the module where the preference is
      defined (by exposing it with a weak type).
 
-**** Remaining problem with merging code:
-       - create two directories, each containing a .txt file
-       - sync so they are equal
-       - change the file so that one region is in conflict and another
-         region has changes that can be propagated correctly
-       - sync
-       - now we should be able to change the second region in just one file,
-         sync again, and see the change propagate; instead, it conflicts
-       - diagnosis: the merge stuff is not correctly updating the archive in
-         the event of a partial reconciliation
-
 *** Un-writeable directories can't be copied.
     The 'rename' operation at the end of Files.copy will fail (at least on
     OSX) if the path being renamed points to a directory and that directory
@@ -82,11 +63,23 @@ promise that anybody is going to implement it!)
     be just after.  But I don't feel like writing this bit of code right
     now, to handle such a corner case.  [BCP, November 2008]
 
+*** [Marcus Sundman, 2008] Unison can't propagate changes in read-only
+    folders. The correct way to do it is to temporarily add write
+    permissions for the user to the folder, then do the changes and then
+    reset the permissions. Now unison tries to just do the changes, which
+    fails with a "permission denied" error.
+
+It would be nice if Unison could have the "power" to copy write-protected
+   files, maybe as an option.
+
 *** Fix the pred module to understand negation and delete XXXnot predicates
 
 *** Web
     - Add a "supported platforms" page mentioning system-specific stuff
     - Add an installation instructions page, removing it from the manual
+
+** add '<meta http-equiv="expires" content="0">'
+   to the head section of all the unison web pages.
 
 *** See if we can get rid of some Osx.XXX stuff (e.g. ressLength!?)
 
@@ -95,9 +88,6 @@ promise that anybody is going to implement it!)
     scanned twice, found to need transferring twice, and transferred twice, but
     the first transfer messes up the second.  The fix would be to throw
     away -path arguments that are suffixes of other ones.
-
-** add '<meta http-equiv="expires" content="0">'
-   to the head section of all the unison web pages.
 
 * There is no way of selecting files with wildchar. I had to use
      ignorenot = Name opt/root/.unison/*.prf
@@ -114,9 +104,79 @@ promise that anybody is going to implement it!)
   a lot of reinstalls and new pendrives and it took a long time to create
   all those dirs. Someone in the list even made a script to do the job!!!
 
+** giving a -path preference whose parent dir doesn't exist currently causes
+   Unison to abort with a fatal error.  Would be better if it just
+   signalled an error for that file.
+
+If we synchronize a path whose parent doesn't exist in one replica, we'll
+  fail.  Might be nicer to create the parent path if needed.
+
 * When synchronizing FAT32, there could be an explicit command for
   ignoring attributes. The problem happens when one side is FAT32 but the
   other is not, or when mounting parameters are different.
+
+
+* MERGE FUNCTIONALITY
+* ===================
+
+* Merge issues:
+     - It would be better to ignore the exit status of the external merge
+       tool and just look at what files it produced to decide what happened
+     - The function that runs the external program should not grab stdin /
+       stdout / stderr if Unison is running with the text UI.
+     - The confirmation step should offer to display the new merged file.
+     - (There are some older merge issues documented below)
+
+**** Remaining problem with merging code:
+       - create two directories, each containing a .txt file
+       - sync so they are equal
+       - change the file so that one region is in conflict and another
+         region has changes that can be propagated correctly
+       - sync
+       - now we should be able to change the second region in just one file,
+         sync again, and see the change propagate; instead, it conflicts
+       - diagnosis: the merge stuff is not correctly updating the archive in
+         the event of a partial reconciliation
+
+** An idea for the interface to the external merge functionality:
+  created a general mechanism for invoking external functionality...
+    - in profile, declare a command of the form
+           key M = external "merge ##1 ##2 ###" --> overwriting originals
+      (concrete syntax open to discussion!).  Main parts are
+         - what key to bind it to in the UI(s)
+         - the command line to start up
+         - variables (##1 and ##2) for the local and remote files
+           (the remote file will automatically be copied to a local temp
+           file, if this variable is used)
+         - a variable (###) for a temporary output file
+         - an indication of what to do with this output file
+           (or maybe this could be automatic)
+         - (should also indicate which machine(s) to run the command on?)
+
+** small additions to merge functionality:
+  - if the external merge program *deletes* one of the files it is given,
+    Unison should interpret this as "Copy the other file onto this location
+    (instead of merging)".  This will allow some other interesting
+    functionality, e.g. external programs that may decide to keep both
+    versions by moving one of them out of the way (mh-rename).
+  - the invocation of the external 'diff' program should be selectable
+    using the same conventions as the 'merge' program
+  - would be nice to be able to invoke DIFFERENT merge programs
+    depending on paths
+
+** We should document other available merge tools, e.g.,
+   idiff [BCP has a copy of the code for idiff that Norman sent.]
+
+** Suggestion for extending merge functionality
+     - add a new kind of preference -- a conditional stringlist preference
+     - in the preference file, each value looks like either
+            prefname = string
+       or
+            prefname = string WHEN Path PPPPP
+            prefname = string WHEN Name XXXXX
+            prefname = string WHEN Regex XXXXX
+     - when we look up such a preference, we provide a current path, and it
+       returns the one that matches the current path, if any
 
 
 * BUILDING AND INSTALLING
@@ -171,11 +231,15 @@ should strip symbols from binary files in 'make exportnative'
        root = ~/bla
      instead of requiring me to give an absolute path to my home dir.
 
-*** [Marcus Sundman, 2008] Unison can't propagate changes in read-only
-    folders. The correct way to do it is to temporarily add write
-    permissions for the user to the folder, then do the changes and then
-    reset the permissions. Now unison tries to just do the changes, which
-    fails with a "permission denied" error.
+** ~/foo seems to work on the command line but not in root = ~/foo in the
+   config file.
+   --
+   Similarly: It seems that when one specifies logfile = foobar
+   in the preferences file, then unison assumes that it is relative to the
+   current directory. Since neither ~ nor $HOME are understood in the
+   preference file, this is an inconvenience, because it forces the user to
+   remember to run unison from the root directory.
+   ===> Would be nice to support ~ internally
 
 *** [Adrian Stephens, 2007] I would like the scope of rootalias to be
     expanded so that any command that expects a root will perform aliasing
@@ -211,6 +275,9 @@ should strip symbols from binary files in 'make exportnative'
 *** unison -help doesn't go to stdout so it's hard to pipe it into less
     ===> Probably *all* output should go to stdout, not stderr (but maybe
          we need a switch to recover the current behavior)
+
+* Maybe we should write debugging and tracing information to stdout
+  instead of stderr?
 
 *** If a root resides on a `host' with an ever and unpredictably changing
     host name (like a public login cluster with dozens of machines and a
@@ -255,35 +322,6 @@ should strip symbols from binary files in 'make exportnative'
     tolerate it, but the window could be eliminated entirely by allowing socket
     connections to require a nonce.
 
-** An idea for the interface to the external merge functionality:
-  created a general mechanism for invoking external functionality...
-    - in profile, declare a command of the form
-           key M = external "merge ##1 ##2 ###" --> overwriting originals
-      (concrete syntax open to discussion!).  Main parts are
-         - what key to bind it to in the UI(s)
-         - the command line to start up
-         - variables (##1 and ##2) for the local and remote files
-           (the remote file will automatically be copied to a local temp
-           file, if this variable is used)
-         - a variable (###) for a temporary output file
-         - an indication of what to do with this output file
-           (or maybe this could be automatic)
-         - (should also indicate which machine(s) to run the command on?)
-
-** small additions to merge functionality:
-  - if the external merge program *deletes* one of the files it is given,
-    Unison should interpret this as "Copy the other file onto this location
-    (instead of merging)".  This will allow some other interesting
-    functionality, e.g. external programs that may decide to keep both
-    versions by moving one of them out of the way (mh-rename).
-  - the invocation of the external 'diff' program should be selectable
-    using the same conventions as the 'merge' program
-  - would be nice to be able to invoke DIFFERENT merge programs
-    depending on paths
-
-** We should document other available merge tools, e.g.,
-   idiff [BCP has a copy of the code for idiff that Norman sent.]
-
 ** Allow 'default.prf' in place of 'default' for profile names
 
 ** [dlux@dlux.hu, Feb 2002] For some apps (e.g., some mail readers?),
@@ -302,17 +340,6 @@ should strip symbols from binary files in 'make exportnative'
        it to a tempfile into the target directory (with .unison.tmp
        extension) and then rename it into the final name.
 
-** Suggestion for extending merge functionality
-     - add a new kind of preference -- a conditional stringlist preference
-     - in the preference file, each value looks like either
-            prefname = string
-       or
-            prefname = string WHEN Path PPPPP
-            prefname = string WHEN Name XXXXX
-            prefname = string WHEN Regex XXXXX
-     - when we look up such a preference, we provide a current path, and it
-       returns the one that matches the current path, if any
-
 ** Would be good to (optionally) change the semantics of the "backup"
    functionality, so that Unison would not insist on making a *full*
    backup of the whole replica, but just do so lazily.  (I.e., it would
@@ -328,20 +355,6 @@ should strip symbols from binary files in 'make exportnative'
    different roots (e.g., the location of the archive dir, ...) and
    provide a general mechanism for setting them per-host.
 
-** ~/foo seems to work on the command line but not in root = ~/foo in the
-   config file.
-   --
-   Similarly: It seems that when one specifies logfile = foobar
-   in the preferences file, then unison assumes that it is relative to the
-   current directory. Since neither ~ nor $HOME are understood in the
-   preference file, this is an inconvenience, because it forces the user to
-   remember to run unison from the root directory.
-   ===> Would be nice to support ~ internally
-
-** giving a -path preference whose parent dir doesn't exist currently causes
-   Unison to abort with a fatal error.  Would be better if it just
-   signalled an error for that file.
-
 ** no spec for escaping regexp chars; spaces? newlines? tabs? others?
    mechanism for getting the list of files from another program (plugin)?
    ===> needs to be documented (look at rx.ml)
@@ -353,9 +366,6 @@ should strip symbols from binary files in 'make exportnative'
      ==> This is probably a good idea, but I'm a little scared of all the
          messages we'd get from upgrading users
      ==> Also, "make" can get confused when the 'time' option is set
-
-* Maybe we should write debugging and tracing information to stdout
-  instead of stderr?
 
 * URI pathname syntax
   Why is the following command wrong?
@@ -415,8 +425,8 @@ Would be nice to have the Unison log file relative to my home directory,
        logfile = $HOME/.unision/log
   (We should do this for *all* files that the user specifies.)
 
-It would be nice if Unison could have the "power" to copy write-protected
-   files, maybe as an option.
+add a switch '-logerrors' that makes unison log error messages to a
+  separate file in addition to the standard logfile
 
 Update checking over NFS might be *much* faster if we use only relative
   pathnames (absolute paths may require an RPC per level!?)
@@ -455,9 +465,6 @@ The -sortbysize is nice, but what I would really like is a -limitbysize.
   immediately who is connected and who is not.  If I have to kill a
   session, I don't kill the wrong one.
 
-add a switch '-logerrors' that makes unison log error messages to a
-  separate file in addition to the standard logfile
-
 Dale Worley's suggestion for relocating archives:
   >   You're right: it's not all that tricky.  So would you be happy if you
   >   could run unison in a special mode like this
@@ -488,6 +495,12 @@ Dale Worley's suggestion for relocating archives:
   of the archive, since MS-Windows directory names can contain spaces,
   etc.
 
+Would be nice to be able to run unison in a special mode like this
+    unison -relocate //old-host1//path1 //old-host2//path2 \
+                     //new-host1//path1 //new-host2//path2
+  (where all the hosts and paths are canonized) and have it move the
+  archives for you on both machines?
+
 For safety...
   - Add a preference 'maxdelete' taking an integer parameter, default 100
     (or perhaps even less -- keeping it fairly small will help naive users
@@ -510,12 +523,6 @@ For safety...
     to be transferred, and a warning signal (display in red or something)
     if these exceed the current setting of maxdelete.
 
-Would be nice to be able to run unison in a special mode like this
-    unison -relocate //old-host1//path1 //old-host2//path2 \
-                     //new-host1//path1 //new-host2//path2
-  (where all the hosts and paths are canonized) and have it move the
-  archives for you on both machines?
-
 It would be nice if unison had a tool by which it could regenerate all
   the MD5 sums and compare them to what it has stored, then produce a list
   of files that are different.  I obviously cannot count on file size and
@@ -525,9 +532,6 @@ It would be nice if unison had a tool by which it could regenerate all
 If the connection to the server goes away and then comes back up, it
   would be nice if Unison would transparently re-establish it (at least,
   when this makes sense!)
-
-If we synchronize a path whose parent doesn't exist in one replica, we'll
-  fail.  Might be nicer to create the parent path if needed.
 
 maybe put backup files somewhere other than in the replica (e.g. in
   $HOME/tmp, or controlled by preference)
