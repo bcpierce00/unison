@@ -87,6 +87,7 @@ module MsgIdMap : Map.S with type key = msgId
 val newMsgId : unit -> msgId
 
 type connection
+val connectionVersion : connection -> int
 val connectionToRoot : Common.root -> connection
 
 val registerServerCmd :
@@ -106,8 +107,8 @@ val streamingActivated : bool Prefs.t
 
 val registerStreamCmd :
   string ->
-  ('a ->
+  (connection -> 'a ->
    (Bytearray.t * int * int) list -> (Bytearray.t * int * int) list * int) *
-  (Bytearray.t -> int -> 'a) ->
+  (connection -> Bytearray.t -> int -> 'a) ->
   (connection -> 'a -> unit) ->
   connection -> (('a -> unit Lwt.t) -> 'b Lwt.t) -> 'b Lwt.t

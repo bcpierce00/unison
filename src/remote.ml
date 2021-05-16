@@ -370,6 +370,8 @@ let makeConnection isServer inCh outCh =
 let setConnectionVersion conn ver =
   conn.version <- ver
 
+let connectionVersion conn = conn.version
+
 (* Send message [l] *)
 let dump conn l =
   performOutput
@@ -432,9 +434,9 @@ end
 
 type tag = Bytearray.t
 
-type 'a marshalFunction =
+type 'a marshalFunction = connection ->
   'a -> (Bytearray.t * int * int) list -> (Bytearray.t * int * int) list
-type 'a unmarshalFunction = Bytearray.t -> 'a
+type 'a unmarshalFunction = connection -> Bytearray.t -> 'a
 type 'a marshalingFunctions = 'a marshalFunction * 'a unmarshalFunction
 
 let registeredSet = ref Util.StringSet.empty
@@ -479,23 +481,33 @@ let registerTag string =
     registeredSet := Util.StringSet.add string !registeredSet;
   Bytearray.of_string string
 
-let defaultMarshalingFunctions =
-  (fun data rem ->
-     let s = Bytearray.marshal data [Marshal.No_sharing] in
-     let l = Bytearray.length s in
-     ((s, 0, l) :: rem, l)),
-  (fun buf pos ->
-      try Bytearray.unmarshal buf pos
-      with Failure s -> raise (Util.Fatal (Printf.sprintf 
+let marshalV0 data rem =
+  let s = Bytearray.marshal data [Marshal.No_sharing] in
+  let l = Bytearray.length s in
+  ((s, 0, l) :: rem, l)
+
+let unmarshalV0 buf pos =
+  try Bytearray.unmarshal buf pos
+  with Failure s -> raise (Util.Fatal (Printf.sprintf
 "Fatal error during unmarshaling (%s),
 possibly because client and server have been compiled with different \
-versions of the OCaml compiler." s)))
+versions of the OCaml compiler." s))
+
+let marshalV1 = marshalV0
+(* TODO: to be replaced by the new encoding function *)
+
+let unmarshalV1 = unmarshalV0
+(* TODO: to be replaced by the new decoding function *)
+
+let defaultMarshalingFunctions =
+  (fun conn -> if conn.version = 0 then marshalV0 else marshalV1),
+  (fun conn -> if conn.version = 0 then unmarshalV0 else unmarshalV1)
 
 let makeMarshalingFunctions payloadMarshalingFunctions string =
   let (marshalPayload, unmarshalPayload) = payloadMarshalingFunctions in
   let tag = registerTag string in
-  let marshal (data : 'a) rem = safeMarshal marshalPayload tag data rem in
-  let unmarshal buf = (safeUnmarshal unmarshalPayload tag buf : 'a) in
+  let marshal conn (data : 'a) rem = safeMarshal (marshalPayload conn) tag data rem in
+  let unmarshal conn buf = (safeUnmarshal (unmarshalPayload conn) tag buf : 'a) in
   (marshal, unmarshal)
 
 (*****************************************************************************)
@@ -662,16 +674,16 @@ let processRequest conn id cmdName buf =
   Lwt.try_bind (fun () -> cmd conn buf)
     (fun marshal ->
        debugE (fun () -> Util.msg "Sending result (id: %d)\n" (decodeInt id 0));
-       dump conn ((id, 0, intSize) :: marshalHeader NormalResult (marshal [])))
+       dump conn ((id, 0, intSize) :: marshalHeader conn NormalResult (marshal [])))
     (function
        Util.Transient s ->
          debugE (fun () ->
            Util.msg "Sending transient exception (id: %d)\n" (decodeInt id 0));
-         dump conn ((id, 0, intSize) :: marshalHeader (TransientExn s) [])
+         dump conn ((id, 0, intSize) :: marshalHeader conn (TransientExn s) [])
      | Util.Fatal s ->
          debugE (fun () ->
            Util.msg "Sending fatal exception (id: %d)\n" (decodeInt id 0));
-         dump conn ((id, 0, intSize) :: marshalHeader (FatalExn s) [])
+         dump conn ((id, 0, intSize) :: marshalHeader conn (FatalExn s) [])
      | e ->
          Lwt.fail e)
 
@@ -683,7 +695,7 @@ let streamError = Hashtbl.create 7
 let abortStream conn id =
   if not !streamAbortedDst then begin
     streamAbortedDst := true;
-    let request = encodeInt id :: marshalHeader StreamAbort [] in
+    let request = encodeInt id :: marshalHeader conn StreamAbort [] in
     dumpUrgent conn request
   end else
     Lwt.return ()
@@ -741,7 +753,7 @@ let rec receive conn =
         (fun () -> Util.msg "Message received (id: %d)\n" num_id);
       (* Read the header *)
       receivePacket conn >>= (fun buf ->
-      let req = unmarshalHeader buf in
+      let req = unmarshalHeader conn buf in
       begin match req with
         Request cmdName ->
           receivePacket conn >>= (fun buf ->
@@ -802,9 +814,9 @@ let registerSpecialServerCmd
     makeMarshalingFunctions marshalingFunctionsResult (cmdName ^ "-res") in
   (* Create a server function and remember it *)
   let server conn buf =
-    let args = unmarshalArgs buf in
+    let args = unmarshalArgs conn buf in
     serverSide conn args >>= (fun answer ->
-    Lwt.return (marshalResult answer))
+    Lwt.return (marshalResult conn answer))
   in
   serverCmds := Util.StringMap.add cmdName server !serverCmds;
   (* Create a client function and return it *)
@@ -813,13 +825,13 @@ let registerSpecialServerCmd
     assert (id >= 0); (* tracking down an assert failure in receivePacket... *)
     let request =
       encodeInt id ::
-      marshalHeader (Request cmdName) (marshalArgs serverArgs [])
+      marshalHeader conn (Request cmdName) (marshalArgs conn serverArgs [])
     in
     let reply = wait_for_reply id in
     debugE (fun () -> Util.msg "Sending request (id: %d)\n" id);
     dump conn request >>= (fun () ->
     reply >>= (fun buf ->
-    Lwt.return (unmarshalResult buf)))
+    Lwt.return (unmarshalResult conn buf)))
   in
   client
 
@@ -913,7 +925,7 @@ let registerStreamCmd
     makeMarshalingFunctions marshalingFunctionsArgs (cmdName ^ "-str") in
   (* Create a server function and remember it *)
   let server conn buf =
-    let args = unmarshalArgs buf in
+    let args = unmarshalArgs conn buf in
     serverSide conn args
   in
   serverStreams := Util.StringMap.add cmdName server !serverStreams;
@@ -923,7 +935,7 @@ let registerStreamCmd
     if !streamAbortedSrc = id then raise (Util.Transient "Streaming aborted");
     let request =
       encodeInt id ::
-      marshalHeader (Stream cmdName) (marshalArgs serverArgs [])
+      marshalHeader conn (Stream cmdName) (marshalArgs conn serverArgs [])
     in
     dumpIdle conn request
   in
