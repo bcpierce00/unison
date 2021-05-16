@@ -105,6 +105,15 @@ val initPrefs :
   termInteract:(string -> string -> string) option ->
   unit
 
+(* Make sure remote connections (if any) corresponding to active roots
+   are still established and re-establish them if necessary.
+   [refreshConnection] is like [initPrefs] but without reloading the profile
+   and re-initializing the prefs. *)
+val refreshConnection :
+  displayWaitMessage:(unit -> unit) ->
+  termInteract:(string -> string -> string) option ->
+  unit
+
 val validateAndFixupPrefs : unit -> unit Lwt.t
 
 (* Exit codes *)

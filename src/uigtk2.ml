@@ -3854,6 +3854,7 @@ lst_store#set ~row ~column:c_path path;
     in
     clearMainWindow ();
     if not (Prefs.profileUnchanged ()) then loadProfile n true
+    else Uicommon.refreshConnection displayWaitMessage termInteract
   in
 
   let detectCmd () =

@@ -994,11 +994,16 @@ let negociateFlowControl conn =
 
 (****)
 
-let initConnection in_ch out_ch =
+let initConnection onClose in_ch out_ch =
   let conn = setupIO false in_ch out_ch in
   checkHeader
     conn (Bytearray.create 1) 0 (String.length connectionHeader) >>= (fun () ->
-  Lwt.ignore_result (receive conn);
+  Lwt.ignore_result (Lwt.catch
+    (fun () -> receive conn)
+    (function
+     | Util.Fatal "Lost connection with the server" as e -> onClose e
+     | e -> Lwt.fail e
+    ));
   negociateFlowControl conn;
   Lwt.return conn)
 
@@ -1102,11 +1107,11 @@ let buildSocket host port kind =
       in
       Lwt.fail (Util.Fatal msg)
 
-let buildSocketConnection host port =
+let buildSocketConnection onClose host port =
   buildSocket host port `Connect >>= fun socket ->
-  initConnection socket socket
+  initConnection onClose socket socket
 
-let buildShellConnection shell host userOpt portOpt rootName termInteract =
+let buildShellConnection onClose shell host userOpt portOpt rootName termInteract =
   let remoteCmd =
     (if Prefs.read serverCmd="" then Uutil.myName
      else Prefs.read serverCmd)
@@ -1179,7 +1184,7 @@ let buildShellConnection shell host userOpt portOpt rootName termInteract =
   | _ ->
       ()
   end;
-  initConnection i2 o1
+  initConnection onClose i2 o1
 
 let canonizeLocally s unicode =
   (* We need to select the proper API in order to compute correctly the
@@ -1208,12 +1213,59 @@ let canonize clroot = (* connection for clroot must have been set up already *)
 
 let listReplace v l = v :: Safelist.remove_assoc (fst v) l
 
+let connectionCheck = ref ""
+
+let checkConnection host ioServer =
+  connectionCheck := host;
+  (* Poke on the socket to trigger an error if connection has been lost. *)
+  Lwt_unix.run (
+    Lwt_unix.read ioServer.inputBuffer.channel ioServer.inputBuffer.buffer 0 0
+    (* Try to make sure connection cleanup, if necessary, has finished
+       before returning.
+       Since there is no way to reliably detect when other threads have
+       finished, we just yield a bit (the same comments apply as in
+       commandLoop). *)
+    >>= fun _ ->
+    let rec wait n =
+      if n = 0 then Lwt.return () else begin
+        Lwt_unix.yield () >>= fun () ->
+        wait (n - 1)
+      end
+    in
+    wait 10);
+  connectionCheck := ""
+
 let rec hostFspath clroot =
   try
+    let (host, _, ioServer) = Safelist.assoc clroot !connectedHosts in
+    checkConnection host ioServer;
     let (_, _, ioServer) = Safelist.assoc clroot !connectedHosts in
     Some (Lwt.return ioServer)
   with Not_found ->
     None
+
+let isRootConnected = function
+  | (Common.Local, _) -> true
+  | (Common.Remote host, _) -> begin
+      try
+        let ioServer = Safelist.assoc host !connectionsByHosts in
+        checkConnection host ioServer;
+        let _ = Safelist.assoc host !connectionsByHosts in
+        true
+      with Not_found ->
+        false
+    end
+
+let onClose clroot e =
+  try
+    let (host, _, _) = Safelist.assoc clroot !connectedHosts in
+    connectedHosts := Safelist.remove_assoc clroot !connectedHosts;
+    connectionsByHosts := Safelist.remove_assoc host !connectionsByHosts;
+    if !connectionCheck = host then Lwt.return ()
+    else Lwt.fail e
+  with Not_found ->
+    if !connectionCheck = "" then Lwt.fail e
+    else Lwt.return ()
 
 let canonizeRoot rootName clroot termInteract =
   let unicode = Case.useUnicodeAPI () in
@@ -1231,13 +1283,13 @@ let canonizeRoot rootName clroot termInteract =
   | Clroot.ConnectBySocket(host,port,s) ->
       begin match hostFspath clroot with
         Some x -> x
-      | None   -> buildSocketConnection host port
+      | None   -> buildSocketConnection (onClose clroot) host port
       end >>= fun ioServer ->
       finish ioServer s
   | Clroot.ConnectByShell(shell,host,userOpt,portOpt,s) ->
       begin match hostFspath clroot with
         Some x -> x
-      | None   -> buildShellConnection
+      | None   -> buildShellConnection (onClose clroot)
                    shell host userOpt portOpt rootName termInteract
       end >>= fun ioServer ->
       finish ioServer s
@@ -1263,7 +1315,7 @@ let openConnectionStart clroot =
       Lwt_unix.run
         (begin match hostFspath clroot with
            Some x -> x
-         | None   -> buildSocketConnection host port
+         | None   -> buildSocketConnection (onClose clroot) host port
          end >>= fun ioServer ->
          (* We need to always compute the fspath as it depends on
             unicode settings *)
@@ -1369,7 +1421,7 @@ let openConnectionReply = function
 let openConnectionEnd (i1,i2,o1,o2,s,_,clroot,pid) =
       Unix.close i1; Unix.close o2;
       Lwt_unix.run
-        (initConnection i2 o1 >>= fun ioServer ->
+        (initConnection (onClose clroot) i2 o1 >>= fun ioServer ->
          let unicode = Case.useUnicodeAPI () in
          canonizeOnServer ioServer (s, unicode) >>= fun (host, fspath) ->
          connectedHosts :=

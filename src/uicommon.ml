@@ -550,6 +550,55 @@ let scanProfiles () =
 
 (* ---- *)
 
+let initRoots displayWaitMessage termInteract =
+  (* The following step contacts the server, so warn the user it could take
+     some time *)
+  if not (Prefs.read contactquietly || Prefs.read Trace.terse) then
+    displayWaitMessage();
+
+  (* Canonize the names of the roots, sort them (with local roots first),
+     and install them in Globals. *)
+  Lwt_unix.run (Globals.installRoots termInteract);
+
+  (* Expand any "wildcard" paths [with final component *] *)
+  Globals.expandWildcardPaths();
+
+  Update.storeRootsName ();
+
+  let hasRemote =
+    match Globals.rootsInCanonicalOrder () with
+    | _ :: (Remote _, _) :: [] -> true
+    | _ -> false in
+  if
+    hasRemote && not (Prefs.read contactquietly || Prefs.read Trace.terse)
+  then
+    Util.msg "Connected [%s]\n"
+      (Util.replacesubstring (Update.getRootsName()) ", " " -> ");
+
+  debug (fun() ->
+       Printf.eprintf "Roots: \n";
+       Safelist.iter (fun clr -> Printf.eprintf "        %s\n" clr)
+         (Globals.rawRoots ());
+       Printf.eprintf "  i.e. \n";
+       Safelist.iter (fun clr -> Printf.eprintf "        %s\n"
+                        (Clroot.clroot2string (Clroot.parseRoot clr)))
+         (Globals.rawRoots ());
+       Printf.eprintf "  i.e. (in canonical order)\n";
+       Safelist.iter (fun r ->
+                        Printf.eprintf "       %s\n" (root2string r))
+         (Globals.rootsInCanonicalOrder());
+       Printf.eprintf "\n");
+
+  Lwt_unix.run
+    (validateAndFixupPrefs () >>=
+     Globals.propagatePrefs);
+
+  (* Initializes some backups stuff according to the preferences just loaded from the profile.
+     Important to do it here, after prefs are propagated, because the function will also be
+     run on the server, if any. Also, this should be done each time a profile is reloaded
+     on this side, that's why it's here. *)
+  Stasher.initBackups ()
+
 let promptForRoots getFirstRoot getSecondRoot =
   (* Ask the user for the roots *)
   let r1 = match getFirstRoot() with None -> exit 0 | Some r -> r in
@@ -640,72 +689,34 @@ let initPrefs ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
     promptForRoots getFirstRoot getSecondRoot;
   end;
 
-  Recon.checkThatPreferredRootIsValid();
-
-  (* The following step contacts the server, so warn the user it could take
-     some time *)
-  if not (Prefs.read contactquietly || Prefs.read Trace.terse) then
-    displayWaitMessage();
-
-  (* Canonize the names of the roots, sort them (with local roots first),
-     and install them in Globals. *)
-  Lwt_unix.run (Globals.installRoots termInteract);
-
-  (* If both roots are local, disable the xferhint table to save time *)
-  begin match Globals.roots() with
-    ((Local,_),(Local,_)) -> Prefs.set Xferhint.xferbycopying false
-  | _ -> ()
-  end;
-
-  (* FIX: This should be before Globals.installRoots *)
   (* Check to be sure that there is at most one remote root *)
   let numRemote =
     Safelist.fold_left
-      (fun n (w,_) -> match w with Local -> n | Remote _ -> n+1)
+      (fun n r -> match Clroot.parseRoot r with
+        ConnectLocal _ -> n | ConnectByShell _ | ConnectBySocket _ -> n+1)
       0
-      (Globals.rootsList()) in
+      (Globals.rawRoots ()) in
       if numRemote > 1 then
         raise(Util.Fatal "cannot synchronize more than one remote root");
+
+  Recon.checkThatPreferredRootIsValid();
+
+  (* If both roots are local, disable the xferhint table to save time *)
+  if numRemote = 0 then Prefs.set Xferhint.xferbycopying false;
 
   (* If no paths were specified, then synchronize the whole replicas *)
   if Prefs.read Globals.paths = [] then Prefs.set Globals.paths [Path.empty];
 
-  (* Expand any "wildcard" paths [with final component *] *)
-  Globals.expandWildcardPaths();
-
-  Update.storeRootsName ();
-
-  if
-    numRemote > 0 && not (Prefs.read contactquietly || Prefs.read Trace.terse)
-  then
-    Util.msg "Connected [%s]\n"
-      (Util.replacesubstring (Update.getRootsName()) ", " " -> ");
-
-  debug (fun() ->
-       Printf.eprintf "Roots: \n";
-       Safelist.iter (fun clr -> Printf.eprintf "        %s\n" clr)
-         (Globals.rawRoots ());
-       Printf.eprintf "  i.e. \n";
-       Safelist.iter (fun clr -> Printf.eprintf "        %s\n"
-                        (Clroot.clroot2string (Clroot.parseRoot clr)))
-         (Globals.rawRoots ());
-       Printf.eprintf "  i.e. (in canonical order)\n";
-       Safelist.iter (fun r ->
-                        Printf.eprintf "       %s\n" (root2string r))
-         (Globals.rootsInCanonicalOrder());
-       Printf.eprintf "\n");
-
-  Lwt_unix.run
-    (validateAndFixupPrefs () >>=
-     Globals.propagatePrefs);
-
-  (* Initializes some backups stuff according to the preferences just loaded from the profile.
-     Important to do it here, after prefs are propagated, because the function will also be
-     run on the server, if any. Also, this should be done each time a profile is reloaded
-     on this side, that's why it's here. *)
-  Stasher.initBackups ();
+  initRoots displayWaitMessage termInteract;
 
   firstTime := false
+
+let refreshConnection ~displayWaitMessage ~termInteract =
+  assert (Safelist.length (Globals.rootsList ()) > 1);
+  let numConn = ref 0 in
+  Lwt_unix.run (Globals.allRootsIter
+    (fun r -> if Remote.isRootConnected r then incr numConn; Lwt.return ()));
+  if !numConn < 2 then initRoots displayWaitMessage termInteract
 
 (**********************************************************************
                        Common startup sequence
