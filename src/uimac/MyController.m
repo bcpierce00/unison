@@ -478,8 +478,10 @@ CAMLprim value unisonInit1Complete(value v)
             return;
         }
     }
-    NSLog(@"Unrecognized message from ssh: %@",prompt);
+    NSLog(@"Unrecognized message from ssh: '%@'",prompt);
         ocamlCall("x@", "openConnectionCancel", preconn);
+    NSRunAlertPanel(@"Connection Error", @"Unrecognized message from ssh: '%@'", @"OK", nil, nil, prompt);
+    [self chooseProfiles];
 }
 
 // The password window will invoke this when Enter occurs, b/c we
