@@ -28,8 +28,6 @@
 #include <caml/signals.h>
 #include <caml/callback.h>
 
-#include <features.h>
-
 static int inotify_flag_table[] = {
         IN_ACCESS, IN_ATTRIB, IN_CLOSE_WRITE, IN_CLOSE_NOWRITE,
         IN_CREATE, IN_DELETE, IN_DELETE_SELF, IN_MODIFY,
