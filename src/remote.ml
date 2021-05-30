@@ -1235,8 +1235,14 @@ let negociateFlowControl conn =
 
 let initConnection onClose in_ch out_ch =
   let conn = setupIO false in_ch out_ch in
-  checkHeader conn >>=
-  checkServerVersion conn >>= (fun () ->
+  let with_timeout t =
+    Lwt.choose [t;
+      Lwt_unix.sleep 120. >>= fun () ->
+      Lwt.fail (Util.Fatal "Timed out negotiating connection with the server")]
+  in
+  with_timeout (
+    checkHeader conn >>=
+    checkServerVersion conn) >>= (fun () ->
   (* From this moment forward, the RPC version has been selected. All
      communication must now adhere to that version's specification. *)
   enableFlowControl conn false;
