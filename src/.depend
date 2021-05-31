@@ -359,6 +359,16 @@ fsmonitor/linux/watcher.cmx : \
     fsmonitor/linux/lwt_inotify.cmx \
     lwt/lwt.cmx \
     fsmonitor/linux/inotify.cmx
+fsmonitor/solaris/watcher.cmo : \
+    fsmonitor/watchercommon.cmi \
+    ubase/safelist.cmi \
+    lwt/lwt_unix.cmi \
+    lwt/lwt.cmi
+fsmonitor/solaris/watcher.cmx : \
+    fsmonitor/watchercommon.cmx \
+    ubase/safelist.cmx \
+    lwt/lwt_unix.cmx \
+    lwt/lwt.cmx
 fsmonitor/watchercommon.cmo : \
     lwt/lwt_unix.cmi \
     lwt/lwt.cmi \
