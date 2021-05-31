@@ -103,6 +103,7 @@ buildexecutable::
 CAMLFLAGS+=-g
 
 INCLFLAGS=-I lwt -I ubase -I system
+DEP_INCLFLAGS::=$(INCLFLAGS)
 CAMLFLAGS+=$(INCLFLAGS)
 CAMLFLAGS+=-I system/$(SYSTEM) -I lwt/$(SYSTEM)
 
@@ -286,17 +287,20 @@ endif
 
 ifeq ($(OSARCH),Linux)
 -include fsmonitor/linux/Makefile src/fsmonitor/linux/Makefile
+INCLFLAGS+=-I fsmonitor -I fsmonitor/linux
 endif
 
 ifeq ($(OSARCH),win32gnuc)
 -include fsmonitor/windows/Makefile src/fsmonitor/windows/Makefile
+INCLFLAGS+=-I fsmonitor -I fsmonitor/windows
 endif
 
 ifeq ($(OSARCH),win32)
 -include fsmonitor/windows/Makefile src/fsmonitor/windows/Makefile
+INCLFLAGS+=-I fsmonitor -I fsmonitor/windows
 endif
 
-INCLFLAGS+=-I fsmonitor -I fsmonitor/linux -I fsmonitor/windows
+DEP_INCLFLAGS+=-I fsmonitor -I fsmonitor/linux -I fsmonitor/windows
 
 ####################################################################
 ### Static build setup
@@ -333,7 +337,7 @@ endif
 # Rebuild dependencies (must be invoked manually)
 .PHONY: depend
 depend::
-	ocamldep $(INCLFLAGS) *.mli *.ml */*.ml */*.mli */*/*.ml */*/*.mli > .depend
+	ocamldep $(DEP_INCLFLAGS) *.mli *.ml */*.ml */*.mli */*/*.ml */*/*.mli > .depend
 ifdef OCAMLDOT
 	echo 'digraph G {' > dot.tmp
 	echo '{ rank = same; "Fileinfo"; "Props"; "Fspath"; "Os"; "Path"; }'\
