@@ -486,6 +486,7 @@ let rec remove_file file =
   StringMap.iter (fun _ f -> remove_file f) file.subdirs;
   Hashtbl.remove file_by_id file.id;
   release_watch file;
+  clear_file_changes file;
   match file.parent with
     Root _         -> ()
   | Parent (nm, p) -> p.subdirs <- StringMap.remove nm p.subdirs
