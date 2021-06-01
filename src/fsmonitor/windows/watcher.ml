@@ -163,7 +163,7 @@ let watch_root_directory path dir =
          end else
            !time_ref := time)
       l;
-    if l = [] then begin
+    if l = [] && get_watch dir <> None then begin
       if !Watchercommon.debug then Format.eprintf "OVERFLOW@.";
       signal_overflow ()
     end;
