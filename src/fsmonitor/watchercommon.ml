@@ -556,6 +556,7 @@ let reset hash =
        end)
     roots;
   List.iter (fun key -> Hashtbl.remove roots key) !l;
+  clear_event_memory ();
   clear_change_table hash
 
 (****)
