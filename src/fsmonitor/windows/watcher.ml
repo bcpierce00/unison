@@ -156,10 +156,7 @@ let watch_root_directory path dir =
                  | _ ->
                      long_name subdir nm
                in
-               if
-                 not (kind = `MODIF && StringMap.mem nm (get_subdirs subdir))
-               then
-                 signal_change event_time subdir (Some nm) kind
+               signal_change event_time subdir (Some nm) kind
          end else
            !time_ref := time)
       l;
