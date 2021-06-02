@@ -167,7 +167,8 @@ let watch_root_directory path dir =
       if !Watchercommon.debug then Format.eprintf "OVERFLOW@.";
       signal_overflow ()
     end;
-    loop ()
+    if get_watch dir <> None then loop ()
+    else Lwt.return ()
   in
   ignore (Lwt.catch loop
             (fun e ->
