@@ -171,12 +171,11 @@ end
 (****)
 
 let useWatcher =
-  Prefs.createBool "watch" true
+  Prefs.createBool "watch" false
     "!when set, use a file watcher process to detect changes"
     "Unison uses a file watcher process, when available, to detect filesystem \
-     changes; this is used to speed up update detection, and for continuous \
-     synchronization (\\verb|-repeat watch| preference. Setting this flag to \
-     false disable the use of this process."
+     changes; this is used to speed up update detection. Setting this flag to \
+     false disables the use of this process."
 
 let printf o fmt =
   Printf.ksprintf

@@ -2069,9 +2069,8 @@ let docs =
       \n\
       \032  watch\n\
       \032         Unison uses a file watcher process, when available, to detect\n\
-      \032         filesystem changes; this is used to speed up update detection,\n\
-      \032         and for continuous synchronization (-repeat watch preference.\n\
-      \032         Setting this flag to false disable the use of this process.\n\
+      \032         filesystem changes; this is used to speed up update detection.\n\
+      \032         Setting this flag to false disables the use of this process.\n\
       \n\
       \032  xferbycopying\n\
       \032         When this preference is set, Unison will try to avoid\n\
