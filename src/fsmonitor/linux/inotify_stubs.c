@@ -33,7 +33,7 @@ static int inotify_flag_table[] = {
         IN_CREATE, IN_DELETE, IN_DELETE_SELF, IN_MODIFY,
         IN_MOVE_SELF, IN_MOVED_FROM, IN_MOVED_TO, IN_OPEN,
         IN_DONT_FOLLOW, IN_MASK_ADD, IN_ONESHOT, IN_ONLYDIR,
-        IN_MOVE, IN_CLOSE, IN_ALL_EVENTS, 0
+        IN_EXCL_UNLINK, IN_MOVE, IN_CLOSE, IN_ALL_EVENTS, 0
 };
 
 static int inotify_return_table[] = {
