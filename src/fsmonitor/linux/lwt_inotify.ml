@@ -42,7 +42,7 @@ let rec read st =
     Lwt.return (Queue.take st.q)
   with Queue.Empty ->
     Lwt_unix.wait_read st.lwt_fd >>= fun () ->
-    let l = Inotify.read st.fd in
+    let l = try Inotify.read st.fd with Unix.Unix_error (EAGAIN, _, _) -> [] in
     List.iter (fun ev -> Queue.push ev st.q) l;
     read st
 
