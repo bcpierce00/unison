@@ -242,8 +242,7 @@ let add_watch path file follow =
     release_watch file;
     match no with
       2 (* ENOENT *) ->
-        Watchercommon.error
-          (Format.sprintf "file '%s' does not exist" path)
+        raise Watchercommon.Already_lost
     | 28 (* ENOSPC *) ->
         Watchercommon.error "cannot add a watcher: system limit reached"
     | 13 (* EACCES *) | 20 (* ENOTDIR *) | 40 (* ELOOP *) ->

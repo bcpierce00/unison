@@ -4,6 +4,8 @@ val debug : bool ref
 val error : string -> 'a
 val format_exc : exn -> string
 
+exception Already_lost
+
 module StringMap : Map.S with type key = string
 
 module F (M : sig type watch end) : sig

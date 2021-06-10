@@ -163,6 +163,8 @@ let error msg =
 
 (****)
 
+exception Already_lost
+
 module F (M : sig type watch end) = struct
 include M
 
@@ -497,6 +499,28 @@ let rec remove_old_files file =
       remove_file file
   end
 
+let watch_path path file follow =
+  try
+    add_watch path file follow
+  with
+  | Already_lost ->
+      if is_root file then
+        error (Format.sprintf "Path '%s' does not exist" path)
+      else
+        signal_change (ref 0.) file None `DEL
+        (* Most likely cause: A subdir was deleted during the scan.
+           Report it as a deletion. If this was not a deletion (could
+           have been an unmount, perhaps even a lost network connection)
+           then reporting it as a deletion will do no harm. Unison will
+           only know that "there was a change" and do its own scan based
+           on the report.
+
+           While getting here is itself a rare event, it is most likely
+           that the real deletion was already reported via [watch].
+           The case of needing to report it here is really exceptional
+           but can happen the very first time a watcher is started on
+           a replica. *)
+
 let print_ack () = printf "OK\n"
 
 let start_watching hash fspath path =
@@ -505,7 +529,7 @@ let start_watching hash fspath path =
   start_file.gen <- !current_gen;
   let fspath = concat fspath path in
 (*Format.eprintf ">>> %s@." fspath;*)
-  if is_root start_file then add_watch fspath start_file false;
+  if is_root start_file then watch_path fspath start_file false;
   print_ack () >>= fun () ->
   let rec add_directories () =
     read_line () >>= fun l ->
@@ -519,7 +543,7 @@ let start_watching hash fspath path =
         clear_file_changes file;
         file.gen <- !current_gen;
 (*Format.eprintf "%s@." fullpath;*)
-        add_watch fullpath file false;
+        watch_path fullpath file false;
         print_ack () >>= fun () ->
         add_directories ()
     | "LINK" ->
@@ -529,7 +553,7 @@ let start_watching hash fspath path =
         clear_file_changes file;
         file.gen <- !current_gen;
 (*Format.eprintf "%s@." fullpath;*)
-        add_watch fullpath file true;
+        watch_path fullpath file true;
         print_ack () >>= fun () ->
         add_directories ()
     | "DONE" ->
