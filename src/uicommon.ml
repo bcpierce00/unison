@@ -95,6 +95,7 @@ let repeat =
      ^ "beginning again. When the argument is \\verb|watch|, Unison relies on "
      ^ "an external file monitoring process to synchronize whenever a change "
      ^ "happens.")
+let repeatWatcher () = Prefs.read repeat = "watch"
 
 let retry =
   Prefs.createInt "retry" 0
@@ -488,6 +489,7 @@ let validateAndFixupPrefs () =
   Fileinfo.init someHostIsRunningBareWindows;
   Prefs.set Globals.someHostIsRunningWindows someHostIsRunningWindows;
   Prefs.set Globals.allHostsAreRunningWindows allHostsAreRunningWindows;
+  if repeatWatcher () then Prefs.set Fswatch.useWatcher true;
   return ())
 
 (* ---- *)

@@ -1164,6 +1164,7 @@ uicommon.cmo : \
     lwt/lwt_unix.cmi \
     lwt/lwt.cmi \
     globals.cmi \
+    fswatch.cmi \
     fspath.cmi \
     files.cmi \
     fileinfo.cmi \
@@ -1192,6 +1193,7 @@ uicommon.cmx : \
     lwt/lwt_unix.cmx \
     lwt/lwt.cmx \
     globals.cmx \
+    fswatch.cmx \
     fspath.cmx \
     files.cmx \
     fileinfo.cmx \
