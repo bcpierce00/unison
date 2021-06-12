@@ -278,6 +278,8 @@ let rec add_watch path file follow =
         if is_directory path follow then add_watch_children path
           (fun nm -> associate true wh id follow (Filename.concat path nm) nm)
       with
+      | Unix.Unix_error (ENOENT, _, _) ->
+          raise Watchercommon.Already_lost
       | Unix.Unix_error (EACCES, _, _)
       | Unix.Unix_error (ENOTDIR, _, _)
       | Unix.Unix_error (ELOOP, _, _) ->
