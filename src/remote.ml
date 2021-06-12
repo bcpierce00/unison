@@ -1219,7 +1219,8 @@ let checkConnection host ioServer =
   connectionCheck := host;
   (* Poke on the socket to trigger an error if connection has been lost. *)
   Lwt_unix.run (
-    Lwt_unix.read ioServer.inputBuffer.channel ioServer.inputBuffer.buffer 0 0
+    (if (Util.osType = `Win32) then Lwt.return 0 else
+    Lwt_unix.read ioServer.inputBuffer.channel ioServer.inputBuffer.buffer 0 0)
     (* Try to make sure connection cleanup, if necessary, has finished
        before returning.
        Since there is no way to reliably detect when other threads have
