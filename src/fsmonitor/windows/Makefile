@@ -8,9 +8,9 @@ FSMOCAMLOBJS = \
    system/win/system_impl.cmo \
    lwt/lwt.cmo lwt/pqueue.cmo lwt/win/lwt_unix_impl.cmo lwt/lwt_unix.cmo \
    lwt/win/lwt_win.cmo \
-   $(DIR)/shortnames.cmo fsmonitor/watchercommon.cmo $(DIR)/watcher.cmo
+   fsmonitor/watchercommon.cmo $(DIR)/watcher.cmo
 FSMCOBJS = \
-   system/system_win_stubs.o lwt/lwt_unix_stubs.o $(DIR)/shortnames_stubs.o
+   system/system_win_stubs.o lwt/lwt_unix_stubs.o
 FSMOCAMLLIBS=bigarray.cma unix.cma
 
 ifeq ($(NATIVE), true)

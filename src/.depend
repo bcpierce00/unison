@@ -378,18 +378,11 @@ fsmonitor/watchercommon.cmx : \
     lwt/lwt.cmx \
     fsmonitor/watchercommon.cmi
 fsmonitor/watchercommon.cmi :
-fsmonitor/windows/shortnames.cmo : \
-    fsmonitor/windows/shortnames.cmi
-fsmonitor/windows/shortnames.cmx : \
-    fsmonitor/windows/shortnames.cmi
-fsmonitor/windows/shortnames.cmi :
 fsmonitor/windows/watcher.cmo : \
     fsmonitor/watchercommon.cmi \
-    fsmonitor/windows/shortnames.cmi \
     lwt/lwt.cmi
 fsmonitor/windows/watcher.cmx : \
     fsmonitor/watchercommon.cmx \
-    fsmonitor/windows/shortnames.cmx \
     lwt/lwt.cmx
 fspath.cmo : \
     uutil.cmi \
