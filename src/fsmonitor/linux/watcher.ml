@@ -218,6 +218,7 @@ let release_watch file =
         Hashtbl.replace watcher_by_id id s
 
 let selected_events =
+  Inotify.S_Excl_unlink ::
   Inotify.([S_Attrib; S_Modify; S_Delete_self; S_Move_self;
             S_Create; S_Delete; S_Modify; S_Moved_from; S_Moved_to])
 let selected_events_nofollow = Inotify.S_Dont_follow :: selected_events
