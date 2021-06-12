@@ -131,8 +131,8 @@ let chown _ _ _ = raise (Unix.Unix_error (Unix.ENOSYS, "chown", ""))
 let utimes f t1 t2 = utimes_impl f (epath f) t1 t2
 let link f1 f2 = link_impl f1 (epath f1) (epath f2)
 let openfile f flags perm = open_impl f (epath f) flags perm
-let readlink _ = raise (Unix.Unix_error (Unix.ENOSYS, "readlink", ""))
-let symlink _ _ = raise (Unix.Unix_error (Unix.ENOSYS, "symlink", ""))
+let readlink = Unix.readlink
+let symlink f t = Unix.symlink f t
 
 let chdir f =
   try
@@ -312,6 +312,8 @@ let canSetTime f = true
    renaming a file "b" over a file "a" does not change the inode
    number of "a". *)
 let hasInodeNumbers () = true
+
+let hasSymlink = Unix.has_symlink
 
 external hasCorrectCTime_impl : unit -> bool = "win_has_correct_ctime"
 

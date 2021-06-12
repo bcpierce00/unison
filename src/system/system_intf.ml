@@ -46,6 +46,7 @@ val fingerprint : fspath -> Digest.t
 
 val canSetTime : fspath -> bool
 val hasInodeNumbers : unit -> bool
+val hasSymlink : unit -> bool
 
 (* [hasCorrectCTime] is true when [stat] and [lstat] return the status change
  * time. This is commonly broken on Windows, where creation time (completely
