@@ -237,3 +237,27 @@ jobs:
         files: ${{ steps.macapp.outputs.APP_NAME }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  opam_dune_build:
+    strategy:
+      fail-fast: false
+      matrix:
+        job:
+        - { os: ubuntu-latest  , ocaml-compiler: 4.12.x }
+
+    runs-on: ${{ matrix.job.os }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Use OCaml ${{ matrix.job.ocaml-compiler }}
+      uses: ocaml/setup-ocaml@v2
+      with:
+        ocaml-compiler: "${{ matrix.job.ocaml-compiler }}"
+
+    - run: opam install . --deps-only
+
+    - run: opam exec -- dune build && cp -L ./_build/install/default/bin/unison* ./src/
+
+#    - run: opam exec -- make test
