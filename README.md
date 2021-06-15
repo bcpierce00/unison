@@ -156,3 +156,17 @@ enough.  Others should be discussed on unison-hackers.
 
 Proposed changes should change documentation in concert with code, and
 should pass CI.
+
+Unison operates under the widely-used "inbound=outbound" contribution
+license process.  Therefore, all contributions to Unison must be
+licensed under the project's license, currently GPLv3 (unless a file
+under a different license is being modified).  New files of
+significance must have a copyright statement and grant permission to
+copy under the project's license.  Significant changes should include
+copyright statements and/or add authors.  Submitting a pull request or
+posting a contribution on a mailinglist is an assertion that the
+submitter has the authority to license their changes under the
+project's license.  (This paragraph is intended to summarize the
+normal conventions, and is not intended to create any new norms.  See
+https://sfconservancy.org/blog/2014/jun/09/do-not-need-cla/ for a
+longer discussion.)
