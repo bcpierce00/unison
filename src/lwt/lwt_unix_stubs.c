@@ -699,3 +699,15 @@ CAMLprim value win_open_directory (value path, value wpath) {
   }
   CAMLreturn(win_alloc_handle(h));
 }
+
+value copy_wstring(LPCWSTR s);
+
+CAMLprim value win_long_path_name(value path) {
+  CAMLparam1(path);
+  wchar_t lbuf[32768] = L"";
+  DWORD res;
+
+  res = GetLongPathNameW((LPCWSTR) String_val(path), lbuf, 32768);
+
+  CAMLreturn(res == 0 || res > 32767 ? path : copy_wstring(lbuf));
+}

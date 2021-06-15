@@ -96,7 +96,15 @@ let watch_root_directory path dir =
            time_ref := ref time;
            previous_event := Some ev;
            if !Watchercommon.debug then print_event ev;
-           match follow_win_path dir ev_path 0 with
+           (* If event path is not found among the watched paths then blindly
+              expand it to long names form and try again. MSDN states
+              the following: "If there is both a short and long name for
+              the file, [Lwt_win.readdirectorychanges] will return one of
+              these names, but it is unspecified which one." *)
+           let pathnm = follow_win_path dir ev_path 0 in
+           let pathnm = if pathnm <> None then pathnm else
+             follow_win_path dir (Lwt_win.longpathname path ev_path) 0 in
+           match pathnm with
              None ->
                ()
            | Some (subdir, nm) ->
