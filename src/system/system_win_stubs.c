@@ -23,7 +23,7 @@ struct filedescr {
 };
 #define Handle_val(v) (((struct filedescr *) Data_custom_val(v))->fd.handle)
 
-static value copy_wstring(LPCWSTR s)
+value copy_wstring(LPCWSTR s)
 {
   int len;
   value res;
