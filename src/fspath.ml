@@ -199,14 +199,6 @@ let concat fspath path =
       Fspath (Bytes.to_string s)
   end
 
-(* Filename.dirname is screwed up in Windows so we use this function.  It    *)
-(* assumes that path separators are slashes.                                 *)
-let winBadDirnameArg = Rx.rx "[a-zA-Z]:/[^/]*"
-let myDirname s =
-  if Util.osType=`Win32 && Rx.match_string winBadDirnameArg s
-  then String.sub s 0 3
-  else Filename.dirname s
-
 (*****************************************************************************)
 (*                         CANONIZING PATHS                                  *)
 (*****************************************************************************)
@@ -263,7 +255,7 @@ let canonizeFspath p0 =
           if isRootDir p then raise
             (Util.Fatal (Printf.sprintf
                "Cannot find canonical name of root directory %s\n(%s)" p why));
-          let parent = myDirname p in
+          let parent = Filename.dirname p in
           let parent' = begin
             (try Fs.chdir parent with
                Sys_error why2 -> raise (Util.Fatal (Printf.sprintf
@@ -329,9 +321,9 @@ let findWorkingDir fspath path =
       Util.msg "Os.findWorkingDir(%s,%s) = (%s,%s)\n"
         (toString fspath)
         (Path.toString path)
-        (myDirname realpath)
+        (Filename.dirname realpath)
         p);
-  (localString2fspath (myDirname realpath), Path.fromString p)
+  (localString2fspath (Filename.dirname realpath), Path.fromString p)
 
 let quotes (Fspath f) = Uutil.quotes f
 let compare (Fspath f1) (Fspath f2) = compare f1 f2
