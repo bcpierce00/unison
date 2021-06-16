@@ -28,6 +28,10 @@
 #include <caml/signals.h>
 #include <caml/callback.h>
 
+#ifndef IN_EXCL_UNLINK
+#define IN_EXCL_UNLINK 0  /* If not supported, just ignore */
+#endif
+
 static int inotify_flag_table[] = {
         IN_ACCESS, IN_ATTRIB, IN_CLOSE_WRITE, IN_CLOSE_NOWRITE,
         IN_CREATE, IN_DELETE, IN_DELETE_SELF, IN_MODIFY,
