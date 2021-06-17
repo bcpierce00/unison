@@ -584,12 +584,6 @@ let makeCaseSensitiveOnRoot =
        makeCaseSensitive (thisRootsGlobalName fspath);
        Lwt.return ())
 
-(*FIX: remove when Unison version > 2.40 *)
-let canMakeCaseSensitive () =
-  Globals.allRootsMap (fun r -> Remote.commandAvailable r "makeCaseSensitive")
-    >>= fun l ->
-  Lwt.return (List.for_all (fun x -> x) l)
-
 (****)
 
 (* Get the archive case sensitivity mode from the archive magic. *)
@@ -612,12 +606,7 @@ let checkArchiveCaseSensitivity l =
   if curMode = archMode then
     Lwt.return ()
   else begin
-    begin if archMode = Case.caseSensitiveModeDesc then
-      canMakeCaseSensitive ()
-    else
-      Lwt.return false
-    end >>= fun convert ->
-    if convert then
+    if archMode = Case.caseSensitiveModeDesc then
       Globals.allRootsIter (fun r -> makeCaseSensitiveOnRoot r ())
     else begin
       (* We cannot compute the archive name locally as it
