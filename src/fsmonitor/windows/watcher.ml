@@ -72,7 +72,38 @@ let rec follow_win_path dir path pos =
         Format.eprintf "Ignored directory %s in path %s@." nm path;
       None
   with Not_found ->
-    Some (dir, String.sub path pos (String.length path - pos))
+    Some (dir, Some (String.sub path pos (String.length path - pos)))
+
+let rec follow_win_path_parent root dir path pos =
+  try
+    let i = String.index_from path pos '\\' in
+    let nm = String.sub path pos (i - pos) in
+    let getn nm =
+      let dir = StringMap.find nm (get_subdirs dir) in
+      follow_win_path_parent (root ^ "\\" ^ nm) dir path (i + 1)
+    in
+    try getn nm with Not_found -> getn (Lwt_win.longpathname root nm)
+  with Not_found ->
+    Some (dir, None)
+
+let get_win_path root dir ((ev_path, act) as ev) =
+  (* Blindly expand the event path to long names form. If event path
+     is not found among the watched patchs then try to find the nearest
+     parent directory and report a modification on it. MSDN states the
+     following: "If there is both a short and long name for the file,
+     [Lwt_win.readdirectorychanges] will return one of these names,
+     but it is unspecified which one." *)
+  let p = if event_kind ev = `DEL then None else
+    follow_win_path dir (Lwt_win.longpathname root ev_path) 0 in
+  match p with
+  | Some _ as pathnm -> (pathnm, ev)
+  | None ->
+    (* If path is not found or event is a deletion then look up the
+       parent directory and report a modification on it. It is not
+       possible to expand the name of the deleted file or directory
+       (it doesn't exist). *)
+      (follow_win_path_parent root dir ev_path 0,
+        (ev_path, Lwt_win.FILE_ACTION_MODIFIED))
 
 let previous_event = ref None
 let time_ref = ref (ref 0.)
@@ -87,6 +118,17 @@ let flags =
 
 let watch_root_directory path dir =
   let h = Lwt_win.open_directory path in
+  let path = Lwt_win.longpathname "" path in
+  let path =
+    if String.sub path 0 4 = "\\\\?\\" then begin
+      let n = String.sub path 4 (String.length path - 4) in
+      if String.sub n 0 3 = "UNC" then
+        "\\" ^ String.sub n 3 (String.length n - 3)
+      else
+        n
+    end else
+      path
+  in
   let rec loop () =
     Lwt_win.readdirectorychanges h true flags >>= fun l ->
     let time = Unix.gettimeofday () in
@@ -96,14 +138,7 @@ let watch_root_directory path dir =
            time_ref := ref time;
            previous_event := Some ev;
            if !Watchercommon.debug then print_event ev;
-           (* If event path is not found among the watched paths then blindly
-              expand it to long names form and try again. MSDN states
-              the following: "If there is both a short and long name for
-              the file, [Lwt_win.readdirectorychanges] will return one of
-              these names, but it is unspecified which one." *)
-           let pathnm = follow_win_path dir ev_path 0 in
-           let pathnm = if pathnm <> None then pathnm else
-             follow_win_path dir (Lwt_win.longpathname path ev_path) 0 in
+           let pathnm, ev = get_win_path path dir ev in
            match pathnm with
              None ->
                ()
@@ -111,7 +146,7 @@ let watch_root_directory path dir =
                let event_time =
                  if event_is_immediate ev then ref 0. else !time_ref in
                let kind = event_kind ev in
-               signal_change event_time subdir (Some nm) kind
+               signal_change event_time subdir nm kind
          end else
            !time_ref := time)
       l;
