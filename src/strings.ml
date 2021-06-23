@@ -4,7 +4,7 @@
 let docs =
     ("about", ("About Unison", 
      "Unison File Synchronizer\n\
-      Version 2.51.3.73\n\
+      Version 2.51.4\n\
       \n\
       "))
 ::
@@ -2880,8 +2880,8 @@ let docs =
       \n\
       "))
 ::
-    ("news", ("Changes in Version 2.51.3.73", 
-     "Changes in Version 2.51.3.73\n\
+    ("news", ("Changes in Version 2.51.4", 
+     "Changes in Version 2.51.4\n\
       \n\
       \032  Changes since 2.51.3:\n\
       \032    * OCaml 4.12 support\n\
