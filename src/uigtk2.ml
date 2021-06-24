@@ -3101,7 +3101,7 @@ lst_store#set ~row ~column:c_path path;
       ignore (mainWindow#prepend
                 [ r1; ""; r2; ""; transcodeFilename path ]);
       displayArrow 0 i action;
-      displayStatusIcon i status
+      displayStatusIcon 0 status
     done;
     debug (fun()-> Util.msg "reset current to %s\n"
              (match savedCurrent with None->"None" | Some(i) -> string_of_int i));
