@@ -1369,7 +1369,9 @@ let getProfile default =
 let handleException e =
   restoreTerminal();
   let msg = Uicommon.exn2string e in
-  Trace.log (msg ^ "\n");
+  let () =
+    try Trace.log (msg ^ "\n")
+    with Util.Fatal _ -> () in (* Can't allow fatal errors in fatal error handler *)
   if not !Trace.sendLogMsgsToStderr then alwaysDisplay ("\n" ^ msg ^ "\n")
 
 let rec start interface =
