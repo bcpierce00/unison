@@ -319,6 +319,9 @@ let rpcSupportedVersionStrHdr =
     (Safelist.map (fun v -> string_of_int v)
        rpcSupportedVersions)
 
+(* FIX: Added in 2021. Should be removed after a couple of years. *)
+let rpcServerCmdlineOverride = "__new-rpc-mode"
+
 (****)
 
 type connection =
@@ -1378,7 +1381,7 @@ let buildShellConnection onClose shell host userOpt portOpt rootName termInterac
     (if Prefs.read serverCmd="" then Uutil.myName
      else Prefs.read serverCmd)
     ^ (if Prefs.read addversionno then "-" ^ Uutil.myMajorVersion else "")
-    ^ " -server" in
+    ^ " -server " ^ rpcServerCmdlineOverride in
   let userArgs =
     match userOpt with
       None -> []
@@ -1614,7 +1617,7 @@ let openConnectionStart clroot =
             (if Prefs.read serverCmd="" then Uutil.myName
              else Prefs.read serverCmd)
             ^ (if Prefs.read addversionno then "-" ^ Uutil.myMajorVersion else "")
-            ^ " -server" in
+            ^ " -server " ^ rpcServerCmdlineOverride in
           let userArgs =
             match userOpt with
               None -> []
@@ -1780,14 +1783,15 @@ let compatServer conn =
 
 (* This function loops, waits for commands, and passes them to
    the relevant functions. *)
-let commandLoop in_ch out_ch =
+let commandLoop ~compatMode in_ch out_ch =
   Trace.runningasserver := true;
   (* Send header indicating to the client that it has successfully
      connected to the server *)
   let conn = setupIO true in_ch out_ch in
   Lwt.catch
     (fun () ->
-       if Util.StringMap.mem rpcCompatName (Prefs.scanCmdLine "") then
+       if compatMode ||
+             Util.StringMap.mem rpcCompatName (Prefs.scanCmdLine "") then
          (* Must enable flow control because that is the default for 2.51 *)
          let () = enableFlowControl conn true in
          let () = setConnectionVersion conn 0 in
@@ -1870,7 +1874,7 @@ let waitOnPort hostOpt port =
          Lwt_unix.setsockopt connected Unix.SO_KEEPALIVE true;
          begin try
            (* Accept a connection *)
-           Lwt_unix.run (commandLoop connected connected)
+           Lwt_unix.run (commandLoop ~compatMode:false connected connected)
          with Util.Fatal "Lost connection with the server" -> () end;
          (* The client has closed its end of the connection *)
          begin try Lwt_unix.close connected with Unix.Unix_error _ -> () end;
@@ -1889,7 +1893,19 @@ let beAServer () =
       "Environment variable HOME unbound: \
        executing server in current directory\n"
   end;
+  (* Let's start with 2.51-compatibility mode. Newer clients will add
+     a special override keyword in server args that will disable the
+     compatibility mode.
+
+     FIX: It is a bit of a hack, so better not make it permanent.
+     It was added in 2021 and should be removed after a couple of years. *)
+  let compatMode =
+     try
+       not (Prefs.scanCmdLine "" |> Util.StringMap.find "rest"
+            |> Safelist.mem rpcServerCmdlineOverride)
+     with Not_found -> true
+  in
   Lwt_unix.run
-    (commandLoop
+    (commandLoop ~compatMode
        (Lwt_unix.of_unix_file_descr Unix.stdin)
        (Lwt_unix.of_unix_file_descr Unix.stdout))
