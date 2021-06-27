@@ -164,25 +164,39 @@ let displayWhenInteractive message =
 
 let getInput () =
   match !cbreakMode with
-    None ->
-      let l = input_line stdin in
-      if l="" then "" else String.sub l 0 1
+    None -> input_line stdin
   | Some funs ->
+      (* Raw terminal mode, we want to read the input directly, without the line
+         buffering. We can't use [Stdlib.input_char] because OCaml 'char' equals
+         one byte and this is not what we want to read. Not all characters are
+         one byte (mainly thinking of UTF-8). We also want to make sure that we
+         properly read in any input ANSI escape sequences. *)
       let input_char () =
         (* We cannot used buffered I/Os under Windows, as character
            '\r' is not passed through (probably due to the code that
            turns \r\n into \n) *)
-        let s = Bytes.create 1 in
-        let n = Unix.read Unix.stdin s 0 1 in
+        let l = 9 in (* This should suffice to fit a complete escape sequence *)
+        let s = Bytes.create l in
+        let n = Unix.read Unix.stdin s 0 l in
         if n = 0 then raise End_of_file;
         if Bytes.get s 0 = '\003' then raise Sys.Break;
-        Bytes.get s 0
+        Bytes.sub_string s 0 n
       in
       funs.System.startReading ();
       let c = input_char () in
       funs.System.stopReading ();
-      let c = if c='\n' || c = '\r' then "" else String.make 1 c in
-      display c;
+      let c = match c with
+        | "\000" -> "(invalid input)" (* Windows*)
+        | "\n" | "\r" -> ""
+        | c when Sys.win32 -> Unicode.protect c
+                 (* This is not correct because [Unicode.protect] assumes
+                    Latin1 encoding. But it does not matter here as currently
+                    non-ASCII input is not expected to be processed anyway. *)
+                 (* FIX: Must reassess this once proper UTF-8 input becomes
+                    possible and widespread on Windows. *)
+        | c -> c in
+      if c <> "" && c.[0] <> '\027' then
+        display c;
       c
 
 let newLine () =
