@@ -817,7 +817,7 @@ let uiInit
 
   (* Load the profile and command-line arguments *)
   initPrefs
-    profileName displayWaitMessage getFirstRoot getSecondRoot termInteract;
+    ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot ~termInteract;
 
   (* Turn on GC messages, if the '-debug gc' flag was provided *)
   if Trace.enabled "gc" then Gc.set {(Gc.get ()) with Gc.verbose = 0x3F};

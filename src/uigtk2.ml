@@ -94,7 +94,8 @@ let icon =
 let icon =
   let p = GdkPixbuf.create ~width:48 ~height:48 ~has_alpha:true () in
   Gpointer.blit
-    (Gpointer.region_of_bytes (Bytes.of_string Pixmaps.icon_data)) (GdkPixbuf.get_pixels p);
+    ~src:(Gpointer.region_of_bytes (Bytes.of_string Pixmaps.icon_data))
+    ~dst:(GdkPixbuf.get_pixels p);
   p
 
 let leftPtrWatch =
@@ -581,11 +582,11 @@ let statistics () =
     lst#set_row ~selectable:false r
   done;
 
-  ignore (t#event#connect#map (fun _ ->
+  ignore (t#event#connect#map ~callback:(fun _ ->
     emission#activate true;
     reception#activate true;
     false));
-  ignore (t#event#connect#unmap (fun _ ->
+  ignore (t#event#connect#unmap ~callback:(fun _ ->
     emission#activate false;
     reception#activate false;
     false));
@@ -1490,7 +1491,7 @@ let createProfile parent =
       options#as_widget
   in
   ignore
-    (assistant#connect#prepare (fun () ->
+    (assistant#connect#prepare ~callback:(fun () ->
        if assistant#current_page = p &&
           not (Util.osType <> `Win32 || React.state askUnicode)
        then
@@ -2956,7 +2957,7 @@ let createToplevelWindow () =
       if scroll then begin
         let r = mainWindow#rows in
         let p = if r < 2 then 0. else (float i +. 0.5) /. float (r - 1) in
-        mainWindow#scroll_vertical `JUMP (min p 1.)
+        mainWindow#scroll_vertical `JUMP ~pos:(min p 1.)
       end;
       if IntSet.is_empty !current then mainWindow#select i 0
     end else begin
@@ -3840,9 +3841,9 @@ lst_store#set ~row ~column:c_path path;
     debug (fun()-> Util.msg "Loading profile %s..." p);
     Trace.status "Loading profile";
     unsynchronizedPaths := None;
-    Uicommon.initPrefs p
-      (fun () -> if not reload then displayWaitMessage ())
-      getFirstRoot getSecondRoot termInteract;
+    Uicommon.initPrefs ~profileName:p
+      ~displayWaitMessage:(fun () -> if not reload then displayWaitMessage ())
+      ~getFirstRoot ~getSecondRoot ~termInteract;
     !updateFromProfile ()
   in
 
@@ -3854,7 +3855,7 @@ lst_store#set ~row ~column:c_path path;
     in
     clearMainWindow ();
     if not (Prefs.profileUnchanged ()) then loadProfile n true
-    else Uicommon.refreshConnection displayWaitMessage termInteract
+    else Uicommon.refreshConnection ~displayWaitMessage ~termInteract
   in
 
   let detectCmd () =
@@ -4211,13 +4212,13 @@ let start _ =
     let detectCmd = createToplevelWindow() in
 
     Uicommon.uiInit
-      fatalError
-      tryAgainOrQuit
-      displayWaitMessage
-      (fun () -> getProfile true)
-      getFirstRoot
-      getSecondRoot
-      termInteract;
+      ~reportError:fatalError
+      ~tryAgainOrQuit
+      ~displayWaitMessage
+      ~getProfile:(fun () -> getProfile true)
+      ~getFirstRoot
+      ~getSecondRoot
+      ~termInteract;
     detectCmd ();
 
     (* Display the ui *)

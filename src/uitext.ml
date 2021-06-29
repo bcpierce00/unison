@@ -1061,9 +1061,9 @@ let synchronizeOnce ?wantWatcher ?skipRecentFiles pathsOpt =
     Util.set_infos (Format.sprintf "%c %s" c path)
   in
   Uicommon.refreshConnection
-    (fun () -> if not (Prefs.read silent)
-               then Util.msg "%s\n" (Uicommon.contactingServerMsg()))
-    None;
+    ~displayWaitMessage:(fun () -> if not (Prefs.read silent)
+                         then Util.msg "%s\n" (Uicommon.contactingServerMsg()))
+    ~termInteract:None;
   Trace.status "Looking for changes";
   if not (Prefs.read Trace.terse) && (Prefs.read Trace.debugmods = []) then
     Uutil.setUpdateStatusPrinter (Some showStatus);
@@ -1323,15 +1323,22 @@ let rec start interface =
     (* Just to make sure something is there... *)
     setWarnPrinterForInitialization();
     Uicommon.uiInit
+      ~reportError:
       (fun s -> Util.msg "%s%s\n\n%s\n" Uicommon.shortUsageMsg profmgrUsageMsg s; exit 1)
+      ~tryAgainOrQuit:
       (fun s -> Util.msg "%s" Uicommon.shortUsageMsg; exit 1)
+      ~displayWaitMessage:
       (fun () -> setWarnPrinter();
                  if Prefs.read silent then Prefs.set Trace.terse true;
                  if not (Prefs.read silent)
                  then Util.msg "%s\n" (Uicommon.contactingServerMsg()))
+      ~getProfile:
       (fun () -> let prof = getProfile "default" in restoreTerminal(); prof)
+      ~getFirstRoot:
       (fun () -> Util.msg "%s%s\n" Uicommon.shortUsageMsg profmgrUsageMsg; exit 1)
+      ~getSecondRoot:
       (fun () -> Util.msg "%s%s\n" Uicommon.shortUsageMsg profmgrUsageMsg; exit 1)
+      ~termInteract:
       None;
 
     (* Some preference settings imply others... *)
