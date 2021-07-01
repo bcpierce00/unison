@@ -171,6 +171,13 @@ let grab conn s len =
 let peekWithoutBlocking conn =
   Bytes.sub conn.buffer 0 conn.length
 
+let peekWithBlocking conn =
+  (if conn.length = 0 then begin
+    fillInputBuffer conn
+  end else
+    Lwt.return ()) >>= fun () ->
+  Lwt.return (peekWithoutBlocking conn)
+
 (****)
 
 (* Low-level outputs *)
@@ -1201,6 +1208,80 @@ let checkHeader conn =
 
 (****)
 
+(* Magic string exchange is used within the old protocol to detect if both
+   the server and the client support the new RPC version negotiation mechanism.
+
+   It works like this:
+    1. Directly after connection header, the server sends the magic string and
+       otherwise continues using the old RPC protocol.
+    2. An old client will process the magic string as a valid RPC message that
+       is effectively a no-op and continues using old RPC protocol as normal.
+    3. A new client will notice the magic string and send the same magic string
+       in response. It will stop the old RPC protocol and restart from header
+       checking and what is now hopefully an RPC version negotiation.
+    4. The server will notice client's magic string, stop the old RPC protocol
+       and restart from connection header, this time with the new RPC version
+       negotiation mechanism.
+
+   The magic string is defined as follows:
+    1. encoded int 1 followed by
+    2. encoded int > 0 (packet size) followed by
+    3. a valid 2.51 protocol packet, the contents of which we don't care about,
+       but it must be a no-op for 2.51 client (in this case a StreamAbort).
+
+   Int 1 is a valid 2.51 protocol message ID but it is never used with normal
+   messages, hence its safe usage as a magic string. A StreamAbort to a client,
+   especially with id 1, is a safe no-op. *)
+
+let magicId = 1
+(* Although this magic packet is inherently dependent on OCaml version,
+   it is unlikely to change and has been verified to be the same with
+   OCaml versions 4.05 to 4.12. It is hard coded here to avoid any future
+   changes (the idea being that old clients will not be compiled with
+   any newer OCaml compilers). *)
+let magicPacket = "rsp\132\149\166\190\000\000\000\001\000\000\000\000\000\000\000\000\000\000\000\000A"
+let magic = encodeInt magicId :: encodeInt (String.length magicPacket) ::
+              [Bytearray.of_string magicPacket, 0, String.length magicPacket]
+
+let checkForMagicString conn =
+  (* Fill the buffer and then peek at the contents without consuming *)
+  peekWithBlocking conn.inputBuffer >>= fun b ->
+  if Bytes.length b < intSize then
+    Lwt.return false
+  else begin
+    let id = Bytearray.create intSize in
+    let () = Bytearray.blit_from_bytes b 0 id 0 intSize in
+    if decodeInt id 0 <> magicId then
+      Lwt.return false
+    else begin
+      debug (fun () -> Util.msg "Received RPC version upgrade notice\n");
+      (* Consume magic id from buffer *)
+      grab conn.inputBuffer id intSize >>= fun () ->
+      (* Consume magic packet from buffer *)
+      receivePacket conn >>= fun _ -> Lwt.return true
+      (* We rely solely on the magic id and don't check the contents of the
+         packet. Should it become necessary for some reason then it is
+         possible to verify the magic packet byte by byte here. *)
+    end
+  end
+
+let checkServerUpgrade conn header =
+  if header <> compatConnectionHeader then
+    Lwt.return header
+  else
+    checkForMagicString conn >>= function
+    | false -> Lwt.return header
+    | true ->
+        (* Consume write token from buffer *)
+        let id = Bytearray.create intSize in
+        grab conn.inputBuffer id intSize >>= fun () ->
+        (* Send the magic string *)
+        dumpUrgent conn magic >>= fun () ->
+        debug (fun () -> Util.msg "Going to attempt RPC version upgrade\n");
+        checkHeader conn
+
+(****)
+
 (*
    Disable flow control if possible.
    Both hosts must use non-blocking I/O (otherwise a dead-lock is
@@ -1245,6 +1326,7 @@ let initConnection onClose in_ch out_ch =
   in
   with_timeout (
     checkHeader conn >>=
+    checkServerUpgrade conn >>=
     checkServerVersion conn) >>= (fun () ->
   (* From this moment forward, the RPC version has been selected. All
      communication must now adhere to that version's specification. *)
@@ -1758,20 +1840,17 @@ let forwardMsgToClient =
        (fun _ str -> (*msg "forwardMsgToClient: %s\n" str; *)
           Lwt.return (Trace.displayMessageLocally str)))
 
-let rpcCompatName = "compat251"
-let _ =
-  Prefs.createBool rpcCompatName false ~local:true
-    "![for server] use a compatibility mode for version 2.51 clients"
-    "When this preference is set on a server, Unison will force a special \
-     compatibility mode to allow a client with a 2.51.x version to connect. \
-     This preference has no effect when set on the client. \
-     Enable only for clients that are unable to connect otherwise. \
-     The default value is \\texttt{false}."
-
 (* Compatibility mode for 2.51 clients. *)
-let compatServer conn =
+let compatServerInit conn =
   dump conn [(Bytearray.of_string compatConnectionHeader, 0,
-                String.length compatConnectionHeader)] >>= (fun () ->
+                String.length compatConnectionHeader)] >>= fun () ->
+  (* Send the magic string to notify new clients *)
+  dumpUrgent conn magic >>= fun () ->
+  (* Let's see if the client noticed the magic string. This is
+     a no-op for old clients. *)
+  checkForMagicString conn
+
+let compatServerRun conn =
   (* Set the local warning printer to make an RPC to the client and
      show the warning there; ditto for the message printer *)
   Util.warnPrinter :=
@@ -1779,7 +1858,7 @@ let compatServer conn =
   Trace.messageForwarder :=
     Some (fun str -> Lwt_unix.run (forwardMsgToClient conn str));
   receive conn >>=
-  Lwt.wait)
+  Lwt.wait
 
 (* This function loops, waits for commands, and passes them to
    the relevant functions. *)
@@ -1790,12 +1869,23 @@ let commandLoop ~compatMode in_ch out_ch =
   let conn = setupIO true in_ch out_ch in
   Lwt.catch
     (fun () ->
-       if compatMode ||
-             Util.StringMap.mem rpcCompatName (Prefs.scanCmdLine "") then
+       (if compatMode then
          (* Must enable flow control because that is the default for 2.51 *)
          let () = enableFlowControl conn true in
          let () = setConnectionVersion conn 0 in
-         compatServer conn
+         compatServerInit conn >>= (fun upgrade ->
+         if upgrade then begin
+           (* Restore the state before starting protocol negotiation *)
+           allowWrites conn.outputQueue;
+           disableFlowControl conn.outputQueue
+         end;
+         Lwt.return upgrade)
+       else
+         Lwt.return true) >>= fun upgrade ->
+       debug (fun () -> Util.msg "%sGoing to attempt RPC version upgrade\n"
+                 (if upgrade then "" else "NOT "));
+       if not upgrade then
+         compatServerRun conn
        else
        sendStrings conn [connectionHeader; rpcVersionsStr] >>=
        checkClientVersion conn >>= (fun () ->
@@ -1874,7 +1964,7 @@ let waitOnPort hostOpt port =
          Lwt_unix.setsockopt connected Unix.SO_KEEPALIVE true;
          begin try
            (* Accept a connection *)
-           Lwt_unix.run (commandLoop ~compatMode:false connected connected)
+           Lwt_unix.run (commandLoop ~compatMode:true connected connected)
          with Util.Fatal "Lost connection with the server" -> () end;
          (* The client has closed its end of the connection *)
          begin try Lwt_unix.close connected with Unix.Unix_error _ -> () end;
