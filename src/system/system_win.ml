@@ -313,6 +313,10 @@ let canSetTime f = true
    number of "a". *)
 let hasInodeNumbers () = true
 
+external hasCorrectCTime_impl : unit -> bool = "win_has_correct_ctime"
+
+let hasCorrectCTime = hasCorrectCTime_impl ()
+
 (****)
 
 external getConsoleMode : unit -> int = "win_get_console_mode"

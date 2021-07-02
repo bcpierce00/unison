@@ -47,6 +47,13 @@ val fingerprint : fspath -> Digest.t
 val canSetTime : fspath -> bool
 val hasInodeNumbers : unit -> bool
 
+(* [hasCorrectCTime] is true when [stat] and [lstat] return the status change
+ * time. This is commonly broken on Windows, where creation time (completely
+ * unrelated to ctime; it is the birthtime) is returned instead. However, it
+ * is possible to get the correct status change time on Windows, which is why
+ * [hasCorrectCTime] can have a different value on different systems. *)
+val hasCorrectCTime : bool
+
 end
 
 module type Full = sig
