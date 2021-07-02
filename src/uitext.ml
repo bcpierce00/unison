@@ -817,12 +817,6 @@ let doTransport reconItemList =
     in
     t1, Format.sprintf "%s  %s ETA" (Util.percent2string v) remTime
   in
-  let logOnly s =
-    let temp = !Trace.sendLogMsgsToStderr in
-    Trace.sendLogMsgsToStderr := false;
-    Trace.log (s ^ "\n");
-    Trace.sendLogMsgsToStderr := temp
-  in
   let tlog = ref t0 in
   let showProgress i bytes dbg =
     let t1, s = calcProgress i bytes dbg in
@@ -831,7 +825,7 @@ let doTransport reconItemList =
     if (Prefs.read Trace.terse) || (Prefs.read Globals.batch) then
       if (t1 -. !tlog) >= 60. then
       begin
-        logOnly s;
+        Trace.logonly (s ^ "\n");
         tlog := t1
       end
   in

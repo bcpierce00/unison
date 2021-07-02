@@ -93,6 +93,10 @@ val log : string -> unit
    ANSI color escapes intact *)
 val log_color : string -> unit
 
+(* Like 'log', but only send message to log file and not to stderr, even when
+   [sendLogMsgsToStderr] is set to true *)
+val logonly : string -> unit
+
 (* Like 'log', but only send message to log file if -terse preference is set *)
 val logverbose : string -> unit
 

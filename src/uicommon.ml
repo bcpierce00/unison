@@ -670,6 +670,10 @@ let initPrefs ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
   (* Print the preference settings *)
   debug (fun() -> Prefs.dumpPrefsToStderr() );
 
+  Trace.logonly (Printf.sprintf "\n%s log started at %s\n\n"
+    (String.capitalize_ascii Uutil.myNameAndVersion)
+    (Util.time2string (Unix.gettimeofday ())));
+
   (* If no roots are given either on the command line or in the profile,
      ask the user *)
   if Globals.rawRoots() = [] then begin
