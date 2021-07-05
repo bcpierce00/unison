@@ -781,9 +781,8 @@ let ls dir pattern =
                   CALL OUT TO EXTERNAL MERGE PROGRAM
 ************************************************************************)
 
-let formatMergeCmd p f1 f2 backup out1 out2 outarch batchmode =
-  if not (Globals.shouldMerge p) then
-    raise (Util.Transient ("'merge' preference not set for "^(Path.toString p)));
+let formatMergeCmd p f1 f2 backup out1 out2 outarch =
+  assert (Globals.shouldMerge p); (* the UI should guarantee that *)
   let raw =
     try Globals.mergeCmdForPath p
     with Not_found ->
