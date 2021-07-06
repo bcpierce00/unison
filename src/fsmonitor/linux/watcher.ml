@@ -245,7 +245,9 @@ let add_watch path file follow =
       2 (* ENOENT *) ->
         raise Watchercommon.Already_lost
     | 28 (* ENOSPC *) ->
-        Watchercommon.error "cannot add a watcher: system limit reached"
+        Watchercommon.error ("cannot add a watcher: system limit reached"
+            ^ " (you can do a web search for \"inotify max_user_watches\""
+            ^ " to understand the reasons and mitigations for this error)")
     | 13 (* EACCES *) | 20 (* ENOTDIR *) | 40 (* ELOOP *) ->
         (* These errors should be well handled by Unison (they will
            result in errors during update detection *)
