@@ -1366,6 +1366,7 @@ uitext.cmo : \
     uutil.cmi \
     ubase/util.cmi \
     update.cmi \
+    unicode.cmi \
     uicommon.cmi \
     transport.cmi \
     ubase/trace.cmi \
@@ -1387,6 +1388,7 @@ uitext.cmx : \
     uutil.cmx \
     ubase/util.cmx \
     update.cmx \
+    unicode.cmx \
     uicommon.cmx \
     transport.cmx \
     ubase/trace.cmx \

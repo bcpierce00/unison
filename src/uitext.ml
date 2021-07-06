@@ -164,25 +164,39 @@ let displayWhenInteractive message =
 
 let getInput () =
   match !cbreakMode with
-    None ->
-      let l = input_line stdin in
-      if l="" then "" else String.sub l 0 1
+    None -> input_line stdin
   | Some funs ->
+      (* Raw terminal mode, we want to read the input directly, without the line
+         buffering. We can't use [Stdlib.input_char] because OCaml 'char' equals
+         one byte and this is not what we want to read. Not all characters are
+         one byte (mainly thinking of UTF-8). We also want to make sure that we
+         properly read in any input ANSI escape sequences. *)
       let input_char () =
         (* We cannot used buffered I/Os under Windows, as character
            '\r' is not passed through (probably due to the code that
            turns \r\n into \n) *)
-        let s = Bytes.create 1 in
-        let n = Unix.read Unix.stdin s 0 1 in
+        let l = 9 in (* This should suffice to fit a complete escape sequence *)
+        let s = Bytes.create l in
+        let n = Unix.read Unix.stdin s 0 l in
         if n = 0 then raise End_of_file;
         if Bytes.get s 0 = '\003' then raise Sys.Break;
-        Bytes.get s 0
+        Bytes.sub_string s 0 n
       in
       funs.System.startReading ();
       let c = input_char () in
       funs.System.stopReading ();
-      let c = if c='\n' || c = '\r' then "" else String.make 1 c in
-      display c;
+      let c = match c with
+        | "\000" -> "(invalid input)" (* Windows*)
+        | "\n" | "\r" -> ""
+        | c when Sys.win32 -> Unicode.protect c
+                 (* This is not correct because [Unicode.protect] assumes
+                    Latin1 encoding. But it does not matter here as currently
+                    non-ASCII input is not expected to be processed anyway. *)
+                 (* FIX: Must reassess this once proper UTF-8 input becomes
+                    possible and widespread on Windows. *)
+        | c -> c in
+      if c <> "" && c.[0] <> '\027' then
+        display c;
       c
 
 let newLine () =
@@ -193,12 +207,54 @@ let newLine () =
 let overwrite () =
   if !cbreakMode <> None then display "\r"
 
+
+let keyEsc = "\027"
+let keyF1 = "\027OP"
+let keyF2 = "\027OQ"
+let keyF3 = "\027OR"
+let keyF4 = "\027OS"
+let keyF5 = "\027[15~"
+let keyF6 = "\027[17~"
+let keyF7 = "\027[18~"
+let keyF8 = "\027[19~"
+let keyF9 = "\027[20~"
+let keyF10 = "\027[21~"
+let keyF11 = "\027[23~"
+let keyF12 = "\027[24~"
+let keyInsert = "\027[2~"
+let keyDelete = "\027[3~"
+let keyHome = "\027[H"
+let keyEnd = "\027[F"
+let keyPgUp = "\027[5~"
+let keyPgDn = "\027[6~"
+let keyUp = "\027[A"
+let keyDn = "\027[B"
+let keyLeft = "\027[D"
+let keyRight = "\027[C"
+let keyShiftUp = "\027[1;2A"
+let keyShiftDn = "\027[1;2B"
+let keyTab = "\t"
+let keyRvTab = "\027[Z"
+
+
 let rec selectAction batch actions tryagain =
   let formatname = function
       "" -> "<ret>"
     | " " -> "<spc>"
-    | "\x7f" -> "<del>"
+    | "\x7f" | "\027[3~" -> "<del>"
     | "\b" -> "<bsp>"
+    | "\t" -> "<tab>"
+    | "\027[Z" -> "<shift+tab>"
+    | "\027" -> "<esc>"
+    | "\027[A" -> "<up>"
+    | "\027[B" -> "<down>"
+    | "\027[D" -> "<left>"
+    | "\027[C" -> "<right>"
+    | "\027[5~" -> "<pg up>"
+    | "\027[6~" -> "<pg down>"
+    | "\027[H" -> "<home>"
+    | "\027[F" -> "<end>"
+    | n when n.[0] = '\027' -> "^" ^ String.map (function | '\027' -> '[' | c -> c) n
     | n -> n in
   let summarizeChoices() =
     display "[";
@@ -217,7 +273,7 @@ let rec selectAction batch actions tryagain =
         if Safelist.mem n names then action else find n rest
   in
   let doAction a =
-    if a="?" then
+    if a="?" || a = "\027OP" then
       (newLine ();
        display "Commands:\n";
        Safelist.iter (fun (names,doc,action) ->
@@ -234,10 +290,10 @@ let rec selectAction batch actions tryagain =
       | None ->
           newLine ();
           if a="" then
-            display ("No default command [type '?' for help]\n")
+            display ("No default command [type '?' or F1 for help]\n")
           else
             display ("Unrecognized command '" ^ String.escaped a
-                     ^ "': try again  [type '?' for help]\n");
+                     ^ "': try again  [type '?' or F1 for help]\n");
           tryagainOrLoop()
   in
   let handleExn s =
@@ -485,36 +541,36 @@ let interact prilist rilist =
                        repeat()
                      end else
                        next()));
-                 (["n";"j"],
+                 (["n";"j"; keyDn; keyTab],
                   ("go to the next item"),
                   (fun () -> newLine();
                      next()));
-                 (["p";"b";"k"],
+                 (["p";"b";"k"; keyUp; keyRvTab],
                   ("go back to previous item"),
                   (fun () -> newLine();
                      previous prev ril));
-                 (["\x7f";"\b"],
+                 (["\x7f";"\b"; keyDelete],
                   ("revert then go back to previous item"),
                   (fun () ->
                      Recon.revertToDefaultDirection ri; redisplayri();
                      previous prev ril));
-                 (["0"],
+                 (["0"; keyHome],
                   ("go to the start of the list"),
                   (fun () -> newLine();
                      loop [] (Safelist.rev_append prev ril)));
-                 (["9"],
+                 (["9"; keyEnd],
                   ("go to the end of the list"),
                   (fun () -> newLine();
                      match Safelist.rev_append ril prev with
                        [] -> loop [] []
                      | lri::prev -> loop prev [lri]));
-                 (["5"],
+                 (["5"; keyPgDn],
                   ("go forward to the middle of the following items"),
                   (fun () -> newLine();
                      let l = (Safelist.length ril)/2 in
                      display ("  Moving "^(string_of_int l)^" items forward\n");
                      forward l prev ril));
-                 (["6"],
+                 (["6"; keyPgUp],
                   ("go backward to the middle of the preceding items"),
                   (fun () -> newLine();
                      let l = -((Safelist.length prev)+1)/2 in
@@ -620,11 +676,11 @@ let interact prilist rilist =
                   ("merge the versions (curr or match)"),
                   (fun () ->
                      actOnMatching (setdir Merge)));
-                 ([">";"."],
+                 ([">";"."; keyRight],
                   ("propagate from " ^ descr ^ " (curr or match)"),
                   (fun () ->
                      actOnMatching (setdir Replica1ToReplica2)));
-                 (["<";","],
+                 (["<";","; keyLeft],
                   ("propagate from " ^ descl ^ " (curr or match)"),
                   (fun () ->
                      actOnMatching (setdir Replica2ToReplica1)));
@@ -688,7 +744,7 @@ let interact prilist rilist =
                   ("proceed immediately to propagating changes"),
                   (fun () -> newLine();
                      (ProceedImmediately, Safelist.rev_append prev ril)));
-                 (["q"],
+                 (["q"; keyEsc],
                   ("exit " ^ Uutil.myName ^ " without propagating any changes"),
                   (fun () -> newLine();
                      raise Sys.Break))
@@ -1014,7 +1070,7 @@ let rec interactAndPropagateChanges prevItemList reconItemList
          (["R"],
           "Reverse the sort order",
           (fun () -> askagain (Safelist.rev newReconItemList)));
-         (["q"],
+         (["q"; keyEsc],
           ("exit " ^ Uutil.myName ^ " without propagating any changes"),
           (fun () -> newLine();
              raise Sys.Break))
