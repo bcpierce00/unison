@@ -380,6 +380,36 @@ typedef enum _FILE_INFORMATION_CLASS {
   FileMaximumInformation
 } FILE_INFORMATION_CLASS, *PFILE_INFORMATION_CLASS;
 
+typedef struct _REPARSE_DATA_BUFFER {
+  ULONG  ReparseTag;
+  USHORT ReparseDataLength;
+  USHORT Reserved;
+  union {
+    struct {
+      USHORT SubstituteNameOffset;
+      USHORT SubstituteNameLength;
+      USHORT PrintNameOffset;
+      USHORT PrintNameLength;
+      ULONG Flags;
+      WCHAR PathBuffer[1];
+    } SymbolicLinkReparseBuffer;
+    struct {
+      USHORT SubstituteNameOffset;
+      USHORT SubstituteNameLength;
+      USHORT PrintNameOffset;
+      USHORT PrintNameLength;
+      WCHAR PathBuffer[1];
+    } MountPointReparseBuffer;
+    struct {
+      UCHAR  DataBuffer[1];
+    } GenericReparseBuffer;
+    struct {
+      ULONG StringCount;
+      WCHAR StringList[1];
+    } AppExecLinkReparseBuffer;
+  };
+} REPARSE_DATA_BUFFER, *PREPARSE_DATA_BUFFER;
+
 typedef NTSTATUS (NTAPI *sNtQueryInformationFile)
                  (HANDLE FileHandle,
                   PIO_STATUS_BLOCK IoStatusBlock,
@@ -452,7 +482,7 @@ CAMLprim value win_has_correct_ctime()
 #define FILETIME_TO_TIME(ft) WINTIME_TO_TIME((((ULONGLONG) ft.dwHighDateTime) << 32) + ft.dwLowDateTime)
 #define FILETIME_NT_TO_TIME(ft) WINTIME_TO_TIME(ft.QuadPart)
 
-CAMLprim value win_stat(value path, value wpath)
+CAMLprim value win_stat(value path, value wpath, value lstat)
 {
   uintnat dev;
   uintnat ino;
@@ -463,6 +493,7 @@ CAMLprim value win_stat(value path, value wpath)
   double atime;
   double mtime;
   double ctime;
+  int syml = 0;
 
   int res;
   NTSTATUS nt_status;
@@ -470,17 +501,21 @@ CAMLprim value win_stat(value path, value wpath)
   BY_HANDLE_FILE_INFORMATION info;
   IO_STATUS_BLOCK io_status;
   FILE_ALL_INFORMATION file_info;
-  CAMLparam2(path,wpath);
+  CAMLparam3(path,wpath, lstat);
   CAMLlocal1 (v);
+  char *fname = Bool_val(lstat) ? "lstat" : "stat";
 
   win_init();
 
-  h = CreateFileW ((LPCWSTR) String_val (wpath), 0, 0, NULL, OPEN_EXISTING,
-                   FILE_FLAG_BACKUP_SEMANTICS | FILE_ATTRIBUTE_READONLY, NULL);
+  h = CreateFileW ((LPCWSTR) String_val (wpath), FILE_READ_ATTRIBUTES,
+                   FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE,
+                   NULL, OPEN_EXISTING,
+                   FILE_FLAG_BACKUP_SEMANTICS | FILE_ATTRIBUTE_READONLY |
+                   (Bool_val(lstat) ? FILE_FLAG_OPEN_REPARSE_POINT : 0), NULL);
 
   if (h == INVALID_HANDLE_VALUE) {
     win32_maperr (GetLastError ());
-    uerror("stat", path);
+    uerror(fname, path);
   }
 
   if (nt_api_available) {
@@ -491,7 +526,7 @@ CAMLprim value win_stat(value path, value wpath)
     if (NT_ERROR(nt_status)) {
       win32_maperr(pRtlNtStatusToDosError(nt_status));
       (void) CloseHandle(h);
-      uerror("stat", path);
+      uerror(fname, path);
     }
   }
 
@@ -499,13 +534,33 @@ CAMLprim value win_stat(value path, value wpath)
   if (res == 0) {
     win32_maperr (GetLastError ());
     (void) CloseHandle (h);
-    uerror("stat", path);
+    uerror(fname, path);
+  }
+
+  if (Bool_val(lstat) &&
+        (info.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT)) {
+    /* The following code is partially copied from OCaml sources,
+     * LGPL 2.1,
+     * Copyright David Allsopp, MetaStack Solutions Ltd. */
+    char buffer[16384];
+    DWORD read;
+
+    if (DeviceIoControl(h, FSCTL_GET_REPARSE_POINT, NULL, 0, buffer, 16384, &read, NULL)) {
+      if (((REPARSE_DATA_BUFFER*)buffer)->ReparseTag == IO_REPARSE_TAG_SYMLINK) {
+        syml = 1;
+        size = ((REPARSE_DATA_BUFFER*)buffer)->SymbolicLinkReparseBuffer.SubstituteNameLength / 2;
+      }
+    }
   }
 
   res = CloseHandle (h);
   if (res == 0) {
     win32_maperr (GetLastError ());
-    uerror("stat", path);
+    uerror(fname, path);
+  }
+
+  if (Bool_val(lstat) && !syml) {
+    CAMLreturn(win_stat(path, wpath, Val_false));
   }
 
   dev = info.dwVolumeSerialNumber;
@@ -524,7 +579,9 @@ CAMLprim value win_stat(value path, value wpath)
       mode |= 0000111;
 
     nlink = file_info.StandardInformation.NumberOfLinks;
-    size = file_info.StandardInformation.EndOfFile.QuadPart;
+    if (!syml) {
+      size = file_info.StandardInformation.EndOfFile.QuadPart;
+    }
     atime = (double) FILETIME_NT_TO_TIME(file_info.BasicInformation.LastAccessTime);
     mtime = (double) FILETIME_NT_TO_TIME(file_info.BasicInformation.LastWriteTime);
     if (file_info.BasicInformation.ChangeTime.QuadPart != 0) {
@@ -550,10 +607,17 @@ CAMLprim value win_stat(value path, value wpath)
       mode |= 0000222;
 
     nlink = info.nNumberOfLinks;
-    size = MAKEDWORDLONG(info.nFileSizeLow,info.nFileSizeHigh);
+    if (!syml) {
+      size = MAKEDWORDLONG(info.nFileSizeLow,info.nFileSizeHigh);
+    }
     atime = (double) FILETIME_TO_TIME(info.ftLastAccessTime);
     mtime = (double) FILETIME_TO_TIME(info.ftLastWriteTime);
     ctime = (double) FILETIME_TO_TIME(info.ftCreationTime);
+  }
+
+  if (syml) {
+    kind = 4;
+    mode |= 0000111 | 0000444;
   }
 
   v = caml_alloc (12, 0);
