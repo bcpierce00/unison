@@ -80,16 +80,18 @@ let resetToDefaults () =
 
 type dumpedPrefs = (string * bool * string) list
 
-let dumpers = ref ([] : (string * bool * (unit->string)) list)
+let dumpers = ref ([] : (string * bool * (unit->bool) * (unit->string)) list)
 let loaders = ref (Util.StringMap.empty : (string->unit) Util.StringMap.t)
 
-let adddumper name optional f =
-  dumpers := (name,optional,f) :: !dumpers
+let adddumper name optional send f =
+  dumpers := (name,optional,send,f) :: !dumpers
 
 let addloader name f =
   loaders := Util.StringMap.add name f !loaders
 
-let dump () = Safelist.map (fun (name, opt, f) -> (name, opt, f())) !dumpers
+let dump () =
+  Safelist.filter (fun (_, _, sf, _) -> sf ()) !dumpers
+  |> Safelist.map (fun (name, opt, _, f) -> (name, opt, f()))
 
 let load d =
   Safelist.iter
@@ -179,10 +181,11 @@ let registerPref name typ pspec doc fulldoc =
   if doc = "" || doc.[0] <> '*' then
     prefType := Util.StringMap.add name typ !prefType
 
-let createPrefInternal name typ local default doc fulldoc printer parsefn =
+let createPrefInternal name typ local send default doc fulldoc printer parsefn =
   let newCell = rawPref default name in
   registerPref name typ (parsefn newCell) doc fulldoc;
   adddumper name local
+    (fun () -> match send with None -> true | Some f -> f ())
     (fun () -> Marshal.to_string (newCell.value, newCell.names) []);
   addprinter name (fun () -> printer newCell.value);
   addresetter
@@ -194,38 +197,38 @@ let createPrefInternal name typ local default doc fulldoc printer parsefn =
        newCell.value <- value);
   newCell
 
-let create name ?(local=false) default doc fulldoc intern printer =
-  createPrefInternal name `CUSTOM local default doc fulldoc printer
+let create name ?(local=false) ?send default doc fulldoc intern printer =
+  createPrefInternal name `CUSTOM local send default doc fulldoc printer
     (fun cell -> Uarg.String (fun s -> set cell (intern (read cell) s)))
 
-let createBool name ?(local=false) default doc fulldoc =
+let createBool name ?(local=false) ?send default doc fulldoc =
   let doc = if default then doc ^ " (default true)" else doc in
-  createPrefInternal name `BOOL local default doc fulldoc
+  createPrefInternal name `BOOL local send default doc fulldoc
     (fun v -> [if v then "true" else "false"])
     (fun cell -> Uarg.Bool (fun b -> set cell b))
 
-let createInt name ?(local=false) default doc fulldoc =
-  createPrefInternal name `INT local default doc fulldoc
+let createInt name ?(local=false) ?send default doc fulldoc =
+  createPrefInternal name `INT local send default doc fulldoc
     (fun v -> [string_of_int v])
     (fun cell -> Uarg.Int (fun i -> set cell i))
 
-let createString name ?(local=false) default doc fulldoc =
-  createPrefInternal name `STRING local default doc fulldoc
+let createString name ?(local=false) ?send default doc fulldoc =
+  createPrefInternal name `STRING local send default doc fulldoc
     (fun v -> [v])
     (fun cell -> Uarg.String (fun s -> set cell s))
 
-let createFspath name ?(local=false) default doc fulldoc =
-  createPrefInternal name `STRING local default doc fulldoc
+let createFspath name ?(local=false) ?send default doc fulldoc =
+  createPrefInternal name `STRING local send default doc fulldoc
     (fun v -> [System.fspathToString v])
     (fun cell -> Uarg.String (fun s -> set cell (System.fspathFromString s)))
 
-let createStringList name ?(local=false) doc fulldoc =
-  createPrefInternal name `STRING_LIST local [] doc fulldoc
+let createStringList name ?(local=false) ?send doc fulldoc =
+  createPrefInternal name `STRING_LIST local send [] doc fulldoc
     (fun v -> v)
     (fun cell -> Uarg.String (fun s -> set cell (s:: read cell)))
 
-let createBoolWithDefault name ?(local=false) doc fulldoc =
-  createPrefInternal name `BOOLDEF local `Default doc fulldoc
+let createBoolWithDefault name ?(local=false) ?send doc fulldoc =
+  createPrefInternal name `BOOLDEF local send `Default doc fulldoc
     (fun v -> [match v with
                  `True    -> "true"
                | `False   -> "false"

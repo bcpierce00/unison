@@ -81,6 +81,19 @@ features:
 - Code is not removed but it can be deprecated ->
   - Add or change a validation function to output a deprecation warning
 
+## User preferences
+
+User preferences are sent from client to server after establishing a
+connection. The server must know all preferences received from the client,
+otherwise the connection fails.
+
+When new preferences are created with a new feature, it is possible (and in
+most cases required) to add a guard function that determines if the
+preference is sent to the server or not. Typically, this guard function
+will take the form `fun () -> Features.enabled somefeature`, meaning that
+the preference is sent to server if and only if 'somefeature' is known by
+the server.
+
 ## Code evolution, conflicting features
 
 With features, new code does not have to replace existing code even if
