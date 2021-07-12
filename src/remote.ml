@@ -1022,7 +1022,7 @@ let printAddr host addr =
   | Unix.ADDR_INET (s, p) ->
       Format.sprintf "%s[%s]:%d" host (Unix.string_of_inet_addr s) p
 
-let buildSocket host port kind =
+let buildSocket host port kind ai =
   let attemptCreation ai =
     Lwt.catch
       (fun () ->
@@ -1037,6 +1037,11 @@ let buildSocket host port kind =
                   (* Connect (synchronously) to the remote host *)
                   Lwt_unix.connect socket ai.Unix.ai_addr
               | `Bind ->
+                  (* Some OS (Linux?) enable dual-stack mode by default;
+                     trying to bind both IPv4 and IPv6 sockets will fail
+                     with EADDRINUSE unless dual-stack mode is disabled. *)
+                  if ai.Unix.ai_family = Unix.PF_INET6 then
+                    Lwt_unix.setsockopt socket Unix.IPV6_ONLY true;
                   (* Allow reuse of local addresses for bind *)
                   Lwt_unix.setsockopt socket Unix.SO_REUSEADDR true;
                   (* Bind the socket to portnum on the local host *)
@@ -1083,32 +1088,41 @@ let buildSocket host port kind =
          | _ ->
              Lwt.fail e)
   in
-  let options =
-    match kind with
-      `Connect -> [ Unix.AI_SOCKTYPE Unix.SOCK_STREAM ]
-    | `Bind    -> [ Unix.AI_SOCKTYPE Unix.SOCK_STREAM ; Unix.AI_PASSIVE ]
-  in
+  attemptCreation ai
+
+let buildConnectSocket host port =
+  let attemptCreation ai = buildSocket host port `Connect ai in
+  let options = [ Unix.AI_SOCKTYPE Unix.SOCK_STREAM ] in
   findFirst attemptCreation (Unix.getaddrinfo host port options) >>= fun res ->
   match res with
     Some socket ->
       Lwt.return socket
   | None ->
       let msg =
-        match kind with
-          `Connect ->
-             Printf.sprintf
-               "Failed to connect to the server on host %s:%s" host port
-        | `Bind ->
-             if host = "" then
-               Printf.sprintf "Can't bind socket to port %s" port
-             else
-               Printf.sprintf "Can't bind socket to port %s on host %s"
-                 port host
+        Printf.sprintf
+          "Failed to connect to the server on host %s:%s" host port
       in
       Lwt.fail (Util.Fatal msg)
 
+let buildListenSocket host port =
+  let options = [ Unix.AI_SOCKTYPE Unix.SOCK_STREAM ; Unix.AI_PASSIVE ] in
+  Lwt_util.map (buildSocket host port `Bind)
+    (Unix.getaddrinfo host port options) >>= fun res ->
+  match Safelist.filter (fun x -> x <> None) res with
+  | [] ->
+      let msg =
+        if host = "" then
+          Printf.sprintf "Can't bind socket to port %s" port
+        else
+          Printf.sprintf "Can't bind socket to port %s on host %s"
+            port host
+      in
+      Lwt.fail (Util.Fatal msg)
+  | s ->
+      Lwt.return (Safelist.map (function None -> assert false | Some x -> x) s)
+
 let buildSocketConnection onClose host port =
-  buildSocket host port `Connect >>= fun socket ->
+  buildConnectSocket host port >>= fun socket ->
   initConnection onClose socket socket
 
 let buildShellConnection onClose shell host userOpt portOpt rootName termInteract =
@@ -1520,11 +1534,20 @@ let waitOnPort hostOpt port =
            Some host -> host
          | None      -> ""
        in
-       let listening = Lwt_unix.run (buildSocket host port `Bind) in
+       let listening = Lwt_unix.run (buildListenSocket host port) in
+       let accepting = Array.make (Safelist.length listening) None in
+       let accept i l =
+         match accepting.(i) with
+           | None ->
+               let st = Lwt_unix.accept l >>= fun s -> Lwt.return (i, s) in
+               let () = accepting.(i) <- Some st in
+               st
+           | Some st -> st
+       and serve (i, s) = accepting.(i) <- None; s in
        Util.msg "server started\n";
        let rec handleClients () =
          let (connected, _) =
-           Lwt_unix.run (Lwt_unix.accept listening)
+           serve @@ Lwt_unix.run (Lwt.choose (List.mapi accept listening))
          in
          Lwt_unix.setsockopt connected Unix.SO_KEEPALIVE true;
          begin try
