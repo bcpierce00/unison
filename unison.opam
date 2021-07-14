@@ -1,8 +1,8 @@
 opam-version: "2.0"
 maintainer: "juergen@hoetzel.info"
 authors: [
-  "Jürgen Hötzel <juergen@hoetzel.info>"
-  "Louis Gesbert <louis.gesbert@ocamlpro.com>"
+  "Benjamin C. Pierce"
+  "Jérôme Vouillon"
 ]
 license: "GPL-3.0-or-later"
 homepage: "https://www.cis.upenn.edu/~bcpierce/unison/"
