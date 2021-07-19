@@ -56,6 +56,17 @@ let archiveFormat = 22
 
 module NameMap = MyMap.Make (Name)
 
+(* IMPORTANT!
+   This is the 2.51-compatible version of type [archive]. It must always remain
+   exactly the same as the type [archive] in version 2.51.5. This means that if
+   any of the types it is composed of changes, for each changed type a 2.51-
+   compatible version must be created (like has been done for [Props.t]). *)
+type archive251 =
+    ArchiveDir of Props.t251 * archive251 NameMap.t
+  | ArchiveFile of Props.t251 * Os.fullfingerprint * Fileinfo.stamp * Osx.ressStamp
+  | ArchiveSymlink of string
+  | NoArchive
+
 type archive =
     ArchiveDir of Props.t * archive NameMap.t
   | ArchiveFile of Props.t * Os.fullfingerprint * Fileinfo.stamp * Osx.ressStamp
@@ -64,6 +75,24 @@ type archive =
 
 (* For directories, only the permissions part of the file description (desc)
    is used for synchronization at the moment. *)
+
+let rec to_compat251 (arch : archive) : archive251 =
+  match arch with
+  | ArchiveDir (desc, children) ->
+      ArchiveDir (Props.to_compat251 desc, NameMap.map to_compat251 children)
+  | ArchiveFile (desc, dig, stamp, ress) ->
+      ArchiveFile (Props.to_compat251 desc, dig, stamp, ress)
+  | ArchiveSymlink content -> ArchiveSymlink content
+  | NoArchive -> NoArchive
+
+let rec of_compat251 (arch : archive251) : archive =
+  match arch with
+  | ArchiveDir (desc, children) ->
+      ArchiveDir (Props.of_compat251 desc, NameMap.map of_compat251 children)
+  | ArchiveFile (desc, dig, stamp, ress) ->
+      ArchiveFile (Props.of_compat251 desc, dig, stamp, ress)
+  | ArchiveSymlink content -> ArchiveSymlink content
+  | NoArchive -> NoArchive
 
 let archive2string = function
     ArchiveDir(_) -> "ArchiveDir"
@@ -257,6 +286,48 @@ let rec checkArchive
         children (Props.hash desc h)
   | ArchiveFile (desc, dig, _, ress) ->
       Uutil.hash2 (Uutil.hash dig) (Props.hash desc h)
+  | ArchiveSymlink content ->
+      Uutil.hash2 (Uutil.hash content) h
+  | NoArchive ->
+      135
+
+(* IMPORTANT!
+   This is the 2.51-compatible version of [checkArchive]. It must produce
+   exactly the same result as [checkArchive] in version 2.51.5.
+   If code changes elsewhere make this function produce a different result then
+   it must be updated accordingly to again return the 2.51-compatible result. *)
+let rec checkArchive251
+      (top: bool) (path: Name.t list) (arch: archive251) (h: int): int =
+  match arch with
+    ArchiveDir (desc, children) ->
+      begin match NameMap.validate children with
+        `Ok ->
+          ()
+      | `Duplicate nm ->
+          let path =
+            List.fold_right (fun n p -> Path.child p n) path Path.empty in
+          raise
+            (Util.Fatal (Printf.sprintf
+                           "Corrupted archive: \
+                            the file %s occurs twice in path %s"
+                           (Name.toString nm) (Path.toString path)));
+      | `Invalid (nm, nm') ->
+          let path =
+            List.fold_right (fun n p -> Path.child p n) path Path.empty in
+          raise
+            (Util.Fatal (Printf.sprintf
+                           "Corrupted archive: the files %s and %s are not \
+                            correctly ordered in directory %s"
+                           (Name.toString nm) (Name.toString nm')
+                           (Path.toString path)));
+      end;
+      NameMap.fold
+        (fun n a h ->
+           Uutil.hash2 (Name.hash n)
+                       (checkArchive251 false (n :: path) a h))
+        children (Props.hash251 desc h)
+  | ArchiveFile (desc, dig, _, ress) ->
+      Uutil.hash2 (Uutil.hash dig) (Props.hash251 desc h)
   | ArchiveSymlink content ->
       Uutil.hash2 (Uutil.hash content) h
   | NoArchive ->
@@ -2039,9 +2110,17 @@ Format.eprintf "Update detection: %f@." (t2 -. t1);
   abortIfAnyMountpointsAreMissing fspath;
   updates
 
+(* Conversion functions for 2.51-compatible return type:
+     (Path.local * Common.updateItem * Props.t list) list *)
+let convV0 = Remote.makeConvV0FunRet
+  (fun r -> Safelist.map
+    (fun (a, b, c) -> a, b, Safelist.map (fun e -> Props.to_compat251 e) c) r)
+  (fun r -> Safelist.map
+    (fun (a, b, c) -> a, b, Safelist.map (fun e -> Props.of_compat251 e) c) r)
+
 let findOnRoot =
   Remote.registerRootCmd
-    "find"
+    "find" ~convV0
     (fun (fspath, (wantWatcher, pathList, subpaths)) ->
        Lwt.return (findLocal wantWatcher fspath pathList subpaths))
 
@@ -2121,7 +2200,7 @@ let findUpdates ?wantWatcher subpaths =
 (*****************************************************************************)
 
 (* To prepare for committing, write to Scratch Archive *)
-let prepareCommitLocal (fspath, magic) =
+let prepareCommitLocal compatMode (fspath, magic) =
   let (newName, root) = archiveName fspath ScratchArch in
   let archive = getArchive root in
   (**
@@ -2131,14 +2210,27 @@ let prepareCommitLocal (fspath, magic) =
      showArchive archive;
      Format.print_flush();
    **)
-  let archiveHash = checkArchive true [] archive 0 in
+  let archiveHash =
+    if not compatMode then checkArchive true [] archive 0
+    else checkArchive251 true [] (to_compat251 archive) 0 in
   let props = getArchiveProps root in
   storeArchiveLocal
     (Util.fileInUnisonDir newName) root archive archiveHash magic props;
   Lwt.return (Some archiveHash)
 
-let prepareCommitOnRoot
-   = Remote.registerRootCmd "prepareCommit" prepareCommitLocal
+let prepareCommitOnRoot =
+   Remote.registerRootCmdWithConnection "prepareCommit"
+     (fun conn (fspath, magic) ->
+       let compatMode = Remote.connectionVersion conn = 0 in
+       prepareCommitLocal compatMode (fspath, magic))
+
+let prepareCommitOnRoots magic =
+  match Globals.rootsInCanonicalOrder () with
+  | [(Local, _); (Local, _)] ->
+      Globals.allRootsMap (fun r -> prepareCommitLocal false (snd r, magic))
+  | [(Local, _); (Remote _, _) as r'] ->
+      Globals.allRootsMap (fun r -> prepareCommitOnRoot r r' (snd r, magic))
+  | _ -> assert false
 
 (* To really commit, first prepare (write to scratch arch.), then make sure
    the checksum on all archives are equal, finally flip scratch to main.  In
@@ -2153,7 +2245,7 @@ let commitUpdates () =
             Format.sprintf "%s\000%.0f.%d"
               ((Case.ops ())#modeDesc) (Unix.gettimeofday ()) (Unix.getpid ())
           in
-          Globals.allRootsMap (fun r -> prepareCommitOnRoot r magic)
+          prepareCommitOnRoots magic
             >>= (fun checksums ->
           if archivesIdentical checksums then begin
             (* Move scratch archives to new *)
@@ -2318,9 +2410,13 @@ let replaceArchiveLocal fspath path newArch =
     updatePathInArchive archive fspath Path.empty path (fun _ _ -> newArch) in
   setArchiveLocal root archive
 
+let convV0 = Remote.makeConvV0FunArg
+  (fun (fspath, (pathTo, arch)) -> (fspath, (pathTo, to_compat251 arch)))
+  (fun (fspath, (pathTo, arch)) -> (fspath, (pathTo, of_compat251 arch)))
+
 let replaceArchiveOnRoot =
   Remote.registerRootCmd
-    "replaceArchive"
+    "replaceArchive" ~convV0
     (fun (fspath, (pathTo, arch)) ->
        replaceArchiveLocal fspath pathTo arch;
        Lwt.return ())

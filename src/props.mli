@@ -3,9 +3,13 @@
 
 (* File properties: time, permission, length, etc. *)
 
+type t251
 type t
+val to_compat251 : t -> t251
+val of_compat251 : t251 -> t
 val dummy : t
 val hash : t -> int -> int
+val hash251 : t251 -> int -> int
 val similar : t -> t -> bool
 val override : t -> t -> t
 val strip : t -> t
