@@ -449,6 +449,20 @@ type 'a marshalFunction = connection ->
 type 'a unmarshalFunction = connection -> Bytearray.t -> 'a
 type 'a marshalingFunctions = 'a marshalFunction * 'a unmarshalFunction
 
+type 'a convV0Fun =
+  V0 : ('a -> 'compat) * ('compat -> 'a) -> 'a convV0Fun
+
+external id : 'a -> 'a = "%identity"
+let convV0_id = V0 (id, id)
+let convV0_id_pair = convV0_id, convV0_id
+
+let makeConvV0FunArg compat_to compat_from =
+  (V0 (compat_to, compat_from)), convV0_id
+let makeConvV0FunRet compat_to compat_from =
+  convV0_id, (V0 (compat_to, compat_from))
+let makeConvV0Funs compat_to compat_from compat_to2 compat_from2 =
+  (V0 (compat_to, compat_from)), (V0 (compat_to2, compat_from2))
+
 let registeredSet = ref Util.StringSet.empty
 
 let rec first_chars len msg =
@@ -491,27 +505,35 @@ let registerTag string =
     registeredSet := Util.StringSet.add string !registeredSet;
   Bytearray.of_string string
 
-let marshalV0 data rem =
+let marshalV0 (V0 (to251, _)) data rem =
+  let s = Bytearray.marshal (to251 data) [Marshal.No_sharing] in
+  let l = Bytearray.length s in
+  ((s, 0, l) :: rem, l)
+
+let unmarshalV0 (V0 (_, from251)) buf pos =
+  try from251 (Bytearray.unmarshal buf pos)
+  with Failure s -> raise (Util.Fatal (Printf.sprintf
+"Fatal error during unmarshaling (%s),
+possibly because client and server have been compiled with different \
+versions of the OCaml compiler." s))
+
+let marshalV1 data rem =
+(* TODO: to be replaced by the new encoding function *)
   let s = Bytearray.marshal data [Marshal.No_sharing] in
   let l = Bytearray.length s in
   ((s, 0, l) :: rem, l)
 
-let unmarshalV0 buf pos =
+let unmarshalV1 buf pos =
+(* TODO: to be replaced by the new decoding function *)
   try Bytearray.unmarshal buf pos
   with Failure s -> raise (Util.Fatal (Printf.sprintf
 "Fatal error during unmarshaling (%s),
 possibly because client and server have been compiled with different \
 versions of the OCaml compiler." s))
 
-let marshalV1 = marshalV0
-(* TODO: to be replaced by the new encoding function *)
-
-let unmarshalV1 = unmarshalV0
-(* TODO: to be replaced by the new decoding function *)
-
-let defaultMarshalingFunctions =
-  (fun conn -> if conn.version = 0 then marshalV0 else marshalV1),
-  (fun conn -> if conn.version = 0 then unmarshalV0 else unmarshalV1)
+let defaultMarshalingFunctions convV0 =
+  (fun conn -> if conn.version = 0 then marshalV0 convV0 else marshalV1),
+  (fun conn -> if conn.version = 0 then unmarshalV0 convV0 else unmarshalV1)
 
 let makeMarshalingFunctions payloadMarshalingFunctions string =
   let (marshalPayload, unmarshalPayload) = payloadMarshalingFunctions in
@@ -674,7 +696,7 @@ type header =
   | StreamAbort
 
 let ((marshalHeader, unmarshalHeader) : header marshalingFunctions) =
-  makeMarshalingFunctions defaultMarshalingFunctions "rsp"
+  makeMarshalingFunctions (defaultMarshalingFunctions convV0_id) "rsp"
 
 let processRequest conn id cmdName buf =
   let cmd =
@@ -845,9 +867,10 @@ let registerSpecialServerCmd
   in
   client
 
-let registerServerCmd name f =
+let registerServerCmd name ?(convV0=convV0_id_pair) f =
   registerSpecialServerCmd
-    name defaultMarshalingFunctions defaultMarshalingFunctions f
+    name (defaultMarshalingFunctions (fst convV0))
+         (defaultMarshalingFunctions (snd convV0)) f
 
 (* RegisterHostCmd is a simpler version of registerClientServer [registerServerCmd?].
    It is used to create remote procedure calls: the only communication
@@ -859,10 +882,10 @@ let registerServerCmd name f =
    RegisterHostCmd recognizes the case where the server is the local
    host, and it avoids socket communication in this case.
 *)
-let registerHostCmd cmdName cmd =
+let registerHostCmd cmdName ?(convV0=convV0_id_pair) cmd =
   let serverSide = (fun _ args -> cmd args) in
   let client0 =
-    registerServerCmd cmdName serverSide in
+    registerServerCmd cmdName ~convV0 serverSide in
   let client host args =
     let conn = hostConnection host in
     client0 conn args in
@@ -881,13 +904,14 @@ let connectionToRoot root = hostConnection (hostOfRoot root)
 
 (* RegisterRootCmd is like registerHostCmd but it indexes connections by
    root instead of host. *)
-let registerRootCmd (cmdName : string) (cmd : (Fspath.t * 'a) -> 'b) =
-  let r = registerHostCmd cmdName cmd in
+let registerRootCmd
+  (cmdName : string) ?(convV0=convV0_id_pair) (cmd : (Fspath.t * 'a) -> 'b) =
+  let r = registerHostCmd cmdName ~convV0 cmd in
   fun root args -> r (hostOfRoot root) ((snd root), args)
 
 let registerRootCmdWithConnection
-  (cmdName : string) (cmd : connection -> 'a -> 'b) =
-  let client0 = registerServerCmd cmdName cmd in
+  (cmdName : string) ?(convV0=convV0_id_pair) (cmd : connection -> 'a -> 'b) =
+  let client0 = registerServerCmd cmdName ~convV0 cmd in
   (* Return a function that runs either the proxy or the local version,
      depending on whether the call is to the local host or a remote one *)
   fun localRoot remoteRoot args ->
@@ -913,7 +937,7 @@ let registerStreamCmd
     =
   let cmd =
     registerSpecialServerCmd
-      cmdName marshalingFunctionsArgs defaultMarshalingFunctions
+      cmdName marshalingFunctionsArgs (defaultMarshalingFunctions convV0_id)
       (fun conn v -> serverSide conn v; Lwt.return ())
   in
   let ping =
