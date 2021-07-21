@@ -688,15 +688,10 @@ let rec diff root1 path1 ui1 root2 path2 ui2 showDiff id =
         Util.replacesubstrings (Prefs.read diffCmd)
           ["CURRENT1", Fspath.quotes fspath1;
            "CURRENT2", Fspath.quotes fspath2] in
-    let c = System.open_process_in
-      (if Util.osType = `Win32 && not Util.isCygwin then
-        (* BCP: Proposed by Karl M. to deal with the standard windows
-           command processor's weird treatment of spaces and quotes: *)
-        "\"" ^ cmd ^ "\""
-       else
-         cmd) in
-    showDiff cmd (External.readChannelTillEof c);
-    ignore (System.close_process_in c) in
+    let _, diffResult = Lwt_unix.run (External.runExternalProgram cmd) in
+    if diffResult <> "" then
+      showDiff cmd diffResult
+  in
   match root1,root2 with
     (Local,fspath1),(Local,fspath2) ->
       Util.convertUnixErrorsToTransient
