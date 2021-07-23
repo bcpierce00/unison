@@ -450,7 +450,7 @@ type 'a unmarshalFunction = connection -> Bytearray.t -> 'a
 type 'a marshalingFunctions = 'a marshalFunction * 'a unmarshalFunction
 
 type 'a convV0Fun =
-  V0 : ('a -> 'compat) * ('compat -> 'a) -> 'a convV0Fun
+  V0 : ('a -> 'compat) * ('compat -> 'a) -> 'a convV0Fun [@unboxed]
 
 external id : 'a -> 'a = "%identity"
 let convV0_id = V0 (id, id)
