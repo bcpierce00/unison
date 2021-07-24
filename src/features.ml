@@ -18,6 +18,7 @@
 type id = string
 
 type t = { mutable enabled : bool;
+           arcFormatChange : bool;
            validator : (id list -> bool -> string option) option }
 
 let allFeatures = Hashtbl.create 8
@@ -28,6 +29,12 @@ let all () = !allNames
 let mem = List.mem
 
 let empty = []
+
+let changingArchiveFormat () =
+  let enabledArch name t accu =
+    if t.enabled && t.arcFormatChange then name :: accu else accu
+  in
+  Hashtbl.fold enabledArch allFeatures []
 
 let inter a b = List.filter (fun name -> mem name a) b
 
@@ -64,12 +71,12 @@ let validateEnabled () =
 
 let enabled feature = feature.enabled
 
-let dummy = { enabled = false; validator = None }
+let dummy = { enabled = false; arcFormatChange = false; validator = None }
 
-let register name validatefn =
+let register name ?(arcFormatChange = false) validatefn =
   if Hashtbl.mem allFeatures name then
     raise (Util.Fatal ("Feature " ^ name ^ " registered twice"));
-  let v = { enabled = false; validator = validatefn } in
+  let v = { enabled = false; arcFormatChange; validator = validatefn } in
   Hashtbl.add allFeatures name v;
   allNames := name :: !allNames;
   v

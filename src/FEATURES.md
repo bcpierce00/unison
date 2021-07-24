@@ -166,8 +166,9 @@ to read and write archive files in this scenario:
   more forgiving variant of the point above, or actually reading and
   unmarshaling the archive according to the features used to write it --
   even if not all the same features are included in the currently negotiated
-  feature set. The latter requires types and code be tailored for this, the
-  same as with the next point below.
+  feature set. The latter is the currently chosen approach. It does require
+  types and code be tailored for this, the same as with the next point below,
+  but to a lesser degree.
 
 - The archive file on-disk format includes information about the types and
   structure of the written data (you can think like a DB with a relatively

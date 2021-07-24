@@ -27,7 +27,7 @@ val enabled : t -> bool
 
     Feature negotiation must have been completed to get the correct result. *)
 
-val register : string ->
+val register : string -> ?arcFormatChange:bool ->
         (id list -> bool -> string option) option -> t
 (** [register n f] registers a supported feature with a unique identifier [n].
 
@@ -37,6 +37,11 @@ val register : string ->
     indicating whether the tested feature is included in the negotiated set.
     [f] must return [Some msg] if the negotiation result must be rejected with
     the error message [msg], otherwise it must return [None].
+
+    [archFormatChange] is an optional argument which indicates whether the
+    feature, if enabled, changes the archive format that is stored on disk.
+    In other words, it indicates if the archive stored while this feature was
+    enabled requires the existence of this feature to be read back in.
 
     @return feature value that can be tested by {!Features.enabled} function.
     @raise {!Util.Fatal} if [n] is not unique. *)
@@ -50,6 +55,10 @@ val all : unit -> id list
 
 val empty : id list
 (** Empty set of features. *)
+
+val changingArchiveFormat : unit -> id list
+(** Set of all currently enabled features that impact the on-disk archive
+    format. The same features must exist in order to read in the archive. *)
 
 val mem : id -> id list -> bool
 (** [mem n s] tests whether feature with id [n] belongs to feature set [s]. *)
