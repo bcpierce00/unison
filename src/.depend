@@ -80,6 +80,11 @@ common.cmi : \
     name.cmi \
     fspath.cmi \
     fileinfo.cmi
+compat408.cmo : \
+    compat408.cmi
+compat408.cmx : \
+    compat408.cmi
+compat408.cmi :
 configure.cmo :
 configure.cmx :
 copy.cmo : \
