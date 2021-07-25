@@ -80,6 +80,11 @@ common.cmi : \
     name.cmi \
     fspath.cmi \
     fileinfo.cmi
+compat.cmo : \
+    compat.cmi
+compat.cmx : \
+    compat.cmi
+compat.cmi :
 copy.cmo : \
     xferhint.cmi \
     uutil.cmi \
