@@ -72,6 +72,9 @@ val validate : id list -> unit
 
     @raise {!Util.Fatal} at first failed validation. *)
 
+val getEnabled : unit -> id list
+(** Set of enabled features. *)
+
 val resetEnabled : unit -> unit
 (** Make the set of enabled features empty. Can be used to reset the results
     of previous feature negotiation. *)

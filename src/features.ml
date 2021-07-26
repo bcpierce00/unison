@@ -38,6 +38,10 @@ let changingArchiveFormat () =
 
 let inter a b = List.filter (fun name -> mem name a) b
 
+let getEnabled () =
+  let enabled name t accu = if t.enabled then name :: accu else accu in
+  Hashtbl.fold enabled allFeatures []
+
 let setEnabled features =
   Hashtbl.iter (fun name t -> t.enabled <- mem name features) allFeatures
 
@@ -63,9 +67,7 @@ let validate features =
   in
   Hashtbl.iter aux allFeatures
 
-let validateEnabled () =
-  let enabled name t accu = if t.enabled then name :: accu else accu in
-  validate (Hashtbl.fold enabled allFeatures [])
+let validateEnabled () = validate (getEnabled ())
 
 (***************)
 
