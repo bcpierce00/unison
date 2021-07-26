@@ -405,11 +405,14 @@ let dumpUrgent conn l =
 let enableFlowControl conn isServer =
   let q = conn.outputQueue in
   q.available <- false;
-  Lwt.ignore_result (flushBuffer conn.outputBuffer);
+  flushBuffer conn.outputBuffer >>= fun () ->
   q.flowControl <- true;
   q.canWrite <- isServer;
   if q.canWrite then
-    Lwt.ignore_result (popOutputQueues q >>= Lwt_unix.yield)
+    popOutputQueues q >>= Lwt_unix.yield >>= fun () ->
+    Lwt.return ()
+  else
+    Lwt.return ()
 
 (****)
 
@@ -1351,10 +1354,10 @@ let initConnection onClose in_ch out_ch =
   with_timeout (
     checkHeader conn >>=
     checkServerUpgrade conn >>=
-    checkServerVersion conn) >>= (fun () ->
+    checkServerVersion conn) >>= fun () ->
   (* From this moment forward, the RPC version has been selected. All
      communication must now adhere to that version's specification. *)
-  enableFlowControl conn false;
+  enableFlowControl conn false >>= (fun () ->
   Lwt.ignore_result (Lwt.catch
     (fun () -> receive conn)
     (function
@@ -1870,6 +1873,10 @@ let compatServerInit conn =
                 String.length compatConnectionHeader)] >>= fun () ->
   (* Send the magic string to notify new clients *)
   dumpUrgent conn magic >>= fun () ->
+  (* Must enable flow control because that is the default for 2.51.
+     This must be done after dumpUrgent above to ensure that the write
+     token is sent the last. *)
+  enableFlowControl conn true >>= fun () ->
   (* Let's see if the client noticed the magic string. This is
      a no-op for old clients. *)
   checkForMagicString conn
@@ -1894,8 +1901,6 @@ let commandLoop ~compatMode in_ch out_ch =
   Lwt.catch
     (fun () ->
        (if compatMode then
-         (* Must enable flow control because that is the default for 2.51 *)
-         let () = enableFlowControl conn true in
          let () = setConnectionVersion conn 0 in
          compatServerInit conn >>= (fun upgrade ->
          if upgrade then begin
@@ -1912,12 +1917,12 @@ let commandLoop ~compatMode in_ch out_ch =
          compatServerRun conn
        else
        sendStrings conn [connectionHeader; rpcVersionsStr] >>=
-       checkClientVersion conn >>= (fun () ->
+       checkClientVersion conn >>= fun () ->
        (* From this moment forward, the RPC version has been selected. All
           communication must now adhere to that version's specification. *)
        (* Flow control was disabled for RPC version handshake. Enable it
           for flow control negotiation. *)
-       enableFlowControl conn true;
+       enableFlowControl conn true >>= (fun () ->
        (* Set the local warning printer to make an RPC to the client and
           show the warning there; ditto for the message printer *)
        Util.warnPrinter :=
