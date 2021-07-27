@@ -44,14 +44,6 @@ module Windows = struct
 let print_event (nm, act) =
   Format.eprintf "%s %d@." nm (Obj.magic act : int)
 
-let event_is_immediate (_, act) =
-  match act with
-    Lwt_win.FILE_ACTION_ADDED
-  | Lwt_win.FILE_ACTION_MODIFIED         -> false
-  | Lwt_win.FILE_ACTION_REMOVED
-  | Lwt_win.FILE_ACTION_RENAMED_OLD_NAME
-  | Lwt_win.FILE_ACTION_RENAMED_NEW_NAME -> true
-
 let event_kind (_, act) =
   match act with
     Lwt_win.FILE_ACTION_ADDED            -> `CREAT
@@ -141,10 +133,8 @@ let watch_root_directory path dir =
              None ->
                ()
            | Some (subdir, nm) ->
-               let event_time =
-                 if event_is_immediate ev then 0. else time in
                let kind = event_kind ev in
-               signal_change event_time subdir nm kind
+               signal_change time subdir nm kind
          end)
       l;
     if l = [] && get_watch dir <> None then begin

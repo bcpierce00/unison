@@ -116,30 +116,9 @@ let is_deletion ev =
      | Q_overflow    -> false
      | Unmount       -> true)
 
-let is_immediate ev =
-  Inotify.
-    (match ev with
-     | Access        -> false
-     | Attrib        -> false
-     | Close_write   -> false
-     | Close_nowrite -> false
-     | Create        -> false
-     | Delete        -> true
-     | Delete_self   -> true
-     | Modify        -> false
-     | Move_self     -> true
-     | Moved_from    -> true
-     | Moved_to      -> true
-     | Open          -> false
-     | Ignored       -> false
-     | Isdir         -> false
-     | Q_overflow    -> false
-     | Unmount       -> true)
-
 let event_is_change (_, evl, _, _) = List.exists is_change evl
 let event_is_creation (_, evl, _, _) = List.exists is_creation evl
 let event_is_deletion (_, evl, _, _) = List.exists is_deletion evl
-let event_is_immediate (_, evl, _, _) = List.exists is_immediate evl
 
 let st = Lwt_inotify.init ()
 
@@ -171,11 +150,10 @@ let rec watch_rec () =
     if kind <> `OTHER then begin
       try
         let files = Hashtbl.find watcher_by_id wd in
-        let event_time = if event_is_immediate ev then 0. else time in
         IntSet.iter
           (fun file ->
              signal_change
-               event_time (Hashtbl.find file_by_id file) nm_opt kind)
+               time (Hashtbl.find file_by_id file) nm_opt kind)
           files
       with Not_found ->
         ()

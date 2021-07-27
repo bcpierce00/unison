@@ -222,13 +222,6 @@ let signal_changes replicas_with_changes =
     (String.concat " "
        (List.map quote (StringSet.elements replicas_with_changes)))
 
-let signal_immediate_changes hash =
-  if StringSet.mem hash !waiting_for_changes then begin
-    waiting_for_changes := StringSet.empty;
-    printf "CHANGES %s\n" (quote hash)
-  end else
-    Lwt.return ()
-
 let replicas_with_changes watched_replicas =
   let time = Unix.gettimeofday () in
   let changed = ref StringSet.empty in
@@ -286,10 +279,7 @@ let wait hash =
 
 let add_change dir nm time =
   Hashtbl.replace (change_table dir.archive_hash) (dir.id, nm) time;
-  if time = 0. then
-    ignore (signal_immediate_changes dir.archive_hash)
-  else
-    ignore (signal_impending_changes ())
+  ignore (signal_impending_changes ())
 let remove_change dir nm =
   Hashtbl.remove (change_table dir.archive_hash) (dir.id, nm)
 let clear_change_table hash =
@@ -351,7 +341,7 @@ let rec signal_change time dir nm_opt kind =
       match dir.parent with
         Root _ ->
           dir.changed <- true;
-          ignore (signal_immediate_changes dir.archive_hash)
+          ignore (signal_impending_changes ())
       | Parent (nm, parent_dir) ->
           signal_change time parent_dir (Some nm) kind
 
