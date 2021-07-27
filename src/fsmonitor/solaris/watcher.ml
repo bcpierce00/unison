@@ -362,7 +362,7 @@ let process_ev time ((file, name), (port, eo, id, ev)) =
     print_event ev
   end;
   let () = cleanup_watch file name port eo id ev in
-  let event_time = if event_is_immediate ev then ref 0. else ref time
+  let event_time = if event_is_immediate ev then 0. else time
   and name = match name with
   | "" -> None
   | _ -> Some name

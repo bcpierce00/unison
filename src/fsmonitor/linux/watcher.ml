@@ -158,7 +158,6 @@ let path_of_id id =
     Format.sprintf "????"
 
 let previous_event = ref None
-let time_ref = ref (ref 0.)
 
 let clear_event_memory () = previous_event := None
 
@@ -168,12 +167,11 @@ let rec watch_rec () =
   if !previous_event <> Some ev then begin
     previous_event := Some ev;
     if !Watchercommon.debug then print_event path_of_id ev;
-    time_ref := ref time;
     let kind = event_kind ev in
     if kind <> `OTHER then begin
       try
         let files = Hashtbl.find watcher_by_id wd in
-        let event_time = if event_is_immediate ev then ref 0. else !time_ref in
+        let event_time = if event_is_immediate ev then 0. else time in
         IntSet.iter
           (fun file ->
              signal_change
@@ -185,8 +183,7 @@ let rec watch_rec () =
       if !Watchercommon.debug then Format.eprintf "OVERFLOW@.";
       signal_overflow ()
     end
-  end else
-    !time_ref := time;
+  end;
   watch_rec ()
 
 let watch () =
