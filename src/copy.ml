@@ -317,6 +317,26 @@ let localFile
           fspathFrom pathFrom fspathTo pathTo `RESS ressLength ido;
       setFileinfo fspathTo pathTo realPathTo update desc)
 
+let localFileWithResume
+      fspathFrom pathFrom fspathTo pathTo realPathTo update desc fp ress ido =
+  let (_, isTransferred) = fileIsTransferred fspathTo pathTo desc fp ress in
+  if isTransferred then begin
+    (* File is already fully transferred (from some interrupted
+       previous transfer).  So just make sure permissions are right. *)
+    Trace.log
+      (Printf.sprintf "%s/%s has already been transferred\n"
+        (Fspath.toDebugString fspathTo) (Path.toString realPathTo));
+    setFileinfo fspathTo pathTo realPathTo update desc;
+    match ido with
+    | None -> ()
+    | Some id ->
+        let len = Uutil.Filesize.add (Props.length desc) (Osx.ressLength ress) in
+        Uutil.showProgress id len "alr"
+  end else
+    localFile
+      fspathFrom pathFrom fspathTo pathTo realPathTo
+      update desc (Osx.ressLength ress) ido
+
 (****)
 
 let tryCopyMovedFile fspathTo pathTo realPathTo update desc fp ress id =
@@ -959,9 +979,9 @@ let file rootFrom pathFrom rootTo fspathTo pathTo realPathTo
   let timer = Trace.startTimer "Transmitting file" in
   begin match rootFrom, rootTo with
     (Common.Local, fspathFrom), (Common.Local, realFspathTo) ->
-      localFile
+      localFileWithResume
         fspathFrom pathFrom fspathTo pathTo realPathTo
-        update desc (Osx.ressLength ress) (Some id);
+        update desc fp ress (Some id);
         paranoidCheck fspathTo pathTo realPathTo desc fp ress
   | _ ->
       transferFile
