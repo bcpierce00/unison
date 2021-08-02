@@ -168,7 +168,7 @@ let rec fingerprintPrefix fspath path offset len accu =
   end
 
 let fingerprintPrefixRemotely =
-  Remote.registerServerCmd
+  Remote.registerRemoteCmd
     "fingerprintSubfile"
     Umarshal.(prod3 Fspath.m Path.mlocal Uutil.Filesize.m id id)
     Umarshal.(list Fingerprint.m)
@@ -382,7 +382,7 @@ let loadPropsExtDataLocal (fspath, path, desc) =
     | `Global p -> Update.translatePathLocal fspath p in
   (Some localPath, Props.loadExtData fspath localPath desc)
 
-let loadPropsExtDataOnServer = Remote.registerServerCmd "propsExtData"
+let loadPropsExtDataOnServer = Remote.registerRemoteCmd "propsExtData"
   Umarshal.(prod3 Fspath.m mxpath Props.m id id)
   Umarshal.(prod2 (option Path.mlocal) Props.mx id id)
   (fun connFrom args -> Lwt.return (loadPropsExtDataLocal args))
@@ -638,7 +638,7 @@ let convV0 = Remote.makeConvV0FunArg
        ((biOpt, fspathFrom, pathFrom, fileKind), (sizeFrom, id, file_id)))
 
 let compressRemotely =
-  Remote.registerServerCmd "compress" ~convV0 mcompress Umarshal.unit compress
+  Remote.registerRemoteCmd "compress" ~convV0 mcompress Umarshal.unit compress
 
 let close_all infd outfd =
   Util.convertUnixErrorsToTransient
@@ -1181,17 +1181,10 @@ let file rootFrom pathFrom rootTo fspathTo pathTo realPathTo
       (Fspath.toDebugString fspathTo) (Path.toString pathTo)
       (Props.toString desc));
   let timer = Trace.startTimer "Transmitting file" in
-  begin match rootFrom, rootTo with
-    (Common.Local, fspathFrom), (Common.Local, realFspathTo) ->
-      localFile
-        fspathFrom pathFrom fspathTo pathTo realPathTo
-        update desc (Osx.ressLength ress) (Some id);
-        paranoidCheck fspathTo pathTo realPathTo desc fp ress
-  | _ ->
-      transferFile
-        rootFrom pathFrom rootTo fspathTo pathTo realPathTo
-        update desc fp ress id
-  end >>= fun status ->
+  transferFile
+    rootFrom pathFrom rootTo fspathTo pathTo realPathTo
+    update desc fp ress id
+  >>= fun status ->
   Trace.showTimer timer;
   match status with
     TransferSucceeded info ->
