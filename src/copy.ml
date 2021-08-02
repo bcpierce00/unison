@@ -144,7 +144,7 @@ let rec fingerprintPrefix fspath path offset len accu =
   end
 
 let fingerprintPrefixRemotely =
-  Remote.registerServerCmd
+  Remote.registerServerCmd'
     "fingerprintSubfile"
     (fun _ (fspath, path, len) ->
        Lwt.return (fingerprintPrefix fspath path 0L len []))
@@ -461,7 +461,7 @@ let compress conn
        Util.convertUnixErrorsToTransient "transferring file contents"
          (fun () -> raise e))
 
-let compressRemotely = Remote.registerServerCmd "compress" compress
+let compressRemotely = Remote.registerServerCmd' "compress" compress
 
 let close_all infd outfd =
   Util.convertUnixErrorsToTransient
@@ -957,17 +957,10 @@ let file rootFrom pathFrom rootTo fspathTo pathTo realPathTo
       (Fspath.toDebugString fspathTo) (Path.toString pathTo)
       (Props.toString desc));
   let timer = Trace.startTimer "Transmitting file" in
-  begin match rootFrom, rootTo with
-    (Common.Local, fspathFrom), (Common.Local, realFspathTo) ->
-      localFile
-        fspathFrom pathFrom fspathTo pathTo realPathTo
-        update desc (Osx.ressLength ress) (Some id);
-        paranoidCheck fspathTo pathTo realPathTo desc fp ress
-  | _ ->
-      transferFile
-        rootFrom pathFrom rootTo fspathTo pathTo realPathTo
-        update desc fp ress id
-  end >>= fun status ->
+  transferFile
+    rootFrom pathFrom rootTo fspathTo pathTo realPathTo
+    update desc fp ress id
+  >>= fun status ->
   Trace.showTimer timer;
   match status with
     TransferSucceeded info ->
