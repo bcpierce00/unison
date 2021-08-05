@@ -603,6 +603,18 @@ let cond c d m =
       );
   }
 
+let switch c ma fa ga mb fb gb =
+  {
+    read =
+      (fun recv ->
+        if c () then ga (ma.read recv) else gb (mb.read recv)
+      );
+    write =
+      (fun send x ->
+        if c () then ma.write send (fa x) else mb.write send (fb x)
+      );
+  }
+
 module type PROPLIST_S = sig
   type key = string
   type value = Obj.t

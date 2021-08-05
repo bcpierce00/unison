@@ -101,6 +101,7 @@ type ('a, 'b, 'c, 'd, 'e, 'f) sum6 = I61 of 'a | I62 of 'b | I63 of 'c | I64 of 
 val sum6 : 'a t -> 'b t -> 'c t -> 'd t -> 'e t -> 'f t -> ('r -> ('a, 'b, 'c, 'd, 'e, 'f) sum6) -> (('a, 'b, 'c, 'd, 'e, 'f) sum6 -> 'r) -> 'r t
 
 val cond : (unit -> bool) -> 'a -> 'a t -> 'a t
+val switch : (unit -> bool) -> 'a t -> ('r -> 'a) -> ('a -> 'r) -> 'b t -> ('r -> 'b) -> ('b -> 'r) -> 'r t
 
 module type PROPLIST_S = sig
   type key = string

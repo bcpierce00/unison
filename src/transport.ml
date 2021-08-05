@@ -29,7 +29,7 @@ let fileSize uiFrom uiTo =
   match uiFrom, uiTo with
     _, Updates (File (props, ContentsUpdated (_, _, ress)), _) ->
       (Props.length props, Osx.ressLength ress)
-  | Updates (_, Previous (`FILE, props, _, ress)),
+  | Updates (_, PrevFile (props, _, _, ress)),
     (NoUpdates | Updates (File (_, ContentsSame), _)) ->
       (Props.length props, Osx.ressLength ress)
   | _ ->

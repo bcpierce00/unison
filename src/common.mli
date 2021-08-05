@@ -75,7 +75,9 @@ and updateContent251 =
       of string                       (*   - link text *)
 
 type prevState =
-    Previous of Fileinfo.typ * Props.t * Os.fullfingerprint * Osx.ressStamp
+  | PrevDir of Props.t
+  | PrevFile of Props.t * Os.fullfingerprint * Fileinfo.stamp * Osx.ressStamp
+  | PrevSymlink
   | New
 
 type contentschange =

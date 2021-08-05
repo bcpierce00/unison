@@ -1666,19 +1666,16 @@ let showStatusDir path = ()
 
 (* ------- *)
 
-let symlinkInfo =
-  Common.Previous (`SYMLINK, Props.dummy, Os.fullfingerprint_dummy, Osx.ressDummy)
-
 let absentInfo = Common.New
 
 let oldInfoOf archive =
   match archive with
     ArchiveDir  (oldDesc, _) ->
-      Common.Previous (`DIRECTORY, oldDesc, Os.fullfingerprint_dummy, Osx.ressDummy)
-  | ArchiveFile (oldDesc, dig, _, ress) ->
-      Common.Previous (`FILE, oldDesc, dig, ress)
+      Common.PrevDir oldDesc
+  | ArchiveFile (oldDesc, dig, oldStamp, ress) ->
+      Common.PrevFile (oldDesc, dig, oldStamp, ress)
   | ArchiveSymlink _ ->
-      symlinkInfo
+      Common.PrevSymlink
   | NoArchive ->
       absentInfo
 
@@ -1687,9 +1684,9 @@ let rec noChildChange childUpdates =
   match childUpdates with
     [] ->
       true
-  | (_, Updates (File _, Previous (`FILE, _, _, _))) :: rem
-  | (_, Updates (Dir _, Previous (`DIRECTORY, _, _, _))) :: rem
-  | (_, Updates (Symlink _, Previous (`SYMLINK, _, _, _))) :: rem ->
+  | (_, Updates (File _, PrevFile _)) :: rem
+  | (_, Updates (Dir _, PrevDir _)) :: rem
+  | (_, Updates (Symlink _, PrevSymlink)) :: rem ->
       noChildChange rem
   | _ ->
       false
@@ -3145,7 +3142,7 @@ let markPossiblyUpdated fspath path =
 let rec markPossiblyUpdatedRec fspath path ui =
   match ui with
     Updates (File (desc, ContentsUpdated (_, _, ress)),
-             Previous (`FILE, oldDesc, _, oldRess)) ->
+             PrevFile (oldDesc, _, _, oldRess)) ->
       if fastCheckMiss path desc ress oldDesc oldRess then
         markPossiblyUpdated fspath path
   | Updates (Dir (_, uiChildren, _, _), _) ->
@@ -3182,7 +3179,7 @@ let rec explainUpdate path ui =
         (Format.sprintf "The properties of file %s have been modified\n"
            (Path.toString path))
   | Updates (File (desc, ContentsUpdated (_, _, ress)),
-             Previous (`FILE, oldDesc, oldFp, oldRess)) ->
+             PrevFile (oldDesc, oldFp, _, oldRess)) ->
       if not (Os.isPseudoFingerprint oldFp) then
         reportUpdate (fastCheckMiss path desc ress oldDesc oldRess)
           (Format.sprintf "The contents of file %s have been modified\n"
@@ -3191,7 +3188,7 @@ let rec explainUpdate path ui =
       reportUpdate false
         (Format.sprintf "The file %s has been created\n"
            (Path.toString path))
-  | Updates (Symlink _, Previous (`SYMLINK, _, _, _)) ->
+  | Updates (Symlink _, PrevSymlink) ->
       reportUpdate false
         (Format.sprintf "The symlink %s has been modified\n"
            (Path.toString path))
@@ -3199,7 +3196,7 @@ let rec explainUpdate path ui =
       reportUpdate false
         (Format.sprintf "The symlink %s has been created\n"
            (Path.toString path))
-  | Updates (Dir (_, _, PropsUpdated, _), Previous (`DIRECTORY, _, _, _)) ->
+  | Updates (Dir (_, _, PropsUpdated, _), PrevDir _) ->
       reportUpdate false
         (Format.sprintf
            "The properties of directory %s have been modified\n"

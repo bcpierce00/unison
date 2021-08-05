@@ -1036,13 +1036,13 @@ let merge root1 path1 ui1 root2 path2 ui2 id showMergeFn =
       (* retrieve the archive for this file, if any *)
       let arch =
         match ui1, ui2 with
-        | Updates (_, Previous (_,_,fp,_)), Updates (_, Previous (_,_,fp2,_)) ->
+        | Updates (_, PrevFile (_,fp,_,_)), Updates (_, PrevFile (_,fp2,_,_)) ->
             if fp = fp2 then
               Stasher.getRecentVersion fspath1 localPath1 fp
             else
               assert false
-        | NoUpdates, Updates(_, Previous (_,_,fp,_))
-        | Updates(_, Previous (_,_,fp,_)), NoUpdates ->
+        | NoUpdates, Updates(_, PrevFile (_,fp,_,_))
+        | Updates(_, PrevFile (_,fp,_,_)), NoUpdates ->
             Stasher.getRecentVersion fspath1 localPath1 fp
         | Updates (_, New), Updates(_, New)
         | Updates (_, New), NoUpdates
@@ -1251,8 +1251,8 @@ let merge root1 path1 ui1 root2 path2 ui2 id showMergeFn =
              let pref_desc =
                if Props.similar desc1' desc2' then Some desc1 else
                match ui1, ui2 with
-               | Updates (_, Previous (_, pdesc1, _, _)),
-                 Updates (_, Previous (_, pdesc2, _, _)) ->
+               | Updates (_, PrevFile (pdesc1, _, _, _)),
+                 Updates (_, PrevFile (pdesc2, _, _, _)) ->
                    if Props.similar pdesc1 desc1 then Some desc1 else
                    if Props.similar pdesc2 desc2 then Some desc2 else
                    if Props.similar pdesc1 pdesc2 then Some pdesc1 else
