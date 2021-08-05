@@ -60,8 +60,10 @@ common.cmo : \
     osx.cmi \
     os.cmi \
     name.cmi \
+    ubase/myMap.cmi \
     fspath.cmi \
     fileinfo.cmi \
+    features.cmi \
     common.cmi
 common.cmx : \
     uutil.cmx \
@@ -73,8 +75,10 @@ common.cmx : \
     osx.cmx \
     os.cmx \
     name.cmx \
+    ubase/myMap.cmx \
     fspath.cmx \
     fileinfo.cmx \
+    features.cmx \
     common.cmi
 common.cmi : \
     uutil.cmi \
@@ -84,6 +88,7 @@ common.cmi : \
     osx.cmi \
     os.cmi \
     name.cmi \
+    ubase/myMap.cmi \
     fspath.cmi \
     fileinfo.cmi
 copy.cmo : \
@@ -1507,7 +1512,6 @@ update.cmo : \
     osx.cmi \
     os.cmi \
     name.cmi \
-    ubase/myMap.cmi \
     lwt/lwt_unix.cmi \
     lwt/lwt.cmi \
     lock.cmi \
@@ -1540,7 +1544,6 @@ update.cmx : \
     osx.cmx \
     os.cmx \
     name.cmx \
-    ubase/myMap.cmx \
     lwt/lwt_unix.cmx \
     lwt/lwt.cmx \
     lock.cmx \
@@ -1564,7 +1567,6 @@ update.cmi : \
     osx.cmi \
     os.cmi \
     name.cmi \
-    ubase/myMap.cmi \
     lwt/lwt.cmi \
     fspath.cmi \
     fileinfo.cmi \

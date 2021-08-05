@@ -509,13 +509,17 @@ let update2replicaContent path (conflict: bool) ui props ucNew oldType:
 
 let oldType (prev: Common.prevState): Fileinfo.typ =
   match prev with
-    Previous (typ, _, _, _) -> typ
-  | New                     -> `ABSENT
+  | ArchiveFile _    -> `FILE
+  | ArchiveDir _     -> `DIRECTORY
+  | ArchiveSymlink _ -> `SYMLINK
+  | NoArchive        -> `ABSENT
 
 let oldDesc (prev: Common.prevState): Props.t =
   match prev with
-    Previous (_, desc, _, _) -> desc
-  | New                      -> Props.dummy
+  | ArchiveFile (desc, _, _, _)
+  | ArchiveDir (desc, _)        -> desc
+  | ArchiveSymlink _
+  | NoArchive                   -> Props.dummy
 
 (* [describeUpdate ui] returns the replica contents for both the case of     *)
 (* updating and the case of non-updating                                     *)
@@ -554,7 +558,7 @@ let rec reconcileNoConflict allowPartial path props' ui props whatIsUpdated
   | Error err ->
       skipIgnored result err NoUpdates
   | Updates (Dir (desc, children, permchg, _),
-             Previous(`DIRECTORY, _, _, _)) ->
+             ArchiveDir _) ->
       let r =
         if permchg = PropsSame then result else Tree.add result (different ())
       in

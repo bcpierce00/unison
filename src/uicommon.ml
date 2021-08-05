@@ -209,10 +209,11 @@ let prevProps newprops ui =
   if not (Prefs.read showprev) then ""
   else match ui with
     NoUpdates | Error _
+  | Updates (_, ArchiveSymlink _)
       -> ""
-  | Updates (_, New) ->
+  | Updates (_, NoArchive) ->
       " (new)"
-  | Updates (_, Previous(_,oldprops,_,_)) ->
+  | Updates (_, (ArchiveFile (oldprops, _, _, _) | ArchiveDir (oldprops, _))) ->
       (* || Props.similar newprops oldprops *)
       " (was: "^(Props.toString oldprops)^")"
 

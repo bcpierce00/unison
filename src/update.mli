@@ -1,7 +1,7 @@
 (* Unison file synchronizer: src/update.mli *)
 (* Copyright 1999-2020, Benjamin C. Pierce (see COPYING for details) *)
 
-module NameMap : MyMap.S with type key = Name.t
+module NameMap = Common.NameMap
 
 type archive251 =
     ArchiveDir of Props.t251 * archive251 NameMap.t
@@ -9,7 +9,7 @@ type archive251 =
   | ArchiveSymlink of string
   | NoArchive
 
-type archive =
+type archive = Common.archive =
     ArchiveDir of Props.t * archive NameMap.t
   | ArchiveFile of Props.t * Os.fullfingerprint * Fileinfo.stamp * Osx.ressStamp
   | ArchiveSymlink of string

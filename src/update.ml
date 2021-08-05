@@ -45,7 +45,7 @@ let ignoreArchives =
   the archive *)
 let archiveFormat = 23
 
-module NameMap = MyMap.Make (Name)
+module NameMap = Common.NameMap
 
 (* IMPORTANT!
    This is the 2.51-compatible version of type [archive]. It must always remain
@@ -58,29 +58,13 @@ type archive251 =
   | ArchiveSymlink of string
   | NoArchive
 
-type archive =
+type archive = Common.archive =
     ArchiveDir of Props.t * archive NameMap.t
   | ArchiveFile of Props.t * Os.fullfingerprint * Fileinfo.stamp * Osx.ressStamp
   | ArchiveSymlink of string
   | NoArchive
 
-let marchive_rec marchive =
-  Umarshal.(sum4
-              (prod2 Props.m (NameMap.m marchive) id id)
-              (prod4 Props.m Os.mfullfingerprint Fileinfo.mstamp Osx.mressStamp id id)
-              string unit
-              (function
-               | ArchiveDir (a, b) -> I41 (a, b)
-               | ArchiveFile (a, b, c, d) -> I42 (a, b, c, d)
-               | ArchiveSymlink a -> I43 a
-               | NoArchive -> I44 ())
-              (function
-               | I41 (a, b) -> ArchiveDir (a, b)
-               | I42 (a, b, c, d) -> ArchiveFile (a, b, c, d)
-               | I43 a -> ArchiveSymlink a
-               | I44 () -> NoArchive))
-
-let marchive = Umarshal.rec1 marchive_rec
+let marchive = Common.marchive
 
 (* For directories, only the permissions part of the file description (desc)
    is used for synchronization at the moment. *)
@@ -1572,30 +1556,14 @@ let showStatusDir path = ()
 
 (* ------- *)
 
-let symlinkInfo =
-  Common.Previous (`SYMLINK, Props.dummy, Os.fullfingerprint_dummy, Osx.ressDummy)
-
-let absentInfo = Common.New
-
-let oldInfoOf archive =
-  match archive with
-    ArchiveDir  (oldDesc, _) ->
-      Common.Previous (`DIRECTORY, oldDesc, Os.fullfingerprint_dummy, Osx.ressDummy)
-  | ArchiveFile (oldDesc, dig, _, ress) ->
-      Common.Previous (`FILE, oldDesc, dig, ress)
-  | ArchiveSymlink _ ->
-      symlinkInfo
-  | NoArchive ->
-      absentInfo
-
 (* Check whether the directory immediate children may have changed *)
 let rec noChildChange childUpdates =
   match childUpdates with
     [] ->
       true
-  | (_, Updates (File _, Previous (`FILE, _, _, _))) :: rem
-  | (_, Updates (Dir _, Previous (`DIRECTORY, _, _, _))) :: rem
-  | (_, Updates (Symlink _, Previous (`SYMLINK, _, _, _))) :: rem ->
+  | (_, Updates (File _, ArchiveFile _)) :: rem
+  | (_, Updates (Dir _, ArchiveDir _)) :: rem
+  | (_, Updates (Symlink _, ArchiveSymlink _)) :: rem ->
       noChildChange rem
   | _ ->
       false
@@ -1667,7 +1635,7 @@ let checkPropChange desc archive archDesc =
     NoUpdates
   end else begin
     debug (fun() -> Util.msg "  File permissions updated\n");
-    Updates (File (desc, ContentsSame), oldInfoOf archive)
+    Updates (File (desc, ContentsSame), archive)
   end
 
 (* Check whether a file has changed has changed, by comparing its digest and
@@ -1754,7 +1722,7 @@ let checkContentsChange
       *)
       None,
       Updates (File (newDesc, ContentsUpdated (newFp, newStamp, newRess)),
-               oldInfoOf archive)
+               archive)
     end
   end
 
@@ -1978,7 +1946,7 @@ and buildUpdateRec archive currfspath path scanInfo =
         None, NoUpdates
     | (`ABSENT, _) ->
         debug (fun() -> Util.msg "  buildUpdate -> Deleted\n");
-        None, Updates (Absent, oldInfoOf archive)
+        None, Updates (Absent, archive)
     (* --- *)
     | (`FILE, ArchiveFile (archDesc, archFp, archStamp, archRess)) ->
         checkContentsChange
@@ -1994,7 +1962,7 @@ and buildUpdateRec archive currfspath path scanInfo =
               scanInfo.fastCheck currfspath path info None in
           Xferhint.insertEntry currfspath path fp;
           Updates (File (desc, ContentsUpdated (fp, stamp, ress)),
-                   oldInfoOf archive)
+                   archive)
         end
     (* --- *)
     | (`SYMLINK, ArchiveSymlink prevl) ->
@@ -2006,11 +1974,11 @@ and buildUpdateRec archive currfspath path scanInfo =
             Util.msg "  buildUpdate -> Symlink %s (previously: %s)\n" l prevl);
         (None,
          if l = prevl then NoUpdates else
-         Updates (Symlink l, oldInfoOf archive))
+         Updates (Symlink l, archive))
     | (`SYMLINK, _) ->
         let l = Os.readLink currfspath path in
         debug (fun() -> Util.msg "  buildUpdate -> New symlink %s\n" l);
-        None, Updates (Symlink l, oldInfoOf archive)
+        None, Updates (Symlink l, archive)
     (* --- *)
     | (`DIRECTORY, ArchiveDir (archDesc, prevChildren)) ->
         debugverbose (fun() -> Util.msg "  buildUpdate -> Directory\n");
@@ -2056,7 +2024,7 @@ and buildUpdateRec archive currfspath path scanInfo =
          end,
          if childUpdates <> [] || permchange = PropsUpdated then
            Updates (Dir (desc, childUpdates, permchange, emptied),
-                    oldInfoOf archive)
+                    archive)
          else
            NoUpdates)
     | (`DIRECTORY, _) ->
@@ -2066,7 +2034,7 @@ and buildUpdateRec archive currfspath path scanInfo =
             currfspath path NameMap.empty false scanInfo in
         (None,
          Updates (Dir (info.Fileinfo.desc, childUpdates, PropsUpdated, false),
-                  oldInfoOf archive))
+                  archive))
   with
     Util.Transient(s) -> None, Error(s)
 
@@ -2155,7 +2123,7 @@ let rec buildUpdatePathTree archive fspath here tree scanInfo =
        if !updates <> [] then
          (* The Recon module relies on the updates to be sorted *)
          Updates (Dir (archDesc, Safelist.rev !updates, PropsSame, false),
-                  oldInfoOf archive)
+                  archive)
        else
          NoUpdates)
   | _ ->
@@ -2759,7 +2727,7 @@ let markEqualLocal fspath paths =
          updatePathInArchive !archive fspath Path.empty path
            (fun archive localPath ->
               !stashCurrentVersion fspath localPath;
-              updateArchiveRec (Updates (uc, New)) archive)
+              updateArchiveRec (Updates (uc, NoArchive)) archive)
        in
        archive := arch);
   setArchiveLocal root !archive
@@ -2899,7 +2867,7 @@ let markPossiblyUpdated fspath path =
 let rec markPossiblyUpdatedRec fspath path ui =
   match ui with
     Updates (File (desc, ContentsUpdated (_, _, ress)),
-             Previous (`FILE, oldDesc, _, oldRess)) ->
+             ArchiveFile (oldDesc, _, _, oldRess)) ->
       if fastCheckMiss path desc ress oldDesc oldRess then
         markPossiblyUpdated fspath path
   | Updates (Dir (_, uiChildren, _, _), _) ->
@@ -2936,7 +2904,7 @@ let rec explainUpdate path ui =
         (Format.sprintf "The properties of file %s have been modified\n"
            (Path.toString path))
   | Updates (File (desc, ContentsUpdated (_, _, ress)),
-             Previous (`FILE, oldDesc, oldFp, oldRess)) ->
+             ArchiveFile (oldDesc, oldFp, _, oldRess)) ->
       if not (Os.isPseudoFingerprint oldFp) then
         reportUpdate (fastCheckMiss path desc ress oldDesc oldRess)
           (Format.sprintf "The contents of file %s have been modified\n"
@@ -2945,7 +2913,7 @@ let rec explainUpdate path ui =
       reportUpdate false
         (Format.sprintf "The file %s has been created\n"
            (Path.toString path))
-  | Updates (Symlink _, Previous (`SYMLINK, _, _, _)) ->
+  | Updates (Symlink _, ArchiveSymlink _) ->
       reportUpdate false
         (Format.sprintf "The symlink %s has been modified\n"
            (Path.toString path))
@@ -2953,7 +2921,7 @@ let rec explainUpdate path ui =
       reportUpdate false
         (Format.sprintf "The symlink %s has been created\n"
            (Path.toString path))
-  | Updates (Dir (_, _, PropsUpdated, _), Previous (`DIRECTORY, _, _, _)) ->
+  | Updates (Dir (_, _, PropsUpdated, _), ArchiveDir _) ->
       reportUpdate false
         (Format.sprintf
            "The properties of directory %s have been modified\n"

@@ -37,6 +37,16 @@ type 'a oneperpath = ONEPERPATH of 'a list
 (*            COMMON TYPES USED BY UPDATE MODULE AND RECONCILER              *)
 (*****************************************************************************)
 
+module NameMap : MyMap.S with type key = Name.t
+
+type archive =
+    ArchiveDir of Props.t * archive NameMap.t
+  | ArchiveFile of Props.t * Os.fullfingerprint * Fileinfo.stamp * Osx.ressStamp
+  | ArchiveSymlink of string
+  | NoArchive
+
+val marchive : archive Umarshal.t
+
 (* An updateItem describes the difference between the current state of the
    filesystem below a given path and the state recorded in the archive below
    that path.  The other types are helpers. *)
@@ -74,9 +84,7 @@ and updateContent251 =
   | Symlink                           (* Path refers to a symbolic link *)
       of string                       (*   - link text *)
 
-type prevState =
-    Previous of Fileinfo.typ * Props.t * Os.fullfingerprint * Osx.ressStamp
-  | New
+type prevState = archive
 
 type contentschange =
     ContentsSame
