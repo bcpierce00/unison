@@ -62,6 +62,7 @@ common.cmo : \
     name.cmi \
     fspath.cmi \
     fileinfo.cmi \
+    features.cmi \
     common.cmi
 common.cmx : \
     uutil.cmx \
@@ -75,6 +76,7 @@ common.cmx : \
     name.cmx \
     fspath.cmx \
     fileinfo.cmx \
+    features.cmx \
     common.cmi
 common.cmi : \
     uutil.cmi \
