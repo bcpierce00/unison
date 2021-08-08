@@ -66,7 +66,12 @@ let readLink fspath path =
   "reading symbolic link"
     (fun () ->
        let abspath = Fspath.concat fspath path in
-       Fs.readlink abspath)
+       let l = Fs.readlink abspath in
+       if Util.osType = `Win32 then
+         Fileutil.backslashes2forwardslashes l
+       else
+         l
+    )
 
 let rec isAppleDoubleFile file =
   Prefs.read Osx.rsrc &&
@@ -209,7 +214,7 @@ let rename fname sourcefspath sourcepath targetfspath targetpath =
   renameFspath fname source target
 
 let symlink =
-  if Util.isCygwin || (Util.osType != `Win32) then
+  if Fs.hasSymlink () then
     fun fspath path l ->
       Util.convertUnixErrorsToTransient
       "writing symbolic link"
@@ -221,8 +226,12 @@ let symlink =
       raise (Util.Transient
                (Format.sprintf
                   "Cannot create symlink \"%s\": \
-                   symlinks are not supported under Windows"
-                  (Fspath.toPrintString (Fspath.concat fspath path))))
+                   symlinks are not supported on this system%s"
+                  (Fspath.toPrintString (Fspath.concat fspath path))
+                  (if Util.osType = `Win32 then
+                     " or elevated privileges may be required"
+                  else "")
+               ))
 
 (* Create a new directory, using the permissions from the given props        *)
 let createDir fspath path props =

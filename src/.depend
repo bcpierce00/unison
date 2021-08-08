@@ -625,6 +625,7 @@ os.cmo : \
     fspath.cmi \
     fs.cmi \
     fingerprint.cmi \
+    fileutil.cmi \
     fileinfo.cmi \
     os.cmi
 os.cmx : \
@@ -640,6 +641,7 @@ os.cmx : \
     fspath.cmx \
     fs.cmx \
     fingerprint.cmx \
+    fileutil.cmx \
     fileinfo.cmx \
     os.cmi
 os.cmi : \

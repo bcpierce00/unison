@@ -1744,8 +1744,10 @@ let docs =
       \032         symbolic links. When the flag is set to false, symbolic links\n\
       \032         will result in an error during update detection. Ordinarily,\n\
       \032         when the flag is set to default, symbolic links are synchronized\n\
-      \032         except when one of the hosts is running Windows. In rare\n\
-      \032         circumstances it may be useful to set the flag manually.\n\
+      \032         except when one of the hosts is running Windows. On a Windows\n\
+      \032         client, Unison makes an attempt to detect if symbolic links are\n\
+      \032         supported and allowed by user privileges. You may have to get\n\
+      \032         elevated privileges to create symbolic links.\n\
       \n\
       \032  log\n\
       \032         When this flag is set, Unison will log all changes to the\n\
@@ -2678,11 +2680,18 @@ let docs =
       \032  to the profile, where pathspec is a path pattern as described in the\n\
       \032  section \"Path Specification\" .\n\
       \n\
-      \032  Windows file systems do not support symbolic links; Unison will refuse\n\
-      \032  to propagate an opaque symbolic link from Unix to Windows and flag the\n\
-      \032  path as erroneous. When a Unix replica is to be synchronized with a\n\
-      \032  Windows system, all symbolic links should match either an ignore\n\
-      \032  pattern or a follow pattern.\n\
+      \032  Not all Windows versions and file systems support symbolic links;\n\
+      \032  Unison will refuse to propagate an opaque symbolic link from Unix to\n\
+      \032  Windows and flag the path as erroneous if the support or privileges are\n\
+      \032  lacking on the Windows side. When a Unix replica is to be synchronized\n\
+      \032  with such Windows system, all symbolic links should match either an\n\
+      \032  ignore pattern or a follow pattern.\n\
+      \n\
+      \032  You may need to acquire extra privileges to create symbolic links under\n\
+      \032  Windows. By default, this is only allowed for administrators. Unison\n\
+      \032  may not be able to automatically detect support for symbolic links\n\
+      \032  under Windows. In that case, set the preference links to true\n\
+      \032  explicitly.\n\
       \n\
       Permissions\n\
       \n\

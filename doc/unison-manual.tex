@@ -2005,11 +2005,16 @@ to treat a link in this manner, add a line of the form
 to the profile, where \ARG{pathspec} is a path pattern as described in
 \sectionref{pathspec}{Path Specification}.
 
-Windows file systems do not support symbolic links; Unison will refuse
-to propagate an opaque symbolic link from Unix to Windows and flag the
-path as erroneous.  When a Unix replica is to be synchronized with a
-Windows system, all symbolic links should match either an
-\verb|ignore| pattern or a \verb|follow| pattern.
+Not all Windows versions and file systems support symbolic links; Unison will
+refuse to propagate an opaque symbolic link from Unix to Windows and flag the
+path as erroneous if the support or privileges are lacking on the Windows side.
+When a Unix replica is to be synchronized with such Windows system, all symbolic
+links should match either an \verb|ignore| pattern or a \verb|follow| pattern.
+
+You may need to acquire extra privileges to create symbolic links under
+Windows. By default, this is only allowed for administrators. Unison may not
+be able to automatically detect support for symbolic links under Windows. In
+that case, set the preference {\tt links} to {\tt true} explicitly.
 
 
 \SUBSECTION{Permissions}{perms}

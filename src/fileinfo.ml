@@ -26,8 +26,9 @@ let allowSymlinks =
       links will result in an error during update detection.  \
       Ordinarily, when the flag is set to {\\tt default}, symbolic \
       links are synchronized except when one of the hosts is running \
-      Windows.  In rare circumstances it may be useful to set the flag \
-      manually.")
+      Windows.  On a Windows client, Unison makes an attempt to detect \
+      if symbolic links are supported and allowed by user privileges.  \
+      You may have to get elevated privileges to create symbolic links.")
 
 let symlinksAllowed =
   Prefs.createBool "links-aux" true
@@ -36,7 +37,8 @@ let symlinksAllowed =
 let init b =
   Prefs.set symlinksAllowed
     (Prefs.read allowSymlinks = `True ||
-     (Prefs.read allowSymlinks = `Default && not b))
+      (Prefs.read allowSymlinks = `Default &&
+      (not b || System.hasSymlink ())))
 
 type typ = [ `ABSENT | `FILE | `DIRECTORY | `SYMLINK ]
 

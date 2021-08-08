@@ -93,6 +93,8 @@ let canSetTime f =
    have access to the lower 32 bits on 32bit systems... *)
 let hasInodeNumbers () = isNotWindows
 
+let hasSymlink = Unix.has_symlink
+
 (* Cygwin can apparently provide correct ctime.
  *
  * With current OCaml Unix library, ctime is not correct on Win32.
