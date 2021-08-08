@@ -44,14 +44,6 @@ module Windows = struct
 let print_event (nm, act) =
   Format.eprintf "%s %d@." nm (Obj.magic act : int)
 
-let event_is_immediate (_, act) =
-  match act with
-    Lwt_win.FILE_ACTION_ADDED
-  | Lwt_win.FILE_ACTION_MODIFIED         -> false
-  | Lwt_win.FILE_ACTION_REMOVED
-  | Lwt_win.FILE_ACTION_RENAMED_OLD_NAME
-  | Lwt_win.FILE_ACTION_RENAMED_NEW_NAME -> true
-
 let event_kind (_, act) =
   match act with
     Lwt_win.FILE_ACTION_ADDED            -> `CREAT
@@ -106,7 +98,6 @@ let get_win_path root dir ((ev_path, act) as ev) =
         (ev_path, Lwt_win.FILE_ACTION_MODIFIED))
 
 let previous_event = ref None
-let time_ref = ref (ref 0.)
 
 let clear_event_memory () = previous_event := None
 
@@ -135,7 +126,6 @@ let watch_root_directory path dir =
     List.iter
       (fun ((ev_path, _) as ev) ->
          if !previous_event <> Some ev then begin
-           time_ref := ref time;
            previous_event := Some ev;
            if !Watchercommon.debug then print_event ev;
            let pathnm, ev = get_win_path path dir ev in
@@ -143,12 +133,9 @@ let watch_root_directory path dir =
              None ->
                ()
            | Some (subdir, nm) ->
-               let event_time =
-                 if event_is_immediate ev then ref 0. else !time_ref in
                let kind = event_kind ev in
-               signal_change event_time subdir nm kind
-         end else
-           !time_ref := time)
+               signal_change time subdir nm kind
+         end)
       l;
     if l = [] && get_watch dir <> None then begin
       if !Watchercommon.debug then Format.eprintf "OVERFLOW@.";

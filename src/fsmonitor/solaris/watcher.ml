@@ -150,24 +150,6 @@ let event_kind =
   in
   List.fold_left (fun k v -> if k = `OTHER then kind v else k) `OTHER
 
-let event_is_exceptional =
-  let is_ex = function
-  | FILE_ACCESS -> false
-  | FILE_MODIFIED -> false
-  | FILE_ATTRIB -> false
-  | FILE_DELETE -> true
-  | FILE_RENAME_TO -> true
-  | FILE_RENAME_FROM -> true
-  | FILE_TRUNC -> false
-  | FILE_NOFOLLOW -> false
-  | UNMOUNTED -> true
-  | MOUNTEDOVER -> true
-  in
-  List.fold_left (fun k v -> if not k then is_ex v else k) false
-
-(* FIXME: should be equal to [event_is_exceptional] here? *)
-let event_is_immediate ev = false
-
 (****)
 
 external port_create : unit -> port = "unsn_port_create"
@@ -362,12 +344,11 @@ let process_ev time ((file, name), (port, eo, id, ev)) =
     print_event ev
   end;
   let () = cleanup_watch file name port eo id ev in
-  let event_time = if event_is_immediate ev then ref 0. else ref time
-  and name = match name with
+  let name = match name with
   | "" -> None
   | _ -> Some name
   in
-  signal_change event_time file name (event_kind ev)
+  signal_change time file name (event_kind ev)
 
 (* Always process events on children first and on parents last because
  * the cleanup procedure clears out children together with the parent. *)

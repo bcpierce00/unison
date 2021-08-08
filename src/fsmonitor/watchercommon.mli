@@ -22,7 +22,7 @@ module F (M : sig type watch end) : sig
   val dir_path : t -> string -> string
 
   val signal_change :
-    float ref -> t -> string option -> [> `CREAT | `DEL ] -> unit
+    float -> t -> string option -> [> `CREAT | `DEL ] -> unit
   val signal_overflow : unit -> unit
 
   module type S = sig

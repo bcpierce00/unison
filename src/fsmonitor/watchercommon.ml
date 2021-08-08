@@ -172,7 +172,7 @@ type t =
     parent : parent;
     archive_hash : string;
     mutable changed : bool;
-    mutable changed_children : (status * float ref) StringMap.t }
+    mutable changed_children : (status * float) StringMap.t }
 
 and parent = Root of string * string | Parent of string * t
 
@@ -222,13 +222,6 @@ let signal_changes replicas_with_changes =
     (String.concat " "
        (List.map quote (StringSet.elements replicas_with_changes)))
 
-let signal_immediate_changes hash =
-  if StringSet.mem hash !waiting_for_changes then begin
-    waiting_for_changes := StringSet.empty;
-    printf "CHANGES %s\n" (quote hash)
-  end else
-    Lwt.return ()
-
 let replicas_with_changes watched_replicas =
   let time = Unix.gettimeofday () in
   let changed = ref StringSet.empty in
@@ -246,7 +239,7 @@ let replicas_with_changes watched_replicas =
        if not (StringSet.mem hash !changed) then
          try
            Hashtbl.iter
-             (fun _ time_ref -> if time -. !time_ref > delay then raise Exit)
+             (fun _ time_ref -> if time -. time_ref > delay then raise Exit)
              (change_table hash)
          with Exit ->
            changed := StringSet.add hash !changed)
@@ -286,10 +279,7 @@ let wait hash =
 
 let add_change dir nm time =
   Hashtbl.replace (change_table dir.archive_hash) (dir.id, nm) time;
-  if !time = 0. then
-    ignore (signal_immediate_changes dir.archive_hash)
-  else
-    ignore (signal_impending_changes ())
+  ignore (signal_impending_changes ())
 let remove_change dir nm =
   Hashtbl.remove (change_table dir.archive_hash) (dir.id, nm)
 let clear_change_table hash =
@@ -300,7 +290,7 @@ let rec clear_changes hash time =
     f.changed_children <-
       StringMap.filter
         (fun nm (_, time_ref) ->
-           if time -. !time_ref <= delay then true else begin
+           if time -. time_ref <= delay then true else begin
              remove_change f nm;
              false
            end)
@@ -351,7 +341,7 @@ let rec signal_change time dir nm_opt kind =
       match dir.parent with
         Root _ ->
           dir.changed <- true;
-          ignore (signal_immediate_changes dir.archive_hash)
+          ignore (signal_impending_changes ())
       | Parent (nm, parent_dir) ->
           signal_change time parent_dir (Some nm) kind
 
@@ -376,7 +366,7 @@ let gather_changes hash time =
   clear_event_memory ();
   let rec gather_rec path r l =
     let c =
-      StringMap.filter (fun _ (_, time_ref) -> time -. !time_ref > delay)
+      StringMap.filter (fun _ (_, time_ref) -> time -. time_ref > delay)
         r.changed_children
     in
     let l = StringMap.fold (fun nm _ l -> concat path nm :: l) c l in
@@ -502,7 +492,7 @@ let watch_path path file follow =
       if is_root file then
         error (Format.sprintf "Path '%s' does not exist" path)
       else
-        signal_change (ref 0.) file None `DEL
+        signal_change 0. file None `DEL
         (* Most likely cause: A subdir was deleted during the scan.
            Report it as a deletion. If this was not a deletion (could
            have been an unmount, perhaps even a lost network connection)

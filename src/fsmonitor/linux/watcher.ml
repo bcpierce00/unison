@@ -116,30 +116,9 @@ let is_deletion ev =
      | Q_overflow    -> false
      | Unmount       -> true)
 
-let is_immediate ev =
-  Inotify.
-    (match ev with
-     | Access        -> false
-     | Attrib        -> false
-     | Close_write   -> false
-     | Close_nowrite -> false
-     | Create        -> false
-     | Delete        -> true
-     | Delete_self   -> true
-     | Modify        -> false
-     | Move_self     -> true
-     | Moved_from    -> true
-     | Moved_to      -> true
-     | Open          -> false
-     | Ignored       -> false
-     | Isdir         -> false
-     | Q_overflow    -> false
-     | Unmount       -> true)
-
 let event_is_change (_, evl, _, _) = List.exists is_change evl
 let event_is_creation (_, evl, _, _) = List.exists is_creation evl
 let event_is_deletion (_, evl, _, _) = List.exists is_deletion evl
-let event_is_immediate (_, evl, _, _) = List.exists is_immediate evl
 
 let st = Lwt_inotify.init ()
 
@@ -158,7 +137,6 @@ let path_of_id id =
     Format.sprintf "????"
 
 let previous_event = ref None
-let time_ref = ref (ref 0.)
 
 let clear_event_memory () = previous_event := None
 
@@ -168,16 +146,14 @@ let rec watch_rec () =
   if !previous_event <> Some ev then begin
     previous_event := Some ev;
     if !Watchercommon.debug then print_event path_of_id ev;
-    time_ref := ref time;
     let kind = event_kind ev in
     if kind <> `OTHER then begin
       try
         let files = Hashtbl.find watcher_by_id wd in
-        let event_time = if event_is_immediate ev then ref 0. else !time_ref in
         IntSet.iter
           (fun file ->
              signal_change
-               event_time (Hashtbl.find file_by_id file) nm_opt kind)
+               time (Hashtbl.find file_by_id file) nm_opt kind)
           files
       with Not_found ->
         ()
@@ -185,8 +161,7 @@ let rec watch_rec () =
       if !Watchercommon.debug then Format.eprintf "OVERFLOW@.";
       signal_overflow ()
     end
-  end else
-    !time_ref := time;
+  end;
   watch_rec ()
 
 let watch () =
