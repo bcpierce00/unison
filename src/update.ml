@@ -2682,6 +2682,8 @@ let rec updateArchiveRec ui archive =
                    children NameMap.empty)
           end
 
+let makeArchive ui = updateArchiveRec ui NoArchive
+
 (* Remove ignored files and properties that are not synchronized *)
 let rec stripArchive path arch =
   if Globals.shouldIgnore path then NoArchive else
@@ -2935,7 +2937,7 @@ let rec explainUpdate path ui =
         (fun (nm, uiChild) -> explainUpdate (Path.child path nm) uiChild)
         uiChildren
 
-let checkNoUpdates fspath pathInArchive ui =
+let checkNoUpdates ?(fastCheck=false) fspath pathInArchive ui =
   debug (fun() ->
     Util.msg "checkNoUpdates %s %s\n"
       (Fspath.toDebugString fspath) (Path.toString pathInArchive));
@@ -2947,7 +2949,7 @@ let checkNoUpdates fspath pathInArchive ui =
   let archive = updateArchiveRec ui archive in
   (* ...and check that this is a good description of what's out in the world *)
   let scanInfo =
-    { fastCheck = false; dirFastCheck = false;
+    { fastCheck; dirFastCheck = false;
       dirStamp = Props.changedDirStamp; rescanProps = true;
       archHash = "" (* Not used *); showStatus = false } in
   let (_, uiNew) = buildUpdateRec archive fspath localPath scanInfo in

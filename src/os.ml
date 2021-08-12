@@ -191,7 +191,7 @@ and delete fspath path =
       | `ABSENT ->
           ())
 
-let rename fname sourcefspath sourcepath targetfspath targetpath =
+let rename ?exdev fname sourcefspath sourcepath targetfspath targetpath =
   let source = Fspath.concat sourcefspath sourcepath in
   let source' = Fspath.toPrintString source in
   let target = Fspath.concat targetfspath targetpath in
@@ -201,7 +201,18 @@ let rename fname sourcefspath sourcepath targetfspath targetpath =
   Util.convertUnixErrorsToTransient ("renaming " ^ source' ^ " to " ^ target')
     (fun () ->
       debug (fun() -> Util.msg "rename %s to %s\n" source' target');
-      Fs.rename source target;
+      begin
+        try
+          Fs.rename source target
+        with Unix.Unix_error (Unix.EXDEV, _, _) as e ->
+          (* We need to handle EXDEV when rename is the primary
+             transport action. [Util.convertUnixErrorsToTransient]
+             loses the original errno, so this is the workaround. *)
+          begin match exdev with
+          | Some f -> f ()
+          | None -> raise e
+          end
+      end;
       if Prefs.read Osx.rsrc then begin
         let sourceDouble = Fspath.appleDouble source in
         let targetDouble = Fspath.appleDouble target in

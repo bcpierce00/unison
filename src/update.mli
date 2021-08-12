@@ -46,6 +46,7 @@ val markEqual :
 
 (* Get and update a part of an archive (the archive remains unchanged) *)
 val updateArchive : Fspath.t -> Path.local -> Common.updateItem -> archive
+val makeArchive : Common.updateItem -> archive
 (* Replace a part of an archive by another archive *)
 val replaceArchive : Common.root -> Path.t -> archive -> unit Lwt.t
 val replaceArchiveLocal : Fspath.t -> Path.local -> archive -> unit
@@ -56,7 +57,7 @@ val updateProps :
 (* Check that no updates has taken place in a given place of the filesystem *)
 (* Returns an archive mirroring the filesystem contents *)
 val checkNoUpdates :
-  Fspath.t -> Path.local -> Common.updateItem -> archive
+  ?fastCheck:bool -> Fspath.t -> Path.local -> Common.updateItem -> archive
 
 (* Turn off fastcheck for the given file on the next sync. *)
 val markPossiblyUpdated : Fspath.t -> Path.local -> unit
