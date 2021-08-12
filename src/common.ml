@@ -320,9 +320,11 @@ type status =
   | `Modified
   | `PropsChanged
   | `Created
+  | `MovedOut of Path.t * replicaContent * replicaContent
+  | `MovedIn of Path.t * replicaContent * replicaContent
   | `Unchanged ]
 
-type replicaContent =
+and replicaContent =
   { typ : Fileinfo.typ;
     status : status;
     desc : Props.t;                (* Properties (for the UI) *)
@@ -382,7 +384,12 @@ let rcLength rc rc' =
   if riAction rc rc' = `SetProps then
     Uutil.Filesize.zero
   else
-    snd rc.size
+    match rc'.status with
+    | `MovedIn _ ->
+        (* A move/rename will be reverted, count its size too *)
+        Uutil.Filesize.add (snd rc.size) (snd rc'.size)
+    | _ ->
+        snd rc.size
 
 let riLength ri =
   match ri.replicas with

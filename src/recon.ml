@@ -35,6 +35,12 @@ let setDirection ri dir force =
       else if dir=`Merge then begin
         if Globals.shouldMerge ri.path1 then diff.direction <- Merge
       end else begin  (* dir = `Older or dir = `Newer *)
+        let rc1, rc2 =
+          match rc1.status, rc2.status with
+          | `MovedOut (_, rc1, _), _ -> rc1, rc2
+          | _, `MovedOut (_, rc2, _) -> rc1, rc2
+          | _ -> rc1, rc2
+        in
         match rc1.status, rc2.status with
           `Deleted, _ ->
             if isConflict default then
@@ -580,7 +586,8 @@ let rec reconcileNoConflict allowPartial path props' ui props whatIsUpdated
                 (Tree.enter result (theName, theName))))
         r children
   | Updates _ ->
-      Tree.add result (propagateErrors allowPartial (different ()))
+      Tree.add result (Moves.addHint path
+                         (propagateErrors allowPartial (different ())))
 
 (* [combineChildrn children1 children2] combines two name-sorted lists of    *)
 (* type [(Name.t * Common.updateItem) list] to a single list of type         *)
@@ -635,14 +642,14 @@ let rec reconcile
   let different uc1 uc2 reason oldType equals unequals =
     (equals,
      Tree.add unequals
-       (propagateErrors allowPartial
+       (Moves.addHint path (propagateErrors allowPartial
           (Different {rc1 = update2replicaContent
                               path true ui1 props1 uc1 oldType;
                       rc2 = update2replicaContent
                               path true ui2 props2 uc2 oldType;
                       direction = Conflict reason;
                       default_direction = Conflict reason;
-                      errors1 = []; errors2 = []}))) in
+                      errors1 = []; errors2 = []})))) in
   let toBeMerged uc1 uc2 oldType equals unequals =
     (equals,
      Tree.add unequals
@@ -791,6 +798,7 @@ let reconcileList allowPartial
       : Common.reconItem list * bool * Path.t list =
   let counter = ref 0 in
   let archiveUpdated = ref false in
+  let () = Moves.reset () in
   let (equals, unequals, dangerous) =
     Safelist.fold_left
       (fun (equals, unequals, dangerous)
@@ -817,10 +825,12 @@ let reconcileList allowPartial
   let result =
     Tree.flatten unequals (Path.empty, Path.empty)
       (fun (p1, p2) (nm1, nm2) -> (Path.child p1 nm1, Path.child p2 nm2)) [] in
+  Moves.detect ();
   let unsorted =
-    Safelist.map
-     (fun ((p1, p2), rplc) -> {path1 = p1; path2 = p2; replicas = rplc})
+    Safelist.filterMap
+     (fun ((p1, p2), rplc) -> Moves.r {path1 = p1; path2 = p2; replicas = rplc})
      result in
+  Moves.reset (); (* To release memory *)
   let sorted = Sortri.sortReconItems unsorted in
   overrideReconcilerChoices sorted;
   (sorted, not (Tree.is_empty equals), dangerous)
