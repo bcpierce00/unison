@@ -244,6 +244,12 @@ let log s = displayMessage (Log, s)
 
 let log_color s = displayMessage (LogColor, s)
 
+let logonly s =
+  let temp = !sendLogMsgsToStderr in
+  sendLogMsgsToStderr := false;
+  displayMessage (Log, s);
+  sendLogMsgsToStderr := temp
+
 let logverbose s =
   let temp = !sendLogMsgsToStderr in
   sendLogMsgsToStderr := !sendLogMsgsToStderr && not (Prefs.read terse);

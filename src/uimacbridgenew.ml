@@ -81,7 +81,9 @@ Callback.register "callbackThreadCreate" callbackThreadCreate;;
 external displayFatalError : string -> unit = "fatalError";;
 
 let fatalError message =
-  Trace.log (message ^ "\n");
+  let () =
+    try Trace.log (message ^ "\n")
+    with Util.Fatal _ -> () in (* Can't allow fatal errors in fatal error handler *)
   displayFatalError message
 
 (* Defined in MyController.m; display the warning and ask whether to
