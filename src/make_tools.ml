@@ -109,6 +109,11 @@ let () = if build_macGUI then outp "macuimaybe: macui"
 (* Generate backtrace information for exceptions *)
 let () = "CAMLFLAGS" <-+= "-g $(INCLFLAGS)"
 
+(* Use 64-bit file offset if possible (for copy_stubs.c). It is
+   included here unconditionally since OCaml itself has had this
+   defined unconditionally since 2002. *)
+let () = "CAMLCFLAGS" <-+= "-ccopt -D_FILE_OFFSET_BITS=64"
+
 let () =
   [
     "CAMLCFLAGS", "CFLAGS", "-ccopt";
@@ -171,7 +176,8 @@ let () =
       end;
       if osarch = "SunOS" then begin
         (* ACL functions *)
-        "CLIBS" <-+= "-cclib -lsec"
+        "CLIBS" <-+= "-cclib -lsec";
+        "CLIBS" <-+= "-cclib -lsendfile";
       end;
       "building_for" <-- "Building for Unix";
     end;
