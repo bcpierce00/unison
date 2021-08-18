@@ -129,6 +129,8 @@ ifneq ($(strip $(LDLIBS)),)
   CLIBS+=-cclib '$(LDLIBS)'
 endif
 
+CAMLCFLAGS+=-ccopt -D_FILE_OFFSET_BITS=64
+
 INCLFLAGS=-I lwt -I ubase -I system
 DEP_INCLFLAGS=-I lwt -I ubase -I system
 CAMLFLAGS+=$(INCLFLAGS)
@@ -187,6 +189,7 @@ else
     ifeq ($(OSARCH),solaris)
       # ACL functions
       CLIBS+=-cclib -lsec
+      CLIBS+=-cclib -lsendfile
     endif
     buildexecutable::
 	@echo Building for Unix
@@ -274,7 +277,7 @@ OCAMLOBJS+=main.cmo
 OCAMLLIBS+=unix.cma str.cma
 INCLFLAGS+=-I +unix -I +str
 
-COBJS+=osxsupport$(OBJ_EXT) pty$(OBJ_EXT) bytearray_stubs$(OBJ_EXT) hash_compat$(OBJ_EXT) props_xattr$(OBJ_EXT) props_acl$(OBJ_EXT)
+COBJS+=osxsupport$(OBJ_EXT) pty$(OBJ_EXT) bytearray_stubs$(OBJ_EXT) hash_compat$(OBJ_EXT) props_xattr$(OBJ_EXT) props_acl$(OBJ_EXT) copy_stubs$(OBJ_EXT)
 
 ########################################################################
 ### User Interface setup
