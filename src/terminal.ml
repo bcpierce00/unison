@@ -202,7 +202,7 @@ let create_session cmd args new_stdin new_stdout new_stderr =
             let tio = Unix.tcgetattr slaveFd in
             tio.Unix.c_echo <- false;
             Unix.tcsetattr slaveFd Unix.TCSANOW tio;
-            perform_redirections new_stdin new_stdout new_stderr;
+            perform_redirections new_stdin new_stdout slaveFd;
             Unix.execvp cmd args (* never returns *)
           with Unix.Unix_error _ ->
             Printf.eprintf "Some error in create_session child\n";
