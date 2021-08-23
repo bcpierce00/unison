@@ -1123,7 +1123,7 @@ let buildListenSocket host port =
 
 let buildSocketConnection onClose host port =
   buildConnectSocket host port >>= fun socket ->
-  initConnection onClose socket socket
+  initConnection (onClose (fun () -> ())) socket socket
 
 let buildShellConnection onClose shell host userOpt portOpt rootName termInteract =
   let remoteCmd =
@@ -1198,7 +1198,10 @@ let buildShellConnection onClose shell host userOpt portOpt rootName termInterac
   | _ ->
       ()
   end;
-  initConnection onClose i2 o1
+  let cleanup () =
+    try Terminal.close_session term with Unix.Unix_error _ -> ()
+  in
+  initConnection (onClose cleanup) i2 o1
 
 let canonizeLocally s unicode =
   (* We need to select the proper API in order to compute correctly the
@@ -1271,11 +1274,12 @@ let isRootConnected = function
         false
     end
 
-let onClose clroot e =
+let onClose clroot cleanup e =
   try
     let (host, _, _) = Safelist.assoc clroot !connectedHosts in
     connectedHosts := Safelist.remove_assoc clroot !connectedHosts;
     connectionsByHosts := Safelist.remove_assoc host !connectionsByHosts;
+    cleanup ();
     if !connectionCheck = host then Lwt.return ()
     else Lwt.fail e
   with Not_found ->
@@ -1433,10 +1437,13 @@ let openConnectionReply = function
                               (String.length response + 1))))
   | _ -> (fun _ -> ())
 
-let openConnectionEnd (i1,i2,o1,o2,s,_,clroot,pid) =
+let openConnectionEnd (i1,i2,o1,o2,s,fdopt,clroot,pid) =
       Unix.close i1; Unix.close o2;
+      let cleanup () =
+        try Terminal.close_session fdopt with Unix.Unix_error _ -> ()
+      in
       Lwt_unix.run
-        (initConnection (onClose clroot) i2 o1 >>= fun ioServer ->
+        (initConnection (onClose clroot cleanup) i2 o1 >>= fun ioServer ->
          let unicode = Case.useUnicodeAPI () in
          canonizeOnServer ioServer (s, unicode) >>= fun (host, fspath) ->
          connectedHosts :=
@@ -1452,8 +1459,8 @@ let openConnectionCancel (i1,i2,o1,o2,s,fdopt,clroot,pid) =
       try Lwt_unix.close o1 with Unix.Unix_error _ -> ();
       try Unix.close o2 with Unix.Unix_error _ -> ();
       match fdopt with
-        None    -> ()
-      | Some fd -> (try Lwt_unix.close fd with Unix.Unix_error _ -> ())
+        None   -> ()
+      | Some _ -> (try Terminal.close_session fdopt with Unix.Unix_error _ -> ())
 
 (****************************************************************************)
 (*                     SERVER-MODE COMMAND PROCESSING LOOP                  *)

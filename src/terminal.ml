@@ -175,6 +175,8 @@ let perform_redirections new_stdin new_stdout new_stderr =
   Unix.dup2 newnewstdout Unix.stdout; Unix.close newnewstdout;
   Unix.dup2 newnewstderr Unix.stderr; Unix.close newnewstderr
 
+let term_sessions = Hashtbl.create 3
+
 (* Like Unix.create_process except that we also try to set up a
    controlling terminal for the new process.  If successful, a file
    descriptor for the master end of the controlling terminal is
@@ -208,14 +210,27 @@ let create_session cmd args new_stdin new_stdout new_stderr =
             exit 127
           end
       | childPid ->
-(*JV: FIX: we are leaking a file descriptor here.  On the other hand,
-  we do not deal gracefully with lost connections anyway. *)
           (* Keep a file descriptor so that we do not get EIO errors
              when the OpenSSH 5.6 child process closes the file
              descriptor before opening /dev/tty. *)
           (* Unix.close slaveFd; *)
-          (Some (Lwt_unix.of_unix_file_descr masterFd), childPid)
+          let fd = Lwt_unix.of_unix_file_descr masterFd in
+          let ret = Some fd in
+          Hashtbl.add term_sessions ret
+            (fun () -> safe_close slaveFd;
+                       Lwt_unix.close fd);
+          (ret, childPid)
       end
+
+let close_session = function
+  | None -> ()
+  | Some _ as fdopt ->
+      try
+        let cleanup = Hashtbl.find term_sessions fdopt in
+        Hashtbl.remove term_sessions fdopt;
+        cleanup ()
+      with Not_found ->
+        raise (Unix.Unix_error (Unix.EBADF, "Terminal.close_session", ""))
 
 let (>>=) = Lwt.bind
 

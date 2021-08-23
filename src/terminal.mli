@@ -7,6 +7,9 @@ val create_session :
   Unix.file_descr -> Unix.file_descr -> Unix.file_descr ->
   Lwt_unix.file_descr option * int
 
+val close_session :
+  Lwt_unix.file_descr option -> unit
+
 (* termInput fdTerm fdInput
    Wait until there is input on at least one file descriptor.
    If there is terminal input s, return Some s.
