@@ -559,8 +559,8 @@ let initRoots displayWaitMessage termInteract =
   if
     hasRemote && not (Prefs.read contactquietly || Prefs.read Trace.terse)
   then
-    Util.msg "Connected [%s]\n"
-      (Util.replacesubstring (Update.getRootsName()) ", " " -> ");
+    Trace.status (Printf.sprintf "Connected [%s]\n"
+      (Util.replacesubstring (Update.getRootsName()) ", " " -> "));
 
   debug (fun() ->
        Printf.eprintf "Roots: \n";

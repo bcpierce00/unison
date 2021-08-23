@@ -2145,10 +2145,13 @@ let commitUpdates () =
               (fun r -> removeArchiveOnRoot r NewArch)))
           end else begin
             unlockArchives () >>= (fun () ->
-            Util.msg "Dumping archives to ~/unison.dump on both hosts\n";
+            let warn =
+              if (Unix.isatty Unix.stderr) then Util.msg "%s"
+              else Trace.log in
+            warn "Dumping archives to ~/unison.dump on both hosts\n";
             Globals.allRootsIter (fun r -> dumpArchiveOnRoot r ())
               >>= (fun () ->
-            Util.msg "Finished dumping archives\n";
+            warn "Finished dumping archives\n";
             raise (Util.Fatal (
                  "Internal error: New archives are not identical.\n"
                ^ "Retaining original archives.  "

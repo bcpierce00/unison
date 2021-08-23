@@ -973,7 +973,9 @@ let merge root1 path1 ui1 root2 path2 ui2 id showMergeFn =
 
       (* It's useful for now to be a bit verbose about what we're doing, but let's
          keep it easy to switch this to debug-only in some later release... *)
-      let say f = f() in
+      (* Added check on [sendLogMsgsToStderr] because in Windows the GUI may not
+         have stderr (and stdout) at all. *)
+      let say f = if !Trace.sendLogMsgsToStderr then f () in
 
       (* Check which files got created by the merge command and do something appropriate
          with them *)
