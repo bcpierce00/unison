@@ -146,6 +146,12 @@ let printTermAttrs fd = (* for debugging *)
 *)
 
 (* Implemented in file pty.c *)
+type pty
+external win_openpty : unit -> (Unix.file_descr * Unix.file_descr)
+  * pty * (Unix.file_descr * Unix.file_descr) = "win_openpty"
+external win_closepty : pty -> unit = "win_closepty"
+let win_openpty () = try Some (win_openpty ()) with Unix.Unix_error _ -> None
+
 external dumpFd : Unix.file_descr -> int = "%identity"
 external setControllingTerminal : Unix.file_descr -> unit =
   "setControllingTerminal"
@@ -177,15 +183,63 @@ let perform_redirections new_stdin new_stdout new_stderr =
 
 let term_sessions = Hashtbl.create 3
 
+external win_create_process_pty :
+  string -> string -> pty ->
+  Unix.file_descr -> Unix.file_descr -> Unix.file_descr -> int
+  = "w_create_process_pty" "w_create_process_pty_native"
+
+let make_cmdline args =
+  let maybe_quote f =
+    if String.contains f ' ' || String.contains f '\"'
+    then Filename.quote f
+    else f in
+  String.concat " " (List.map maybe_quote (Array.to_list args))
+
+let create_process_pty prog args pty fd1 fd2 fd3 =
+  win_create_process_pty prog (make_cmdline args) pty fd1 fd2 fd3
+
+let protect f g =
+  try f () with Sys_error _ | Unix.Unix_error _ as e ->
+    begin try g () with Sys_error _  | Unix.Unix_error _ -> () end;
+    raise e
+
+let finally f g =
+  try let r = f () in g (); r with Sys_error _ | Unix.Unix_error _ as e ->
+    begin try g () with Sys_error _  | Unix.Unix_error _ -> () end;
+    raise e
+
+let fallback_session cmd args new_stdin new_stdout new_stderr =
+  (None, System.create_process cmd args new_stdin new_stdout new_stderr)
+
+let win_create_session cmd args new_stdin new_stdout new_stderr =
+  match win_openpty () with
+  | None -> fallback_session cmd args new_stdin new_stdout new_stderr
+  | Some ((masterIn, masterOut), pty, (conIn, conOut)) ->
+      safe_close conIn;
+      let create_proc () =
+        create_process_pty cmd args pty new_stdin new_stdout conOut in
+      let childPid =
+        protect (fun () -> finally create_proc
+                                   (fun () -> safe_close conOut))
+                (fun () -> safe_close masterOut;
+                           safe_close masterIn)
+      in
+      let fdIn = Lwt_unix.of_unix_file_descr masterIn
+      and fdOut = Lwt_unix.of_unix_file_descr masterOut in
+      let ret = Some (fdIn, fdOut) in
+      Hashtbl.add term_sessions ret
+        (fun () -> finally (fun () -> win_closepty pty)
+                           (fun () -> finally (fun () -> Lwt_unix.close fdOut)
+                                              (fun () -> Lwt_unix.close fdIn)));
+      (ret, childPid)
+
 (* Like Unix.create_process except that we also try to set up a
    controlling terminal for the new process.  If successful, a file
    descriptor for the master end of the controlling terminal is
    returned. *)
-let create_session cmd args new_stdin new_stdout new_stderr =
+let unix_create_session cmd args new_stdin new_stdout new_stderr =
   match openpty () with
-    None ->
-      (None,
-       System.create_process cmd args new_stdin new_stdout new_stderr)
+    None -> fallback_session cmd args new_stdin new_stdout new_stderr
   | Some (masterFd, slaveFd) ->
 (*
       Printf.printf "openpty returns %d--%d\n" (dumpFd fdM) (dumpFd fdS); flush stdout;
@@ -221,6 +275,11 @@ let create_session cmd args new_stdin new_stdout new_stderr =
                        Lwt_unix.close fd);
           (ret, childPid)
       end
+
+let create_session =
+  match Sys.os_type with
+  | "Win32" -> win_create_session
+  | _       -> unix_create_session
 
 let close_session = function
   | None -> ()
