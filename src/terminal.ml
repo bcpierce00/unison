@@ -215,7 +215,7 @@ let create_session cmd args new_stdin new_stdout new_stderr =
              descriptor before opening /dev/tty. *)
           (* Unix.close slaveFd; *)
           let fd = Lwt_unix.of_unix_file_descr masterFd in
-          let ret = Some fd in
+          let ret = Some (fd, fd) in
           Hashtbl.add term_sessions ret
             (fun () -> safe_close slaveFd;
                        Lwt_unix.close fd);
@@ -236,7 +236,7 @@ let (>>=) = Lwt.bind
 
 (* Wait until there is input. If there is terminal input s,
    return Some s. Otherwise, return None. *)
-let rec termInput fdTerm fdInput =
+let rec termInput (fdTerm, _) fdInput =
   let buf = Bytes.create 10000 in
   let rec readPrompt () =
     Lwt_unix.read fdTerm buf 0 10000 >>= fun len ->
@@ -258,10 +258,10 @@ let rec termInput fdTerm fdInput =
        [readPrompt (); connectionEstablished ()])
 
 (* Read messages from the terminal and use the callback to get an answer *)
-let handlePasswordRequests fdTerm callback =
+let handlePasswordRequests (fdIn, fdOut) callback =
   let buf = Bytes.create 10000 in
   let rec loop () =
-    Lwt_unix.read fdTerm buf 0 10000 >>= (fun len ->
+    Lwt_unix.read fdIn buf 0 10000 >>= (fun len ->
       if len = 0 then
         (* The remote end is dead *)
         Lwt.return ()
@@ -271,7 +271,7 @@ let handlePasswordRequests fdTerm callback =
           loop ()
         else begin
           let response = callback query in
-          Lwt_unix.write_substring fdTerm
+          Lwt_unix.write_substring fdOut
             (response ^ "\n") 0 (String.length response + 1)
               >>= (fun _ ->
           loop ())

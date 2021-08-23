@@ -1323,7 +1323,7 @@ type preconnection =
      * Lwt_unix.file_descr
      * Unix.file_descr
      * string option
-     * Lwt_unix.file_descr option
+     * (Lwt_unix.file_descr * Lwt_unix.file_descr) option
      * Clroot.clroot
      * int)
 let openConnectionStart clroot =
@@ -1433,7 +1433,7 @@ let openConnectionReply = function
     (i1,i2,o1,o2,s,Some fdTerm,clroot,pid) ->
     (fun response ->
       (* FIX: should loop until everything is written... *)
-      ignore (Lwt_unix.run (Lwt_unix.write fdTerm (Bytes.of_string (response ^ "\n")) 0
+      ignore (Lwt_unix.run (Lwt_unix.write (snd fdTerm) (Bytes.of_string (response ^ "\n")) 0
                               (String.length response + 1))))
   | _ -> (fun _ -> ())
 
