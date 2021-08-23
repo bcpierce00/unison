@@ -293,6 +293,25 @@ let close_session = function
 
 let (>>=) = Lwt.bind
 
+let escRemove = Str.regexp
+   ("\\(\\(.\\|[\n\r]\\)+\027\\[[12]J\\)" (* Clear screen *)
+  ^ "\\|\\(\027\\[[0-2]?J\\)" (* Clear screen *)
+  ^ "\\|\\(\027\\[!p\\)" (* Soft reset *)
+  ^ "\\|\\(\027\\][02];[^\007]*\007\\)" (* Set console window title *)
+  ^ "\\|\\(\027\\[\\?25[hl]\\)" (* Show/hide cursor *)
+  ^ "\\|\\(\027\\[[0-9;]*m\\)" (* Formatting *)
+  ^ "\\|\\(\027\\[H\\)") (* Home *)
+
+let escSpace = Str.regexp "\027\\[\\([0-9]*\\)C"
+
+let processEscapes s =
+  let whitesp s =
+    try String.make (min 1 (int_of_string (Str.replace_matched "\\1" s))) ' '
+    with Failure _ -> " "
+  in
+  Str.global_replace escRemove "" s
+  |> Str.global_substitute escSpace whitesp
+
 (* Wait until there is input. If there is terminal input s,
    return Some s. Otherwise, return None. *)
 let rec termInput (fdTerm, _) fdInput =
@@ -307,7 +326,7 @@ let rec termInput (fdTerm, _) fdInput =
       if query = "\r\n" || query = "\n" || query = "\r" then
         readPrompt ()
       else
-        Lwt.return (Some query)
+        Lwt.return (Some (processEscapes query))
   in
   let connectionEstablished () =
     Lwt_unix.wait_read fdInput >>= fun () -> Lwt.return None
@@ -329,10 +348,12 @@ let handlePasswordRequests (fdIn, fdOut) callback =
         if query = "\r\n" || query = "\n" || query = "\r" then
           loop ()
         else begin
-          let response = callback query in
+          let response = callback (processEscapes query) in
           Lwt_unix.write_substring fdOut
             (response ^ "\n") 0 (String.length response + 1)
-              >>= (fun _ ->
+            (* HACK: Sleep briefly to allow time for output to be
+               generated and read in as a whole. *)
+              >>= fun _ -> Lwt_unix.sleep 0.2 >>= (fun _ ->
           loop ())
         end)
   in
