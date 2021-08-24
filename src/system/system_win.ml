@@ -321,6 +321,8 @@ let hasCorrectCTime = hasCorrectCTime_impl ()
 
 (****)
 
+type fdopt = Unix.file_descr option
+external initConsole : unit -> fdopt * fdopt * fdopt = "win_init_console"
 external getConsoleMode : unit -> int = "win_get_console_mode"
 external setConsoleMode : int -> unit = "win_set_console_mode"
 external getConsoleOutputCP : unit -> int = "win_get_console_output_cp"
@@ -331,6 +333,28 @@ type terminalStateFunctions =
     startReading : unit -> unit; stopReading : unit -> unit }
 
 let terminalStateFunctions () =
+  (* First, allocate a console in case we don't already have one.
+     Unix.stdin/out/err have bogus handles if they weren't redirected by
+     the user and there was no console at startup. We must restore them
+     if a console was allocated. The fd numbers for the handles are
+     hardcoded as 0, 1, 2, and must be redirected as well because these
+     fds are not restored automatically by Windows. The stdin/out/err
+     channels in Stdlib do not need to be restored separately because
+     they operate by same hardcoded fd numbers, which will be restored
+     when Unix.stdin/out/err are restored.*)
+  let redirect (in', out', err') =
+    let safe_redirect fd1' fd2 =
+      match fd1' with Some fd1 -> Unix.dup2 fd1 fd2 | None -> ()
+    in
+    safe_redirect in' Unix.stdin;
+    safe_redirect out' Unix.stdout;
+    safe_redirect err' Unix.stderr
+    (* in', out', err' must not be closed after dup2 because they are set as
+       the std handles in Win32 API and something might break when they are
+       closed (in fact, most everything that does not use hardcoded fd numbers
+       0, 1, 2, which are the ones restored by these redirections). *)
+  in
+  let () = redirect (initConsole ()) in
   let oldstate = getConsoleMode () in
   let oldcp = getConsoleOutputCP () in
   (* Ctrl-C does not interrupt a call to ReadFile when
