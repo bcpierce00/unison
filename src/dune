@@ -7,7 +7,9 @@
         -w -3-6-9-10-26-27-32-34-35-38-39-50-52
         -warn-error -3-6-9-10-26-27-32-34-35-39-50-52
         -no-strict-sequence)
- (c_names bytearray_stubs osxsupport pty hash_compat)
+ (foreign_stubs
+  (language c)
+  (names bytearray_stubs osxsupport pty hash_compat))
  (c_library_flags -lutil)
  (libraries str unix lwt_lib bigarray))
 
