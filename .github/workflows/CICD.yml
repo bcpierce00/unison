@@ -244,6 +244,7 @@ jobs:
       matrix:
         job:
         - { os: ubuntu-latest  , ocaml-compiler: 4.12.x }
+        - { os: macos-latest  , ocaml-compiler: 4.12.x }
 
     runs-on: ${{ matrix.job.os }}
 
