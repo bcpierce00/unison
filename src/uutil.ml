@@ -111,7 +111,7 @@ let showUpdateStatus path =
 (*               Copy bytes from one file_desc to another                    *)
 (*****************************************************************************)
 
-let bufsize = 16384
+let bufsize = 65536
 let bufsizeFS = Filesize.ofInt bufsize
 let buf = Bytes.create bufsize
 
