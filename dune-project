@@ -1,2 +1,2 @@
-(lang dune 1.3)
+(lang dune 2.3)
 (name unison)
