@@ -1391,7 +1391,8 @@ let rec start interface =
       ~getSecondRoot:
       (fun () -> Util.msg "%s%s\n" Uicommon.shortUsageMsg profmgrUsageMsg; exit 1)
       ~termInteract:
-      None;
+      None
+      ();
 
     (* Some preference settings imply others... *)
     if Prefs.read silent then begin

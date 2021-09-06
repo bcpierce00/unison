@@ -559,8 +559,8 @@ let initRoots displayWaitMessage termInteract =
   if
     hasRemote && not (Prefs.read contactquietly || Prefs.read Trace.terse)
   then
-    Util.msg "Connected [%s]\n"
-      (Util.replacesubstring (Update.getRootsName()) ", " " -> ");
+    Trace.status (Printf.sprintf "Connected [%s]\n"
+      (Util.replacesubstring (Update.getRootsName()) ", " " -> "));
 
   debug (fun() ->
        Printf.eprintf "Roots: \n";
@@ -616,7 +616,7 @@ let cmdLineRawRoots = ref []
 
 (* BCP: WARNING: Some of the code from here is duplicated in uimacbridge...! *)
 let initPrefs ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
-              ~termInteract =
+              ?(prepDebug = fun () -> ()) ~termInteract () =
   (* Restore prefs to their default values, if necessary *)
   if not !firstTime then Prefs.resetToDefaults();
   Globals.setRawRoots !cmdLineRawRoots;
@@ -646,6 +646,8 @@ let initPrefs ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
     if Prefs.read runtests then raise (Util.Fatal
       "The 'test' flag should only be given on the command line")
   end;
+
+  if Prefs.read Trace.debugmods <> [] then prepDebug ();
 
   (* Parse the command line.  This will override settings from the profile. *)
   (* JV (6/09): always reparse the command line *)
@@ -731,13 +733,15 @@ let _ = Prefs.alias testServer "testServer"
 (* ---- *)
 
 let uiInit
+    ?(prepDebug = fun () -> ())
     ~(reportError : string -> unit)
     ~(tryAgainOrQuit : string -> bool)
     ~(displayWaitMessage : unit -> unit)
     ~(getProfile : unit -> string option)
     ~(getFirstRoot : unit -> string option)
     ~(getSecondRoot : unit -> string option)
-    ~(termInteract : (string -> string -> string) option) =
+    ~(termInteract : (string -> string -> string) option)
+    () =
 
   (* Make sure we have a directory for archives and profiles *)
   Os.createUnisonDir();
@@ -745,8 +749,13 @@ let uiInit
   (* Extract any command line profile or roots *)
   let clprofile = ref None in
   begin
+    let args = Prefs.scanCmdLine usageMsg in
+    begin
+      try if Util.StringMap.find "debug" args <> [] then prepDebug ()
+      with Not_found -> ()
+    end;
+
     try
-      let args = Prefs.scanCmdLine usageMsg in
       match Util.StringMap.find "rest" args with
         [] -> ()
       | [profile] -> clprofile := Some profile
@@ -806,7 +815,8 @@ let uiInit
 
   (* Load the profile and command-line arguments *)
   initPrefs
-    ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot ~termInteract;
+    ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
+    ~prepDebug ~termInteract ();
 
   (* Turn on GC messages, if the '-debug gc' flag was provided *)
   if Trace.enabled "gc" then Gc.set {(Gc.get ()) with Gc.verbose = 0x3F};

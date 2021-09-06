@@ -146,6 +146,12 @@ let printTermAttrs fd = (* for debugging *)
 *)
 
 (* Implemented in file pty.c *)
+type pty
+external win_openpty : unit -> (Unix.file_descr * Unix.file_descr)
+  * pty * (Unix.file_descr * Unix.file_descr) = "win_openpty"
+external win_closepty : pty -> unit = "win_closepty"
+let win_openpty () = try Some (win_openpty ()) with Unix.Unix_error _ -> None
+
 external dumpFd : Unix.file_descr -> int = "%identity"
 external setControllingTerminal : Unix.file_descr -> unit =
   "setControllingTerminal"
@@ -175,15 +181,65 @@ let perform_redirections new_stdin new_stdout new_stderr =
   Unix.dup2 newnewstdout Unix.stdout; Unix.close newnewstdout;
   Unix.dup2 newnewstderr Unix.stderr; Unix.close newnewstderr
 
+let term_sessions = Hashtbl.create 3
+
+external win_create_process_pty :
+  string -> string -> pty ->
+  Unix.file_descr -> Unix.file_descr -> Unix.file_descr -> int
+  = "w_create_process_pty" "w_create_process_pty_native"
+
+let make_cmdline args =
+  let maybe_quote f =
+    if String.contains f ' ' || String.contains f '\"'
+    then Filename.quote f
+    else f in
+  String.concat " " (List.map maybe_quote (Array.to_list args))
+
+let create_process_pty prog args pty fd1 fd2 fd3 =
+  win_create_process_pty prog (make_cmdline args) pty fd1 fd2 fd3
+
+let protect f g =
+  try f () with Sys_error _ | Unix.Unix_error _ as e ->
+    begin try g () with Sys_error _  | Unix.Unix_error _ -> () end;
+    raise e
+
+let finally f g =
+  try let r = f () in g (); r with Sys_error _ | Unix.Unix_error _ as e ->
+    begin try g () with Sys_error _  | Unix.Unix_error _ -> () end;
+    raise e
+
+let fallback_session cmd args new_stdin new_stdout new_stderr =
+  (None, System.create_process cmd args new_stdin new_stdout new_stderr)
+
+let win_create_session cmd args new_stdin new_stdout new_stderr =
+  match win_openpty () with
+  | None -> fallback_session cmd args new_stdin new_stdout new_stderr
+  | Some ((masterIn, masterOut), pty, (conIn, conOut)) ->
+      safe_close conIn;
+      let create_proc () =
+        create_process_pty cmd args pty new_stdin new_stdout conOut in
+      let childPid =
+        protect (fun () -> finally create_proc
+                                   (fun () -> safe_close conOut))
+                (fun () -> safe_close masterOut;
+                           safe_close masterIn)
+      in
+      let fdIn = Lwt_unix.of_unix_file_descr masterIn
+      and fdOut = Lwt_unix.of_unix_file_descr masterOut in
+      let ret = Some (fdIn, fdOut) in
+      Hashtbl.add term_sessions ret
+        (fun () -> finally (fun () -> win_closepty pty)
+                           (fun () -> finally (fun () -> Lwt_unix.close fdOut)
+                                              (fun () -> Lwt_unix.close fdIn)));
+      (ret, childPid)
+
 (* Like Unix.create_process except that we also try to set up a
    controlling terminal for the new process.  If successful, a file
    descriptor for the master end of the controlling terminal is
    returned. *)
-let create_session cmd args new_stdin new_stdout new_stderr =
+let unix_create_session cmd args new_stdin new_stdout new_stderr =
   match openpty () with
-    None ->
-      (None,
-       System.create_process cmd args new_stdin new_stdout new_stderr)
+    None -> fallback_session cmd args new_stdin new_stdout new_stderr
   | Some (masterFd, slaveFd) ->
 (*
       Printf.printf "openpty returns %d--%d\n" (dumpFd fdM) (dumpFd fdS); flush stdout;
@@ -200,7 +256,7 @@ let create_session cmd args new_stdin new_stdout new_stderr =
             let tio = Unix.tcgetattr slaveFd in
             tio.Unix.c_echo <- false;
             Unix.tcsetattr slaveFd Unix.TCSANOW tio;
-            perform_redirections new_stdin new_stdout new_stderr;
+            perform_redirections new_stdin new_stdout slaveFd;
             Unix.execvp cmd args (* never returns *)
           with Unix.Unix_error _ ->
             Printf.eprintf "Some error in create_session child\n";
@@ -208,20 +264,57 @@ let create_session cmd args new_stdin new_stdout new_stderr =
             exit 127
           end
       | childPid ->
-(*JV: FIX: we are leaking a file descriptor here.  On the other hand,
-  we do not deal gracefully with lost connections anyway. *)
           (* Keep a file descriptor so that we do not get EIO errors
              when the OpenSSH 5.6 child process closes the file
              descriptor before opening /dev/tty. *)
           (* Unix.close slaveFd; *)
-          (Some (Lwt_unix.of_unix_file_descr masterFd), childPid)
+          let fd = Lwt_unix.of_unix_file_descr masterFd in
+          let ret = Some (fd, fd) in
+          Hashtbl.add term_sessions ret
+            (fun () -> safe_close slaveFd;
+                       Lwt_unix.close fd);
+          (ret, childPid)
       end
+
+let create_session =
+  match Sys.os_type with
+  | "Win32" -> win_create_session
+  | _       -> unix_create_session
+
+let close_session = function
+  | None -> ()
+  | Some _ as fdopt ->
+      try
+        let cleanup = Hashtbl.find term_sessions fdopt in
+        Hashtbl.remove term_sessions fdopt;
+        cleanup ()
+      with Not_found ->
+        raise (Unix.Unix_error (Unix.EBADF, "Terminal.close_session", ""))
 
 let (>>=) = Lwt.bind
 
+let escRemove = Str.regexp
+   ("\\(\\(.\\|[\n\r]\\)+\027\\[[12]J\\)" (* Clear screen *)
+  ^ "\\|\\(\027\\[[0-2]?J\\)" (* Clear screen *)
+  ^ "\\|\\(\027\\[!p\\)" (* Soft reset *)
+  ^ "\\|\\(\027\\][02];[^\007]*\007\\)" (* Set console window title *)
+  ^ "\\|\\(\027\\[\\?25[hl]\\)" (* Show/hide cursor *)
+  ^ "\\|\\(\027\\[[0-9;]*m\\)" (* Formatting *)
+  ^ "\\|\\(\027\\[H\\)") (* Home *)
+
+let escSpace = Str.regexp "\027\\[\\([0-9]*\\)C"
+
+let processEscapes s =
+  let whitesp s =
+    try String.make (min 1 (int_of_string (Str.replace_matched "\\1" s))) ' '
+    with Failure _ -> " "
+  in
+  Str.global_replace escRemove "" s
+  |> Str.global_substitute escSpace whitesp
+
 (* Wait until there is input. If there is terminal input s,
    return Some s. Otherwise, return None. *)
-let rec termInput fdTerm fdInput =
+let rec termInput (fdTerm, _) fdInput =
   let buf = Bytes.create 10000 in
   let rec readPrompt () =
     Lwt_unix.read fdTerm buf 0 10000 >>= fun len ->
@@ -233,7 +326,7 @@ let rec termInput fdTerm fdInput =
       if query = "\r\n" || query = "\n" || query = "\r" then
         readPrompt ()
       else
-        Lwt.return (Some query)
+        Lwt.return (Some (processEscapes query))
   in
   let connectionEstablished () =
     Lwt_unix.wait_read fdInput >>= fun () -> Lwt.return None
@@ -243,10 +336,10 @@ let rec termInput fdTerm fdInput =
        [readPrompt (); connectionEstablished ()])
 
 (* Read messages from the terminal and use the callback to get an answer *)
-let handlePasswordRequests fdTerm callback =
+let handlePasswordRequests (fdIn, fdOut) callback =
   let buf = Bytes.create 10000 in
   let rec loop () =
-    Lwt_unix.read fdTerm buf 0 10000 >>= (fun len ->
+    Lwt_unix.read fdIn buf 0 10000 >>= (fun len ->
       if len = 0 then
         (* The remote end is dead *)
         Lwt.return ()
@@ -255,10 +348,12 @@ let handlePasswordRequests fdTerm callback =
         if query = "\r\n" || query = "\n" || query = "\r" then
           loop ()
         else begin
-          let response = callback query in
-          Lwt_unix.write_substring fdTerm
+          let response = callback (processEscapes query) in
+          Lwt_unix.write_substring fdOut
             (response ^ "\n") 0 (String.length response + 1)
-              >>= (fun _ ->
+            (* HACK: Sleep briefly to allow time for output to be
+               generated and read in as a whole. *)
+              >>= fun _ -> Lwt_unix.sleep 0.2 >>= (fun _ ->
           loop ())
         end)
   in

@@ -257,10 +257,12 @@ endif
 
 # Patch to make a Windows GUI version come up with no
 # console when click-started
-#  ifeq ($(OSARCH), win32)
+ifeq ($(OSARCH), win32)
+  ifneq ($(UISTYLE), text)
 #    COBJS+=winmain.c
-#    CFLAGS+=-cclib /subsystem:windows
-#  endif
+    CFLAGS+=-ccopt "-link -Wl,--subsystem,windows"
+  endif
+endif
 
 # Gtk GUI
 ifeq ($(UISTYLE), gtk)

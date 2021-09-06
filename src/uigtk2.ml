@@ -3786,13 +3786,23 @@ let createToplevelWindow () =
    *********************************************************************)
   let updateFromProfile = ref (fun () -> ()) in
 
+  let prepDebug () =
+    if Sys.os_type = "Win32" then
+      (* As a side-effect, this allocates a console if the process doesn't
+         have one already. This call is here only for the side-effect,
+         because debugging output is produced on stderr and the GUI will
+         crash if there is no stderr. *)
+      try ignore (System.terminalStateFunctions ())
+      with Unix.Unix_error _ -> ()
+  in
+
   let loadProfile p reload =
     debug (fun()-> Util.msg "Loading profile %s..." p);
     Trace.status "Loading profile";
     unsynchronizedPaths := None;
     Uicommon.initPrefs ~profileName:p
       ~displayWaitMessage:(fun () -> if not reload then displayWaitMessage ())
-      ~getFirstRoot ~getSecondRoot ~termInteract;
+      ~getFirstRoot ~getSecondRoot ~prepDebug ~termInteract ();
     !updateFromProfile ()
   in
 
@@ -4161,18 +4171,30 @@ let start _ =
     in
     ignore_result (tick ());
 
+    let prepDebug () =
+      if Sys.os_type = "Win32" then
+        (* As a side-effect, this allocates a console if the process doesn't
+           have one already. This call is here only for the side-effect,
+           because debugging output is produced on stderr and the GUI will
+           crash if there is no stderr. *)
+        try ignore (System.terminalStateFunctions ())
+        with Unix.Unix_error _ -> ()
+    in
+
     Os.createUnisonDir();
     Uicommon.scanProfiles();
     let detectCmd = createToplevelWindow() in
 
     Uicommon.uiInit
+      ~prepDebug
       ~reportError:fatalError
       ~tryAgainOrQuit
       ~displayWaitMessage
       ~getProfile:(fun () -> getProfile true)
       ~getFirstRoot
       ~getSecondRoot
-      ~termInteract;
+      ~termInteract
+      ();
     detectCmd ();
 
     (* Display the ui *)

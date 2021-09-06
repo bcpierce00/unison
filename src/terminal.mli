@@ -5,17 +5,20 @@
 val create_session :
   string -> string array ->
   Unix.file_descr -> Unix.file_descr -> Unix.file_descr ->
-  Lwt_unix.file_descr option * int
+  (Lwt_unix.file_descr * Lwt_unix.file_descr) option * int
+
+val close_session :
+  (Lwt_unix.file_descr * Lwt_unix.file_descr) option -> unit
 
 (* termInput fdTerm fdInput
    Wait until there is input on at least one file descriptor.
    If there is terminal input s, return Some s.
    Otherwise, return None. *)
 val termInput :
-  Lwt_unix.file_descr -> Lwt_unix.file_descr -> string option
+  (Lwt_unix.file_descr * Lwt_unix.file_descr) -> Lwt_unix.file_descr -> string option
 
 val handlePasswordRequests :
-  Lwt_unix.file_descr -> (string -> string) -> unit
+  (Lwt_unix.file_descr * Lwt_unix.file_descr) -> (string -> string) -> unit
 
 (* For recognizing messages from OpenSSH *)
 val password : string -> bool

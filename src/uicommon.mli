@@ -88,6 +88,7 @@ val usageMsg : string
 val shortUsageMsg : string
 
 val uiInit :
+    ?prepDebug:(unit -> unit) ->
     reportError:(string -> unit) ->
     tryAgainOrQuit:(string -> bool) ->
     displayWaitMessage:(unit -> unit) ->
@@ -95,6 +96,7 @@ val uiInit :
     getFirstRoot:(unit -> string option) ->
     getSecondRoot:(unit -> string option) ->
     termInteract:(string -> string -> string) option ->
+    unit ->
     unit
 
 val initPrefs :
@@ -102,7 +104,9 @@ val initPrefs :
   displayWaitMessage:(unit->unit) ->
   getFirstRoot:(unit->string option) ->
   getSecondRoot:(unit->string option) ->
+  ?prepDebug:(unit -> unit) ->
   termInteract:(string -> string -> string) option ->
+  unit ->
   unit
 
 (* Make sure remote connections (if any) corresponding to active roots

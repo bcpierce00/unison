@@ -8,6 +8,7 @@
 #include <windows.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <stdio.h>
 
 #define NT_MAX_PATH 32768
 
@@ -839,6 +840,68 @@ CAMLprim value w_create_process(value * argv, int argn)
 }
 
 /****/
+
+CAMLprim value win_init_console(value unit)
+{
+  CAMLparam0();
+  CAMLlocal2(ret, tmp);
+  HANDLE in, out, err, in_orig, out_orig, err_orig;
+  FILE *ign;
+
+  ret = caml_alloc_tuple(3);
+  Store_field(ret, 0, Val_int(0));
+  Store_field(ret, 1, Val_int(0));
+  Store_field(ret, 2, Val_int(0));
+
+  in_orig = (HANDLE) GetStdHandle(STD_INPUT_HANDLE);
+  out_orig = (HANDLE) GetStdHandle(STD_OUTPUT_HANDLE);
+  err_orig = (HANDLE) GetStdHandle(STD_ERROR_HANDLE);
+
+  if (!GetFileType(out_orig) || !GetFileType(err_orig)) {
+    AllocConsole();
+    /* There's nothing we can do about an error, so we're not going to check.
+     * Already having a console returns an error, which we want to ignore. */
+    if (GetStdHandle(STD_ERROR_HANDLE) == NULL) {
+      MessageBoxW(NULL, L"Unable to open a console where debugging output "
+                         "will be sent. The program will most likely crash "
+                         "when trying to produce debugging output.\n\n"
+                         "If the problem persists then remove any \"debug\" "
+                         "preferences from the profile, use the text UI or "
+                         "redirect standard output and error.",
+                  L"Error", MB_OK | MB_ICONWARNING);
+    }
+
+    /* Windows C runtime fds for stdin, stdout, stderr are not restored
+     * automatically. */
+    if (_fileno(stdin) < 0) freopen_s(&ign, "CONIN$", "r", stdin);
+    if (_fileno(stdout) < 0) freopen_s(&ign, "CONOUT$", "w", stdout);
+    if (_fileno(stderr) < 0) freopen_s(&ign, "CONOUT$", "w", stderr);
+
+    /* AllocConsole() is supposed to init these handles. */
+    in = (HANDLE) GetStdHandle(STD_INPUT_HANDLE);
+    out = (HANDLE) GetStdHandle(STD_OUTPUT_HANDLE);
+    err = (HANDLE) GetStdHandle(STD_ERROR_HANDLE);
+
+    /* Return only handles that are not already redirected by user. */
+    if (!GetFileType(in_orig)) {
+      tmp = caml_alloc_small(1, 0);
+      Store_field(tmp, 0, win_alloc_handle(in));
+      Store_field(ret, 0, tmp);
+    }
+    if (!GetFileType(out_orig)) {
+      tmp = caml_alloc_small(1, 0);
+      Store_field(tmp, 0, win_alloc_handle(out));
+      Store_field(ret, 1, tmp);
+    }
+    if (!GetFileType(err_orig)) {
+      tmp = caml_alloc_small(1, 0);
+      Store_field(tmp, 0, win_alloc_handle(err));
+      Store_field(ret, 2, tmp);
+    }
+  }
+
+  CAMLreturn(ret);
+}
 
 static HANDLE conin = INVALID_HANDLE_VALUE;
 
