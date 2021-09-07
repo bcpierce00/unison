@@ -125,6 +125,10 @@ static wchar_t* Tcaml_stat_strdup_to_utf16(const char *s)
   return ws;
 }
 
+#ifndef Data_abstract_val /* OCaml < 4.05 */
+#define Data_abstract_val(v) ((void*) Op_val(v))
+#endif
+
 #define PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE 0x00020016
 
 typedef VOID* HPCON;
