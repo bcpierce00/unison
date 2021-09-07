@@ -2089,9 +2089,31 @@ let findUpdatesOnPaths ?wantWatcher pathList subpaths =
      Lwt.return result))))
 
 let findUpdates ?wantWatcher subpaths =
-  (* TODO: We should filter the paths to remove duplicates (including prefixes)
-     and ignored paths *)
-  findUpdatesOnPaths ?wantWatcher (Prefs.read Globals.paths) subpaths
+  let compareRev x y = -1 * (Path.compare x y) in (* Sort in reverse *)
+  let notIgnored p = not (Globals.shouldIgnore p) in
+  let (//>) p ch =
+    let rec prefix n1 n2 =
+      match n1, n2 with
+      | [], _ -> true
+      | _, [] -> false
+      | hd1 :: tl1, hd2 :: tl2 when Name.compare hd1 hd2 = 0 -> prefix tl1 tl2
+      | _ -> false
+    in
+    prefix (Path.toNames p) (Path.toNames ch)
+  in
+  let rec keepPrefix acc p =
+    match acc with
+    | [] -> [p]
+    | hd :: tl when p //> hd -> keepPrefix tl p (* p is hd's prefix, drop hd *)
+    | _ -> p :: acc
+  in
+  let filteredPaths =
+    Prefs.read Globals.paths
+    |> Safelist.sort compareRev
+    |> Safelist.fold_left keepPrefix []
+    |> Safelist.filter notIgnored
+  in
+  findUpdatesOnPaths ?wantWatcher filteredPaths subpaths
 
 
 (*****************************************************************************)
