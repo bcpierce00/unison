@@ -1060,7 +1060,7 @@ let abortIfAnyMountpointsAreMissing fspath =
        let path = Path.fromString s in
        if not (Os.exists fspath path) then
          raise (Util.Fatal
-           (Printf.sprintf "Path %s / %s is designated as a mountpoint, but points to nothing on host %s\n"
+           (Printf.sprintf "Path %s/%s is designated as a mountpoint, but points to nothing on host %s\n"
              (Fspath.toPrintString fspath) (Path.toString path)
              (Os.myCanonicalHostName ()))))
     (Prefs.read mountpoints)
