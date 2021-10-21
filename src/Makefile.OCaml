@@ -150,6 +150,15 @@ else
   endif
 endif
 
+ifeq ($(NATIVE), true)
+  COMPATCAMLFLAGS=$(subst .cmo,.cmx, $(shell ocaml $(CWD)/configure.ml))
+  COMPATOCAMLOBJS=$(subst .cmo,.cmx, $(subst .cma,.cmxa, $(shell ocaml $(CWD)/configure.ml objs)))
+else
+  COMPATCAMLFLAGS=$(shell ocaml $(CWD)/configure.ml)
+  COMPATOCAMLOBJS=$(shell ocaml $(CWD)/configure.ml objs)
+endif
+OCAMLOBJS+=$(COMPATOCAMLOBJS)
+
 .PHONY: buildexecutable
 buildexecutable::
 	@echo NATIVE = $(NATIVE)
@@ -420,17 +429,25 @@ win32rc/unison.res.lib: win32rc/unison.res
 
 %.cmi : %.mli
 	@echo "$(CAMLC): $< ---> $@"
-	$(CAMLC) $(CAMLFLAGS) -c $(CWD)/$<
+	$(CAMLC) $(CAMLFLAGS) $(COMPATCAMLFLAGS) -c $(CWD)/$<
 
 fswatch.cmi : ubase/prefs.cmi
 
-%.cmo: %.ml
+compat%.cmo: compat%.ml
 	@echo "$(OCAMLC): $< ---> $@"
-	$(OCAMLC) $(CAMLFLAGS) -c $(CWD)/$<
+	$(OCAMLC) $(COMPATCAMLFLAGS) -c $(CWD)/$<
 
-%.cmx: %.ml
+%.cmo: %.ml $(COMPATOCAMLOBJS)
+	@echo "$(OCAMLC): $< ---> $@"
+	$(OCAMLC) $(CAMLFLAGS) $(COMPATCAMLFLAGS) -c $(CWD)/$<
+
+compat%.cmx: compat%.ml
 	@echo "$(OCAMLOPT): $< ---> $@"
-	$(OCAMLOPT) $(CAMLFLAGS) -c $(CWD)/$<
+	$(OCAMLOPT) $(COMPATCAMLFLAGS) -c $(CWD)/$<
+
+%.cmx: %.ml $(COMPATOCAMLOBJS)
+	@echo "$(OCAMLOPT): $< ---> $@"
+	$(OCAMLOPT) $(CAMLFLAGS) $(COMPATCAMLFLAGS) -c $(CWD)/$<
 
 %.o %.obj: %.c
 	@echo "$(CAMLC): $< ---> $@"

@@ -9,6 +9,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <stdio.h>
+#include <stdint.h>
 
 #define NT_MAX_PATH 32768
 

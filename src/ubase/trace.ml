@@ -154,7 +154,7 @@ let rec getLogch() =
         logch := None; getLogch ()
       end)
 
-let ansiColorRegexp = Str.regexp "\o033\\[[0-9;:]*m"
+let ansiColorRegexp = Str.regexp "\027\\[[0-9;:]*m"
 
 let stripColorEscapes s =
   Str.global_replace ansiColorRegexp "" s

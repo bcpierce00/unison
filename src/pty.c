@@ -17,7 +17,6 @@
 #include <caml/memory.h>   // Store_field
 #include <caml/fail.h>     // failwith
 #include <caml/unixsupport.h> // uerror, unix_error
-#include <caml/version.h>
 #include <errno.h>         // ENOSYS
 
 // openpty
@@ -77,6 +76,10 @@ CAMLprim value c_openpty() {
 
 #ifdef _WIN32
 
+#ifndef CAMLassert
+#define CAMLassert(x) ((void) 0)
+#endif
+
 #include <windows.h>
 
 extern void win32_maperr(DWORD errcode);
@@ -106,7 +109,8 @@ static int Twin_multi_byte_to_wide_char(const char *s, int slen,
   return retcode;
 }
 
-#if OCAML_VERSION < 40600
+#ifndef Bytes_val /* Hack to know that we are on OCaml < 4.06.
+                     #include <caml/version.h> is not always found, for some reason. */
 static void* caml_stat_alloc_noexc(asize_t sz)
 {
   return malloc(sz);
@@ -124,6 +128,10 @@ static wchar_t* Tcaml_stat_strdup_to_utf16(const char *s)
 
   return ws;
 }
+
+#ifndef Data_abstract_val /* OCaml < 4.05 */
+#define Data_abstract_val(v) ((void*) Op_val(v))
+#endif
 
 #define PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE 0x00020016
 
