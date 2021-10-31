@@ -602,7 +602,7 @@ type servercmd =
 let serverCmds = ref (Util.StringMap.empty : servercmd Util.StringMap.t)
 
 type serverstream =
-  connection -> Bytearray.t -> unit
+  connection option -> Bytearray.t -> unit
 let serverStreams = ref (Util.StringMap.empty : serverstream Util.StringMap.t)
 
 type header =
@@ -660,7 +660,7 @@ let processStream conn id cmdName buf =
         try Util.StringMap.find cmdName !serverStreams
         with Not_found -> raise (Util.Fatal (cmdName ^ " not registered!"))
       in
-      cmd conn buf;
+      cmd (Some conn) buf;
       Lwt.return ()
     with e ->
       Hashtbl.add streamError id e;
@@ -789,6 +789,17 @@ let registerServerCmd name f =
   registerSpecialServerCmd
     name defaultMarshalingFunctions defaultMarshalingFunctions f
 
+(* Same as [registerServerCmd] but returns a function that runs either
+   the proxy or the local version, depending on whether the call is to
+   the local host (in this case [conn] is None) or a remote one. *)
+let registerServerCmd' name f =
+  let serverSide = (fun conn args -> f (Some conn) args) in
+  let client0 = registerServerCmd name serverSide in
+  fun conn args ->
+    match conn with
+    | None -> f None args
+    | Some conn -> client0 conn args
+
 (* RegisterHostCmd is a simpler version of registerClientServer [registerServerCmd?].
    It is used to create remote procedure calls: the only communication
    between the client and server is the sending of arguments from
@@ -826,16 +837,16 @@ let registerRootCmd (cmdName : string) (cmd : (Fspath.t * 'a) -> 'b) =
   fun root args -> r (hostOfRoot root) ((snd root), args)
 
 let registerRootCmdWithConnection
-  (cmdName : string) (cmd : connection -> 'a -> 'b) =
-  let client0 = registerServerCmd cmdName cmd in
+  (cmdName : string) (cmd : connection option -> 'a -> 'b) =
+  let serverSide = (fun conn args -> cmd (Some conn) args) in
+  let client0 = registerServerCmd cmdName serverSide in
   (* Return a function that runs either the proxy or the local version,
      depending on whether the call is to the local host or a remote one *)
   fun localRoot remoteRoot args ->
-    match (hostOfRoot localRoot) with
-      "" -> let conn = hostConnection (hostOfRoot remoteRoot) in
-            cmd conn args
-    | _  -> let conn = hostConnection (hostOfRoot localRoot) in
-            client0 conn args
+    match hostOfRoot localRoot, hostOfRoot remoteRoot with
+    | "", "" -> cmd None args
+    | "", _ ->  cmd (Some (connectionToRoot remoteRoot)) args
+    | _  -> client0 (connectionToRoot localRoot) args
 
 let streamReg = Lwt_util.make_region 1
 
@@ -849,12 +860,12 @@ let streamingActivated =
 let registerStreamCmd
     (cmdName : string)
     marshalingFunctionsArgs
-    (serverSide : connection -> 'a -> unit)
+    (serverSide : connection option -> 'a -> unit)
     =
   let cmd =
     registerSpecialServerCmd
       cmdName marshalingFunctionsArgs defaultMarshalingFunctions
-      (fun conn v -> serverSide conn v; Lwt.return ())
+      (fun conn v -> serverSide (Some conn) v; Lwt.return ())
   in
   let ping =
     registerServerCmd (cmdName ^ "Ping")
@@ -889,7 +900,7 @@ let registerStreamCmd
     in
     dumpIdle conn request
   in
-  fun conn sender ->
+  let proxy conn sender =
     if not (Prefs.read streamingActivated) then
       sender (fun v -> cmd conn v)
     else begin
@@ -905,6 +916,11 @@ let registerStreamCmd
              Util.msg "Pinging remote end after streaming error\n");
            ping conn id >>= fun () -> Lwt.fail e)
     end
+  in
+  fun conn sender ->
+    match conn with
+    | None -> sender (fun v -> Lwt.return (serverSide conn v))
+    | Some conn -> proxy conn sender
 
 let commandAvailable =
   registerRootCmd "commandAvailable"

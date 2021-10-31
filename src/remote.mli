@@ -91,6 +91,8 @@ val connectionToRoot : Common.root -> connection
 
 val registerServerCmd :
   string -> (connection -> 'a -> 'b Lwt.t) -> connection -> 'a -> 'b Lwt.t
+val registerServerCmd' :
+  string -> (connection option -> 'a -> 'b Lwt.t) -> connection option -> 'a -> 'b Lwt.t
 val registerSpecialServerCmd :
   string ->
   ('a ->
@@ -109,7 +111,7 @@ val encodeInt : int -> Bytearray.t * int * int
 val decodeInt : Bytearray.t -> int -> int
 val registerRootCmdWithConnection :
     string                          (* command name *)
- -> (connection -> 'a -> 'b Lwt.t)  (* local command *)
+ -> (connection option -> 'a -> 'b Lwt.t)  (* local command *)
  ->    Common.root                  (* root on which the command is executed *)
     -> Common.root                  (* other root *)
     -> 'a                           (* additional arguments *)
@@ -122,5 +124,5 @@ val registerStreamCmd :
   ('a ->
    (Bytearray.t * int * int) list -> (Bytearray.t * int * int) list * int) *
   (Bytearray.t -> int -> 'a) ->
-  (connection -> 'a -> unit) ->
-  connection -> (('a -> unit Lwt.t) -> 'b Lwt.t) -> 'b Lwt.t
+  (connection option -> 'a -> unit) ->
+  connection option -> (('a -> unit Lwt.t) -> 'b Lwt.t) -> 'b Lwt.t
