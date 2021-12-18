@@ -70,15 +70,15 @@ text-indent: 0;
 </style>
 
  <META name="Author" content="Benjamin C. Pierce">
- <link rel="stylesheet" href="/home/bcpierce/pub/unison/unison.css">
+ <link rel="stylesheet" href="http://www.cis.upenn.edu/~bcpierce/unison/unison.css">
  
 <title>unison-manual</title>
 </head>
 <body >
 <!--HEVEA command line is: hevea unison-manual.tex -->
-<!--CUT STYLE article--><!--CUT DEF section 1 --><p><div id="manualbody"></p><div class="center"><span style="font-size:xx-large"><span style="font-size:150%"><span style="color:red">DraftDraftDraftDraft</span></span></span></div><p><div id="manualheader"></p><div class="center"><span style="font-size:xx-large"><span style="font-size:150%"><span style="color:black">Unison File Synchronizer</span></span></span><span style="font-size:xx-large"><span style="font-size:150%"><br>
+<!--CUT STYLE article--><!--CUT DEF section 1 --><p><div id="manualbody"></p><p><div id="manualheader"></p><div class="center"><span style="font-size:xx-large"><span style="font-size:150%"><span style="color:black">Unison File Synchronizer</span></span></span><span style="font-size:xx-large"><span style="font-size:150%"><br>
 </span></span><span style="font-size:150%"><span style="font-size:xx-large"><span style="color:black">User Manual and Reference Guide</span></span></span><span style="font-size:150%"><span style="font-size:xx-large"><br>
-<span style="font-size:x-large">Version 2.51.4<br>
+<span style="font-size:x-large">Version 2.51.5<br>
 <span style="font-size:large">Copyright 1998-2020, Benjamin C. Pierce
 </span></span></span></span></div><p></div></p><!--TOC section id="sec1" Contents-->
 <h2 id="sec1" class="section">Contents</h2><!--SEC END --><blockquote class="quote">
@@ -140,7 +140,7 @@ text-indent: 0;
 &#X2003;&#X2003;&#X2003;&#X2003;&#X2003;&#X2003;&#X2003;&#X2003;&#X2003;&#X2003;&#X2022;<a href="#mountpoints">Mount Points and Removable Media</a><br>
 &#X2003;&#X2003;&#X2003;&#X2003;&#X2003;&#X2003;&#X2003;&#X2003;&#X2003;&#X2003;&#X2022;<a href="#click">Click-starting Unison</a><br>
 <a href="#ssh"><span style="font-size:large"><span style="font-weight:bold">Ssh</span></span></a><br>
-<a href="#news"><span style="font-size:large"><span style="font-weight:bold">Changes in Version 2.51.4</span></span></a><br>
+<a href="#news"><span style="font-size:large"><span style="font-weight:bold">Changes in Version 2.51.5</span></span></a><br>
 
 </blockquote><p><hr></p><!--TOC section id="sec2" Overview-->
 <h2 id="sec2" class="section">Overview</h2><!--SEC END --><p>Unison is a file-synchronization tool for Unix and Windows. It allows
@@ -848,7 +848,7 @@ it is copying a file onto a directory or vice versa, it must first move
 the original contents out of the way. If Unison gets
 interrupted during one of these periods, some manual cleanup may be
 required. In this case, a file called <span style="font-family:monospace">DANGER.README</span> will be left
-in your home directory, containing information about the operation that
+in the <span style="font-family:monospace">.unison</span> directory, containing information about the operation that
 was interrupted. The next time you try to run Unison, it will notice this
 file and warn you about it.]</p><p>If an interruption happens while it is propagating updates, then there
 may be some paths for which an update has been propagated but which
@@ -1218,7 +1218,7 @@ This preference overrides <span style="font-family:monospace">immutable</span>.<
 Used in a profile to define a numeric key (0-9) that can be used in the user interface to switch immediately to this profile.</dd><dt class="dt-description"><span style="font-weight:bold">killserver </span></dt><dd class="dd-description">
 When set to <code class="verb">true</code>, this flag causes Unison to kill the remote server process when the synchronization is finished. This behavior is the default for <code class="verb">ssh</code> connections, so this preference is not normally needed when running over <code class="verb">ssh</code>; it is provided so that socket-mode servers can be killed off after a single run of Unison, rather than waiting to accept future connections. (Some users prefer to start a remote socket server for each run of Unison, rather than leaving one running all the time.)</dd><dt class="dt-description"><span style="font-weight:bold">label <span style="font-family:monospace">xxx</span></span></dt><dd class="dd-description">
 Used in a profile to provide a descriptive string documenting its settings. (This is useful for users that switch between several profiles, especially using the &#X2018;fast switch&#X2019; feature of the graphical user interface.)</dd><dt class="dt-description"><span style="font-weight:bold">links <span style="font-family:monospace">xxx</span></span></dt><dd class="dd-description">
-When set to <span style="font-family:monospace">true</span>, this flag causes Unison to synchronize symbolic links. When the flag is set to <span style="font-family:monospace">false</span>, symbolic links will result in an error during update detection. Ordinarily, when the flag is set to <span style="font-family:monospace">default</span>, symbolic links are synchronized except when one of the hosts is running Windows. In rare circumstances it may be useful to set the flag manually.</dd><dt class="dt-description"><span style="font-weight:bold">log </span></dt><dd class="dd-description">
+When set to <span style="font-family:monospace">true</span>, this flag causes Unison to synchronize symbolic links. When the flag is set to <span style="font-family:monospace">false</span>, symbolic links will result in an error during update detection. Ordinarily, when the flag is set to <span style="font-family:monospace">default</span>, symbolic links are synchronized except when one of the hosts is running Windows. On a Windows client, Unison makes an attempt to detect if symbolic links are supported and allowed by user privileges. You may have to get elevated privileges to create symbolic links.</dd><dt class="dt-description"><span style="font-weight:bold">log </span></dt><dd class="dd-description">
 When this flag is set, Unison will log all changes to the filesystems
 on a file.</dd><dt class="dt-description"><span style="font-weight:bold">logfile <span style="font-family:monospace">xxx</span></span></dt><dd class="dd-description">
 By default, logging messages will be appended to the file
@@ -1774,11 +1774,14 @@ to treat a link in this manner, add a line of the form
              follow = <span style="font-family:monospace"><span style="font-style:italic">pathspec</span></span>
 </pre><p>
 to the profile, where <span style="font-family:monospace"><span style="font-style:italic">pathspec</span></span> is a path pattern as described in
-the <a href="#pathspec">Path Specification</a> section.</p><p>Windows file systems do not support symbolic links; Unison will refuse
-to propagate an opaque symbolic link from Unix to Windows and flag the
-path as erroneous. When a Unix replica is to be synchronized with a
-Windows system, all symbolic links should match either an
-<code class="verb">ignore</code> pattern or a <code class="verb">follow</code> pattern.</p><!--TOC subsection id="sec57" Permissions-->
+the <a href="#pathspec">Path Specification</a> section.</p><p>Not all Windows versions and file systems support symbolic links; Unison will
+refuse to propagate an opaque symbolic link from Unix to Windows and flag the
+path as erroneous if the support or privileges are lacking on the Windows side.
+When a Unix replica is to be synchronized with such Windows system, all symbolic
+links should match either an <code class="verb">ignore</code> pattern or a <code class="verb">follow</code> pattern.</p><p>You may need to acquire extra privileges to create symbolic links under
+Windows. By default, this is only allowed for administrators. Unison may not
+be able to automatically detect support for symbolic links under Windows. In
+that case, set the preference <span style="font-family:monospace">links</span> to <span style="font-family:monospace">true</span> explicitly.</p><!--TOC subsection id="sec57" Permissions-->
 <h3 id="sec57" class="subsection">Permissions</h3><!--SEC END --><p>Synchronizing the permission bits of files is slightly tricky when two
 different filesystems are involved (e.g., when synchronizing a Windows
 client and a Unix server). In detail, here&#X2019;s how it works:
@@ -1917,8 +1920,18 @@ using.</p><p>To use Unison in this mode, you must first create a profile (see
 the <a href="#profile">Profiles</a> section). Use your favorite editor for this.</p><p><hr></p><!--TOC section id="sec64" Ssh-->
 <h2 id="sec64" class="section">Ssh</h2><!--SEC END --><p>Your local host will need just an ssh client; the remote host needs an
 ssh server (or daemon). ssh is now normal, and Unison thus does not
-provide instructions.</p><p><hr></p><!--TOC section id="sec65" Changes in Version 2.51.4-->
-<h2 id="sec65" class="section">Changes in Version 2.51.4</h2><!--SEC END --><p>Changes since 2.51.3:
+provide instructions.</p><p><hr></p><!--TOC section id="sec65" Changes in Version 2.51.5-->
+<h2 id="sec65" class="section">Changes in Version 2.51.5</h2><!--SEC END --><p>Changes since 2.51.4:
+</p><ul class="itemize"><li class="li-itemize">
+
+Restore OCaml compat to before 4.02
+</li><li class="li-itemize">dune/opam improvements/fixes
+</li><li class="li-itemize">Improve GTK UI by using GtkTreeView
+</li><li class="li-itemize">Add support for syncing symlinks on Windows (NTFS)
+</li><li class="li-itemize">Improve ssh support on Windows (hide Windows console in GUI mode)
+</li><li class="li-itemize">Many bugfixes and minor improvements
+
+</li></ul><p>Changes since 2.51.3:
 </p><ul class="itemize"><li class="li-itemize">
 
 OCaml 4.12 support
