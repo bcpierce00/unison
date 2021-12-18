@@ -4,7 +4,7 @@
 let docs =
     ("about", ("About Unison", 
      "Unison File Synchronizer\n\
-      Version 2.51.4\n\
+      Version 2.51.5\n\
       \n\
       "))
 ::
@@ -893,7 +893,7 @@ let docs =
       \032  copying a file onto a directory or vice versa, it must first move the\n\
       \032  original contents out of the way. If Unison gets interrupted during one\n\
       \032  of these periods, some manual cleanup may be required. In this case, a\n\
-      \032  file called DANGER.README will be left in your home directory,\n\
+      \032  file called DANGER.README will be left in the .unison directory,\n\
       \032  containing information about the operation that was interrupted. The\n\
       \032  next time you try to run Unison, it will notice this file and warn you\n\
       \032  about it.]\n\
@@ -2889,8 +2889,16 @@ let docs =
       \n\
       "))
 ::
-    ("news", ("Changes in Version 2.51.4", 
-     "Changes in Version 2.51.4\n\
+    ("news", ("Changes in Version 2.51.5", 
+     "Changes in Version 2.51.5\n\
+      \n\
+      \032  Changes since 2.51.4:\n\
+      \032    * Restore OCaml compat to before 4.02\n\
+      \032    * dune/opam improvements/fixes\n\
+      \032    * Improve GTK UI by using GtkTreeView\n\
+      \032    * Add support for syncing symlinks on Windows (NTFS)\n\
+      \032    * Improve ssh support on Windows (hide Windows console in GUI mode)\n\
+      \032    * Many bugfixes and minor improvements\n\
       \n\
       \032  Changes since 2.51.3:\n\
       \032    * OCaml 4.12 support\n\

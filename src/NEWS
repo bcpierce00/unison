@@ -1,5 +1,13 @@
 
-Changes in Version 2.51.3.73
+Changes in Version 2.51.5
+
+   Changes since 2.51.4:
+     * Restore OCaml compat to before 4.02
+     * dune/opam improvements/fixes
+     * Improve GTK UI by using GtkTreeView
+     * Add support for syncing symlinks on Windows (NTFS)
+     * Improve ssh support on Windows (hide Windows console in GUI mode)
+     * Many bugfixes and minor improvements
 
    Changes since 2.51.3:
      * OCaml 4.12 support
