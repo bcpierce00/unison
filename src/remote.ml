@@ -453,7 +453,10 @@ type 'a unmarshalFunction = connection -> Bytearray.t -> 'a
 type 'a marshalingFunctions = 'a marshalFunction * 'a unmarshalFunction
 
 type 'a convV0Fun =
-  V0 : ('a -> 'compat) * ('compat -> 'a) -> 'a convV0Fun [@unboxed]
+  V0 : ('a -> 'compat) * ('compat -> 'a) -> 'a convV0Fun (* [@unboxed] *)
+(* FIX: `unboxed` commented out to restore compatibility with OCaml < 4.02
+   Remove this hack after next release when this compatibility is no longer
+   required. *)
 
 external id : 'a -> 'a = "%identity"
 let convV0_id = V0 (id, id)
@@ -1147,9 +1150,8 @@ let parseVersion side s =
   if s = "" then
     error "invalid format"
   else
-    match int_of_string s with
-    | ver -> Some ver
-    | exception Failure _ -> error "parse error"
+    try Some (int_of_string s) with
+    | Failure _ -> error "parse error"
 
 let parseServerVersions inp =
   let supported l = function
@@ -1841,7 +1843,10 @@ let checkClientVersion conn () =
              ^ String.escaped (fromClient
              ^ Bytes.to_string (peekWithoutBlocking conn.inputBuffer)) ^ "\"")
   | Data buf ->
-      match parseVersion "client" buf with
+      (* FIX: This monstrosity needs to be changed to `match ... with exception ...`
+         after the next release when compatibility with OCaml < 4.02 is no longer
+         required. *)
+      match (try parseVersion "client" buf with Util.Transient e -> ignore (error e); None) with
       | Some clientVer ->
           if verIsSupported clientVer then begin
             setConnectionVersion conn clientVer;
@@ -1852,7 +1857,6 @@ let checkClientVersion conn () =
                    ^ string_of_int clientVer ^ "\". "
                    ^ "Supported RPC versions: " ^ rpcSupportedVersionStr)
       | None -> Lwt.return ()
-      | exception Util.Transient e -> error e
 
 (****)
 
