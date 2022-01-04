@@ -15,11 +15,13 @@ jobs:
       fail-fast: false
       matrix:
         job:
+        - { os: macos-11      , ocaml-version: 4.12.1 }
         - { os: macos-10.15   , ocaml-version: 4.12.1 }
         - { os: macos-10.15   , ocaml-version: 4.11.2 }
         - { os: macos-10.15   , ocaml-version: 4.10.2 }
         - { os: macos-10.15   , ocaml-version: 4.09.1 }
         - { os: macos-10.15   , ocaml-version: 4.08.1 }
+        - { os: ubuntu-20.04  , ocaml-version: 4.12.1 }
         - { os: ubuntu-18.04  , ocaml-version: 4.12.1 }
         - { os: ubuntu-18.04  , ocaml-version: 4.11.2 }
         - { os: ubuntu-18.04  , ocaml-version: 4.10.2 }
