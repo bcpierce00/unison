@@ -10,7 +10,7 @@ FSMOCAMLOBJS = \
    lwt/win/lwt_win.cmo \
    fsmonitor/watchercommon.cmo $(DIR)/watcher.cmo
 FSMCOBJS = \
-   system/system_win_stubs.o lwt/lwt_unix_stubs.o
+   system/system_win_stubs$(OBJ_EXT) lwt/lwt_unix_stubs$(OBJ_EXT)
 FSMOCAMLLIBS=bigarray.cma unix.cma
 
 ifeq ($(NATIVE), true)
@@ -28,5 +28,5 @@ $(FSMONITOR)$(EXEC_EXT): $(COMPATOCAMLOBJS) $(FSMCAMLOBJS) $(FSMCOBJS)
 	$(CAMLC) -verbose $(CAMLFLAGS) $(CAMLLDFLAGS) -o $@ $(CFLAGS) $(FSMCAMLLIBS) $^ $(CLIBS)
 
 clean::
-	rm -f $(DIR)/*.cm[iox] $(DIR)/*.o $(DIR)/*~
+	rm -f $(DIR)/*.cm[iox] $(DIR)/*.{o,obj} $(DIR)/*~
 	rm -f $(FSMONITOR)$(EXEC_EXT)
