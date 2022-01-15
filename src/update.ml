@@ -327,8 +327,26 @@ let loadArchiveLocal fspath (thisRoot: string) :
              roots (verboseArchiveName thisRoot));
         None
       end else
-        (* Throw away the timestamp line *)
-        let _ = input_line c in
+        let featrs =
+          match String.split_on_char '\030' (input_line c) with
+          | [] -> [] (* This is not possible, but compiler doesn't know it *)
+          | _ :: rest -> (* Ignore the first part of the timestamp line *)
+              Safelist.filter (fun x -> x <> "") rest
+        in
+        let commonFts = Features.inter featrs (Features.all ()) in
+        if Safelist.length featrs <> Safelist.length commonFts then
+          raise
+            (Util.Fatal ("Archive format mismatch: the archive was stored with \
+                         features that are currently not available.\n\
+                         Missing features: "
+                         ^ (String.concat ", " (Safelist.filter
+                             (fun x -> not (Safelist.mem x commonFts)) featrs))
+                         ^ "\nArchive file: "
+                         ^ System.fspathToPrintString fspath ^ "\n\
+                         You should either upgrade Unison or invoke Unison \
+                         once with -ignorearchives flag and then try again."));
+        (* TODO: When the new archive encoding is merged, the decoder must take
+           the list of features as input here. *)
         (* Load the datastructure *)
         try
           let ((archive, hash, magic) : archive * int * string) =
@@ -364,10 +382,16 @@ let storeArchiveLocal fspath thisRoot archive hash magic properties =
    output_string c "\n";
    output_string c (verboseArchiveName thisRoot);
    output_string c "\n";
-   (* This third line is purely informative *)
-   output_string c (Printf.sprintf "Written at %s - %s mode\n"
+   (* First part of third line is purely informative *)
+   output_string c (Printf.sprintf "Written at %s - %s mode"
                       (Util.time2string (Util.time()))
                       ((Case.ops())#modeDesc));
+   (* Second part of third line is not informative.
+      Record the features that change the archive format and must exist to
+      be able to load the archive later. *)
+   output_string c "\030";
+   output_string c (String.concat "\030" (Features.changingArchiveFormat ()));
+   output_string c "\n";
    Marshal.to_channel c (archive, hash, magic) [Marshal.No_sharing];
    output_char c '\000'; (* Marker that indicates that the archive
                             is followed by a property list *)

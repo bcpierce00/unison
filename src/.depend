@@ -175,6 +175,13 @@ external.cmx : \
     external.cmi
 external.cmi : \
     lwt/lwt.cmi
+features.cmo : \
+    ubase/util.cmi \
+    features.cmi
+features.cmx : \
+    ubase/util.cmx \
+    features.cmi
+features.cmi :
 fileinfo.cmo : \
     ubase/util.cmi \
     system.cmi \
@@ -485,6 +492,7 @@ globals.cmo : \
     pred.cmi \
     path.cmi \
     os.cmi \
+    negotiate.cmi \
     name.cmi \
     lwt/lwt_util.cmi \
     lwt/lwt_unix.cmi \
@@ -501,6 +509,7 @@ globals.cmx : \
     pred.cmx \
     path.cmx \
     os.cmx \
+    negotiate.cmx \
     name.cmx \
     lwt/lwt_util.cmx \
     lwt/lwt_unix.cmx \
@@ -623,6 +632,25 @@ name.cmx : \
     case.cmx \
     name.cmi
 name.cmi :
+negotiate.cmo : \
+    ubase/util.cmi \
+    ubase/safelist.cmi \
+    remote.cmi \
+    lwt/lwt.cmi \
+    features.cmi \
+    common.cmi \
+    negotiate.cmi
+negotiate.cmx : \
+    ubase/util.cmx \
+    ubase/safelist.cmx \
+    remote.cmx \
+    lwt/lwt.cmx \
+    features.cmx \
+    common.cmx \
+    negotiate.cmi
+negotiate.cmi : \
+    lwt/lwt.cmi \
+    common.cmi
 os.cmo : \
     ubase/util.cmi \
     ubase/trace.cmi \
@@ -1174,6 +1202,7 @@ uicommon.cmo : \
     fspath.cmi \
     files.cmi \
     fileinfo.cmi \
+    features.cmi \
     common.cmi \
     clroot.cmi \
     case.cmi \
@@ -1203,6 +1232,7 @@ uicommon.cmx : \
     fspath.cmx \
     files.cmx \
     fileinfo.cmx \
+    features.cmx \
     common.cmx \
     clroot.cmx \
     case.cmx \
@@ -1509,11 +1539,13 @@ uutil.cmo : \
     ubase/util.cmi \
     ubase/trace.cmi \
     ubase/projectInfo.cmo \
+    features.cmi \
     uutil.cmi
 uutil.cmx : \
     ubase/util.cmx \
     ubase/trace.cmx \
     ubase/projectInfo.cmx \
+    features.cmx \
     uutil.cmi
 uutil.cmi :
 xferhint.cmo : \
