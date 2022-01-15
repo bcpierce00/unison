@@ -171,6 +171,13 @@ let grab conn s len =
 let peekWithoutBlocking conn =
   Bytes.sub conn.buffer 0 conn.length
 
+let peekWithBlocking conn =
+  (if conn.length = 0 then begin
+    fillInputBuffer conn
+  end else
+    Lwt.return ()) >>= fun () ->
+  Lwt.return (peekWithoutBlocking conn)
+
 (****)
 
 (* Low-level outputs *)
@@ -289,16 +296,44 @@ let disableFlowControl q =
 
 let outputQueueIsEmpty q = q.available
 
+(* Setup IO with flow control initially disabled, to do the RPC version
+   handshake. Flow control is part of RPC protocol and must be enabled
+   only after RPC version handshake is complete. *)
 let makeOutputQueue isServer flush =
-  { available = true; canWrite = isServer; flowControl = true;
+  { available = true; canWrite = true; flowControl = false;
     writes = Queue.create (); urgentWrites = Queue.create ();
     idleWrites = Queue.create ();
     flush = flush }
 
 (****)
 
+(* IMPORTANT: the RPC version must be increased when the RPC mechanism itself
+   changes in a breaking way. Changes on the API level (functions and data
+   types) normally do not cause a breaking change at the RPC level. *)
+(* Version 0 is special in that it must not be listed as a supported version.
+   It is used for 2.51-compatibility mode and is never negotiated. *)
+(* Supported RPC versions should be ordered from newest to oldest. *)
+let rpcSupportedVersions = [1]
+let rpcDefaultVersion = Safelist.hd rpcSupportedVersions
+
+let rpcSupportedVersionStr =
+  String.concat ", "
+    (Safelist.map (fun v -> "\"" ^ string_of_int v ^ "\"")
+       rpcSupportedVersions)
+
+let rpcSupportedVersionStrHdr =
+  String.concat " "
+    (Safelist.map (fun v -> string_of_int v)
+       rpcSupportedVersions)
+
+(* FIX: Added in 2021. Should be removed after a couple of years. *)
+let rpcServerCmdlineOverride = "__new-rpc-mode"
+
+(****)
+
 type connection =
-  { inputBuffer : ioBuffer;
+  { mutable version : int;
+    inputBuffer : ioBuffer;
     outputBuffer : ioBuffer;
     outputQueue : outputQueue }
 
@@ -335,11 +370,17 @@ let maybeFlush pendingFlush q buf =
 let makeConnection isServer inCh outCh =
   let pendingFlush = ref false in
   let outputBuffer = makeBuffer outCh in
-  { inputBuffer = makeBuffer inCh;
+  { version = rpcDefaultVersion;
+    inputBuffer = makeBuffer inCh;
     outputBuffer = outputBuffer;
     outputQueue =
       makeOutputQueue isServer
         (fun q -> maybeFlush pendingFlush q outputBuffer) }
+
+let setConnectionVersion conn ver =
+  conn.version <- ver
+
+let connectionVersion conn = conn.version
 
 (* Send message [l] *)
 let dump conn l =
@@ -360,6 +401,18 @@ let dumpUrgent conn l =
     (fun () ->
        fillBuffer conn.outputBuffer l >>= fun () ->
        flushBuffer conn.outputBuffer)
+
+let enableFlowControl conn isServer =
+  let q = conn.outputQueue in
+  q.available <- false;
+  flushBuffer conn.outputBuffer >>= fun () ->
+  q.flowControl <- true;
+  q.canWrite <- isServer;
+  if q.canWrite then
+    popOutputQueues q >>= Lwt_unix.yield >>= fun () ->
+    Lwt.return ()
+  else
+    Lwt.return ()
 
 (****)
 
@@ -394,10 +447,27 @@ end
 
 type tag = Bytearray.t
 
-type 'a marshalFunction =
+type 'a marshalFunction = connection ->
   'a -> (Bytearray.t * int * int) list -> (Bytearray.t * int * int) list
-type 'a unmarshalFunction = Bytearray.t -> 'a
+type 'a unmarshalFunction = connection -> Bytearray.t -> 'a
 type 'a marshalingFunctions = 'a marshalFunction * 'a unmarshalFunction
+
+type 'a convV0Fun =
+  V0 : ('a -> 'compat) * ('compat -> 'a) -> 'a convV0Fun (* [@unboxed] *)
+(* FIX: `unboxed` commented out to restore compatibility with OCaml < 4.02
+   Remove this hack after next release when this compatibility is no longer
+   required. *)
+
+external id : 'a -> 'a = "%identity"
+let convV0_id = V0 (id, id)
+let convV0_id_pair = convV0_id, convV0_id
+
+let makeConvV0FunArg compat_to compat_from =
+  (V0 (compat_to, compat_from)), convV0_id
+let makeConvV0FunRet compat_to compat_from =
+  convV0_id, (V0 (compat_to, compat_from))
+let makeConvV0Funs compat_to compat_from compat_to2 compat_from2 =
+  (V0 (compat_to, compat_from)), (V0 (compat_to2, compat_from2))
 
 let registeredSet = ref Util.StringSet.empty
 
@@ -441,23 +511,41 @@ let registerTag string =
     registeredSet := Util.StringSet.add string !registeredSet;
   Bytearray.of_string string
 
-let defaultMarshalingFunctions =
-  (fun data rem ->
-     let s = Bytearray.marshal data [Marshal.No_sharing] in
-     let l = Bytearray.length s in
-     ((s, 0, l) :: rem, l)),
-  (fun buf pos ->
-      try Bytearray.unmarshal buf pos
-      with Failure s -> raise (Util.Fatal (Printf.sprintf 
+let marshalV0 (V0 (to251, _)) data rem =
+  let s = Bytearray.marshal (to251 data) [Marshal.No_sharing] in
+  let l = Bytearray.length s in
+  ((s, 0, l) :: rem, l)
+
+let unmarshalV0 (V0 (_, from251)) buf pos =
+  try from251 (Bytearray.unmarshal buf pos)
+  with Failure s -> raise (Util.Fatal (Printf.sprintf
 "Fatal error during unmarshaling (%s),
 possibly because client and server have been compiled with different \
-versions of the OCaml compiler." s)))
+versions of the OCaml compiler." s))
+
+let marshalV1 data rem =
+(* TODO: to be replaced by the new encoding function *)
+  let s = Bytearray.marshal data [Marshal.No_sharing] in
+  let l = Bytearray.length s in
+  ((s, 0, l) :: rem, l)
+
+let unmarshalV1 buf pos =
+(* TODO: to be replaced by the new decoding function *)
+  try Bytearray.unmarshal buf pos
+  with Failure s -> raise (Util.Fatal (Printf.sprintf
+"Fatal error during unmarshaling (%s),
+possibly because client and server have been compiled with different \
+versions of the OCaml compiler." s))
+
+let defaultMarshalingFunctions convV0 =
+  (fun conn -> if conn.version = 0 then marshalV0 convV0 else marshalV1),
+  (fun conn -> if conn.version = 0 then unmarshalV0 convV0 else unmarshalV1)
 
 let makeMarshalingFunctions payloadMarshalingFunctions string =
   let (marshalPayload, unmarshalPayload) = payloadMarshalingFunctions in
   let tag = registerTag string in
-  let marshal (data : 'a) rem = safeMarshal marshalPayload tag data rem in
-  let unmarshal buf = (safeUnmarshal unmarshalPayload tag buf : 'a) in
+  let marshal conn (data : 'a) rem = safeMarshal (marshalPayload conn) tag data rem in
+  let unmarshal conn buf = (safeUnmarshal (unmarshalPayload conn) tag buf : 'a) in
   (marshal, unmarshal)
 
 (*****************************************************************************)
@@ -614,7 +702,7 @@ type header =
   | StreamAbort
 
 let ((marshalHeader, unmarshalHeader) : header marshalingFunctions) =
-  makeMarshalingFunctions defaultMarshalingFunctions "rsp"
+  makeMarshalingFunctions (defaultMarshalingFunctions convV0_id) "rsp"
 
 let processRequest conn id cmdName buf =
   let cmd =
@@ -624,16 +712,16 @@ let processRequest conn id cmdName buf =
   Lwt.try_bind (fun () -> cmd conn buf)
     (fun marshal ->
        debugE (fun () -> Util.msg "Sending result (id: %d)\n" (decodeInt id 0));
-       dump conn ((id, 0, intSize) :: marshalHeader NormalResult (marshal [])))
+       dump conn ((id, 0, intSize) :: marshalHeader conn NormalResult (marshal [])))
     (function
        Util.Transient s ->
          debugE (fun () ->
            Util.msg "Sending transient exception (id: %d)\n" (decodeInt id 0));
-         dump conn ((id, 0, intSize) :: marshalHeader (TransientExn s) [])
+         dump conn ((id, 0, intSize) :: marshalHeader conn (TransientExn s) [])
      | Util.Fatal s ->
          debugE (fun () ->
            Util.msg "Sending fatal exception (id: %d)\n" (decodeInt id 0));
-         dump conn ((id, 0, intSize) :: marshalHeader (FatalExn s) [])
+         dump conn ((id, 0, intSize) :: marshalHeader conn (FatalExn s) [])
      | e ->
          Lwt.fail e)
 
@@ -645,7 +733,7 @@ let streamError = Hashtbl.create 7
 let abortStream conn id =
   if not !streamAbortedDst then begin
     streamAbortedDst := true;
-    let request = encodeInt id :: marshalHeader StreamAbort [] in
+    let request = encodeInt id :: marshalHeader conn StreamAbort [] in
     dumpUrgent conn request
   end else
     Lwt.return ()
@@ -703,7 +791,7 @@ let rec receive conn =
         (fun () -> Util.msg "Message received (id: %d)\n" num_id);
       (* Read the header *)
       receivePacket conn >>= (fun buf ->
-      let req = unmarshalHeader buf in
+      let req = unmarshalHeader conn buf in
       begin match req with
         Request cmdName ->
           receivePacket conn >>= (fun buf ->
@@ -764,9 +852,9 @@ let registerSpecialServerCmd
     makeMarshalingFunctions marshalingFunctionsResult (cmdName ^ "-res") in
   (* Create a server function and remember it *)
   let server conn buf =
-    let args = unmarshalArgs buf in
+    let args = unmarshalArgs conn buf in
     serverSide conn args >>= (fun answer ->
-    Lwt.return (marshalResult answer))
+    Lwt.return (marshalResult conn answer))
   in
   serverCmds := Util.StringMap.add cmdName server !serverCmds;
   (* Create a client function and return it *)
@@ -775,19 +863,20 @@ let registerSpecialServerCmd
     assert (id >= 0); (* tracking down an assert failure in receivePacket... *)
     let request =
       encodeInt id ::
-      marshalHeader (Request cmdName) (marshalArgs serverArgs [])
+      marshalHeader conn (Request cmdName) (marshalArgs conn serverArgs [])
     in
     let reply = wait_for_reply id in
     debugE (fun () -> Util.msg "Sending request (id: %d)\n" id);
     dump conn request >>= (fun () ->
     reply >>= (fun buf ->
-    Lwt.return (unmarshalResult buf)))
+    Lwt.return (unmarshalResult conn buf)))
   in
   client
 
-let registerServerCmd name f =
+let registerServerCmd name ?(convV0=convV0_id_pair) f =
   registerSpecialServerCmd
-    name defaultMarshalingFunctions defaultMarshalingFunctions f
+    name (defaultMarshalingFunctions (fst convV0))
+         (defaultMarshalingFunctions (snd convV0)) f
 
 (* RegisterHostCmd is a simpler version of registerClientServer [registerServerCmd?].
    It is used to create remote procedure calls: the only communication
@@ -799,10 +888,10 @@ let registerServerCmd name f =
    RegisterHostCmd recognizes the case where the server is the local
    host, and it avoids socket communication in this case.
 *)
-let registerHostCmd cmdName cmd =
+let registerHostCmd cmdName ?(convV0=convV0_id_pair) cmd =
   let serverSide = (fun _ args -> cmd args) in
   let client0 =
-    registerServerCmd cmdName serverSide in
+    registerServerCmd cmdName ~convV0 serverSide in
   let client host args =
     let conn = hostConnection host in
     client0 conn args in
@@ -821,13 +910,14 @@ let connectionToRoot root = hostConnection (hostOfRoot root)
 
 (* RegisterRootCmd is like registerHostCmd but it indexes connections by
    root instead of host. *)
-let registerRootCmd (cmdName : string) (cmd : (Fspath.t * 'a) -> 'b) =
-  let r = registerHostCmd cmdName cmd in
+let registerRootCmd
+  (cmdName : string) ?(convV0=convV0_id_pair) (cmd : (Fspath.t * 'a) -> 'b) =
+  let r = registerHostCmd cmdName ~convV0 cmd in
   fun root args -> r (hostOfRoot root) ((snd root), args)
 
 let registerRootCmdWithConnection
-  (cmdName : string) (cmd : connection -> 'a -> 'b) =
-  let client0 = registerServerCmd cmdName cmd in
+  (cmdName : string) ?(convV0=convV0_id_pair) (cmd : connection -> 'a -> 'b) =
+  let client0 = registerServerCmd cmdName ~convV0 cmd in
   (* Return a function that runs either the proxy or the local version,
      depending on whether the call is to the local host or a remote one *)
   fun localRoot remoteRoot args ->
@@ -853,7 +943,7 @@ let registerStreamCmd
     =
   let cmd =
     registerSpecialServerCmd
-      cmdName marshalingFunctionsArgs defaultMarshalingFunctions
+      cmdName marshalingFunctionsArgs (defaultMarshalingFunctions convV0_id)
       (fun conn v -> serverSide conn v; Lwt.return ())
   in
   let ping =
@@ -875,7 +965,7 @@ let registerStreamCmd
     makeMarshalingFunctions marshalingFunctionsArgs (cmdName ^ "-str") in
   (* Create a server function and remember it *)
   let server conn buf =
-    let args = unmarshalArgs buf in
+    let args = unmarshalArgs conn buf in
     serverSide conn args
   in
   serverStreams := Util.StringMap.add cmdName server !serverStreams;
@@ -885,7 +975,7 @@ let registerStreamCmd
     if !streamAbortedSrc = id then raise (Util.Transient "Streaming aborted");
     let request =
       encodeInt id ::
-      marshalHeader (Stream cmdName) (marshalArgs serverArgs [])
+      marshalHeader conn (Stream cmdName) (marshalArgs conn serverArgs [])
     in
     dumpIdle conn request
   in
@@ -914,29 +1004,206 @@ let commandAvailable =
                      BUILDING CONNECTIONS TO THE SERVER
  ****************************************************************************)
 
-let connectionHeader =
-  let (major,minor,patchlevel) =
-    Scanf.sscanf Sys.ocaml_version "%d.%d.%d" (fun x y z -> (x,y,z)) in
-  let compiler =
-    if    major < 4 
-       || major = 4 && minor < 2
-       || major = 4 && minor = 2 && patchlevel <= 1
-    then "<= 4.01.1"
-    else ">= 4.01.2"
-    (* BCP: These strings seem wrong -- they should say 4.02,
-       not 4.01, according to my understanding of when the breaking
-       change happened.  However, I'm nervous about breaking installations
-       that are working, so I'm going to leave it.  Hopefully we are
-       far enough beyond these OCaml versions that it doesn't matter 
-       anyway. *)
-  in "Unison " ^ Uutil.myMajorVersion ^ " with OCaml " ^ compiler ^ "\n"
+let receiveUntilSep ?(space=false) ?(nl=true) ?(includesep=false) conn =
+  assert (space || nl);
+  let inp = Buffer.create 32
+  and buf = Bytearray.create 1 in
+  let add () = Buffer.add_char inp buf.{0} in
+  let rec aux () =
+    grab conn.inputBuffer buf 1 >>= fun () ->
+    match buf.{0} with
+    | ' ' | '\t' when space ->
+        if includesep then add (); Lwt.return (Buffer.contents inp)
+    | '\n' when nl ->
+        if includesep then add (); Lwt.return (Buffer.contents inp)
+    | '\r' ->
+        aux () (* ignore *)
+    | _ ->
+        add (); aux ()
+  in aux ()
 
-let rec checkHeader conn buffer pos len =
+(* Get input until newline (excluded), blocking *)
+let receiveUntilNewline conn =
+  receiveUntilSep ~nl:true conn
+
+(* Get input until space or newline, separator included by default; blocking *)
+let receiveUntilSpaceOrNl ?(includesep=true) conn =
+  receiveUntilSep ~space:true ~nl:true ~includesep conn
+
+(* Get input of fixed length, blocking *)
+let receiveString conn len =
+  let buf = Bytearray.create len in
+  grab conn.inputBuffer buf len >>= fun () ->
+  Lwt.return (Bytearray.to_string buf)
+
+(* Get input until newline (excluded), non-blocking *)
+let receiveUntilNewlineNb conn =
+  let e = Bytes.to_string (peekWithoutBlocking conn.inputBuffer) in
+  let len = try String.index e '\n' with Not_found -> String.length e in
+  receiveString conn len
+
+let sendStrings conn slist =
+  dump conn
+    (Safelist.map (fun s -> (Bytearray.of_string s, 0, String.length s)) slist)
+
+let sendString conn s = sendStrings conn [s]
+
+(****)
+
+let rpcOk = "OK\n"
+
+let rpcNokTag = "NOK "
+let rpcErr err = rpcNokTag ^ err ^ "\n"
+
+type handshakeMsg = Ok | Error of string | Unknown of string
+
+let receiveHandshakeMsg conn =
+  receiveUntilSpaceOrNl conn >>= fun msg ->
+  if msg = rpcOk then Lwt.return Ok
+  else if msg = rpcNokTag then begin
+    receiveUntilNewlineNb conn >>= fun msg -> Lwt.return (Error msg)
+  end else
+    Lwt.return (Unknown msg)
+
+type handshakeData = Data of string | Error of string | Unknown of string
+
+let receiveHandshakeData conn keyw =
+  receiveUntilSpaceOrNl conn >>= fun msg ->
+  if msg = keyw then
+    receiveUntilNewline conn >>= fun data -> Lwt.return (Data data)
+  else if msg = rpcNokTag then
+    receiveUntilNewlineNb conn >>= fun err -> Lwt.return (Error err)
+  else
+    Lwt.return (Unknown msg)
+
+let sendHandshakeMsg conn = function
+  | Ok -> sendString conn rpcOk
+  | Error err -> sendString conn (rpcErr err)
+  | Unknown _ -> assert false
+
+let sendHandshakeErr conn err =
+  sendHandshakeMsg conn (Error err)
+
+let sendHandshakeData conn keyw data =
+  let len = String.length keyw in
+  let keyw = if len > 0 && keyw.[len - 1] <> ' ' then keyw ^ " " else keyw in
+  sendString conn (keyw ^ data ^ "\n")
+
+(* RPC version negotiation process:
+   1. Server sends connectionHeader and supported RPC versions.
+
+   2. Client receives and verifies connectionHeader.
+      * If OK then proceeds.
+      * If NOK then closes connection.
+
+   3. Client receives and verifies RPC versions.
+      * If not correct verion tag or can't parse then closes connection.
+
+   4. Client selects a version (typically the most recent one) from the
+      intersection of its supported RPC versions and server's RPC versions.
+      * If interesection is empty then closes connection.
+
+   5. Client sends selected RPC version to the server.
+
+   6. Server receives and verifies proposed version.
+      * If OK then proceeds.
+      * If not correct version tag, can't parse or proposed version is
+        not supported then server sends "NOK".
+      ** Client receives "NOK" and closes connection.
+
+   7. Server selects proposed version and sends "OK".
+
+   8. Client receives "OK". Version negotiation is complete.
+*)
+
+let connectionHeader = "Unison RPC\n"
+let compatConnectionHeader = "Unison 2.51 with OCaml >= 4.01.2\n"
+(* Every supported version released prior to the RPC version negotiation
+   mechanism uses this connection header string. *)
+
+let rpcVersionsTag = "VERSIONS "
+let rpcVersionsStr = rpcVersionsTag ^ rpcSupportedVersionStrHdr ^ "\n"
+
+let rpcVersionTag = "VERSION "
+let rpcVersionStr ver = rpcVersionTag ^ string_of_int ver ^ "\n"
+
+let verIsSupported ver =
+  Safelist.exists (fun v -> v = ver) rpcSupportedVersions
+
+let handshakeFail err =
+  Lwt.fail (Util.Fatal err)
+
+let handshakeError msg =
+  handshakeFail ("Received error from the server: \"" ^ msg ^ "\".")
+
+let handshakeUnknown msg =
+  handshakeFail ("Received unexpected header from the server: \""
+                 ^ String.escaped msg ^ "\".")
+
+let parseVersion side s =
+  let error e =
+    raise (Util.Transient
+            ("Unknown " ^ side ^ " RPC version: " ^ e
+             ^ ". Version received from " ^ side ^ ": \"" ^ String.escaped s
+             ^ "\". Supported RPC versions: " ^ rpcSupportedVersionStr))
+  in
+  if s = "" then
+    error "invalid format"
+  else
+    try Some (int_of_string s) with
+    | Failure _ -> error "parse error"
+
+let parseServerVersions inp =
+  let supported l = function
+    | "" -> l
+    | v -> match parseVersion "server" v with
+           | Some vi -> if verIsSupported vi then vi :: l else l
+           | None -> l
+  in
+  try
+    let vs = String.split_on_char ' ' inp in
+    if vs = [""] then ignore (parseVersion "server" ""); (* Trigger the error *)
+    let intersect = Safelist.fold_left supported [] vs in
+    Lwt.return (Safelist.rev (Safelist.sort compare intersect))
+  with
+  | Util.Transient e -> handshakeFail e
+
+let selectServerVersion conn =
+  let getTheRest () = Bytes.to_string (peekWithoutBlocking conn.inputBuffer) in
+  receiveHandshakeData conn rpcVersionsTag >>= function
+  | Error msg -> handshakeError msg
+  | Unknown fromServ -> handshakeUnknown (fromServ ^ getTheRest ())
+  | Data versions ->
+      parseServerVersions versions >>= function
+      | [] ->
+          handshakeFail ("None of server's RPC versions are supported. "
+                         ^ "The server may be too old or too recent. "
+                         ^ "Versions received from server: \""
+                         ^ String.escaped versions ^ "\". "
+                         ^ "Supported RPC versions: " ^ rpcSupportedVersionStr)
+      | ver :: _ ->
+          setConnectionVersion conn ver;
+          debug (fun () -> Util.msg "Selected RPC version: %i\n" ver);
+          sendHandshakeData conn rpcVersionTag (string_of_int ver) >>= fun () ->
+          receiveHandshakeMsg conn >>= function
+          | Ok -> Lwt.return ()
+          | Error reply -> handshakeError reply
+          | Unknown reply -> handshakeUnknown (reply ^ getTheRest ())
+
+let checkServerVersion conn header =
+  if header = compatConnectionHeader then begin
+    setConnectionVersion conn 0;
+    debug (fun () -> Util.msg "Selected RPC version: 2.51-compatibility\n");
+    (* skip negotiation *) Lwt.return ()
+  end else
+    selectServerVersion conn
+
+let rec checkHeaderRec conn buffer pos len connectionHeader =
   if pos = len then
-    Lwt.return ()
+    Lwt.return connectionHeader
   else begin
     (grab conn.inputBuffer buffer 1 >>= (fun () ->
-    if buffer.{0} <> connectionHeader.[pos] then
+    if buffer.{0} <> connectionHeader.[pos] && buffer.{0} <> compatConnectionHeader.[pos] then
       let prefix =
         String.sub connectionHeader 0 pos ^ Bytearray.to_string buffer in
       let rest = peekWithoutBlocking conn.inputBuffer in
@@ -954,8 +1221,93 @@ let rec checkHeader conn buffer pos len =
            ^ "message, or because your remote login shell is printing\n"
            ^ "something itself before starting Unison."))
     else
-      checkHeader conn buffer (pos + 1) len))
+    if buffer.{0} <> connectionHeader.[pos] && buffer.{0} = compatConnectionHeader.[pos] then
+      (* We make use of the fact that that the new header is almost a prefix
+         of the old header. It is not an exact comparison here but good
+         enough for this purpose. *)
+      checkHeaderRec conn buffer (pos + 1)
+        (String.length compatConnectionHeader) compatConnectionHeader
+    else
+      checkHeaderRec conn buffer (pos + 1) len connectionHeader))
   end
+
+let checkHeader conn =
+  checkHeaderRec conn (Bytearray.create 1) 0
+    (String.length connectionHeader) connectionHeader
+
+(****)
+
+(* Magic string exchange is used within the old protocol to detect if both
+   the server and the client support the new RPC version negotiation mechanism.
+
+   It works like this:
+    1. Directly after connection header, the server sends the magic string and
+       otherwise continues using the old RPC protocol.
+    2. An old client will process the magic string as a valid RPC message that
+       is effectively a no-op and continues using old RPC protocol as normal.
+    3. A new client will notice the magic string and send the same magic string
+       in response. It will stop the old RPC protocol and restart from header
+       checking and what is now hopefully an RPC version negotiation.
+    4. The server will notice client's magic string, stop the old RPC protocol
+       and restart from connection header, this time with the new RPC version
+       negotiation mechanism.
+
+   The magic string is defined as follows:
+    1. encoded int 1 followed by
+    2. encoded int > 0 (packet size) followed by
+    3. a valid 2.51 protocol packet, the contents of which we don't care about,
+       but it must be a no-op for 2.51 client (in this case a StreamAbort).
+
+   Int 1 is a valid 2.51 protocol message ID but it is never used with normal
+   messages, hence its safe usage as a magic string. A StreamAbort to a client,
+   especially with id 1, is a safe no-op. *)
+
+let magicId = 1
+(* Although this magic packet is inherently dependent on OCaml version,
+   it is unlikely to change and has been verified to be the same with
+   OCaml versions 4.05 to 4.12. It is hard coded here to avoid any future
+   changes (the idea being that old clients will not be compiled with
+   any newer OCaml compilers). *)
+let magicPacket = "rsp\132\149\166\190\000\000\000\001\000\000\000\000\000\000\000\000\000\000\000\000A"
+let magic = encodeInt magicId :: encodeInt (String.length magicPacket) ::
+              [Bytearray.of_string magicPacket, 0, String.length magicPacket]
+
+let checkForMagicString conn =
+  (* Fill the buffer and then peek at the contents without consuming *)
+  peekWithBlocking conn.inputBuffer >>= fun b ->
+  if Bytes.length b < intSize then
+    Lwt.return false
+  else begin
+    let id = Bytearray.create intSize in
+    let () = Bytearray.blit_from_bytes b 0 id 0 intSize in
+    if decodeInt id 0 <> magicId then
+      Lwt.return false
+    else begin
+      debug (fun () -> Util.msg "Received RPC version upgrade notice\n");
+      (* Consume magic id from buffer *)
+      grab conn.inputBuffer id intSize >>= fun () ->
+      (* Consume magic packet from buffer *)
+      receivePacket conn >>= fun _ -> Lwt.return true
+      (* We rely solely on the magic id and don't check the contents of the
+         packet. Should it become necessary for some reason then it is
+         possible to verify the magic packet byte by byte here. *)
+    end
+  end
+
+let checkServerUpgrade conn header =
+  if header <> compatConnectionHeader then
+    Lwt.return header
+  else
+    checkForMagicString conn >>= function
+    | false -> Lwt.return header
+    | true ->
+        (* Consume write token from buffer *)
+        let id = Bytearray.create intSize in
+        grab conn.inputBuffer id intSize >>= fun () ->
+        (* Send the magic string *)
+        dumpUrgent conn magic >>= fun () ->
+        debug (fun () -> Util.msg "Going to attempt RPC version upgrade\n");
+        checkHeader conn
 
 (****)
 
@@ -996,8 +1348,18 @@ let negociateFlowControl conn =
 
 let initConnection onClose in_ch out_ch =
   let conn = setupIO false in_ch out_ch in
-  checkHeader
-    conn (Bytearray.create 1) 0 (String.length connectionHeader) >>= (fun () ->
+  let with_timeout t =
+    Lwt.choose [t;
+      Lwt_unix.sleep 120. >>= fun () ->
+      Lwt.fail (Util.Fatal "Timed out negotiating connection with the server")]
+  in
+  with_timeout (
+    checkHeader conn >>=
+    checkServerUpgrade conn >>=
+    checkServerVersion conn) >>= fun () ->
+  (* From this moment forward, the RPC version has been selected. All
+     communication must now adhere to that version's specification. *)
+  enableFlowControl conn false >>= (fun () ->
   Lwt.ignore_result (Lwt.catch
     (fun () -> receive conn)
     (function
@@ -1130,7 +1492,7 @@ let buildShellConnection onClose shell host userOpt portOpt rootName termInterac
     (if Prefs.read serverCmd="" then Uutil.myName
      else Prefs.read serverCmd)
     ^ (if Prefs.read addversionno then "-" ^ Uutil.myMajorVersion else "")
-    ^ " -server" in
+    ^ " -server " ^ rpcServerCmdlineOverride in
   let userArgs =
     match userOpt with
       None -> []
@@ -1366,7 +1728,7 @@ let openConnectionStart clroot =
             (if Prefs.read serverCmd="" then Uutil.myName
              else Prefs.read serverCmd)
             ^ (if Prefs.read addversionno then "-" ^ Uutil.myMajorVersion else "")
-            ^ " -server" in
+            ^ " -server " ^ rpcServerCmdlineOverride in
           let userArgs =
             match userOpt with
               None -> []
@@ -1466,6 +1828,38 @@ let openConnectionCancel (i1,i2,o1,o2,s,fdopt,clroot,pid) =
 (*                     SERVER-MODE COMMAND PROCESSING LOOP                  *)
 (****************************************************************************)
 
+let checkClientVersion conn () =
+  let reply msg = sendHandshakeMsg conn msg in
+  (* FIX: In future when gaining the ability to close connections from server
+     side, make errors close the connection, not just send to client. *)
+  let error = sendHandshakeErr conn in
+  receiveHandshakeData conn rpcVersionTag >>= function
+  | Error msg ->
+      error ("Could not negotiate RPC version. "
+             ^ "Received unexpected error from the client: \"" ^ msg ^ "\"")
+  | Unknown fromClient ->
+      error ("Could not negotiate RPC version. "
+             ^ "Received unexpected header from the client: \""
+             ^ String.escaped (fromClient
+             ^ Bytes.to_string (peekWithoutBlocking conn.inputBuffer)) ^ "\"")
+  | Data buf ->
+      (* FIX: This monstrosity needs to be changed to `match ... with exception ...`
+         after the next release when compatibility with OCaml < 4.02 is no longer
+         required. *)
+      match (try parseVersion "client" buf with Util.Transient e -> ignore (error e); None) with
+      | Some clientVer ->
+          if verIsSupported clientVer then begin
+            setConnectionVersion conn clientVer;
+            reply Ok
+          end else
+            error ("Client RPC version not supported. "
+                   ^ "Version received from client: \""
+                   ^ string_of_int clientVer ^ "\". "
+                   ^ "Supported RPC versions: " ^ rpcSupportedVersionStr)
+      | None -> Lwt.return ()
+
+(****)
+
 let showWarningOnClient =
     (registerServerCmd
        "showWarningOnClient"
@@ -1477,18 +1871,62 @@ let forwardMsgToClient =
        (fun _ str -> (*msg "forwardMsgToClient: %s\n" str; *)
           Lwt.return (Trace.displayMessageLocally str)))
 
+(* Compatibility mode for 2.51 clients. *)
+let compatServerInit conn =
+  dump conn [(Bytearray.of_string compatConnectionHeader, 0,
+                String.length compatConnectionHeader)] >>= fun () ->
+  (* Send the magic string to notify new clients *)
+  dumpUrgent conn magic >>= fun () ->
+  (* Must enable flow control because that is the default for 2.51.
+     This must be done after dumpUrgent above to ensure that the write
+     token is sent the last. *)
+  enableFlowControl conn true >>= fun () ->
+  (* Let's see if the client noticed the magic string. This is
+     a no-op for old clients. *)
+  checkForMagicString conn
+
+let compatServerRun conn =
+  (* Set the local warning printer to make an RPC to the client and
+     show the warning there; ditto for the message printer *)
+  Util.warnPrinter :=
+    Some (fun str -> Lwt_unix.run (showWarningOnClient conn str));
+  Trace.messageForwarder :=
+    Some (fun str -> Lwt_unix.run (forwardMsgToClient conn str));
+  receive conn >>=
+  Lwt.wait
+
 (* This function loops, waits for commands, and passes them to
    the relevant functions. *)
-let commandLoop in_ch out_ch =
+let commandLoop ~compatMode in_ch out_ch =
   Trace.runningasserver := true;
   (* Send header indicating to the client that it has successfully
      connected to the server *)
   let conn = setupIO true in_ch out_ch in
   Lwt.catch
-    (fun e ->
-       dump conn [(Bytearray.of_string connectionHeader, 0,
-                   String.length connectionHeader)]
-         >>= (fun () ->
+    (fun () ->
+       (if compatMode then
+         let () = setConnectionVersion conn 0 in
+         compatServerInit conn >>= (fun upgrade ->
+         if upgrade then begin
+           (* Restore the state before starting protocol negotiation *)
+           allowWrites conn.outputQueue;
+           disableFlowControl conn.outputQueue
+         end;
+         Lwt.return upgrade)
+       else
+         Lwt.return true) >>= fun upgrade ->
+       debug (fun () -> Util.msg "%sGoing to attempt RPC version upgrade\n"
+                 (if upgrade then "" else "NOT "));
+       if not upgrade then
+         compatServerRun conn
+       else
+       sendStrings conn [connectionHeader; rpcVersionsStr] >>=
+       checkClientVersion conn >>= fun () ->
+       (* From this moment forward, the RPC version has been selected. All
+          communication must now adhere to that version's specification. *)
+       (* Flow control was disabled for RPC version handshake. Enable it
+          for flow control negotiation. *)
+       enableFlowControl conn true >>= (fun () ->
        (* Set the local warning printer to make an RPC to the client and
           show the warning there; ditto for the message printer *)
        Util.warnPrinter :=
@@ -1559,7 +1997,7 @@ let waitOnPort hostOpt port =
          Lwt_unix.setsockopt connected Unix.SO_KEEPALIVE true;
          begin try
            (* Accept a connection *)
-           Lwt_unix.run (commandLoop connected connected)
+           Lwt_unix.run (commandLoop ~compatMode:true connected connected)
          with Util.Fatal "Lost connection with the server" -> () end;
          (* The client has closed its end of the connection *)
          begin try Lwt_unix.close connected with Unix.Unix_error _ -> () end;
@@ -1578,7 +2016,19 @@ let beAServer () =
       "Environment variable HOME unbound: \
        executing server in current directory\n"
   end;
+  (* Let's start with 2.51-compatibility mode. Newer clients will add
+     a special override keyword in server args that will disable the
+     compatibility mode.
+
+     FIX: It is a bit of a hack, so better not make it permanent.
+     It was added in 2021 and should be removed after a couple of years. *)
+  let compatMode =
+     try
+       not (Prefs.scanCmdLine "" |> Util.StringMap.find "rest"
+            |> Safelist.mem rpcServerCmdlineOverride)
+     with Not_found -> true
+  in
   Lwt_unix.run
-    (commandLoop
+    (commandLoop ~compatMode
        (Lwt_unix.of_unix_file_descr Unix.stdin)
        (Lwt_unix.of_unix_file_descr Unix.stdout))

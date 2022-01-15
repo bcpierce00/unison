@@ -7,6 +7,7 @@ let compat4 =
   [
     compat4pred 2, "Compat402", "compat402.cmo";
     compat4pred 3, "Compat403", "compat403.cmo";
+    compat4pred 4, "Compat404", "compat404.cmo";
     compat4pred 8, "Compat408", "compat408.cmo" ]
 
 let objects =
