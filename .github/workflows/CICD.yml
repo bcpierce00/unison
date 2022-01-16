@@ -136,8 +136,15 @@ jobs:
 
     - name: lablgtk install
       ## [2020-09] non-working/unavailable for MSVC or musl OCaml variants ; also, non-working for 32bit OCaml variant (see [GH:garrigue/lablgtk#64](https://github.com/garrigue/lablgtk/issues/64))
-      if: ${{ ! ( contains(matrix.job.ocaml-version, '+msvc') || contains(matrix.job.ocaml-version, '+musl') || contains(matrix.job.ocaml-version, '+32bit') ) }}
+      ## [2022-01] lablgtk 2.18.12 builds seem to hang on Windows with OCaml < 4.10.0
+      if: ${{ ! ( contains(matrix.job.ocaml-version, '+msvc') || contains(matrix.job.ocaml-version, '+musl') || contains(matrix.job.ocaml-version, '+32bit') || (contains(matrix.job.ocaml-version, '+mingw') && matrix.job.ocaml-version < '4.10.0') ) }}
       run: opam depext --install --verbose --yes lablgtk
+
+    - name: lablgtk install compatibility hack
+      ## [2022-01] lablgtk 2.18.12 builds seem to hang on Windows with OCaml < 4.10.0; this is a hack to work around the issue
+      if: ${{ contains(matrix.job.ocaml-version, '+mingw') && matrix.job.ocaml-version < '4.10.0' }}
+      shell: cmd
+      run: opam depext --install --verbose --yes lablgtk^^^<2.18.12
 
     - shell: bash
       run: |
