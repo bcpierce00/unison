@@ -134,6 +134,12 @@ jobs:
         echo %CYGWIN_ROOT_WRAPPERBIN%>> %GITHUB_PATH%
         echo SHELLOPTS=igncr>> %GITHUB_ENV%
 
+    - name: Prepare lablgtk install (Windows)
+      if: ${{ runner.os == 'Windows' && contains(matrix.job.ocaml-version, '+mingw') }}
+      run: |
+        opam install opam-depext depext-cygwinports
+        echo "/usr/${{ steps.vars.outputs.MinGW_ARCH }}-w64-mingw32/sys-root/mingw/bin" >> $GITHUB_PATH
+
     - name: lablgtk install
       ## [2020-09] non-working/unavailable for MSVC or musl OCaml variants ; also, non-working for 32bit OCaml variant (see [GH:garrigue/lablgtk#64](https://github.com/garrigue/lablgtk/issues/64))
       ## [2022-01] lablgtk 2.18.12 builds seem to hang on Windows with OCaml < 4.10.0
