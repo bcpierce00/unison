@@ -256,6 +256,10 @@ let unix_create_session cmd args new_stdin new_stdout new_stderr =
             let tio = Unix.tcgetattr slaveFd in
             tio.Unix.c_echo <- false;
             Unix.tcsetattr slaveFd Unix.TCSANOW tio;
+            (* Redirect ssh authentication errors to controlling terminal,
+               instead of new_stderr, so that they can be captured by GUI.
+               This will also redirect the remote stderr to GUI. *)
+            safe_close new_stderr;
             perform_redirections new_stdin new_stdout slaveFd;
             Unix.execvp cmd args (* never returns *)
           with Unix.Unix_error _ ->
