@@ -35,7 +35,7 @@ int main(int argc, const char *argv[])
         !strcmp(argv[i],"-server") ||
         !strcmp(argv[i],"-socket") ||
         !strcmp(argv[i],"-ui")) {
-                        NSLog(@"Calling nonGuiStartup");
+                        //NSLog(@"Calling nonGuiStartup");
                         @try {
                                 ocamlCall("x", "unisonNonGuiStartup");
                         } @catch (NSException *ex) {
