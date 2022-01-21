@@ -262,8 +262,9 @@ let unix_create_session cmd args new_stdin new_stdout new_stderr =
             safe_close new_stderr;
             perform_redirections new_stdin new_stdout slaveFd;
             Unix.execvp cmd args (* never returns *)
-          with Unix.Unix_error _ ->
-            Printf.eprintf "Some error in create_session child\n";
+          with Unix.Unix_error (e, s1, s2) ->
+            Printf.eprintf "Error in create_session child: [%s] (%s) %s\n"
+              s1 s2 (Unix.error_message e);
             flush stderr;
             exit 127
           end
