@@ -478,10 +478,36 @@ CAMLprim value unisonInit1Complete(value v)
             return;
         }
     }
-    NSLog(@"Unrecognized message from ssh: '%@'",prompt);
-        ocamlCall("x@", "openConnectionCancel", preconn);
-    NSRunAlertPanel(@"Connection Error", @"Unrecognized message from ssh: '%@'", @"OK", nil, nil, prompt);
-    [self chooseProfiles];
+    /* Unison uimac versions <= 2.51.5 always produce an NSLog message
+     * "Calling nonGuiStartup". Previously, this was just hidden from the
+     * user. Starting Unison uimac version 2.51.5, error messages are
+     * displayed to the user. Since this is not an error message, and it
+     * is a known message to ignore, silently drop it here */
+    if (NSEqualRanges([prompt rangeOfString:@"Calling nonGuiStartup"],
+                      NSMakeRange(NSNotFound, 0))) {
+        NSLog(@"Unrecognized message from ssh: '%@'",prompt);
+        NSInteger i = NSRunAlertPanel(@"Connection Error", @"Unrecognized message from ssh: '%@'",
+                          @"Continue", @"Cancel", nil, prompt);
+	if (i == NSAlertAlternateReturn) {
+            ocamlCall("x@", "openConnectionCancel", preconn);
+            [self chooseProfiles];
+            return;
+	}
+    }
+    /* Unrecognized message from ssh does not immediately mean connection
+     * failure. Continue. */
+    prompt = ocamlCall("S@", "openConnectionPrompt", preconn);
+    if (!prompt) {
+        // all done with prompts, finish opening connection
+        ocamlCall("x@", "openConnectionEnd", preconn);
+        waitingForPassword = NO;
+        [self afterOpen];
+        return;
+    } else {
+        [self raisePasswordWindow:[NSString
+            stringWithUTF8String:String_val(Field(prompt, 0))]];
+        return;
+    }
 }
 
 // The password window will invoke this when Enter occurs, b/c we
