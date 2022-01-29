@@ -147,10 +147,10 @@ val mdumpedPrefs : dumpedPrefs Umarshal.t
 (* Dump current values of all preferences into a value that can be
    marshalled and sent over the network or stored in a file for fast
    retrieval *)
-val dump : unit -> dumpedPrefs
+val dump : int -> dumpedPrefs
 
 (* Load new values of all preferences from a string created by dump          *)
-val load : dumpedPrefs -> unit
+val load : dumpedPrefs -> int -> unit
 
 (* ------------------------------------------------------------------------- *)
 

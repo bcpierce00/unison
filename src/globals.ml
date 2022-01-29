@@ -196,19 +196,19 @@ let expandWildcardPaths() =
 (*****************************************************************************)
 
 let propagatePrefsTo =
-  Remote.registerHostCmd
+  Remote.registerRootCmdWithConnection
     "installPrefs" Prefs.mdumpedPrefs Umarshal.unit
-    (fun prefs -> return (Prefs.load prefs))
+    (fun conn prefs -> return (Prefs.load prefs (Remote.connectionVersion conn)))
 
 let propagatePrefs () =
-  let prefs = Prefs.dump() in
-  let toHost root =
-    match root with
-      (Local, _) -> return ()
-    | (Remote host,_) ->
-        propagatePrefsTo host prefs
+  let toRoot = function
+    | (Local, _) -> return ()
+    | (Remote _, _) as root ->
+        let rpcVer = Remote.(connectionVersion (connectionToRoot root)) in
+        let prefs = Prefs.dump rpcVer in
+        propagatePrefsTo root root prefs
   in
-  allRootsIter toHost
+  allRootsIter toRoot
 
 (*****************************************************************************)
 (*                      PREFERENCES AND PREDICATES                           *)

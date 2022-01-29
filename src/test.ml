@@ -256,13 +256,13 @@ let test() =
   Prefs.set Trace.terse true;
   Trace.sendLogMsgsToStderr := false;
 
-  let origPrefs = Prefs.dump() in
+  let origPrefs = Prefs.dump 99 in
 
   let runtest name prefs f =
     Util.msg "%s...\n" name;
     Util.convertUnixErrorsToFatal "Test.test" (fun() ->
       currentTest := name;
-      Prefs.load origPrefs;
+      Prefs.load origPrefs 99;
       loadPrefs prefs;
       debug (fun() -> Util.msg "Emptying backup directory\n");
       Lwt_unix.run (Globals.allRootsIter (fun r -> makeBackupEmpty r ()));

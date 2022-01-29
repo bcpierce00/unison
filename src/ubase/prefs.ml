@@ -82,8 +82,8 @@ type dumpedPrefs = (string * bool * string) list
 
 let mdumpedPrefs = Umarshal.(list (prod3 string bool string id id))
 
-let dumpers = ref ([] : (string * bool * (unit->bool) * (unit->string)) list)
-let loaders = ref (Util.StringMap.empty : (string->unit) Util.StringMap.t)
+let dumpers = ref ([] : (string * bool * (unit->bool) * (int->string)) list)
+let loaders = ref (Util.StringMap.empty : (int->string->unit) Util.StringMap.t)
 
 let adddumper name optional send f =
   dumpers := (name,optional,send,f) :: !dumpers
@@ -91,18 +91,18 @@ let adddumper name optional send f =
 let addloader name f =
   loaders := Util.StringMap.add name f !loaders
 
-let dump () =
+let dump rpcVer =
   Safelist.filter (fun (_, _, sf, _) -> sf ()) !dumpers
-  |> Safelist.map (fun (name, opt, _, f) -> (name, opt, f()))
+  |> Safelist.map (fun (name, opt, _, f) -> (name, opt, f rpcVer))
 
-let load d =
+let load d rpcVer =
   Safelist.iter
     (fun (name, opt, dumpedval) ->
        match
          try Some (Util.StringMap.find name !loaders) with Not_found -> None
        with
          Some loaderfn ->
-           loaderfn dumpedval
+           loaderfn rpcVer dumpedval
        | None ->
            if not opt then
              raise (Util.Fatal
@@ -189,16 +189,20 @@ let createPrefInternal name typ local send default doc fulldoc printer parsefn m
   registerPref name typ (parsefn newCell) doc fulldoc;
   adddumper name local
     (fun () -> match send with None -> true | Some f -> f ())
-    (* TODO: add 2.51 compatibility mode
-    (fun () -> Marshal.to_string (newCell.value, newCell.names) []); *)
-    (fun () -> Umarshal.to_string m (newCell.value, newCell.names));
+    (function
+     | 0 -> Marshal.to_string (newCell.value, newCell.names) []
+     | _ -> Umarshal.to_string m (newCell.value, newCell.names));
   addprinter name (fun () -> printer newCell.value);
   addresetter
     (fun () ->
        newCell.setInProfile <- false; newCell.value <- newCell.defaultValue);
   addloader name
-    (fun s ->
-       let (value, names) = Umarshal.from_string m s 0 in
+    (fun rpcVer s ->
+       let (value, names) =
+         match rpcVer with
+         | 0 -> Marshal.from_string s 0
+         | _ -> Umarshal.from_string m s 0
+       in
        newCell.value <- value);
   newCell
 
