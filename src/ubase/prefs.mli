@@ -16,6 +16,7 @@ val readDefault : 'a t -> 'a
 val createBool :
         string              (* preference name *)
      -> ?local:bool             (* whether it is local to the client *)
+     -> ?send:(unit->bool)  (* whether preference should be sent to server *)
      -> bool                (* initial value *)
      -> string              (* documentation string *)
      -> string              (* full (tex) documentation string *)
@@ -24,6 +25,7 @@ val createBool :
 val createInt :
         string              (* preference name *)
      -> ?local:bool             (* whether it is local to the client *)
+     -> ?send:(unit->bool)  (* whether preference should be sent to server *)
      -> int                 (* initial value *)
      -> string              (* documentation string *)
      -> string              (* full (tex) documentation string *)
@@ -32,6 +34,7 @@ val createInt :
 val createString :
         string              (* preference name *)
      -> ?local:bool             (* whether it is local to the client *)
+     -> ?send:(unit->bool)  (* whether preference should be sent to server *)
      -> string              (* initial value *)
      -> string              (* documentation string *)
      -> string              (* full (tex) documentation string *)
@@ -40,6 +43,7 @@ val createString :
 val createFspath :
         string              (* preference name *)
      -> ?local:bool             (* whether it is local to the client *)
+     -> ?send:(unit->bool)  (* whether preference should be sent to server *)
      -> System.fspath       (* initial value *)
      -> string              (* documentation string *)
      -> string              (* full (tex) documentation string *)
@@ -48,6 +52,7 @@ val createFspath :
 val createStringList :
         string              (* preference name *)
      -> ?local:bool             (* whether it is local to the client *)
+     -> ?send:(unit->bool)  (* whether preference should be sent to server *)
      -> string              (* documentation string *)
      -> string              (* full (tex) documentation string *)
      -> string list t       (*   -> new preference value *)
@@ -55,6 +60,7 @@ val createStringList :
 val createBoolWithDefault :
         string              (* preference name *)
      -> ?local:bool             (* whether it is local to the client *)
+     -> ?send:(unit->bool)  (* whether preference should be sent to server *)
      -> string              (* documentation string *)
      -> string              (* full (tex) documentation string *)
      -> [`True|`False|`Default] t
@@ -67,6 +73,7 @@ exception IllegalValue of string
 val create :
         string                  (* preference name *)
      -> ?local:bool             (* whether it is local to the client *)
+     -> ?send:(unit->bool)      (* whether the pref should be sent to server *)
      -> 'a                      (* initial value *)
      -> string                  (* documentation string *)
      -> string                  (* full (tex) documentation string *)

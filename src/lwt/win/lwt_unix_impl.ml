@@ -17,9 +17,9 @@ let buffer_create l = Bigarray.Array1.create Bigarray.char Bigarray.c_layout l
 external unsafe_blit_string_to_buffer :
   string -> int -> buffer -> int -> int -> unit = "ml_blit_string_to_buffer"
 external unsafe_blit_bytes_to_buffer :
-  bytes -> int -> buffer -> int -> int -> unit = "ml_blit_string_to_buffer"
+  bytes -> int -> buffer -> int -> int -> unit = "ml_blit_bytes_to_buffer"
 external unsafe_blit_buffer_to_bytes :
-  buffer -> int -> bytes -> int -> int -> unit = "ml_blit_buffer_to_string"
+  buffer -> int -> bytes -> int -> int -> unit = "ml_blit_buffer_to_bytes"
 
 let buffer_length = Bigarray.Array1.dim
 
@@ -712,3 +712,24 @@ if !d then Format.eprintf "Reading started@.";
                         (parse_directory_changes buf)))
 
 let close_dir = Unix.close
+
+external long_name : string -> string = "win_long_path_name"
+
+let longpathname root path =
+  (* Parameter [path] can be relative. Result value must then also be relative.
+     Input parameter to [long_name] must always be absolute path. *)
+  let epath = System_impl.Fs.W.epath (Filename.concat root path)
+  and root = System_impl.Fs.W.epath (Filename.concat root "") in
+  let root = String.sub root 0 (String.length root - 2) in (* Remove trailing \000\000 *)
+  let start = String.length root
+  and ln = long_name epath in
+  let n =
+  try
+    (* The assumption is that [root] does not change in [long_name]. The
+       Windows fsmonitor operates under this assumption, so it is ok here.
+       To remove this assumption, we'd have to pass [root] separately through
+       [long_name]. *)
+    String.sub ln start (String.length ln - start)
+  with
+  | Invalid_argument _ -> ln
+  in System_impl.Fs.W.path8 n

@@ -45,20 +45,33 @@ extern void get_sockaddr (value mladdr,
 
 #define Array_data(a, i) (((char *) a->data) + Long_val(i))
 
+#ifndef Bytes_val
+#define Bytes_val(x) ((unsigned char *) Bp_val(x))
+#endif
+
 CAMLprim value ml_blit_string_to_buffer
 (value s, value i, value a, value j, value l)
 {
-  char *src = String_val(s) + Int_val(i);
+  const char *src = String_val(s) + Int_val(i);
   char *dest = Array_data(Bigarray_val(a), j);
   memcpy(dest, src, Long_val(l));
   return Val_unit;
 }
 
-CAMLprim value ml_blit_buffer_to_string
+CAMLprim value ml_blit_bytes_to_buffer
+(value s, value i, value a, value j, value l)
+{
+  char *src = Bytes_val(s) + Int_val(i);
+  char *dest = Array_data(Bigarray_val(a), j);
+  memcpy(dest, src, Long_val(l));
+  return Val_unit;
+}
+
+CAMLprim value ml_blit_buffer_to_bytes
 (value a, value i, value s, value j, value l)
 {
   char *src = Array_data(Bigarray_val(a), i);
-  char *dest = String_val(s) + Long_val(j);
+  char *dest = Bytes_val(s) + Long_val(j);
   memcpy(dest, src, Long_val(l));
   return Val_unit;
 }
@@ -657,7 +670,7 @@ CAMLprim value win_parse_directory_changes (value buf_val) {
     entry = (FILE_NOTIFY_INFORMATION *)pos;
     elt = caml_alloc_tuple(2);
     filename = caml_alloc_string(entry->FileNameLength);
-    memmove(String_val(filename), entry->FileName, entry->FileNameLength);
+    memmove((char *)String_val(filename), entry->FileName, entry->FileNameLength);
     Store_field (elt, 0, filename);
     Store_field (elt, 1, Val_long(entry->Action - 1));
     tmp = caml_alloc_tuple(2);
@@ -685,4 +698,16 @@ CAMLprim value win_open_directory (value path, value wpath) {
     uerror("open", path);
   }
   CAMLreturn(win_alloc_handle(h));
+}
+
+value copy_wstring(LPCWSTR s);
+
+CAMLprim value win_long_path_name(value path) {
+  CAMLparam1(path);
+  wchar_t lbuf[32768] = L"";
+  DWORD res;
+
+  res = GetLongPathNameW((LPCWSTR) String_val(path), lbuf, 32768);
+
+  CAMLreturn(res == 0 || res > 32767 ? path : copy_wstring(lbuf));
 }

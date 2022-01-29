@@ -38,13 +38,13 @@ let unsafe_blit_to_string a i s j l =
 *)
 
 external unsafe_blit_from_string : string -> int -> t -> int -> int -> unit
-  = "ml_blit_string_to_bigarray" [@@noalloc]
+  = "ml_blit_string_to_bigarray" "noalloc"
 
 external unsafe_blit_from_bytes : bytes -> int -> t -> int -> int -> unit
-  = "ml_blit_string_to_bigarray" [@@noalloc]
+  = "ml_blit_bytes_to_bigarray" "noalloc"
 
 external unsafe_blit_to_bytes : t -> int -> bytes -> int -> int -> unit
-  = "ml_blit_bigarray_to_string" [@@noalloc]
+  = "ml_blit_bigarray_to_bytes" "noalloc"
 
 let to_string a =
   let l = length a in

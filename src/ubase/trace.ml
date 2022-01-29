@@ -113,20 +113,37 @@ let logging =
 
 let logfile =
   Prefs.createFspath "logfile"
-    (Util.fileInHomeDir "unison.log")
+    (System.fspathFromString "unison.log")
     "!logfile name"
     "By default, logging messages will be appended to the file
-     \\verb|unison.log| in your HOME directory.  Set this preference if
-     you prefer another file.  It can be a path relative to your HOME directory."
+     \\verb|unison.log| in your .unison directory.  Set this preference if
+     you prefer another file.  It can be a path relative to your .unison directory.
+     Sending SIGUSR1 will close the logfile; the logfile will be re-opened (and
+     created, if needed) automatically, to allow for log rotation."
 
 let logch = ref None
+
+let closelog _ =
+  match !logch with
+    None -> ()
+  | Some(ch,file) ->
+      close_out ch;
+      logch := None
+
+let _ =
+  if Util.osType <> `Win32 || Util.isCygwin then
+    try
+      ignore (Sys.signal Sys.sigusr1 (Signal_handle closelog))
+    with e ->
+      Printf.eprintf "Warning: SIGUSR1 handler not set: %s\n"
+        (Printexc.to_string e)
 
 let rec getLogch() =
   Util.convertUnixErrorsToFatal "getLogch" (fun() ->
   match !logch with
     None ->
       let prefstr = System.fspathToString (Prefs.read logfile) in
-      let file = Util.fileMaybeRelToHomeDir prefstr in
+      let file = Util.fileMaybeRelToUnisonDir prefstr in
       let ch =
         System.open_out_gen [Open_wronly; Open_creat; Open_append] 0o600 file in
       logch := Some (ch, file);
@@ -137,9 +154,14 @@ let rec getLogch() =
         logch := None; getLogch ()
       end)
 
+let ansiColorRegexp = Str.regexp "\027\\[[0-9;:]*m"
+
+let stripColorEscapes s =
+  Str.global_replace ansiColorRegexp "" s
+
 let sendLogMsgsToStderr = ref true
 
-let writeLog s =
+let writeLog s stripColor =
   if !sendLogMsgsToStderr then begin
       match !traceprinter with
       | `Stdout -> Printf.printf "%s" s
@@ -151,9 +173,10 @@ let writeLog s =
       | `Stderr -> Util.msg "%s" s
       | `FormatStdout -> Format.printf "%s " s);
   if Prefs.read logging then begin
+    let clean = if stripColor then stripColorEscapes s else s in
     let ch = getLogch() in
     begin try
-      output_string ch s;
+      output_string ch clean;
       flush ch
     with Sys_error _ -> () end
   end
@@ -166,7 +189,7 @@ let terse =
     ("When this preference is set to {\\tt true}, the user "
      ^ "interface will not print status messages.")
 
-type msgtype = Msg | StatusMajor | StatusMinor | Log
+type msgtype = Msg | StatusMajor | StatusMinor | Log | LogColor
 type msg = msgtype * string
 
 let mmsgtype = Umarshal.(sum4 unit unit unit unit
@@ -207,7 +230,8 @@ let displayMessageLocally (mt,s) =
     Msg -> display s
   | StatusMajor -> statusMsgMajor := s; statusMsgMinor := ""; displayStatus()
   | StatusMinor -> statusMsgMinor := s; displayStatus()
-  | Log -> writeLog s
+  | Log      -> writeLog s false
+  | LogColor -> writeLog s true
 
 let messageForwarder = ref None
 
@@ -231,6 +255,14 @@ let statusDetail s =
   displayMessage (StatusMinor, ss)
 
 let log s = displayMessage (Log, s)
+
+let log_color s = displayMessage (LogColor, s)
+
+let logonly s =
+  let temp = !sendLogMsgsToStderr in
+  sendLogMsgsToStderr := false;
+  displayMessage (Log, s);
+  sendLogMsgsToStderr := temp
 
 let logverbose s =
   let temp = !sendLogMsgsToStderr in

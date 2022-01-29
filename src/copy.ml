@@ -430,10 +430,10 @@ let processTransferInstruction conn (file_id, ti) =
        ignore (Remote.MsgIdMap.find file_id !decompressor ti))
 
 let marshalTransferInstruction =
-  (fun (file_id, (data, pos, len)) rem ->
+  (fun _ (file_id, (data, pos, len)) rem ->
      (Remote.encodeInt file_id :: (data, pos, len) :: rem,
       len + Remote.intSize)),
-  (fun buf pos ->
+  (fun _ buf pos ->
      let len = Bytearray.length buf - pos - Remote.intSize in
      (Remote.decodeInt buf pos, (buf, pos + Remote.intSize, len)))
 

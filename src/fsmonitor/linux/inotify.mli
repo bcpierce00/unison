@@ -32,6 +32,7 @@ type select_event =
 | S_Mask_add
 | S_Oneshot
 | S_Onlydir
+| S_Excl_unlink
 | S_Move
 | S_Close
 | S_All

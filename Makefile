@@ -6,7 +6,7 @@ text:
 	$(MAKE) -C src UISTYLE=text
 
 test:
-	./src/unison -selftest
+	./src/unison -ui text -selftest
 
 all: src
 

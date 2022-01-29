@@ -940,7 +940,7 @@ let normalize s =
        also with non-unicode strings.  The optimization below assumes
        a case-insensitive comparison on ASCII characters, thus we
        translate the string to lowercase *)
-    String.lowercase s
+    String.lowercase_ascii s
 
 (****)
 

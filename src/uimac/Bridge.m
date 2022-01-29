@@ -74,7 +74,7 @@ const char **the_argv;
 
         // now start the callback thread
         // NSLog(@"*** _ocamlStartup - calling callbackThreadCreate (%d)", pthread_self());
-        value *f = caml_named_value("callbackThreadCreate");
+        const value *f = caml_named_value("callbackThreadCreate");
         (void)caml_callback_exn(*f,Val_unit);
     [pool release];
 }
@@ -111,7 +111,7 @@ typedef unsigned int NSUInteger;
     NSString *msg = [NSString stringWithFormat:@"Uncaught exception: %@", [exception reason]];
     msg = [[msg componentsSeparatedByString:@"\n"] componentsJoinedByString:@" "];
     NSLog(@"%@", msg);
-    NSRunAlertPanel(@"Fatal error", msg, @"Exit", nil, nil);
+    NSRunAlertPanel(@"Fatal error", @"%@", @"Exit", nil, nil, msg);
         exit(1);
         return FALSE;
 }
@@ -181,7 +181,7 @@ CAMLprim value bridgeThreadWait(value ignore)
                 if (cs->opCode == SafeCall) {
                         int i;
                         char *fname = va_arg(cs->args, char *);
-                        value *f = caml_named_value(fname);
+                        const value *f = caml_named_value(fname);
                         // varargs with C-based args -- convert them to OCaml values based on type code string
                         const char *p = cs->argTypes;
                         retType = *p++;
@@ -262,7 +262,7 @@ CAMLprim value bridgeThreadWait(value ignore)
 
                 if (Is_exception_result(e)) {
                         // get exception string -- it will get thrown back in the calling thread
-                    value *f = caml_named_value("unisonExnInfo");
+                    const value *f = caml_named_value("unisonExnInfo");
                     // We leak memory here...
                     cs->exception = strdup(String_val(caml_callback(*f,Extract_exception(e))));
                 }

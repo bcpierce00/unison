@@ -79,52 +79,6 @@ let init b someHostRunningOsX =
 
 (****)
 
-(* Dots are ignored at the end of filenames under Windows. *)
-
-(* FIX: for the moment, simply disallow files ending with a dot.
-   This is more efficient, and this may well be good enough.
-   We should reconsider this is people start complaining...
-
-let hasTrailingDots s =
-  let rec iter s pos len wasDot =
-    if pos = len then wasDot else
-    let c = s.[pos] in
-    (wasDot && c = '/') || iter s (pos + 1) len (c = '.')
-  in
-  iter s 0 (String.length s) false
-
-let removeTrailingDots s =
-  let len = String.length s in
-  let s' = Bytes.create len in
-  let pos = ref (len - 1) in
-  let pos' = ref (len - 1) in
-  while !pos >= 0 do
-    while !pos >= 0 && s.[!pos] = '.' do decr pos done;
-    while !pos >= 0 && s.[!pos] <> '/' do
-      s'.[!pos'] <- s.[!pos]; decr pos; decr pos'
-    done;
-    while !pos >= 0 && s.[!pos] = '/' do
-      s'.[!pos'] <- s.[!pos]; decr pos; decr pos'
-    done
-  done;
-  String.sub s' (!pos' + 1) (len - !pos' - 1)
-
-let rmTrailDots s =
-  s
-(*FIX: disabled for now -- requires an archive version change
-  if
-    Prefs.read someHostIsRunningWindows &&
-    not (Prefs.read allHostsAreRunningWindows) &&
-    hasTrailingDots s
-  then
-    removeTrailingDots s
-  else
-    s
-*)
-*)
-
-(****)
-
 type mode = Sensitive | Insensitive | UnicodeSensitive | UnicodeInsensitive
 
 (*
@@ -152,7 +106,7 @@ let insensitiveOps = object
   method mode = Insensitive
   method modeDesc = "Latin-1 case insensitive"
   method compare s s' = Util.nocase_cmp s s'
-  method hash s = Uutil.hash (String.lowercase s)
+  method hash s = Uutil.hash (String.map Util.lowercase_latin1 s)
   method normalizePattern s = s
   method caseInsensitiveMatch = true
   method normalizeMatchedString s = s

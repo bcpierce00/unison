@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
+#include <sys/inotify.h>
 #include <caml/mlvalues.h>
 #include <caml/memory.h>
 #include <caml/alloc.h>
@@ -27,18 +28,8 @@
 #include <caml/signals.h>
 #include <caml/callback.h>
 
-#include <features.h>
-
-#if __GLIBC__ >= 2 && __GLIBC_MINOR__ >= 4
-#define GLIBC_SUPPORT_INOTIFY 1
-#else
-#define GLIBC_SUPPORT_INOTIFY 0
-#endif
-
-#if GLIBC_SUPPORT_INOTIFY
-#include <sys/inotify.h>
-#else
-#include "inotify_compat.h"
+#ifndef IN_EXCL_UNLINK
+#define IN_EXCL_UNLINK 0  /* If not supported, just ignore */
 #endif
 
 static int inotify_flag_table[] = {
@@ -46,7 +37,7 @@ static int inotify_flag_table[] = {
         IN_CREATE, IN_DELETE, IN_DELETE_SELF, IN_MODIFY,
         IN_MOVE_SELF, IN_MOVED_FROM, IN_MOVED_TO, IN_OPEN,
         IN_DONT_FOLLOW, IN_MASK_ADD, IN_ONESHOT, IN_ONLYDIR,
-        IN_MOVE, IN_CLOSE, IN_ALL_EVENTS, 0
+        IN_EXCL_UNLINK, IN_MOVE, IN_CLOSE, IN_ALL_EVENTS, 0
 };
 
 static int inotify_return_table[] = {
@@ -58,7 +49,7 @@ static int inotify_return_table[] = {
 
 static void raise_inotify_error(char const *msg)
 {
-        static value *inotify_err = NULL;
+        static const value *inotify_err = NULL;
         value args[2];
 
         if (!inotify_err)

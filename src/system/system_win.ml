@@ -105,7 +105,7 @@ type dir_entry = Dir_empty | Dir_read of string | Dir_toread
 type dir_handle = System_generic.dir_handle
                 = { readdir : unit -> string; closedir : unit -> unit }
 
-external stat_impl : string -> string -> Unix.LargeFile.stats = "win_stat"
+external stat_impl : string -> string -> bool -> Unix.LargeFile.stats = "win_stat"
 external rmdir_impl : string -> string -> unit = "win_rmdir"
 external mkdir_impl : string -> string -> unit = "win_mkdir"
 external unlink_impl : string -> string -> unit = "win_unlink"
@@ -122,8 +122,8 @@ external findfirst : string -> string * int = "win_findfirstw"
 external findnext : int -> string = "win_findnextw"
 external findclose : int -> unit = "win_findclosew"
 
-let stat f = stat_impl f (epath f)
-let lstat = stat
+let stat f = stat_impl f (epath f) false
+let lstat f = stat_impl f (epath f) true
 let rmdir f = rmdir_impl f (epath f)
 let mkdir f perms = mkdir_impl f (epath f)
 let unlink f = unlink_impl f (epath f)
@@ -133,8 +133,8 @@ let chown _ _ _ = raise (Unix.Unix_error (Unix.ENOSYS, "chown", ""))
 let utimes f t1 t2 = utimes_impl f (epath f) t1 t2
 let link f1 f2 = link_impl f1 (epath f1) (epath f2)
 let openfile f flags perm = open_impl f (epath f) flags perm
-let readlink _ = raise (Unix.Unix_error (Unix.ENOSYS, "readlink", ""))
-let symlink _ _ = raise (Unix.Unix_error (Unix.ENOSYS, "symlink", ""))
+let readlink = Unix.readlink
+let symlink f t = Unix.symlink f t
 
 let chdir f =
   try
@@ -315,8 +315,16 @@ let canSetTime f = true
    number of "a". *)
 let hasInodeNumbers () = true
 
+let hasSymlink = Unix.has_symlink
+
+external hasCorrectCTime_impl : unit -> bool = "win_has_correct_ctime"
+
+let hasCorrectCTime = hasCorrectCTime_impl ()
+
 (****)
 
+type fdopt = Unix.file_descr option
+external initConsole : unit -> fdopt * fdopt * fdopt = "win_init_console"
 external getConsoleMode : unit -> int = "win_get_console_mode"
 external setConsoleMode : int -> unit = "win_set_console_mode"
 external getConsoleOutputCP : unit -> int = "win_get_console_output_cp"
@@ -327,6 +335,28 @@ type terminalStateFunctions =
     startReading : unit -> unit; stopReading : unit -> unit }
 
 let terminalStateFunctions () =
+  (* First, allocate a console in case we don't already have one.
+     Unix.stdin/out/err have bogus handles if they weren't redirected by
+     the user and there was no console at startup. We must restore them
+     if a console was allocated. The fd numbers for the handles are
+     hardcoded as 0, 1, 2, and must be redirected as well because these
+     fds are not restored automatically by Windows. The stdin/out/err
+     channels in Stdlib do not need to be restored separately because
+     they operate by same hardcoded fd numbers, which will be restored
+     when Unix.stdin/out/err are restored.*)
+  let redirect (in', out', err') =
+    let safe_redirect fd1' fd2 =
+      match fd1' with Some fd1 -> Unix.dup2 fd1 fd2 | None -> ()
+    in
+    safe_redirect in' Unix.stdin;
+    safe_redirect out' Unix.stdout;
+    safe_redirect err' Unix.stderr
+    (* in', out', err' must not be closed after dup2 because they are set as
+       the std handles in Win32 API and something might break when they are
+       closed (in fact, most everything that does not use hardcoded fd numbers
+       0, 1, 2, which are the ones restored by these redirections). *)
+  in
+  let () = redirect (initConsole ()) in
   let oldstate = getConsoleMode () in
   let oldcp = getConsoleOutputCP () in
   (* Ctrl-C does not interrupt a call to ReadFile when

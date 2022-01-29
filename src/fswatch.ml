@@ -81,13 +81,6 @@ let debugverbose = Trace.debug "fswatch+"
 
 let (>>=) = Lwt.bind
 
-let rec really_write o s pos len =
-  Lwt_unix.write o s pos len >>= fun l ->
-  if l = len then
-    Lwt.return ()
-  else
-    really_write o s (pos + l) (len - l)
-
 let rec really_write_substring o s pos len =
   Lwt_unix.write_substring o s pos len >>= fun l ->
   if l = len then
@@ -178,12 +171,11 @@ end
 (****)
 
 let useWatcher =
-  Prefs.createBool "watch" true
+  Prefs.createBool "watch" false
     "!when set, use a file watcher process to detect changes"
     "Unison uses a file watcher process, when available, to detect filesystem \
-     changes; this is used to speed up update detection, and for continuous \
-     synchronization (\\verb|-repeat watch| preference. Setting this flag to \
-     false disable the use of this process."
+     changes; this is used to speed up update detection. Setting this flag to \
+     false disables the use of this process."
 
 let printf o fmt =
   Printf.ksprintf
@@ -238,8 +230,14 @@ let path =
 
 let search_in_path ?(path = path) name =
   System.fspathConcat
-    (List.find (fun dir -> System.file_exists (System.fspathConcat dir name))
-       path)
+    (List.find (fun dir ->
+       let p = System.fspathConcat dir name in
+       let found = System.file_exists p in
+       debug (fun () -> Util.msg "'%s' ...%s\n"
+         (System.fspathToString p)
+         (match found with true -> "found" | false -> "not found"));
+       found)
+    path)
     name
 
 let exec_path = [System.fspathFromString Sys.executable_name]
@@ -265,6 +263,7 @@ let exec_dir = List.map System.fspathDirname exec_path
 let watcher =
   lazy
     (let suffix = if Util.osType = `Win32 then ".exe" else "" in
+     debug (fun () -> Util.msg "File monitoring helper program...\n");
      System.fspathToString
        (try
           search_in_path ~path:(exec_dir @ path)

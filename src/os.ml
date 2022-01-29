@@ -66,7 +66,12 @@ let readLink fspath path =
   "reading symbolic link"
     (fun () ->
        let abspath = Fspath.concat fspath path in
-       Fs.readlink abspath)
+       let l = Fs.readlink abspath in
+       if Util.osType = `Win32 then
+         Fileutil.backslashes2forwardslashes l
+       else
+         l
+    )
 
 let rec isAppleDoubleFile file =
   Prefs.read Osx.rsrc &&
@@ -209,7 +214,7 @@ let rename fname sourcefspath sourcepath targetfspath targetpath =
   renameFspath fname source target
 
 let symlink =
-  if Util.isCygwin || (Util.osType != `Win32) then
+  if Fs.hasSymlink () then
     fun fspath path l ->
       Util.convertUnixErrorsToTransient
       "writing symbolic link"
@@ -221,8 +226,12 @@ let symlink =
       raise (Util.Transient
                (Format.sprintf
                   "Cannot create symlink \"%s\": \
-                   symlinks are not supported under Windows"
-                  (Fspath.toPrintString (Fspath.concat fspath path))))
+                   symlinks are not supported on this system%s"
+                  (Fspath.toPrintString (Fspath.concat fspath path))
+                  (if Util.osType = `Win32 then
+                     " or elevated privileges may be required"
+                  else "")
+               ))
 
 (* Create a new directory, using the permissions from the given props        *)
 let createDir fspath path props =
@@ -305,31 +314,15 @@ let fullfingerprintEqual (fp, rfp) (fp', rfp') =
 (*                           UNISON DIRECTORY                                *)
 (*****************************************************************************)
 
-(* Gives the fspath of the archive directory on the machine, depending on    *)
-(* which OS we use                                                           *)
-let unisonDir =
-  try
-    System.fspathFromString (System.getenv "UNISON")
-  with Not_found ->
-    let genericName =
-      Util.fileInHomeDir (Printf.sprintf ".%s" Uutil.myName) in
-    if Osx.isMacOSX && not (System.file_exists genericName) then
-      Util.fileInHomeDir "Library/Application Support/Unison"
-    else
-      genericName
-
-(* build a fspath representing an archive child path whose name is given     *)
-let fileInUnisonDir str = System.fspathConcat unisonDir str
-
 (* Make sure archive directory exists                                        *)
 let createUnisonDir() =
-  try ignore (System.stat unisonDir)
+  try ignore (System.stat Util.unisonDir)
   with Unix.Unix_error(_) ->
     Util.convertUnixErrorsToFatal
       (Printf.sprintf "creating unison directory %s"
-         (System.fspathToPrintString unisonDir))
+         (System.fspathToPrintString Util.unisonDir))
       (fun () ->
-         ignore (System.mkdir unisonDir 0o700))
+         ignore (System.mkdir Util.unisonDir 0o700))
 
 (*****************************************************************************)
 (*                           TEMPORARY FILES                                 *)

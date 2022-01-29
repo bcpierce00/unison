@@ -67,7 +67,8 @@ let installRoots termInteract =
        return (r' :: l))))
     roots (return []) >>= (fun roots' ->
   theroots := roots';
-  return ())
+  Negotiate.features (Common.sortRoots roots') >>=
+  return)
 
 (* Alternate interface, should replace old interface eventually *)
 let installRoots2 () =
@@ -75,7 +76,7 @@ let installRoots2 () =
   let roots = rawRoots () in
   theroots :=
     Safelist.map Remote.canonize ((Safelist.map Clroot.parseRoot) roots);
-  theroots := !theroots
+  Lwt.ignore_result (Negotiate.features (Common.sortRoots !theroots) >>= return)
 
 let roots () =
   match !theroots with

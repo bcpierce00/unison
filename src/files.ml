@@ -25,7 +25,7 @@ let debugverbose = Trace.debug "files+"
 
 (* ------------------------------------------------------------ *)
 
-let commitLogName = Util.fileInHomeDir "DANGER.README"
+let commitLogName = Util.fileInUnisonDir "DANGER.README"
 
 let writeCommitLog source target tempname =
   let sourcename = Fspath.toDebugString source in
@@ -49,7 +49,7 @@ let writeCommitLog source target tempname =
 let clearCommitLog pathTo =
   debug (fun() -> (Util.msg "Deleting commit log\n"));
 
-  let tmpPathDir = Fspath.canonize (Some Util.homeDirStr) in  (* tmpPathDir is a Fspath.t *)
+  let tmpPathDir = Fspath.canonize (Some Util.unisonDirStr) in  (* tmpPathDir is a Fspath.t *)
   (* Use pathTo in the temporary name (instead of DANGER.README) to reduce chance of reuse *)
   let tmpPath = Os.tempPath tmpPathDir pathTo in  (* tmpPath is a Path.local *)
   let dangerFspath = Fspath.canonize (Some (System.fspathToString commitLogName)) in
@@ -91,32 +91,40 @@ let copyOnConflict = Prefs.createBool "copyonconflict" false
    with the \\verb|-repeat watch| and \\verb|-prefer newer| preferences."
 
 let prepareCopy workingDir path notDefault =
-  if notDefault
-     && Prefs.read copyOnConflict
-     && (Fileinfo.get true workingDir path).Fileinfo.typ <> `ABSENT
-  then begin
-    let tmpPath = Os.tempPath workingDir path in
-    Copy.recursively workingDir path workingDir tmpPath;
-    Some (workingDir, path, tmpPath)
+  if notDefault && Prefs.read copyOnConflict then begin
+    match (Fileinfo.get true workingDir path).Fileinfo.typ with
+    | `ABSENT -> Some (workingDir, path, None)
+    | _ ->
+      begin
+        let tmpPath = Os.tempPath workingDir path in
+        Copy.recursively workingDir path workingDir tmpPath;
+        Some (workingDir, path, Some tmpPath)
+      end
   end else
     None
 
 let finishCopy copyInfo =
   match copyInfo with
-    Some (workingDir, path, tmpPath) ->
+    Some (workingDir, path, tmpPathOpt) ->
       let tm = Unix.localtime (Unix.gettimeofday ()) in
       let rec copyPath n =
         let p =
           Path.addToFinalName path
-            (Format.sprintf " (conflict%s_on_%04d-%02d-%02d)"
+            (Format.sprintf " (conflict%s_on_%04d-%02d-%02d%s)"
                (if n = 0 then "" else " #" ^ string_of_int n)
-               (tm.Unix.tm_year + 1900) (tm.Unix.tm_mon + 1) tm.Unix.tm_mday)
+               (tm.Unix.tm_year + 1900) (tm.Unix.tm_mon + 1) tm.Unix.tm_mday
+               (if tmpPathOpt = None then "_was_deleted" else ""))
         in
         if Os.exists workingDir p then copyPath (n + 1) else p
-      in
-      Os.rename "keepCopy" workingDir tmpPath workingDir (copyPath 0)
+      in begin
+        match tmpPathOpt with
+        | Some tmpPath ->
+              Os.rename "keepCopy" workingDir tmpPath workingDir (copyPath 0);
+              None
+        | None -> Some (copyPath 0)
+      end
   | None ->
-      ()
+      None
 
 (* ------------------------------------------------------------ *)
 
@@ -129,7 +137,7 @@ let deleteLocal (fspathTo, (pathTo, ui, notDefault)) =
   (* Make sure the target is unchanged first *)
   (* (There is an unavoidable race condition here.) *)
   let prevArch = Update.checkNoUpdates fspathTo localPathTo ui in
-  finishCopy copyInfo;
+  ignore (finishCopy copyInfo);
   Stasher.backup fspathTo localPathTo `AndRemove prevArch;
   (* Archive update must be done last *)
   Update.replaceArchiveLocal fspathTo localPathTo Update.NoArchive;
@@ -332,7 +340,11 @@ let renameLocal
   (* Make sure the target is unchanged, then do the rename.
      (Note that there is an unavoidable race condition here...) *)
   let prevArch = Update.checkNoUpdates fspathTo localPathTo ui in
-  finishCopy copyInfo;
+  (* Create a conflict copy if the file was modified in one replica
+     and deleted in the other replica. *)
+  let pathTo = match finishCopy copyInfo with
+  | Some conflictPath -> conflictPath
+  | None -> pathTo in
   performRename fspathTo localPathTo workingDir pathFrom pathTo prevArch;
   begin match archOpt with
     Some archTo -> Stasher.stashCurrentVersion fspathTo localPathTo None;
@@ -651,14 +663,17 @@ let copy
 let (>>=) = Lwt.bind
 
 let diffCmd =
-  Prefs.createString "diff" "diff -u CURRENT2 CURRENT1"
+  Prefs.createString "diff" "diff -u OLDER NEWER"
     "!set command for showing differences between files"
     ("This preference can be used to control the name and command-line "
      ^ "arguments of the system "
      ^ "utility used to generate displays of file differences.  The default "
-     ^ "is `\\verb|diff -u CURRENT2 CURRENT1|'.  If the value of this preference contains the substrings "
+     ^ "is `\\verb|diff -u OLDER NEWER|'.  If the value of this preference contains the substrings "
      ^ "CURRENT1 and CURRENT2, these will be replaced by the names of the files to be "
-     ^ "diffed.  If not, the two filenames will be appended to the command.  In both "
+     ^ "diffed.  If the value of this preference contains the substrings "
+     ^ "NEWER and OLDER, these will be replaced by the names of files to be "
+     ^ "diffed, NEWER being the most recently modified file of the two.  "
+     ^ "Without any of these substrings, the two filenames will be appended to the command.  In all "
      ^ "cases, the filenames are suitably quoted.")
 
 let tempName s = Os.tempFilePrefix ^ s
@@ -669,9 +684,20 @@ let rec diff root1 path1 ui1 root2 path2 ui2 showDiff id =
       "diff %s %s %s %s ...\n"
       (root2string root1) (Path.toString path1)
       (root2string root2) (Path.toString path2));
+  let (desc1, fp1, ress1, desc2, fp2, ress2) = Common.fileInfos ui1 ui2 in
   let displayDiff fspath1 fspath2 =
     let cmd =
-      if Util.findsubstring "CURRENT1" (Prefs.read diffCmd) = None then
+      if Util.findsubstring "NEWER" (Prefs.read diffCmd) <> None then
+        let newer1 = (Props.time desc1) > (Props.time desc2) in
+        let (newer, older) = if newer1 then
+          (fspath1, fspath2)
+        else
+          (fspath2, fspath1)
+        in
+        Util.replacesubstrings (Prefs.read diffCmd)
+          ["OLDER", Fspath.quotes older;
+           "NEWER", Fspath.quotes newer]
+      else if Util.findsubstring "CURRENT1" (Prefs.read diffCmd) = None then
           (Prefs.read diffCmd)
         ^ " " ^ (Fspath.quotes fspath1)
         ^ " " ^ (Fspath.quotes fspath2)
@@ -679,16 +705,10 @@ let rec diff root1 path1 ui1 root2 path2 ui2 showDiff id =
         Util.replacesubstrings (Prefs.read diffCmd)
           ["CURRENT1", Fspath.quotes fspath1;
            "CURRENT2", Fspath.quotes fspath2] in
-    let c = System.open_process_in
-      (if Util.osType = `Win32 && not Util.isCygwin then
-        (* BCP: Proposed by Karl M. to deal with the standard windows
-           command processor's weird treatment of spaces and quotes: *)
-        "\"" ^ cmd ^ "\""
-       else
-         cmd) in
-    showDiff cmd (External.readChannelTillEof c);
-    ignore (System.close_process_in c) in
-  let (desc1, fp1, ress1, desc2, fp2, ress2) = Common.fileInfos ui1 ui2 in
+    let _, diffResult = Lwt_unix.run (External.runExternalProgram cmd) in
+    if diffResult <> "" then
+      showDiff cmd diffResult
+  in
   match root1,root2 with
     (Local,fspath1),(Local,fspath2) ->
       Util.convertUnixErrorsToTransient
@@ -970,7 +990,9 @@ let merge root1 path1 ui1 root2 path2 ui2 id showMergeFn =
 
       (* It's useful for now to be a bit verbose about what we're doing, but let's
          keep it easy to switch this to debug-only in some later release... *)
-      let say f = f() in
+      (* Added check on [sendLogMsgsToStderr] because in Windows the GUI may not
+         have stderr (and stdout) at all. *)
+      let say f = if !Trace.sendLogMsgsToStderr then f () in
 
       (* Check which files got created by the merge command and do something appropriate
          with them *)

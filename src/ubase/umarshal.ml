@@ -232,10 +232,10 @@ type bytearray =
   (char, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
 
 external unsafe_blit_from_bytes : bytes -> int -> bytearray -> int -> int -> unit
-  = "ml_blit_string_to_bigarray" [@@noalloc]
+  = "ml_blit_bytes_to_bigarray" [@@noalloc]
 
 external unsafe_blit_to_bytes : bytearray -> int -> bytes -> int -> int -> unit
-  = "ml_blit_bigarray_to_string" [@@noalloc]
+  = "ml_blit_bigarray_to_bytes" [@@noalloc]
 
 let bytearray =
   {

@@ -32,7 +32,7 @@ let prsection ch =
     if l<>"----SNIP----" then begin
       for n=0 to (String.length l) - 1 do
         let e =
-          if n=0 & l.[n]=' ' then "\\032"
+          if n=0 && l.[n]=' ' then "\\032"
           else if l.[n]='"' then "\\\""
           else if l.[n]='\'' then "'"
           else if (Char.code l.[n])>=128 then sprintf "\\%d" (Char.code l.[n])

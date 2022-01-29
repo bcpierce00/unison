@@ -645,7 +645,7 @@ static NSMutableDictionary *_iconsByExtension = nil;
         return _children;
 }
 
-- (ReconItem *)findChildWithPath:(NSArray *)pathArray level:level{
+- (ReconItem *)findChildWithPath:(NSArray *)pathArray level:(NSUInteger)level{
     ReconItem *item;
     NSString *element = [pathArray count] ? [pathArray objectAtIndex:level] : @"";
 
@@ -657,7 +657,7 @@ static NSMutableDictionary *_iconsByExtension = nil;
     return nil;
 }
 
-- (void)addChild:(ReconItem *)item pathArray:(NSArray *)pathArray level:(int)level
+- (void)addChild:(ReconItem *)item pathArray:(NSArray *)pathArray level:(NSUInteger)level
 {
   //    NSLog(@"Adding child: %@", pathArray);
         NSString *element = [pathArray count] ? [pathArray objectAtIndex:level] : @"";
@@ -700,7 +700,7 @@ static NSMutableDictionary *_iconsByExtension = nil;
         [_children sortUsingDescriptors:sortDescriptors];
 
         // then have them sort theirs
-        int i = [_children count];
+        NSUInteger i = [_children count];
         while (i--) {
                 id child = [_children objectAtIndex:i];
                 if ([child isKindOfClass:[ParentReconItem class]]) [child sortUsingDescriptors:sortDescriptors];
@@ -717,7 +717,7 @@ static NSMutableDictionary *_iconsByExtension = nil;
         }
 
         // recurse
-        int i = [_children count];
+        NSUInteger i = [_children count];
         while (i--) {
                 ReconItem *child = [_children objectAtIndex:i];
                 ReconItem *replacement = [child collapseParentsWithSingleChildren:NO];
@@ -748,7 +748,7 @@ static NSMutableDictionary *_iconsByExtension = nil;
 // Propagation methods
 - (void)doAction:(unichar)action
 {
-        int i = [_children count];
+        NSUInteger i = [_children count];
         while (i--) {
                 ReconItem *child = [_children objectAtIndex:i];
                 [child doAction:action];
@@ -761,7 +761,7 @@ static NSMutableDictionary *_iconsByExtension = nil;
         if (action == 'I') {
                 [super doIgnore:'I'];
         } else {
-                int i = [_children count];
+                NSUInteger i = [_children count];
                 while (i--) {
                         ReconItem *child = [_children objectAtIndex:i];
                         [child doIgnore:action];
@@ -773,7 +773,7 @@ static NSMutableDictionary *_iconsByExtension = nil;
 - (long)fileCount
 {
         if (fileCount == 0) {
-                int i = [_children count];
+                NSUInteger i = [_children count];
                 while (i--) {
                         ReconItem *child = [_children objectAtIndex:i];
                         fileCount += [child fileCount];
@@ -785,7 +785,7 @@ static NSMutableDictionary *_iconsByExtension = nil;
 - (double)computeFileSize
 {
         double size = 0;
-        int i = [_children count];
+        NSUInteger i = [_children count];
         while (i--) {
                 ReconItem *child = [_children objectAtIndex:i];
                 size += [child fileSize];
@@ -797,7 +797,7 @@ static NSMutableDictionary *_iconsByExtension = nil;
 {
         if (bytesTransferred == -1.) {
                 bytesTransferred = 0.;
-                int i = [_children count];
+                NSUInteger i = [_children count];
                 while (i--) {
                         ReconItem *child = [_children objectAtIndex:i];
                         bytesTransferred += [child bytesTransferred];
@@ -811,7 +811,7 @@ static NSMutableDictionary *_iconsByExtension = nil;
 - (NSString *)dirString
 {
         NSString *rollup = nil;
-        int i = [_children count];
+        NSUInteger i = [_children count];
         while (i--) {
                 ReconItem *child = [_children objectAtIndex:i];
                 NSString *dirString = [child dirString];

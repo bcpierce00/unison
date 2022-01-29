@@ -32,10 +32,7 @@ let (>>=) = Lwt.bind
 
 module StringMap = Watchercommon.StringMap
 
-type watch_def =
-  { mutable handle : Lwt_win.directory_handle option;
-    mutable longname : string StringMap.t;
-    mutable shortname : string StringMap.t }
+type watch_def = { mutable handle : Lwt_win.directory_handle option }
 
 module M = Watchercommon.F (struct type watch = watch_def end)
 include M
@@ -47,14 +44,6 @@ module Windows = struct
 let print_event (nm, act) =
   Format.eprintf "%s %d@." nm (Obj.magic act : int)
 
-let event_is_immediate (_, act) =
-  match act with
-    Lwt_win.FILE_ACTION_ADDED
-  | Lwt_win.FILE_ACTION_MODIFIED         -> false
-  | Lwt_win.FILE_ACTION_REMOVED
-  | Lwt_win.FILE_ACTION_RENAMED_OLD_NAME
-  | Lwt_win.FILE_ACTION_RENAMED_NEW_NAME -> true
-
 let event_kind (_, act) =
   match act with
     Lwt_win.FILE_ACTION_ADDED            -> `CREAT
@@ -63,28 +52,52 @@ let event_kind (_, act) =
   | Lwt_win.FILE_ACTION_REMOVED
   | Lwt_win.FILE_ACTION_RENAMED_OLD_NAME -> `DEL
 
-let long_name dir nm =
-  match get_watch dir with
-    None   -> nm
-  | Some w -> try StringMap.find nm w.longname with Not_found -> nm
-
 let rec follow_win_path dir path pos =
   try
     let i = String.index_from path pos '\\' in
     let nm = String.sub path pos (i - pos) in
     try
-      let dir = StringMap.find (long_name dir nm) (get_subdirs dir) in
+      let dir = StringMap.find nm (get_subdirs dir) in
       follow_win_path dir path (i + 1)
     with Not_found ->
       if !Watchercommon.debug then
-        Format.eprintf "Ignored directory %s (%s) in path %s@."
-          nm (long_name dir nm) path;
+        Format.eprintf "Ignored directory %s in path %s@." nm path;
       None
   with Not_found ->
-    Some (dir, String.sub path pos (String.length path - pos))
+    Some (dir, Some (String.sub path pos (String.length path - pos)))
+
+let rec follow_win_path_parent root dir path pos =
+  try
+    let i = String.index_from path pos '\\' in
+    let nm = String.sub path pos (i - pos) in
+    let getn nm =
+      let dir = StringMap.find nm (get_subdirs dir) in
+      follow_win_path_parent (root ^ "\\" ^ nm) dir path (i + 1)
+    in
+    try getn nm with Not_found -> getn (Lwt_win.longpathname root nm)
+  with Not_found ->
+    Some (dir, None)
+
+let get_win_path root dir ((ev_path, act) as ev) =
+  (* Blindly expand the event path to long names form. If event path
+     is not found among the watched patchs then try to find the nearest
+     parent directory and report a modification on it. MSDN states the
+     following: "If there is both a short and long name for the file,
+     [Lwt_win.readdirectorychanges] will return one of these names,
+     but it is unspecified which one." *)
+  let p = if event_kind ev = `DEL then None else
+    follow_win_path dir (Lwt_win.longpathname root ev_path) 0 in
+  match p with
+  | Some _ as pathnm -> (pathnm, ev)
+  | None ->
+    (* If path is not found or event is a deletion then look up the
+       parent directory and report a modification on it. It is not
+       possible to expand the name of the deleted file or directory
+       (it doesn't exist). *)
+      (follow_win_path_parent root dir ev_path 0,
+        (ev_path, Lwt_win.FILE_ACTION_MODIFIED))
 
 let previous_event = ref None
-let time_ref = ref (ref 0.)
 
 let clear_event_memory () = previous_event := None
 
@@ -96,78 +109,40 @@ let flags =
 
 let watch_root_directory path dir =
   let h = Lwt_win.open_directory path in
+  let path = Lwt_win.longpathname "" path in
+  let path =
+    if String.sub path 0 4 = "\\\\?\\" then begin
+      let n = String.sub path 4 (String.length path - 4) in
+      if String.sub n 0 3 = "UNC" then
+        "\\" ^ String.sub n 3 (String.length n - 3)
+      else
+        n
+    end else
+      path
+  in
   let rec loop () =
     Lwt_win.readdirectorychanges h true flags >>= fun l ->
     let time = Unix.gettimeofday () in
     List.iter
       (fun ((ev_path, _) as ev) ->
          if !previous_event <> Some ev then begin
-           time_ref := ref time;
            previous_event := Some ev;
            if !Watchercommon.debug then print_event ev;
-           match follow_win_path dir ev_path 0 with
+           let pathnm, ev = get_win_path path dir ev in
+           match pathnm with
              None ->
                ()
            | Some (subdir, nm) ->
-               let event_time =
-                 if event_is_immediate ev then ref 0. else !time_ref in
                let kind = event_kind ev in
-               let nm =
-                 match kind, get_watch subdir with
-                   (`CREAT | `MOVED), Some w ->
-                     begin try
-                       match
-                         Shortnames.of_file (Filename.concat path ev_path)
-                       with
-                         Some (l, s) ->
-                           if !Watchercommon.debug then
-                             Format.eprintf "New mapping: %s -> %s@." l s;
-                           (* First remove a previous binding, if any *)
-                           begin try
-                             w.longname <-
-                               StringMap.remove (StringMap.find l w.shortname)
-                                 w.longname
-                           with Not_found -> () end;
-                           begin try
-                             w.shortname <-
-                               StringMap.remove (StringMap.find s w.longname)
-                                 w.shortname
-                           with Not_found -> () end;
-                           w.shortname <- StringMap.add l s w.shortname;
-                           w.longname <- StringMap.add s l w.longname;
-                           l
-                       | None ->
-                           long_name subdir nm
-                     with Unix.Unix_error _ as e ->
-                       if !Watchercommon.debug then
-                         Format.eprintf
-                           "Error while getting file short name: %s@."
-                           (Watchercommon.format_exc e);
-                       long_name subdir nm
-                     end
-                 | `DEL, Some w ->
-                     let l = long_name subdir nm in
-                     begin try
-                       let s = StringMap.find l w.shortname in
-                       w.shortname <- StringMap.remove l w.shortname;
-                       w.longname <- StringMap.remove s w.longname
-                     with Not_found -> () end;
-                     l
-                 | _ ->
-                     long_name subdir nm
-               in
-               if
-                 not (kind = `MODIF && StringMap.mem nm (get_subdirs subdir))
-               then
-                 signal_change event_time subdir (Some nm) kind
-         end else
-           !time_ref := time)
+               signal_change time subdir nm kind
+         end)
       l;
-    if l = [] then begin
+    if l = [] && get_watch dir <> None then begin
       if !Watchercommon.debug then Format.eprintf "OVERFLOW@.";
       signal_overflow ()
     end;
-    loop ()
+    if get_watch dir <> None then loop ()
+    else Lwt.return ()
   in
   ignore (Lwt.catch loop
             (fun e ->
@@ -178,13 +153,11 @@ let watch_root_directory path dir =
                    (Watchercommon.format_exc e); Lwt.return ()));
   h
 
-let add_watch path file =
+let add_watch path file _ =
   if get_watch file = None then begin
-    let watch_info =
-      { handle = None;
-        longname = StringMap.empty; shortname = StringMap.empty } in
+    let watch_info = { handle = None } in
     set_watch file (Some watch_info);
-    if is_root file then begin
+    if is_root file then
       try
         watch_info.handle <- Some (watch_root_directory path file)
       with Unix.Unix_error _ as e ->
@@ -192,18 +165,6 @@ let add_watch path file =
           (Format.sprintf
              "Error while starting to watch for changes: %s@."
              (Watchercommon.format_exc e))
-    end;
-    let mapping =
-      try Shortnames.in_directory path with Unix.Unix_error _ -> [] in
-    watch_info.longname <-
-      List.fold_left
-        (fun m (l, s) ->
-           if !Watchercommon.debug then Format.eprintf "%s -> %s@." l s;
-           StringMap.add s l m)
-        StringMap.empty mapping;
-    watch_info.shortname <-
-      List.fold_left (fun m (l, s) -> StringMap.add l s m)
-        StringMap.empty mapping
   end
 
 let release_watch file =

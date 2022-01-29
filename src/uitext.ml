@@ -86,6 +86,68 @@ let setupTerminal() =
     with Unix.Unix_error _ ->
       restoreTerminal ()
 
+let colorMode =
+  Prefs.createBoolWithDefault "color" ~local:true
+    "!use color output for text UI (true/false/default)"
+    ("When set to {\\tt true}, this flag enables color output in "
+     ^ "text mode user interface. When set to {\\tt false}, all "
+     ^ "color output is disabled. Default is to enable color if "
+     ^ "the {\\tt NO\\_COLOR} environment variable is not set.")
+
+let colorEnabled = ref false
+
+let setColorPreference () =
+  let envOk = try let _ = System.getenv "NO_COLOR" in false
+    with Not_found -> true
+  and termOk = try System.getenv "TERM" <> "dumb" with Not_found -> true
+  and ttyOk = (Unix.isatty Unix.stdin) && (Unix.isatty Unix.stderr) in
+  let colorOk = envOk && termOk && ttyOk && not (Prefs.read dumbtty) in
+  colorEnabled :=
+    match Prefs.read colorMode with
+    | `True    -> true
+    | `False   -> false
+    | `Default -> colorOk && Sys.os_type <> "Win32"
+
+let color t =
+  if not !colorEnabled then "" else
+  match t with
+    `Reset       -> "\027[0m"
+  | `Focus       -> "\027[1m"
+  | `Success     -> "\027[1;32m"
+  | `Information -> "\027[1;34m"
+  | `Warning     -> "\027[1;33m"
+  | `Failure     -> "\027[1;31m"
+  | `AError      -> "\027[31m"
+  | `ASkip       -> "\027[1;35m"
+  | `ALtoRf      -> "\027[1;32m"
+  | `ALtoRt      -> "\027[1;33m"
+  | `ARtoLf      -> "\027[1;34m"
+  | `ARtoLt      -> "\027[1;33m"
+  | `AMerge      -> "\027[1;36m"
+  | `DiffHead    -> "\027[1m"
+  | `DiffAdd     -> "\027[32m"
+  | `DiffDel     -> "\027[31m"
+  | `DiffLoc     -> "\027[36m"
+  | _            -> ""
+
+let lineRegexp = Str.regexp "^"
+
+let colorDiff text =
+  let result = Buffer.create (String.length text) in
+  let a s = Buffer.add_string result s in
+  let p = Str.full_split lineRegexp text in
+  Safelist.iter (fun t ->
+              match t with
+                Str.Delim s -> a s
+              | Str.Text s -> (let lineSt = s.[0] in
+                               match lineSt with
+                               | '+' -> a (color `DiffAdd); a s; a (color `Reset)
+                               | '-' -> a (color `DiffDel); a s; a (color `Reset)
+                               | '@' -> a (color `DiffLoc); a s; a (color `Reset)
+                               | _   -> a s)
+            ) p;
+  Buffer.contents result
+
 let alwaysDisplay message =
   print_string message;
   flush stdout
@@ -102,25 +164,39 @@ let displayWhenInteractive message =
 
 let getInput () =
   match !cbreakMode with
-    None ->
-      let l = input_line stdin in
-      if l="" then "" else String.sub l 0 1
+    None -> input_line stdin
   | Some funs ->
+      (* Raw terminal mode, we want to read the input directly, without the line
+         buffering. We can't use [Stdlib.input_char] because OCaml 'char' equals
+         one byte and this is not what we want to read. Not all characters are
+         one byte (mainly thinking of UTF-8). We also want to make sure that we
+         properly read in any input ANSI escape sequences. *)
       let input_char () =
         (* We cannot used buffered I/Os under Windows, as character
            '\r' is not passed through (probably due to the code that
            turns \r\n into \n) *)
-        let s = Bytes.create 1 in
-        let n = Unix.read Unix.stdin s 0 1 in
+        let l = 9 in (* This should suffice to fit a complete escape sequence *)
+        let s = Bytes.create l in
+        let n = Unix.read Unix.stdin s 0 l in
         if n = 0 then raise End_of_file;
         if Bytes.get s 0 = '\003' then raise Sys.Break;
-        Bytes.get s 0
+        Bytes.sub_string s 0 n
       in
       funs.System.startReading ();
       let c = input_char () in
       funs.System.stopReading ();
-      let c = if c='\n' || c = '\r' then "" else String.make 1 c in
-      display c;
+      let c = match c with
+        | "\000" -> "(invalid input)" (* Windows*)
+        | "\n" | "\r" -> ""
+        | c when Sys.win32 -> Unicode.protect c
+                 (* This is not correct because [Unicode.protect] assumes
+                    Latin1 encoding. But it does not matter here as currently
+                    non-ASCII input is not expected to be processed anyway. *)
+                 (* FIX: Must reassess this once proper UTF-8 input becomes
+                    possible and widespread on Windows. *)
+        | c -> c in
+      if c <> "" && c.[0] <> '\027' then
+        display c;
       c
 
 let newLine () =
@@ -131,12 +207,54 @@ let newLine () =
 let overwrite () =
   if !cbreakMode <> None then display "\r"
 
+
+let keyEsc = "\027"
+let keyF1 = "\027OP"
+let keyF2 = "\027OQ"
+let keyF3 = "\027OR"
+let keyF4 = "\027OS"
+let keyF5 = "\027[15~"
+let keyF6 = "\027[17~"
+let keyF7 = "\027[18~"
+let keyF8 = "\027[19~"
+let keyF9 = "\027[20~"
+let keyF10 = "\027[21~"
+let keyF11 = "\027[23~"
+let keyF12 = "\027[24~"
+let keyInsert = "\027[2~"
+let keyDelete = "\027[3~"
+let keyHome = "\027[H"
+let keyEnd = "\027[F"
+let keyPgUp = "\027[5~"
+let keyPgDn = "\027[6~"
+let keyUp = "\027[A"
+let keyDn = "\027[B"
+let keyLeft = "\027[D"
+let keyRight = "\027[C"
+let keyShiftUp = "\027[1;2A"
+let keyShiftDn = "\027[1;2B"
+let keyTab = "\t"
+let keyRvTab = "\027[Z"
+
+
 let rec selectAction batch actions tryagain =
   let formatname = function
       "" -> "<ret>"
     | " " -> "<spc>"
-    | "\x7f" -> "<del>"
+    | "\x7f" | "\027[3~" -> "<del>"
     | "\b" -> "<bsp>"
+    | "\t" -> "<tab>"
+    | "\027[Z" -> "<shift+tab>"
+    | "\027" -> "<esc>"
+    | "\027[A" -> "<up>"
+    | "\027[B" -> "<down>"
+    | "\027[D" -> "<left>"
+    | "\027[C" -> "<right>"
+    | "\027[5~" -> "<pg up>"
+    | "\027[6~" -> "<pg down>"
+    | "\027[H" -> "<home>"
+    | "\027[F" -> "<end>"
+    | n when n.[0] = '\027' -> "^" ^ String.map (function | '\027' -> '[' | c -> c) n
     | n -> n in
   let summarizeChoices() =
     display "[";
@@ -155,7 +273,7 @@ let rec selectAction batch actions tryagain =
         if Safelist.mem n names then action else find n rest
   in
   let doAction a =
-    if a="?" then
+    if a="?" || a = "\027OP" then
       (newLine ();
        display "Commands:\n";
        Safelist.iter (fun (names,doc,action) ->
@@ -172,10 +290,10 @@ let rec selectAction batch actions tryagain =
       | None ->
           newLine ();
           if a="" then
-            display ("No default command [type '?' for help]\n")
+            display ("No default command [type '?' or F1 for help]\n")
           else
             display ("Unrecognized command '" ^ String.escaped a
-                     ^ "': try again  [type '?' for help]\n");
+                     ^ "': try again  [type '?' or F1 for help]\n");
           tryagainOrLoop()
   in
   let handleExn s =
@@ -184,20 +302,29 @@ let rec selectAction batch actions tryagain =
     alwaysDisplay "\n";
     raise (Util.Fatal ("Failure reading from the standard input ("^s^")\n"))
   in
-  try doAction (match batch with
-    None   ->
+  let userInput () =
+    try
+      Some (getInput ())
+    with
+      (* Restart an interrupted system call (which can happen notably when
+       * the process is put in the background by SIGTSTP). *)
+    | Unix.Unix_error (Unix.EINTR, _, _) -> None
+      (* Simply print a slightly more informative message than the exception
+       * itself (e.g. "Uncaught unix error: read failed: Resource temporarily
+       * unavailable" or "Uncaught exception End_of_file"). *)
+    | End_of_file -> handleExn "End of file"
+    | Unix.Unix_error (err, _, _) -> handleExn (Unix.error_message err)
+  in
+  let a =
+    match batch with
+    | None ->
       summarizeChoices();
-      getInput ()
-  | Some i -> i)
-  with
-    (* Restart an interrupted system call (which can happen notably when
-     * the process is put in the background by SIGTSTP). *)
-    Unix.Unix_error (Unix.EINTR, _, _) -> tryagainOrLoop()
-    (* Simply print a slightly more informative message than the exception
-     * itself (e.g. "Uncaught unix error: read failed: Resource temporarily
-     * unavailable" or "Uncaught exception End_of_file"). *)
-  | End_of_file -> handleExn "End of file"
-  | Unix.Unix_error (err, _, _) -> handleExn (Unix.error_message err)
+      userInput ()
+    | _ -> batch
+  in
+  match a with
+  | Some a -> doAction a
+  | None -> tryagainOrLoop()
 
 let alwaysDisplayErrors prefix l =
   List.iter
@@ -224,13 +351,13 @@ let displayri ri =
   in
   let (defaultAction, forcedAction) =
     match action with
-      Uicommon.AError      -> ("error", "error")
-    | Uicommon.ASkip _     -> ("<-?->", "<=?=>")
-    | Uicommon.ALtoR false -> ("---->", "====>")
-    | Uicommon.ALtoR true  -> ("--?->", "==?=>")
-    | Uicommon.ARtoL false -> ("<----", "<====")
-    | Uicommon.ARtoL true  -> ("<-?--", "<=?==")
-    | Uicommon.AMerge      -> ("<-M->", "<=M=>")
+      Uicommon.AError      -> ((color `AError) ^ "error" ^ (color `Reset), (color `AError) ^ "error" ^ (color `Reset))
+    | Uicommon.ASkip _     -> ((color `ASkip)  ^ "<-?->" ^ (color `Reset), (color `ASkip)  ^ "<=?=>" ^ (color `Reset))
+    | Uicommon.ALtoR false -> ((color `ALtoRf) ^ "---->" ^ (color `Reset), (color `ALtoRf) ^ "====>" ^ (color `Reset))
+    | Uicommon.ALtoR true  -> ((color `ALtoRt) ^ "--?->" ^ (color `Reset), (color `ALtoRt) ^ "==?=>" ^ (color `Reset))
+    | Uicommon.ARtoL false -> ((color `ARtoLf) ^ "<----" ^ (color `Reset), (color `ARtoLf) ^ "<====" ^ (color `Reset))
+    | Uicommon.ARtoL true  -> ((color `ARtoLt) ^ "<-?--" ^ (color `Reset), (color `ARtoLt) ^ "<=?==" ^ (color `Reset))
+    | Uicommon.AMerge      -> ((color `AMerge) ^ "<-M->" ^ (color `Reset), (color `AMerge) ^ "<=M=>" ^ (color `Reset))
   in
   let action = if forced then forcedAction else defaultAction in
   let s = Format.sprintf "%s %s %s   %s  " r1 action r2 path in
@@ -252,15 +379,16 @@ let interact prilist rilist =
   let showdiffs ri =
     Uicommon.showDiffs ri
       (fun title text ->
+         let colorText = colorDiff text in
          try
            let pager = System.getenv "PAGER" in
            restoreTerminal ();
            let out = System.open_process_out pager in
-           Printf.fprintf out "\n%s\n\n%s\n\n" title text;
+           Printf.fprintf out "\n%s\n\n%s\n\n" title colorText;
            let _ = System.close_process_out out in
            setupTerminal ()
          with Not_found ->
-           Printf.printf "\n%s\n\n%s\n\n" title text)
+           Printf.printf "\n%s\n\n%s\n\n" title colorText)
       (fun s -> Printf.printf "%s\n" s)
       Uutil.File.dummy;
       true
@@ -398,6 +526,7 @@ let interact prilist rilist =
                 if not (Prefs.read Trace.terse) then
                   displayDetails ri
               end;
+              if Prefs.read Globals.batch then next () else
               selectAction
                 (if Prefs.read Globals.batch then Some " " else None)
                 [((if (isConflict dir) && not (Prefs.read Globals.batch)
@@ -412,36 +541,36 @@ let interact prilist rilist =
                        repeat()
                      end else
                        next()));
-                 (["n";"j"],
+                 (["n";"j"; keyDn; keyTab],
                   ("go to the next item"),
                   (fun () -> newLine();
                      next()));
-                 (["p";"b";"k"],
+                 (["p";"b";"k"; keyUp; keyRvTab],
                   ("go back to previous item"),
                   (fun () -> newLine();
                      previous prev ril));
-                 (["\x7f";"\b"],
+                 (["\x7f";"\b"; keyDelete],
                   ("revert then go back to previous item"),
                   (fun () ->
                      Recon.revertToDefaultDirection ri; redisplayri();
                      previous prev ril));
-                 (["0"],
+                 (["0"; keyHome],
                   ("go to the start of the list"),
                   (fun () -> newLine();
                      loop [] (Safelist.rev_append prev ril)));
-                 (["9"],
+                 (["9"; keyEnd],
                   ("go to the end of the list"),
                   (fun () -> newLine();
                      match Safelist.rev_append ril prev with
                        [] -> loop [] []
                      | lri::prev -> loop prev [lri]));
-                 (["5"],
+                 (["5"; keyPgDn],
                   ("go forward to the middle of the following items"),
                   (fun () -> newLine();
                      let l = (Safelist.length ril)/2 in
                      display ("  Moving "^(string_of_int l)^" items forward\n");
                      forward l prev ril));
-                 (["6"],
+                 (["6"; keyPgUp],
                   ("go backward to the middle of the preceding items"),
                   (fun () -> newLine();
                      let l = -((Safelist.length prev)+1)/2 in
@@ -547,11 +676,11 @@ let interact prilist rilist =
                   ("merge the versions (curr or match)"),
                   (fun () ->
                      actOnMatching (setdir Merge)));
-                 ([">";"."],
+                 ([">";"."; keyRight],
                   ("propagate from " ^ descr ^ " (curr or match)"),
                   (fun () ->
                      actOnMatching (setdir Replica1ToReplica2)));
-                 (["<";","],
+                 (["<";","; keyLeft],
                   ("propagate from " ^ descl ^ " (curr or match)"),
                   (fun () ->
                      actOnMatching (setdir Replica2ToReplica1)));
@@ -615,7 +744,7 @@ let interact prilist rilist =
                   ("proceed immediately to propagating changes"),
                   (fun () -> newLine();
                      (ProceedImmediately, Safelist.rev_append prev ril)));
-                 (["q"],
+                 (["q"; keyEsc],
                   ("exit " ^ Uutil.myName ^ " without propagating any changes"),
                   (fun () -> newLine();
                      raise Sys.Break))
@@ -669,7 +798,7 @@ let doTransport reconItemList =
          Uutil.Filesize.zero items)
   in
   let t0 = Unix.gettimeofday () in
-  let showProgress i bytes dbg =
+  let calcProgress i bytes dbg =
     let i = Uutil.File.toLine i in
     let item = items.(i) in
     item.bytesTransferred <- Uutil.Filesize.add item.bytesTransferred bytes;
@@ -686,11 +815,21 @@ let doTransport reconItemList =
         let t = truncate ((t1 -. t0) *. (100. -. v) /. v +. 0.5) in
         Format.sprintf "%02d:%02d" (t / 60) (t mod 60)
     in
-    Util.set_infos
-      (Format.sprintf "%s  %s ETA" (Util.percent2string v) remTime)
+    t1, Format.sprintf "%s  %s ETA" (Util.percent2string v) remTime
   in
-  if not (Prefs.read Trace.terse) && (Prefs.read Trace.debugmods = []) then
-    Uutil.setProgressPrinter showProgress;
+  let tlog = ref t0 in
+  let showProgress i bytes dbg =
+    let t1, s = calcProgress i bytes dbg in
+    if not (Prefs.read Trace.terse) && (Prefs.read Trace.debugmods = []) then
+      Util.set_infos s;
+    if (Prefs.read Trace.terse) || (Prefs.read Globals.batch) then
+      if (t1 -. !tlog) >= 60. then
+      begin
+        Trace.logonly (s ^ "\n");
+        tlog := t1
+      end
+  in
+  Uutil.setProgressPrinter showProgress;
 
   Transport.logStart ();
   let fFailedPaths = ref [] in
@@ -808,8 +947,8 @@ let rec interactAndPropagateChanges prevItemList reconItemList
     let trans = updatesToDo - failures in
     let summary =
       Printf.sprintf
-       "Synchronization %s at %s  (%d item%s transferred, %s%d skipped, %d failed)"
-       (if failures=0 then "complete" else "incomplete")
+       "Synchronization %s at %s  (%d item%s transferred, %s%s, %s)"
+       (if failures = 0 then (color `Success) ^ "complete" ^ (color `Reset) else (color `Failure) ^ "incomplete" ^ (color `Reset))
        (let tm = Util.localtime (Util.time()) in
         Printf.sprintf "%02d:%02d:%02d"
           tm.Unix.tm_hour tm.Unix.tm_min tm.Unix.tm_sec)
@@ -818,9 +957,9 @@ let rec interactAndPropagateChanges prevItemList reconItemList
           Format.sprintf "%d partially transferred, " partials
         else
           "")
-       skipped
-       failures in
-    Trace.log (summary ^ "\n");
+       (if skipped = 0 then "0 skipped" else (color `Information) ^ (Printf.sprintf "%d skipped" skipped) ^ (color `Reset))
+       (if failures = 0 then "0 failed" else (color `Failure) ^ (Printf.sprintf "%d failed" failures) ^ (color `Reset)) in
+    Trace.log_color (summary ^ "\n");
     if skipped>0 then
       Safelist.iter
         (fun ri ->
@@ -841,7 +980,6 @@ let rec interactAndPropagateChanges prevItemList reconItemList
         (fun p -> alwaysDisplayAndLog ("  failed: " ^ (Path.toString p)))
         failedPaths;
     (skipped > 0, partials > 0, failures > 0, failedPaths) in
-  if not !Update.foundArchives then Update.commitUpdates ();
   if updatesToDo = 0 then begin
     (* BCP (3/09): We need to commit the archives even if there are
        no updates to propagate because some files (in fact, if we've
@@ -856,12 +994,16 @@ let rec interactAndPropagateChanges prevItemList reconItemList
     if skipped > 0 then begin
       let summary =
         Printf.sprintf
-          "Synchronization complete at %s  (0 item transferred, %d skipped, 0 failed)"
+          "Synchronization %scomplete%s at %s  (0 items transferred, %s%d skipped%s, 0 failed)"
+          (color `Success)
+          (color `Reset)
           (let tm = Util.localtime (Util.time()) in
            Printf.sprintf "%02d:%02d:%02d"
                           tm.Unix.tm_hour tm.Unix.tm_min tm.Unix.tm_sec)
-          skipped in
-      Trace.log (summary ^ "\n");
+          (color `Information)
+          skipped
+          (color `Reset) in
+      Trace.log_color (summary ^ "\n");
       Safelist.iter
         (fun ri ->
          match ri.replicas with
@@ -922,7 +1064,7 @@ let rec interactAndPropagateChanges prevItemList reconItemList
          (["R"],
           "Reverse the sort order",
           (fun () -> askagain (Safelist.rev newReconItemList)));
-         (["q"],
+         (["q"; keyEsc],
           ("exit " ^ Uutil.myName ^ " without propagating any changes"),
           (fun () -> newLine();
              raise Sys.Break))
@@ -968,6 +1110,10 @@ let synchronizeOnce ?wantWatcher ?skipRecentFiles pathsOpt =
     let c = "-\\|/".[truncate (mod_float (4. *. Unix.gettimeofday ()) 4.)] in
     Util.set_infos (Format.sprintf "%c %s" c path)
   in
+  Uicommon.refreshConnection
+    ~displayWaitMessage:(fun () -> if not (Prefs.read silent)
+                         then Util.msg "%s\n" (Uicommon.contactingServerMsg()))
+    ~termInteract:None;
   Trace.status "Looking for changes";
   if not (Prefs.read Trace.terse) && (Prefs.read Trace.debugmods = []) then
     Uutil.setUpdateStatusPrinter (Some showStatus);
@@ -983,7 +1129,10 @@ let synchronizeOnce ?wantWatcher ?skipRecentFiles pathsOpt =
   let (reconItemList, anyEqualUpdates, dangerousPaths) =
     Recon.reconcileAll ~allowPartial:true updates in
 
+  if not !Update.foundArchives then Update.commitUpdates ();
   if reconItemList = [] then begin
+    if !Update.foundArchives && Prefs.read Uicommon.repeat = "" then
+      Update.commitUpdates ();
     (if anyEqualUpdates then
       Trace.status ("Nothing to do: replicas have been changed only "
                     ^ "in identical ways since last sync.")
@@ -1098,10 +1247,125 @@ let rec synchronizeUntilDone () =
 
 (* ----------------- Startup ---------------- *)
 
+let profmgrPrefName = "i"
+let profmgrPref =
+  Prefs.createBool profmgrPrefName false ~local:true
+    "interactive profile mode (text UI); command-line only"
+    ("Provide this preference in the command line arguments to enable "
+     ^ "interactive profile manager in the text user interface. Currently "
+     ^ "only profile listing and interactive selection are available. "
+     ^ "Preferences like \\texttt{batch} and \\texttt{silent} remain "
+     ^ "applicable to synchronization functionality.")
+let profmgrUsageMsg = "To start interactive profile selection, type \""
+  ^ Uutil.myName ^ " -" ^ profmgrPrefName ^ "\"."
+
+let addProfileKeys list default =
+  let rec nextAvailKey i =
+    let n = i + 1 in
+    if n >= (Array.length Uicommon.profileKeymap) then
+      n
+    else
+      match Uicommon.profileKeymap.(n) with
+          None   -> n
+        | Some _ -> nextAvailKey n
+  in
+  let keyAndNext (p, info) i =
+    match info.Uicommon.key with
+      Some k -> (k, i)
+    | None   -> if p = default then ("d", i)
+                else ((string_of_int i), (nextAvailKey i))
+  in
+  let rec addKey i acc = function
+  | []           -> []
+  | [prof]       -> let (key, _) = keyAndNext prof i in
+                      (key, prof) :: acc
+  | prof :: rest -> let (key, next) = keyAndNext prof i in
+                      addKey next ((key, prof) :: acc) rest
+  in
+  addKey 0 [] list
+
+let getProfile default =
+  let cmdArgs = Prefs.scanCmdLine Uicommon.shortUsageMsg in
+  Uicommon.scanProfiles ();
+  if Util.StringMap.mem Uicommon.runTestsPrefName cmdArgs ||
+    not (Util.StringMap.mem profmgrPrefName cmdArgs) then
+    Some default
+  else
+  if (List.length !Uicommon.profilesAndRoots) > 10 then begin
+    Trace.log (Format.sprintf "You have too many profiles in %s \
+                for interactive selection. Please specify profile \
+                or roots on command line.\n"
+                (System.fspathToPrintString Util.unisonDir));
+    Trace.log "The profile names are:\n";
+    Safelist.iter (fun (p, _) -> Trace.log (Format.sprintf "  %s\n" p))
+      !Uicommon.profilesAndRoots;
+    Trace.log "\n";
+    Some default
+  end else if (List.length !Uicommon.profilesAndRoots) = 0 then
+    Some default
+  else
+
+  let keyedProfileList = addProfileKeys
+    (Safelist.sort (fun (p, _) (p', _) -> compare p p')
+      !Uicommon.profilesAndRoots)
+    default in
+  let profileList = (Safelist.sort (fun (k, _) (k', _) -> compare k k')
+                      keyedProfileList)
+  in
+
+  (* Must parse command line to get dumbtty and color preferences *)
+  Prefs.parseCmdLine Uicommon.shortUsageMsg;
+  setupTerminal(); setColorPreference ();
+  Prefs.resetToDefaults();
+
+  display "Available profiles:\n key:  profilename         label\n";
+  Safelist.iteri
+    (fun n (key, (profile, info)) ->
+      let labeltext =
+          match info.Uicommon.label with None -> "" | Some l -> l in
+      display (Format.sprintf "  %s%s%s :"
+                (color `Focus) key (color `Reset));
+      display (Format.sprintf "  %s%-18s%s  %s%s%s\n"
+                (color `Focus) profile (color `Reset)
+                (color `Information) labeltext (color `Reset));
+      Safelist.iteri
+          (fun i root -> display (Format.sprintf "         root %i = %s\n"
+                                   (i + 1) root))
+          info.Uicommon.roots
+    )
+    profileList;
+  display "\n";
+
+  let selection = ref (Some default) in
+  let actions = Safelist.append
+    [(["";"n";"/"],
+      "Don't select any profile",
+      (fun () -> selection := None; newLine();
+                   display "\nNo profile selected\n\n"));
+     (["q"],
+      ("exit " ^ Uutil.myName),
+      (fun () -> newLine(); raise Sys.Break))]
+    (Safelist.map (fun (key, (profile, info)) ->
+        ([key],
+        "Profile: " ^ profile,
+        (fun () -> selection := Some profile; newLine();
+                     display ("\nProfile " ^ profile ^ " selected\n\n")))
+      )
+      profileList);
+  in
+  let rec askProfile () =
+    display "Select a profile ";
+    selectAction None actions (fun () -> display "Select a profile ")
+  in
+  askProfile ();
+  !selection
+
 let handleException e =
   restoreTerminal();
   let msg = Uicommon.exn2string e in
-  Trace.log (msg ^ "\n");
+  let () =
+    try Trace.log (msg ^ "\n")
+    with Util.Fatal _ -> () in (* Can't allow fatal errors in fatal error handler *)
   if not !Trace.sendLogMsgsToStderr then alwaysDisplay ("\n" ^ msg ^ "\n")
 
 let rec start interface =
@@ -1111,16 +1375,24 @@ let rec start interface =
     (* Just to make sure something is there... *)
     setWarnPrinterForInitialization();
     Uicommon.uiInit
-      (fun s -> Util.msg "%s\n%s\n" Uicommon.shortUsageMsg s; exit 1)
+      ~reportError:
+      (fun s -> Util.msg "%s%s\n\n%s\n" Uicommon.shortUsageMsg profmgrUsageMsg s; exit 1)
+      ~tryAgainOrQuit:
       (fun s -> Util.msg "%s" Uicommon.shortUsageMsg; exit 1)
+      ~displayWaitMessage:
       (fun () -> setWarnPrinter();
                  if Prefs.read silent then Prefs.set Trace.terse true;
                  if not (Prefs.read silent)
                  then Util.msg "%s\n" (Uicommon.contactingServerMsg()))
-      (fun () -> Some "default")
-      (fun () -> Util.msg "%s" Uicommon.shortUsageMsg; exit 1)
-      (fun () -> Util.msg "%s" Uicommon.shortUsageMsg; exit 1)
-      None;
+      ~getProfile:
+      (fun () -> let prof = getProfile "default" in restoreTerminal(); prof)
+      ~getFirstRoot:
+      (fun () -> Util.msg "%s%s\n" Uicommon.shortUsageMsg profmgrUsageMsg; exit 1)
+      ~getSecondRoot:
+      (fun () -> Util.msg "%s%s\n" Uicommon.shortUsageMsg profmgrUsageMsg; exit 1)
+      ~termInteract:
+      None
+      ();
 
     (* Some preference settings imply others... *)
     if Prefs.read silent then begin
@@ -1132,6 +1404,7 @@ let rec start interface =
     if Prefs.read Uicommon.repeat <> "" then begin
       Prefs.set Globals.batch true;
     end;
+    setColorPreference ();
 
     (* Tell OCaml that we want to catch Control-C ourselves, so that
        we get a chance to reset the terminal before exiting *)

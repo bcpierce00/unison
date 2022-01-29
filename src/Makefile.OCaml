@@ -8,18 +8,15 @@
 ifeq (${OSCOMP},cygwingnuc) # Define this if compiling with Cygwin GNU C
   OSARCH=win32gnuc
   ETAGS=/bin/etags
-  buildexecutable:: win32rc/unison.res.lib
 else
 # Win32 system
 ifeq (${OSTYPE},cygwin32) # Cygwin Beta 19
   OSARCH=win32
   ETAGS=/bin/etags
-  buildexecutable:: win32rc/unison.res.lib
 else
 ifeq (${OSTYPE},cygwin)	  # Cygwin Beta 20
   OSARCH=win32
   ETAGS=/bin/etags
-  buildexecutable:: win32rc/unison.res.lib
 else
 
 # Unix system
@@ -103,20 +100,33 @@ buildexecutable::
 CAMLFLAGS+=-g
 
 INCLFLAGS=-I lwt -I ubase -I system
+DEP_INCLFLAGS=-I lwt -I ubase -I system
 CAMLFLAGS+=$(INCLFLAGS)
 CAMLFLAGS+=-I system/$(SYSTEM) -I lwt/$(SYSTEM)
 
 ifeq ($(OSARCH),win32)
   # Win32 system
   EXEC_EXT=.exe
-  OBJ_EXT=.o
-  OUTPUT_SEL=-o
+  ifeq ($(shell ocamlc -config 2> /dev/null | grep ext_obj),ext_obj: .obj)
+    OBJ_EXT=.obj
+  else
+    OBJ_EXT=.o
+  endif
+  ifeq ($(shell ocamlc -config 2> /dev/null | grep ccomp_type),ccomp_type: msvc)
+    OUTPUT_SEL=-Fo
+    CLIBS+=-cclib shell32.lib -cclib user32.lib -cclib "-link win32rc/unison.res"
+    STATICLIBS+=-cclib "-link win32rc/unison.res"
+    buildexecutable:: win32rc/unison.res
+  else
+    OUTPUT_SEL=-o
+    CLIBS+=-cclib "-link win32rc/unison.res.lib"
+    STATICLIBS+=-cclib "-link win32rc/unison.res.lib"
+    buildexecutable:: win32rc/unison.res.lib
+  endif
   CWD=.
   COBJS+=system/system_win_stubs$(OBJ_EXT) lwt/lwt_unix_stubs$(OBJ_EXT)
   WINOBJS=system/system_win.cmo
   SYSTEM=win
-  CLIBS+=-cclib "-link win32rc/unison.res.lib"
-  STATICLIBS+=-cclib "-link win32rc/unison.res.lib"
   buildexecutable::
 	@echo Building for Windows
 else
@@ -131,7 +141,7 @@ else
     SYSTEM=win
     CLIBS+=-cclib win32rc/unison.res.lib
     STATIC=false                      # Cygwin is not MinGW :-(
-    buildexecutable::
+    buildexecutable:: win32rc/unison.res.lib
 	@echo Building for Windows with Cygwin GNU C
   else
     CWD=$(shell pwd)
@@ -149,10 +159,18 @@ else
   endif
 endif
 
+ifeq ($(NATIVE), true)
+  COMPATCAMLFLAGS=$(subst .cmo,.cmx, $(shell ocaml $(CWD)/configure.ml))
+  COMPATOCAMLOBJS=$(subst .cmo,.cmx, $(subst .cma,.cmxa, $(shell ocaml $(CWD)/configure.ml objs)))
+else
+  COMPATCAMLFLAGS=$(shell ocaml $(CWD)/configure.ml)
+  COMPATOCAMLOBJS=$(shell ocaml $(CWD)/configure.ml objs)
+endif
+OCAMLOBJS+=$(COMPATOCAMLOBJS)
+
 .PHONY: buildexecutable
 buildexecutable::
 	@echo NATIVE = $(NATIVE)
-	@echo THREADS = $(THREADS)
 	@echo STATIC = $(STATIC)
 	@echo OSTYPE = $(OSTYPE)
 	@echo OSARCH = $(OSARCH)
@@ -178,11 +196,17 @@ endif
 MINOSXVERSION=10.6
 ifeq ($(OSARCH),osx)
   CAMLFLAGS+=-ccopt -mmacosx-version-min=$(MINOSXVERSION)
+  XCODEFLAGS=-arch $(shell uname -m)
 endif
 
 .PHONY: macexecutable
 macexecutable:
 	(cd $(UIMACDIR); $(RM) -f ExternalSettings.xcconfig ; echo MARKETING_VERSION = $(VERSION) > ExternalSettings.xcconfig ; echo OCAMLLIBDIR = $(OCAMLLIBDIR) >> ExternalSettings.xcconfig)
+ifeq ($(word 1,$(sort 4.08 $(shell ocamlc -version))),4.08)
+	(cd $(UIMACDIR); echo LIB_BIGARRAY = >> ExternalSettings.xcconfig)
+else
+	(cd $(UIMACDIR); echo LIB_BIGARRAY = -lbigarray >> ExternalSettings.xcconfig)
+endif
 	(cd $(UIMACDIR); xcodebuild $(XCODEFLAGS) SYMROOT=build)
 	$(CC) $(CFLAGS) -mmacosx-version-min=$(MINOSXVERSION) $(UIMACDIR)/cltool.c -o $(UIMACDIR)/build/Default/Unison.app/Contents/MacOS/cltool -framework Carbon
 
@@ -205,12 +229,12 @@ OCAMLOBJS += \
           lwt/pqueue.cmo lwt/lwt.cmo lwt/lwt_util.cmo \
           lwt/$(SYSTEM)/lwt_unix_impl.cmo lwt/lwt_unix.cmo \
           \
-          uutil.cmo case.cmo pred.cmo \
+          features.cmo uutil.cmo case.cmo pred.cmo \
           fileutil.cmo name.cmo path.cmo fspath.cmo fs.cmo fingerprint.cmo \
           abort.cmo osx.cmo external.cmo fswatch.cmo \
           props.cmo fileinfo.cmo os.cmo lock.cmo clroot.cmo common.cmo \
-          tree.cmo checksum.cmo terminal.cmo \
-          transfer.cmo xferhint.cmo remote.cmo globals.cmo fswatchold.cmo \
+          tree.cmo checksum.cmo terminal.cmo transfer.cmo xferhint.cmo \
+          remote.cmo negotiate.cmo globals.cmo fswatchold.cmo \
           fpcache.cmo update.cmo copy.cmo stasher.cmo \
 	  files.cmo sortri.cmo recon.cmo transport.cmo \
           strings.cmo uicommon.cmo uitext.cmo test.cmo
@@ -221,7 +245,7 @@ OCAMLOBJS+=main.cmo
 # File extensions will be substituted for the native code version
 OCAMLLIBS+=unix.cma str.cma bigarray.cma
 
-COBJS+=osxsupport$(OBJ_EXT) pty$(OBJ_EXT) bytearray_stubs$(OBJ_EXT)
+COBJS+=osxsupport$(OBJ_EXT) pty$(OBJ_EXT) bytearray_stubs$(OBJ_EXT) hash_compat$(OBJ_EXT)
 
 ########################################################################
 ### User Interface setup
@@ -234,7 +258,6 @@ endif
 ## New Mac UI, 2014 version
 ifeq ($(UISTYLE),mac)
   OCAMLOBJS+=uimacbridgenew.cmo
-  THREADS=true
   OCAMLLIBS+=threads.cma
   INCLFLAGS+=-thread
 endif
@@ -253,10 +276,12 @@ endif
 
 # Patch to make a Windows GUI version come up with no
 # console when click-started
-#  ifeq ($(OSARCH), win32)
+ifeq ($(OSARCH), win32)
+  ifneq ($(UISTYLE), text)
 #    COBJS+=winmain.c
-#    CFLAGS+=-cclib /subsystem:windows
-#  endif
+    CFLAGS+=-ccopt "-link -Wl,--subsystem,windows"
+  endif
+endif
 
 # Gtk GUI
 ifeq ($(UISTYLE), gtk)
@@ -281,23 +306,27 @@ endif
 ########################################################################
 ### Filesystem monitoring
 
-OCAMLSWITCH_IS_MUSL := $(shell opam switch show 2> /dev/null | grep -iF '+musl')
-
 ifeq ($(OSARCH),Linux)
-ifeq ($(OCAMLSWITCH_IS_MUSL),)
 -include fsmonitor/linux/Makefile src/fsmonitor/linux/Makefile
+INCLFLAGS+=-I fsmonitor -I fsmonitor/linux
 endif
+
+ifeq ($(OSARCH),solaris)
+-include fsmonitor/solaris/Makefile src/fsmonitor/solaris/Makefile
+INCLFLAGS+=-I fsmonitor -I fsmonitor/solaris
 endif
 
 ifeq ($(OSARCH),win32gnuc)
 -include fsmonitor/windows/Makefile src/fsmonitor/windows/Makefile
+INCLFLAGS+=-I fsmonitor -I fsmonitor/windows
 endif
 
 ifeq ($(OSARCH),win32)
 -include fsmonitor/windows/Makefile src/fsmonitor/windows/Makefile
+INCLFLAGS+=-I fsmonitor -I fsmonitor/windows
 endif
 
-INCLFLAGS+=-I fsmonitor -I fsmonitor/linux -I fsmonitor/windows
+DEP_INCLFLAGS+=-I fsmonitor -I fsmonitor/linux -I fsmonitor/solaris -I fsmonitor/windows
 
 ####################################################################
 ### Static build setup
@@ -334,7 +363,7 @@ endif
 # Rebuild dependencies (must be invoked manually)
 .PHONY: depend
 depend::
-	ocamldep $(INCLFLAGS) *.mli *.ml */*.ml */*.mli */*/*.ml */*/*.mli > .depend
+	ocamldep $(DEP_INCLFLAGS) *.mli *.ml */*.ml */*.mli */*/*.ml */*/*.mli > .depend
 ifdef OCAMLDOT
 	echo 'digraph G {' > dot.tmp
 	echo '{ rank = same; "Fileinfo"; "Props"; "Fspath"; "Os"; "Path"; }'\
@@ -399,9 +428,10 @@ WINDRES := $(or ${EXEC_PREFIX},$(filter i686-w64-mingw32- x86_64-w64-mingw32-,$(
 ##$(info windres='${WINDRES}')
 
 win32rc/unison.res: win32rc/unison.rc win32rc/U.ico
-	$(WINDRES) win32rc/unison.rc win32rc/unison.res
+	rc win32rc/unison.rc
 
-win32rc/unison.res.lib: win32rc/unison.res
+win32rc/unison.res.lib: win32rc/unison.rc win32rc/U.ico
+	$(WINDRES) win32rc/unison.rc win32rc/unison.res
 	$(WINDRES) win32rc/unison.res win32rc/unison.res.lib
 
 %.ml: %.mll
@@ -410,20 +440,28 @@ win32rc/unison.res.lib: win32rc/unison.res
 
 %.cmi : %.mli
 	@echo "$(CAMLC): $< ---> $@"
-	$(CAMLC) $(CAMLFLAGS) -c $(CWD)/$<
+	$(CAMLC) $(CAMLFLAGS) $(COMPATCAMLFLAGS) -c $(CWD)/$<
 
 fswatch.cmi : ubase/prefs.cmi
 
-%.cmo: %.ml
+compat%.cmo: compat%.ml
 	@echo "$(OCAMLC): $< ---> $@"
-	$(OCAMLC) $(CAMLFLAGS) -c $(CWD)/$<
+	$(OCAMLC) $(COMPATCAMLFLAGS) -c $(CWD)/$<
 
-%.cmx: %.ml
+%.cmo: %.ml $(COMPATOCAMLOBJS)
+	@echo "$(OCAMLC): $< ---> $@"
+	$(OCAMLC) $(CAMLFLAGS) $(COMPATCAMLFLAGS) -c $(CWD)/$<
+
+compat%.cmx: compat%.ml
 	@echo "$(OCAMLOPT): $< ---> $@"
-	$(OCAMLOPT) $(CAMLFLAGS) -c $(CWD)/$<
+	$(OCAMLOPT) $(COMPATCAMLFLAGS) -c $(CWD)/$<
+
+%.cmx: %.ml $(COMPATOCAMLOBJS)
+	@echo "$(OCAMLOPT): $< ---> $@"
+	$(OCAMLOPT) $(CAMLFLAGS) $(COMPATCAMLFLAGS) -c $(CWD)/$<
 
 %.o %.obj: %.c
-	@echo "$(OCAMLOPT): $< ---> $@"
+	@echo "$(CAMLC): $< ---> $@"
 	$(CAMLC) $(CAMLFLAGS) -ccopt $(OUTPUT_SEL)$(CWD)/$@ -c $(CWD)/$<
 
 $(NAME)$(EXEC_EXT): $(CAMLOBJS) $(COBJS)

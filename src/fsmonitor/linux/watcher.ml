@@ -116,30 +116,9 @@ let is_deletion ev =
      | Q_overflow    -> false
      | Unmount       -> true)
 
-let is_immediate ev =
-  Inotify.
-    (match ev with
-     | Access        -> false
-     | Attrib        -> false
-     | Close_write   -> false
-     | Close_nowrite -> false
-     | Create        -> false
-     | Delete        -> true
-     | Delete_self   -> true
-     | Modify        -> false
-     | Move_self     -> true
-     | Moved_from    -> true
-     | Moved_to      -> true
-     | Open          -> false
-     | Ignored       -> false
-     | Isdir         -> false
-     | Q_overflow    -> false
-     | Unmount       -> true)
-
 let event_is_change (_, evl, _, _) = List.exists is_change evl
 let event_is_creation (_, evl, _, _) = List.exists is_creation evl
 let event_is_deletion (_, evl, _, _) = List.exists is_deletion evl
-let event_is_immediate (_, evl, _, _) = List.exists is_immediate evl
 
 let st = Lwt_inotify.init ()
 
@@ -158,7 +137,6 @@ let path_of_id id =
     Format.sprintf "????"
 
 let previous_event = ref None
-let time_ref = ref (ref 0.)
 
 let clear_event_memory () = previous_event := None
 
@@ -168,16 +146,14 @@ let rec watch_rec () =
   if !previous_event <> Some ev then begin
     previous_event := Some ev;
     if !Watchercommon.debug then print_event path_of_id ev;
-    time_ref := ref time;
     let kind = event_kind ev in
     if kind <> `OTHER then begin
       try
         let files = Hashtbl.find watcher_by_id wd in
-        let event_time = if event_is_immediate ev then ref 0. else !time_ref in
         IntSet.iter
           (fun file ->
              signal_change
-               event_time (Hashtbl.find file_by_id file) nm_opt kind)
+               time (Hashtbl.find file_by_id file) nm_opt kind)
           files
       with Not_found ->
         ()
@@ -185,8 +161,7 @@ let rec watch_rec () =
       if !Watchercommon.debug then Format.eprintf "OVERFLOW@.";
       signal_overflow ()
     end
-  end else
-    !time_ref := time;
+  end;
   watch_rec ()
 
 let watch () =
@@ -218,11 +193,16 @@ let release_watch file =
         Hashtbl.replace watcher_by_id id s
 
 let selected_events =
+  Inotify.S_Excl_unlink ::
   Inotify.([S_Attrib; S_Modify; S_Delete_self; S_Move_self;
             S_Create; S_Delete; S_Modify; S_Moved_from; S_Moved_to])
+let selected_events_nofollow = Inotify.S_Dont_follow :: selected_events
 
-let add_watch path file =
+let add_watch path file follow =
   try
+    let selected_events =
+      if follow then selected_events
+      else selected_events_nofollow in
     let id = Lwt_inotify.add_watch st path selected_events in
     begin match get_watch file with
       Some id' when id = id' ->
@@ -238,10 +218,11 @@ let add_watch path file =
     release_watch file;
     match no with
       2 (* ENOENT *) ->
-        Watchercommon.error
-          (Format.sprintf "file '%s' does not exist" path)
+        raise Watchercommon.Already_lost
     | 28 (* ENOSPC *) ->
-        Watchercommon.error "cannot add a watcher: system limit reached"
+        Watchercommon.error ("cannot add a watcher: system limit reached"
+            ^ " (you can do a web search for \"inotify max_user_watches\""
+            ^ " to understand the reasons and mitigations for this error)")
     | 13 (* EACCES *) | 20 (* ENOTDIR *) | 40 (* ELOOP *) ->
         (* These errors should be well handled by Unison (they will
            result in errors during update detection *)

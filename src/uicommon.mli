@@ -40,6 +40,8 @@ val retry : int Prefs.t
 (* User preference: confirmation before committing merge results *)
 val confirmmerge : bool Prefs.t
 
+val runTestsPrefName : string
+
 (* Format the information about current contents of a path in one replica (the second argument
    is used as a separator) *)
 val details2string : Common.reconItem -> string -> string
@@ -86,6 +88,7 @@ val usageMsg : string
 val shortUsageMsg : string
 
 val uiInit :
+    ?prepDebug:(unit -> unit) ->
     reportError:(string -> unit) ->
     tryAgainOrQuit:(string -> bool) ->
     displayWaitMessage:(unit -> unit) ->
@@ -93,6 +96,7 @@ val uiInit :
     getFirstRoot:(unit -> string option) ->
     getSecondRoot:(unit -> string option) ->
     termInteract:(string -> string -> string) option ->
+    unit ->
     unit
 
 val initPrefs :
@@ -100,6 +104,17 @@ val initPrefs :
   displayWaitMessage:(unit->unit) ->
   getFirstRoot:(unit->string option) ->
   getSecondRoot:(unit->string option) ->
+  ?prepDebug:(unit -> unit) ->
+  termInteract:(string -> string -> string) option ->
+  unit ->
+  unit
+
+(* Make sure remote connections (if any) corresponding to active roots
+   are still established and re-establish them if necessary.
+   [refreshConnection] is like [initPrefs] but without reloading the profile
+   and re-initializing the prefs. *)
+val refreshConnection :
+  displayWaitMessage:(unit -> unit) ->
   termInteract:(string -> string -> string) option ->
   unit
 
@@ -115,3 +130,12 @@ val exitCode: bool * bool -> int
 
 (* Initialization *)
 val testFunction : (unit->unit) ref
+
+(* Profile scanning and selection *)
+type profileInfo = {roots:string list; label:string option; key:string option}
+
+val profileKeymap : (string * profileInfo) option array
+
+val profilesAndRoots : (string * profileInfo) list ref
+
+val scanProfiles : unit -> unit

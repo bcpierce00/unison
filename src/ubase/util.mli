@@ -39,6 +39,7 @@ val process_status_to_string : Unix.process_status -> string
 (* Case insensitive comparison *)
 val nocase_cmp : string -> string -> int
 val nocase_eq  : string -> string -> bool
+val lowercase_latin1 : char -> char
 
 (* Ready-build set and map implementations *)
 module StringSet : Set.S with type elt = string
@@ -82,9 +83,6 @@ val percentageOfTotal :
   int        (* percentage of total *)
 val monthname : int -> string
 val percent2string : float -> string
-val fileInHomeDir : string -> System.fspath
-val fileMaybeRelToHomeDir : string -> System.fspath
-val homeDirStr : string
 
 (* Just like the versions in the Unix module, but raising Transient
    instead of Unix_error *)
@@ -102,11 +100,14 @@ val debug : string -> (unit->unit) -> unit
 val warnPrinter : (string -> unit) option ref
 val warn : string -> unit
 
-(* Someone should supply a function here that will convert a simple filename
-   to a filename in the unison directory *)
-val supplyFileInUnisonDirFn : (string -> System.fspath) -> unit
-(* Use it like this: *)
+(* Gives the fspath of the archive directory on the machine, depending on    *)
+(* which OS we use                                                           *)
+val unisonDir : System.fspath
+
+(* build a fspath representing an archive child path whose name is given     *)
 val fileInUnisonDir : string -> System.fspath
+val fileMaybeRelToUnisonDir : string -> System.fspath
+val unisonDirStr : string
 
 (* Printing and formatting functions *)
 

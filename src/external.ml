@@ -60,16 +60,16 @@ let runExternalProgram cmd =
   if Util.osType = `Win32 && not Util.isCygwin then begin
     debug (fun()-> Util.msg "Executing external program windows-style\n");
     let c = System.open_process_in ("\"" ^ cmd ^ "\"") in
-    let log = readChannelTillEof c in
+    let log = Util.trimWhitespace (readChannelTillEof c) in
     let returnValue = System.close_process_in c in
-    let mergeResultLog =
-      cmd ^
-      (if log <> "" then "\n\n" ^ log else "") ^
+    let resultLog =
+      (*cmd ^
+      (if log <> "" then "\n\n" ^*) log (*else "")*) ^
       (if returnValue <> Unix.WEXITED 0 then
          "\n\n" ^ Util.process_status_to_string returnValue
        else
          "") in
-    Lwt.return (returnValue,mergeResultLog)
+    Lwt.return (returnValue, resultLog)
   end else
     let (out, ipt, err) as desc = System.open_process_full cmd in
     let out = Lwt_unix.intern_in_channel out in

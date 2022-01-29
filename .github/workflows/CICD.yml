@@ -15,20 +15,32 @@ jobs:
       fail-fast: false
       matrix:
         job:
-        - { os: macos-10.15   , ocaml-version: 4.11.1 }
-        - { os: macos-10.15   , ocaml-version: 4.10.1 }
+        - { os: macos-11      , ocaml-version: 4.12.1 }
+        - { os: macos-10.15   , ocaml-version: 4.12.1 }
+        - { os: macos-10.15   , ocaml-version: 4.11.2 }
+        - { os: macos-10.15   , ocaml-version: 4.10.2 }
         - { os: macos-10.15   , ocaml-version: 4.09.1 }
         - { os: macos-10.15   , ocaml-version: 4.08.1 }
-        - { os: ubuntu-latest  , ocaml-version: 4.11.1 }
-        - { os: ubuntu-latest  , ocaml-version: 4.10.1 }
-        - { os: ubuntu-latest  , ocaml-version: 4.10.0+musl+static+flambda }
-        - { os: ubuntu-latest  , ocaml-version: 4.09.1 }
-        - { os: ubuntu-latest  , ocaml-version: 4.08.1 }
-        - { os: windows-latest , ocaml-version: 4.11.1 }
-        - { os: windows-latest , ocaml-version: 4.10.1 }
-        - { os: windows-latest , ocaml-version: 4.10.1+mingw32 }
-        - { os: windows-latest , ocaml-version: 4.09.1 }
-        - { os: windows-latest , ocaml-version: 4.08.1 }
+        - { os: ubuntu-20.04  , ocaml-version: 4.12.1 }
+        - { os: ubuntu-18.04  , ocaml-version: 4.12.1 }
+        - { os: ubuntu-18.04  , ocaml-version: 4.11.2 }
+        - { os: ubuntu-18.04  , ocaml-version: 4.10.2 }
+        - { os: ubuntu-18.04  , ocaml-version: 4.10.2+musl+static+flambda }
+        - { os: ubuntu-18.04  , ocaml-version: 4.09.1 }
+        - { os: ubuntu-18.04  , ocaml-version: 4.08.1 }
+        - { os: ubuntu-18.04  , ocaml-version: 4.07.1 }
+        - { os: ubuntu-18.04  , ocaml-version: 4.06.1 }
+        - { os: ubuntu-18.04  , ocaml-version: 4.05.0 }
+        - { os: ubuntu-18.04  , ocaml-version: 4.04.2 }
+        - { os: ubuntu-18.04  , ocaml-version: 4.03.0 }
+        - { os: ubuntu-18.04  , ocaml-version: 4.02.3 }
+        - { os: ubuntu-18.04  , ocaml-version: 4.01.0 }
+        - { os: windows-latest , ocaml-version: 4.12.1+mingw64c }
+        - { os: windows-latest , ocaml-version: 4.11.2+mingw64c }
+        - { os: windows-latest , ocaml-version: 4.10.2+mingw64c }
+        - { os: windows-latest , ocaml-version: 4.10.2+mingw32c }
+        - { os: windows-latest , ocaml-version: 4.09.1+mingw64c }
+        - { os: windows-latest , ocaml-version: 4.08.1+mingw64c }
 
     runs-on: ${{ matrix.job.os }}
 
@@ -42,18 +54,19 @@ jobs:
       run: |
         outputs() { for var in "$@" ; do echo steps.vars.outputs.${var}="${!var}"; echo ::set-output name=${var}::${!var}; done; }
         # normalize to pre-compiled ocaml compiler variants for windows/Cygwin (decreases OCaml install time by 50%)
+        case '${{ matrix.job.ocaml-version }}' in
+          *+*) OCAML_COMPILER='ocaml-variants.${{ matrix.job.ocaml-version }}' ;;
+            *) OCAML_COMPILER='ocaml-base-compiler.${{ matrix.job.ocaml-version }}' ;;
+        esac
         OCAML_VARIANT='${{ matrix.job.ocaml-version }}'
-        OCAML_VARIANT="${OCAML_VARIANT/%+mingw32/+mingw32c}"
-        OCAML_VARIANT="${OCAML_VARIANT/%+mingw64/+mingw64c}"
-        OCAML_VARIANT="${OCAML_VARIANT/%+msvc32/+msvc32c}"
-        OCAML_VARIANT="${OCAML_VARIANT/%+msvc64/+msvc64c}"
-        outputs OCAML_VARIANT
+        outputs OCAML_VARIANT OCAML_COMPILER
         # architecture/platform vars
         EXE_suffix='' ; case '${{ matrix.job.os }}' in windows-*) EXE_suffix=".exe" ;; esac
         MinGW_ARCH='x86_64' ; case '${{ matrix.job.ocaml-version }}' in *+mingw32*) MinGW_ARCH='i686' ;; *+mingw64*) MinGW_ARCH='x86_64' ;; esac
         MSVC_ARCH='' ; case '${{ matrix.job.ocaml-version }}' in *+msvc32*) MSVC_ARCH='x86' ;; *+msvc64*) MSVC_ARCH='x64' ;; esac
         STATIC='false' ; case '${{ matrix.job.ocaml-version }}' in *+musl*) STATIC='true' ;; esac
         outputs EXE_suffix MinGW_ARCH MSVC_ARCH STATIC
+        case '${{ matrix.job.os }}' in macos-*) echo "MACOSX_DEPLOYMENT_TARGET=10.6" >> $GITHUB_ENV ;; esac
         # staging environment
         STAGING_DIR='_staging'
         outputs STAGING_DIR
@@ -73,10 +86,11 @@ jobs:
         PKG_OS='linux' ; case '${{ matrix.job.os }}' in macos-*) PKG_OS='${{ matrix.job.os }}' ;; windows-*) PKG_OS='windows' ;; esac;
         PKG_STATIC='' ; case '${{ matrix.job.ocaml-version }}' in *+static*) PKG_STATIC='.static' ;; esac;
         PKG_ARCH='x86_64' ; case '${{ matrix.job.ocaml-version }}' in *+32bit* | *+mingw32*) PKG_ARCH='i386' ;; esac;
-        PKG_BASENAME="${PROJECT_NAME}-${REF_TAG:-$REF_SHAS}+ocaml-${OCAML_VARIANT/%+*/}+${PKG_ARCH}.${PKG_OS}${PKG_STATIC}"
+        PKG_VER="${REF_TAG:-$REF_SHAS}"
+        PKG_BASENAME="${PROJECT_NAME}-${PKG_VER}+ocaml-${OCAML_VARIANT/%+*/}+${PKG_ARCH}.${PKG_OS}${PKG_STATIC}"
         PKG_NAME="${PKG_BASENAME}${PKG_suffix}"
         PKG_DIR="${STAGING_DIR}/${PKG_BASENAME}"
-        outputs PKG_BASENAME PKG_DIR PKG_NAME PKG_OS PKG_suffix
+        outputs PKG_VER PKG_BASENAME PKG_DIR PKG_NAME PKG_OS PKG_suffix
 
     - name: Create/configure any needed build/workspace
       shell: bash
@@ -86,77 +100,80 @@ jobs:
         mkdir -p '${{ steps.vars.outputs.PKG_DIR }}'
         mkdir -p '${{ steps.vars.outputs.PKG_DIR }}'/bin
 
+    - name: Select Xcode version 11.7 for OCaml 4.05 (macOS)
+      if: runner.os == 'macOS' && matrix.job.ocaml-version == '4.05.0'
+      ## Xcode >= 12 breaks building lablgtk with OCaml 4.05 (a bug fixed in OCaml >= 4.06)
+      run: |
+        sudo xcode-select -s "/Applications/Xcode_11.7.app"
+
     - name: Enable/config MSVC environment (if/when needed)
-      uses: ilammy/msvc-dev-cmd@v1.3.0
+      uses: ilammy/msvc-dev-cmd@v1
       with:
         arch: "${{ steps.vars.outputs.MSVC_ARCH }}"
       if: contains(matrix.job.ocaml-version, '+msvc')
 
-    - name: Retrieve opam cache
-      uses: actions/cache@v2
-      id: cache-opam
-      with:
-        path: ~/.opam
-        key: v1-${{ matrix.job.os }}-opam-${{ matrix.job.ocaml-version }}
-
     - name: Use OCaml ${{ matrix.job.ocaml-version }}
-      uses: CICD-tools/ghactions-ocaml.toolchain@dev
+      uses: ocaml/setup-ocaml@v2
       with:
-        ocaml-version: "${{ steps.vars.outputs.OCAML_VARIANT }}"
+        ocaml-compiler: "${{ steps.vars.outputs.OCAML_COMPILER }}"
+        opam-pin: false
+        opam-depext: false
+      # setup-ocaml can prepare the build environment from unison.opam
+      # We're not relying on that capability here, to make sure the builds
+      # also work without using unison.opam
 
     ## note: at this point, after OCaml installation, windows platforms will use Cygwin bash as the default
     ##   ... Cygwin bash cannot handle shell scripts containing CRLF EOLs (which are what is generated by GHA on windows platforms)
-    ##   ... so, for portable usage of bash, use `shell: bash --login --norc --noprofile -e -o pipefail -c "dos2unix '{0}' 2>/dev/null; source '{0}' ;"`
+    ##   ... so, "igncr" must be added to SHELLOPTS
 
-    # Check the consistency of installed opam packages
-    - run: opam upgrade --fixup
-      if: steps.cache-opam.outputs.cache-hit == 'true'
+    - name: Prepare Cygwin environment (Windows)
+      if: runner.os == 'Windows'
+      shell: cmd
+      run: |
+        echo %CYGWIN_ROOT_BIN%>> %GITHUB_PATH%
+        echo %CYGWIN_ROOT_WRAPPERBIN%>> %GITHUB_PATH%
+        echo SHELLOPTS=igncr>> %GITHUB_ENV%
+
+    - name: Prepare lablgtk install (Windows)
+      if: ${{ runner.os == 'Windows' && contains(matrix.job.ocaml-version, '+mingw') }}
+      run: |
+        opam install opam-depext depext-cygwinports
+        echo "/usr/${{ steps.vars.outputs.MinGW_ARCH }}-w64-mingw32/sys-root/mingw/bin" >> $GITHUB_PATH
 
     - name: lablgtk install
       ## [2020-09] non-working/unavailable for MSVC or musl OCaml variants ; also, non-working for 32bit OCaml variant (see [GH:garrigue/lablgtk#64](https://github.com/garrigue/lablgtk/issues/64))
-      if: ${{ ! ( contains(matrix.job.ocaml-version, '+msvc') || contains(matrix.job.ocaml-version, '+musl') || contains(matrix.job.ocaml-version, '+32bit') ) }}
-      shell: bash --login --norc --noprofile -e -o pipefail -c "dos2unix '{0}' 2>/dev/null ; source '{0}' ;"
-      run: |
-        ocaml-env-exec () { ocaml-env >/dev/null 2>&1 && ocaml-env exec -- $* || $* ; } ## `ocaml-env exec ...` is not available for all ocaml switches
-        eval "$(opam env)"
-        # install extra 'lablgtk' prerequisites
-        case '${{ matrix.job.os }}' in
-          macos-*) brew install gtk+ ;;
-          ubuntu-*) sudo apt-get install -qq -yy libexpat1-dev libgtk2.0-dev ;;
-          windows-*)
-            # ref: <https://www.reddit.com/r/ocaml/comments/5rt3gh/installing_lablgtk_on_windows> @@ <https://archive.is/6GSXF>
-            # * `cygwin-dl` and `cygwin-install` are from the 'depext-cygwinports' opam package (<https://github.com/fdopen/depext-cygwinports>)
-            cygwin-dl --wait --quiet-mode --no-admin --no-desktop --packages mingw64-${{ steps.vars.outputs.MINGW_ARCH }}-glib2.0,mingw64-${{ steps.vars.outputs.MINGW_ARCH }}-gtk2.0,mingw64-${{ steps.vars.outputs.MINGW_ARCH }}-pango1.0,libgtk2.0_0,libgtk2.0_devel
-            ;;
-        esac
-        # install 'lablgtk' package
-        ocaml-env-exec opam depext --install --verbose --yes lablgtk
+      ## [2022-01] lablgtk 2.18.12 builds seem to hang on Windows with OCaml < 4.10.0
+      if: ${{ ! ( contains(matrix.job.ocaml-version, '+msvc') || contains(matrix.job.ocaml-version, '+musl') || contains(matrix.job.ocaml-version, '+32bit') || (contains(matrix.job.ocaml-version, '+mingw') && matrix.job.ocaml-version < '4.10.0') ) }}
+      run: opam depext --install --verbose --yes lablgtk
 
-    - shell: bash --login --norc --noprofile -e -o pipefail -c "dos2unix '{0}' 2>/dev/null ; source '{0}' ;"
+    - name: lablgtk install compatibility hack
+      ## [2022-01] lablgtk 2.18.12 builds seem to hang on Windows with OCaml < 4.10.0; this is a hack to work around the issue
+      if: ${{ contains(matrix.job.ocaml-version, '+mingw') && matrix.job.ocaml-version < '4.10.0' }}
+      shell: cmd
+      run: opam depext --install --verbose --yes lablgtk^^^<2.18.12
+
+    - shell: bash
       run: |
         opam exec -- make src OSTYPE=$OSTYPE UISTYLE=text STATIC=${{ steps.vars.outputs.STATIC }}
         # stage
-        # * notes: darwin/macos doesn't build `unison-fsmonitor` ; windows gtk2 build hangs at "looking for changes" when `unison-fsmonitor.exe` is present
+        # * notes: darwin/macos doesn't build `unison-fsmonitor`
         for file in ${PROJECT_EXES} ; do
           if [ -f "src/${file}${{ steps.vars.outputs.EXE_suffix }}" ]; then
-            case '${{ matrix.job.os }}' in windows-*) if [ "${file}" = "unison-fsmonitor" ]; then continue; fi ;; esac
             cp "src/${file}${{ steps.vars.outputs.EXE_suffix }}" '${{ steps.vars.outputs.PKG_DIR }}/bin'
             echo "'src/${file}${{ steps.vars.outputs.EXE_suffix }}' copied to '${{ steps.vars.outputs.PKG_DIR }}/bin'"
           fi
         done
 
+    - run: opam exec -- make test
+
     - if: steps.vars.outputs.STATIC != 'true' ## unable to build static gtk for linux or windows/Cygwin MinGW platforms
-      shell: bash --login --norc --noprofile -e -o pipefail -c "dos2unix '{0}' 2>/dev/null ; source '{0}' ;"
+      shell: bash
       run: |
         opam exec -- make src OSTYPE=$OSTYPE UISTYLE=gtk2 STATIC=${{ steps.vars.outputs.STATIC }}
         # stage
         # * copy only main/first project binary
         project_exe_stem=${PROJECT_EXES%% *}
         cp "src/${project_exe_stem}${{ steps.vars.outputs.EXE_suffix }}" "${{ steps.vars.outputs.PKG_DIR }}/bin/${project_exe_stem}-gtk2${{ steps.vars.outputs.EXE_suffix }}"
-
-    - if: runner.os != 'Windows' ## [2020-09] Windows builds fail self-testing
-      shell: bash --login --norc --noprofile -e -o pipefail -c "dos2unix '{0}' 2>/dev/null ; source '{0}' ;"
-      run: opam exec -- make OSTYPE=$OSTYPE STATIC=${{ steps.vars.outputs.STATIC }} test
 
     - uses: actions/upload-artifact@v2
       with:
@@ -165,7 +182,7 @@ jobs:
 
     - name: Package
       # if: steps.vars.outputs.DEPLOY
-      shell: bash --login --norc --noprofile -e -o pipefail -c "dos2unix '{0}' 2>/dev/null ; source '{0}' ;"
+      shell: bash
       run: |
         ## package artifact(s)
         PKG_DIR='${{ steps.vars.outputs.PKG_DIR }}'
@@ -209,3 +226,55 @@ jobs:
           ${{ steps.vars.outputs.STAGING_DIR }}/${{ steps.vars.outputs.PKG_NAME }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - if: runner.os == 'macOS'
+      name: "macOS: Build and package Unison.app"
+      id: macapp
+      run: |
+        opam exec -- make src UISTYLE=mac
+
+        # package
+        APP_NAME=Unison-${{ steps.vars.outputs.PKG_VER }}.ocaml-${{ matrix.job.ocaml-version }}.${{ matrix.job.os }}.app.tar.gz
+        echo ::set-output name=APP_NAME::${APP_NAME}
+
+        tar czf ${APP_NAME} -C src/uimac/build/Default Unison.app
+
+    - if: runner.os == 'macOS'
+      name: "macOS: Upload Unison.app artifact"
+      uses: actions/upload-artifact@v2
+      with:
+        name: Unison-${{ steps.vars.outputs.REF_SHAS }}.ocaml-${{ matrix.job.ocaml-version }}.${{ matrix.job.os }}.app
+        path: ${{ steps.macapp.outputs.APP_NAME }}
+
+    - if: runner.os == 'macOS' && steps.vars.outputs.DEPLOY
+      name: "macOS: Publish Unison.app"
+      uses: softprops/action-gh-release@v1
+      with:
+        files: ${{ steps.macapp.outputs.APP_NAME }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  opam_dune_build:
+    strategy:
+      fail-fast: false
+      matrix:
+        job:
+        - { os: ubuntu-latest  , ocaml-compiler: 4.12.x }
+        - { os: macos-latest  , ocaml-compiler: 4.12.x }
+
+    runs-on: ${{ matrix.job.os }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Use OCaml ${{ matrix.job.ocaml-compiler }}
+      uses: ocaml/setup-ocaml@v2
+      with:
+        ocaml-compiler: "${{ matrix.job.ocaml-compiler }}"
+
+    - run: opam install . --deps-only
+
+    - run: opam exec -- dune build && cp -L ./_build/install/default/bin/unison* ./src/
+
+#    - run: opam exec -- make test

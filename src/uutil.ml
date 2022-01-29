@@ -32,11 +32,17 @@ let myNameAndVersion = myName ^ " " ^ myVersion
 (*                             HASHING                                       *)
 (*****************************************************************************)
 
+let featHashOCaml4Murmur3 = Features.register "hash-ocaml4-murmur3" None
+
 let hash2 x y = (17 * x + 257 * y) land 0x3FFFFFFF
 
-external hash_param : int -> int -> 'a -> int = "caml_hash_univ_param" [@@noalloc]
+external hash_param : int -> int -> 'a -> int = "unsn_hash_univ_param" "noalloc"
 
-let hash x = hash_param 10 100 x
+let hash x =
+  if Features.enabled featHashOCaml4Murmur3 then
+    Hashtbl.hash x
+  else (* The algorithm used before any features were defined *)
+    hash_param 10 100 x (* FIX: This algorithm should be removed eventually *)
 
 (*****************************************************************************)
 (*                             File sizes                                    *)
@@ -114,7 +120,7 @@ let showUpdateStatus path =
 (*               Copy bytes from one file_desc to another                    *)
 (*****************************************************************************)
 
-let bufsize = 16384
+let bufsize = 65536
 let bufsizeFS = Filesize.ofInt bufsize
 let buf = Bytes.create bufsize
 

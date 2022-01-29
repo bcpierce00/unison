@@ -7,16 +7,7 @@
 
 # Set NATIVE=false if you are not using the native code compiler (ocamlopt)
 # This is not advised, though: Unison runs much slower when byte-compiled.
-#
-# If you set NATIVE=false, then make sure that the THREADS option below is
-# also set to false unless your OCaml installation has true posix-compliant
-# threads (i.e., -with-pthreads was given as an option to the config script).
 NATIVE=true
-
-# Use THREADS=false if your OCaml installation is not configured with the
-# -with-pthreads option.  (Unison will crash when compiled with THREADS=true
-# if the -with-pthreads configuration option was not used.)
-THREADS=false
 
 # User interface style.  For legal values, see Makefile.OCaml.
 # You probably don't need to set this yourself -- it will be set to

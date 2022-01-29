@@ -7,10 +7,10 @@
 {
     IBOutlet NSTableView *tableView;
     NSMutableArray *profiles;
-    int defaultIndex; // -1 if no default, else the index in profiles of @"default"
+    NSUInteger defaultIndex; // -1 if no default, else the index in profiles of @"default"
 }
 - (void)initProfiles;
-- (int)numberOfRowsInTableView:(NSTableView *)aTableView;
+- (NSUInteger)numberOfRowsInTableView:(NSTableView *)aTableView;
 - (id)tableView:(NSTableView *)aTableView
     objectValueForTableColumn:(NSTableColumn *)aTableColumn
     row:(int)rowIndex;

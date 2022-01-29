@@ -20,7 +20,7 @@ type stateItem = { mutable ri : reconItem;
 let theState = ref [| |];;
 let unsynchronizedPaths = ref None;;
 
-let unisonDirectory() = System.fspathToString Os.unisonDir
+let unisonDirectory() = System.fspathToString Util.unisonDir
 ;;
 Callback.register "unisonDirectory" unisonDirectory;;
 
@@ -81,7 +81,9 @@ Callback.register "callbackThreadCreate" callbackThreadCreate;;
 external displayFatalError : string -> unit = "fatalError";;
 
 let fatalError message =
-  Trace.log (message ^ "\n");
+  let () =
+    try Trace.log (message ^ "\n")
+    with Util.Fatal _ -> () in (* Can't allow fatal errors in fatal error handler *)
   displayFatalError message
 
 (* Defined in MyController.m; display the warning and ask whether to
@@ -142,11 +144,6 @@ Callback.register "unisonGetVersion" unisonGetVersion;;
 (* Returns a string option: command line profile, if any *)
 let unisonInit0() =
   ignore (Gc.set {(Gc.get ()) with Gc.max_overhead = 150});
-  (* Install an appropriate function for finding preference files.  (We put
-     this in Util just because the Prefs module lives below the Os module in the
-     dependency hierarchy, so Prefs can't call Os directly.) *)
-  Util.supplyFileInUnisonDirFn
-    (fun n -> Os.fileInUnisonDir(n));
   (* Display status in GUI instead of on stderr *)
   let formatStatus major minor = (Util.padto 30 (major ^ "  ")) ^ minor in
   Trace.messageDisplayer := displayStatus;
@@ -365,14 +362,14 @@ let do_unisonInit2 () =
   let (reconItemList, thereAreEqualUpdates, dangerousPaths) =
     reconcile (findUpdates ()) in
   if not !Update.foundArchives then commitUpdates ();
-  if reconItemList = [] then
-    if thereAreEqualUpdates then begin
-      if !Update.foundArchives then commitUpdates ();
+  if reconItemList = [] then begin
+    if !Update.foundArchives then commitUpdates ();
+    if thereAreEqualUpdates then
       Trace.status
         "Replicas have been changed only in identical ways since last sync"
-    end else
+    else
       Trace.status "Everything is up to date"
-  else
+  end else
     Trace.status "Check and/or adjust selected actions; then press Go";
   Trace.status (Printf.sprintf "There are %d reconitems" (Safelist.length reconItemList));
   let stateItemList =

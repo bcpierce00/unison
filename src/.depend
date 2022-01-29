@@ -86,6 +86,19 @@ common.cmi : \
     name.cmi \
     fspath.cmi \
     fileinfo.cmi
+compat402.cmo :
+compat402.cmx :
+compat403.cmo :
+compat403.cmx :
+compat404.cmo :
+compat404.cmx :
+compat408.cmo : \
+    compat408.cmi
+compat408.cmx : \
+    compat408.cmi
+compat408.cmi :
+configure.cmo :
+configure.cmx :
 copy.cmo : \
     xferhint.cmi \
     uutil.cmi \
@@ -172,6 +185,13 @@ external.cmx : \
     external.cmi
 external.cmi : \
     lwt/lwt.cmi
+features.cmo : \
+    ubase/util.cmi \
+    features.cmi
+features.cmx : \
+    ubase/util.cmx \
+    features.cmi
+features.cmi :
 fileinfo.cmo : \
     ubase/util.cmi \
     ubase/umarshal.cmi \
@@ -377,6 +397,16 @@ fsmonitor/linux/watcher.cmx : \
     fsmonitor/linux/lwt_inotify.cmx \
     lwt/lwt.cmx \
     fsmonitor/linux/inotify.cmx
+fsmonitor/solaris/watcher.cmo : \
+    fsmonitor/watchercommon.cmi \
+    ubase/safelist.cmi \
+    lwt/lwt_unix.cmi \
+    lwt/lwt.cmi
+fsmonitor/solaris/watcher.cmx : \
+    fsmonitor/watchercommon.cmx \
+    ubase/safelist.cmx \
+    lwt/lwt_unix.cmx \
+    lwt/lwt.cmx
 fsmonitor/watchercommon.cmo : \
     lwt/lwt_unix.cmi \
     lwt/lwt.cmi \
@@ -386,18 +416,11 @@ fsmonitor/watchercommon.cmx : \
     lwt/lwt.cmx \
     fsmonitor/watchercommon.cmi
 fsmonitor/watchercommon.cmi :
-fsmonitor/windows/shortnames.cmo : \
-    fsmonitor/windows/shortnames.cmi
-fsmonitor/windows/shortnames.cmx : \
-    fsmonitor/windows/shortnames.cmi
-fsmonitor/windows/shortnames.cmi :
 fsmonitor/windows/watcher.cmo : \
     fsmonitor/watchercommon.cmi \
-    fsmonitor/windows/shortnames.cmi \
     lwt/lwt.cmi
 fsmonitor/windows/watcher.cmx : \
     fsmonitor/watchercommon.cmx \
-    fsmonitor/windows/shortnames.cmx \
     lwt/lwt.cmx
 fspath.cmo : \
     uutil.cmi \
@@ -459,7 +482,6 @@ fswatchold.cmo : \
     ubase/prefs.cmi \
     pred.cmi \
     path.cmi \
-    os.cmi \
     lwt/lwt_unix.cmi \
     lwt/lwt.cmi \
     globals.cmi \
@@ -474,7 +496,6 @@ fswatchold.cmx : \
     ubase/prefs.cmx \
     pred.cmx \
     path.cmx \
-    os.cmx \
     lwt/lwt_unix.cmx \
     lwt/lwt.cmx \
     globals.cmx \
@@ -495,6 +516,7 @@ globals.cmo : \
     pred.cmi \
     path.cmi \
     os.cmi \
+    negotiate.cmi \
     name.cmi \
     lwt/lwt_util.cmi \
     lwt/lwt_unix.cmi \
@@ -512,6 +534,7 @@ globals.cmx : \
     pred.cmx \
     path.cmx \
     os.cmx \
+    negotiate.cmx \
     name.cmx \
     lwt/lwt_util.cmx \
     lwt/lwt_unix.cmx \
@@ -637,8 +660,26 @@ name.cmx : \
     name.cmi
 name.cmi : \
     ubase/umarshal.cmi
+negotiate.cmo : \
+    ubase/util.cmi \
+    ubase/safelist.cmi \
+    remote.cmi \
+    lwt/lwt.cmi \
+    features.cmi \
+    common.cmi \
+    negotiate.cmi
+negotiate.cmx : \
+    ubase/util.cmx \
+    ubase/safelist.cmx \
+    remote.cmx \
+    lwt/lwt.cmx \
+    features.cmx \
+    common.cmx \
+    negotiate.cmi
+negotiate.cmi : \
+    lwt/lwt.cmi \
+    common.cmi
 os.cmo : \
-    uutil.cmi \
     ubase/util.cmi \
     ubase/umarshal.cmi \
     ubase/trace.cmi \
@@ -652,10 +693,10 @@ os.cmo : \
     fspath.cmi \
     fs.cmi \
     fingerprint.cmi \
+    fileutil.cmi \
     fileinfo.cmi \
     os.cmi
 os.cmx : \
-    uutil.cmx \
     ubase/util.cmx \
     ubase/umarshal.cmx \
     ubase/trace.cmx \
@@ -669,12 +710,12 @@ os.cmx : \
     fspath.cmx \
     fs.cmx \
     fingerprint.cmx \
+    fileutil.cmx \
     fileinfo.cmx \
     os.cmi
 os.cmi : \
     uutil.cmi \
     ubase/umarshal.cmi \
-    system.cmi \
     props.cmi \
     path.cmi \
     name.cmi \
@@ -972,10 +1013,12 @@ system/system_intf.cmx : \
     ubase/umarshal.cmx
 system/system_win.cmo : \
     unicode.cmi \
+    ubase/umarshal.cmi \
     system/system_generic.cmo \
     ubase/rx.cmi
 system/system_win.cmx : \
     unicode.cmx \
+    ubase/umarshal.cmx \
     system/system_generic.cmx \
     ubase/rx.cmx
 system/win/system_impl.cmo : \
@@ -1144,8 +1187,6 @@ ubase/prefs.cmi : \
     ubase/util.cmi \
     ubase/umarshal.cmi \
     system.cmi
-ubase/projectInfo.cmo :
-ubase/projectInfo.cmx :
 ubase/proplist.cmo : \
     ubase/util.cmi \
     ubase/umarshal.cmi \
@@ -1232,9 +1273,11 @@ uicommon.cmo : \
     lwt/lwt_unix.cmi \
     lwt/lwt.cmi \
     globals.cmi \
+    fswatch.cmi \
     fspath.cmi \
     files.cmi \
     fileinfo.cmi \
+    features.cmi \
     common.cmi \
     clroot.cmi \
     case.cmi \
@@ -1261,9 +1304,11 @@ uicommon.cmx : \
     lwt/lwt_unix.cmx \
     lwt/lwt.cmx \
     globals.cmx \
+    fswatch.cmx \
     fspath.cmx \
     files.cmx \
     fileinfo.cmx \
+    features.cmx \
     common.cmx \
     clroot.cmx \
     case.cmx \
@@ -1297,7 +1342,6 @@ uigtk2.cmo : \
     lwt/lwt_unix.cmi \
     lwt/lwt.cmi \
     globals.cmi \
-    files.cmi \
     common.cmi \
     clroot.cmi \
     case.cmi \
@@ -1325,7 +1369,6 @@ uigtk2.cmx : \
     lwt/lwt_unix.cmx \
     lwt/lwt.cmx \
     globals.cmx \
-    files.cmx \
     common.cmx \
     clroot.cmx \
     case.cmx \
@@ -1442,6 +1485,7 @@ uitext.cmo : \
     uutil.cmi \
     ubase/util.cmi \
     update.cmi \
+    unicode.cmi \
     ubase/umarshal.cmi \
     uicommon.cmi \
     transport.cmi \
@@ -1464,6 +1508,7 @@ uitext.cmx : \
     uutil.cmx \
     ubase/util.cmx \
     update.cmx \
+    unicode.cmx \
     ubase/umarshal.cmx \
     uicommon.cmx \
     transport.cmx \
@@ -1522,6 +1567,7 @@ update.cmo : \
     fpcache.cmi \
     fingerprint.cmi \
     fileinfo.cmi \
+    features.cmi \
     common.cmi \
     case.cmi \
     update.cmi
@@ -1554,6 +1600,7 @@ update.cmx : \
     fpcache.cmx \
     fingerprint.cmx \
     fileinfo.cmx \
+    features.cmx \
     common.cmx \
     case.cmx \
     update.cmi
@@ -1575,13 +1622,13 @@ uutil.cmo : \
     ubase/util.cmi \
     ubase/umarshal.cmi \
     ubase/trace.cmi \
-    ubase/projectInfo.cmo \
+    features.cmi \
     uutil.cmi
 uutil.cmx : \
     ubase/util.cmx \
     ubase/umarshal.cmx \
     ubase/trace.cmx \
-    ubase/projectInfo.cmx \
+    features.cmx \
     uutil.cmi
 uutil.cmi : \
     ubase/umarshal.cmi

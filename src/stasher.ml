@@ -139,7 +139,7 @@ let backupDirectory () =
         if Prefs.read backupdir <> ""
         then Fspath.canonize (Some (Prefs.read backupdir))
         else Fspath.canonize
-               (Some (System.fspathToString (Os.fileInUnisonDir "backup"))))
+               (Some (System.fspathToString (Util.fileInUnisonDir "backup"))))
 
 let backupcurrent =
   Pred.create "backupcurr" ~advanced:true
@@ -300,13 +300,13 @@ let showContent typ fspath path =
 let backupPath fspath path =
   let sFspath = stashDirectory fspath in
 
-  let rec f i =
+  let rec f path i =
     let tempPath = makeBackupName path i in
     verbose (fun () -> Util.msg "backupPath f %s %d\n" (Path.toString path) i);
     if Os.exists sFspath tempPath then
       if i < Prefs.read maxbackups then begin
         verbose (fun () -> Util.msg "need to rename backup file\n");
-        Os.rename "backupPath" sFspath tempPath sFspath (f (i + 1))
+        Os.rename "backupPath" sFspath tempPath sFspath (f path (i + 1))
       end
       else if i >= Prefs.read maxbackups then
         Os.delete sFspath tempPath;
@@ -323,7 +323,18 @@ let backupPath fspath path =
     | Some (_, parent) ->
         mkdirectories parent;
         let props = (Fileinfo.get false sFspath Path.empty).Fileinfo.desc in
-        if not (Os.exists sFspath backdir) then Os.createDir sFspath backdir props in
+        if not (Os.exists sFspath backdir) then Os.createDir sFspath backdir props
+        else (* Do not just check with Os.exists. It must also be a directory.
+                https://github.com/bcpierce00/unison/issues/30
+                If a non-directory with the same name exists, it must be moved
+                out of the way. Backup version rotation [f backdir] is used for
+                this purpose.
+                This is only applicable with backuplocation "central" as it
+                will create a separate directory tree. *)
+        if (Prefs.read backuplocation = "central") &&
+          (Fileinfo.get false sFspath backdir).Fileinfo.typ != `DIRECTORY then
+          let backdir = f backdir 0 in
+          Os.createDir sFspath backdir props in
 
   let path0 = makeBackupName path 0 in
   let sourceTyp = (Fileinfo.get true fspath path).Fileinfo.typ in
@@ -347,7 +358,7 @@ let backupPath fspath path =
       (showContent path0Typ sFspath path0)
       (Fspath.toDebugString fspath) (Path.toString path)
       (showContent sourceTyp fspath path));
-    let sPath = f 0 in
+    let sPath = f path 0 in
     (* Make sure the parent directory exists *)
     begin match Path.deconstructRev sPath with
      | None -> mkdirectories Path.empty

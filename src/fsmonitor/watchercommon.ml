@@ -22,11 +22,6 @@ let _ =
     ignore(Sys.set_signal Sys.sigpipe Sys.Signal_ignore)
 
 module StringMap = Map.Make(String)
-(*FIX: temporary workaround, as there is no StringMap.filter function
-  in OCaml 3.11 *)
-let stringmap_filter f m =
-  StringMap.fold (fun k v m' -> if f k v then StringMap.add k v m' else m')
-    m StringMap.empty
 module StringSet = Set.Make(String)
 module IntSet =
   Set.Make
@@ -101,13 +96,6 @@ let split_on_space s =
 
 let (>>=) = Lwt.bind
 
-let rec really_write o s pos len =
-  Lwt_unix.write o s pos len >>= fun l ->
-  if l = len then
-    Lwt.return ()
-  else
-    really_write o s (pos + l) (len - l)
-
 let rec really_write_substring o s pos len =
   Lwt_unix.write_substring o s pos len >>= fun l ->
   if l = len then
@@ -170,6 +158,8 @@ let error msg =
 
 (****)
 
+exception Already_lost
+
 module F (M : sig type watch end) = struct
 include M
 
@@ -182,7 +172,7 @@ type t =
     parent : parent;
     archive_hash : string;
     mutable changed : bool;
-    mutable changed_children : (status * float ref) StringMap.t }
+    mutable changed_children : (status * float) StringMap.t }
 
 and parent = Root of string * string | Parent of string * t
 
@@ -232,13 +222,6 @@ let signal_changes replicas_with_changes =
     (String.concat " "
        (List.map quote (StringSet.elements replicas_with_changes)))
 
-let signal_immediate_changes hash =
-  if StringSet.mem hash !waiting_for_changes then begin
-    waiting_for_changes := StringSet.empty;
-    printf "CHANGES %s\n" (quote hash)
-  end else
-    Lwt.return ()
-
 let replicas_with_changes watched_replicas =
   let time = Unix.gettimeofday () in
   let changed = ref StringSet.empty in
@@ -256,7 +239,7 @@ let replicas_with_changes watched_replicas =
        if not (StringSet.mem hash !changed) then
          try
            Hashtbl.iter
-             (fun _ time_ref -> if time -. !time_ref > delay then raise Exit)
+             (fun _ time_ref -> if time -. time_ref > delay then raise Exit)
              (change_table hash)
          with Exit ->
            changed := StringSet.add hash !changed)
@@ -296,10 +279,7 @@ let wait hash =
 
 let add_change dir nm time =
   Hashtbl.replace (change_table dir.archive_hash) (dir.id, nm) time;
-  if !time = 0. then
-    ignore (signal_immediate_changes dir.archive_hash)
-  else
-    ignore (signal_impending_changes ())
+  ignore (signal_impending_changes ())
 let remove_change dir nm =
   Hashtbl.remove (change_table dir.archive_hash) (dir.id, nm)
 let clear_change_table hash =
@@ -308,9 +288,9 @@ let clear_change_table hash =
 let rec clear_changes hash time =
   let rec clear_rec f =
     f.changed_children <-
-      stringmap_filter
+      StringMap.filter
         (fun nm (_, time_ref) ->
-           if time -. !time_ref <= delay then true else begin
+           if time -. time_ref <= delay then true else begin
              remove_change f nm;
              false
            end)
@@ -361,7 +341,7 @@ let rec signal_change time dir nm_opt kind =
       match dir.parent with
         Root _ ->
           dir.changed <- true;
-          ignore (signal_immediate_changes dir.archive_hash)
+          ignore (signal_impending_changes ())
       | Parent (nm, parent_dir) ->
           signal_change time parent_dir (Some nm) kind
 
@@ -373,7 +353,7 @@ let signal_overflow () =
 (****)
 
 module type S = sig
-  val add_watch : string -> t -> unit
+  val add_watch : string -> t -> bool -> unit
   val release_watch : t -> unit
   val watch : unit -> unit
   val clear_event_memory : unit -> unit
@@ -386,7 +366,7 @@ let gather_changes hash time =
   clear_event_memory ();
   let rec gather_rec path r l =
     let c =
-      stringmap_filter (fun _ (_, time_ref) -> time -. !time_ref > delay)
+      StringMap.filter (fun _ (_, time_ref) -> time -. time_ref > delay)
         r.changed_children
     in
     let l = StringMap.fold (fun nm _ l -> concat path nm :: l) c l in
@@ -400,11 +380,7 @@ let gather_changes hash time =
     (Hashtbl.fold
        (fun (hash', _, path) r l ->
           if hash' <> hash then l else
-          (* If this path is not watched (presumably, it does not exist),
-             we report that it should be scanned again. On the other hand,
-             this is not reported as a change by the WAIT function, so that
-             Unison does not loop checking this path. *)
-          if r.changed && r.watch = None then path :: l else
+          if r.changed then gather_rec path r (path :: l) else
           gather_rec path r l)
        roots [])
 
@@ -493,6 +469,7 @@ let rec remove_file file =
   StringMap.iter (fun _ f -> remove_file f) file.subdirs;
   Hashtbl.remove file_by_id file.id;
   release_watch file;
+  clear_file_changes file;
   match file.parent with
     Root _         -> ()
   | Parent (nm, p) -> p.subdirs <- StringMap.remove nm p.subdirs
@@ -507,6 +484,28 @@ let rec remove_old_files file =
       remove_file file
   end
 
+let watch_path path file follow =
+  try
+    add_watch path file follow
+  with
+  | Already_lost ->
+      if is_root file then
+        error (Format.sprintf "Path '%s' does not exist" path)
+      else
+        signal_change 0. file None `DEL
+        (* Most likely cause: A subdir was deleted during the scan.
+           Report it as a deletion. If this was not a deletion (could
+           have been an unmount, perhaps even a lost network connection)
+           then reporting it as a deletion will do no harm. Unison will
+           only know that "there was a change" and do its own scan based
+           on the report.
+
+           While getting here is itself a rare event, it is most likely
+           that the real deletion was already reported via [watch].
+           The case of needing to report it here is really exceptional
+           but can happen the very first time a watcher is started on
+           a replica. *)
+
 let print_ack () = printf "OK\n"
 
 let start_watching hash fspath path =
@@ -515,7 +514,7 @@ let start_watching hash fspath path =
   start_file.gen <- !current_gen;
   let fspath = concat fspath path in
 (*Format.eprintf ">>> %s@." fspath;*)
-  if is_root start_file then add_watch fspath start_file;
+  if is_root start_file then watch_path fspath start_file false;
   print_ack () >>= fun () ->
   let rec add_directories () =
     read_line () >>= fun l ->
@@ -529,7 +528,7 @@ let start_watching hash fspath path =
         clear_file_changes file;
         file.gen <- !current_gen;
 (*Format.eprintf "%s@." fullpath;*)
-        add_watch fullpath file;
+        watch_path fullpath file false;
         print_ack () >>= fun () ->
         add_directories ()
     | "LINK" ->
@@ -539,7 +538,7 @@ let start_watching hash fspath path =
         clear_file_changes file;
         file.gen <- !current_gen;
 (*Format.eprintf "%s@." fullpath;*)
-        add_watch fullpath file;
+        watch_path fullpath file true;
         print_ack () >>= fun () ->
         add_directories ()
     | "DONE" ->
@@ -566,6 +565,7 @@ let reset hash =
        end)
     roots;
   List.iter (fun key -> Hashtbl.remove roots key) !l;
+  clear_event_memory ();
   clear_change_table hash
 
 (****)

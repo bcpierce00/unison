@@ -70,7 +70,7 @@ let profileKey =
   Prefs.createString "key" ""
     "!define a keyboard shortcut for this profile (in some UIs)"
     ("Used in a profile to define a numeric key (0-9) that can be used in "
-     ^ "the graphical user interface to switch immediately to this profile.")
+     ^ "the user interface to switch immediately to this profile.")
 (* This preference is not actually referred to in the code anywhere, since
    the keyboard shortcuts are constructed by a separate scan of the preference
    file in uigtk.ml, but it must be present to prevent the preferences module
@@ -95,6 +95,7 @@ let repeat =
      ^ "beginning again. When the argument is \\verb|watch|, Unison relies on "
      ^ "an external file monitoring process to synchronize whenever a change "
      ^ "happens.")
+let repeatWatcher () = Prefs.read repeat = "watch"
 
 let retry =
   Prefs.createInt "retry" 0
@@ -437,19 +438,6 @@ let debug = Trace.debug "startup"
 
 (* ---- *)
 
-(*FIX: remove when Unison version > 2.40 *)
-let _ =
-fun r x -> Remote.registerRootCmd "_unicodeCaseSensitive_" Umarshal.unit Umarshal.unit (fun _ -> Lwt.return ()) r x
-let supportUnicodeCaseSensitive () =
-  if Uutil.myMajorVersion > "2.40" (* The test is correct until 2.99... *) then
-    Lwt.return true
-  else begin
-    Globals.allRootsMap
-      (fun r -> Remote.commandAvailable r "_unicodeCaseSensitive_")
-    >>= fun l ->
-    Lwt.return (List.for_all (fun x -> x) l)
-  end
-
 (* Determine the case sensitivity of a root (does filename FOO==foo?) *)
 let architecture =
   Remote.registerRootCmd
@@ -464,9 +452,7 @@ let architecture =
    Windows (needed for permissions) and does some sanity checking. *)
 let validateAndFixupPrefs () =
   Props.validatePrefs();
-  let supportUnicodeCaseSensitive = supportUnicodeCaseSensitive () in
   Globals.allRootsMap (fun r -> architecture r ()) >>= (fun archs ->
-  supportUnicodeCaseSensitive >>= fun unicodeCS ->
   let someHostIsRunningWindows =
     Safelist.exists (fun (isWin, _, _) -> isWin) archs in
   let allHostsAreRunningWindows =
@@ -484,15 +470,124 @@ let validateAndFixupPrefs () =
     Prefs.overrideDefault Fileinfo.allowSymlinks `False;
     Prefs.overrideDefault Fileinfo.ignoreInodeNumbers true
   end;
-  Case.init someHostIsCaseInsensitive (someHostRunningOsX && unicodeCS);
+  Case.init someHostIsCaseInsensitive someHostRunningOsX;
   Props.init someHostIsRunningWindows;
   Osx.init someHostRunningOsX;
   Fileinfo.init someHostIsRunningBareWindows;
   Prefs.set Globals.someHostIsRunningWindows someHostIsRunningWindows;
   Prefs.set Globals.allHostsAreRunningWindows allHostsAreRunningWindows;
+  if repeatWatcher () then Prefs.set Fswatch.useWatcher true;
+  Features.validateEnabled ();
   return ())
 
 (* ---- *)
+
+type profileInfo = {roots:string list; label:string option; key:string option}
+
+let profileKeymap = Array.make 10 None
+
+let provideProfileKey filename k profile info =
+  try
+    let i = int_of_string k in
+    if 0<=i && i<=9 then
+      match profileKeymap.(i) with
+        None -> profileKeymap.(i) <- Some(profile,info)
+      | Some(otherProfile,_) ->
+          raise (Util.Fatal
+            ("Error scanning profile "^
+                System.fspathToPrintString filename ^":\n"
+             ^ "shortcut key "^k^" is already bound to profile "
+             ^ otherProfile))
+    else
+      raise (Util.Fatal
+        ("Error scanning profile "^ System.fspathToPrintString filename ^":\n"
+         ^ "Value of 'key' preference must be a single digit (0-9), "
+         ^ "not " ^ k))
+  with Failure _ -> raise (Util.Fatal
+    ("Error scanning profile "^ System.fspathToPrintString filename ^":\n"
+     ^ "Value of 'key' preference must be a single digit (0-9), "
+     ^ "not " ^ k))
+
+let profilesAndRoots = ref []
+
+let scanProfiles () =
+  Array.iteri (fun i _ -> profileKeymap.(i) <- None) profileKeymap;
+  profilesAndRoots :=
+    (Safelist.map
+       (fun f ->
+          let f = Filename.chop_suffix f ".prf" in
+          let filename = Prefs.profilePathname f in
+          let fileContents = Safelist.map (fun (_, _, n, v) -> (n, v)) (Prefs.readAFile f) in
+          let roots =
+            Safelist.map snd
+              (Safelist.filter (fun (n, _) -> n = "root") fileContents) in
+          let label =
+            try Some(Safelist.assoc "label" fileContents)
+            with Not_found -> None in
+          let key =
+            try Some (Safelist.assoc "key" fileContents)
+            with Not_found -> None in
+          let info = {roots=roots; label=label; key=key} in
+          (* If this profile has a 'key' binding, put it in the keymap *)
+          (try
+             let k = Safelist.assoc "key" fileContents in
+             provideProfileKey filename k f info
+           with Not_found -> ());
+          (f, info))
+       (Safelist.filter (fun name -> not (   Util.startswith name ".#"
+                                          || Util.startswith name Os.tempFilePrefix))
+          (Files.ls Util.unisonDir "*.prf")))
+
+(* ---- *)
+
+let initRoots displayWaitMessage termInteract =
+  (* The following step contacts the server, so warn the user it could take
+     some time *)
+  if not (Prefs.read contactquietly || Prefs.read Trace.terse) then
+    displayWaitMessage();
+
+  (* Canonize the names of the roots, sort them (with local roots first),
+     and install them in Globals. *)
+  Lwt_unix.run (Globals.installRoots termInteract);
+
+  (* Expand any "wildcard" paths [with final component *] *)
+  Globals.expandWildcardPaths();
+
+  Update.storeRootsName ();
+
+  let hasRemote =
+    match Globals.rootsInCanonicalOrder () with
+    | _ :: (Remote _, _) :: [] -> true
+    | _ -> false in
+  if
+    hasRemote && not (Prefs.read contactquietly || Prefs.read Trace.terse)
+  then
+    Trace.status (Printf.sprintf "Connected [%s]\n"
+      (Util.replacesubstring (Update.getRootsName()) ", " " -> "));
+
+  debug (fun() ->
+       Printf.eprintf "Roots: \n";
+       Safelist.iter (fun clr -> Printf.eprintf "        %s\n" clr)
+         (Globals.rawRoots ());
+       Printf.eprintf "  i.e. \n";
+       Safelist.iter (fun clr -> Printf.eprintf "        %s\n"
+                        (Clroot.clroot2string (Clroot.parseRoot clr)))
+         (Globals.rawRoots ());
+       Printf.eprintf "  i.e. (in canonical order)\n";
+       Safelist.iter (fun r ->
+                        Printf.eprintf "       %s\n" (root2string r))
+         (Globals.rootsInCanonicalOrder());
+       Printf.eprintf "\n");
+
+  Lwt_unix.run
+    (validateAndFixupPrefs () >>=
+     Globals.propagatePrefs);
+
+  (* Initializes some backups stuff according to the preferences just loaded from the profile.
+     Important to do it here, after prefs are propagated, because the function will also be
+     run on the server, if any. Also, this should be done each time a profile is reloaded
+     on this side, that's why it's here. *)
+  Stasher.initBackups ()
 
 let promptForRoots getFirstRoot getSecondRoot =
   (* Ask the user for the roots *)
@@ -508,10 +603,11 @@ let promptForRoots getFirstRoot getSecondRoot =
 (* ---- *)
 
 let makeTempDir pattern =
-  let ic = Unix.open_process_in (Printf.sprintf "(mktemp --tmpdir -d %s.XXXXXX || mktemp -d -t %s) 2>/dev/null" pattern pattern) in
-  let path = input_line ic in
-  ignore (Unix.close_process_in ic);
-  path
+  let path = Filename.temp_file pattern "" in
+  let fspath = System.fspathFromString path in
+  System.unlink fspath; (* Remove file created by [temp_file]... *)
+  System.mkdir fspath 0o755; (* ... and create a dir instead. *)
+  path ^ Filename.dir_sep
 
 (* The first time we load preferences, we also read the command line
    arguments; if we re-load prefs (because the user selected a new profile)
@@ -523,7 +619,7 @@ let cmdLineRawRoots = ref []
 
 (* BCP: WARNING: Some of the code from here is duplicated in uimacbridge...! *)
 let initPrefs ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
-              ~termInteract =
+              ?(prepDebug = fun () -> ()) ~termInteract () =
   (* Restore prefs to their default values, if necessary *)
   if not !firstTime then Prefs.resetToDefaults();
   Globals.setRawRoots !cmdLineRawRoots;
@@ -554,6 +650,8 @@ let initPrefs ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
       "The 'test' flag should only be given on the command line")
   end;
 
+  if Prefs.read Trace.debugmods <> [] then prepDebug ();
+
   (* Parse the command line.  This will override settings from the profile. *)
   (* JV (6/09): always reparse the command line *)
   if true (*!firstTime*) then begin
@@ -577,78 +675,44 @@ let initPrefs ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
   (* Print the preference settings *)
   debug (fun() -> Prefs.dumpPrefsToStderr() );
 
+  Trace.logonly (Printf.sprintf "\n%s log started at %s\n\n"
+    (String.capitalize_ascii Uutil.myNameAndVersion)
+    (Util.time2string (Unix.gettimeofday ())));
+
   (* If no roots are given either on the command line or in the profile,
      ask the user *)
   if Globals.rawRoots() = [] then begin
     promptForRoots getFirstRoot getSecondRoot;
   end;
 
-  Recon.checkThatPreferredRootIsValid();
-
-  (* The following step contacts the server, so warn the user it could take
-     some time *)
-  if not (Prefs.read contactquietly || Prefs.read Trace.terse) then
-    displayWaitMessage();
-
-  (* Canonize the names of the roots, sort them (with local roots first),
-     and install them in Globals. *)
-  Lwt_unix.run (Globals.installRoots termInteract);
-
-  (* If both roots are local, disable the xferhint table to save time *)
-  begin match Globals.roots() with
-    ((Local,_),(Local,_)) -> Prefs.set Xferhint.xferbycopying false
-  | _ -> ()
-  end;
-
-  (* FIX: This should be before Globals.installRoots *)
   (* Check to be sure that there is at most one remote root *)
   let numRemote =
     Safelist.fold_left
-      (fun n (w,_) -> match w with Local -> n | Remote _ -> n+1)
+      (fun n r -> match Clroot.parseRoot r with
+        ConnectLocal _ -> n | ConnectByShell _ | ConnectBySocket _ -> n+1)
       0
-      (Globals.rootsList()) in
+      (Globals.rawRoots ()) in
       if numRemote > 1 then
         raise(Util.Fatal "cannot synchronize more than one remote root");
+
+  Recon.checkThatPreferredRootIsValid();
+
+  (* If both roots are local, disable the xferhint table to save time *)
+  if numRemote = 0 then Prefs.set Xferhint.xferbycopying false;
 
   (* If no paths were specified, then synchronize the whole replicas *)
   if Prefs.read Globals.paths = [] then Prefs.set Globals.paths [Path.empty];
 
-  (* Expand any "wildcard" paths [with final component *] *)
-  Globals.expandWildcardPaths();
-
-  Update.storeRootsName ();
-
-  if
-    numRemote > 0 && not (Prefs.read contactquietly || Prefs.read Trace.terse)
-  then
-    Util.msg "Connected [%s]\n"
-      (Util.replacesubstring (Update.getRootsName()) ", " " -> ");
-
-  debug (fun() ->
-       Printf.eprintf "Roots: \n";
-       Safelist.iter (fun clr -> Printf.eprintf "        %s\n" clr)
-         (Globals.rawRoots ());
-       Printf.eprintf "  i.e. \n";
-       Safelist.iter (fun clr -> Printf.eprintf "        %s\n"
-                        (Clroot.clroot2string (Clroot.parseRoot clr)))
-         (Globals.rawRoots ());
-       Printf.eprintf "  i.e. (in canonical order)\n";
-       Safelist.iter (fun r ->
-                        Printf.eprintf "       %s\n" (root2string r))
-         (Globals.rootsInCanonicalOrder());
-       Printf.eprintf "\n");
-
-  Lwt_unix.run
-    (validateAndFixupPrefs () >>=
-     Globals.propagatePrefs);
-
-  (* Initializes some backups stuff according to the preferences just loaded from the profile.
-     Important to do it here, after prefs are propagated, because the function will also be
-     run on the server, if any. Also, this should be done each time a profile is reloaded
-     on this side, that's why it's here. *)
-  Stasher.initBackups ();
+  initRoots displayWaitMessage termInteract;
 
   firstTime := false
+
+let refreshConnection ~displayWaitMessage ~termInteract =
+  assert (Safelist.length (Globals.rootsList ()) > 1);
+  let numConn = ref 0 in
+  Lwt_unix.run (Globals.allRootsIter
+    (fun r -> if Remote.isRootConnected r then incr numConn; Lwt.return ()));
+  if !numConn < 2 then initRoots displayWaitMessage termInteract
 
 (**********************************************************************
                        Common startup sequence
@@ -672,13 +736,15 @@ let _ = Prefs.alias testServer "testServer"
 (* ---- *)
 
 let uiInit
+    ?(prepDebug = fun () -> ())
     ~(reportError : string -> unit)
     ~(tryAgainOrQuit : string -> bool)
     ~(displayWaitMessage : unit -> unit)
     ~(getProfile : unit -> string option)
     ~(getFirstRoot : unit -> string option)
     ~(getSecondRoot : unit -> string option)
-    ~(termInteract : (string -> string -> string) option) =
+    ~(termInteract : (string -> string -> string) option)
+    () =
 
   (* Make sure we have a directory for archives and profiles *)
   Os.createUnisonDir();
@@ -686,8 +752,13 @@ let uiInit
   (* Extract any command line profile or roots *)
   let clprofile = ref None in
   begin
+    let args = Prefs.scanCmdLine usageMsg in
+    begin
+      try if Util.StringMap.find "debug" args <> [] then prepDebug ()
+      with Not_found -> ()
+    end;
+
     try
-      let args = Prefs.scanCmdLine usageMsg in
       match Util.StringMap.find "rest" args with
         [] -> ()
       | [profile] -> clprofile := Some profile
@@ -747,7 +818,8 @@ let uiInit
 
   (* Load the profile and command-line arguments *)
   initPrefs
-    profileName displayWaitMessage getFirstRoot getSecondRoot termInteract;
+    ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
+    ~prepDebug ~termInteract ();
 
   (* Turn on GC messages, if the '-debug gc' flag was provided *)
   if Trace.enabled "gc" then Gc.set {(Gc.get ()) with Gc.verbose = 0x3F};

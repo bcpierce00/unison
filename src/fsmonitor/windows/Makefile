@@ -9,10 +9,10 @@ FSMOCAMLOBJS = \
    system/win/system_impl.cmo \
    lwt/lwt.cmo lwt/pqueue.cmo lwt/win/lwt_unix_impl.cmo lwt/lwt_unix.cmo \
    lwt/win/lwt_win.cmo \
-   $(DIR)/shortnames.cmo fsmonitor/watchercommon.cmo $(DIR)/watcher.cmo
+   fsmonitor/watchercommon.cmo $(DIR)/watcher.cmo
 FSMCOBJS = \
    bytearray_stubs.o \
-   system/system_win_stubs.o lwt/lwt_unix_stubs.o $(DIR)/shortnames_stubs.o
+   system/system_win_stubs$(OBJ_EXT) lwt/lwt_unix_stubs$(OBJ_EXT)
 FSMOCAMLLIBS=bigarray.cma unix.cma
 
 ifeq ($(NATIVE), true)
@@ -25,10 +25,10 @@ endif
 
 buildexecutable:: $(FSMONITOR)$(EXEC_EXT)
 
-$(FSMONITOR)$(EXEC_EXT): $(FSMCAMLOBJS) $(FSMCOBJS)
+$(FSMONITOR)$(EXEC_EXT): $(COMPATOCAMLOBJS) $(FSMCAMLOBJS) $(FSMCOBJS)
 	@echo Linking $@
 	$(CAMLC) -verbose $(CAMLFLAGS) $(CAMLLDFLAGS) -o $@ $(CFLAGS) $(FSMCAMLLIBS) $^ $(CLIBS)
 
 clean::
-	rm -f $(DIR)/*.cm[iox] $(DIR)/*.o $(DIR)/*~
+	rm -f $(DIR)/*.cm[iox] $(DIR)/*.{o,obj} $(DIR)/*~
 	rm -f $(FSMONITOR)$(EXEC_EXT)

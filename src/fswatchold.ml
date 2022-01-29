@@ -25,7 +25,7 @@ let debug = Util.debug "fswatch"
 
 let watchinterval = 5
 
-let watcherTemp archHash n = Os.fileInUnisonDir (n ^ archHash)
+let watcherTemp archHash n = Util.fileInUnisonDir (n ^ archHash)
 
 let watchercmd archHash root =
   let fsmonfile =

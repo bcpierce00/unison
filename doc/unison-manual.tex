@@ -149,16 +149,8 @@ will continue to be maintained and supported for the foreseeable future,
 and we will occasionally release new versions with bug fixes, small
 improvements, and contributed patches.
 
-Reports of bugs affecting correctness or safety are of interest to many
-people and will generally get high priority.  Other bug reports will be
-looked at as time permits.  Bugs should be reported to the users list at
-\UNISONUSERS.
-
-Feature requests are welcome, but will probably just be added to the
-ever-growing todo list.  They should also be sent to \UNISONUSERS.
-
-Patches are even more welcome.  They should be sent to
-\UNISONHACKERS.
+Proposed changes to unison are welcome.
+They should be submitted as pull requests.
 (Since safety and robustness are Unison's most important properties,
 patches will be held to high standards of clear design and clean coding.)
 If you want to contribute to Unison, start by downloading the developer
@@ -217,8 +209,7 @@ fine with the textual version.
 
 \SUBSECTION{Downloading Unison}{download}
 
-The Unison download site lives under
-\ONEURL{http://www.cis.upenn.edu/\home{bcpierce}/unison}.
+See \ONEURL{https://github.com/bcpierce00/unison/wiki/Downloading-Unison}.
 
 If a pre-built binary of Unison is available for the client machine's
 architecture, just download it and put it somewhere in your search
@@ -233,10 +224,6 @@ provides just the textual interface.
 
 If you don't see a pre-built executable for your architecture, you'll
 need to build it yourself.  See \sectionref{building}{Building Unison from Scratch}.
-There are also a small number of contributed ports to other
-architectures that are not maintained by us.  See the
-\SHOWURL{http://www.cis.upenn.edu/\home{bcpierce}/unison/download.html}{Contributed
-Ports page} to check what's available.
 
 Check to make sure that what you have downloaded is really executable.
 Either click-start it, or type \showtt{unison -version} at the command
@@ -1059,7 +1046,7 @@ it is copying a file onto a directory or vice versa, it must first move
 the original contents out of the way.  If Unison gets
 interrupted during one of these periods, some manual cleanup may be
 required.  In this case, a file called {\tt DANGER.README} will be left
-in your home directory, containing information about the operation that
+in the {\tt .unison} directory, containing information about the operation that
 was interrupted. The next time you try to run Unison, it will notice this
 file and warn you about it.]
 
@@ -2018,11 +2005,16 @@ to treat a link in this manner, add a line of the form
 to the profile, where \ARG{pathspec} is a path pattern as described in
 \sectionref{pathspec}{Path Specification}.
 
-Windows file systems do not support symbolic links; Unison will refuse
-to propagate an opaque symbolic link from Unix to Windows and flag the
-path as erroneous.  When a Unix replica is to be synchronized with a
-Windows system, all symbolic links should match either an
-\verb|ignore| pattern or a \verb|follow| pattern.
+Not all Windows versions and file systems support symbolic links; Unison will
+refuse to propagate an opaque symbolic link from Unix to Windows and flag the
+path as erroneous if the support or privileges are lacking on the Windows side.
+When a Unix replica is to be synchronized with such Windows system, all symbolic
+links should match either an \verb|ignore| pattern or a \verb|follow| pattern.
+
+You may need to acquire extra privileges to create symbolic links under
+Windows. By default, this is only allowed for administrators. Unison may not
+be able to automatically detect support for symbolic links under Windows. In
+that case, set the preference {\tt links} to {\tt true} explicitly.
 
 
 \SUBSECTION{Permissions}{perms}
@@ -2223,125 +2215,11 @@ To use Unison in this mode, you must first create a profile (see
 
 
 \appendix
-\SECTION{Installing Ssh}{ssh}{ssh}
-
-{\em Warning: These instructions may be out of date.  More current
-  information can be found the
-  \SHOWURL{http://alliance.seas.upenn.edu/~bcpierce/wiki/index.php?n=Main.UnisonFAQOSSpecific}{Unison
-    Wiki}.}
+\SECTION{Ssh}{ssh}{ssh}
 
 Your local host will need just an ssh client; the remote host needs an
-ssh server (or daemon), which is available on Unix systems.  Unison is
-known to work with ssh version 1.2.27 (Unix) and version 1.2.14
-(Windows); other versions may or may not work.
-
-\SUBSECTION{Unix}{ssh-unix}
-
-Most modern Unix installations come with \verb|ssh| pre-installed.
-
-\SUBSECTION{Windows}{ssh-win}
-Many Windows implementations of ssh only provide graphical interfaces,
-but Unison requires an ssh client that it can invoke with a
-command-line interface.  A suitable version of ssh can be installed as
-follows.
-
-\begin{enumerate}
-\item Download an \verb|ssh| executable.
-
-Warning: there are many implementations and ports of ssh for
-Windows, and not all of them will work with Unison.  We have gotten
-Unison to work with Cygwin's port of OpenSSH, and we suggest you try
-that one first.  Here's how to install it:
-\begin{enumerate}
-\item First, create a new folder on your desktop to hold temporary
-  installation files.  It can have any name you like, but in these
-  instructions we'll assume that you call it \verb|Foo|.
-\item Direct your web browser to www.cygwin.com, and click on the
-  ``Install now!'' link.  This will download a file, \verb|setup.exe|;
-  save it in the directory \verb|Foo|.  The file \verb|setup.exe| is a
-  small program that will download the actual install files from
-  the Internet when you run it.
-\item Start \verb|setup.exe| (by double-clicking).  This brings up a
-  series of dialogs that you will have to go through.  Select
-  ``Install from Internet.''  For ``Local Package Directory'' select
-  the directory \verb|Foo|.  For ``Select install root directory'' we
-  recommend that you use the default, \verb|C:\cygwin|.  The next
-  dialog asks you to select the way that you want to connect to the
-  network to download the installation files; we have used ``Use IE5
-  Settings'' successfully, but you may need to make a different
-  selection depending on your networking setup.  The next dialog gives
-  a list of mirrors; select one close to you.
-
-  Next you are asked to select which packages to install.  The default
-  settings in this dialog download a lot of packages that are not
-  strictly necessary to run Unison with ssh.  If you don't want to
-  install a package, click on it until ``skip'' is shown.  For a
-  minimum installation, select only the packages ``cygwin'' and
-  ``openssh,'' which come to about 1900KB; the full installation is
-  much larger.
-
-  \begin{quote} \em Note that you are plan to build unison using the free
-    CygWin GNU C compiler, you need to install essential development
-    packages such as ``gcc'', ``make'', ``fileutil'', etc; we refer to
-    the file ``INSTALL.win32-cygwin-gnuc'' in the source distribution
-    for further details.
-  \end{quote}
-
-  After the packages are downloaded and installed, the next dialog
-  allows you to choose whether to ``Create Desktop Icon'' and ``Add to
-  Start Menu.''  You make the call.
-\item You can now delete the directory \verb|Foo| and its contents.
-\end{enumerate}
-Some people have reported problems using Cygwin's ssh with Unison.  If
-you have trouble, you might try other ones instead:
-\begin{verbatim}
-  http://linuxmafia.com/ssh/win32.html
-\end{verbatim}
-
-\item You must set the environment variables HOME and PATH\@.
-  Ssh will create a directory \verb|.ssh| in the directory given
-  by HOME, so that it has a place to keep data like your public and
-  private keys.  PATH must be set to include the Cygwin \verb|bin|
-  directory, so that Unison can find the ssh executable.
-  \begin{itemize}
-  \item
-    On Windows 95/98, add the lines
-\begin{verbatim}
-    set PATH=%PATH%;<SSHDIR>
-    set HOME=<HOMEDIR>
-\end{verbatim}
-    to the file \verb|C:\AUTOEXEC.BAT|, where \verb|<HOMEDIR>| is the
-    directory where you want ssh to create its \verb|.ssh| directory,
-    and \verb|<SSHDIR>| is the directory where the executable
-    \verb|ssh.exe| is stored; if you've installed Cygwin in the
-    default location, this is \verb|C:\cygwin\bin|.  You will have to
-    reboot your computer to take the changes into account.
-  \item On Windows NT/2k/XP, open the environment variables dialog box:
-    \begin{itemize}
-    \item Windows NT: My Computer/Properties/Environment
-    \item Windows 2k: My Computer/Properties/Advanced/Environment
-      variables
-    \end{itemize}
-    then select Path and edit its value by appending \verb|;<SSHDIR>|
-    to it, where \verb|<SSHDIR>| is the full name of the directory
-    that includes the ssh executable; if you've installed Cygwin in
-    the default location, this is \verb|C:\cygwin\bin|.
-  \end{itemize}
-  \item Test ssh from a DOS shell by typing
-\begin{verbatim}
-      ssh <remote host> -l <login name>
-\end{verbatim}
-    You should get a prompt for your password on \verb|<remote host>|,
-    followed by a working connection.
-  \item Note that \verb|ssh-keygen| may not work (fails with
-  ``gethostname: no such file or directory'') on some systems.  This is
-  OK: you can use ssh with your regular password for the remote
-  system.
-\item You should now be able to use Unison with an ssh connection. If
-  you are logged in with a different user name on the local and remote
-  hosts, provide your remote user name when providing the remote root
-  (i.e., \verb|//username@host/path...|).
-\end{enumerate}
+ssh server (or daemon).   ssh is now normal, and Unison thus does not
+provide instructions.
 
 \SECTION{Changes in Version \unisonversion}{news}{news}
 

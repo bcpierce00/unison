@@ -11,8 +11,6 @@ val includeInTempNames : string -> unit
 val exists : Fspath.t -> Path.local -> bool
 
 val createUnisonDir : unit -> unit
-val fileInUnisonDir : string -> System.fspath
-val unisonDir : System.fspath
 
 val childrenOf : Fspath.t -> Path.local -> Name.t list
 val readLink : Fspath.t -> Path.local -> string

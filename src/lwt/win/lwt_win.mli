@@ -18,3 +18,5 @@ val readdirectorychanges :
 
 val open_directory : string -> directory_handle
 val close_dir : directory_handle -> unit
+
+val longpathname : string -> string -> string
