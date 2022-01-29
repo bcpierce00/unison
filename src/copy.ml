@@ -107,9 +107,19 @@ let mcheckForChangesToSource =
               (prod3 Osx.mressStamp (option Os.mfullfingerprint) bool id id)
               id id)
 
+let convV0 = Remote.makeConvV0FunArg
+  (fun (fspathFrom,
+          ((pathFrom, archDesc, archFp, archStamp), (archRess, newFpOpt, paranoid))) ->
+       (fspathFrom,
+          (pathFrom, archDesc, archFp, archStamp, archRess, newFpOpt, paranoid)))
+  (fun (fspathFrom,
+          (pathFrom, archDesc, archFp, archStamp, archRess, newFpOpt, paranoid)) ->
+       (fspathFrom,
+          ((pathFrom, archDesc, archFp, archStamp), (archRess, newFpOpt, paranoid))))
+
 let checkForChangesToSourceOnRoot =
   Remote.registerRootCmd
-    "checkForChangesToSource"
+    "checkForChangesToSource" ~convV0
     mcheckForChangesToSource Umarshal.unit
     (fun (fspathFrom,
           ((pathFrom, archDesc, archFp, archStamp), (archRess, newFpOpt, paranoid))) ->
@@ -498,7 +508,14 @@ let mcompress = Umarshal.(prod2
                             (prod3 Uutil.Filesize.m Uutil.File.m int id id)
                             id id)
 
-let compressRemotely = Remote.registerServerCmd "compress" mcompress Umarshal.unit compress
+let convV0 = Remote.makeConvV0FunArg
+  (fun ((biOpt, fspathFrom, pathFrom, fileKind), (sizeFrom, id, file_id)) ->
+       (biOpt, fspathFrom, pathFrom, fileKind, sizeFrom, id, file_id))
+  (fun (biOpt, fspathFrom, pathFrom, fileKind, sizeFrom, id, file_id) ->
+       ((biOpt, fspathFrom, pathFrom, fileKind), (sizeFrom, id, file_id)))
+
+let compressRemotely =
+  Remote.registerServerCmd "compress" ~convV0 mcompress Umarshal.unit compress
 
 let close_all infd outfd =
   Util.convertUnixErrorsToTransient
@@ -842,6 +859,16 @@ let finishExternalTransferLocal connFrom
   Xferhint.insertEntry fspathTo pathTo fp;
   Lwt.return res
 
+let convV0 = Remote.makeConvV0FunArg
+  (fun ((fspathFrom, pathFrom, fspathTo, pathTo, realPathTo),
+         (update, desc, fp, ress, id)) ->
+       (fspathFrom, pathFrom, fspathTo, pathTo, realPathTo,
+         update, desc, fp, ress, id))
+  (fun (fspathFrom, pathFrom, fspathTo, pathTo, realPathTo,
+         update, desc, fp, ress, id) ->
+       ((fspathFrom, pathFrom, fspathTo, pathTo, realPathTo),
+         (update, desc, fp, ress, id)))
+
 let mcopyOrUpdate = Umarshal.(sum2 unit (prod2 Uutil.Filesize.m Uutil.Filesize.m id id)
                                 (function
                                  | `Copy -> I21 ()
@@ -857,7 +884,8 @@ let mfinishExternalTransfer = Umarshal.(prod2
 
 let finishExternalTransferOnRoot =
   Remote.registerRootCmdWithConnection
-    "finishExternalTransfer" mfinishExternalTransfer mtransferStatus finishExternalTransferLocal
+    "finishExternalTransfer" ~convV0
+    mfinishExternalTransfer mtransferStatus finishExternalTransferLocal
 
 let copyprogReg = Lwt_util.make_region 1
 
@@ -944,6 +972,16 @@ let transferFileLocal connFrom
                Lwt.return (`DONE (status, None))
              end)
 
+let convV0 = Remote.makeConvV0FunArg
+  (fun ((fspathFrom, pathFrom, fspathTo, pathTo, realPathTo),
+         (update, desc, fp, ress, id)) ->
+       (fspathFrom, pathFrom, fspathTo, pathTo, realPathTo,
+         update, desc, fp, ress, id))
+  (fun (fspathFrom, pathFrom, fspathTo, pathTo, realPathTo,
+         update, desc, fp, ress, id) ->
+       ((fspathFrom, pathFrom, fspathTo, pathTo, realPathTo),
+         (update, desc, fp, ress, id)))
+
 let mtransferFile = Umarshal.(sum2 (prod2 mtransferStatus (option string) id id) bool
                                 (function
                                  | `DONE (a, b) -> I21 (a, b)
@@ -953,7 +991,8 @@ let mtransferFile = Umarshal.(sum2 (prod2 mtransferStatus (option string) id id)
                                  | I22 a -> `EXTERNAL a))
 
 let transferFileOnRoot =
-  Remote.registerRootCmdWithConnection "transferFile" mfinishExternalTransfer mtransferFile transferFileLocal
+  Remote.registerRootCmdWithConnection "transferFile" ~convV0
+    mfinishExternalTransfer mtransferFile transferFileLocal
 
 (* We limit the size of the output buffers to about 512 KB
    (we cannot go above the limit below plus 64) *)

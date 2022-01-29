@@ -356,12 +356,23 @@ let renameLocal
   end;
   Lwt.return ()
 
+let convV0 = Remote.makeConvV0FunArg
+  (fun (fspathTo,
+         ((localPathTo, workingDir, pathFrom, pathTo), (ui, archOpt, notDefault))) ->
+       (fspathTo,
+         (localPathTo, workingDir, pathFrom, pathTo, ui, archOpt, notDefault)))
+  (fun (fspathTo,
+         (localPathTo, workingDir, pathFrom, pathTo, ui, archOpt, notDefault)) ->
+       (fspathTo,
+         ((localPathTo, workingDir, pathFrom, pathTo), (ui, archOpt, notDefault))))
+
 let mrename = Umarshal.(prod2
                           (prod4 Path.mlocal Fspath.m Path.mlocal Path.mlocal id id)
                           (prod3 Common.mupdateItem (option Update.marchive) bool id id)
                           id id)
 
-let renameOnHost = Remote.registerRootCmd "rename" mrename Umarshal.unit renameLocal
+let renameOnHost =
+  Remote.registerRootCmd "rename" ~convV0 mrename Umarshal.unit renameLocal
 
 let rename root localPath workingDir pathOld pathNew ui archOpt notDefault =
   debug (fun() ->
