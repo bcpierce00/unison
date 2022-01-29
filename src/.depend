@@ -662,6 +662,7 @@ name.cmi : \
     ubase/umarshal.cmi
 negotiate.cmo : \
     ubase/util.cmi \
+    ubase/umarshal.cmi \
     ubase/safelist.cmi \
     remote.cmi \
     lwt/lwt.cmi \
@@ -670,6 +671,7 @@ negotiate.cmo : \
     negotiate.cmi
 negotiate.cmx : \
     ubase/util.cmx \
+    ubase/umarshal.cmx \
     ubase/safelist.cmx \
     remote.cmx \
     lwt/lwt.cmx \

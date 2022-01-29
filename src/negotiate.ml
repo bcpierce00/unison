@@ -38,9 +38,11 @@ let getCommonFeaturesLocal (root, features) =
   with
   | e -> Lwt.fail e
 
+let m = Umarshal.(list string)
+
 let negotiateFeaturesRpcName = "negotiateFeatures"
 let getCommonFeaturesRemote =
-  Remote.registerRootCmd negotiateFeaturesRpcName getCommonFeaturesLocal
+  Remote.registerRootCmd negotiateFeaturesRpcName m m getCommonFeaturesLocal
 
 let getCommonFeaturesOnRoot features = function
   | (Common.Local, _) -> Lwt.return features
