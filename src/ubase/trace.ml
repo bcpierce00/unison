@@ -192,17 +192,19 @@ let terse =
 type msgtype = Msg | StatusMajor | StatusMinor | Log | LogColor
 type msg = msgtype * string
 
-let mmsgtype = Umarshal.(sum4 unit unit unit unit
+let mmsgtype = Umarshal.(sum5 unit unit unit unit unit
                            (function
-                            | Msg -> I41 ()
-                            | StatusMajor -> I42 ()
-                            | StatusMinor -> I43 ()
-                            | Log -> I44 ())
+                            | Msg -> I51 ()
+                            | StatusMajor -> I52 ()
+                            | StatusMinor -> I53 ()
+                            | Log -> I54 ()
+                            | LogColor -> I55 ())
                            (function
-                            | I41 () -> Msg
-                            | I42 () -> StatusMajor
-                            | I43 () -> StatusMinor
-                            | I44 () -> Log))
+                            | I51 () -> Msg
+                            | I52 () -> StatusMajor
+                            | I53 () -> StatusMinor
+                            | I54 () -> Log
+                            | I55 () -> LogColor))
 
 let mmsg = Umarshal.(prod2 mmsgtype string id id)
 
