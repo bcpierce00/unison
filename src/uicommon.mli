@@ -6,6 +6,8 @@ type interface =
    Text
  | Graphic
 
+val minterface : interface Umarshal.t
+
 (* The interface of a concrete UI implementation *)
 module type UI =
 sig

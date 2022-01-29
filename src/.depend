@@ -629,6 +629,7 @@ lwt/win/lwt_win.cmi : \
 main.cmo : \
     uutil.cmi \
     ubase/util.cmi \
+    ubase/umarshal.cmi \
     uitext.cmi \
     uicommon.cmi \
     strings.cmi \
@@ -639,6 +640,7 @@ main.cmo : \
 main.cmx : \
     uutil.cmx \
     ubase/util.cmx \
+    ubase/umarshal.cmx \
     uitext.cmx \
     uicommon.cmx \
     strings.cmx \
@@ -1317,6 +1319,7 @@ uicommon.cmx : \
     uicommon.cmi
 uicommon.cmi : \
     uutil.cmi \
+    ubase/umarshal.cmi \
     ubase/prefs.cmi \
     path.cmi \
     lwt/lwt.cmi \

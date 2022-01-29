@@ -26,6 +26,15 @@ type interface =
    Text
  | Graphic
 
+let minterface =
+  Umarshal.(sum2 unit unit
+              (function
+               | Text -> I21 ()
+               | Graphic -> I22 ())
+              (function
+               | I21 () -> Text
+               | I22 () -> Graphic))
+
 module type UI =
 sig
  val start : interface -> unit
