@@ -36,9 +36,8 @@ let find (k : 'a key) m : 'a = Obj.obj (Util.StringMap.find k m)
 let add (k : 'a key) (v : 'a) m = Util.StringMap.add k (Obj.repr v) m
 
 let find_m (k : 'a key) : 'a Umarshal.t =
-  match Util.StringMap.find_opt k !names with
-  | Some x -> Obj.obj x
-  | None -> raise (Util.Fatal (Format.sprintf "Property lists: %s not yet registered!" k))
+  try Obj.obj (Util.StringMap.find k !names) with
+  | Not_found -> raise (Util.Fatal (Format.sprintf "Property lists: %s not yet registered!" k))
 
 module S = struct
   type key = string
