@@ -7,9 +7,28 @@
 #include "caml/bigarray.h"
 #include "caml/memory.h"
 
+CAMLprim value ml_marshal_to_bigarray(value v, value flags)
+{
+  char *buf;
+  long len;
+  output_value_to_malloc(v, flags, &buf, &len);
+  return alloc_bigarray(BIGARRAY_UINT8 | BIGARRAY_C_LAYOUT | BIGARRAY_MANAGED,
+                        1, buf, &len);
+}
+
 
 #define Array_data(a, i) (((char *) a->data) + Long_val(i))
 
+
+CAMLprim value ml_unmarshal_from_bigarray(value b, value ofs)
+{
+  CAMLparam1(b); /* Holds [b] live until unmarshalling completes. */
+  value result;
+  struct caml_bigarray *b_arr = Bigarray_val(b);
+  result = input_value_from_block (Array_data (b_arr, ofs),
+                                 b_arr->dim[0] - Long_val(ofs));
+  CAMLreturn(result);
+}
 
 CAMLprim value ml_blit_string_to_bigarray
 (value s, value i, value a, value j, value l)

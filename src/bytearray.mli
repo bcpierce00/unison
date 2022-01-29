@@ -23,3 +23,7 @@ val blit_from_bytes : bytes -> int -> t -> int -> int -> unit
 val blit_to_bytes : t -> int -> bytes -> int -> int -> unit
 
 val prefix : t -> t -> int -> bool
+
+val marshal : 'a -> Marshal.extern_flags list -> t
+
+val unmarshal : t -> int -> 'a
