@@ -232,10 +232,10 @@ type bytearray =
   (char, Bigarray.int8_unsigned_elt, Bigarray.c_layout) Bigarray.Array1.t
 
 external unsafe_blit_from_bytes : bytes -> int -> bytearray -> int -> int -> unit
-  = "ml_blit_bytes_to_bigarray" [@@noalloc]
+  = "ml_blit_bytes_to_bigarray" "noalloc"
 
 external unsafe_blit_to_bytes : bytearray -> int -> bytes -> int -> int -> unit
-  = "ml_blit_bigarray_to_bytes" [@@noalloc]
+  = "ml_blit_bigarray_to_bytes" "noalloc"
 
 let bytearray =
   {
@@ -349,7 +349,7 @@ let list m =
       (fun recv ->
         let length = int.read recv in
         let result = ref [] in
-        for _ = 1 to length do
+        for _i = 1 to length do
           result := m.read recv :: !result
         done;
         List.rev !result
@@ -609,7 +609,7 @@ module Proplist (S : PROPLIST_S) = struct
         (fun recv ->
           let length = int.read recv in
           let res = ref S.empty in
-          for _ = 1 to length do
+          for _i = 1 to length do
             let key = string.read recv in
             let value = (S.find_m key).read recv in
             res := S.add key value !res
