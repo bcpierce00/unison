@@ -1122,6 +1122,16 @@ let archivesExistOnRoot: Common.root -> unit -> (bool * bool) Lwt.t =
        let (newname,_) = archiveName fspath NewArch in
        let newexists =
          System.file_exists (Util.fileInUnisonDir newname) in
+       let oldexists =
+         if oldexists || newexists then oldexists else
+           (* No archive found, try 2.51 upgrade mode *)
+           (* IMPORTANT! This code is for smoother upgrades from
+              versions <= 2.51.5
+              It can be removed when this compatibility is no longer
+              required. *)
+           let (oldname, _) = archiveName251 fspath MainArch in
+           System.file_exists (Util.fileInUnisonDir oldname)
+       in
        Lwt.return (oldexists, newexists))
 
 let forall = Safelist.for_all (fun x -> x)
