@@ -11,7 +11,7 @@ FSMOCAMLOBJS = \
    lwt/win/lwt_win.cmo \
    fsmonitor/watchercommon.cmo $(DIR)/watcher.cmo
 FSMCOBJS = \
-   bytearray_stubs.o \
+   bytearray_stubs$(OBJ_EXT) \
    system/system_win_stubs$(OBJ_EXT) lwt/lwt_unix_stubs$(OBJ_EXT)
 FSMOCAMLLIBS=bigarray.cma unix.cma
 
