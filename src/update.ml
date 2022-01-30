@@ -478,13 +478,17 @@ let loadArchiveLocal fspath (thisRoot: string) :
                          ^ System.fspathToPrintString fspath ^ "\n\
                          You should either upgrade Unison or invoke Unison \
                          once with -ignorearchives flag and then try again."));
-        (* TODO: When the new archive encoding is merged, the decoder must take
-           the list of features as input here. *)
-        (* Load the datastructure *)
         try
+          (* Temporarily enable features that were used when storing the archive
+             to make sure the types are correct when loading the archive. *)
+          let negotiatedFts = Features.getEnabled () in
+          let () = Features.setEnabled commonFts in
+          (* Load the datastructure *)
           let ((archive, hash, magic, properties) : archive * int * string * Proplist.t) =
             Umarshal.from_channel mpayload c in
           close_in c;
+          (* Restore to the negotiated features *)
+          let () = Features.setEnabled negotiatedFts in
           Some (archive, hash, magic, properties)
         with Failure s | Umarshal.Error s -> raise (Util.Fatal (Printf.sprintf
            "Archive file seems damaged (%s): \
