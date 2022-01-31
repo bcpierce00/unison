@@ -605,8 +605,11 @@ let removeArchiveLocal ((fspath: Fspath.t), (v: archiveVersion)): unit Lwt.t =
   if Safelist.exists (fun x -> x = fspath) !loadedCompatArchive then begin
     loadedCompatArchive := Safelist.filter (fun x -> x <> fspath)
       !loadedCompatArchive;
-    try
+    (try
       ignore (f' (fst (archiveName251 fspath MainArch)))
+    with Util.Fatal _ -> ());
+    try
+      ignore (f' (fst (archiveName251 fspath FPCache)))
     with Util.Fatal _ -> ()
   end;
   ret
