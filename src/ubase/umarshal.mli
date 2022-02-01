@@ -1,8 +1,41 @@
 (* Unison file synchronizer: src/ubase/umarshal.mli *)
 (* Copyright 2020, Stéphane Glondu (see COPYING for details) *)
 
+(* The purpose and characteristics of the Umarshal module are not unlike
+   those of Stdlib's Marshal module, with two main differences
+
+    - it is not intended to encode and decode arbitrary data structures.
+    - it is intended to be compatible and stable across all machines and
+      OCaml versions.
+
+   This module provides basic infrastructure for marshaling along with some
+   combinators to build marshaling functions for various data structures.
+
+   The encoding format used by Umarshal is not following any standard, it
+   is a minimal binary format with no overhead designed to encode a limited
+   set of data types in a platform-neutral way. The format does not carry
+   any schema or other type information. *)
+
 exception Error of string
 
+(* Type ['a t] defines un-/marshaling functions for a data structure with
+   type ['a].
+
+   The combinators in this module are used to build [Umarshal.t] values.
+   Combinators are provided for basic types, such as ints, floats and
+   strings, for basic structures such as products (tuples) and sums
+   (variants), and for recursive structures. Other types (such as records)
+   will need to be converted to tuples. All sum and product combinators
+   receive conversion functions for this purpose.
+
+   By convention, a [Umarshal.t] value for a type in another module will be
+   named by the name of the type prefixed with "m", or just "m" in case the
+   type is named "t".
+
+   For example (in other modules):
+     [mtyp : typ Umarshal.t]
+     [m : t Umarshal.t]
+*)
 type 'a t
 
 external id : 'a -> 'a = "%identity"
