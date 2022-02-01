@@ -1627,13 +1627,13 @@ uutil.cmo : \
     ubase/util.cmi \
     ubase/umarshal.cmi \
     ubase/trace.cmi \
-    features.cmi \
+    ubase/projectInfo.cmo \
     uutil.cmi
 uutil.cmx : \
     ubase/util.cmx \
     ubase/umarshal.cmx \
     ubase/trace.cmx \
-    features.cmx \
+    ubase/projectInfo.cmx \
     uutil.cmi
 uutil.cmi : \
     ubase/umarshal.cmi
