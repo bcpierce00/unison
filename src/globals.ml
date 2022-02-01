@@ -261,7 +261,7 @@ let ignorenotPred =
      synchronized will not work.  Instead, you should use the {\\tt path}
      preference to choose particular paths to synchronize.")
 
-let atomic = Pred.create "atomic" ~advanced:true
+let atomic = Pred.create "atomic" ~local:true ~advanced:true
   ("This preference specifies paths for directories whose "
    ^ "contents will be considered as a group rather than individually when "
    ^ "they are both modified.  "
