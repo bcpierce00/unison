@@ -166,6 +166,15 @@ jobs:
 
     - run: opam exec -- make test
 
+    - name: Run self-tests over RPC
+      shell: bash
+      run: |
+        # Separate backup dir must be set for server instance so that the central
+        # backup location of both instances doesn't overlap
+        UNISONBACKUPDIR=./src/testbak2 ./src/unison -socket 55443 &
+        sleep 1 # Wait for the server to be fully started
+        ./src/unison -ui text -selftest testr1 socket://127.0.0.1:55443/testr2 -killserver
+
     - if: steps.vars.outputs.STATIC != 'true' ## unable to build static gtk for linux or windows/Cygwin MinGW platforms
       shell: bash
       run: |
