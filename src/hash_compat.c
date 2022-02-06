@@ -1,7 +1,10 @@
 /* The pre-OCaml 4.00 hash implementation */
 /* FIXME: This is included for backwards compatibility only and must be
- * REMVOED at next Unison version increase. The removal of this will
- * break Unison version compatibility. */
+ * REMOVED when a new hash function included in a stable release has been
+ * available for a few years. The removal of this function will break
+ * Unison version compatibility. There must be plenty of time given
+ * for users to upgrade (most users don't compile themselves and are at
+ * mercy of whatever package repositories they use). */
 
 /* Code copied from OCaml sources */
 /**************************************************************************/
@@ -19,7 +22,6 @@
 /*                                                                        */
 /**************************************************************************/
 
-#define CAML_NAME_SPACE
 #include <caml/mlvalues.h>
 #include <caml/custom.h>
 #ifndef Bytes_val /* Hack to know that we are on OCaml < 4.06.

@@ -11,7 +11,6 @@
 
 #endif /* _WIN32 */
 
-#define CAML_NAME_SPACE
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>    // alloc_tuple
 #include <caml/memory.h>   // Store_field
@@ -50,10 +49,10 @@ CAMLprim value setControllingTerminal(value fdVal) {
 }
 
 /* c_openpty: unit -> (int * Unix.file_descr) */
-CAMLprim value c_openpty() {
+CAMLprim value c_openpty(value unit) {
   CAMLparam0();
-  int master,slave;
   CAMLlocal1(pair);
+  int master, slave;
   if (openpty(&master,&slave,NULL,NULL,NULL) < 0)
     uerror("openpty", (value) 0);
   pair = caml_alloc_tuple(2);
@@ -68,7 +67,7 @@ CAMLprim value setControllingTerminal(value fdVal) {
   unix_error (ENOSYS, "setControllingTerminal", Nothing);
 }
 
-CAMLprim value c_openpty() {
+CAMLprim value c_openpty(value unit) {
   unix_error (ENOSYS, "openpty", Nothing);
 }
 
@@ -145,7 +144,7 @@ typedef void (WINAPI *sClosePseudoConsole) (HPCON hPC);
 sCreatePseudoConsole pCreatePseudoConsole;
 sClosePseudoConsole pClosePseudoConsole;
 
-CAMLprim value win_openpty()
+CAMLprim value win_openpty(value unit)
 {
   CAMLparam0();
   CAMLlocal4(tup, tmp1, tmp2, tmp3);

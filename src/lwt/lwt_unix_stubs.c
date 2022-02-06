@@ -9,12 +9,11 @@
 #include <caml/fail.h>
 #include <caml/bigarray.h>
 #include <caml/callback.h>
+#include <caml/unixsupport.h>
+#include <caml/socketaddr.h>
 
 //#define D(x) x
 #define D(x) while(0){}
-
-#define UNIX_BUFFER_SIZE 16384
-#define Nothing ((value) 0)
 
 typedef struct
 {
@@ -23,57 +22,36 @@ typedef struct
   long action;
 } completionData;
 
-struct filedescr {
-  union {
-    HANDLE handle;
-    SOCKET socket;
-  } fd;
-  enum { KIND_HANDLE, KIND_SOCKET } kind;
-  int crt_fd;
-};
-#define Handle_val(v) (((struct filedescr *) Data_custom_val(v))->fd.handle)
-#define Socket_val(v) (((struct filedescr *) Data_custom_val(v))->fd.socket)
-
-extern void win32_maperr (DWORD errcode);
-extern void uerror (char * cmdname, value arg);
-extern value unix_error_of_code (int errcode);
-extern value win_alloc_handle (HANDLE h);
-extern value win_alloc_socket(SOCKET);
-extern void get_sockaddr (value mladdr,
-                          struct sockaddr * addr /*out*/,
-                          int * addr_len /*out*/);
-
-#define Array_data(a, i) (((char *) a->data) + Long_val(i))
+#define Array_data(a, i) (((char *) Caml_ba_data_val(a)) + Long_val(i))
 
 #ifndef Bytes_val
 #define Bytes_val(x) ((unsigned char *) Bp_val(x))
 #endif
 
-CAMLprim value ml_blit_string_to_buffer
-(value s, value i, value a, value j, value l)
-{
-  const char *src = String_val(s) + Int_val(i);
-  char *dest = Array_data(Bigarray_val(a), j);
-  memcpy(dest, src, Long_val(l));
-  return Val_unit;
-}
-
 CAMLprim value ml_blit_bytes_to_buffer
 (value s, value i, value a, value j, value l)
 {
-  char *src = Bytes_val(s) + Int_val(i);
-  char *dest = Array_data(Bigarray_val(a), j);
+  CAMLparam5(s, i, a, j, l);
+  unsigned char *src = Bytes_val(s) + Long_val(i);
+  char *dest = Array_data(a, j);
   memcpy(dest, src, Long_val(l));
-  return Val_unit;
+  CAMLreturn(Val_unit);
+}
+
+CAMLprim value ml_blit_string_to_buffer
+(value s, value i, value a, value j, value l)
+{
+  return ml_blit_bytes_to_buffer(s, i, a, j, l);
 }
 
 CAMLprim value ml_blit_buffer_to_bytes
 (value a, value i, value s, value j, value l)
 {
-  char *src = Array_data(Bigarray_val(a), i);
-  char *dest = Bytes_val(s) + Long_val(j);
+  CAMLparam5(a, i, s, j, l);
+  char *src = Array_data(a, i);
+  unsigned char *dest = Bytes_val(s) + Long_val(j);
   memcpy(dest, src, Long_val(l));
-  return Val_unit;
+  CAMLreturn(Val_unit);
 }
 
 /****/
@@ -101,7 +79,7 @@ static void invoke_completion_callback
     win32_maperr (errCode);
     err = unix_error_of_code(errno);
   }
-  name = copy_string (action_name[action]);
+  name = caml_copy_string(action_name[action]);
   D(printf("Action %s completed: id %ld -> len %ld / err %d (errCode %ld)\n",
            action_name[action], id, len, errno, errCode));
   args[0] = Val_long(id);
@@ -110,6 +88,7 @@ static void invoke_completion_callback
   args[3] = name;
   caml_callbackN(completionCallback, 4, args);
   D(printf("Callback performed\n"));
+  CAMLreturn0;
 }
 
 typedef struct {
@@ -256,7 +235,6 @@ static VOID CALLBACK perform_io_on_thread(ULONG_PTR param) {
 
 static void thread_io
 (long action, long id, value threads, HANDLE h, char * buf, long len) {
-  struct caml_bigarray *buf_arr = Bigarray_val(buf);
   ioInfo * info = GlobalAlloc(GPTR, sizeof(ioInfo));
   if (info == NULL) {
     errno = ENOMEM;
@@ -327,29 +305,27 @@ CAMLprim value win_wrap_overlapped (value fd) {
 
 CAMLprim value win_read
 (value fd, value buf, value ofs, value len, value id) {
-  CAMLparam4(fd, buf, ofs, len);
-  struct caml_bigarray *buf_arr = Bigarray_val(buf);
+  CAMLparam5(fd, buf, ofs, len, id);
 
   if (Field(fd, 1) == Val_long(0))
     overlapped_action (READ_OVERLAPPED, Long_val(id), Handle(fd),
-                       Array_data (buf_arr, ofs), Long_val(len));
+                       Array_data(buf, ofs), Long_val(len));
   else
     thread_io (READ, Long_val(id), Field(fd, 1), Handle(fd),
-               Array_data (buf_arr, ofs), Long_val(len));
+               Array_data(buf, ofs), Long_val(len));
   CAMLreturn (Val_unit);
 }
 
 CAMLprim value win_write
 (value fd, value buf, value ofs, value len, value id) {
-  CAMLparam4(fd, buf, ofs, len);
-  struct caml_bigarray *buf_arr = Bigarray_val(buf);
+  CAMLparam5(fd, buf, ofs, len, id);
 
   if (Field(fd, 1) == Val_long(0))
     overlapped_action (WRITE_OVERLAPPED, Long_val(id), Handle(fd),
-                       Array_data (buf_arr, ofs), Long_val(len));
+                       Array_data(buf, ofs), Long_val(len));
   else
     thread_io (WRITE, Long_val(id), Field(fd, 1), Handle(fd),
-               Array_data (buf_arr, ofs), Long_val(len));
+               Array_data(buf, ofs), Long_val(len));
   CAMLreturn (Val_unit);
 }
 
@@ -423,7 +399,7 @@ CAMLprim value init_lwt (value callback) {
   int i;
 
   D(printf("Init...\n"));
-  register_global_root (&completionCallback);
+  caml_register_global_root(&completionCallback);
   completionCallback = callback;
 
   dummyEvent = CreateEvent(NULL, TRUE, FALSE, NULL);  // Dummy event
@@ -526,7 +502,7 @@ value win_pipe(long readMode, long writeMode) {
 
   readfd = win_alloc_handle(readh);
   writefd = win_alloc_handle(writeh);
-  res = alloc_small(2, 0);
+  res = caml_alloc_small(2, 0);
   Store_field(res, 0, readfd);
   Store_field(res, 1, writefd);
   CAMLreturn (res);
@@ -623,15 +599,14 @@ static int notify_filter_flags[8] = {
 CAMLprim value win_readdirtorychanges
 (value fd_val, value buf_val, value recursive, value flags, value id_val) {
   CAMLparam5(fd_val, buf_val, recursive, flags, id_val);
-  struct caml_bigarray *buf_arr = Bigarray_val(buf_val);
   long id = Long_val(id_val);
   HANDLE fd = Handle_val(fd_val);
-  char * buf = Array_data (buf_arr, 0);
-  long len = buf_arr->dim[0];
+  char * buf = Array_data(buf_val, 0);
+  long len = Caml_ba_array_val(buf_val)->dim[0];
   long action = READDIRECTORYCHANGES;
   BOOL res;
   long err;
-  int notify_filter = convert_flag_list(flags, notify_filter_flags);
+  int notify_filter = caml_convert_flag_list(flags, notify_filter_flags);
   completionData * d = GlobalAlloc(GPTR, sizeof(completionData));
   if (d == NULL) {
     errno = ENOMEM;
@@ -661,8 +636,7 @@ CAMLprim value win_readdirtorychanges
 CAMLprim value win_parse_directory_changes (value buf_val) {
   CAMLparam1(buf_val);
   CAMLlocal4(lst, tmp, elt, filename);
-  struct caml_bigarray *buf_arr = Bigarray_val(buf_val);
-  char * pos = Array_data (buf_arr, 0);
+  char * pos = Array_data(buf_val, 0);
   FILE_NOTIFY_INFORMATION * entry;
 
   lst = Val_long(0);

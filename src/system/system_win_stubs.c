@@ -1,29 +1,19 @@
 #define WINVER 0x0500
 
-#include <caml/mlvalues.h>
-#include <caml/alloc.h>
-#include <caml/memory.h>
-#include <caml/fail.h>
-
+#include <winsock2.h>
 #include <windows.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <stdio.h>
 #include <stdint.h>
 
+#include <caml/mlvalues.h>
+#include <caml/alloc.h>
+#include <caml/memory.h>
+#include <caml/fail.h>
+#include <caml/unixsupport.h>
+
 #define NT_MAX_PATH 32768
-
-#define Nothing ((value) 0)
-
-struct filedescr {
-  union {
-    HANDLE handle;
-    SOCKET socket;
-  } fd;
-  enum { KIND_HANDLE, KIND_SOCKET } kind;
-  int crt_fd;
-};
-#define Handle_val(v) (((struct filedescr *) Data_custom_val(v))->fd.handle)
 
 value copy_wstring(LPCWSTR s)
 {
@@ -36,9 +26,6 @@ value copy_wstring(LPCWSTR s)
   return res;
 }
 
-extern void win32_maperr (DWORD errcode);
-extern void uerror (char * cmdname, value arg);
-extern value win_alloc_handle (HANDLE h);
 extern value cst_to_constr (int n, int * tbl, int size, int deflt);
 
 static int open_access_flags[12] = {
@@ -195,9 +182,9 @@ CAMLprim value win_open (value path, value wpath, value flags, value perm) {
 
   CAMLparam4 (path, wpath, flags, perm);
 
-  fileaccess = convert_flag_list(flags, open_access_flags);
+  fileaccess = caml_convert_flag_list(flags, open_access_flags);
 
-  createflags = convert_flag_list(flags, open_create_flags);
+  createflags = caml_convert_flag_list(flags, open_create_flags);
   if ((createflags & (O_CREAT | O_EXCL)) == (O_CREAT | O_EXCL))
     filecreate = CREATE_NEW;
   else if ((createflags & (O_CREAT | O_TRUNC)) == (O_CREAT | O_TRUNC))
@@ -382,36 +369,6 @@ typedef enum _FILE_INFORMATION_CLASS {
   FileMaximumInformation
 } FILE_INFORMATION_CLASS, *PFILE_INFORMATION_CLASS;
 
-typedef struct _REPARSE_DATA_BUFFER {
-  ULONG  ReparseTag;
-  USHORT ReparseDataLength;
-  USHORT Reserved;
-  union {
-    struct {
-      USHORT SubstituteNameOffset;
-      USHORT SubstituteNameLength;
-      USHORT PrintNameOffset;
-      USHORT PrintNameLength;
-      ULONG Flags;
-      WCHAR PathBuffer[1];
-    } SymbolicLinkReparseBuffer;
-    struct {
-      USHORT SubstituteNameOffset;
-      USHORT SubstituteNameLength;
-      USHORT PrintNameOffset;
-      USHORT PrintNameLength;
-      WCHAR PathBuffer[1];
-    } MountPointReparseBuffer;
-    struct {
-      UCHAR  DataBuffer[1];
-    } GenericReparseBuffer;
-    struct {
-      ULONG StringCount;
-      WCHAR StringList[1];
-    } AppExecLinkReparseBuffer;
-  };
-} REPARSE_DATA_BUFFER, *PREPARSE_DATA_BUFFER;
-
 typedef NTSTATUS (NTAPI *sNtQueryInformationFile)
                  (HANDLE FileHandle,
                   PIO_STATUS_BLOCK IoStatusBlock,
@@ -470,7 +427,7 @@ void win_init()
 
 /* END section originally copied from libuv win/winapi.c */
 
-CAMLprim value win_has_correct_ctime()
+CAMLprim value win_has_correct_ctime(value unit)
 {
   CAMLparam0();
 
@@ -491,7 +448,7 @@ CAMLprim value win_stat(value path, value wpath, value lstat)
   uintnat kind;
   uintnat mode;
   uintnat nlink;
-  uint64_t size;
+  uint64_t size = 0;
   double atime;
   double mtime;
   double ctime;
@@ -631,10 +588,10 @@ CAMLprim value win_stat(value path, value wpath, value lstat)
   Store_field(v, 5, Val_int(0));
   Store_field(v, 6, Val_int(0));
   Store_field(v, 7, Val_int(0));
-  Store_field(v, 8, copy_int64(size));
-  Store_field(v, 9, copy_double(atime));
-  Store_field(v, 10, copy_double(mtime));
-  Store_field(v, 11, copy_double(ctime));
+  Store_field(v, 8, caml_copy_int64(size));
+  Store_field(v, 9, caml_copy_double(atime));
+  Store_field(v, 10, caml_copy_double(mtime));
+  Store_field(v, 11, caml_copy_double(ctime));
 
   CAMLreturn (v);
 }
@@ -685,7 +642,7 @@ CAMLprim value win_findfirstw(value name)
   if (h == INVALID_HANDLE_VALUE) {
     DWORD err = GetLastError();
     if ((err == ERROR_NO_MORE_FILES) || (err == ERROR_FILE_NOT_FOUND))
-      raise_end_of_file();
+      caml_raise_end_of_file();
     else {
       win32_maperr(err);
       uerror("opendir", Nothing);
@@ -693,7 +650,7 @@ CAMLprim value win_findfirstw(value name)
   }
   valname = copy_wstring(fileinfo.cFileName);
   valh = win_alloc_handle(h);
-  v = alloc_small(2, 0);
+  v = caml_alloc_small(2, 0);
   Field(v,0) = valname;
   Field(v,1) = valh;
   CAMLreturn (v);
@@ -710,7 +667,7 @@ CAMLprim value win_findnextw(value valh)
   if (!retcode) {
     DWORD err = GetLastError();
     if (err == ERROR_NO_MORE_FILES)
-      raise_end_of_file();
+      caml_raise_end_of_file();
     else {
       win32_maperr(err);
       uerror("readdir", Nothing);
@@ -737,13 +694,13 @@ CAMLprim value win_getenv(value var)
   CAMLparam1(var);
   CAMLlocal1(res);
 
-  s = stat_alloc (65536);
+  s = caml_stat_alloc(65536);
 
   len = GetEnvironmentVariableW((LPCWSTR) String_val(var), s, 65536);
-  if (len == 0) { stat_free (s); raise_not_found(); }
+  if (len == 0) { caml_stat_free(s); caml_raise_not_found(); }
 
   res = copy_wstring(s);
-  stat_free (s);
+  caml_stat_free(s);
   CAMLreturn (res);
 
 }
@@ -921,6 +878,7 @@ static void init_conin ()
 
 CAMLprim value win_get_console_mode (value unit)
 {
+  CAMLparam0();
   DWORD mode;
   BOOL res;
 
@@ -932,11 +890,12 @@ CAMLprim value win_get_console_mode (value unit)
     uerror("get_console_mode", Nothing);
   }
 
-  return (Val_int (mode));
+  CAMLreturn(Val_int(mode));
 }
 
 CAMLprim value win_set_console_mode (value mode)
 {
+  CAMLparam1(mode);
   BOOL res;
 
   init_conin ();
@@ -946,19 +905,21 @@ CAMLprim value win_set_console_mode (value mode)
     win32_maperr (GetLastError ());
     uerror("set_console_mode", Nothing);
   }
-  return (Val_unit);
+  CAMLreturn(Val_unit);
 }
 
 CAMLprim value win_get_console_output_cp (value unit) {
-  return (Val_int (GetConsoleOutputCP ()));
+  CAMLparam0();
+  CAMLreturn(Val_int(GetConsoleOutputCP()));
 }
 
 CAMLprim value win_set_console_output_cp (value cp) {
+  CAMLparam1(cp);
   BOOL res;
   res = SetConsoleOutputCP (Int_val (cp));
   if (res == 0) {
     win32_maperr (GetLastError ());
     uerror("set_console_cp", Nothing);
   }
-  return (Val_unit);
+  CAMLreturn(Val_unit);
 }
