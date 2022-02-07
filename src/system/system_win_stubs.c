@@ -369,6 +369,44 @@ typedef enum _FILE_INFORMATION_CLASS {
   FileMaximumInformation
 } FILE_INFORMATION_CLASS, *PFILE_INFORMATION_CLASS;
 
+#ifndef init_exceptions /* Removed since OCaml 4.02 */
+#include <caml/version.h> /* Available since OCaml 4.02 */
+#endif
+
+#if !defined(OCAML_VERSION) || OCAML_VERSION < 40300
+
+typedef struct _REPARSE_DATA_BUFFER {
+  ULONG  ReparseTag;
+  USHORT ReparseDataLength;
+  USHORT Reserved;
+  union {
+    struct {
+      USHORT SubstituteNameOffset;
+      USHORT SubstituteNameLength;
+      USHORT PrintNameOffset;
+      USHORT PrintNameLength;
+      ULONG Flags;
+      WCHAR PathBuffer[1];
+    } SymbolicLinkReparseBuffer;
+    struct {
+      USHORT SubstituteNameOffset;
+      USHORT SubstituteNameLength;
+      USHORT PrintNameOffset;
+      USHORT PrintNameLength;
+      WCHAR PathBuffer[1];
+    } MountPointReparseBuffer;
+    struct {
+      UCHAR  DataBuffer[1];
+    } GenericReparseBuffer;
+    struct {
+      ULONG StringCount;
+      WCHAR StringList[1];
+    } AppExecLinkReparseBuffer;
+  };
+} REPARSE_DATA_BUFFER, *PREPARSE_DATA_BUFFER;
+
+#endif /* !OCAML_VERSION */
+
 typedef NTSTATUS (NTAPI *sNtQueryInformationFile)
                  (HANDLE FileHandle,
                   PIO_STATUS_BLOCK IoStatusBlock,
