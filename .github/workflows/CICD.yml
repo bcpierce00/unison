@@ -35,12 +35,12 @@ jobs:
         - { os: ubuntu-18.04  , ocaml-version: 4.03.0 }
         - { os: ubuntu-18.04  , ocaml-version: 4.02.3 }
         - { os: ubuntu-18.04  , ocaml-version: 4.01.0 }
-        - { os: windows-latest , ocaml-version: 4.12.1+mingw64c }
-        - { os: windows-latest , ocaml-version: 4.11.2+mingw64c }
-        - { os: windows-latest , ocaml-version: 4.10.2+mingw64c }
-        - { os: windows-latest , ocaml-version: 4.10.2+mingw32c }
-        - { os: windows-latest , ocaml-version: 4.09.1+mingw64c }
-        - { os: windows-latest , ocaml-version: 4.08.1+mingw64c }
+        - { os: windows-2019  , ocaml-version: 4.12.1+mingw64c }
+        - { os: windows-2019  , ocaml-version: 4.11.2+mingw64c }
+        - { os: windows-2019  , ocaml-version: 4.10.2+mingw64c }
+        - { os: windows-2019  , ocaml-version: 4.10.2+mingw32c }
+        - { os: windows-2019  , ocaml-version: 4.09.1+mingw64c }
+        - { os: windows-2019  , ocaml-version: 4.08.1+mingw64c }
 
     runs-on: ${{ matrix.job.os }}
 
