@@ -95,7 +95,13 @@ let read st ic =
     debug (fun () -> Util.msg "bad chunk checksum\n");
     raise End_of_file
   end;
-  let q : entry list = Umarshal.from_bytes mentry_list s 0 in
+  let q =
+    try Umarshal.from_bytes mentry_list s 0 with
+    | Umarshal.Error _ ->
+        debug (fun () -> Util.msg ("Umarshal error when reading from file, "
+                                ^^ "ignoring and continuing\n"));
+        []
+  in
   debug (fun () -> Util.msg "read chunk of %d files\n" (List.length q));
   List.iter (fun (l, p, i) -> PathTbl.add tbl (decompress st l p) i) q
 
