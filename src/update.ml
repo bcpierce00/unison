@@ -44,8 +44,6 @@ let ignoreArchives =
   time the format is modified *)
 (*FIX: also make Jerome's suggested change about file times (see his mesg in
        unison-pending email folder). *)
-(*FIX: we could also drop the use of 8.3-style filenames on Windows, next
-  time the format is changed *)
 (* FIX: use a special stamp rather than the current hack to leave a flag
    in the archive when a file transfer fails so as to turn off fastcheck
    for this file on the next sync. *)
@@ -202,15 +200,6 @@ let storeRootsName () =
                (Globals.rootsInCanonicalOrder())))) in
   Prefs.set rootsName n
 
-(* How many characters of the filename should be used for the unique id of
-   the archive?  On Unix systems, we use the full fingerprint (32 bytes).
-   On windows systems, filenames longer than 8 bytes can cause problems, so
-   we chop off all but the first 6 from the fingerprint. *)
-let significantDigits =
-  match Util.osType with
-    `Win32 -> 6
-  | `Unix -> 32
-
 let thisRootsGlobalName (fspath: Fspath.t): string =
   root2stringOrAlias (Common.Remote (Os.myCanonicalHostName ()), fspath)
 
@@ -253,7 +242,7 @@ let archiveHash fspath =
   debugverbose (fun()-> Util.msg "Archive name is %s; hashcode is %s\n" n d);
   if Prefs.read showArchiveName then
     Util.msg "Archive name is %s; hashcode is %s\n" n d;
-  (String.sub d 0 significantDigits)
+  d
 
 (* We include the hash part of the archive name in the names of temp files
    created by this run of Unison.  The reason for this is that, during
@@ -283,6 +272,15 @@ let archiveName fspath (v: archiveVersion): string * string =
    It is safe to delete it when that support is no longer required. *)
 let archiveName251 fspath (v: archiveVersion): string * string =
   let archiveHash251 fspath =
+    (* How many characters of the filename should be used for the unique id of
+       the archive?  On Unix systems, we use the full fingerprint (32 bytes).
+       On windows systems, filenames longer than 8 bytes can cause problems, so
+       we chop off all but the first 6 from the fingerprint. *)
+    let significantDigits =
+      match Util.osType with
+        `Win32 -> 6
+      | `Unix -> 32
+    in
     let thisRoot = thisRootsGlobalName fspath in
     let r = Prefs.read rootsName in
     let n = Printf.sprintf "%s;%s;22" thisRoot r in
