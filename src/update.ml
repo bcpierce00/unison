@@ -40,13 +40,8 @@ let ignoreArchives =
    archive changes: old archives will then automatically be discarded.  (We
    do not use the unison version number for this because usually the archive
    representation does not change between unison versions.) *)
-(*FIX: also change Fileinfo.stamp to drop the info.ctime component, next
-  time the format is modified *)
 (*FIX: also make Jerome's suggested change about file times (see his mesg in
        unison-pending email folder). *)
-(* FIX: use a special stamp rather than the current hack to leave a flag
-   in the archive when a file transfer fails so as to turn off fastcheck
-   for this file on the next sync. *)
 (*FIX: consider changing the way case-sensitivity mode is stored in
   the archive *)
 let archiveFormat = 23
@@ -712,7 +707,7 @@ let fileUnchanged oldInfo newInfo =
     &&
   match Fileinfo.stamp oldInfo, Fileinfo.stamp newInfo with
     Fileinfo.InodeStamp in1, Fileinfo.InodeStamp in2 -> in1 = in2
-  | Fileinfo.CtimeStamp _,   Fileinfo.CtimeStamp _   -> true
+  | Fileinfo.NoStamp,        Fileinfo.NoStamp        -> true
   | _                                                -> false
 
 let archiveUnchanged fspath newInfo =
@@ -1595,8 +1590,10 @@ let checkContentsChange
                Fileinfo.InodeStamp inode ->
                  (Util.msg "archStamp is inode (%d)" inode;
                   Util.msg " / info.inode (%d)" info.Fileinfo.inode)
-             | Fileinfo.CtimeStamp stamp ->
-                 (Util.msg "archStamp is ctime (%f)" stamp)
+             | Fileinfo.NoStamp ->
+                 (Util.msg "archStamp is no-stamp")
+             | Fileinfo.RescanStamp ->
+                 (Util.msg "archStamp is rescan-possibly-updated")
            end;
            Util.msg " / times: %f = %f... %b"
              (Props.time archDesc) (Props.time info.Fileinfo.desc)
@@ -2689,8 +2686,7 @@ let fastCheckMiss path desc ress oldDesc oldRess =
 let doMarkPossiblyUpdated arch =
   match arch with
     ArchiveFile (desc, fp, stamp, ress) ->
-      (* It would be cleaner to have a special stamp for this *)
-      ArchiveFile (desc, fp, Fileinfo.InodeStamp (-1), ress)
+      ArchiveFile (desc, fp, Fileinfo.RescanStamp, ress)
   | _ ->
       (* Should not happen, actually.  But this is hard to test... *)
       arch

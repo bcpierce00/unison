@@ -183,33 +183,31 @@ type stamp251 =
   | CtimeStamp of float       (* creation time, for windows systems *)
 
 type stamp =
-    InodeStamp of int         (* inode number, for Unix systems *)
-  | CtimeStamp of float       (* creation time, for windows systems *)
-    (* FIX [BCP, 3/07]: The Ctimestamp variant is actually bogus.
-      For file transfers, it appears that using the ctime to detect a
-      file change is completely ineffective as, when a file is deleted (or
-      renamed) and then replaced by another file, the new file inherits the
-      ctime of the old file.  It is slightly harmful performancewise, as
-      fastcheck expects ctime to be preserved by renaming.  Thus, we should
-      probably not use any stamp under Windows. *)
+  | InodeStamp of int         (* inode number, for Unix systems *)
+  | NoStamp
+  | RescanStamp               (* stamp indicating file should be rescanned
+                                 (perhaps because previous transfer failed) *)
 
-let mstamp = Umarshal.(sum2 int float
+let mstamp = Umarshal.(sum3 int unit unit
                          (function
-                          | InodeStamp a -> I21 a
-                          | CtimeStamp a -> I22 a)
+                          | InodeStamp a -> I31 a
+                          | NoStamp -> I32 ()
+                          | RescanStamp -> I33 ())
                          (function
-                          | I21 a -> InodeStamp a
-                          | I22 a -> CtimeStamp a))
+                          | I31 a -> InodeStamp a
+                          | I32 () -> NoStamp
+                          | I33 () -> RescanStamp))
 
 let stamp_to_compat251 (st : stamp) : stamp251 =
   match st with
   | InodeStamp i -> InodeStamp i
-  | CtimeStamp c -> CtimeStamp c
+  | NoStamp -> CtimeStamp 0.0
+  | RescanStamp -> InodeStamp (-1)
 
 let stamp_of_compat251 (st : stamp251) : stamp =
   match st with
-  | CtimeStamp c -> CtimeStamp c
-  | InodeStamp i -> InodeStamp i
+  | InodeStamp i -> if i <> -1 then InodeStamp i else RescanStamp
+  | CtimeStamp _ -> NoStamp
 
 let ignoreInodeNumbers =
   Prefs.createBool "ignoreinodenumbers" false
@@ -222,10 +220,8 @@ let ignoreInodeNumbers =
 let _ = Prefs.alias ignoreInodeNumbers "pretendwin"
 
 let stamp info =
-       (* Was "CtimeStamp info.ctime", but this is bogus: Windows
-          ctimes are not reliable. *)
-  if Prefs.read ignoreInodeNumbers then CtimeStamp 0.0 else
-  if Fs.hasInodeNumbers () then InodeStamp info.inode else CtimeStamp 0.0
+  if Prefs.read ignoreInodeNumbers then NoStamp else
+  if Fs.hasInodeNumbers () then InodeStamp info.inode else NoStamp
 
 let ressStamp info = Osx.stamp info.osX
 

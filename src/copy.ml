@@ -63,7 +63,8 @@ let checkForChangesToSourceLocal
         && not (Fpcache.excelFile pathFrom)
         && match archStamp with
              Some (Fileinfo.InodeStamp inode) -> sourceInfo.Fileinfo.inode = inode
-           | Some (Fileinfo.CtimeStamp ctime) -> true
+           | Some (Fileinfo.NoStamp)          -> true
+           | Some (Fileinfo.RescanStamp)      -> false
            | None                             -> false   in
       let ressClearlyUnchanged =
            not clearlyChanged

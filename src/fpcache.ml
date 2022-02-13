@@ -230,11 +230,10 @@ let dataClearlyUnchanged fastCheck path info desc stamp =
   match stamp with
     Fileinfo.InodeStamp inode ->
       info.Fileinfo.inode = inode
-  | Fileinfo.CtimeStamp ctime ->
-      (* BCP [Apr 07]: This doesn't work -- ctimes are unreliable
-                       under windows.  :-(
-         info.Fileinfo.ctime = ctime *)
+  | Fileinfo.NoStamp ->
       true
+  | Fileinfo.RescanStamp ->
+      false
 
 let ressClearlyUnchanged fastCheck info ress dataClearlyUnchanged =
   fastCheck
