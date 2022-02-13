@@ -60,7 +60,7 @@ module NameMap = MyMap.Make (Name)
    compatible version must be created (like has been done for [Props.t]). *)
 type archive251 =
     ArchiveDir of Props.t251 * archive251 NameMap.t
-  | ArchiveFile of Props.t251 * Os.fullfingerprint * Fileinfo.stamp * Osx.ressStamp
+  | ArchiveFile of Props.t251 * Os.fullfingerprint * Fileinfo.stamp251 * Osx.ressStamp
   | ArchiveSymlink of string
   | NoArchive
 
@@ -96,7 +96,7 @@ let rec to_compat251 (arch : archive) : archive251 =
   | ArchiveDir (desc, children) ->
       ArchiveDir (Props.to_compat251 desc, NameMap.map to_compat251 children)
   | ArchiveFile (desc, dig, stamp, ress) ->
-      ArchiveFile (Props.to_compat251 desc, dig, stamp, ress)
+      ArchiveFile (Props.to_compat251 desc, dig, Fileinfo.stamp_to_compat251 stamp, ress)
   | ArchiveSymlink content -> ArchiveSymlink content
   | NoArchive -> NoArchive
 
@@ -105,7 +105,7 @@ let rec of_compat251 (arch : archive251) : archive =
   | ArchiveDir (desc, children) ->
       ArchiveDir (Props.of_compat251 desc, NameMap.map of_compat251 children)
   | ArchiveFile (desc, dig, stamp, ress) ->
-      ArchiveFile (Props.of_compat251 desc, dig, stamp, ress)
+      ArchiveFile (Props.of_compat251 desc, dig, Fileinfo.stamp_of_compat251 stamp, ress)
   | ArchiveSymlink content -> ArchiveSymlink content
   | NoArchive -> NoArchive
 
@@ -2301,9 +2301,9 @@ Format.eprintf "Update detection: %f@." (t2 -. t1);
      (Path.local * Common.updateItem * Props.t list) list *)
 let convV0 = Remote.makeConvV0FunRet
   (fun r -> Safelist.map
-    (fun (a, b, c) -> a, b, Safelist.map (fun e -> Props.to_compat251 e) c) r)
+    (fun (a, b, c) -> a, Common.ui_to_compat251 b, Safelist.map Props.to_compat251 c) r)
   (fun r -> Safelist.map
-    (fun (a, b, c) -> a, b, Safelist.map (fun e -> Props.of_compat251 e) c) r)
+    (fun (a, b, c) -> a, Common.ui_of_compat251 b, Safelist.map Props.of_compat251 c) r)
 
 let findOnRoot =
   Remote.registerRootCmd
@@ -2573,9 +2573,16 @@ let markEqualLocal fspath paths =
        archive := arch);
   setArchiveLocal root !archive
 
+let convV0 =
+  let to_compat251 = Tree.map (fun nm -> nm) Common.uc_to_compat251
+  and of_compat251 = Tree.map (fun nm -> nm) Common.uc_of_compat251 in
+  Remote.makeConvV0FunArg
+    (fun (fspath, paths) -> (fspath, to_compat251 paths))
+    (fun (fspath, paths) -> (fspath, of_compat251 paths))
+
 let markEqualOnRoot =
   Remote.registerRootCmd
-    "markEqual" (Tree.m Name.m Common.mupdateContent) Umarshal.unit
+    "markEqual" ~convV0 (Tree.m Name.m Common.mupdateContent) Umarshal.unit
     (fun (fspath, paths) -> markEqualLocal fspath paths; Lwt.return ())
 
 let markEqual equals =

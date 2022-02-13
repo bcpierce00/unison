@@ -68,6 +68,15 @@ let sortRoots rootList = Safelist.sort compareRoots rootList
 
 (* ---------------------------------------------------------------------- *)
 
+(* IMPORTANT!
+   This is the 2.51-compatible version of type [Common.prevState]. It must
+   always remain exactly the same as the type [Common.prevState] in version
+   2.51.5. This means that if any of the types it is composed of changes then
+   for each changed type also a 2.51-compatible version must be created. *)
+type prevState251 =
+    Previous of Fileinfo.typ * Props.t251 * Os.fullfingerprint * Osx.ressStamp
+  | New
+
 type prevState =
     Previous of Fileinfo.typ * Props.t * Os.fullfingerprint * Osx.ressStamp
   | New
@@ -81,6 +90,16 @@ let mprevState = Umarshal.(sum2
                              (function
                               | I21 (a, b, c, d) -> Previous (a, b, c, d)
                               | I22 () -> New))
+
+(* IMPORTANT!
+   This is the 2.51-compatible version of type [Common.contentschange]. It
+   must always remain exactly the same as the type [Common.contentschange]
+   in version 2.51.5. This means that if any of the types it is composed of
+   changes then for each changed type also a 2.51-compatible version must be
+   created. *)
+type contentschange251 =
+    ContentsSame
+  | ContentsUpdated of Os.fullfingerprint * Fileinfo.stamp251 * Osx.ressStamp
 
 type contentschange =
     ContentsSame
@@ -103,6 +122,34 @@ let mpermchange = Umarshal.(sum2 unit unit
                               (function
                                | I21 () -> PropsSame
                                | I22 () -> PropsUpdated))
+
+(* IMPORTANT!
+   These are the 2.51-compatible versions of types [Common.updateItem] and
+   [Common.updateContent]. They must always remain exactly the same as the
+   types [Common.updateItem] and [Common.updateContent] in version 2.51.5.
+   This means that if any of the types they are composed of changes then
+   for each changed type also a 2.51-compatible version must be created. *)
+type updateItem251 =
+    NoUpdates                         (* Path not changed *)
+  | Updates                           (* Path changed in this replica *)
+      of updateContent251             (*   - new state *)
+       * prevState251                 (*   - summary of old state *)
+  | Error                             (* Error while detecting updates *)
+      of string                       (*   - description of error *)
+
+and updateContent251 =
+    Absent                            (* Path refers to nothing *)
+  | File                              (* Path refers to an ordinary file *)
+      of Props.t251                   (*   - summary of current state *)
+       * contentschange251            (*   - hint to transport agent *)
+  | Dir                               (* Path refers to a directory *)
+      of Props.t251                   (*   - summary of current state *)
+       * (Name.t * updateItem251) list(*   - children;
+                                             MUST KEEP SORTED for recon *)
+       * permchange                   (*   - did permissions change? *)
+       * bool                         (*   - is the directory now empty? *)
+  | Symlink                           (* Path refers to a symbolic link *)
+      of string                       (*   - link text *)
 
 type updateItem =
     NoUpdates                         (* Path not changed *)
@@ -156,6 +203,68 @@ let mupdateContent_rec mupdateItem =
 
 let mupdateContent, mupdateItem =
   Umarshal.rec2 mupdateItem_rec mupdateContent_rec
+
+(* Compatibility conversion functions *)
+
+let prev_to_compat251 (prev : prevState) : prevState251 =
+  match prev with
+  | Previous (typ, props, fp, ress) ->
+      Previous (typ, Props.to_compat251 props, fp, ress)
+  | New -> New
+
+let prev_of_compat251 (prev : prevState251) : prevState =
+  match prev with
+  | Previous (typ, props, fp, ress) ->
+      Previous (typ, Props.of_compat251 props, fp, ress)
+  | New -> New
+
+let change_to_compat251 (c : contentschange) : contentschange251 =
+  match c with
+  | ContentsSame -> ContentsSame
+  | ContentsUpdated (fp, stamp, ress) ->
+      ContentsUpdated (fp, Fileinfo.stamp_to_compat251 stamp, ress)
+
+let change_of_compat251 (c : contentschange251) : contentschange =
+  match c with
+  | ContentsSame -> ContentsSame
+  | ContentsUpdated (fp, stamp, ress) ->
+      ContentsUpdated (fp, Fileinfo.stamp_of_compat251 stamp, ress)
+
+let rec ui_to_compat251 (ui : updateItem) : updateItem251 =
+  match ui with
+  | NoUpdates -> NoUpdates
+  | Updates (uc, prev) -> Updates (uc_to_compat251 uc, prev_to_compat251 prev)
+  | Error s -> Error s
+
+and ui_of_compat251 (ui : updateItem251) : updateItem =
+  match ui with
+  | NoUpdates -> NoUpdates
+  | Updates (uc, prev) -> Updates (uc_of_compat251 uc, prev_of_compat251 prev)
+  | Error s -> Error s
+
+and children_to_compat251 l =
+  Safelist.map (fun (n, ui) -> (n, ui_to_compat251 ui)) l
+
+and children_of_compat251 l =
+  Safelist.map (fun (n, ui) -> (n, ui_of_compat251 ui)) l
+
+and uc_to_compat251 (uc : updateContent) : updateContent251 =
+  match uc with
+  | Absent -> Absent
+  | File (props, change) ->
+      File (Props.to_compat251 props, change_to_compat251 change)
+  | Dir (props, ch, perm, empty) ->
+      Dir (Props.to_compat251 props, children_to_compat251 ch, perm, empty)
+  | Symlink s -> Symlink s
+
+and uc_of_compat251 (uc : updateContent251) : updateContent =
+  match uc with
+  | Absent -> Absent
+  | File (props, change) ->
+      File (Props.of_compat251 props, change_of_compat251 change)
+  | Dir (props, ch, perm, empty) ->
+      Dir (Props.of_compat251 props, children_of_compat251 ch, perm, empty)
+  | Symlink s -> Symlink s
 
 (* ------------------------------------------------------------------------- *)
 

@@ -22,10 +22,10 @@ val makeConvV0FunRet :
  -> ('compat -> 'b)
  -> 'a convV0Fun * 'b convV0Fun
 val makeConvV0Funs :
-    ('a -> 'compat)
- -> ('compat -> 'a)
- -> ('b -> 'compat)
- -> ('compat -> 'b)
+    ('a -> 'compata)
+ -> ('compata -> 'a)
+ -> ('b -> 'compatb)
+ -> ('compatb -> 'b)
  -> 'a convV0Fun * 'b convV0Fun
 
 (* Register a server function.  The result is a function that takes a host

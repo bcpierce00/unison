@@ -3,6 +3,12 @@
 
 module NameMap : MyMap.S with type key = Name.t
 
+type archive251 =
+    ArchiveDir of Props.t251 * archive251 NameMap.t
+  | ArchiveFile of Props.t251 * Os.fullfingerprint * Fileinfo.stamp251 * Osx.ressStamp
+  | ArchiveSymlink of string
+  | NoArchive
+
 type archive =
     ArchiveDir of Props.t * archive NameMap.t
   | ArchiveFile of Props.t * Os.fullfingerprint * Fileinfo.stamp * Osx.ressStamp
@@ -10,6 +16,9 @@ type archive =
   | NoArchive
 
 val marchive : archive Umarshal.t
+
+val to_compat251 : archive -> archive251
+val of_compat251 : archive251 -> archive
 
 (* Calculate a canonical name for the set of roots to be synchronized.  This
    will be used in constructing the archive name for each root. Note, all

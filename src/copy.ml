@@ -107,15 +107,25 @@ let mcheckForChangesToSource =
               (prod3 Osx.mressStamp (option Os.mfullfingerprint) bool id id)
               id id)
 
+let archStamp_to_compat251 = function
+  | Some stamp -> Some (Fileinfo.stamp_to_compat251 stamp)
+  | None -> None
+
+let archStamp_of_compat251 = function
+  | Some stamp -> Some (Fileinfo.stamp_of_compat251 stamp)
+  | None -> None
+
 let convV0 = Remote.makeConvV0FunArg
   (fun (fspathFrom,
           ((pathFrom, archDesc, archFp, archStamp), (archRess, newFpOpt, paranoid))) ->
        (fspathFrom,
-          (pathFrom, archDesc, archFp, archStamp, archRess, newFpOpt, paranoid)))
+          (pathFrom, Props.to_compat251 archDesc, archFp,
+            archStamp_to_compat251 archStamp, archRess, newFpOpt, paranoid)))
   (fun (fspathFrom,
           (pathFrom, archDesc, archFp, archStamp, archRess, newFpOpt, paranoid)) ->
        (fspathFrom,
-          ((pathFrom, archDesc, archFp, archStamp), (archRess, newFpOpt, paranoid))))
+          ((pathFrom, Props.of_compat251 archDesc, archFp,
+            archStamp_of_compat251 archStamp), (archRess, newFpOpt, paranoid))))
 
 let checkForChangesToSourceOnRoot =
   Remote.registerRootCmd
@@ -187,6 +197,16 @@ let validFilePrefix connFrom fspathFrom pathFrom fspathTo pathTo info desc =
   end else
     Lwt.return None
 
+(* IMPORTANT!
+   This is the 2.51-compatible version of type [transferStatus]. It must always
+   remain exactly the same as the type [transferStatus] in version 2.51.5. This
+   means that if any of the types it is composed of changes then for each
+   changed type also a 2.51-compatible version must be created. *)
+type transferStatus251 =
+    TransferSucceeded of Fileinfo.t251
+  | TransferNeedsDoubleCheckAgainstCurrentSource of Fileinfo.t251 * Os.fullfingerprint
+  | TransferFailed of string
+
 type transferStatus =
     TransferSucceeded of Fileinfo.t
   | TransferNeedsDoubleCheckAgainstCurrentSource of Fileinfo.t * Os.fullfingerprint
@@ -204,6 +224,20 @@ let mtransferStatus = Umarshal.(sum3
                                    | I31 a -> TransferSucceeded a
                                    | I32 (a, b) -> TransferNeedsDoubleCheckAgainstCurrentSource (a, b)
                                    | I33 a -> TransferFailed a))
+
+let transferStatus_to_compat251 (st : transferStatus) : transferStatus251 =
+  match st with
+  | TransferSucceeded info -> TransferSucceeded (Fileinfo.to_compat251 info)
+  | TransferNeedsDoubleCheckAgainstCurrentSource (info, fp) ->
+      TransferNeedsDoubleCheckAgainstCurrentSource (Fileinfo.to_compat251 info, fp)
+  | TransferFailed s -> TransferFailed s
+
+let transferStatus_of_compat251 (st : transferStatus251) : transferStatus =
+  match st with
+  | TransferSucceeded info -> TransferSucceeded (Fileinfo.of_compat251 info)
+  | TransferNeedsDoubleCheckAgainstCurrentSource (info, fp) ->
+      TransferNeedsDoubleCheckAgainstCurrentSource (Fileinfo.of_compat251 info, fp)
+  | TransferFailed s -> TransferFailed s
 
 (* Paranoid check: recompute the transferred file's fingerprint to match it
    with the archive's.  If the old
@@ -249,8 +283,12 @@ let saveTempFileLocal (fspathTo, (pathTo, realPathTo, reason)) =
         reason
         (Fspath.toDebugString (Fspath.concat fspathTo savepath))))
 
+let convV0 = Remote.makeConvV0FunRet Fileinfo.to_compat251 Fileinfo.of_compat251
+
 let saveTempFileOnRoot =
-  Remote.registerRootCmd "saveTempFile" Umarshal.(prod3 Path.mlocal Path.mlocal string id id) Fileinfo.m saveTempFileLocal
+  Remote.registerRootCmd "saveTempFile" ~convV0
+    Umarshal.(prod3 Path.mlocal Path.mlocal string id id) Fileinfo.m
+    saveTempFileLocal
 
 (****)
 
@@ -859,15 +897,17 @@ let finishExternalTransferLocal connFrom
   Xferhint.insertEntry fspathTo pathTo fp;
   Lwt.return res
 
-let convV0 = Remote.makeConvV0FunArg
+let convV0 = Remote.makeConvV0Funs
   (fun ((fspathFrom, pathFrom, fspathTo, pathTo, realPathTo),
          (update, desc, fp, ress, id)) ->
        (fspathFrom, pathFrom, fspathTo, pathTo, realPathTo,
-         update, desc, fp, ress, id))
+         update, Props.to_compat251 desc, fp, ress, id))
   (fun (fspathFrom, pathFrom, fspathTo, pathTo, realPathTo,
          update, desc, fp, ress, id) ->
        ((fspathFrom, pathFrom, fspathTo, pathTo, realPathTo),
-         (update, desc, fp, ress, id)))
+         (update, Props.of_compat251 desc, fp, ress, id)))
+  transferStatus_to_compat251
+  transferStatus_of_compat251
 
 let mcopyOrUpdate = Umarshal.(sum2 unit (prod2 Uutil.Filesize.m Uutil.Filesize.m id id)
                                 (function
@@ -972,15 +1012,21 @@ let transferFileLocal connFrom
                Lwt.return (`DONE (status, None))
              end)
 
-let convV0 = Remote.makeConvV0FunArg
+let convV0 = Remote.makeConvV0Funs
   (fun ((fspathFrom, pathFrom, fspathTo, pathTo, realPathTo),
          (update, desc, fp, ress, id)) ->
        (fspathFrom, pathFrom, fspathTo, pathTo, realPathTo,
-         update, desc, fp, ress, id))
+         update, Props.to_compat251 desc, fp, ress, id))
   (fun (fspathFrom, pathFrom, fspathTo, pathTo, realPathTo,
          update, desc, fp, ress, id) ->
        ((fspathFrom, pathFrom, fspathTo, pathTo, realPathTo),
-         (update, desc, fp, ress, id)))
+         (update, Props.of_compat251 desc, fp, ress, id)))
+  (function
+   | `DONE (a, b) -> `DONE (transferStatus_to_compat251 a, b)
+   | `EXTERNAL a -> `EXTERNAL a)
+  (function
+   | `DONE (a, b) -> `DONE (transferStatus_of_compat251 a, b)
+   | `EXTERNAL a -> `EXTERNAL a)
 
 let mtransferFile = Umarshal.(sum2 (prod2 mtransferStatus (option string) id id) bool
                                 (function
