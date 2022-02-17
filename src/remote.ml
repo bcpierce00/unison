@@ -1394,7 +1394,7 @@ let rec findFirst f l =
 let printAddr host addr =
   match addr with
     Unix.ADDR_UNIX s ->
-      assert false
+      s
   | Unix.ADDR_INET (s, p) ->
       Format.sprintf "%s[%s]:%d" host (Unix.string_of_inet_addr s) p
 
@@ -1420,7 +1420,8 @@ let buildSocket host port kind ai =
                     Lwt_unix.setsockopt socket Unix.IPV6_ONLY true;
                   (* Allow reuse of local addresses for bind *)
                   Lwt_unix.setsockopt socket Unix.SO_REUSEADDR true;
-                  (* Bind the socket to portnum on the local host *)
+                  (* Bind the socket to portnum on the local host
+                     or to a filesystem path (when Unix domain socket) *)
                   Lwt_unix.bind socket ai.Unix.ai_addr;
                   (* Start listening, allow up to 1 pending request *)
                   Lwt_unix.listen socket 1;
@@ -1447,7 +1448,7 @@ let buildSocket host port kind ai =
                        Printf.sprintf "Can't connect to server %s: %s\n"
                          (printAddr host ai.Unix.ai_addr)
                          (Unix.error_message error)
-                   | `Bind ->
+                   | `Bind when ai.Unix.ai_family <> Unix.PF_UNIX ->
                        Printf.sprintf
                          "Can't bind socket to port %s at address [%s]: %s\n"
                          port
@@ -1456,6 +1457,11 @@ let buildSocket host port kind ai =
                               Unix.string_of_inet_addr addr
                           | _ ->
                               assert false)
+                         (Unix.error_message error)
+                   | `Bind (* Unix.PF_UNIX *) ->
+                       Printf.sprintf
+                         "Can't bind socket to path '%s': %s\n"
+                         port
                          (Unix.error_message error)
                  in
                  Util.warn msg
@@ -1466,7 +1472,28 @@ let buildSocket host port kind ai =
   in
   attemptCreation ai
 
+let makeUnixSocketAi path =
+  { Unix.ai_family = Unix.PF_UNIX;
+    ai_socktype = Unix.SOCK_STREAM;
+    ai_protocol = 0;
+    ai_addr = Unix.ADDR_UNIX path;
+    ai_canonname = "" }
+
+let buildConnectSocketUnix path =
+  assert (String.length path > 2);
+  (* Unix domain socket path from [Clroot] is enclosed in curly braces.
+     Extract the real path. *)
+  let path = String.sub path 1 ((String.length path) - 2) in
+  buildSocket "" path `Connect (makeUnixSocketAi path) >>= function
+  | None ->
+      Lwt.fail (Util.Fatal
+        (Printf.sprintf "Can't connect to Unix domain socket on path %s" path))
+  | Some x ->
+      Lwt.return x
+
 let buildConnectSocket host port =
+  let isHost = String.length host > 0 && host.[0] <> '{' in
+  if not isHost then buildConnectSocketUnix host else
   let attemptCreation ai = buildSocket host port `Connect ai in
   let options = [ Unix.AI_SOCKTYPE Unix.SOCK_STREAM ] in
   findFirst attemptCreation (Unix.getaddrinfo host port options) >>= fun res ->
@@ -1480,7 +1507,32 @@ let buildConnectSocket host port =
       in
       Lwt.fail (Util.Fatal msg)
 
+(* [at_exit] does not provide reliable cleanup (why?), so this
+   complex mechanism is needed to unlink Unix domain sockets
+   in case of exceptional termination. *)
+let createdUnixSockets = ref []
+
+let postponeUnixSocketCleanup path =
+  createdUnixSockets := path :: !createdUnixSockets
+
+let unixSocketCleanup () =
+  Safelist.iter
+    (fun path -> try Unix.unlink path with Unix.Unix_error _ -> ())
+    !createdUnixSockets
+
+let buildListenSocketUnix path =
+  assert (path <> "");
+  buildSocket "" path `Bind (makeUnixSocketAi path) >>= function
+  | None ->
+      Lwt.fail (Util.Fatal
+        (Printf.sprintf "Can't bind Unix domain socket on path %s" path))
+  | Some x ->
+      postponeUnixSocketCleanup path;
+      Lwt.return [x]
+
 let buildListenSocket hosts port =
+  let isPort = try ignore (int_of_string port); true with Failure _ -> false in
+  if not isPort then buildListenSocketUnix port else
   let options = [ Unix.AI_SOCKTYPE Unix.SOCK_STREAM ; Unix.AI_PASSIVE ] in
   hosts
   |> Safelist.map (fun host -> Unix.getaddrinfo host port options)
@@ -2010,7 +2062,17 @@ let waitOnPort hosts port =
          begin try Lwt_unix.close connected with Unix.Unix_error _ -> () end;
          if not (Prefs.read killServer) then handleClients ()
        in
-       handleClients ())
+       try
+         Sys.catch_break true;
+         handleClients ();
+         unixSocketCleanup ()
+       with
+       | Sys.Break ->
+           unixSocketCleanup ()
+       | (Util.Fatal _ | Unix.Unix_error _) as e ->
+           unixSocketCleanup ();
+           raise e
+    )
 
 let beAServer () =
   begin try

@@ -85,15 +85,8 @@ let server =
 
 let socketPrefName = "socket"
 let socket =
-  Prefs.create socketPrefName None
+  Prefs.createString socketPrefName "" ~local:true
     "!act as a server on a socket" ""
-    (fun _ -> fun i ->
-      (try
-         Some(int_of_string i)
-       with Failure _ ->
-         raise(Prefs.IllegalValue "-socket must be followed by a number")))
-    (function None -> [] | Some(i) -> [string_of_int i])
-    Umarshal.(option int)
 
 let serverHostNameAlias = "host"
 let serverHostName = "listen"

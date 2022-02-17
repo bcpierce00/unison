@@ -32,6 +32,7 @@
   user ::= [-_a-zA-Z0-9]+
 
   host ::= [-_a-zA-Z0-9.]+
+        |  { [^}]+ }                   For Unix domain sockets only.
 
   port ::= [0-9]+
 
@@ -114,7 +115,8 @@ let getUser s =
 
 (*ipv6 support*)
 let hostWithBracketsRegexp = Str.regexp "\\[.*\\]"
-let hostRegexp = Str.regexp "[-_a-zA-Z0-9.]+"
+(* Hostname, IP or Unix domain socket path *)
+let hostRegexp = Str.regexp "[-_a-zA-Z0-9.]+\\|{[^}]+}"
 let getHost s =
   if Str.string_match hostWithBracketsRegexp s 0
   then
@@ -201,7 +203,8 @@ let clroot2string = function
     else Printf.sprintf "file:///%s" s
     else s
 | ConnectBySocket(h,p,s) ->
-    Printf.sprintf "socket://%s:%s/%s" h p
+    let p = if p <> "" then ":" ^ p else p in
+    Printf.sprintf "socket://%s%s/%s" h p
       (match s with None -> "" | Some x -> x)
 | ConnectByShell(sh,h,u,p,s) ->
     let user = match u with None -> "" | Some x -> x^"@" in
@@ -228,6 +231,7 @@ let parseRoot string =
     match protocol,user,host,port with
     | _,_,None,Some _
     | _,Some _,None,None
+    | Socket, _, None, None
     | Rsh,_,None,_
     | Ssh,_,None,_ ->
         illegal2 "missing host"
@@ -242,12 +246,16 @@ let parseRoot string =
         | Some p -> ConnectLocal(Some(prefix^p)))
     | File,None,None,None ->
         ConnectLocal(path)
-    | Socket,None,Some h,Some p ->
+    | Socket, None, Some h, Some p when h.[0] <> '{' ->
         ConnectBySocket(h,p,path)
+    | Socket, None, Some h, None when h.[0] = '{' ->
+        ConnectBySocket (h, "", path)
     | Socket,Some _,_,_ ->
         illegal2 "ill-formed (cannot use a user with socket)"
     | Socket,_,_,None ->
         illegal2 "ill-formed (must give a port number with socket)"
+    | Socket, _, Some _, Some _ ->
+        illegal2 "ill-formed (must not give a port number with Unix domain socket)"
     | Rsh,_,Some h,_ ->
         ConnectByShell("rsh",h,user,port,path)
     | Ssh,_,Some h,_ ->

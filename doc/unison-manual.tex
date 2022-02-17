@@ -842,9 +842,10 @@ The full grammar is:
             |  ssh
             |  rsh
 
-  \NT{user} ::= [-_a-zA-Z0-9]+
+  \NT{user} ::= [-\_a-zA-Z0-9]+
 
-  \NT{host} ::= [-_a-zA-Z0-9.]+
+  \NT{host} ::= [-\_a-zA-Z0-9.]+
+        |  \{ [\^{}\}]+ \}                   For Unix domain sockets only.
 
   \NT{port} ::= [0-9]+
 \end{alltt}
