@@ -80,6 +80,7 @@ val create :
      -> ('a->string->'a)        (* interning function for preference values
                                    (1st arg is old value of preference) *)
      -> ('a -> string list)     (* printing function for preference values *)
+     -> 'a Umarshal.t
      -> 'a t                    (*   -> new preference value *)
 
 (* Create an alternate name for a preference (the new name will not appear   *)
@@ -141,13 +142,15 @@ val loadStrings : string list -> unit
 
 type dumpedPrefs
 
+val mdumpedPrefs : dumpedPrefs Umarshal.t
+
 (* Dump current values of all preferences into a value that can be
    marshalled and sent over the network or stored in a file for fast
    retrieval *)
-val dump : unit -> dumpedPrefs
+val dump : int -> dumpedPrefs
 
 (* Load new values of all preferences from a string created by dump          *)
-val load : dumpedPrefs -> unit
+val load : dumpedPrefs -> int -> unit
 
 (* ------------------------------------------------------------------------- *)
 

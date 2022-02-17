@@ -42,13 +42,48 @@ let init b =
 
 type typ = [ `ABSENT | `FILE | `DIRECTORY | `SYMLINK ]
 
+let mtyp = Umarshal.(sum4 unit unit unit unit
+                       (function
+                        | `ABSENT -> I41 ()
+                        | `FILE -> I42 ()
+                        | `DIRECTORY -> I43 ()
+                        | `SYMLINK -> I44 ())
+                       (function
+                        | I41 () -> `ABSENT
+                        | I42 () -> `FILE
+                        | I43 () -> `DIRECTORY
+                        | I44 () -> `SYMLINK))
+
 let type2string = function
     `ABSENT    -> "nonexistent"
   | `FILE      -> "file"
   | `DIRECTORY -> "dir"
   | `SYMLINK   -> "symlink"
 
+(* IMPORTANT!
+   This is the 2.51-compatible version of type [Fileinfo.t]. It must always
+   remain exactly the same as the type [Fileinfo.t] in version 2.51.5. This
+   means that if any of the types it is composed of changes then for each
+   changed type also a 2.51-compatible version must be created. *)
+type t251 = { typ : typ; inode : int; desc : Props.t251; osX : Osx.info}
+
 type t = { typ : typ; inode : int; desc : Props.t; osX : Osx.info}
+
+let m = Umarshal.(prod4 mtyp int Props.m Osx.minfo
+                    (fun {typ; inode; desc; osX} -> typ, inode, desc, osX)
+                    (fun (typ, inode, desc, osX) -> {typ; inode; desc; osX}))
+
+let to_compat251 (x : t) : t251 =
+  { typ = x.typ;
+    inode = x.inode;
+    desc = Props.to_compat251 x.desc;
+    osX = x.osX }
+
+let of_compat251 (x : t251) : t =
+  { typ = x.typ;
+    inode = x.inode;
+    desc = Props.of_compat251 x.desc;
+    osX = x.osX }
 
 (* Stat function that pays attention to pref for following links             *)
 let statFn fromRoot fspath path =
@@ -139,16 +174,40 @@ let set fspath path action newDesc =
   Props.set fspath path kind p;
   check fspath path p
 
-type stamp =
+(* IMPORTANT!
+   This is the 2.51-compatible version of type [Fileinfo.stamp]. It must
+   always remain exactly the same as the type [Fileinfo.stamp] in version
+   2.51.5. *)
+type stamp251 =
     InodeStamp of int         (* inode number, for Unix systems *)
   | CtimeStamp of float       (* creation time, for windows systems *)
-    (* FIX [BCP, 3/07]: The Ctimestamp variant is actually bogus.
-      For file transfers, it appears that using the ctime to detect a
-      file change is completely ineffective as, when a file is deleted (or
-      renamed) and then replaced by another file, the new file inherits the
-      ctime of the old file.  It is slightly harmful performancewise, as
-      fastcheck expects ctime to be preserved by renaming.  Thus, we should
-      probably not use any stamp under Windows. *)
+
+type stamp =
+  | InodeStamp of int         (* inode number, for Unix systems *)
+  | NoStamp
+  | RescanStamp               (* stamp indicating file should be rescanned
+                                 (perhaps because previous transfer failed) *)
+
+let mstamp = Umarshal.(sum3 int unit unit
+                         (function
+                          | InodeStamp a -> I31 a
+                          | NoStamp -> I32 ()
+                          | RescanStamp -> I33 ())
+                         (function
+                          | I31 a -> InodeStamp a
+                          | I32 () -> NoStamp
+                          | I33 () -> RescanStamp))
+
+let stamp_to_compat251 (st : stamp) : stamp251 =
+  match st with
+  | InodeStamp i -> InodeStamp i
+  | NoStamp -> CtimeStamp 0.0
+  | RescanStamp -> InodeStamp (-1)
+
+let stamp_of_compat251 (st : stamp251) : stamp =
+  match st with
+  | InodeStamp i -> if i <> -1 then InodeStamp i else RescanStamp
+  | CtimeStamp _ -> NoStamp
 
 let ignoreInodeNumbers =
   Prefs.createBool "ignoreinodenumbers" false
@@ -161,10 +220,8 @@ let ignoreInodeNumbers =
 let _ = Prefs.alias ignoreInodeNumbers "pretendwin"
 
 let stamp info =
-       (* Was "CtimeStamp info.ctime", but this is bogus: Windows
-          ctimes are not reliable. *)
-  if Prefs.read ignoreInodeNumbers then CtimeStamp 0.0 else
-  if Fs.hasInodeNumbers () then InodeStamp info.inode else CtimeStamp 0.0
+  if Prefs.read ignoreInodeNumbers then NoStamp else
+  if Fs.hasInodeNumbers () then InodeStamp info.inode else NoStamp
 
 let ressStamp info = Osx.stamp info.osX
 

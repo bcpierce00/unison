@@ -20,6 +20,7 @@ let debug = Util.debug "props"
 
 module type S = sig
   type t
+  val m : t Umarshal.t
   val dummy : t
   val hash : t -> int -> int
   val similar : t -> t -> bool
@@ -65,6 +66,8 @@ end = struct
 (* NOTE: IF YOU CHANGE TYPE "PERM", THE ARCHIVE FORMAT CHANGES; INCREMENT    *)
 (* "UPDATE.ARCHIVEFORMAT"                                                    *)
 type t = int * int
+
+let m = Umarshal.(prod2 int int id id)
 
 (* This allows us to export NullPerm while keeping the type perm abstract    *)
 let dummy = (0, 0)
@@ -298,6 +301,16 @@ type t =
   | IdNamed of string
   | IdNumeric of int
 
+let m = Umarshal.(sum3 unit string int
+                    (function
+                     | IdIgnored -> I31 ()
+                     | IdNamed a -> I32 a
+                     | IdNumeric a -> I33 a)
+                    (function
+                     | I31 () -> IdIgnored
+                     | I32 a -> IdNamed a
+                     | I33 a -> IdNumeric a))
+
 let dummy = IdIgnored
 
 let hash id h =
@@ -440,6 +453,14 @@ let sync =
      file modification times (but not directory modtimes) are propagated."
 
 type t = Synced of float | NotSynced of float
+
+let m = Umarshal.(sum2 float float
+                    (function
+                     | Synced a -> I21 a
+                     | NotSynced a -> I22 a)
+                    (function
+                     | I21 a -> Synced a
+                     | I22 a -> NotSynced a))
 
 let dummy = NotSynced 0.
 
@@ -615,6 +636,8 @@ module TypeCreator : S = struct
 
 type t = string option
 
+let m = Umarshal.(option string)
+
 let dummy = None
 
 let hash t h = Uutil.hash2 (Uutil.hash t) h
@@ -685,6 +708,10 @@ type t =
     time : Time.t;
     typeCreator : TypeCreator.t;
     length : Uutil.Filesize.t }
+
+let m = Umarshal.(prod6 Perm.m Uid.m Gid.m Time.m TypeCreator.m Uutil.Filesize.m
+                    (fun {perm; uid; gid; time; typeCreator; length} -> perm, uid, gid, time, typeCreator, length)
+                    (fun (perm, uid, gid, time, typeCreator, length) -> {perm; uid; gid; time; typeCreator; length}))
 
 let to_compat251 (p : t) : t251 =
   { perm = p.perm;
@@ -843,6 +870,8 @@ let validatePrefs = Perm.validatePrefs
    the directory is unchanged *)
 
 type dirChangedStamp = Uutil.Filesize.t
+
+let mdirChangedStamp = Uutil.Filesize.m
 
 let freshDirStamp () =
   let t =

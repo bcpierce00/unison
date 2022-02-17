@@ -18,13 +18,13 @@
 type 'a key = string
 type t = Obj.t Util.StringMap.t
 
-let names = ref Util.StringSet.empty
+let names = ref Util.StringMap.empty
 
-let register nm =
-  if (Util.StringSet.mem nm !names) then
+let register nm m =
+  if (Util.StringMap.mem nm !names) then
     raise (Util.Fatal
             (Format.sprintf "Property lists: %s already registered!" nm));
-  names := Util.StringSet.add nm !names;
+  names := Util.StringMap.add nm (Obj.repr m) !names;
   nm
 
 let empty = Util.StringMap.empty
@@ -34,3 +34,20 @@ let mem = Util.StringMap.mem
 let find (k : 'a key) m : 'a = Obj.obj (Util.StringMap.find k m)
 
 let add (k : 'a key) (v : 'a) m = Util.StringMap.add k (Obj.repr v) m
+
+let find_m (k : 'a key) : 'a Umarshal.t =
+  try Obj.obj (Util.StringMap.find k !names) with
+  | Not_found -> raise (Util.Fatal (Format.sprintf "Property lists: %s not yet registered!" k))
+
+module S = struct
+  type key = string
+  type value = Obj.t
+  type map = t
+  let cardinal = Util.StringMap.cardinal
+  let empty = Util.StringMap.empty
+  let add = Util.StringMap.add
+  let iter = Util.StringMap.iter
+  let find_m = find_m
+end
+
+include Umarshal.Proplist (S)

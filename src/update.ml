@@ -40,19 +40,11 @@ let ignoreArchives =
    archive changes: old archives will then automatically be discarded.  (We
    do not use the unison version number for this because usually the archive
    representation does not change between unison versions.) *)
-(*FIX: also change Fileinfo.stamp to drop the info.ctime component, next
-  time the format is modified *)
 (*FIX: also make Jerome's suggested change about file times (see his mesg in
        unison-pending email folder). *)
-(*FIX: we could also drop the use of 8.3-style filenames on Windows, next
-  time the format is changed *)
-(* FIX: use a special stamp rather than the current hack to leave a flag
-   in the archive when a file transfer fails so as to turn off fastcheck
-   for this file on the next sync. *)
 (*FIX: consider changing the way case-sensitivity mode is stored in
   the archive *)
-(*FIX: we should use only one Marshal.from_channel *)
-let archiveFormat = 22
+let archiveFormat = 23
 
 module NameMap = MyMap.Make (Name)
 
@@ -63,7 +55,7 @@ module NameMap = MyMap.Make (Name)
    compatible version must be created (like has been done for [Props.t]). *)
 type archive251 =
     ArchiveDir of Props.t251 * archive251 NameMap.t
-  | ArchiveFile of Props.t251 * Os.fullfingerprint * Fileinfo.stamp * Osx.ressStamp
+  | ArchiveFile of Props.t251 * Os.fullfingerprint * Fileinfo.stamp251 * Osx.ressStamp
   | ArchiveSymlink of string
   | NoArchive
 
@@ -73,6 +65,24 @@ type archive =
   | ArchiveSymlink of string
   | NoArchive
 
+let marchive_rec marchive =
+  Umarshal.(sum4
+              (prod2 Props.m (NameMap.m marchive) id id)
+              (prod4 Props.m Os.mfullfingerprint Fileinfo.mstamp Osx.mressStamp id id)
+              string unit
+              (function
+               | ArchiveDir (a, b) -> I41 (a, b)
+               | ArchiveFile (a, b, c, d) -> I42 (a, b, c, d)
+               | ArchiveSymlink a -> I43 a
+               | NoArchive -> I44 ())
+              (function
+               | I41 (a, b) -> ArchiveDir (a, b)
+               | I42 (a, b, c, d) -> ArchiveFile (a, b, c, d)
+               | I43 a -> ArchiveSymlink a
+               | I44 () -> NoArchive))
+
+let marchive = Umarshal.rec1 marchive_rec
+
 (* For directories, only the permissions part of the file description (desc)
    is used for synchronization at the moment. *)
 
@@ -81,7 +91,7 @@ let rec to_compat251 (arch : archive) : archive251 =
   | ArchiveDir (desc, children) ->
       ArchiveDir (Props.to_compat251 desc, NameMap.map to_compat251 children)
   | ArchiveFile (desc, dig, stamp, ress) ->
-      ArchiveFile (Props.to_compat251 desc, dig, stamp, ress)
+      ArchiveFile (Props.to_compat251 desc, dig, Fileinfo.stamp_to_compat251 stamp, ress)
   | ArchiveSymlink content -> ArchiveSymlink content
   | NoArchive -> NoArchive
 
@@ -90,7 +100,7 @@ let rec of_compat251 (arch : archive251) : archive =
   | ArchiveDir (desc, children) ->
       ArchiveDir (Props.of_compat251 desc, NameMap.map of_compat251 children)
   | ArchiveFile (desc, dig, stamp, ress) ->
-      ArchiveFile (Props.of_compat251 desc, dig, stamp, ress)
+      ArchiveFile (Props.of_compat251 desc, dig, Fileinfo.stamp_of_compat251 stamp, ress)
   | ArchiveSymlink content -> ArchiveSymlink content
   | NoArchive -> NoArchive
 
@@ -185,15 +195,6 @@ let storeRootsName () =
                (Globals.rootsInCanonicalOrder())))) in
   Prefs.set rootsName n
 
-(* How many characters of the filename should be used for the unique id of
-   the archive?  On Unix systems, we use the full fingerprint (32 bytes).
-   On windows systems, filenames longer than 8 bytes can cause problems, so
-   we chop off all but the first 6 from the fingerprint. *)
-let significantDigits =
-  match Util.osType with
-    `Win32 -> 6
-  | `Unix -> 32
-
 let thisRootsGlobalName (fspath: Fspath.t): string =
   root2stringOrAlias (Common.Remote (Os.myCanonicalHostName ()), fspath)
 
@@ -201,6 +202,20 @@ let thisRootsGlobalName (fspath: Fspath.t): string =
 
 (* The status of an archive *)
 type archiveVersion = MainArch | NewArch | ScratchArch | Lock | FPCache
+
+let marchiveVersion = Umarshal.(sum5 unit unit unit unit unit
+                                  (function
+                                   | MainArch -> I51 ()
+                                   | NewArch -> I52 ()
+                                   | ScratchArch -> I53 ()
+                                   | Lock -> I54 ()
+                                   | FPCache -> I55 ())
+                                  (function
+                                   | I51 () -> MainArch
+                                   | I52 () -> NewArch
+                                   | I53 () -> ScratchArch
+                                   | I54 () -> Lock
+                                   | I55 () -> FPCache))
 
 let showArchiveName =
   Prefs.createBool "showarchive" false
@@ -222,7 +237,7 @@ let archiveHash fspath =
   debugverbose (fun()-> Util.msg "Archive name is %s; hashcode is %s\n" n d);
   if Prefs.read showArchiveName then
     Util.msg "Archive name is %s; hashcode is %s\n" n d;
-  (String.sub d 0 significantDigits)
+  d
 
 (* We include the hash part of the archive name in the names of temp files
    created by this run of Unison.  The reason for this is that, during
@@ -252,6 +267,15 @@ let archiveName fspath (v: archiveVersion): string * string =
    It is safe to delete it when that support is no longer required. *)
 let archiveName251 fspath (v: archiveVersion): string * string =
   let archiveHash251 fspath =
+    (* How many characters of the filename should be used for the unique id of
+       the archive?  On Unix systems, we use the full fingerprint (32 bytes).
+       On windows systems, filenames longer than 8 bytes can cause problems, so
+       we chop off all but the first 6 from the fingerprint. *)
+    let significantDigits =
+      match Util.osType with
+        `Win32 -> 6
+      | `Unix -> 32
+    in
     let thisRoot = thisRootsGlobalName fspath in
     let r = Prefs.read rootsName in
     let n = Printf.sprintf "%s;%s;22" thisRoot r in
@@ -368,7 +392,7 @@ let (archiveNameOnRoot
        : Common.root ->  archiveVersion -> (string * string * bool) Lwt.t)
     =
   Remote.registerRootCmd
-    "archiveName"
+    "archiveName" marchiveVersion Umarshal.(prod3 string string bool id id)
       (fun (fspath, v) ->
        let (name,_) = archiveName fspath v in
        Lwt.return
@@ -392,6 +416,10 @@ let compatFormatString = "Unison archive format 22"
 let verboseArchiveName thisRoot =
   Printf.sprintf "Archive for root %s synchronizing roots %s"
     thisRoot (Prefs.read rootsName)
+
+let mpayload = Umarshal.prod4
+                 marchive Umarshal.int Umarshal.string Proplist.m
+                 Umarshal.id Umarshal.id
 
 (* Load in the archive in [fspath]; check that archiveFormat (first line)
    and roots (second line) match skip the third line (time stamp), and read
@@ -443,22 +471,19 @@ let loadArchiveLocal fspath (thisRoot: string) :
                          ^ System.fspathToPrintString fspath ^ "\n\
                          You should either upgrade Unison or invoke Unison \
                          once with -ignorearchives flag and then try again."));
-        (* TODO: When the new archive encoding is merged, the decoder must take
-           the list of features as input here. *)
-        (* Load the datastructure *)
         try
-          let ((archive, hash, magic) : archive * int * string) =
-            Marshal.from_channel c in
-          let properties =
-            try
-              ignore (input_char c); (* Marker *)
-              Marshal.from_channel c
-            with End_of_file ->
-              Proplist.empty
-          in
+          (* Temporarily enable features that were used when storing the archive
+             to make sure the types are correct when loading the archive. *)
+          let negotiatedFts = Features.getEnabled () in
+          let () = Features.setEnabled commonFts in
+          (* Load the datastructure *)
+          let ((archive, hash, magic, properties) : archive * int * string * Proplist.t) =
+            Umarshal.from_channel mpayload c in
           close_in c;
+          (* Restore to the negotiated features *)
+          let () = Features.setEnabled negotiatedFts in
           Some (archive, hash, magic, properties)
-        with Failure s -> raise (Util.Fatal (Printf.sprintf
+        with Failure s | Umarshal.Error s -> raise (Util.Fatal (Printf.sprintf
            "Archive file seems damaged (%s): \
             use the -ignorearchives option, or throw away archives on both machines and try again" s))
     else
@@ -550,10 +575,7 @@ let storeArchiveLocal fspath thisRoot archive hash magic properties =
    output_string c "\030";
    output_string c (String.concat "\030" (Features.changingArchiveFormat ()));
    output_string c "\n";
-   Marshal.to_channel c (archive, hash, magic) [Marshal.No_sharing];
-   output_char c '\000'; (* Marker that indicates that the archive
-                            is followed by a property list *)
-   Marshal.to_channel c properties [Marshal.No_sharing];
+   Umarshal.to_channel mpayload c (archive, hash, magic, properties);
    close_out c)
 
 (* IMPORTANT! This val is here for smoother upgrades from versions <= 2.51.5
@@ -576,8 +598,11 @@ let removeArchiveLocal ((fspath: Fspath.t), (v: archiveVersion)): unit Lwt.t =
   if Safelist.exists (fun x -> x = fspath) !loadedCompatArchive then begin
     loadedCompatArchive := Safelist.filter (fun x -> x <> fspath)
       !loadedCompatArchive;
-    try
+    (try
       ignore (f' (fst (archiveName251 fspath MainArch)))
+    with Util.Fatal _ -> ());
+    try
+      ignore (f' (fst (archiveName251 fspath FPCache)))
     with Util.Fatal _ -> ()
   end;
   ret
@@ -585,7 +610,7 @@ let removeArchiveLocal ((fspath: Fspath.t), (v: archiveVersion)): unit Lwt.t =
 (* [removeArchiveOnRoot root v] invokes [removeArchive fspath v] on the
    server, where [fspath] is the path to root on the server *)
 let removeArchiveOnRoot: Common.root -> archiveVersion -> unit Lwt.t =
-  Remote.registerRootCmd "removeArchive" removeArchiveLocal
+  Remote.registerRootCmd "removeArchive" marchiveVersion Umarshal.unit removeArchiveLocal
 
 (* [commitArchive (fspath, ())] commits the archive for [fspath] by changing
    the filenames from ScratchArch-ones to a NewArch-ones *)
@@ -603,7 +628,7 @@ let commitArchiveLocal ((fspath: Fspath.t), ())
 (* [commitArchiveOnRoot root v] invokes [commitArchive fspath v] on the
    server, where [fspath] is the path to root on the server *)
 let commitArchiveOnRoot: Common.root -> unit -> unit Lwt.t =
-  Remote.registerRootCmd "commitArchive" commitArchiveLocal
+  Remote.registerRootCmd "commitArchive" Umarshal.unit Umarshal.unit commitArchiveLocal
 
 let archiveInfoCache = Hashtbl.create 7
 (* [postCommitArchive (fspath, v)] finishes the committing protocol by
@@ -642,7 +667,7 @@ let postCommitArchiveLocal (fspath,())
 (* [postCommitArchiveOnRoot root v] invokes [postCommitArchive fspath v] on
    the server, where [fspath] is the path to root on the server *)
 let postCommitArchiveOnRoot: Common.root -> unit -> unit Lwt.t =
-  Remote.registerRootCmd "postCommitArchive" postCommitArchiveLocal
+  Remote.registerRootCmd "postCommitArchive" Umarshal.unit Umarshal.unit postCommitArchiveLocal
 
 
 (*************************************************************************)
@@ -682,7 +707,7 @@ let fileUnchanged oldInfo newInfo =
     &&
   match Fileinfo.stamp oldInfo, Fileinfo.stamp newInfo with
     Fileinfo.InodeStamp in1, Fileinfo.InodeStamp in2 -> in1 = in2
-  | Fileinfo.CtimeStamp _,   Fileinfo.CtimeStamp _   -> true
+  | Fileinfo.NoStamp,        Fileinfo.NoStamp        -> true
   | _                                                -> false
 
 let archiveUnchanged fspath newInfo =
@@ -732,7 +757,7 @@ let dumpArchiveLocal (fspath,()) =
   Lwt.return ()
 
 let dumpArchiveOnRoot : Common.root -> unit -> unit Lwt.t =
-  Remote.registerRootCmd "dumpArchive" dumpArchiveLocal
+  Remote.registerRootCmd "dumpArchive" Umarshal.unit Umarshal.unit dumpArchiveLocal
 
 (*****************************************************************************)
 (*                          ARCHIVE CASE CONVERSION                          *)
@@ -740,10 +765,10 @@ let dumpArchiveOnRoot : Common.root -> unit -> unit Lwt.t =
 
 (* Stamp for marking unchange directories *)
 let dirStampKey : Props.dirChangedStamp Proplist.key =
-  Proplist.register "unchanged directory stamp"
+  Proplist.register "unchanged directory stamp" Props.mdirChangedStamp
 
 (* Property containing a description of the archive case sensitivity mode *)
-let caseKey : string Proplist.key = Proplist.register "case mode"
+let caseKey : string Proplist.key = Proplist.register "case mode" Umarshal.string
 
 (* Turn a case sensitive archive into a case insensitive archive.
    Directory children are resorted and duplicates are removed.
@@ -776,7 +801,7 @@ let makeCaseSensitive thisRoot =
           (getArchiveProps thisRoot)))
 
 let makeCaseSensitiveOnRoot =
-  Remote.registerRootCmd "makeCaseSensitive"
+  Remote.registerRootCmd "makeCaseSensitive" Umarshal.unit Umarshal.unit
     (fun (fspath, ()) ->
        makeCaseSensitive (thisRootsGlobalName fspath);
        Lwt.return ())
@@ -875,7 +900,7 @@ let clearArchiveData thisRoot =
 (* Load (main) root archive and cache it on the given server *)
 let loadArchiveOnRoot: Common.root -> bool -> (int * string) option Lwt.t =
   Remote.registerRootCmd
-    "loadArchive"
+    "loadArchive" Umarshal.bool Umarshal.(option (prod2 int string id id))
     (fun (fspath, optimistic) ->
        let (arcName,thisRoot) = archiveName fspath MainArch in
        let arcFspath = Util.fileInUnisonDir arcName in
@@ -997,7 +1022,7 @@ let lockArchiveLocal fspath =
 
 let lockArchiveOnRoot: Common.root -> unit -> string option Lwt.t =
   Remote.registerRootCmd
-    "lockArchive" (fun (fspath, ()) -> Lwt.return (lockArchiveLocal fspath))
+    "lockArchive" Umarshal.unit Umarshal.(option string) (fun (fspath, ()) -> Lwt.return (lockArchiveLocal fspath))
 
 let unlockArchiveLocal fspath =
   Lock.release
@@ -1005,7 +1030,7 @@ let unlockArchiveLocal fspath =
 
 let unlockArchiveOnRoot: Common.root -> unit -> unit Lwt.t =
   Remote.registerRootCmd
-    "unlockArchive"
+    "unlockArchive" Umarshal.unit Umarshal.unit
     (fun (fspath, ()) -> Lwt.return (unlockArchiveLocal fspath))
 
 let ignorelocks =
@@ -1089,7 +1114,7 @@ let unlockArchives () =
 
 let archivesExistOnRoot: Common.root -> unit -> (bool * bool) Lwt.t =
   Remote.registerRootCmd
-    "archivesExist"
+    "archivesExist" Umarshal.unit Umarshal.(prod2 bool bool id id)
     (fun (fspath,rootsName) ->
        let (oldname,_) = archiveName fspath MainArch in
        let oldexists =
@@ -1097,6 +1122,16 @@ let archivesExistOnRoot: Common.root -> unit -> (bool * bool) Lwt.t =
        let (newname,_) = archiveName fspath NewArch in
        let newexists =
          System.file_exists (Util.fileInUnisonDir newname) in
+       let oldexists =
+         if oldexists || newexists then oldexists else
+           (* No archive found, try 2.51 upgrade mode *)
+           (* IMPORTANT! This code is for smoother upgrades from
+              versions <= 2.51.5
+              It can be removed when this compatibility is no longer
+              required. *)
+           let (oldname, _) = archiveName251 fspath MainArch in
+           System.file_exists (Util.fileInUnisonDir oldname)
+       in
        Lwt.return (oldexists, newexists))
 
 let forall = Safelist.for_all (fun x -> x)
@@ -1256,7 +1291,7 @@ let translatePathLocal fspath path =
   localPath
 
 let translatePath =
-  Remote.registerRootCmd "translatePath"
+  Remote.registerRootCmd "translatePath" Path.m Path.mlocal
     (fun (fspath, path) -> Lwt.return (translatePathLocal fspath path))
 
 (***********************************************************************
@@ -1555,8 +1590,10 @@ let checkContentsChange
                Fileinfo.InodeStamp inode ->
                  (Util.msg "archStamp is inode (%d)" inode;
                   Util.msg " / info.inode (%d)" info.Fileinfo.inode)
-             | Fileinfo.CtimeStamp stamp ->
-                 (Util.msg "archStamp is ctime (%f)" stamp)
+             | Fileinfo.NoStamp ->
+                 (Util.msg "archStamp is no-stamp")
+             | Fileinfo.RescanStamp ->
+                 (Util.msg "archStamp is rescan-possibly-updated")
            end;
            Util.msg " / times: %f = %f... %b"
              (Props.time archDesc) (Props.time info.Fileinfo.desc)
@@ -2111,8 +2148,8 @@ let updatePredicates =
    ("follow", Path.followPred)]
 
 let predKey : (string * string list) list Proplist.key =
-  Proplist.register "update predicates"
-let rsrcKey : bool Proplist.key = Proplist.register "rsrc pref"
+  Proplist.register "update predicates" Umarshal.(list (prod2 string (list string) id id))
+let rsrcKey : bool Proplist.key = Proplist.register "rsrc pref" Umarshal.bool
 
 let checkNoUpdatePredicateChange thisRoot =
   let props = getArchiveProps thisRoot in
@@ -2261,13 +2298,15 @@ Format.eprintf "Update detection: %f@." (t2 -. t1);
      (Path.local * Common.updateItem * Props.t list) list *)
 let convV0 = Remote.makeConvV0FunRet
   (fun r -> Safelist.map
-    (fun (a, b, c) -> a, b, Safelist.map (fun e -> Props.to_compat251 e) c) r)
+    (fun (a, b, c) -> a, Common.ui_to_compat251 b, Safelist.map Props.to_compat251 c) r)
   (fun r -> Safelist.map
-    (fun (a, b, c) -> a, b, Safelist.map (fun e -> Props.of_compat251 e) c) r)
+    (fun (a, b, c) -> a, Common.ui_of_compat251 b, Safelist.map Props.of_compat251 c) r)
 
 let findOnRoot =
   Remote.registerRootCmd
     "find" ~convV0
+    Umarshal.(prod3 bool (list Path.m) (option (prod2 (list Path.m) (list Path.m) id id)) id id)
+    Umarshal.(list (prod3 Path.mlocal Common.mupdateItem (list Props.m) id id))
     (fun (fspath, (wantWatcher, pathList, subpaths)) ->
        Lwt.return (findLocal wantWatcher fspath pathList subpaths))
 
@@ -2367,6 +2406,7 @@ let prepareCommitLocal compatMode (fspath, magic) =
 
 let prepareCommitOnRoot =
    Remote.registerRootCmdWithConnection "prepareCommit"
+     Umarshal.(prod2 Fspath.m string id id) Umarshal.(option int)
      (fun conn (fspath, magic) ->
        let compatMode = Remote.connectionVersion conn = 0 in
        prepareCommitLocal compatMode (fspath, magic))
@@ -2530,9 +2570,16 @@ let markEqualLocal fspath paths =
        archive := arch);
   setArchiveLocal root !archive
 
+let convV0 =
+  let to_compat251 = Tree.map (fun nm -> nm) Common.uc_to_compat251
+  and of_compat251 = Tree.map (fun nm -> nm) Common.uc_of_compat251 in
+  Remote.makeConvV0FunArg
+    (fun (fspath, paths) -> (fspath, to_compat251 paths))
+    (fun (fspath, paths) -> (fspath, of_compat251 paths))
+
 let markEqualOnRoot =
   Remote.registerRootCmd
-    "markEqual"
+    "markEqual" ~convV0 (Tree.m Name.m Common.mupdateContent) Umarshal.unit
     (fun (fspath, paths) -> markEqualLocal fspath paths; Lwt.return ())
 
 let markEqual equals =
@@ -2564,6 +2611,7 @@ let convV0 = Remote.makeConvV0FunArg
 let replaceArchiveOnRoot =
   Remote.registerRootCmd
     "replaceArchive" ~convV0
+    Umarshal.(prod2 Path.m marchive id id) Umarshal.unit
     (fun (fspath, (pathTo, arch)) ->
        replaceArchiveLocal fspath pathTo arch;
        Lwt.return ())
@@ -2638,8 +2686,7 @@ let fastCheckMiss path desc ress oldDesc oldRess =
 let doMarkPossiblyUpdated arch =
   match arch with
     ArchiveFile (desc, fp, stamp, ress) ->
-      (* It would be cleaner to have a special stamp for this *)
-      ArchiveFile (desc, fp, Fileinfo.InodeStamp (-1), ress)
+      ArchiveFile (desc, fp, Fileinfo.RescanStamp, ress)
   | _ ->
       (* Should not happen, actually.  But this is hard to test... *)
       arch
@@ -2838,5 +2885,5 @@ let rec iterFiles fspath path arch f =
 (* Hook for filesystem auto-detection (not implemented yet) *)
 let inspectFilesystem =
   Remote.registerRootCmd
-    "inspectFilesystem"
+    "inspectFilesystem" Umarshal.unit Proplist.m
     (fun _ -> Lwt.return Proplist.empty)

@@ -3,6 +3,8 @@
 
 type t
 
+val m : t Umarshal.t
+
 val fromString : string -> t
 val toString : t -> string
 

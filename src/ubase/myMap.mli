@@ -29,6 +29,7 @@ module type OrderedType =
   sig
     type t
       (** The type of the map keys. *)
+    val m : t Umarshal.t
     val compare : t -> t -> int
       (** A total ordering function over the keys.
           This is a two-argument function [f] such that
@@ -47,6 +48,8 @@ module type S =
 
     type (+'a) t
     (** The type of maps from type [key] to type ['a]. *)
+
+    val m : 'a Umarshal.t -> 'a t Umarshal.t
 
     val empty: 'a t
     (** The empty map. *)

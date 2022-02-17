@@ -5,6 +5,8 @@
 
 type t
 
+val m : t Umarshal.t
+
 val child : t -> Name.t -> t
 val concat : t -> Path.local -> t
 

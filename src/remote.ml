@@ -523,23 +523,19 @@ let unmarshalV0 (V0 (_, from251)) buf pos =
 possibly because client and server have been compiled with different \
 versions of the OCaml compiler." s))
 
-let marshalV1 data rem =
-(* TODO: to be replaced by the new encoding function *)
-  let s = Bytearray.marshal data [Marshal.No_sharing] in
+let marshalV1 m data rem =
+  let s = Umarshal.marshal_to_bytearray m data in
   let l = Bytearray.length s in
   ((s, 0, l) :: rem, l)
 
-let unmarshalV1 buf pos =
-(* TODO: to be replaced by the new decoding function *)
-  try Bytearray.unmarshal buf pos
-  with Failure s -> raise (Util.Fatal (Printf.sprintf
-"Fatal error during unmarshaling (%s),
-possibly because client and server have been compiled with different \
-versions of the OCaml compiler." s))
+let unmarshalV1 m buf pos =
+  try Umarshal.unmarshal_from_bytearray m buf pos
+  with Failure s | Umarshal.Error s -> raise (Util.Fatal (Printf.sprintf
+"Fatal error during unmarshaling (%s)" s))
 
-let defaultMarshalingFunctions convV0 =
-  (fun conn -> if conn.version = 0 then marshalV0 convV0 else marshalV1),
-  (fun conn -> if conn.version = 0 then unmarshalV0 convV0 else unmarshalV1)
+let defaultMarshalingFunctions convV0 m =
+  (fun conn -> if conn.version = 0 then marshalV0 convV0 else marshalV1 m),
+  (fun conn -> if conn.version = 0 then unmarshalV0 convV0 else unmarshalV1 m)
 
 let makeMarshalingFunctions payloadMarshalingFunctions string =
   let (marshalPayload, unmarshalPayload) = payloadMarshalingFunctions in
@@ -701,8 +697,24 @@ type header =
   | Stream of string
   | StreamAbort
 
+let mheader = Umarshal.(sum6 unit string string string string unit
+                          (function
+                           | NormalResult -> I61 ()
+                           | TransientExn a -> I62 a
+                           | FatalExn a -> I63 a
+                           | Request a -> I64 a
+                           | Stream a -> I65 a
+                           | StreamAbort -> I66 ())
+                          (function
+                           | I61 () -> NormalResult
+                           | I62 a -> TransientExn a
+                           | I63 a -> FatalExn a
+                           | I64 a -> Request a
+                           | I65 a -> Stream a
+                           | I66 () -> StreamAbort))
+
 let ((marshalHeader, unmarshalHeader) : header marshalingFunctions) =
-  makeMarshalingFunctions (defaultMarshalingFunctions convV0_id) "rsp"
+  makeMarshalingFunctions (defaultMarshalingFunctions convV0_id mheader) "rsp"
 
 let processRequest conn id cmdName buf =
   let cmd =
@@ -873,10 +885,10 @@ let registerSpecialServerCmd
   in
   client
 
-let registerServerCmd name ?(convV0=convV0_id_pair) f =
+let registerServerCmd name ?(convV0=convV0_id_pair) mArg mRet f =
   registerSpecialServerCmd
-    name (defaultMarshalingFunctions (fst convV0))
-         (defaultMarshalingFunctions (snd convV0)) f
+    name (defaultMarshalingFunctions (fst convV0) mArg)
+         (defaultMarshalingFunctions (snd convV0) mRet) f
 
 (* RegisterHostCmd is a simpler version of registerClientServer [registerServerCmd?].
    It is used to create remote procedure calls: the only communication
@@ -888,10 +900,10 @@ let registerServerCmd name ?(convV0=convV0_id_pair) f =
    RegisterHostCmd recognizes the case where the server is the local
    host, and it avoids socket communication in this case.
 *)
-let registerHostCmd cmdName ?(convV0=convV0_id_pair) cmd =
+let registerHostCmd cmdName ?(convV0=convV0_id_pair) mArg mRet cmd =
   let serverSide = (fun _ args -> cmd args) in
   let client0 =
-    registerServerCmd cmdName ~convV0 serverSide in
+    registerServerCmd cmdName ~convV0 mArg mRet serverSide in
   let client host args =
     let conn = hostConnection host in
     client0 conn args in
@@ -910,14 +922,15 @@ let connectionToRoot root = hostConnection (hostOfRoot root)
 
 (* RegisterRootCmd is like registerHostCmd but it indexes connections by
    root instead of host. *)
-let registerRootCmd
-  (cmdName : string) ?(convV0=convV0_id_pair) (cmd : (Fspath.t * 'a) -> 'b) =
-  let r = registerHostCmd cmdName ~convV0 cmd in
+let registerRootCmd (cmdName : string)
+  ?(convV0=convV0_id_pair) mArg mRet (cmd : (Fspath.t * 'a) -> 'b) =
+  let mArg = Umarshal.(prod2 Fspath.m mArg id id) in
+  let r = registerHostCmd cmdName ~convV0 mArg mRet cmd in
   fun root args -> r (hostOfRoot root) ((snd root), args)
 
-let registerRootCmdWithConnection
-  (cmdName : string) ?(convV0=convV0_id_pair) (cmd : connection -> 'a -> 'b) =
-  let client0 = registerServerCmd cmdName ~convV0 cmd in
+let registerRootCmdWithConnection (cmdName : string)
+  ?(convV0=convV0_id_pair) mArg mRet (cmd : connection -> 'a -> 'b) =
+  let client0 = registerServerCmd cmdName ~convV0 mArg mRet cmd in
   (* Return a function that runs either the proxy or the local version,
      depending on whether the call is to the local host or a remote one *)
   fun localRoot remoteRoot args ->
@@ -943,11 +956,12 @@ let registerStreamCmd
     =
   let cmd =
     registerSpecialServerCmd
-      cmdName marshalingFunctionsArgs (defaultMarshalingFunctions convV0_id)
+      cmdName marshalingFunctionsArgs
+      (defaultMarshalingFunctions convV0_id Umarshal.unit)
       (fun conn v -> serverSide conn v; Lwt.return ())
   in
   let ping =
-    registerServerCmd (cmdName ^ "Ping")
+    registerServerCmd (cmdName ^ "Ping") Umarshal.int Umarshal.unit
       (fun conn (id : int) ->
          try
            let e = Hashtbl.find streamError id in
@@ -997,7 +1011,7 @@ let registerStreamCmd
     end
 
 let commandAvailable =
-  registerRootCmd "commandAvailable"
+  registerRootCmd "commandAvailable" Umarshal.string Umarshal.bool
     (fun (_, cmdName) -> Lwt.return (Util.StringMap.mem cmdName !serverCmds))
 
 (****************************************************************************
@@ -1332,7 +1346,7 @@ let negociateFlowControlLocal conn () =
   Lwt.return false
 
 let negociateFlowControlRemote =
-  registerServerCmd "negociateFlowControl" negociateFlowControlLocal
+  registerServerCmd "negociateFlowControl" Umarshal.unit Umarshal.bool negociateFlowControlLocal
 
 let negociateFlowControl conn =
   (* Flow control negociation can be done asynchronously. *)
@@ -1573,6 +1587,8 @@ let canonizeLocally s unicode =
 
 let canonizeOnServer =
   registerServerCmd "canonizeOnServer"
+    Umarshal.(prod2 (option string) bool id id)
+    Umarshal.(prod2 string Fspath.m id id)
     (fun _ (s, unicode) ->
        Lwt.return (Os.myCanonicalHostName (), canonizeLocally s unicode))
 
@@ -1862,12 +1878,12 @@ let checkClientVersion conn () =
 
 let showWarningOnClient =
     (registerServerCmd
-       "showWarningOnClient"
+       "showWarningOnClient" Umarshal.string Umarshal.unit
        (fun _ str -> Lwt.return (Util.warn str)))
 
 let forwardMsgToClient =
     (registerServerCmd
-       "forwardMsgToClient"
+       "forwardMsgToClient" Trace.mmsg Umarshal.unit
        (fun _ str -> (*msg "forwardMsgToClient: %s\n" str; *)
           Lwt.return (Trace.displayMessageLocally str)))
 

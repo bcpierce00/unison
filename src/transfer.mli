@@ -77,6 +77,8 @@ module Rsync :
     (* Built from the old file by the destination computer *)
     type rsync_block_info
 
+    val mrsync_block_info : rsync_block_info Umarshal.t
+
     (* Expected size of the [rsync_block_info] datastructure (in KiB). *)
     val memoryFootprint : Uutil.Filesize.t -> Uutil.Filesize.t -> int
 

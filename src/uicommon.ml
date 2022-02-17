@@ -26,6 +26,15 @@ type interface =
    Text
  | Graphic
 
+let minterface =
+  Umarshal.(sum2 unit unit
+              (function
+               | Text -> I21 ()
+               | Graphic -> I22 ())
+              (function
+               | I21 () -> Text
+               | I22 () -> Graphic))
+
 module type UI =
 sig
  val start : interface -> unit
@@ -442,6 +451,8 @@ let debug = Trace.debug "startup"
 let architecture =
   Remote.registerRootCmd
     "architecture"
+    Umarshal.unit
+    Umarshal.(prod3 bool bool bool id id)
     (fun (_,()) -> return (Util.osType = `Win32, Osx.isMacOSX, Util.isCygwin))
 
 (* During startup the client determines the case sensitivity of each root.

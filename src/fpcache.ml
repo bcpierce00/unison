@@ -34,6 +34,12 @@ let tbl = PathTbl.create 101
 type entry =
   int * string * (Props.t * Os.fullfingerprint * Fileinfo.stamp * Osx.ressStamp)
 
+let mentry = Umarshal.(prod3 int string
+                         (prod4 Props.m Os.mfullfingerprint Fileinfo.mstamp Osx.mressStamp id id)
+                         id id)
+
+let mentry_list = Umarshal.list mentry
+
 type state =
   { oc : out_channel;
     mutable count : int;
@@ -74,14 +80,14 @@ let read st ic =
   (* I/O errors are dealt with at a higher level *)
   let fp1 = Digest.input ic in
   let fp2 = Digest.input ic in
-  let headerSize = Marshal.header_size in
+  let headerSize = Umarshal.header_size in
   let header = Bytes.create headerSize in
   really_input ic header 0 headerSize;
   if fp1 <> Digest.bytes header then begin
     debug (fun () -> Util.msg "bad header checksum\n");
     raise End_of_file
   end;
-  let dataSize = Marshal.data_size header 0 in
+  let dataSize = Umarshal.data_size header 0 in
   let s = Bytes.create (headerSize + dataSize) in
   Bytes.blit header 0 s 0 headerSize;
   really_input ic s headerSize dataSize;
@@ -89,7 +95,13 @@ let read st ic =
     debug (fun () -> Util.msg "bad chunk checksum\n");
     raise End_of_file
   end;
-  let q : entry list = Marshal.from_bytes s 0 in
+  let q =
+    try Umarshal.from_bytes mentry_list s 0 with
+    | Umarshal.Error _ ->
+        debug (fun () -> Util.msg ("Umarshal error when reading from file, "
+                                ^^ "ignoring and continuing\n"));
+        []
+  in
   debug (fun () -> Util.msg "read chunk of %d files\n" (List.length q));
   List.iter (fun (l, p, i) -> PathTbl.add tbl (decompress st l p) i) q
 
@@ -102,8 +114,8 @@ let closeOut st =
 
 let write state =
   let q = Safelist.rev state.queue in
-  let s = Marshal.to_string q [Marshal.No_sharing] in
-  let fp1 = Digest.substring s 0 Marshal.header_size in
+  let s = Umarshal.to_string mentry_list q in
+  let fp1 = Digest.substring s 0 Umarshal.header_size in
   let fp2 = Digest.string s in
   begin try
     Digest.output state.oc fp1; Digest.output state.oc fp2;
@@ -127,7 +139,7 @@ let finish () =
                closeOut st
   | None    -> ()
 
-let magic = "Unison fingerprint cache format 2"
+let magic = "Unison fingerprint cache format 3"
 
 let init fastCheck ignorearchives fspath =
   finish ();
@@ -218,11 +230,10 @@ let dataClearlyUnchanged fastCheck path info desc stamp =
   match stamp with
     Fileinfo.InodeStamp inode ->
       info.Fileinfo.inode = inode
-  | Fileinfo.CtimeStamp ctime ->
-      (* BCP [Apr 07]: This doesn't work -- ctimes are unreliable
-                       under windows.  :-(
-         info.Fileinfo.ctime = ctime *)
+  | Fileinfo.NoStamp ->
       true
+  | Fileinfo.RescanStamp ->
+      false
 
 let ressClearlyUnchanged fastCheck info ress dataClearlyUnchanged =
   fastCheck

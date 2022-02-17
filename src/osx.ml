@@ -179,7 +179,20 @@ type 'a ressInfo =
   | HfsRess of Uutil.Filesize.t
   | AppleDoubleRess of int * float * float * Uutil.Filesize.t * 'a
 
+let mressInfo m = Umarshal.(sum3 unit Uutil.Filesize.m
+                              (prod5 int float float Uutil.Filesize.m m id id)
+                              (function
+                               | NoRess -> I31 ()
+                               | HfsRess a -> I32 a
+                               | AppleDoubleRess (a, b, c, d, e) -> I33 (a, b, c, d, e))
+                              (function
+                               | I31 () -> NoRess
+                               | I32 a -> HfsRess a
+                               | I33 (a, b, c, d, e) -> AppleDoubleRess (a, b, c, d, e)))
+
 type ressStamp = unit ressInfo
+
+let mressStamp = mressInfo Umarshal.unit
 
 let ressStampToString r =
   match r with
@@ -194,6 +207,10 @@ let ressStampToString r =
 type info =
   { ressInfo : (Fspath.t * int64) ressInfo;
     finfo : string }
+
+let minfo = Umarshal.(prod2 (mressInfo (prod2 Fspath.m int64 id id)) string
+                        (fun {ressInfo; finfo} -> ressInfo, finfo)
+                        (fun (ressInfo, finfo) -> {ressInfo; finfo}))
 
 external getFileInfosInternal :
   System.fspath -> bool -> string * int64 = "getFileInfos"

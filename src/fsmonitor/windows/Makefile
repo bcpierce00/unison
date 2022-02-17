@@ -3,6 +3,7 @@ FSMONITOR = unison-fsmonitor
 
 DIR=fsmonitor/windows
 FSMOCAMLOBJS = \
+   ubase/umarshal.cmo \
    ubase/rx.cmo unicode_tables.cmo unicode.cmo \
    system/system_generic.cmo system/system_win.cmo \
    system/win/system_impl.cmo \
@@ -10,6 +11,7 @@ FSMOCAMLOBJS = \
    lwt/win/lwt_win.cmo \
    fsmonitor/watchercommon.cmo $(DIR)/watcher.cmo
 FSMCOBJS = \
+   bytearray_stubs$(OBJ_EXT) \
    system/system_win_stubs$(OBJ_EXT) lwt/lwt_unix_stubs$(OBJ_EXT)
 FSMOCAMLLIBS=bigarray.cma unix.cma
 

@@ -41,6 +41,39 @@ type 'a oneperpath = ONEPERPATH of 'a list
    filesystem below a given path and the state recorded in the archive below
    that path.  The other types are helpers. *)
 
+type prevState251 =
+    Previous of Fileinfo.typ * Props.t251 * Os.fullfingerprint * Osx.ressStamp
+  | New
+
+type contentschange251 =
+    ContentsSame
+  | ContentsUpdated of Os.fullfingerprint * Fileinfo.stamp251 * Osx.ressStamp
+type permchange = PropsSame | PropsUpdated
+
+(* Variable name prefix: "ui" *)
+type updateItem251 =
+    NoUpdates                         (* Path not changed *)
+  | Updates                           (* Path changed in this replica *)
+      of updateContent251             (*   - new state *)
+       * prevState251                 (*   - summary of old state *)
+  | Error                             (* Error while detecting updates *)
+      of string                       (*   - description of error *)
+
+(* Variable name prefix: "uc" *)
+and updateContent251 =
+    Absent                            (* Path refers to nothing *)
+  | File                              (* Path refers to an ordinary file *)
+      of Props.t251                   (*   - summary of current state *)
+       * contentschange251            (*   - hint to transport agent *)
+  | Dir                               (* Path refers to a directory *)
+      of Props.t251                   (*   - summary of current state *)
+       * (Name.t * updateItem251) list(*   - children
+                                             MUST KEEP SORTED for recon *)
+       * permchange                   (*   - did permissions change? *)
+       * bool                         (*   - is the directory now empty? *)
+  | Symlink                           (* Path refers to a symbolic link *)
+      of string                       (*   - link text *)
+
 type prevState =
     Previous of Fileinfo.typ * Props.t * Os.fullfingerprint * Osx.ressStamp
   | New
@@ -48,7 +81,6 @@ type prevState =
 type contentschange =
     ContentsSame
   | ContentsUpdated of Os.fullfingerprint * Fileinfo.stamp * Osx.ressStamp
-type permchange = PropsSame | PropsUpdated
 
 (* Variable name prefix: "ui" *)
 type updateItem =
@@ -74,6 +106,13 @@ and updateContent =
   | Symlink                           (* Path refers to a symbolic link *)
       of string                       (*   - link text *)
 
+val mupdateItem : updateItem Umarshal.t
+val mupdateContent : updateContent Umarshal.t
+
+val ui_to_compat251 : updateItem -> updateItem251
+val ui_of_compat251 : updateItem251 -> updateItem
+val uc_to_compat251 : updateContent -> updateContent251
+val uc_of_compat251 : updateContent251 -> updateContent
 
 (*****************************************************************************)
 (*            COMMON TYPES SHARED BY RECONCILER AND TRANSPORT AGENT          *)

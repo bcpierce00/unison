@@ -22,10 +22,10 @@ val makeConvV0FunRet :
  -> ('compat -> 'b)
  -> 'a convV0Fun * 'b convV0Fun
 val makeConvV0Funs :
-    ('a -> 'compat)
- -> ('compat -> 'a)
- -> ('b -> 'compat)
- -> ('compat -> 'b)
+    ('a -> 'compata)
+ -> ('compata -> 'a)
+ -> ('b -> 'compatb)
+ -> ('compatb -> 'b)
  -> 'a convV0Fun * 'b convV0Fun
 
 (* Register a server function.  The result is a function that takes a host
@@ -38,6 +38,7 @@ val registerHostCmd :
     string              (* command name *)
  -> ?convV0: 'a convV0Fun * 'b convV0Fun
                         (* 2.51-compatibility functions for args and result *)
+ -> 'a Umarshal.t -> 'b Umarshal.t
  -> ('a -> 'b Lwt.t)    (* local command *)
  -> (   string          (* -> host *)
      -> 'a              (*    arguments *)
@@ -55,6 +56,7 @@ val registerRootCmd :
  -> ?convV0: (Fspath.t * 'a) convV0Fun * 'b convV0Fun
                                    (* 2.51-compatibility functions for args
                                       and result *)
+ -> 'a Umarshal.t -> 'b Umarshal.t
  -> ((Fspath.t * 'a) -> 'b Lwt.t)  (* local command *)
  -> (   Common.root                (* -> root *)
      -> 'a                         (*    additional arguments *)
@@ -119,9 +121,11 @@ val connectionVersion : connection -> int
 val connectionToRoot : Common.root -> connection
 
 val registerServerCmd :
-    string
+  string
  -> ?convV0: 'a convV0Fun * 'b convV0Fun
- -> (connection -> 'a -> 'b Lwt.t) -> connection -> 'a -> 'b Lwt.t
+ -> 'a Umarshal.t -> 'b Umarshal.t
+ -> (connection -> 'a -> 'b Lwt.t)
+ -> connection -> 'a -> 'b Lwt.t
 val intSize : int
 val encodeInt : int -> Bytearray.t * int * int
 val decodeInt : Bytearray.t -> int -> int
@@ -130,6 +134,7 @@ val registerRootCmdWithConnection :
  -> ?convV0: 'a convV0Fun * 'b convV0Fun
                                     (* 2.51-compatibility functions for args
                                        and result *)
+ -> 'a Umarshal.t -> 'b Umarshal.t
  -> (connection -> 'a -> 'b Lwt.t)  (* local command *)
  ->    Common.root                  (* root on which the command is executed *)
     -> Common.root                  (* other root *)

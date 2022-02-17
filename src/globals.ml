@@ -161,6 +161,7 @@ let paths =
      ^ "are not regular expressions.")
     (fun oldpaths string -> Safelist.append oldpaths [Path.fromString string])
     (fun l -> Safelist.map Path.toString l)
+    Umarshal.(list Path.m)
 
 (* FIX: this does weird things in case-insensitive mode... *)
 let globPath lr p =
@@ -195,19 +196,19 @@ let expandWildcardPaths() =
 (*****************************************************************************)
 
 let propagatePrefsTo =
-  Remote.registerHostCmd
-    "installPrefs"
-    (fun prefs -> return (Prefs.load prefs))
+  Remote.registerRootCmdWithConnection
+    "installPrefs" Prefs.mdumpedPrefs Umarshal.unit
+    (fun conn prefs -> return (Prefs.load prefs (Remote.connectionVersion conn)))
 
 let propagatePrefs () =
-  let prefs = Prefs.dump() in
-  let toHost root =
-    match root with
-      (Local, _) -> return ()
-    | (Remote host,_) ->
-        propagatePrefsTo host prefs
+  let toRoot = function
+    | (Local, _) -> return ()
+    | (Remote _, _) as root ->
+        let rpcVer = Remote.(connectionVersion (connectionToRoot root)) in
+        let prefs = Prefs.dump rpcVer in
+        propagatePrefsTo root root prefs
   in
-  allRootsIter toHost
+  allRootsIter toRoot
 
 (*****************************************************************************)
 (*                      PREFERENCES AND PREDICATES                           *)

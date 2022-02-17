@@ -18,6 +18,7 @@ val hash : 'a -> int
 
 module type FILESIZE = sig
   type t
+  val m : t Umarshal.t
   val zero : t
   val dummy : t
   val add : t -> t -> t
@@ -41,6 +42,7 @@ module Filesize : FILESIZE
 module File :
   sig
     type t
+    val m : t Umarshal.t
     val ofLine : int -> t
     val toLine : t -> int
     val toString : t -> string

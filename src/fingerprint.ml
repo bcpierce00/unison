@@ -19,6 +19,8 @@
 (* INCREMENT "UPDATE.ARCHIVEFORMAT"                                          *)
 type t = string
 
+let m = Umarshal.string
+
 let pseudo_prefix = "LEN"
 
 let pseudo path len = pseudo_prefix ^ (Uutil.Filesize.toString len) ^ "@" ^

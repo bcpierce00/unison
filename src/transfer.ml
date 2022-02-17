@@ -333,6 +333,13 @@ struct
         (int32, Bigarray.int32_elt, Bigarray.c_layout) Bigarray.Array1.t;
       strongChecksum : Bytearray.t }
 
+  let mrsync_block_info =
+    Umarshal.(prod5 int int int int32bigarray Bytearray.m
+                (fun {blockSize; blockCount; checksumSize; weakChecksum; strongChecksum} ->
+                  blockSize, blockCount, checksumSize, weakChecksum, strongChecksum)
+                (fun (blockSize, blockCount, checksumSize, weakChecksum, strongChecksum) ->
+                  {blockSize; blockCount; checksumSize; weakChecksum; strongChecksum}))
+
   (*** PREPROCESS ***)
 
   (* Worst case probability of a failure *)

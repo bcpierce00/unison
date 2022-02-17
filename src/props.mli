@@ -5,6 +5,7 @@
 
 type t251
 type t
+val m : t Umarshal.t
 val to_compat251 : t -> t251
 val of_compat251 : t251 -> t
 val dummy : t
@@ -39,6 +40,7 @@ val dontChmod : bool Prefs.t
 (* We are reusing the directory length to store a flag indicating that
    the directory is unchanged *)
 type dirChangedStamp
+val mdirChangedStamp : dirChangedStamp Umarshal.t
 val freshDirStamp : unit -> dirChangedStamp
 val changedDirStamp : dirChangedStamp
 val setDirChangeFlag : t -> dirChangedStamp -> int -> t * bool

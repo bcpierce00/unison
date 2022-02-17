@@ -192,6 +192,22 @@ let terse =
 type msgtype = Msg | StatusMajor | StatusMinor | Log | LogColor
 type msg = msgtype * string
 
+let mmsgtype = Umarshal.(sum5 unit unit unit unit unit
+                           (function
+                            | Msg -> I51 ()
+                            | StatusMajor -> I52 ()
+                            | StatusMinor -> I53 ()
+                            | Log -> I54 ()
+                            | LogColor -> I55 ())
+                           (function
+                            | I51 () -> Msg
+                            | I52 () -> StatusMajor
+                            | I53 () -> StatusMinor
+                            | I54 () -> Log
+                            | I55 () -> LogColor))
+
+let mmsg = Umarshal.(prod2 mmsgtype string id id)
+
 let defaultMessageDisplayer s =
   if not (Prefs.read terse) then begin
     let show() = if s<>"" then Util.msg "%s\n" s in

@@ -104,6 +104,18 @@ type fs =
   | Link of string
   | Dir of (string * fs) list
 
+let mfs_rec fs = Umarshal.(sum3 string string (list (prod2 string fs id id))
+                             (function
+                              | File a -> I31 a
+                              | Link a -> I32 a
+                              | Dir a -> I33 a)
+                             (function
+                              | I31 a -> File a
+                              | I32 a -> Link a
+                              | I33 a -> Dir a))
+
+let mfs = Umarshal.rec1 mfs_rec
+
 let rec equal fs1 fs2 =
   match fs1,fs2 with
     | File s1, File s2 -> s1=s2
@@ -157,7 +169,7 @@ let writefs p fs =
 
 let checkRootEmpty : Common.root -> unit -> unit Lwt.t =
   Remote.registerRootCmd
-    "checkRootEmpty"
+    "checkRootEmpty" Umarshal.unit Umarshal.unit
     (fun (fspath, ()) ->
        if Os.exists fspath Path.empty then
          raise (Util.Fatal (Printf.sprintf
@@ -167,26 +179,26 @@ let checkRootEmpty : Common.root -> unit -> unit Lwt.t =
 
 let makeRootEmpty : Common.root -> unit -> unit Lwt.t =
   Remote.registerRootCmd
-    "makeRootEmpty"
+    "makeRootEmpty" Umarshal.unit Umarshal.unit
     (fun (fspath, ()) ->
        remove_file_or_dir fspath;
        Lwt.return ())
 
 let getfs : Common.root -> unit -> (fs option) Lwt.t =
   Remote.registerRootCmd
-    "getfs"
+    "getfs" Umarshal.unit Umarshal.(option mfs)
     (fun (fspath, ()) ->
        Lwt.return (readfs fspath))
 
 let getbackup : Common.root -> unit -> (fs option) Lwt.t =
   Remote.registerRootCmd
-    "getbackup"
+    "getbackup" Umarshal.unit Umarshal.(option mfs)
     (fun (fspath, ()) ->
        Lwt.return (readfs (Stasher.backupDirectory ())))
 
 let makeBackupEmpty : Common.root -> unit -> unit Lwt.t =
   Remote.registerRootCmd
-    "makeBackupEmpty"
+    "makeBackupEmpty" Umarshal.unit Umarshal.unit
     (fun (fspath, ()) ->
        let b = Stasher.backupDirectory () in
        debug (fun () -> Util.msg "Removing %s\n" (Fspath.toDebugString b));
@@ -194,7 +206,7 @@ let makeBackupEmpty : Common.root -> unit -> unit Lwt.t =
 
 let putfs : Common.root -> fs -> unit Lwt.t =
   Remote.registerRootCmd
-    "putfs"
+    "putfs" mfs Umarshal.unit
     (fun (fspath, fs) ->
        writefs fspath fs;
        Lwt.return ())
@@ -244,13 +256,13 @@ let test() =
   Prefs.set Trace.terse true;
   Trace.sendLogMsgsToStderr := false;
 
-  let origPrefs = Prefs.dump() in
+  let origPrefs = Prefs.dump 99 in
 
   let runtest name prefs f =
     Util.msg "%s...\n" name;
     Util.convertUnixErrorsToFatal "Test.test" (fun() ->
       currentTest := name;
-      Prefs.load origPrefs;
+      Prefs.load origPrefs 99;
       loadPrefs prefs;
       debug (fun() -> Util.msg "Emptying backup directory\n");
       Lwt_unix.run (Globals.allRootsIter (fun r -> makeBackupEmpty r ()));

@@ -28,6 +28,7 @@ val delete : Fspath.t -> Path.local -> unit
    is a pair of the main file's fingerprint and the resource fork fingerprint,
    if any. *)
 type fullfingerprint
+val mfullfingerprint : fullfingerprint Umarshal.t
 val fullfingerprint_to_string : fullfingerprint -> string
 val reasonForFingerprintMismatch : fullfingerprint -> fullfingerprint -> string
 val fullfingerprint_dummy : fullfingerprint

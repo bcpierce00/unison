@@ -73,7 +73,7 @@ let processCommitLog () =
     Lwt.return ()
 
 let processCommitLogOnHost =
-  Remote.registerHostCmd "processCommitLog" processCommitLog
+  Remote.registerHostCmd "processCommitLog" Umarshal.unit Umarshal.unit processCommitLog
 
 let processCommitLogs() =
   Lwt_unix.run
@@ -143,7 +143,15 @@ let deleteLocal (fspathTo, (pathTo, ui, notDefault)) =
   Update.replaceArchiveLocal fspathTo localPathTo Update.NoArchive;
   Lwt.return ()
 
-let deleteOnRoot = Remote.registerRootCmd "delete" deleteLocal
+let convV0 = Remote.makeConvV0FunArg
+  (fun (fspathTo, (pathTo, ui, notDefault)) ->
+       (fspathTo, (pathTo, Common.ui_to_compat251 ui, notDefault)))
+  (fun (fspathTo, (pathTo, ui, notDefault)) ->
+       (fspathTo, (pathTo, Common.ui_of_compat251 ui, notDefault)))
+
+let deleteOnRoot = Remote.registerRootCmd "delete" ~convV0
+  Umarshal.(prod3 Path.m Common.mupdateItem bool id id) Umarshal.unit
+  deleteLocal
 
 let delete rootFrom pathFrom rootTo pathTo ui notDefault =
   deleteOnRoot rootTo (pathTo, ui, notDefault) >>= fun _ ->
@@ -167,11 +175,37 @@ let setPropLocal (fspath, (path, ui, newDesc, oldDesc)) =
   Update.updateProps fspath localPath (Some newDesc) ui;
   Lwt.return ()
 
-let setPropOnRoot = Remote.registerRootCmd "setProp" setPropLocal
+let convV0 = Remote.makeConvV0FunArg
+  (fun (fspath, (path, ui, newDesc, oldDesc)) ->
+       (fspath, (path, Common.ui_to_compat251 ui,
+         Props.to_compat251 newDesc, Props.to_compat251 oldDesc)))
+  (fun (fspath, (path, ui, newDesc, oldDesc)) ->
+       (fspath, (path, Common.ui_of_compat251 ui,
+         Props.of_compat251 newDesc, Props.of_compat251 oldDesc)))
+
+let setPropOnRoot = Remote.registerRootCmd "setProp" ~convV0
+  Umarshal.(prod4 Path.m Common.mupdateItem Props.m Props.m id id) Umarshal.unit
+  setPropLocal
+
+let propOpt_to_compat251 = function
+  | Some prop -> Some (Props.to_compat251 prop)
+  | None -> None
+
+let propOpt_of_compat251 = function
+  | Some prop -> Some (Props.of_compat251 prop)
+  | None -> None
+
+let convV0 = Remote.makeConvV0FunArg
+  (fun (fspath, (path, propOpt, ui)) ->
+       (fspath, (path, propOpt_to_compat251 propOpt, Common.ui_to_compat251 ui)))
+  (fun (fspath, (path, propOpt, ui)) ->
+       (fspath, (path, propOpt_of_compat251 propOpt, Common.ui_of_compat251 ui)))
 
 let updatePropsOnRoot =
   Remote.registerRootCmd
-   "updateProps"
+   "updateProps" ~convV0
+   Umarshal.(prod3 Path.m (option Props.m) Common.mupdateItem id id)
+   Umarshal.unit
      (fun (fspath, (path, propOpt, ui)) ->
         let localPath = Update.translatePathLocal fspath path in
         (* Archive update must be done first *)
@@ -198,9 +232,15 @@ let setProp rootFrom pathFrom rootTo pathTo newDesc oldDesc uiFrom uiTo =
 
 (* ------------------------------------------------------------ *)
 
+let convV0 = Remote.makeConvV0FunRet
+  (fun (b, desc) -> (b, Props.to_compat251 desc))
+  (fun (b, desc) -> (b, Props.of_compat251 desc))
+
 let mkdirOnRoot =
   Remote.registerRootCmd
-    "mkdir"
+    "mkdir" ~convV0
+    Umarshal.(prod2 Fspath.m Path.mlocal id id)
+    Umarshal.(prod2 bool Props.m id id)
     (fun (fspath,(workingDir,path)) ->
        let info = Fileinfo.get false workingDir path in
        if info.Fileinfo.typ = `DIRECTORY then begin
@@ -217,9 +257,19 @@ let mkdirOnRoot =
          Lwt.return (false, (Fileinfo.get false workingDir path).Fileinfo.desc)
        end)
 
+let convV0 = Remote.makeConvV0FunArg
+  (fun (fspath, (workingDir, path, initialDesc, newDesc)) ->
+       (fspath, (workingDir, path,
+         Props.to_compat251 initialDesc, Props.to_compat251 newDesc)))
+  (fun (fspath, (workingDir, path, initialDesc, newDesc)) ->
+       (fspath, (workingDir, path,
+         Props.of_compat251 initialDesc, Props.of_compat251 newDesc)))
+
 let setDirPropOnRoot =
   Remote.registerRootCmd
-    "setDirProp"
+    "setDirProp" ~convV0
+    Umarshal.(prod4 Fspath.m Path.mlocal Props.m Props.m id id)
+    Umarshal.unit
     (fun (_, (workingDir, path, initialDesc, newDesc)) ->
       Fileinfo.set workingDir path (`Set initialDesc) newDesc;
       Lwt.return ())
@@ -227,6 +277,8 @@ let setDirPropOnRoot =
 let makeSymlink =
   Remote.registerRootCmd
     "makeSymlink"
+    Umarshal.(prod3 Fspath.m Path.mlocal string id id)
+    Umarshal.unit
     (fun (fspath, (workingDir, path, l)) ->
        if Os.exists workingDir path then
          Os.delete workingDir path;
@@ -327,7 +379,7 @@ let performRename fspathTo localPathTo workingDir pathFrom pathTo prevArch =
    either locally or on the other side. *)
 let renameLocal
       (fspathTo,
-       (localPathTo, workingDir, pathFrom, pathTo, ui, archOpt, notDefault)) =
+       ((localPathTo, workingDir, pathFrom, pathTo), (ui, archOpt, notDefault))) =
   let copyInfo = prepareCopy workingDir pathTo notDefault in
   (* Make sure the target is unchanged, then do the rename.
      (Note that there is an unavoidable race condition here...) *)
@@ -348,7 +400,33 @@ let renameLocal
   end;
   Lwt.return ()
 
-let renameOnHost = Remote.registerRootCmd "rename" renameLocal
+let archOpt_to_compat251 = function
+  | Some arch -> Some (Update.to_compat251 arch)
+  | None -> None
+
+let archOpt_of_compat251 = function
+  | Some arch -> Some (Update.of_compat251 arch)
+  | None -> None
+
+let convV0 = Remote.makeConvV0FunArg
+  (fun (fspathTo,
+         ((localPathTo, workingDir, pathFrom, pathTo), (ui, archOpt, notDefault))) ->
+       (fspathTo,
+         (localPathTo, workingDir, pathFrom, pathTo,
+         Common.ui_to_compat251 ui, archOpt_to_compat251 archOpt, notDefault)))
+  (fun (fspathTo,
+         (localPathTo, workingDir, pathFrom, pathTo, ui, archOpt, notDefault)) ->
+       (fspathTo,
+         ((localPathTo, workingDir, pathFrom, pathTo),
+         (Common.ui_of_compat251 ui, archOpt_of_compat251 archOpt, notDefault))))
+
+let mrename = Umarshal.(prod2
+                          (prod4 Path.mlocal Fspath.m Path.mlocal Path.mlocal id id)
+                          (prod3 Common.mupdateItem (option Update.marchive) bool id id)
+                          id id)
+
+let renameOnHost =
+  Remote.registerRootCmd "rename" ~convV0 mrename Umarshal.unit renameLocal
 
 let rename root localPath workingDir pathOld pathNew ui archOpt notDefault =
   debug (fun() ->
@@ -357,7 +435,7 @@ let rename root localPath workingDir pathOld pathNew ui archOpt notDefault =
       (Path.toString localPath)
       (Path.toString pathOld) (Path.toString pathNew));
   renameOnHost root
-    (localPath, workingDir, pathOld, pathNew, ui, archOpt, notDefault)
+    ((localPath, workingDir, pathOld, pathNew), (ui, archOpt, notDefault))
 
 (* ------------------------------------------------------------ *)
 
@@ -383,8 +461,10 @@ let setupTargetPathsLocal (fspath, path) =
   let tempPath = Os.tempPath ~fresh:false workingDir realPath in
   Lwt.return (workingDir, realPath, tempPath, localPath)
 
+let msetupTargetPaths = Umarshal.(prod4 Fspath.m Path.mlocal Path.mlocal Path.mlocal id id)
+
 let setupTargetPaths =
-  Remote.registerRootCmd "setupTargetPaths" setupTargetPathsLocal
+  Remote.registerRootCmd "setupTargetPaths" Path.m msetupTargetPaths setupTargetPathsLocal
 
 let rec createDirectories fspath localPath props =
   match props with
@@ -413,8 +493,16 @@ let setupTargetPathsAndCreateParentDirectoryLocal (fspath, (path, props)) =
   let tempPath = Os.tempPath ~fresh:false workingDir realPath in
   Lwt.return (workingDir, realPath, tempPath, localPath)
 
+let convV0 = Remote.makeConvV0FunArg
+  (fun (fspath, (path, props)) ->
+       (fspath, (path, Safelist.map Props.to_compat251 props)))
+  (fun (fspath, (path, props)) ->
+       (fspath, (path, Safelist.map Props.of_compat251 props)))
+
 let setupTargetPathsAndCreateParentDirectory =
-  Remote.registerRootCmd "setupTargetPathsAndCreateParentDirectory"
+  Remote.registerRootCmd "setupTargetPathsAndCreateParentDirectory" ~convV0
+    Umarshal.(prod2 Path.m (list Props.m) id id)
+    Umarshal.(prod4 Fspath.m Path.mlocal Path.mlocal Path.mlocal id id)
     setupTargetPathsAndCreateParentDirectoryLocal
 
 (* ------------------------------------------------------------ *)
@@ -435,8 +523,16 @@ let updateSourceArchiveLocal (fspathFrom, (localPathFrom, uiFrom, errPaths)) =
   Stasher.stashCurrentVersion fspathFrom localPathFrom None;
   Lwt.return ()
 
+let convV0 = Remote.makeConvV0FunArg
+  (fun (fspathFrom, (localPathFrom, uiFrom, errPaths)) ->
+       (fspathFrom, (localPathFrom, Common.ui_to_compat251 uiFrom, errPaths)))
+  (fun (fspathFrom, (localPathFrom, uiFrom, errPaths)) ->
+       (fspathFrom, (localPathFrom, Common.ui_of_compat251 uiFrom, errPaths)))
+
 let updateSourceArchive =
-  Remote.registerRootCmd "updateSourceArchive" updateSourceArchiveLocal
+  Remote.registerRootCmd "updateSourceArchive" ~convV0
+    Umarshal.(prod3 Path.mlocal Common.mupdateItem (list Path.mlocal) id id) Umarshal.unit
+    updateSourceArchiveLocal
 
 (* ------------------------------------------------------------ *)
 
@@ -472,7 +568,7 @@ let deleteSpuriousChildrenLocal (_, (fspathTo, pathTo, archChildren)) =
   Lwt.return ()
 
 let deleteSpuriousChildren =
-  Remote.registerRootCmd "deleteSpuriousChildren" deleteSpuriousChildrenLocal
+  Remote.registerRootCmd "deleteSpuriousChildren" Umarshal.(prod3 Fspath.m Path.mlocal (list Name.m) id id) Umarshal.unit deleteSpuriousChildrenLocal
 
 let rec normalizeProps propsFrom propsTo =
   match propsFrom, propsTo with

@@ -80,8 +80,10 @@ let resetToDefaults () =
 
 type dumpedPrefs = (string * bool * string) list
 
-let dumpers = ref ([] : (string * bool * (unit->bool) * (unit->string)) list)
-let loaders = ref (Util.StringMap.empty : (string->unit) Util.StringMap.t)
+let mdumpedPrefs = Umarshal.(list (prod3 string bool string id id))
+
+let dumpers = ref ([] : (string * bool * (unit->bool) * (int->string)) list)
+let loaders = ref (Util.StringMap.empty : (int->string->unit) Util.StringMap.t)
 
 let adddumper name optional send f =
   dumpers := (name,optional,send,f) :: !dumpers
@@ -89,18 +91,18 @@ let adddumper name optional send f =
 let addloader name f =
   loaders := Util.StringMap.add name f !loaders
 
-let dump () =
+let dump rpcVer =
   Safelist.filter (fun (_, _, sf, _) -> sf ()) !dumpers
-  |> Safelist.map (fun (name, opt, _, f) -> (name, opt, f()))
+  |> Safelist.map (fun (name, opt, _, f) -> (name, opt, f rpcVer))
 
-let load d =
+let load d rpcVer =
   Safelist.iter
     (fun (name, opt, dumpedval) ->
        match
          try Some (Util.StringMap.find name !loaders) with Not_found -> None
        with
          Some loaderfn ->
-           loaderfn dumpedval
+           loaderfn rpcVer dumpedval
        | None ->
            if not opt then
              raise (Util.Fatal
@@ -181,51 +183,64 @@ let registerPref name typ pspec doc fulldoc =
   if doc = "" || doc.[0] <> '*' then
     prefType := Util.StringMap.add name typ !prefType
 
-let createPrefInternal name typ local send default doc fulldoc printer parsefn =
+let createPrefInternal name typ local send default doc fulldoc printer parsefn m =
+  let m = Umarshal.(prod2 m (list string) id id) in
   let newCell = rawPref default name in
   registerPref name typ (parsefn newCell) doc fulldoc;
   adddumper name local
     (fun () -> match send with None -> true | Some f -> f ())
-    (fun () -> Marshal.to_string (newCell.value, newCell.names) []);
+    (function
+     | 0 -> Marshal.to_string (newCell.value, newCell.names) []
+     | _ -> Umarshal.to_string m (newCell.value, newCell.names));
   addprinter name (fun () -> printer newCell.value);
   addresetter
     (fun () ->
        newCell.setInProfile <- false; newCell.value <- newCell.defaultValue);
   addloader name
-    (fun s ->
-       let (value, names) = Marshal.from_string s 0 in
+    (fun rpcVer s ->
+       let (value, names) =
+         match rpcVer with
+         | 0 -> Marshal.from_string s 0
+         | _ -> Umarshal.from_string m s 0
+       in
        newCell.value <- value);
   newCell
 
-let create name ?(local=false) ?send default doc fulldoc intern printer =
+let create name ?(local=false) ?send default doc fulldoc intern printer m =
   createPrefInternal name `CUSTOM local send default doc fulldoc printer
     (fun cell -> Uarg.String (fun s -> set cell (intern (read cell) s)))
+    m
 
 let createBool name ?(local=false) ?send default doc fulldoc =
   let doc = if default then doc ^ " (default true)" else doc in
   createPrefInternal name `BOOL local send default doc fulldoc
     (fun v -> [if v then "true" else "false"])
     (fun cell -> Uarg.Bool (fun b -> set cell b))
+    Umarshal.bool
 
 let createInt name ?(local=false) ?send default doc fulldoc =
   createPrefInternal name `INT local send default doc fulldoc
     (fun v -> [string_of_int v])
     (fun cell -> Uarg.Int (fun i -> set cell i))
+    Umarshal.int
 
 let createString name ?(local=false) ?send default doc fulldoc =
   createPrefInternal name `STRING local send default doc fulldoc
     (fun v -> [v])
     (fun cell -> Uarg.String (fun s -> set cell s))
+    Umarshal.string
 
 let createFspath name ?(local=false) ?send default doc fulldoc =
   createPrefInternal name `STRING local send default doc fulldoc
     (fun v -> [System.fspathToString v])
     (fun cell -> Uarg.String (fun s -> set cell (System.fspathFromString s)))
+    System.mfspath
 
 let createStringList name ?(local=false) ?send doc fulldoc =
   createPrefInternal name `STRING_LIST local send [] doc fulldoc
     (fun v -> v)
     (fun cell -> Uarg.String (fun s -> set cell (s:: read cell)))
+    Umarshal.(list string)
 
 let createBoolWithDefault name ?(local=false) ?send doc fulldoc =
   createPrefInternal name `BOOLDEF local send `Default doc fulldoc
@@ -243,6 +258,15 @@ let createBoolWithDefault name ?(local=false) ?send doc fulldoc =
               | _                  -> `False
             in
             set cell v))
+    Umarshal.(sum3 unit unit unit
+                (function
+                 | `True -> I31 ()
+                 | `False -> I32 ()
+                 | `Default -> I33 ())
+                (function
+                 | I31 () -> `True
+                 | I32 () -> `False
+                 | I33 () -> `Default))
 
 (*****************************************************************************)
 (*                     Preferences file parsing                              *)

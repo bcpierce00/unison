@@ -92,7 +92,8 @@ let socket =
          Some(int_of_string i)
        with Failure _ ->
          raise(Prefs.IllegalValue "-socket must be followed by a number")))
-    (function None -> [] | Some(i) -> [string_of_int i]) ;;
+    (function None -> [] | Some(i) -> [string_of_int i])
+    Umarshal.(option int)
 
 let serverHostName = "host"
 let serverHost =
@@ -123,7 +124,8 @@ let interface =
                                       graphic -> graphic user interface\n"
                                       ^other^ " is not a legal value")))
     (function Uicommon.Text -> ["text"]
-      | Uicommon.Graphic -> ["graphic"]);;
+      | Uicommon.Graphic -> ["graphic"])
+    Uicommon.minterface
 
 let catch_all f =
   try

@@ -35,6 +35,8 @@ let debugverbose = Util.debug "fsspath+"
 
 type t = Fspath of string
 
+let m = Umarshal.(sum1 string (function Fspath a -> a) (function a -> Fspath a))
+
 let toString (Fspath f) = f
 let toPrintString (Fspath f) = f
 let toDebugString (Fspath f) = String.escaped f

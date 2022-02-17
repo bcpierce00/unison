@@ -12,6 +12,9 @@ type info =
   { ressInfo : (Fspath.t * int64) ressInfo;
     finfo : string }
 
+val mressStamp : ressStamp Umarshal.t
+val minfo : info Umarshal.t
+
 val defaultInfos :  [> `DIRECTORY | `FILE ] -> info
 
 val getFileInfos : Fspath.t -> Path.local -> [> `DIRECTORY | `FILE ] -> info

@@ -18,6 +18,7 @@ Some functions have been added to suite Unison needs.
 module type OrderedType =
   sig
     type t
+    val m : t Umarshal.t
     val compare: t -> t -> int
   end
 
@@ -25,6 +26,7 @@ module type S =
   sig
     type key
     type +'a t
+    val m : 'a Umarshal.t -> 'a t Umarshal.t
     val empty: 'a t
     val is_empty: 'a t -> bool
     val add: key -> 'a -> 'a t -> 'a t
@@ -262,4 +264,8 @@ module Make(Ord: OrderedType) = struct
           `Ok
       | Node (l, v, _, r, _) ->
           val_combine (validate_left l v) (validate_right v r)
+
+    let m m = Umarshal.(sum1 (list (prod2 Ord.m m id id))
+                          (fun x -> fold (fun k v accu -> (k, v) :: accu) x [])
+                          (fun x -> List.fold_left (fun accu (k, v) -> add k v accu) empty x))
 end

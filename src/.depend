@@ -13,10 +13,13 @@ abort.cmx : \
 abort.cmi : \
     uutil.cmi
 bytearray.cmo : \
+    ubase/umarshal.cmi \
     bytearray.cmi
 bytearray.cmx : \
+    ubase/umarshal.cmx \
     bytearray.cmi
-bytearray.cmi :
+bytearray.cmi : \
+    ubase/umarshal.cmi
 case.cmo : \
     uutil.cmi \
     ubase/util.cmi \
@@ -50,6 +53,7 @@ clroot.cmi :
 common.cmo : \
     uutil.cmi \
     ubase/util.cmi \
+    ubase/umarshal.cmi \
     ubase/safelist.cmi \
     props.cmi \
     path.cmi \
@@ -62,6 +66,7 @@ common.cmo : \
 common.cmx : \
     uutil.cmx \
     ubase/util.cmx \
+    ubase/umarshal.cmx \
     ubase/safelist.cmx \
     props.cmx \
     path.cmx \
@@ -73,6 +78,7 @@ common.cmx : \
     common.cmi
 common.cmi : \
     uutil.cmi \
+    ubase/umarshal.cmi \
     props.cmi \
     path.cmi \
     osx.cmi \
@@ -84,6 +90,8 @@ compat402.cmo :
 compat402.cmx :
 compat403.cmo :
 compat403.cmx :
+compat404.cmo :
+compat404.cmx :
 compat408.cmo : \
     compat408.cmi
 compat408.cmx : \
@@ -96,6 +104,7 @@ copy.cmo : \
     uutil.cmi \
     ubase/util.cmi \
     update.cmi \
+    ubase/umarshal.cmi \
     transfer.cmi \
     ubase/trace.cmi \
     ubase/safelist.cmi \
@@ -124,6 +133,7 @@ copy.cmx : \
     uutil.cmx \
     ubase/util.cmx \
     update.cmx \
+    ubase/umarshal.cmx \
     transfer.cmx \
     ubase/trace.cmx \
     ubase/safelist.cmx \
@@ -184,6 +194,7 @@ features.cmx : \
 features.cmi :
 fileinfo.cmo : \
     ubase/util.cmi \
+    ubase/umarshal.cmi \
     system.cmi \
     props.cmi \
     ubase/prefs.cmi \
@@ -195,6 +206,7 @@ fileinfo.cmo : \
     fileinfo.cmi
 fileinfo.cmx : \
     ubase/util.cmx \
+    ubase/umarshal.cmx \
     system.cmx \
     props.cmx \
     ubase/prefs.cmx \
@@ -205,6 +217,7 @@ fileinfo.cmx : \
     fs.cmx \
     fileinfo.cmi
 fileinfo.cmi : \
+    ubase/umarshal.cmi \
     system.cmi \
     props.cmi \
     ubase/prefs.cmi \
@@ -216,6 +229,7 @@ files.cmo : \
     uutil.cmi \
     ubase/util.cmi \
     update.cmi \
+    ubase/umarshal.cmi \
     ubase/trace.cmi \
     system.cmi \
     stasher.cmi \
@@ -246,6 +260,7 @@ files.cmx : \
     uutil.cmx \
     ubase/util.cmx \
     update.cmx \
+    ubase/umarshal.cmx \
     ubase/trace.cmx \
     system.cmx \
     stasher.cmx \
@@ -287,6 +302,7 @@ fileutil.cmi :
 fingerprint.cmo : \
     uutil.cmi \
     ubase/util.cmi \
+    ubase/umarshal.cmi \
     path.cmi \
     fspath.cmi \
     fs.cmi \
@@ -294,17 +310,20 @@ fingerprint.cmo : \
 fingerprint.cmx : \
     uutil.cmx \
     ubase/util.cmx \
+    ubase/umarshal.cmx \
     path.cmx \
     fspath.cmx \
     fs.cmx \
     fingerprint.cmi
 fingerprint.cmi : \
     uutil.cmi \
+    ubase/umarshal.cmi \
     path.cmi \
     fspath.cmi
 fpcache.cmo : \
     uutil.cmi \
     ubase/util.cmi \
+    ubase/umarshal.cmi \
     ubase/trace.cmi \
     system.cmi \
     ubase/safelist.cmi \
@@ -319,6 +338,7 @@ fpcache.cmo : \
 fpcache.cmx : \
     uutil.cmx \
     ubase/util.cmx \
+    ubase/umarshal.cmx \
     ubase/trace.cmx \
     system.cmx \
     ubase/safelist.cmx \
@@ -405,6 +425,7 @@ fsmonitor/windows/watcher.cmx : \
 fspath.cmo : \
     uutil.cmi \
     ubase/util.cmi \
+    ubase/umarshal.cmi \
     system.cmi \
     ubase/rx.cmi \
     path.cmi \
@@ -414,6 +435,7 @@ fspath.cmo : \
 fspath.cmx : \
     uutil.cmx \
     ubase/util.cmx \
+    ubase/umarshal.cmx \
     system.cmx \
     ubase/rx.cmx \
     path.cmx \
@@ -421,6 +443,7 @@ fspath.cmx : \
     fileutil.cmx \
     fspath.cmi
 fspath.cmi : \
+    ubase/umarshal.cmi \
     system.cmi \
     path.cmi \
     name.cmi
@@ -485,6 +508,7 @@ fswatchold.cmi : \
     fspath.cmi
 globals.cmo : \
     ubase/util.cmi \
+    ubase/umarshal.cmi \
     ubase/trace.cmi \
     ubase/safelist.cmi \
     remote.cmi \
@@ -502,6 +526,7 @@ globals.cmo : \
     globals.cmi
 globals.cmx : \
     ubase/util.cmx \
+    ubase/umarshal.cmx \
     ubase/trace.cmx \
     ubase/safelist.cmx \
     remote.cmx \
@@ -604,6 +629,7 @@ lwt/win/lwt_win.cmi : \
 main.cmo : \
     uutil.cmi \
     ubase/util.cmi \
+    ubase/umarshal.cmi \
     uitext.cmi \
     uicommon.cmi \
     strings.cmi \
@@ -614,6 +640,7 @@ main.cmo : \
 main.cmx : \
     uutil.cmx \
     ubase/util.cmx \
+    ubase/umarshal.cmx \
     uitext.cmx \
     uicommon.cmx \
     strings.cmx \
@@ -623,17 +650,21 @@ main.cmx : \
     os.cmx
 name.cmo : \
     ubase/util.cmi \
+    ubase/umarshal.cmi \
     ubase/rx.cmi \
     case.cmi \
     name.cmi
 name.cmx : \
     ubase/util.cmx \
+    ubase/umarshal.cmx \
     ubase/rx.cmx \
     case.cmx \
     name.cmi
-name.cmi :
+name.cmi : \
+    ubase/umarshal.cmi
 negotiate.cmo : \
     ubase/util.cmi \
+    ubase/umarshal.cmi \
     ubase/safelist.cmi \
     remote.cmi \
     lwt/lwt.cmi \
@@ -642,6 +673,7 @@ negotiate.cmo : \
     negotiate.cmi
 negotiate.cmx : \
     ubase/util.cmx \
+    ubase/umarshal.cmx \
     ubase/safelist.cmx \
     remote.cmx \
     lwt/lwt.cmx \
@@ -653,6 +685,7 @@ negotiate.cmi : \
     common.cmi
 os.cmo : \
     ubase/util.cmi \
+    ubase/umarshal.cmi \
     ubase/trace.cmi \
     system.cmi \
     ubase/safelist.cmi \
@@ -669,6 +702,7 @@ os.cmo : \
     os.cmi
 os.cmx : \
     ubase/util.cmx \
+    ubase/umarshal.cmx \
     ubase/trace.cmx \
     system.cmx \
     ubase/safelist.cmx \
@@ -685,6 +719,7 @@ os.cmx : \
     os.cmi
 os.cmi : \
     uutil.cmi \
+    ubase/umarshal.cmi \
     props.cmi \
     path.cmi \
     name.cmi \
@@ -693,6 +728,7 @@ os.cmi : \
 osx.cmo : \
     uutil.cmi \
     ubase/util.cmi \
+    ubase/umarshal.cmi \
     ubase/trace.cmi \
     system.cmi \
     ubase/safelist.cmi \
@@ -706,6 +742,7 @@ osx.cmo : \
 osx.cmx : \
     uutil.cmx \
     ubase/util.cmx \
+    ubase/umarshal.cmx \
     ubase/trace.cmx \
     system.cmx \
     ubase/safelist.cmx \
@@ -718,12 +755,14 @@ osx.cmx : \
     osx.cmi
 osx.cmi : \
     uutil.cmi \
+    ubase/umarshal.cmi \
     ubase/prefs.cmi \
     path.cmi \
     fspath.cmi \
     fingerprint.cmi
 path.cmo : \
     ubase/util.cmi \
+    ubase/umarshal.cmi \
     ubase/safelist.cmi \
     ubase/rx.cmi \
     pred.cmi \
@@ -733,6 +772,7 @@ path.cmo : \
     path.cmi
 path.cmx : \
     ubase/util.cmx \
+    ubase/umarshal.cmx \
     ubase/safelist.cmx \
     ubase/rx.cmx \
     pred.cmx \
@@ -741,12 +781,14 @@ path.cmx : \
     case.cmx \
     path.cmi
 path.cmi : \
+    ubase/umarshal.cmi \
     pred.cmi \
     name.cmi
 pixmaps.cmo :
 pixmaps.cmx :
 pred.cmo : \
     ubase/util.cmi \
+    ubase/umarshal.cmi \
     ubase/safelist.cmi \
     ubase/rx.cmi \
     ubase/prefs.cmi \
@@ -754,6 +796,7 @@ pred.cmo : \
     pred.cmi
 pred.cmx : \
     ubase/util.cmx \
+    ubase/umarshal.cmx \
     ubase/safelist.cmx \
     ubase/rx.cmx \
     ubase/prefs.cmx \
@@ -763,6 +806,7 @@ pred.cmi :
 props.cmo : \
     uutil.cmi \
     ubase/util.cmi \
+    ubase/umarshal.cmi \
     ubase/prefs.cmi \
     path.cmi \
     osx.cmi \
@@ -774,6 +818,7 @@ props.cmo : \
 props.cmx : \
     uutil.cmx \
     ubase/util.cmx \
+    ubase/umarshal.cmx \
     ubase/prefs.cmx \
     path.cmx \
     osx.cmx \
@@ -784,6 +829,7 @@ props.cmx : \
     props.cmi
 props.cmi : \
     uutil.cmi \
+    ubase/umarshal.cmi \
     ubase/prefs.cmi \
     path.cmi \
     osx.cmi \
@@ -829,6 +875,7 @@ recon.cmi : \
 remote.cmo : \
     uutil.cmi \
     ubase/util.cmi \
+    ubase/umarshal.cmi \
     ubase/trace.cmi \
     terminal.cmi \
     system.cmi \
@@ -848,6 +895,7 @@ remote.cmo : \
 remote.cmx : \
     uutil.cmx \
     ubase/util.cmx \
+    ubase/umarshal.cmx \
     ubase/trace.cmx \
     terminal.cmx \
     system.cmx \
@@ -865,6 +913,7 @@ remote.cmx : \
     bytearray.cmx \
     remote.cmi
 remote.cmi : \
+    ubase/umarshal.cmi \
     ubase/prefs.cmi \
     lwt/lwt.cmi \
     fspath.cmi \
@@ -893,6 +942,7 @@ stasher.cmo : \
     xferhint.cmi \
     ubase/util.cmi \
     update.cmi \
+    ubase/umarshal.cmi \
     system.cmi \
     ubase/safelist.cmi \
     remote.cmi \
@@ -916,6 +966,7 @@ stasher.cmx : \
     xferhint.cmx \
     ubase/util.cmx \
     update.cmx \
+    ubase/umarshal.cmx \
     system.cmx \
     ubase/safelist.cmx \
     remote.cmx \
@@ -956,16 +1007,22 @@ system/generic/system_impl.cmo : \
     system/system_generic.cmo
 system/generic/system_impl.cmx : \
     system/system_generic.cmx
-system/system_generic.cmo :
-system/system_generic.cmx :
-system/system_intf.cmo :
-system/system_intf.cmx :
+system/system_generic.cmo : \
+    ubase/umarshal.cmi
+system/system_generic.cmx : \
+    ubase/umarshal.cmx
+system/system_intf.cmo : \
+    ubase/umarshal.cmi
+system/system_intf.cmx : \
+    ubase/umarshal.cmx
 system/system_win.cmo : \
     unicode.cmi \
+    ubase/umarshal.cmi \
     system/system_generic.cmo \
     ubase/rx.cmi
 system/system_win.cmx : \
     unicode.cmx \
+    ubase/umarshal.cmx \
     system/system_generic.cmx \
     ubase/rx.cmx
 system/win/system_impl.cmo : \
@@ -992,6 +1049,7 @@ test.cmo : \
     uutil.cmi \
     ubase/util.cmi \
     update.cmi \
+    ubase/umarshal.cmi \
     uicommon.cmi \
     transport.cmi \
     ubase/trace.cmi \
@@ -1015,6 +1073,7 @@ test.cmx : \
     uutil.cmx \
     ubase/util.cmx \
     update.cmx \
+    ubase/umarshal.cmx \
     uicommon.cmx \
     transport.cmx \
     ubase/trace.cmx \
@@ -1038,6 +1097,7 @@ test.cmi :
 transfer.cmo : \
     uutil.cmi \
     ubase/util.cmi \
+    ubase/umarshal.cmi \
     ubase/trace.cmi \
     ubase/safelist.cmi \
     lwt/lwt.cmi \
@@ -1047,6 +1107,7 @@ transfer.cmo : \
 transfer.cmx : \
     uutil.cmx \
     ubase/util.cmx \
+    ubase/umarshal.cmx \
     ubase/trace.cmx \
     ubase/safelist.cmx \
     lwt/lwt.cmx \
@@ -1055,6 +1116,7 @@ transfer.cmx : \
     transfer.cmi
 transfer.cmi : \
     uutil.cmi \
+    ubase/umarshal.cmi \
     lwt/lwt.cmi \
     bytearray.cmi
 transport.cmo : \
@@ -1094,41 +1156,51 @@ transport.cmi : \
     lwt/lwt.cmi \
     common.cmi
 tree.cmo : \
+    ubase/umarshal.cmi \
     ubase/safelist.cmi \
     tree.cmi
 tree.cmx : \
+    ubase/umarshal.cmx \
     ubase/safelist.cmx \
     tree.cmi
-tree.cmi :
+tree.cmi : \
+    ubase/umarshal.cmi
 ubase/myMap.cmo : \
+    ubase/umarshal.cmi \
     ubase/myMap.cmi
 ubase/myMap.cmx : \
+    ubase/umarshal.cmx \
     ubase/myMap.cmi
-ubase/myMap.cmi :
+ubase/myMap.cmi : \
+    ubase/umarshal.cmi
 ubase/prefs.cmo : \
     ubase/util.cmi \
+    ubase/umarshal.cmi \
     ubase/uarg.cmi \
     system.cmi \
     ubase/safelist.cmi \
     ubase/prefs.cmi
 ubase/prefs.cmx : \
     ubase/util.cmx \
+    ubase/umarshal.cmx \
     ubase/uarg.cmx \
     system.cmx \
     ubase/safelist.cmx \
     ubase/prefs.cmi
 ubase/prefs.cmi : \
     ubase/util.cmi \
+    ubase/umarshal.cmi \
     system.cmi
-ubase/projectInfo.cmo :
-ubase/projectInfo.cmx :
 ubase/proplist.cmo : \
     ubase/util.cmi \
+    ubase/umarshal.cmi \
     ubase/proplist.cmi
 ubase/proplist.cmx : \
     ubase/util.cmx \
+    ubase/umarshal.cmx \
     ubase/proplist.cmi
-ubase/proplist.cmi :
+ubase/proplist.cmi : \
+    ubase/umarshal.cmi
 ubase/rx.cmo : \
     ubase/rx.cmi
 ubase/rx.cmx : \
@@ -1141,17 +1213,20 @@ ubase/safelist.cmx : \
 ubase/safelist.cmi :
 ubase/trace.cmo : \
     ubase/util.cmi \
+    ubase/umarshal.cmi \
     system.cmi \
     ubase/safelist.cmi \
     ubase/prefs.cmi \
     ubase/trace.cmi
 ubase/trace.cmx : \
     ubase/util.cmx \
+    ubase/umarshal.cmx \
     system.cmx \
     ubase/safelist.cmx \
     ubase/prefs.cmx \
     ubase/trace.cmi
 ubase/trace.cmi : \
+    ubase/umarshal.cmi \
     ubase/prefs.cmi
 ubase/uarg.cmo : \
     ubase/util.cmi \
@@ -1164,15 +1239,18 @@ ubase/uarg.cmx : \
     ubase/safelist.cmx \
     ubase/uarg.cmi
 ubase/uarg.cmi :
+ubase/umarshal.cmo : \
+    ubase/umarshal.cmi
+ubase/umarshal.cmx : \
+    ubase/umarshal.cmi
+ubase/umarshal.cmi :
 ubase/util.cmo : \
     system.cmi \
     ubase/safelist.cmi \
-    ubase/projectInfo.cmo \
     ubase/util.cmi
 ubase/util.cmx : \
     system.cmx \
     ubase/safelist.cmx \
-    ubase/projectInfo.cmx \
     ubase/util.cmi
 ubase/util.cmi : \
     system.cmi
@@ -1182,6 +1260,7 @@ uicommon.cmo : \
     uutil.cmi \
     ubase/util.cmi \
     update.cmi \
+    ubase/umarshal.cmi \
     ubase/trace.cmi \
     system.cmi \
     stasher.cmi \
@@ -1212,6 +1291,7 @@ uicommon.cmx : \
     uutil.cmx \
     ubase/util.cmx \
     update.cmx \
+    ubase/umarshal.cmx \
     ubase/trace.cmx \
     system.cmx \
     stasher.cmx \
@@ -1239,6 +1319,7 @@ uicommon.cmx : \
     uicommon.cmi
 uicommon.cmi : \
     uutil.cmi \
+    ubase/umarshal.cmi \
     ubase/prefs.cmi \
     path.cmi \
     lwt/lwt.cmi \
@@ -1410,6 +1491,7 @@ uitext.cmo : \
     ubase/util.cmi \
     update.cmi \
     unicode.cmi \
+    ubase/umarshal.cmi \
     uicommon.cmi \
     transport.cmi \
     ubase/trace.cmi \
@@ -1432,6 +1514,7 @@ uitext.cmx : \
     ubase/util.cmx \
     update.cmx \
     unicode.cmx \
+    ubase/umarshal.cmx \
     uicommon.cmx \
     transport.cmx \
     ubase/trace.cmx \
@@ -1464,6 +1547,7 @@ update.cmo : \
     xferhint.cmi \
     uutil.cmi \
     ubase/util.cmi \
+    ubase/umarshal.cmi \
     tree.cmi \
     ubase/trace.cmi \
     system.cmi \
@@ -1488,6 +1572,7 @@ update.cmo : \
     fpcache.cmi \
     fingerprint.cmi \
     fileinfo.cmi \
+    features.cmi \
     common.cmi \
     case.cmi \
     update.cmi
@@ -1495,6 +1580,7 @@ update.cmx : \
     xferhint.cmx \
     uutil.cmx \
     ubase/util.cmx \
+    ubase/umarshal.cmx \
     tree.cmx \
     ubase/trace.cmx \
     system.cmx \
@@ -1519,11 +1605,13 @@ update.cmx : \
     fpcache.cmx \
     fingerprint.cmx \
     fileinfo.cmx \
+    features.cmx \
     common.cmx \
     case.cmx \
     update.cmi
 update.cmi : \
     uutil.cmi \
+    ubase/umarshal.cmi \
     tree.cmi \
     props.cmi \
     path.cmi \
@@ -1537,15 +1625,18 @@ update.cmi : \
     common.cmi
 uutil.cmo : \
     ubase/util.cmi \
+    ubase/umarshal.cmi \
     ubase/trace.cmi \
     ubase/projectInfo.cmo \
     uutil.cmi
 uutil.cmx : \
     ubase/util.cmx \
+    ubase/umarshal.cmx \
     ubase/trace.cmx \
     ubase/projectInfo.cmx \
     uutil.cmi
-uutil.cmi :
+uutil.cmi : \
+    ubase/umarshal.cmi
 xferhint.cmo : \
     ubase/util.cmi \
     ubase/trace.cmi \
