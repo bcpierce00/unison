@@ -2892,6 +2892,9 @@ let docs =
     ("news", ("Changes in Version 2.51.5", 
      "Changes in Version 2.51.5\n\
       \n\
+      \032  Changes since 2.51.5:\n\
+      \032    * NEWS content for 2.52.0 and later is in NEWS.md in the sources\n\
+      \n\
       \032  Changes since 2.51.4:\n\
       \032    * Restore OCaml compat to before 4.02\n\
       \032    * dune/opam improvements/fixes\n\
