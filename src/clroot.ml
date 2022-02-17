@@ -113,24 +113,15 @@ let getUser s =
     (Some beforeAt,afterAt)
   else (None,s)
 
-(*ipv6 support*)
-let hostWithBracketsRegexp = Str.regexp "\\[.*\\]"
 (* Hostname, IP or Unix domain socket path *)
 let hostRegexp = Str.regexp "[-_a-zA-Z0-9.]+\\|{[^}]+}"
 let getHost s =
-  if Str.string_match hostWithBracketsRegexp s 0
-  then
-    let host' = Str.matched_string s in
-    let s' = Str.string_after s (String.length host') in
-    let host = String.sub host' 1 ((String.length host')-2) in
-    (Some host,s')
-  else if Str.string_match hostRegexp s 0
+  if Str.string_match hostRegexp s 0
   then
     let host = Str.matched_string s in
     let s' = Str.string_after s (String.length host) in
     (Some host,s')
-  else
-     (None,s)
+  else (None,s)
 
 let colonPortRegexp = Str.regexp ":[^/]+"
 let getPort s =
