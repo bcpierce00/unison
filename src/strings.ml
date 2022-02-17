@@ -4,7 +4,7 @@
 let docs =
     ("about", ("About Unison", 
      "Unison File Synchronizer\n\
-      Version 2.51.5\n\
+      Version 2.51.70\n\
       \n\
       "))
 ::
@@ -2889,8 +2889,8 @@ let docs =
       \n\
       "))
 ::
-    ("news", ("Changes in Version 2.51.5", 
-     "Changes in Version 2.51.5\n\
+    ("news", ("Changes in Version 2.51.70", 
+     "Changes in Version 2.51.70\n\
       \n\
       \032  Changes since 2.51.5:\n\
       \032    * NEWS content for 2.52.0 and later is in NEWS.md in the sources\n\
