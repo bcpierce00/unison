@@ -1480,20 +1480,15 @@ let buildConnectSocket host port =
       in
       Lwt.fail (Util.Fatal msg)
 
-let buildListenSocket host port =
+let buildListenSocket hosts port =
   let options = [ Unix.AI_SOCKTYPE Unix.SOCK_STREAM ; Unix.AI_PASSIVE ] in
-  Lwt_util.map (buildSocket host port `Bind)
-    (Unix.getaddrinfo host port options) >>= fun res ->
+  hosts
+  |> Safelist.map (fun host -> Unix.getaddrinfo host port options)
+  |> Safelist.concat
+  |> Lwt_util.map (buildSocket "" port `Bind) >>= fun res ->
   match Safelist.filter (fun x -> x <> None) res with
   | [] ->
-      let msg =
-        if host = "" then
-          Printf.sprintf "Can't bind socket to port %s" port
-        else
-          Printf.sprintf "Can't bind socket to port %s on host %s"
-            port host
-      in
-      Lwt.fail (Util.Fatal msg)
+      Lwt.fail (Util.Fatal (Printf.sprintf "Can't bind socket to port %s" port))
   | s ->
       Lwt.return (Safelist.map (function None -> assert false | Some x -> x) s)
 
@@ -1987,15 +1982,11 @@ let _ = Prefs.alias killServer "killServer"
 (* Used by the socket mechanism: Create a socket on portNum and wait
    for a request. Each request is processed by commandLoop. When a
    session finishes, the server waits for another request. *)
-let waitOnPort hostOpt port =
+let waitOnPort hosts port =
   Util.convertUnixErrorsToFatal "waiting on port"
     (fun () ->
-       let host =
-         match hostOpt with
-           Some host -> host
-         | None      -> ""
-       in
-       let listening = Lwt_unix.run (buildListenSocket host port) in
+       let hosts = match hosts with [] -> [""] | _ -> hosts in
+       let listening = Lwt_unix.run (buildListenSocket hosts port) in
        let accepting = Array.make (Safelist.length listening) None in
        let accept i l =
          match accepting.(i) with
