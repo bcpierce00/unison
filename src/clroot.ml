@@ -32,7 +32,10 @@
   user ::= [-_a-zA-Z0-9]+
 
   host ::= [-_a-zA-Z0-9.]+
+        |  \[ [a-f0-9:.]+ zone? \]     IPv6 literals (no future format).
         |  { [^}]+ }                   For Unix domain sockets only.
+
+  zone ::= %[-_a-zA-Z0-9~%.]+
 
   port ::= [0-9]+
 
@@ -113,14 +116,16 @@ let getUser s =
     (Some beforeAt,afterAt)
   else (None,s)
 
+let ipv6Regexp = "[a-f0-9:.]+\\(%[-_a-zA-Z0-9~%.]+\\)?"
 (* Hostname, IP or Unix domain socket path *)
-let hostRegexp = Str.regexp "[-_a-zA-Z0-9.]+\\|{[^}]+}"
+let hostRegexp = Str.regexp ("[-_a-zA-Z0-9.]+\\|{[^}]+}\\|\\[\\(" ^ ipv6Regexp ^ "\\)\\]")
 let getHost s =
   if Str.string_match hostRegexp s 0
   then
     let host = Str.matched_string s in
+    let host' = try Str.matched_group 1 s with Not_found -> host in
     let s' = Str.string_after s (String.length host) in
-    (Some host,s')
+    (Some host', s')
   else (None,s)
 
 let colonPortRegexp = Str.regexp ":[^/]+"
@@ -195,12 +200,14 @@ let clroot2string = function
     else s
 | ConnectBySocket(h,p,s) ->
     let p = if p <> "" then ":" ^ p else p in
+    let h = if String.contains h ':' && h.[0] <> '{' then "[" ^ h ^ "]" else h in
     Printf.sprintf "socket://%s%s/%s" h p
       (match s with None -> "" | Some x -> x)
 | ConnectByShell(sh,h,u,p,s) ->
     let user = match u with None -> "" | Some x -> x^"@" in
     let port = match p with None -> "" | Some x -> ":"^x in
     let path = match s with None -> "" | Some x -> x in
+    let h = if String.contains h ':' then "[" ^ h ^ "]" else h in
     Printf.sprintf "%s://%s%s%s/%s" sh user h port path
 
 let sshversion = Prefs.createString "sshversion" ""

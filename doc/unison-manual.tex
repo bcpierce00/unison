@@ -845,7 +845,10 @@ The full grammar is:
   \NT{user} ::= [-\_a-zA-Z0-9]+
 
   \NT{host} ::= [-\_a-zA-Z0-9.]+
+        |  \textbackslash[ [a-f0-9:.]+ \NT{zone}? \textbackslash]    IPv6 literals (no future format).
         |  \{ [\^{}\}]+ \}                   For Unix domain sockets only.
+
+  \NT{zone} ::= \%[-\_a-zA-Z0-9~\%.]+
 
   \NT{port} ::= [0-9]+
 \end{alltt}
