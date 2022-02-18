@@ -55,9 +55,6 @@ let prmanual() =
   close_in ch;
   fprintf ml "    [];;\n\n" in
 
-(* FIX: this should be derived automatically from projectInfo.ml *)
-let myName = "unison" in
-
 (* Docs *)
 prmanual ();
 

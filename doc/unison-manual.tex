@@ -4,6 +4,7 @@
 \usepackage{moreverb}
 % \usepackage{hyperref}
 \usepackage{hevea}
+\ifhevea\@def@charset{UTF-8}\fi
 
 \input{local}
 \fulltrue
@@ -233,7 +234,7 @@ Unison can be used in three different modes: with different directories on a
 single machine, with a remote machine over a direct socket connection, or
 with a remote machine using {\tt ssh} for authentication and secure
 transfer.  If you intend to use the last option, you may need to install
-{\tt ssh}; see \sectionref{ssh}{Installing Ssh}.
+{\tt ssh} separately.
 
 \SUBSECTION{Running Unison}{afterinstall}
 
@@ -305,7 +306,7 @@ some additional things:
 based systems).
 \item OCaml bindings for Gtk2. Install them from your software repositories
 (package {\tt liblablgtk2-ocaml} on debian based systems). Also available
-from \ONEURL{http://wwwfun.kurims.kyoto-u.ac.jp/soft/olabl/lablgtk.html}.
+from \ONEURL{https://github.com/garrigue/lablgtk}.
 \item Pango, a text rendering library and a part of Gtk2. On some systems
 (e.g. Ubuntu) the bindings between Pango and OCaml need to be installed
 explicitly (package {\tt liblablgtk-extras-ocaml-dev} on Ubuntu).
@@ -572,8 +573,7 @@ Decide which of these you want to try, and continue with
 
 The standard remote shell facility on Unix systems is \verb|ssh|, which provides the
 same functionality as the older \verb|rsh| but much better security.  Ssh is available from
-\ONEURL{http://www.openssh.org}.  See section~\ref{ssh-win}
-for installation instructions for the Windows version.
+\ONEURL{http://www.openssh.org}.
 
 Running
 \verb|ssh| requires some coordination between the client and server
@@ -792,7 +792,7 @@ lists, to receive announcements of new versions.  See
 
 To understand how Unison works, it is necessary to discuss a few
 straightforward concepts.
-%
+
 These concepts are developed more rigorously and at more length in a number
 of papers, available at \ONEURL{http://www.cis.upenn.edu/\home{bcpierce}/papers}.
 But the informal presentation here should be enough for most users.
@@ -2219,11 +2219,6 @@ To use Unison in this mode, you must first create a profile (see
 
 
 \appendix
-\SECTION{Ssh}{ssh}{ssh}
-
-Your local host will need just an ssh client; the remote host needs an
-ssh server (or daemon).   ssh is now normal, and Unison thus does not
-provide instructions.
 
 \SECTION{Changes in Version \unisonversion}{news}{news}
 

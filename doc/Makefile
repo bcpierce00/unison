@@ -40,17 +40,17 @@ ifeq ($(HEVEA),true)
 	latex unison-manual.tex
 	hevea unison-manual.tex
 	./postproc < unison-manual.html > temp.html
-	(TERM=vt100; export TERM; lynx -dump temp.html > unison-manual.dtxt)
+	(TERM=vt100; export TERM; lynx -display_charset=utf8 -dump temp.html > unison-manual.dtxt)
 	./docs$(EXEC_EXT)
 endif
-	printf '$(TEXDIRECTIVES)\\textversionfalse' > texdirectives.tex
+	printf '$(TEXDIRECTIVES)\\textversionfalse\\draftfalse' > texdirectives.tex
 	latex unison-manual.tex
 	latex unison-manual.tex
 	cp unison-manual.dvi temp.dvi
 	dvips -t letter -o unison-manual.ps unison-manual.dvi
 	dvips -t letter -z -Ppdf -G0 -D600 unison-manual.dvi -o junk.ps
 	ps2pdf junk.ps unison-manual.pdf
-ifdef HEVEA
+ifeq ($(HEVEA),true)
 	hevea unison-manual.tex
 endif
 
@@ -77,7 +77,7 @@ postproc$(EXEC_EXT) : postproc.ml
 
 clean::
 	$(RM) -r \
-	   *.dtxt *.aux *.log *.out \
+	   *.dtxt *.aux *.haux *.log *.out \
 	   texdirectives.tex \
 	   junk.* *.htoc *.toc *.bak \
 	   docs docs.exe temp.dvi temp.html unison-manual.html \
