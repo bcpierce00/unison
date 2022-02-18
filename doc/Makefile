@@ -41,6 +41,7 @@ ifeq ($(HEVEA),true)
 	hevea unison-manual.tex
 	./postproc < unison-manual.html > temp.html
 	(TERM=vt100; export TERM; lynx -display_charset=utf8 -dump temp.html > unison-manual.dtxt)
+	sed -e "/^----SNIP----/,+2 d" -e "/^Junk/,$$ d" unison-manual.dtxt > unison-manual.txt
 	./docs$(EXEC_EXT)
 endif
 	printf '$(TEXDIRECTIVES)\\textversionfalse\\draftfalse' > texdirectives.tex
@@ -83,6 +84,6 @@ clean::
 	   docs docs.exe temp.dvi temp.html unison-manual.html \
 	   postproc postproc.exe postproc.ml \
 	   unison-manual.dvi unison-manual.ps unison-manual.pdf \
-	   unison-manual.info* unisonversion.tex \
+	   unison-manual.txt unison-manual.info* unisonversion.tex \
 	   contact.html faq.html faq.haux index.html
 
