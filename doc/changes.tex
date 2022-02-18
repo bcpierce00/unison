@@ -142,8 +142,9 @@ the client host name, overriding {\tt UNISONLOCALHOSTNAME} and the actual
 host name.
 \item OS X GUI:
 \begin{itemize}
-\item fix crash under Lion, because of problems with the toolbar, using the
+\item \begin{sloppypar} fix crash under Lion, because of problems with the toolbar, using the
 fix suggested in {\tt http://blitzbasic.com/Community/posts.php?topic=95778}.
+\end{sloppypar}
 
 \item uimacnew09 is now the standard graphical interface on OSX
 \item A small improvement to the uimacnew09 interface from Alan Schmitt
@@ -1072,6 +1073,7 @@ during Unison startup (under the graphical UI).
     under multi-threading.  The temp file names are made less likely
     to coincide with the name of a file created by the user.  They
     take the form \\ \verb|.#<filename>.<serial>.unison.tmp|.
+
     [N.b. This was later changed to \verb|.unison.<filename>.<serial>.unison.tmp|.]
   \end{itemize}
 \item Added a new command to the GTK user interface: pressing 'f' causes

@@ -31,7 +31,7 @@ let localCanonicalHostName =
 let clientHostName : string Prefs.t =
   Prefs.createString "clientHostName" localCanonicalHostName
     "!set host name of client"
-    ("When specified, the host name of the client will not be guessed" ^
+    ("When specified, the host name of the client will not be guessed " ^
      "and the provided host name will be used to find the archive.")
 
 let serverHostName = localCanonicalHostName
