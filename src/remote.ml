@@ -1360,7 +1360,7 @@ let negociateFlowControl conn =
 
 (****)
 
-let initConnection onClose in_ch out_ch =
+let initConnection ?(connReady=fun () -> ()) onClose in_ch out_ch =
   let conn = setupIO false in_ch out_ch in
   let with_timeout t =
     Lwt.choose [t;
@@ -1368,6 +1368,8 @@ let initConnection onClose in_ch out_ch =
       Lwt.fail (Util.Fatal "Timed out negotiating connection with the server")]
   in
   with_timeout (
+    peekWithBlocking conn.inputBuffer >>= fun _ ->
+    connReady (); Lwt.return () >>= fun () -> (* Connection working, notify *)
     checkHeader conn >>=
     checkServerUpgrade conn >>=
     checkServerVersion conn) >>= fun () ->
@@ -1615,16 +1617,60 @@ let buildShellConnection onClose shell host userOpt portOpt rootName termInterac
         fst (Terminal.create_session shellCmd argsarray i1 o2 Unix.stderr))
   in
   Unix.close i1; Unix.close o2;
-  begin match term, termInteract with
-  | Some fdTerm, Some callBack ->
-      Terminal.handlePasswordRequests fdTerm (callBack rootName)
-  | _ ->
-      ()
-  end;
+  let forwardShellStderr fdIn fdOut = function
+    | None -> Lwt.return ()
+    | Some s ->
+        (* When the shell connection has been established then keep
+           forwarding server's stderr to client's stderr; not to GUI. *)
+        let buf = Bytes.create 16000 in
+        let rec loop s len =
+          (* Can't use printf because if stderr is not open in Windows,
+             it will throw an exception when at_exit tries to flush it. *)
+          ignore (try if len > 0 then Unix.write fdOut s 0 len else 0
+                  with Unix.Unix_error _ -> 0);
+          Lwt.catch (fun () -> Lwt_unix.read fdIn buf 0 16000)
+            (fun _ -> debug (fun () ->
+               Util.msg "Caught an exception when reading remote stderr\n");
+               Lwt.return 0)
+          >>= function
+          | 0 -> Lwt.return ()
+          | len -> loop buf len
+        in
+        loop (Bytes.of_string s) (String.length s)
+  in
+  let est = ref false in
+  let connReady () = est := true
+  and isReady () = !est = true in
+  let getTermErr =
+    match term, termInteract with
+    | Some fdTerm, Some callBack ->
+        let (readTerm, getErr) =
+          Terminal.handlePasswordRequests fdTerm (callBack rootName) isReady in
+        Lwt.ignore_result (
+          readTerm >>=
+          forwardShellStderr (fst fdTerm) Unix.stderr);
+        getErr
+    | _ ->
+        fun () -> Lwt.return ""
+  in
   let cleanup () =
     try Terminal.close_session term with Unix.Unix_error _ -> ()
   in
-  initConnection (onClose cleanup) i2 o1
+  (* With [connReady], we know that shell connection was established (even if
+     RPC handshake failed). This hacky way of detecting the connection is used
+     because [Lwt_unix.wait_read] is not implemented under Windows.
+     By this time, we are already somewhat late in the communication process.
+     Any error output from very early stages of server startup, before other
+     output is produced, might still end up in GUI (but this is very unlikely;
+     it is more likely that the same error caused connection to be dropped). *)
+  Lwt.catch
+    (fun () -> initConnection ~connReady (onClose cleanup) i2 o1)
+    (fun e ->
+      Lwt.catch
+        (fun () -> getTermErr () >>= fun s ->
+                   if s <> "" then Util.warn s;
+                   Lwt.fail e)
+        (fun _ ->  Lwt.fail e))
 
 let canonizeLocally s unicode =
   (* We need to select the proper API in order to compute correctly the

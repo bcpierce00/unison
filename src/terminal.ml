@@ -341,25 +341,61 @@ let rec termInput (fdTerm, _) fdInput =
        [readPrompt (); connectionEstablished ()])
 
 (* Read messages from the terminal and use the callback to get an answer *)
-let handlePasswordRequests (fdIn, fdOut) callback =
-  let buf = Bytes.create 10000 in
-  let rec loop () =
-    Lwt_unix.read fdIn buf 0 10000 >>= (fun len ->
-      if len = 0 then
-        (* The remote end is dead *)
-        Lwt.return ()
-      else
-        let query = Bytes.sub_string buf 0 len in
-        if query = "\r\n" || query = "\n" || query = "\r" then
-          loop ()
-        else begin
-          let response = callback (processEscapes query) in
-          Lwt_unix.write_substring fdOut
-            (response ^ "\n") 0 (String.length response + 1)
-            (* HACK: Sleep briefly to allow time for output to be
-               generated and read in as a whole. *)
-              >>= fun _ -> Lwt_unix.sleep 0.2 >>= (fun _ ->
-          loop ())
-        end)
+let handlePasswordRequests (fdIn, fdOut) callback isReady =
+  let scrollback = Buffer.create 32 in
+  let extract () =
+    let s = Buffer.contents scrollback in
+    let () = Buffer.clear scrollback in
+    s
   in
-  ignore (loop ())
+  let buf = Bytes.create 10000 in
+  let time = ref (Unix.gettimeofday ()) in
+  let rec loop () =
+    Lwt_unix.read fdIn buf 0 10000 >>= function
+    | 0 -> Lwt.return None (* The remote end is dead *)
+    | len ->
+        time := Unix.gettimeofday ();
+        Buffer.add_string scrollback (Bytes.sub_string buf 0 len);
+        if isReady () then   (* The shell connection has been established *)
+          Lwt.return (Some (extract ()))
+        else
+          loop ()
+  in
+  let delay = 0.2 in
+  let rec prompt () =
+    if isReady () then
+      Lwt.return ()
+    else
+      let d = (Unix.gettimeofday ()) -. !time in
+      if d < delay
+        || Buffer.length scrollback = 0 then
+      (* HACK: Delay briefly (0.2 s, noticable to a human but not terrible
+         either since some delay from the network is expected anyway) to allow
+         time for output to be generated and read in as a whole. Otherwise, it
+         may happen that 'Invalid password' and 'Please re-enter password'
+         prompts are received separately, and this is not what we want.
+         Loop by 0.01 s to let other threads run while not introducing
+         noticable latency to the user. *)
+      Lwt_unix.sleep (max (delay -. (max 0. d)) 0.01) >>= prompt
+    else
+      let query = extract () in
+      if query = "\r\n" || query = "\n" || query = "\r" then
+        Lwt_unix.yield () >>= prompt
+      else
+        let response = callback (processEscapes query) in
+        Lwt_unix.write_substring fdOut
+          (response ^ "\n") 0 (String.length response + 1) >>= fun _ -> prompt ()
+  in
+  let getErr () =
+    (* Yield a couple of times to give one final chance of reading the error
+       output from the ssh process. *)
+    Lwt_unix.yield () >>=
+    Lwt_unix.yield >>= fun () ->
+    Lwt.return (Util.trimWhitespace (processEscapes (extract ())))
+  in
+  let () = Lwt.ignore_result (Lwt.catch prompt
+    (Util.encodeException "writing to shell terminal" `Fatal))
+  and readTerm = Lwt.catch loop
+    (Util.encodeException "reading from shell terminal" `Fatal)
+  in
+  (readTerm, getErr)

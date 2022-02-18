@@ -18,7 +18,8 @@ val termInput :
   (Lwt_unix.file_descr * Lwt_unix.file_descr) -> Lwt_unix.file_descr -> string option
 
 val handlePasswordRequests :
-  (Lwt_unix.file_descr * Lwt_unix.file_descr) -> (string -> string) -> unit
+  (Lwt_unix.file_descr * Lwt_unix.file_descr) -> (string -> string) ->
+  (unit -> bool) -> string option Lwt.t * (unit -> string Lwt.t)
 
 (* For recognizing messages from OpenSSH *)
 val password : string -> bool
