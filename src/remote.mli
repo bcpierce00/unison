@@ -71,7 +71,7 @@ val commandAvailable :
 (* Enter "server mode", reading and processing commands from a remote
    client process until killed *)
 val beAServer : unit -> unit
-val waitOnPort : string option -> string -> unit
+val waitOnPort : string list -> string -> unit
 
 (* Whether the server should be killed when the client terminates *)
 val killServer : bool Prefs.t

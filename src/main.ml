@@ -85,20 +85,20 @@ let server =
 
 let socketPrefName = "socket"
 let socket =
-  Prefs.create socketPrefName None
+  Prefs.createString socketPrefName "" ~local:true
     "!act as a server on a socket" ""
-    (fun _ -> fun i ->
-      (try
-         Some(int_of_string i)
-       with Failure _ ->
-         raise(Prefs.IllegalValue "-socket must be followed by a number")))
-    (function None -> [] | Some(i) -> [string_of_int i])
-    Umarshal.(option int)
 
-let serverHostName = "host"
+let serverHostNameAlias = "host"
+let serverHostName = "listen"
 let serverHost =
-  Prefs.createString serverHostName ""
-    "!bind the socket to this host name in server socket mode" ""
+  Prefs.createString serverHostName "" ~local:true
+    "!listen on this name or addr in server socket mode (can repeat)"
+    ("When acting as a server on a socket, Unison will by default listen "
+     ^ "on \"any\" address (0.0.0.0 and [::]).  This command-line argument "
+     ^ "allows to specify a different listening address and can be repeated "
+     ^ "to listen on multiple addresses.  Listening address can be specified "
+     ^ "as a host name or an IP address.")
+let () = Prefs.alias serverHost serverHostNameAlias
 
 (* User preference for which UI to use if there is a choice *)
 let uiPrefName = "ui"
@@ -207,13 +207,8 @@ let init () = begin
     catch_all (fun () ->
      Os.createUnisonDir();
       Remote.waitOnPort
-        (begin try
-           match Util.StringMap.find serverHostName argv with
-             []     -> None
-           | s :: _ -> Some s
-         with Not_found ->
-           None
-         end)
+        ((try Util.StringMap.find serverHostName argv with Not_found -> []) @
+         (try Util.StringMap.find serverHostNameAlias argv with Not_found -> []))
         i);
     exit 0
   with Not_found -> () end;

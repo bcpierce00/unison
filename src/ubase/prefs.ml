@@ -172,6 +172,12 @@ let alias pref newname =
   (* found in the map, no need for catching exception                       *)
   let (_,pspec,_) = Util.StringMap.find (Safelist.hd (name pref)) !prefs in
   prefs := Util.StringMap.add newname ("*", pspec, "") !prefs;
+  let () =
+    try
+      let loader = Util.StringMap.find (Safelist.hd (name pref)) !loaders in
+      addloader newname loader
+    with Not_found -> ()
+  in
   aliasMap := Util.StringMap.add newname (Safelist.hd (name pref)) !aliasMap;
   pref.names <- newname :: pref.names
 
