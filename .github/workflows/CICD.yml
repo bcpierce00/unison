@@ -10,7 +10,36 @@ on:
   - push
 
 jobs:
+  docs:
+    runs-on: ubuntu-20.04
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Use OCaml
+      uses: ocaml/setup-ocaml@v2
+      with:
+        ocaml-compiler: 4.13.x
+        opam-depext: false
+
+    - run: sudo apt-get install hevea lynx texlive-latex-base
+
+    - run: opam exec -- make docs
+
+    - name: Store user manual for the build jobs
+      uses: actions/upload-artifact@v2
+      with:
+        name: unison-docs
+        path: |
+          doc/unison-manual.txt
+          doc/unison-manual.html
+          doc/unison-manual.pdf
+
   build:
+    if: ${{ always() }}    # Don't fail if 'docs' failed
+    needs: docs
+
     strategy:
       fail-fast: false
       matrix:
@@ -188,6 +217,12 @@ jobs:
       with:
         name: unison-${{ steps.vars.outputs.REF_SHAS }}.ocaml-${{ matrix.job.ocaml-version }}.${{ matrix.job.os }}
         path: ${{ steps.vars.outputs.PKG_DIR }}/bin/*
+
+    - name: Copy user manual
+      uses: actions/download-artifact@v2
+      with:
+        name: unison-docs
+        path: '${{ steps.vars.outputs.PKG_DIR }}'
 
     - name: Package
       # if: steps.vars.outputs.DEPLOY
