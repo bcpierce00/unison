@@ -40,8 +40,6 @@ let ignoreArchives =
    archive changes: old archives will then automatically be discarded.  (We
    do not use the unison version number for this because usually the archive
    representation does not change between unison versions.) *)
-(*FIX: also make Jerome's suggested change about file times (see his mesg in
-       unison-pending email folder). *)
 (*FIX: consider changing the way case-sensitivity mode is stored in
   the archive *)
 let archiveFormat = 23
