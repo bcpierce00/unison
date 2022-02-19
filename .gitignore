@@ -40,12 +40,18 @@ doc/docs
 doc/junk.ps
 doc/postproc
 doc/postproc.ml
+doc/prefs.tmp
+doc/prefsdocs.tmp
+doc/temp.dvi
+doc/temp.html
+doc/texdirectives.tex
 doc/unison-manual.dtxt
 doc/unison-manual.dvi
 doc/unison-manual.html
 doc/unison-manual.htoc
 doc/unison-manual.pdf
 doc/unison-manual.ps
+doc/unison-manual.txt
 doc/unisonversion.tex
 
 _build

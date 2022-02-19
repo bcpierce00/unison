@@ -231,7 +231,7 @@ Either click-start it, or type \showtt{unison -version} at the command
 line.
 
 Unison can be used in three different modes: with different directories on a
-single machine, with a remote machine over a direct socket connection, or
+single machine, with a local or a remote machine over a direct socket connection, or
 with a remote machine using {\tt ssh} for authentication and secure
 transfer.  If you intend to use the last option, you may need to install
 {\tt ssh} separately.
@@ -665,26 +665,35 @@ daemon process on the server.  This process runs continuously,
 waiting for connections over a given socket from client machines
 running Unison and processing their requests in turn.
 
-Note that socket mode cannot be started from a profile. It should be started as a command-line argument only.
+Since the socket method is not used by many people, its functionality is
+rather limited.  For example, the server can only deal with one client at a
+time.
 
-To start the daemon, type
+Note that the Unison daemon process is always started with a command-line
+argument; not from a profile.
+
+\SUBSUBSECTION{TCP Sockets}{socket-tcp}
+
+To start the daemon for connections over a TCP socket, type
 \begin{verbatim}
        unison -socket NNNN
 \end{verbatim}
-on the server machine, where {\tt NNNN} is the socket number that the
+on the server machine, where {\tt NNNN} is the TCP port number that the
 daemon should listen on for connections from clients.  ({\tt NNNN} can
 be any large number that is not being used by some other program; if
 \texttt{NNNN} is already in use, Unison will exit with an error
-message.)  Note that paths specified by the client will be interpreted
-relative to the directory in which you start the server process; this
-behavior is different from the ssh case, where the path is relative to
-your home directory on the server.
+message.)
 
 Create a test directory {\tt a.tmp} in your home directory on the
 client machine.  Now type:
 \begin{alltt}
        unison a.tmp socket://\NT{remotehostname}:NNNN/a.tmp
 \end{alltt}
+Note that paths specified by the client will be interpreted relative
+to the directory in which you start the server process; this behavior
+is different from the ssh case, where the path is relative to your home
+directory on the server.
+%
 The result should be that the entire directory {\tt a.tmp} is
 propagated from the client to the server (\texttt{a.tmp} will be
 created on the server in the directory that the server was started
@@ -694,10 +703,37 @@ After finishing the first synchronization, change a few files and try
 synchronizing again.  You should see similar results as in the local
 case.
 
-Since the socket method is not used by many people, its functionality is
-rather limited.  For example, the server can only deal with one client at a
-time.
+By default Unison will listen for incoming connections on all interfaces.
+If you want to limit this to certain interfaces or addresses then you
+can use the {\tt -listen} command-line argument, specifying a host name
+or an IP address to listen on. {\tt -listen} can be given multiple
+times to listen on several addresses.
 
+\SUBSUBSECTION{Unix Domain Sockets}{socket-unix}
+
+To start the daemon for connections over a Unix domain socket, type
+\begin{verbatim}
+       unison -socket PPPP
+\end{verbatim}
+where {\tt PPPP} is the path to a Unix socket that the daemon should
+open for connections from clients.  ({\tt PPPP} can be any absolute or
+relative path the server process has access to but it must not exist
+yet; the socket is created at that path when the daemon process is
+started.)  You are responsible for securing access to the socket path.
+For example, this can be done by controlling the permissions of
+socket's parent directory and the {\tt umask} value when starting
+Unison.
+
+Clients can connect to a server over a Unix domain socket by specifying
+the absolute or relative path to the socket, instead of a server address
+and port number:
+\begin{alltt}
+       unison a.tmp socket://\{\NT{path/to/unix/socket}\}/a.tmp
+\end{alltt}
+(socket path is enclosed in curly braces).  Note that Unix domain
+sockets are local sockets (they exist in the filesystem namespace).
+To connect over a Unix socket remotely, you have to forward the socket
+by other means, for example by using {\tt spiped} secure pipe daemon.
 
 \SUBSECTION{Using Unison for All Your Files}{usingit}
 
@@ -826,10 +862,19 @@ If the remote server is already running (in the socket mode), then the syntax
 \begin{alltt}
       socket://\NT{remotehost}:\NT{portnum}//\NT{absolute/path/of/root}
       socket://\NT{remotehost}:\NT{portnum}/\NT{relative/path/of/root}
+      socket://[\NT{IPv6literal}]:\NT{portnum}/\NT{path}
 \end{alltt}
 \noindent
 is used to specify the hostname and the port that the client Unison should
 use to contact it.
+Syntax
+\begin{alltt}
+      socket://\{\NT{path/of/socket}\}//\NT{absolute/path/of/root}
+      socket://\{\NT{path/of/socket}\}/\NT{relative/path/of/root}
+\end{alltt}
+\noindent
+is used to specify the Unix domain socket the client Unison should use to
+contact the server.
 
 The syntax for roots is based on that of URIs (described in RFC 2396).
 The full grammar is:
@@ -1329,10 +1374,11 @@ Here are all the preferences supported by Unison.  This list can be
 \begin{quote}
 \verbatiminput{prefs.tmp}
 \end{quote}
+
 Here, in more detail, is what they do.  Many are discussed in greater detail
 in other sections of the manual.
 
-It should be noted that some command-line arguments are handled specially during startup, including \verb|-doc|, \verb|-help|, \verb|-version|, \verb|-server|, \verb|-socket|, and \verb|-ui|. They are expected to appear on the command-line only, not in a profile. In particular, \verb|-version| and \verb|-doc| will print to the standard output, so they only make sense if invoked from the command-line (and not a click-launched gui that has no standard output). Furthermore, the actions associated with these command-line arguments are executed without loading a profile or doing the usual command-line parsing. This is because we want to run the actions without loading a profile; and then we can't do command-line parsing because it is intertwined with profile loading.
+It should be noted that some command-line arguments are handled specially during startup, including \verb|-doc|, \verb|-help|, \verb|-version|, \verb|-socket|, and \verb|-ui|. They are expected to appear on the command-line only, not in a profile. In particular, \verb|-version| and \verb|-doc| will print to the standard output, so they only make sense if invoked from the command-line (and not a click-launched gui that has no standard output). Furthermore, the actions associated with these command-line arguments are executed without loading a profile or doing the usual command-line parsing.
 %
 \input{prefsdocs.tmp}
 
