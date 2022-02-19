@@ -217,10 +217,10 @@ let docs =
       \032  Either click-start it, or type \"unison -version\" at the command line.\n\
       \n\
       \032  Unison can be used in three different modes: with different directories\n\
-      \032  on a single machine, with a remote machine over a direct socket\n\
-      \032  connection, or with a remote machine using ssh for authentication and\n\
-      \032  secure transfer. If you intend to use the last option, you may need to\n\
-      \032  install ssh separately.\n\
+      \032  on a single machine, with a local or a remote machine over a direct\n\
+      \032  socket connection, or with a remote machine using ssh for\n\
+      \032  authentication and secure transfer. If you intend to use the last\n\
+      \032  option, you may need to install ssh separately.\n\
       \n\
       Running Unison\n\
       \n\
@@ -598,34 +598,65 @@ let docs =
       \032  connections over a given socket from client machines running Unison and\n\
       \032  processing their requests in turn.\n\
       \n\
-      \032  Note that socket mode cannot be started from a profile. It should be\n\
-      \032  started as a command-line argument only.\n\
+      \032  Since the socket method is not used by many people, its functionality\n\
+      \032  is rather limited. For example, the server can only deal with one\n\
+      \032  client at a time.\n\
       \n\
-      \032  To start the daemon, type\n\
+      \032  Note that the Unison daemon process is always started with a\n\
+      \032  command-line argument; not from a profile.\n\
+      \n\
+      TCP Sockets\n\
+      \n\
+      \032  To start the daemon for connections over a TCP socket, type\n\
       \032      unison -socket NNNN\n\
       \n\
-      \032  on the server machine, where NNNN is the socket number that the daemon\n\
-      \032  should listen on for connections from clients. (NNNN can be any large\n\
-      \032  number that is not being used by some other program; if NNNN is already\n\
-      \032  in use, Unison will exit with an error message.) Note that paths\n\
-      \032  specified by the client will be interpreted relative to the directory\n\
-      \032  in which you start the server process; this behavior is different from\n\
-      \032  the ssh case, where the path is relative to your home directory on the\n\
-      \032  server.\n\
+      \032  on the server machine, where NNNN is the TCP port number that the\n\
+      \032  daemon should listen on for connections from clients. (NNNN can be any\n\
+      \032  large number that is not being used by some other program; if NNNN is\n\
+      \032  already in use, Unison will exit with an error message.)\n\
       \n\
       \032  Create a test directory a.tmp in your home directory on the client\n\
       \032  machine. Now type:\n\
       \032      unison a.tmp socket://remotehostname:NNNN/a.tmp\n\
       \n\
-      \032  The result should be that the entire directory a.tmp is propagated from\n\
-      \032  the client to the server (a.tmp will be created on the server in the\n\
-      \032  directory that the server was started from). After finishing the first\n\
-      \032  synchronization, change a few files and try synchronizing again. You\n\
-      \032  should see similar results as in the local case.\n\
+      \032  Note that paths specified by the client will be interpreted relative to\n\
+      \032  the directory in which you start the server process; this behavior is\n\
+      \032  different from the ssh case, where the path is relative to your home\n\
+      \032  directory on the server. The result should be that the entire directory\n\
+      \032  a.tmp is propagated from the client to the server (a.tmp will be\n\
+      \032  created on the server in the directory that the server was started\n\
+      \032  from). After finishing the first synchronization, change a few files\n\
+      \032  and try synchronizing again. You should see similar results as in the\n\
+      \032  local case.\n\
       \n\
-      \032  Since the socket method is not used by many people, its functionality\n\
-      \032  is rather limited. For example, the server can only deal with one\n\
-      \032  client at a time.\n\
+      \032  By default Unison will listen for incoming connections on all\n\
+      \032  interfaces. If you want to limit this to certain interfaces or\n\
+      \032  addresses then you can use the -listen command-line argument,\n\
+      \032  specifying a host name or an IP address to listen on. -listen can be\n\
+      \032  given multiple times to listen on several addresses.\n\
+      \n\
+      Unix Domain Sockets\n\
+      \n\
+      \032  To start the daemon for connections over a Unix domain socket, type\n\
+      \032      unison -socket PPPP\n\
+      \n\
+      \032  where PPPP is the path to a Unix socket that the daemon should open for\n\
+      \032  connections from clients. (PPPP can be any absolute or relative path\n\
+      \032  the server process has access to but it must not exist yet; the socket\n\
+      \032  is created at that path when the daemon process is started.) You are\n\
+      \032  responsible for securing access to the socket path. For example, this\n\
+      \032  can be done by controlling the permissions of socket\226\128\153s parent directory\n\
+      \032  and the umask value when starting Unison.\n\
+      \n\
+      \032  Clients can connect to a server over a Unix domain socket by specifying\n\
+      \032  the absolute or relative path to the socket, instead of a server\n\
+      \032  address and port number:\n\
+      \032      unison a.tmp socket://{path/to/unix/socket}/a.tmp\n\
+      \n\
+      \032  (socket path is enclosed in curly braces). Note that Unix domain\n\
+      \032  sockets are local sockets (they exist in the filesystem namespace). To\n\
+      \032  connect over a Unix socket remotely, you have to forward the socket by\n\
+      \032  other means, for example by using spiped secure pipe daemon.\n\
       \n\
       Using Unison for All Your Files\n\
       \n\
@@ -737,9 +768,15 @@ let docs =
       \032  syntax\n\
       \032     socket://remotehost:portnum//absolute/path/of/root\n\
       \032     socket://remotehost:portnum/relative/path/of/root\n\
+      \032     socket://[IPv6literal]:portnum/path\n\
       \n\
       \032  is used to specify the hostname and the port that the client Unison\n\
-      \032  should use to contact it.\n\
+      \032  should use to contact it. Syntax\n\
+      \032     socket://{path/of/socket}//absolute/path/of/root\n\
+      \032     socket://{path/of/socket}/relative/path/of/root\n\
+      \n\
+      \032  is used to specify the Unix domain socket the client Unison should use\n\
+      \032  to contact the server.\n\
       \n\
       \032  The syntax for roots is based on that of URIs (described in RFC 2396).\n\
       \032  The full grammar is:\n\
@@ -1263,16 +1300,13 @@ let docs =
       \032  detail in other sections of the manual.\n\
       \n\
       \032  It should be noted that some command-line arguments are handled\n\
-      \032  specially during startup, including -doc, -help, -version, -server,\n\
-      \032  -socket, and -ui. They are expected to appear on the command-line only,\n\
-      \032  not in a profile. In particular, -version and -doc will print to the\n\
-      \032  standard output, so they only make sense if invoked from the\n\
-      \032  command-line (and not a click-launched gui that has no standard\n\
-      \032  output). Furthermore, the actions associated with these command-line\n\
-      \032  arguments are executed without loading a profile or doing the usual\n\
-      \032  command-line parsing. This is because we want to run the actions\n\
-      \032  without loading a profile; and then we can\226\128\153t do command-line parsing\n\
-      \032  because it is intertwined with profile loading.\n\
+      \032  specially during startup, including -doc, -help, -version, -socket, and\n\
+      \032  -ui. They are expected to appear on the command-line only, not in a\n\
+      \032  profile. In particular, -version and -doc will print to the standard\n\
+      \032  output, so they only make sense if invoked from the command-line (and\n\
+      \032  not a click-launched gui that has no standard output). Furthermore, the\n\
+      \032  actions associated with these command-line arguments are executed\n\
+      \032  without loading a profile or doing the usual command-line parsing.\n\
       \n\
       \032  addprefsto xxx\n\
       \032         By default, new preferences added by Unison (e.g., new ignore\n\
@@ -1754,7 +1788,7 @@ let docs =
       \032         elevated privileges to create symbolic links.\n\
       \n\
       \032  listen xxx\n\
-      \032         When acting as a server on a socket, Unison will by default\n\
+      \032         When acting as a server on a TCP socket, Unison will by default\n\
       \032         listen on \"any\" address (0.0.0.0 and [::]). This command-line\n\
       \032         argument allows to specify a different listening address and can\n\
       \032         be repeated to listen on multiple addresses. Listening address\n\
