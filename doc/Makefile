@@ -6,7 +6,7 @@ all:: unison-manual.html
 include ../src/Makefile.OCaml
 
 STRINGS = ../icons/Unison.gif
-SOURCES = unison-manual.tex changes.tex \
+SOURCES = unison-manual.tex \
           local.tex short.tex postproc$(EXEC_EXT) Makefile
 
 # ifeq ($(shell ls /usr/local/bin/hevea), /usr/local/bin/hevea)

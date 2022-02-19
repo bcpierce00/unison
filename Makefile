@@ -129,7 +129,6 @@ exportdocs:
 	$(MAKE) -C doc TEXDIRECTIVES+="\\\\draftfalse" real
 	$(MAKE) -C src UISTYLE=text DEBUGGING=false \
                        NATIVE=$(EXPORTNATIVE) STATIC=$(EXPORTSTATIC)
-	src/unison -doc news > src/NEWS
 	cp doc/unison-manual.ps $(DOWNLOADDIR)/$(EXPORTNAME)-manual.ps
 	-cp doc/unison-manual.pdf $(DOWNLOADDIR)/$(EXPORTNAME)-manual.pdf
 	cp doc/unison-manual.html $(DOWNLOADDIR)/$(EXPORTNAME)-manual.html
@@ -146,7 +145,6 @@ mailchanges:
 	@echo "  " http://www.cis.upenn.edu/~bcpierce/unison/download.html \
            >> $(MAILTMP)
 	@echo >> $(MAILTMP)
-	@cat src/NEWS >> $(MAILTMP)
 	@src/unison -doc news >> $(MAILTMP)
 	@echo "Announcement draft can be found in $(MAILTMP)"
 
