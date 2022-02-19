@@ -37,7 +37,7 @@ jobs:
           doc/unison-manual.pdf
 
   build:
-    if: ${{ always() }}    # Don't fail if 'docs' failed
+    if: ${{ !cancelled() }}    # Don't fail if 'docs' failed
     needs: docs
 
     strategy:
