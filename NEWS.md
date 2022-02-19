@@ -13,7 +13,15 @@ Note that formatting for 2.51.x and older is almost certainly incorrect.
 
 ## Changes in 2.52.0
 
-\todo
+   * Feature negotiation, compatible wtih 2.51.
+   * New archive format (independent of ocaml version, based on umarshal)
+     Upgrade is automatic.
+   * New wire protocol (independent of ocaml version, based on umarshal)
+     New protocol is used if both sides are >= 2.52.0.
+   * Support for unix-domain sockets
+   * Many bugfixes and minor improvements
+   * ocaml compatibility is now >= 4.01
+   * NEWS is now in NEWS.md and not in the manual
 
 ## Changes in 2.51.5
 
