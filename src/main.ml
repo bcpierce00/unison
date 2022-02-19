@@ -93,7 +93,7 @@ let serverHostName = "listen"
 let serverHost =
   Prefs.createString serverHostName "" ~local:true
     "!listen on this name or addr in server socket mode (can repeat)"
-    ("When acting as a server on a socket, Unison will by default listen "
+    ("When acting as a server on a TCP socket, Unison will by default listen "
      ^ "on \"any\" address (0.0.0.0 and [::]).  This command-line argument "
      ^ "allows to specify a different listening address and can be repeated "
      ^ "to listen on multiple addresses.  Listening address can be specified "
