@@ -118,7 +118,7 @@ let getUser s =
 
 let ipv6Regexp = "[a-f0-9:.]+\\(%[-_a-zA-Z0-9~%.]+\\)?"
 (* Hostname, IP or Unix domain socket path *)
-let hostRegexp = Str.regexp ("[-_a-zA-Z0-9.]+\\|{[^}]+}\\|\\[\\(" ^ ipv6Regexp ^ "\\)\\]")
+let hostRegexp = Str.regexp ("[-_a-zA-Z0-9%.]+\\|{[^}]+}\\|\\[\\(" ^ ipv6Regexp ^ "\\)\\]")
 let getHost s =
   if Str.string_match hostRegexp s 0
   then
@@ -167,6 +167,14 @@ let parseUri s =
           raise(Util.Fatal
                   (Printf.sprintf "ill-formed root specification %s" s)) in
       (protocol,userOpt,hostOpt,portOpt,pathOpt)
+
+let parseHostPort s =
+  let (hostOpt, s1) = getHost s in
+  let (portOpt, s2) = getPort s1 in
+  if String.length s2 > 0 then
+    raise (Util.Transient
+              (Printf.sprintf "ill-formed host specification %s" s));
+  ((match hostOpt with Some h -> h | None -> ""), portOpt)
 
 (* These should succeed *)
 let t1 = "socket://tjim@saul.cis.upenn.edu:4040/hello/world"
@@ -218,6 +226,18 @@ let sshversion = Prefs.createString "sshversion" ""
      ^ "\\verb|ssh2| instead of just \\verb|ssh| to invoke ssh.  "
      ^ "The default value is empty, which will make unison use whatever "
      ^ "version of ssh is installed as the default `ssh' command.")
+
+let fixHost = function
+  | ConnectLocal _ as r -> r
+  | ConnectBySocket (h, "", s) ->
+      (match parseHostPort h with
+      | h, Some p -> ConnectBySocket (h, p, s)
+      | h, None -> ConnectBySocket (h, "", s))
+  | ConnectBySocket _ as r -> r
+  | ConnectByShell (sh, h, u, None, s) ->
+      let (h, p) = parseHostPort h in
+      ConnectByShell (sh, h, u, p, s)
+  | ConnectByShell _ as r -> r
 
 (* Main external function *)
 let parseRoot string =
