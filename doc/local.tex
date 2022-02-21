@@ -84,7 +84,7 @@
   \ifhevea
     \SNIP{#1}{#3}%
     \iftextversion\else \@print{<hr>}\fi%
-    \section*{\label{#2}#1}%
+    \section*{\aname{#2}#1}%
   \else
     \newpage
     \section{\label{#2}#1}%
@@ -94,7 +94,7 @@
 
 \newcommand{\SUBSECTION}[2]{%
   \ifhevea
-    \subsection*{\label{#2}#1}%
+    \subsection*{\aname{#2}#1}%
   \else
     \subsection{\label{#2}#1}%
     \addtocontents{htoc}{\hspace{10em}\bullet\string\urlref{#2}{#1}\\}
@@ -103,7 +103,7 @@
 
 \newcommand{\SUBSUBSECTION}[2]{%
   \ifhevea
-    \subsubsection*{\label{#2}#1}%
+    \subsubsection*{\aname{#2}#1}%
   \else
     \subsubsection{\label{#2}#1}%
     \addtocontents{htoc}{\hspace{18em}\string\urlref{#2}{#1}\\}
