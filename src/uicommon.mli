@@ -44,6 +44,10 @@ val confirmmerge : bool Prefs.t
 
 val runTestsPrefName : string
 
+val runtests : bool Prefs.t
+
+val testServer : bool Prefs.t
+
 (* Format the information about current contents of a path in one replica (the second argument
    is used as a separator) *)
 val details2string : Common.reconItem -> string -> string

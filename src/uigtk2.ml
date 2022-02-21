@@ -4193,8 +4193,7 @@ let start _ =
       ~getProfile:(fun () -> getProfile true)
       ()
     in
-    (* Load the profile and command-line arguments *)
-    initPrefs
+    Uicommon.initPrefs
       ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
       ~prepDebug ~termInteract ();
 

@@ -1381,7 +1381,7 @@ let rec start interface =
       (fun () -> let prof = getProfile "default" in restoreTerminal(); prof)
       ()
     in
-    Uicommon.uiInitStage2
+    Uicommon.initPrefs
       ~profileName
       ~displayWaitMessage:
       (fun () -> setWarnPrinter();
@@ -1395,18 +1395,14 @@ let rec start interface =
       ~termInteract:
       None
       ();
-    (* Load the profile and command-line arguments *)
-    initPrefs
-      ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
-      ~prepDebug ~termInteract ();
 
-    if Prefs.read testServer then exit 0;
+    if Prefs.read Uicommon.testServer then exit 0;
 
     (* Run unit tests if requested *)
-    if Prefs.read runtests then begin
-      (!testFunction)();
+    if Prefs.read Uicommon.runtests then begin
+      (!Uicommon.testFunction)();
       exit 0
-    end
+    end;
 
     (* Some preference settings imply others... *)
     if Prefs.read silent then begin
