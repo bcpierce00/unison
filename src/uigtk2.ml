@@ -824,18 +824,18 @@ let getSecondRoot () =
       `Local ->
         Clroot.clroot2string(Clroot.ConnectLocal(Some file))
     | `SSH | `RSH ->
-        Clroot.clroot2string(
+        Clroot.clroot2string(Clroot.fixHost(
         Clroot.ConnectByShell((if !varLocalRemote=`SSH then "ssh" else "rsh"),
                               host,
                               (if user="" then None else Some user),
                               (if port="" then None else Some port),
-                              Some file))
+                              Some file)))
     | `SOCKET ->
-        Clroot.clroot2string(
+        Clroot.clroot2string(Clroot.fixHost(
         (* FIX: report an error if the port entry is not well formed *)
         Clroot.ConnectBySocket(host,
                                portE#text,
-                               Some file)) in
+                               Some file))) in
   let contCommand() =
     try
       let root = getRoot() in
@@ -1048,6 +1048,7 @@ let createProfile parent =
   assistant#set_modal true;
   assistant#set_title "Profile Creation";
 
+  let empty s = s = "" in
   let nonEmpty s = s <> "" in
 (*
   let integerRe =
@@ -1288,10 +1289,14 @@ let createProfile parent =
   let connectImmediately =
     React.lift2 (&&) connectImmediately (isLocal >> not) in
 *)
+  let isNotUnixPath s = String.length s > 0 && s.[0] <> '{' in
+  let isTCPsocket = React.lift2 (&&) isSocket (host >> isNotUnixPath) in
   let pageComplete =
     React.lift2 (||) isLocal
       (React.lift2 (&&) (host >> nonEmpty)
-          (React.lift2 (||) (isSocket >> not) (port >> isInteger)))
+          (React.lift2 (||)
+              (React.lift2 (&&) isTCPsocket (port >> isInteger))
+              (React.lift2 (&&) (isTCPsocket >> not) (port >> empty))))
   in
   ignore
     (assistant#append_page
@@ -1529,7 +1534,7 @@ let createProfile parent =
         | `SOCKET -> Clroot.ConnectBySocket
                        (host, React.state port, Some secondDir)
       in
-      Printf.fprintf ch "root = %s\n" (Clroot.clroot2string secondRoot);
+      Printf.fprintf ch "root = %s\n" (Clroot.clroot2string (Clroot.fixHost secondRoot));
       if React.state compress && React.state kind = `SSH then
         Printf.fprintf ch "sshargs = -C\n";
 (*

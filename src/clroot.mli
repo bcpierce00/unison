@@ -19,3 +19,7 @@ type clroot =
 val clroot2string : clroot -> string
 
 val parseRoot : string -> clroot
+
+(* Parse a clroot with manually constructed host
+   which may or may not include the port number *)
+val fixHost : clroot -> clroot
