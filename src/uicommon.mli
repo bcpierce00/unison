@@ -89,17 +89,6 @@ val usageMsg : string
 
 val shortUsageMsg : string
 
-val uiInit :
-    ?prepDebug:(unit -> unit) ->
-    reportError:(string -> unit) ->
-    displayWaitMessage:(unit -> unit) ->
-    getProfile:(unit -> string option) ->
-    getFirstRoot:(unit -> string option) ->
-    getSecondRoot:(unit -> string option) ->
-    termInteract:(string -> string -> string) option ->
-    unit ->
-    unit
-
 val uiInitStage1 :
     ?prepDebug:(unit -> unit) ->
     reportError:(string -> unit) ->

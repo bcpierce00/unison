@@ -1374,16 +1374,20 @@ let rec start interface =
   begin try
     (* Just to make sure something is there... *)
     setWarnPrinterForInitialization();
-    Uicommon.uiInit
+    let profileName = Uicommon.uiInitStage1
       ~reportError:
       (fun s -> Util.msg "%s%s\n\n%s\n" Uicommon.shortUsageMsg profmgrUsageMsg s; exit 1)
+      ~getProfile:
+      (fun () -> let prof = getProfile "default" in restoreTerminal(); prof)
+      ()
+    in
+    Uicommon.uiInitStage2
+      ~profileName
       ~displayWaitMessage:
       (fun () -> setWarnPrinter();
                  if Prefs.read silent then Prefs.set Trace.terse true;
                  if not (Prefs.read silent)
                  then Util.msg "%s\n" (Uicommon.contactingServerMsg()))
-      ~getProfile:
-      (fun () -> let prof = getProfile "default" in restoreTerminal(); prof)
       ~getFirstRoot:
       (fun () -> Util.msg "%s%s\n" Uicommon.shortUsageMsg profmgrUsageMsg; exit 1)
       ~getSecondRoot:

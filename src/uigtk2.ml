@@ -4187,11 +4187,16 @@ let start _ =
     Uicommon.scanProfiles();
     let detectCmd = createToplevelWindow() in
 
-    Uicommon.uiInit
+    let profileName = Uicommon.uiInitStage1
       ~prepDebug
       ~reportError:fatalError
-      ~displayWaitMessage
       ~getProfile:(fun () -> getProfile true)
+      ()
+    in
+    Uicommon.uiInitStage2
+      ~prepDebug
+      ~profileName
+      ~displayWaitMessage
       ~getFirstRoot
       ~getSecondRoot
       ~termInteract

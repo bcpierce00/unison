@@ -846,20 +846,6 @@ let uiInitStage2
     exit 0
   end
 
-let uiInit
-    ?(prepDebug = fun () -> ())
-    ~(reportError : string -> unit)
-    ~(displayWaitMessage : unit -> unit)
-    ~(getProfile : unit -> string option)
-    ~(getFirstRoot : unit -> string option)
-    ~(getSecondRoot : unit -> string option)
-    ~(termInteract : (string -> string -> string) option)
-    () =
-  let profileName = uiInitStage1 ~prepDebug ~reportError ~getProfile () in
-  uiInitStage2
-    ~profileName ~prepDebug ~displayWaitMessage
-    ~getFirstRoot ~getSecondRoot ~termInteract ()
-
 (* Exit codes *)
 let perfectExit = 0   (* when everything's okay *)
 let skippyExit  = 1   (* when some items were skipped, but no failure occurred *)
