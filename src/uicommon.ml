@@ -824,28 +824,6 @@ let uiInitStage1
         n
     end
 
-let uiInitStage2
-    ?(prepDebug = fun () -> ())
-    ~(profileName : string)
-    ~(displayWaitMessage : unit -> unit)
-    ~(getFirstRoot : unit -> string option)
-    ~(getSecondRoot : unit -> string option)
-    ~(termInteract : (string -> string -> string) option)
-    () =
-
-  (* Load the profile and command-line arguments *)
-  initPrefs
-    ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
-    ~prepDebug ~termInteract ();
-
-  if Prefs.read testServer then exit 0;
-
-  (* Run unit tests if requested *)
-  if Prefs.read runtests then begin
-    (!testFunction)();
-    exit 0
-  end
-
 (* Exit codes *)
 let perfectExit = 0   (* when everything's okay *)
 let skippyExit  = 1   (* when some items were skipped, but no failure occurred *)

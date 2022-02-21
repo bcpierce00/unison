@@ -1395,6 +1395,18 @@ let rec start interface =
       ~termInteract:
       None
       ();
+    (* Load the profile and command-line arguments *)
+    initPrefs
+      ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
+      ~prepDebug ~termInteract ();
+
+    if Prefs.read testServer then exit 0;
+
+    (* Run unit tests if requested *)
+    if Prefs.read runtests then begin
+      (!testFunction)();
+      exit 0
+    end
 
     (* Some preference settings imply others... *)
     if Prefs.read silent then begin
