@@ -689,10 +689,6 @@ let fatalError message =
 
 (* ------ *)
 
-let tryAgainOrQuit = fatalError
-
-(* ------ *)
-
 let getFirstRoot () =
   let t = GWindow.dialog ~parent:(toplevelWindow ()) ~title:"Root selection"
       ~modal:true ~allow_grow:true () in
@@ -4194,7 +4190,6 @@ let start _ =
     Uicommon.uiInit
       ~prepDebug
       ~reportError:fatalError
-      ~tryAgainOrQuit
       ~displayWaitMessage
       ~getProfile:(fun () -> getProfile true)
       ~getFirstRoot

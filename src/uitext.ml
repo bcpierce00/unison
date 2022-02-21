@@ -1377,8 +1377,6 @@ let rec start interface =
     Uicommon.uiInit
       ~reportError:
       (fun s -> Util.msg "%s%s\n\n%s\n" Uicommon.shortUsageMsg profmgrUsageMsg s; exit 1)
-      ~tryAgainOrQuit:
-      (fun s -> Util.msg "%s" Uicommon.shortUsageMsg; exit 1)
       ~displayWaitMessage:
       (fun () -> setWarnPrinter();
                  if Prefs.read silent then Prefs.set Trace.terse true;

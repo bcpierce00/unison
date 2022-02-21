@@ -668,6 +668,9 @@ let initPrefs ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
     Prefs.parseCmdLine usageMsg;
   end;
 
+  (* Turn on GC messages, if the '-debug gc' flag was provided *)
+  if Trace.enabled "gc" then Gc.set {(Gc.get ()) with Gc.verbose = 0x3F};
+
   (* Install dummy roots and backup directory if we are running self-tests *)
   if Prefs.read runtests then begin
     let tmpdir = makeTempDir "unisontest" in
@@ -714,6 +717,8 @@ let initPrefs ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
 
   initRoots displayWaitMessage termInteract;
 
+  Files.processCommitLogs();
+
   firstTime := false
 
 let refreshConnection ~displayWaitMessage ~termInteract =
@@ -744,15 +749,10 @@ let _ = Prefs.alias testServer "testServer"
 
 (* ---- *)
 
-let uiInit
+let uiInitStage1
     ?(prepDebug = fun () -> ())
     ~(reportError : string -> unit)
-    ~(tryAgainOrQuit : string -> bool)
-    ~(displayWaitMessage : unit -> unit)
     ~(getProfile : unit -> string option)
-    ~(getFirstRoot : unit -> string option)
-    ~(getSecondRoot : unit -> string option)
-    ~(termInteract : (string -> string -> string) option)
     () =
 
   (* Make sure we have a directory for archives and profiles *)
@@ -798,7 +798,6 @@ let uiInit
           root1 root2
     | _ -> assert false));
 
-  let profileName =
     begin match !clprofile with
       None ->
         let clroots_given = !cmdLineRawRoots <> [] in
@@ -823,26 +822,43 @@ let uiInit
                              (System.fspathToPrintString f));
               exit 1);
         n
-    end in
+    end
+
+let uiInitStage2
+    ?(prepDebug = fun () -> ())
+    ~(profileName : string)
+    ~(displayWaitMessage : unit -> unit)
+    ~(getFirstRoot : unit -> string option)
+    ~(getSecondRoot : unit -> string option)
+    ~(termInteract : (string -> string -> string) option)
+    () =
 
   (* Load the profile and command-line arguments *)
   initPrefs
     ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
     ~prepDebug ~termInteract ();
 
-  (* Turn on GC messages, if the '-debug gc' flag was provided *)
-  if Trace.enabled "gc" then Gc.set {(Gc.get ()) with Gc.verbose = 0x3F};
-
   if Prefs.read testServer then exit 0;
-
-  (* BCPFIX: Should/can this be done earlier?? *)
-  Files.processCommitLogs();
 
   (* Run unit tests if requested *)
   if Prefs.read runtests then begin
     (!testFunction)();
     exit 0
   end
+
+let uiInit
+    ?(prepDebug = fun () -> ())
+    ~(reportError : string -> unit)
+    ~(displayWaitMessage : unit -> unit)
+    ~(getProfile : unit -> string option)
+    ~(getFirstRoot : unit -> string option)
+    ~(getSecondRoot : unit -> string option)
+    ~(termInteract : (string -> string -> string) option)
+    () =
+  let profileName = uiInitStage1 ~prepDebug ~reportError ~getProfile () in
+  uiInitStage2
+    ~profileName ~prepDebug ~displayWaitMessage
+    ~getFirstRoot ~getSecondRoot ~termInteract ()
 
 (* Exit codes *)
 let perfectExit = 0   (* when everything's okay *)
