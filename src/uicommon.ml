@@ -520,6 +520,7 @@ let provideProfileKey filename k profile info =
 let profilesAndRoots = ref []
 
 let scanProfiles () =
+  Os.createUnisonDir ();
   Array.iteri (fun i _ -> profileKeymap.(i) <- None) profileKeymap;
   profilesAndRoots :=
     (Safelist.map
@@ -614,6 +615,8 @@ let firstTime = ref(true)
 
 (* Roots given on the command line *)
 let cmdLineRawRoots = ref []
+
+let clearClRoots () = cmdLineRawRoots := []
 
 (* BCP: WARNING: Some of the code from here is duplicated in uimacbridge...! *)
 let initPrefs ~profileName ~displayWaitMessage ~promptForRoots

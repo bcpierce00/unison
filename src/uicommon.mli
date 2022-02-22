@@ -107,6 +107,8 @@ val initPrefs :
   unit ->
   unit
 
+val clearClRoots : unit -> unit
+
 (* Make sure remote connections (if any) corresponding to active roots
    are still established and re-establish them if necessary.
    [refreshConnection] is like [initPrefs] but without reloading the profile
