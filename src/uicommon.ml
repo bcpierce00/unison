@@ -598,17 +598,6 @@ let initRoots displayWaitMessage termInteract =
      on this side, that's why it's here. *)
   Stasher.initBackups ()
 
-let promptForRoots getFirstRoot getSecondRoot =
-  (* Ask the user for the roots *)
-  let r1 = match getFirstRoot() with None -> exit 0 | Some r -> r in
-  let r2 = match getSecondRoot() with None -> exit 0 | Some r -> r in
-  (* Remember them for this run, ordering them so that the first
-     will come out on the left in the UI *)
-  Globals.setRawRoots [r1; r2];
-  (* Save them in the current profile *)
-  ignore (Prefs.add "root" r1);
-  ignore (Prefs.add "root" r2)
-
 (* ---- *)
 
 let makeTempDir pattern =
@@ -627,7 +616,7 @@ let firstTime = ref(true)
 let cmdLineRawRoots = ref []
 
 (* BCP: WARNING: Some of the code from here is duplicated in uimacbridge...! *)
-let initPrefs ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
+let initPrefs ~profileName ~displayWaitMessage ~promptForRoots
               ?(prepDebug = fun () -> ()) ~termInteract () =
   (* Restore prefs to their default values, if necessary *)
   if not !firstTime then Prefs.resetToDefaults();
@@ -694,7 +683,18 @@ let initPrefs ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
   (* If no roots are given either on the command line or in the profile,
      ask the user *)
   if Globals.rawRoots() = [] then begin
-    promptForRoots getFirstRoot getSecondRoot;
+    (* Ask the user for the roots *)
+    match promptForRoots () with
+    | None -> raise (Util.Fatal "no roots given on command line or in profile")
+    | Some (r1, r2) ->
+        begin
+          (* Remember them for this run, ordering them so that the first
+             will come out on the left in the UI *)
+          Globals.setRawRoots [r1; r2];
+          (* Save them in the current profile *)
+          ignore (Prefs.add "root" r1);
+          ignore (Prefs.add "root" r2)
+        end
   end;
 
   (* Check to be sure that there is at most one remote root *)

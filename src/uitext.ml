@@ -1386,9 +1386,7 @@ let rec start interface =
                  if Prefs.read silent then Prefs.set Trace.terse true;
                  if not (Prefs.read silent)
                  then Util.msg "%s\n" (Uicommon.contactingServerMsg()))
-      ~getFirstRoot:
-      (fun () -> Util.msg "%s%s\n" Uicommon.shortUsageMsg profmgrUsageMsg; exit 1)
-      ~getSecondRoot:
+      ~promptForRoots:
       (fun () -> Util.msg "%s%s\n" Uicommon.shortUsageMsg profmgrUsageMsg; exit 1)
       ~termInteract:
       None

@@ -3802,9 +3802,14 @@ let createToplevelWindow () =
     debug (fun()-> Util.msg "Loading profile %s..." p);
     Trace.status "Loading profile";
     unsynchronizedPaths := None;
+    let promptForRoots () =
+      let r1 = match getFirstRoot() with None -> exit 0 | Some r -> r in
+      let r2 = match getSecondRoot() with None -> exit 0 | Some r -> r in
+      Some (r1, r2)
+    in
     Uicommon.initPrefs ~profileName:p
       ~displayWaitMessage:(fun () -> if not reload then displayWaitMessage ())
-      ~getFirstRoot ~getSecondRoot ~prepDebug ~termInteract ();
+      ~promptForRoots ~prepDebug ~termInteract ();
     !updateFromProfile ()
   in
 
@@ -4197,8 +4202,13 @@ let start _ =
       | Ok None -> (match getProfile true with None -> exit 0 | Some x -> x)
       | Ok (Some s) -> s
     in
+    let promptForRoots () =
+      let r1 = match getFirstRoot() with None -> exit 0 | Some r -> r in
+      let r2 = match getSecondRoot() with None -> exit 0 | Some r -> r in
+      Some (r1, r2)
+    in
     Uicommon.initPrefs
-      ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
+      ~profileName ~displayWaitMessage ~promptForRoots
       ~prepDebug ~termInteract ();
 
     detectCmd ();

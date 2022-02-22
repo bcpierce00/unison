@@ -101,8 +101,7 @@ val uiInitStage1 :
 val initPrefs :
   profileName:string ->
   displayWaitMessage:(unit->unit) ->
-  getFirstRoot:(unit->string option) ->
-  getSecondRoot:(unit->string option) ->
+  promptForRoots:(unit -> (string * string) option) ->
   ?prepDebug:(unit -> unit) ->
   termInteract:(string -> string -> string) option ->
   unit ->
