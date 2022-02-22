@@ -1374,9 +1374,20 @@ let rec start interface =
   begin try
     (* Just to make sure something is there... *)
     setWarnPrinterForInitialization();
+    let errorOut s =
+      Util.msg "%s%s%s\n" Uicommon.shortUsageMsg profmgrUsageMsg s;
+      exit 1
+    in
     let profileName = match Uicommon.uiInitClRootsAndProfile () with
-      | Error s -> (Util.msg "%s%s\n\n%s\n" Uicommon.shortUsageMsg profmgrUsageMsg s; exit 1)
-      | Ok None -> (let prof = getProfile "default" in restoreTerminal(); match prof with None -> exit 0 | Some x -> x)
+      | Error s -> errorOut ("\n\n" ^ s)
+      | Ok None ->
+          let profile = getProfile "default" in
+          let () = restoreTerminal () in
+          begin
+            match profile with
+            | None -> exit 0
+            | Some x -> x
+          end
       | Ok (Some s) -> s
     in
     Uicommon.initPrefs
@@ -1387,7 +1398,7 @@ let rec start interface =
                  if not (Prefs.read silent)
                  then Util.msg "%s\n" (Uicommon.contactingServerMsg()))
       ~promptForRoots:
-      (fun () -> Util.msg "%s%s\n" Uicommon.shortUsageMsg profmgrUsageMsg; exit 1)
+      (fun () -> errorOut "")
       ~termInteract:
       None
       ();
@@ -1396,7 +1407,7 @@ let rec start interface =
 
     (* Run unit tests if requested *)
     if Prefs.read Uicommon.runtests then begin
-      (!Uicommon.testFunction)();
+      !Uicommon.testFunction ();
       exit 0
     end;
 
