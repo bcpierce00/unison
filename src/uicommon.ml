@@ -523,11 +523,22 @@ let scanProfiles () =
   Os.createUnisonDir ();
   Array.iteri (fun i _ -> profileKeymap.(i) <- None) profileKeymap;
   profilesAndRoots :=
-    (Safelist.map
+    (Safelist.filterMap
        (fun f ->
           let f = Filename.chop_suffix f ".prf" in
           let filename = Prefs.profilePathname f in
-          let fileContents = Safelist.map (fun (_, _, n, v) -> (n, v)) (Prefs.readAFile f) in
+          let prefs =
+            try Some (Prefs.readAFile f) with
+            | Util.Fatal s -> begin
+                Util.warn ("Error when reading list of profiles.\n"
+                         ^ "Skipping file with error: "
+                         ^ System.fspathToPrintString filename
+                         ^ "\n\n" ^ s);
+                None end in
+          match prefs with
+          | None -> None
+          | Some prefs ->
+          let fileContents = Safelist.map (fun (_, _, n, v) -> (n, v)) prefs in
           let roots =
             Safelist.map snd
               (Safelist.filter (fun (n, _) -> n = "root") fileContents) in
@@ -543,7 +554,7 @@ let scanProfiles () =
              let k = Safelist.assoc "key" fileContents in
              provideProfileKey filename k f info
            with Not_found -> ());
-          (f, info))
+          Some (f, info))
        (Safelist.filter (fun name -> not (   Util.startswith name ".#"
                                           || Util.startswith name Os.tempFilePrefix))
           (Files.ls Util.unisonDir "*.prf")))
