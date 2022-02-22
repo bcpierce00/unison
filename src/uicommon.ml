@@ -751,8 +751,6 @@ let _ = Prefs.alias testServer "testServer"
 
 let uiInitStage1
     ?(prepDebug = fun () -> ())
-    ~(reportError : string -> unit)
-    ~(getProfile : unit -> string option)
     () =
 
   (* Make sure we have a directory for archives and profiles *)
@@ -760,7 +758,7 @@ let uiInitStage1
 
   (* Extract any command line profile or roots *)
   let clprofile = ref None in
-  begin
+  match begin
     let args = Prefs.scanCmdLine usageMsg in
     begin
       try if Util.StringMap.find "debug" args <> [] then prepDebug ()
@@ -769,18 +767,19 @@ let uiInitStage1
 
     try
       match Util.StringMap.find "rest" args with
-        [] -> ()
-      | [profile] -> clprofile := Some profile
-      | [root2;root1] -> cmdLineRawRoots := [root1;root2]
+        [] -> Ok ()
+      | [profile] -> Ok ( clprofile := Some profile )
+      | [root2;root1] -> Ok ( cmdLineRawRoots := [root1;root2] )
       | [root2;root1;profile] ->
-          cmdLineRawRoots := [root1;root2];
-          clprofile := Some profile
+          Ok ( cmdLineRawRoots := [root1;root2];
+          clprofile := Some profile )
       | _ ->
-          (reportError(Printf.sprintf
-             "%s was invoked incorrectly (too many roots)" Uutil.myName);
-           exit 1)
-    with Not_found -> ()
-  end;
+          Error(Printf.sprintf
+             "%s was invoked incorrectly (too many roots)" Uutil.myName)
+    with Not_found -> Ok ()
+  end with
+  | Error _ as e -> e
+  | Ok () -> begin
 
   (* Print header for debugging output *)
   debug (fun() ->
@@ -801,28 +800,23 @@ let uiInitStage1
     begin match !clprofile with
       None ->
         let clroots_given = !cmdLineRawRoots <> [] in
-        let n =
           if not(clroots_given) then begin
             (* Ask the user to choose a profile or create a new one. *)
-            clprofile := getProfile();
-            match !clprofile with
-              None -> exit 0 (* None means the user wants to quit *)
-            | Some x -> x
+            Ok None
           end else begin
             (* Roots given on command line.
                The profile should be the default. *)
-            clprofile := Some "default";
-            "default"
-          end in
-        n
+            Ok ( Some "default" )
+          end
     | Some n ->
         let f = Prefs.profilePathname n in
         if not(System.file_exists f)
-        then (reportError (Printf.sprintf "Profile %s does not exist"
-                             (System.fspathToPrintString f));
-              exit 1);
-        n
+        then Error (Printf.sprintf "Profile %s does not exist"
+                             (System.fspathToPrintString f))
+        else
+        Ok ( Some n )
     end
+  end
 
 (* Exit codes *)
 let perfectExit = 0   (* when everything's okay *)

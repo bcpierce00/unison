@@ -95,10 +95,8 @@ val shortUsageMsg : string
 
 val uiInitStage1 :
     ?prepDebug:(unit -> unit) ->
-    reportError:(string -> unit) ->
-    getProfile:(unit -> string option) ->
     unit ->
-    string
+    (string option, string) result
 
 val initPrefs :
   profileName:string ->
