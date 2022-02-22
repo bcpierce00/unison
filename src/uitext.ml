@@ -1374,7 +1374,7 @@ let rec start interface =
   begin try
     (* Just to make sure something is there... *)
     setWarnPrinterForInitialization();
-    let profileName = match Uicommon.uiInitStage1 () with
+    let profileName = match Uicommon.uiInitClRootsAndProfile () with
       | Error s -> (Util.msg "%s%s\n\n%s\n" Uicommon.shortUsageMsg profmgrUsageMsg s; exit 1)
       | Ok None -> (let prof = getProfile "default" in restoreTerminal(); match prof with None -> exit 0 | Some x -> x)
       | Ok (Some s) -> s

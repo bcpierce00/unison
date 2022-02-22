@@ -93,7 +93,7 @@ val usageMsg : string
 
 val shortUsageMsg : string
 
-val uiInitStage1 :
+val uiInitClRootsAndProfile :
     ?prepDebug:(unit -> unit) ->
     unit ->
     (string option, string) result

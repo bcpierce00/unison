@@ -4192,12 +4192,8 @@ let start _ =
     Uicommon.scanProfiles();
     let detectCmd = createToplevelWindow() in
 
-    let profileName' = Uicommon.uiInitStage1
-      ~prepDebug
-      ()
-    in
     let profileName =
-      match profileName' with
+      match Uicommon.uiInitClRootsAndProfile ~prepDebug () with
       | Error s -> fatalError s
       | Ok None -> (match getProfile true with None -> exit 0 | Some x -> x)
       | Ok (Some s) -> s

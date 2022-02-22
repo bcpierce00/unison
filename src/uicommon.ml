@@ -749,74 +749,61 @@ let _ = Prefs.alias testServer "testServer"
 
 (* ---- *)
 
-let uiInitStage1
-    ?(prepDebug = fun () -> ())
-    () =
-
+let uiInitClRootsAndProfile ?(prepDebug = fun () -> ()) () =
   (* Make sure we have a directory for archives and profiles *)
   Os.createUnisonDir();
 
-  (* Extract any command line profile or roots *)
-  let clprofile = ref None in
-  match begin
-    let args = Prefs.scanCmdLine usageMsg in
-    begin
-      try if Util.StringMap.find "debug" args <> [] then prepDebug ()
-      with Not_found -> ()
-    end;
+  let args = Prefs.scanCmdLine usageMsg in
+  begin
+    try if Util.StringMap.find "debug" args <> [] then prepDebug ()
+    with Not_found -> ()
+  end;
 
+  (* Extract any command line profile or roots *)
+  match begin
     try
       match Util.StringMap.find "rest" args with
-        [] -> Ok ()
-      | [profile] -> Ok ( clprofile := Some profile )
-      | [root2;root1] -> Ok ( cmdLineRawRoots := [root1;root2] )
+      | [] -> Ok None
+      | [profile] -> Ok (Some profile)
+      | [root2;root1] -> Ok (cmdLineRawRoots := [root1;root2]; None)
       | [root2;root1;profile] ->
-          Ok ( cmdLineRawRoots := [root1;root2];
-          clprofile := Some profile )
+          Ok (cmdLineRawRoots := [root1;root2]; Some profile)
       | _ ->
-          Error(Printf.sprintf
-             "%s was invoked incorrectly (too many roots)" Uutil.myName)
-    with Not_found -> Ok ()
+          Error (Printf.sprintf
+                   "%s was invoked incorrectly (too many roots)" Uutil.myName)
+    with Not_found -> Ok None
   end with
   | Error _ as e -> e
-  | Ok () -> begin
+  | Ok clprofile ->
+      debug (fun () ->
+        (* Print header for debugging output *)
+        Printf.eprintf "%s, version %s\n\n" Uutil.myName Uutil.myVersion;
+        Util.msg "initializing UI";
 
-  (* Print header for debugging output *)
-  debug (fun() ->
-    Printf.eprintf "%s, version %s\n\n" Uutil.myName Uutil.myVersion);
-  debug (fun() -> Util.msg "initializing UI");
+        (match clprofile with
+         | None -> Util.msg "No profile given on command line"
+         | Some s -> Printf.eprintf "Profile '%s' given on command line" s);
+        (match !cmdLineRawRoots with
+         | [] -> Util.msg "No roots given on command line"
+         | [root1;root2] ->
+             Printf.eprintf "Roots '%s' and '%s' given on command line"
+               root1 root2
+         | _ -> assert false));
 
-  debug (fun () ->
-    (match !clprofile with
-      None -> Util.msg "No profile given on command line"
-    | Some s -> Printf.eprintf "Profile '%s' given on command line" s);
-    (match !cmdLineRawRoots with
-      [] -> Util.msg "No roots given on command line"
-    | [root1;root2] ->
-        Printf.eprintf "Roots '%s' and '%s' given on command line"
-          root1 root2
-    | _ -> assert false));
-
-    begin match !clprofile with
-      None ->
-        let clroots_given = !cmdLineRawRoots <> [] in
-          if not(clroots_given) then begin
-            (* Ask the user to choose a profile or create a new one. *)
-            Ok None
-          end else begin
-            (* Roots given on command line.
-               The profile should be the default. *)
-            Ok ( Some "default" )
-          end
-    | Some n ->
-        let f = Prefs.profilePathname n in
-        if not(System.file_exists f)
-        then Error (Printf.sprintf "Profile %s does not exist"
-                             (System.fspathToPrintString f))
-        else
-        Ok ( Some n )
-    end
-  end
+      match clprofile with
+      | None when !cmdLineRawRoots = [] ->
+          (* Ask the user to choose a profile or create a new one. *)
+          Ok None
+      | None ->
+          (* Roots given on command line. The profile should be the default. *)
+          Ok (Some "default")
+      | Some n ->
+          let f = Prefs.profilePathname n in
+          if not (System.file_exists f)
+          then Error (Printf.sprintf
+                        "Profile '%s' does not exist (looking for file %s)"
+                        n (System.fspathToPrintString f))
+          else Ok (Some n)
 
 (* Exit codes *)
 let perfectExit = 0   (* when everything's okay *)
