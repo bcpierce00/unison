@@ -3100,10 +3100,11 @@ let createToplevelWindow () =
       displayRow row i r1 r2 action status path;
     done;
     mainWindow#set_model (Some mainWindowModel#coerce);
-    match savedCurrent with
+    begin match savedCurrent with
     | []  -> selectSomethingIfPossible ()
     | [x] -> select x true
-    | _   -> Safelist.iter (fun p -> mainWindow#selection#select_path p) savedCurrent;
+    | _   -> Safelist.iter (fun p -> mainWindow#selection#select_path p) savedCurrent
+    end;
 
     progressBar#set_text ""; progressBar#set_fraction 0.;
     updateDetails ();  (* Do we need this line? *)
@@ -4239,9 +4240,10 @@ let start = function
         try System.getenv "DISPLAY" <> "" with Not_found -> false
       in
       if displayAvailable then Private.start Uicommon.Graphic
-      else
+      else begin
         Util.warn "DISPLAY not set or empty; starting the Text UI\n";
         Uitext.Body.start Uicommon.Text
+      end
 
 let defaultUi = Uicommon.Graphic
 

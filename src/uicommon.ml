@@ -658,7 +658,7 @@ let initPrefs ~profileName ~displayWaitMessage ~promptForRoots
   end;
 
   (* Turn on GC messages, if the '-debug gc' flag was provided *)
-  if Trace.enabled "gc" then Gc.set {(Gc.get ()) with Gc.verbose = 0x3F};
+  Gc.set {(Gc.get ()) with Gc.verbose = if Trace.enabled "gc" then 0x3F else 0};
 
   (* Install dummy roots and backup directory if we are running self-tests *)
   if Prefs.read runtests then begin
