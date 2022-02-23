@@ -19,17 +19,18 @@ extern void unix_error (int errcode, char * cmdname, value arg) Noreturn;
 extern void uerror (char * cmdname, value arg) Noreturn;
 
 CAMLprim value isMacOSX (value nothing) {
+  CAMLparam0();
 #ifdef __APPLE__
-  return Val_true;
+  CAMLreturn(Val_true);
 #else
-  return Val_false;
+  CAMLreturn(Val_false);
 #endif
 }
 
 CAMLprim value getFileInfos (value path, value need_size) {
 #ifdef __APPLE__
 
-  CAMLparam1(path);
+  CAMLparam2(path, need_size);
   CAMLlocal3(res, fInfo, length);
   int retcode;
   struct attrlist attrList;
@@ -67,11 +68,11 @@ CAMLprim value getFileInfos (value path, value need_size) {
   fInfo = caml_alloc_string (32);
   memcpy ((char *) String_val (fInfo), attrBuf.finderInfo, 32);
   if (Bool_val (need_size))
-    length = copy_int64 (attrBuf.rsrcLength);
+    length = caml_copy_int64(attrBuf.rsrcLength);
   else
-    length = copy_int64 (0);
+    length = caml_copy_int64(0);
 
-  res = alloc_small (2, 0);
+  res = caml_alloc_small(2, 0);
   Field (res, 0) = fInfo;
   Field (res, 1) = length;
 
