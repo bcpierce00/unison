@@ -1284,13 +1284,21 @@ let addProfileKeys list default =
   in
   addKey 0 [] list
 
+let scanProfiles () =
+  let wp = !Util.warnPrinter in
+  (* Replace warn printer with something that doesn't quit
+     the UI just for errors in random scanned profiles. *)
+  Util.warnPrinter := Some (fun s -> alwaysDisplay ("Warning: " ^ s ^ "\n\n"));
+  let () = Uicommon.scanProfiles () in
+  Util.warnPrinter := wp
+
 let getProfile default =
   let cmdArgs = Prefs.scanCmdLine Uicommon.shortUsageMsg in
-  Uicommon.scanProfiles ();
   if Util.StringMap.mem Uicommon.runTestsPrefName cmdArgs ||
     not (Util.StringMap.mem profmgrPrefName cmdArgs) then
     Some default
   else
+  let () = scanProfiles () in
   if (List.length !Uicommon.profilesAndRoots) > 10 then begin
     Trace.log (Format.sprintf "You have too many profiles in %s \
                 for interactive selection. Please specify profile \
