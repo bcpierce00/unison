@@ -414,9 +414,9 @@ class ['a] gMenuFactory
       (* Register this accel path *)
       GtkBase.Widget.set_accel_path item#as_widget accel_path accel_group;
       Gaux.may callback ~f:(fun callback -> item#connect#activate ~callback)
-    method add_item ?key ?modi ?callback ?submenu label =
+    method add_item ?key ?modi ?callback ?submenu ?bindname label =
       let item = GMenu.menu_item  ~use_mnemonic:true ~label () in
-      self#bind ?modi ?key ?callback label item;
+      self#bind ?modi ?key ?callback label ?name:bindname item;
       Gaux.may (submenu : GMenu.menu option) ~f:item#set_submenu;
       item
     method add_image_item ?(image : GObj.widget option)
@@ -4103,28 +4103,44 @@ let createToplevelWindow () =
        ~image:(GMisc.image ~stock:`OPEN ~icon_size:`MENU () :> GObj.widget)
        "Change _Profile...");
 
-  let fastProf name key =
-    grAdd grRescan
-      (fileMenu#add_item ~key:key
+  let fastProf i key =
+    let item = fileMenu#add_item ~key:key ~bindname:(string_of_int i) "" in
+    item#misc#hide ();
+    grAdd grRescan item;
+    let show name =
+      match item#children with
+      | [] | _::_::_ -> ()
+      | [l] ->
+          let label = (GMisc.label_cast l) in
+          label#set_label ("Select profile " ^ name);
+          ignore (item#connect#activate
             ~callback:(fun _ ->
                if System.file_exists (Prefs.profilePathname name) then begin
                  Trace.status ("Loading profile " ^ name);
                  loadProfile name false; detectCmd ()
                end else
                  Trace.status ("Profile " ^ name ^ " not found"))
-            ("Select profile " ^ name)) in
+            );
+          item#misc#show ()
+    in
+    (item#misc#hide, show) in
 
   let fastKeysyms =
     [| GdkKeysyms._0; GdkKeysyms._1; GdkKeysyms._2; GdkKeysyms._3;
        GdkKeysyms._4; GdkKeysyms._5; GdkKeysyms._6; GdkKeysyms._7;
        GdkKeysyms._8; GdkKeysyms._9 |] in
 
-  Array.iteri
-    (fun i v -> match v with
-      None -> ()
-    | Some(profile, info) ->
-        fastProf profile fastKeysyms.(i))
-    Uicommon.profileKeymap;
+  let fastKeyitems = Array.init 10 (fun i -> fastProf i fastKeysyms.(i)) in
+
+  let updateProfileKeyMenu () =
+    if !Uicommon.profilesAndRoots = [] then Uicommon.scanProfiles ();
+
+    Array.iteri
+      (fun i v -> match v with
+      | None -> (fst fastKeyitems.(i)) ()
+      | Some (profile, info) -> (snd fastKeyitems.(i)) profile)
+      Uicommon.profileKeymap
+  in
 
   ignore (fileMenu#add_separator ());
   ignore (fileMenu#add_item
@@ -4201,6 +4217,7 @@ let createToplevelWindow () =
             (fun _ -> safeExit (); true));
   toplevelWindow#show ();
   fun p ->
+    updateProfileKeyMenu ();
     mainWindow#misc#grab_focus ();
     loadProfile p false;
     detectCmd ()
