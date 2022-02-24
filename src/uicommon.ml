@@ -634,6 +634,10 @@ let initPrefs ~profileName ~displayWaitMessage ~promptForRoots
               ?(prepDebug = fun () -> ()) ~termInteract () =
   (* Restore prefs to their default values, if necessary *)
   if not !firstTime then Prefs.resetToDefaults();
+  (* Clear out any roots left from a previous profile. They can't remain
+     hanging around if [initPrefs] for the new profile receives an exception
+     before fully completing. *)
+  Globals.uninstallRoots ();
   Globals.setRawRoots !cmdLineRawRoots;
 
   (* Tell the preferences module the name of the profile *)
@@ -711,13 +715,20 @@ let initPrefs ~profileName ~displayWaitMessage ~promptForRoots
         end
   end;
 
+  (* Parse the roots to validate them *)
+  let parsedRoots =
+    try Safelist.map Clroot.parseRoot (Globals.rawRoots ()) with
+    | Invalid_argument s | Util.Fatal s | Prefs.IllegalValue s ->
+        raise (Util.Fatal ("There's a problem with one of the roots:\n" ^ s))
+  in
+
   (* Check to be sure that there is at most one remote root *)
   let numRemote =
     Safelist.fold_left
-      (fun n r -> match Clroot.parseRoot r with
+      (fun n (r : Clroot.clroot) -> match r with
         ConnectLocal _ -> n | ConnectByShell _ | ConnectBySocket _ -> n+1)
       0
-      (Globals.rawRoots ()) in
+      parsedRoots in
       if numRemote > 1 then
         raise(Util.Fatal "cannot synchronize more than one remote root");
 

@@ -736,7 +736,7 @@ let getFirstRoot () =
   let f3 = t#action_area in
   let result = ref None in
   let contCommand() =
-    result := Some(fileE#text);
+    result := Some (Util.trimWhitespace fileE#text);
     t#destroy () in
   let cancelButton = GButton.button ~stock:`CANCEL ~packing:f3#add () in
   ignore (cancelButton#connect#clicked
@@ -833,10 +833,10 @@ let getSecondRoot () =
   ignore (socketB#connect#clicked ~callback:(fun () -> protoState(`SOCKET)));
   localState();
   let getRoot() =
-    let file = fileE#text in
-    let user = userE#text in
-    let host = hostE#text in
-    let port = portE#text in
+    let file = Util.trimWhitespace fileE#text in
+    let user = Util.trimWhitespace userE#text in
+    let host = Util.trimWhitespace hostE#text in
+    let port = Util.trimWhitespace portE#text in
     match !varLocalRemote with
       `Local ->
         Clroot.clroot2string(Clroot.ConnectLocal(Some file))
@@ -863,9 +863,9 @@ let getSecondRoot () =
         okBox ~parent:t ~title:"Error" ~typ:`ERROR ~message:"Please enter a port"
       else okBox ~parent:t ~title:"Error" ~typ:`ERROR
           ~message:"The port you specify must be an integer"
-    | _ ->
+    | Util.Transient s | Util.Fatal s | Invalid_argument s | Prefs.IllegalValue s ->
       okBox ~parent:t ~title:"Error" ~typ:`ERROR
-        ~message:"Something's wrong with the values you entered, try again" in
+        ~message:("Something's wrong with the values you entered, try again.\n" ^ s) in
   let f3 = t#action_area in
   let cancelButton =
     GButton.button ~stock:`CANCEL ~packing:f3#add () in
@@ -1525,17 +1525,54 @@ let createProfile parent =
        then
          assistant#set_current_page (p + 1)));
 
+  let conclusionOk = "You have now finished filling in the profile.\n\n\
+             Click \"Apply\" to create it."
+  and conclusionFail = "There was an error when preparing the profile.\n\n\
+             Click \"Back\" to review what you entered." in
   let conclusion =
     GMisc.label
       ~xpad:12 ~ypad:12
-      ~text:"You have now finished filling in the profile.\n\n\
-             Click \"Apply\" to create it."
+      ~text:conclusionOk
     () in
-  ignore
+  let conclusionp =
     (assistant#append_page
        ~title:"Done" ~complete:true
        ~page_type:`CONFIRM
-       conclusion#as_widget);
+       conclusion#as_widget) in
+
+  let makeRemoteRoot () =
+    let secondDir = Util.trimWhitespace (React.state secondDir) in
+    let host = Util.trimWhitespace (React.state host) in
+    let user = match React.state user with "" -> None | u -> Some (Util.trimWhitespace u) in
+    let secondRoot =
+      match React.state kind with
+        `Local  -> Clroot.ConnectLocal (Some secondDir)
+      | `SSH    -> Clroot.ConnectByShell
+                     ("ssh", host, user, None, Some secondDir)
+      | `RSH    -> Clroot.ConnectByShell
+                     ("rsh", host, user, None, Some secondDir)
+      | `SOCKET -> Clroot.ConnectBySocket
+                     (host, React.state port, Some secondDir)
+    in
+    try
+      let root = Clroot.clroot2string (Clroot.fixHost secondRoot) in
+      ignore (Clroot.parseRoot root);
+      Some root
+    with
+    | Util.Transient s | Util.Fatal s | Invalid_argument s | Prefs.IllegalValue s ->
+        begin
+          okBox ~parent ~title:"Error" ~typ:`ERROR
+            ~message:("There was a problem with the remote root "
+              ^ "data you entered.\n\n" ^ s);
+          None
+        end
+  in
+  ignore (assistant#connect#prepare ~callback:(fun () ->
+    if assistant#current_page = conclusionp then
+    let ok = (React.state kind = `Local) || (makeRemoteRoot () <> None) in
+    let () = setPageComplete conclusion ok in
+    if ok then conclusion#set_text conclusionOk
+    else conclusion#set_text conclusionFail));
 
   let profileName = ref None in
   let saveProfile () =
@@ -1548,20 +1585,12 @@ let createProfile parent =
       let label = React.state label in
       if label <> "" then Printf.fprintf ch "label = %s\n" label;
       Printf.fprintf ch "root = %s\n" (React.state firstDir);
-      let secondDir = React.state secondDir in
-      let host = React.state host in
-      let user = match React.state user with "" -> None | u -> Some u in
       let secondRoot =
-        match React.state kind with
-          `Local  -> Clroot.ConnectLocal (Some secondDir)
-        | `SSH    -> Clroot.ConnectByShell
-                       ("ssh", host, user, None, Some secondDir)
-        | `RSH    -> Clroot.ConnectByShell
-                       ("rsh", host, user, None, Some secondDir)
-        | `SOCKET -> Clroot.ConnectBySocket
-                       (host, React.state port, Some secondDir)
+        match makeRemoteRoot () with
+        | None -> assert false (* We should never reach here due to validation above *)
+        | Some s -> s
       in
-      Printf.fprintf ch "root = %s\n" (Clroot.clroot2string (Clroot.fixHost secondRoot));
+      Printf.fprintf ch "root = %s\n" secondRoot;
       if React.state compress && React.state kind = `SSH then
         Printf.fprintf ch "sshargs = -C\n";
 (*
