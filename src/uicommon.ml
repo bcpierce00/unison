@@ -571,8 +571,7 @@ let initRoots displayWaitMessage termInteract =
      and install them in Globals. *)
   Lwt_unix.run (Globals.installRoots termInteract);
 
-  (* Expand any "wildcard" paths [with final component *] *)
-  Globals.expandWildcardPaths();
+  Files.processCommitLogs ();
 
   Update.storeRootsName ();
 
@@ -599,6 +598,9 @@ let initRoots displayWaitMessage termInteract =
                         Printf.eprintf "       %s\n" (root2string r))
          (Globals.rootsInCanonicalOrder());
        Printf.eprintf "\n");
+
+  (* Expand any "wildcard" paths [with final component *] *)
+  Globals.expandWildcardPaths ();
 
   Lwt_unix.run
     (validateAndFixupPrefs () >>=
@@ -741,8 +743,6 @@ let initPrefs ~profileName ~displayWaitMessage ~promptForRoots
   if Prefs.read Globals.paths = [] then Prefs.set Globals.paths [Path.empty];
 
   initRoots displayWaitMessage termInteract;
-
-  Files.processCommitLogs();
 
   firstTime := false
 
