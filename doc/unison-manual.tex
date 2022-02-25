@@ -257,6 +257,83 @@ you roll back to the previous version of Unison, you will find the old
 archives intact), which means that any differences between the replicas will
 show up as conflicts that need to be resolved manually.
 
+As of version 2.52, Unison has a degree of backward and forward
+compatibility.  This means three things.  First, it is possible for local
+and remote machines to run a different version of Unison.  Second, it is
+possible for local and remote machines to run a version (same or different)
+of Unison built with a different version of OCaml compiler (this has been
+problematic historically).  Lastly, it is possible to upgrade Unison on
+the local machine (compiled with any OCaml version) and keep the existing
+archive.
+
+If version interoperability requirements are followed then Unison 2.52 can
+upgrade the archive created by earlier Unison versions.  To avoid rebuilding
+archive files, you must install version 2.52 built with the same OCaml
+version as your previous version of Unison, and then run it at least once
+on each root.  Doing so will upgrade the archive file.
+
+After upgrading the archive, you are free to swap the Unison 2.52
+executable to one compiled with a different version of OCaml.
+The archive file is no longer dependent on the compiler version.
+
+\SUBSUBSECTION{Version interoperability}{interoperability}
+
+To ensure interoperability with different Unison versions on local and
+remote machines, and to upgrade from an earlier version {\em without
+rebuilding the archive files}, you have to remember these guidelines.
+Upgrading from an incompatible version, while possible and normal, will
+require fully scanning both roots, which can be time-consuming with big
+replicas.
+
+{\bf Unison 2.52} is compatible with:
+\begin{itemize}
+\item {\em Unison 2.52 or newer} (for as long as backwards compatibility
+is maintained in the newer versions). You do not have to pay any attention
+to OCaml compiler versions.
+\item {\em Unison 2.51} if both versions are compiled with same OCaml
+compiler version (you can see which compiler version was used by running
+{\tt unison -version}).
+\item {\em Unison 2.48} if both versions are compiled with same OCaml
+compiler version.  See special notes below.
+\end{itemize}
+
+\vspace{1em}
+\noindent {\bf Interoperability matrix} for quick reference:
+
+\vspace{1em}
+\begin{tabular}{r||c|c|c}
+  Client versions & \multicolumn{3}{c}{Server versions} \\
+  & 2.52 or newer & 2.51  & 2.48 \\
+  \hline \hline
+  2.52 or newer & full interop & same OCaml version & same OCaml version \\
+  \hline
+  2.51 & same OCaml version & full interop & no interop \\
+  \hline
+  2.48 & same OCaml version* & no interop & full interop \\
+\end{tabular}
+\vspace{2em}
+
+\noindent {\it Special notes for Unison 2.48:}
+\begin{itemize}
+\item Unison 2.48 does not show which OCaml compiler was used to compile it.
+If you do not have the option of re-compiling the 2.48 version, you have
+two alternatives.  First (and most likely to succeed), see what is the version
+of the OCaml compiler in the same package repository where you installed
+Unison 2.48 from, then use Unison 2.52 compiled with that version.
+Second, you can just try Unison 2.52 executables compiled with different
+OCaml versions and see which one works with your copy of Unison 2.48.
+\item When running Unison 2.48 on the client machine with Unison 2.52 or
+newer on the server machine, you have to do some additional configuration.
+The Unison executable name on the server must start with \verb|unison-2.48|
+(just \verb|unison-2.48| is ok, as is \verb|unison-2.48.exe|, but also
+\verb|unison-2.48+ocaml-4.05|).  If using TCP socket connection to the
+server then you're all set!  If using {\tt ssh} then you have to add one
+of the following options to your profile or as a command-line argument
+on the client machine: \verb|-addversionno|; see
+\sectionref{remote}{Remote Usage}, or \verb|-servercmd|; see
+\sectionref{rshmeth}{Remote Shell Method}.
+\end{itemize}
+
 
 \SUBSECTION{Building Unison from Scratch}{building}
 
