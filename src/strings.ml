@@ -243,6 +243,72 @@ let docs =
       \032  the replicas will show up as conflicts that need to be resolved\n\
       \032  manually.\n\
       \n\
+      \032  As of version 2.52, Unison has a degree of backward and forward\n\
+      \032  compatibility. This means three things. First, it is possible for local\n\
+      \032  and remote machines to run a different version of Unison. Second, it is\n\
+      \032  possible for local and remote machines to run a version (same or\n\
+      \032  different) of Unison built with a different version of OCaml compiler\n\
+      \032  (this has been problematic historically). Lastly, it is possible to\n\
+      \032  upgrade Unison on the local machine (compiled with any OCaml version)\n\
+      \032  and keep the existing archive.\n\
+      \n\
+      \032  If version interoperability requirements are followed then Unison 2.52\n\
+      \032  can upgrade the archive created by earlier Unison versions. To avoid\n\
+      \032  rebuilding archive files, you must install version 2.52 built with the\n\
+      \032  same OCaml version as your previous version of Unison, and then run it\n\
+      \032  at least once on each root. Doing so will upgrade the archive file.\n\
+      \n\
+      \032  After upgrading the archive, you are free to swap the Unison 2.52\n\
+      \032  executable to one compiled with a different version of OCaml. The\n\
+      \032  archive file is no longer dependent on the compiler version.\n\
+      \n\
+      Version interoperability\n\
+      \n\
+      \032  To ensure interoperability with different Unison versions on local and\n\
+      \032  remote machines, and to upgrade from an earlier version without\n\
+      \032  rebuilding the archive files, you have to remember these guidelines.\n\
+      \032  Upgrading from an incompatible version, while possible and normal, will\n\
+      \032  require fully scanning both roots, which can be time-consuming with big\n\
+      \032  replicas.\n\
+      \n\
+      \032  Unison 2.52 is compatible with:\n\
+      \032    * Unison 2.52 or newer (for as long as backwards compatibility is\n\
+      \032      maintained in the newer versions). You do not have to pay any\n\
+      \032      attention to OCaml compiler versions.\n\
+      \032    * Unison 2.51 if both versions are compiled with same OCaml compiler\n\
+      \032      version (you can see which compiler version was used by running\n\
+      \032      unison -version).\n\
+      \032    * Unison 2.48 if both versions are compiled with same OCaml compiler\n\
+      \032      version. See special notes below.\n\
+      \n\
+      \032  Interoperability matrix for quick reference:\n\
+      \n\
+      \032  Client versions Server versions\n\
+      \032                  2.52 or newer       2.51               2.48\n\
+      \032  2.52 or newer   full interop        same OCaml version same OCaml version\n\
+      \032  2.51            same OCaml version  full interop       no interop\n\
+      \032  2.48            same OCaml version* no interop         full interop\n\
+      \n\
+      \032  Special notes for Unison 2.48:\n\
+      \032    * Unison 2.48 does not show which OCaml compiler was used to compile\n\
+      \032      it. If you do not have the option of re-compiling the 2.48 version,\n\
+      \032      you have two alternatives. First (and most likely to succeed), see\n\
+      \032      what is the version of the OCaml compiler in the same package\n\
+      \032      repository where you installed Unison 2.48 from, then use Unison\n\
+      \032      2.52 compiled with that version. Second, you can just try Unison\n\
+      \032      2.52 executables compiled with different OCaml versions and see\n\
+      \032      which one works with your copy of Unison 2.48.\n\
+      \032    * When running Unison 2.48 on the client machine with Unison 2.52 or\n\
+      \032      newer on the server machine, you have to do some additional\n\
+      \032      configuration. The Unison executable name on the server must start\n\
+      \032      with unison-2.48 (just unison-2.48 is ok, as is unison-2.48.exe,\n\
+      \032      but also unison-2.48+ocaml-4.05). If using TCP socket connection to\n\
+      \032      the server then you\226\128\153re all set! If using ssh then you have to add\n\
+      \032      one of the following options to your profile or as a command-line\n\
+      \032      argument on the client machine: -addversionno; see the section\n\
+      \032      \226\128\156Remote Usage\226\128\157 , or -servercmd; see the section \226\128\156Remote Shell\n\
+      \032      Method\226\128\157 .\n\
+      \n\
       Building Unison from Scratch\n\
       \n\
       \032  If a pre-built image is not available, you will need to compile it from\n\
