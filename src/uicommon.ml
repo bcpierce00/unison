@@ -747,7 +747,7 @@ let initPrefs ~profileName ~displayWaitMessage ~promptForRoots
   firstTime := false
 
 let refreshConnection ~displayWaitMessage ~termInteract =
-  assert (Safelist.length (Globals.rootsList ()) > 1);
+  assert (Safelist.length (Globals.rawRoots ()) > 1);
   let numConn = ref 0 in
   Lwt_unix.run (Globals.allRootsIter
     (fun r -> if Remote.isRootConnected r then incr numConn; Lwt.return ()));
