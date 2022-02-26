@@ -520,13 +520,25 @@ let provideProfileKey filename k profile info =
 let profilesAndRoots = ref []
 
 let scanProfiles () =
+  Os.createUnisonDir ();
   Array.iteri (fun i _ -> profileKeymap.(i) <- None) profileKeymap;
   profilesAndRoots :=
-    (Safelist.map
+    (Safelist.filterMap
        (fun f ->
           let f = Filename.chop_suffix f ".prf" in
           let filename = Prefs.profilePathname f in
-          let fileContents = Safelist.map (fun (_, _, n, v) -> (n, v)) (Prefs.readAFile f) in
+          let prefs =
+            try Some (Prefs.readAFile f) with
+            | Util.Fatal s -> begin
+                Util.warn ("Error when reading list of profiles.\n"
+                         ^ "Skipping file with error: "
+                         ^ System.fspathToPrintString filename
+                         ^ "\n\n" ^ s);
+                None end in
+          match prefs with
+          | None -> None
+          | Some prefs ->
+          let fileContents = Safelist.map (fun (_, _, n, v) -> (n, v)) prefs in
           let roots =
             Safelist.map snd
               (Safelist.filter (fun (n, _) -> n = "root") fileContents) in
@@ -542,7 +554,7 @@ let scanProfiles () =
              let k = Safelist.assoc "key" fileContents in
              provideProfileKey filename k f info
            with Not_found -> ());
-          (f, info))
+          Some (f, info))
        (Safelist.filter (fun name -> not (   Util.startswith name ".#"
                                           || Util.startswith name Os.tempFilePrefix))
           (Files.ls Util.unisonDir "*.prf")))
@@ -559,8 +571,7 @@ let initRoots displayWaitMessage termInteract =
      and install them in Globals. *)
   Lwt_unix.run (Globals.installRoots termInteract);
 
-  (* Expand any "wildcard" paths [with final component *] *)
-  Globals.expandWildcardPaths();
+  Files.processCommitLogs ();
 
   Update.storeRootsName ();
 
@@ -588,6 +599,9 @@ let initRoots displayWaitMessage termInteract =
          (Globals.rootsInCanonicalOrder());
        Printf.eprintf "\n");
 
+  (* Expand any "wildcard" paths [with final component *] *)
+  Globals.expandWildcardPaths ();
+
   Lwt_unix.run
     (validateAndFixupPrefs () >>=
      Globals.propagatePrefs);
@@ -597,17 +611,6 @@ let initRoots displayWaitMessage termInteract =
      run on the server, if any. Also, this should be done each time a profile is reloaded
      on this side, that's why it's here. *)
   Stasher.initBackups ()
-
-let promptForRoots getFirstRoot getSecondRoot =
-  (* Ask the user for the roots *)
-  let r1 = match getFirstRoot() with None -> exit 0 | Some r -> r in
-  let r2 = match getSecondRoot() with None -> exit 0 | Some r -> r in
-  (* Remember them for this run, ordering them so that the first
-     will come out on the left in the UI *)
-  Globals.setRawRoots [r1; r2];
-  (* Save them in the current profile *)
-  ignore (Prefs.add "root" r1);
-  ignore (Prefs.add "root" r2)
 
 (* ---- *)
 
@@ -626,11 +629,17 @@ let firstTime = ref(true)
 (* Roots given on the command line *)
 let cmdLineRawRoots = ref []
 
+let clearClRoots () = cmdLineRawRoots := []
+
 (* BCP: WARNING: Some of the code from here is duplicated in uimacbridge...! *)
-let initPrefs ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
+let initPrefs ~profileName ~displayWaitMessage ~promptForRoots
               ?(prepDebug = fun () -> ()) ~termInteract () =
   (* Restore prefs to their default values, if necessary *)
   if not !firstTime then Prefs.resetToDefaults();
+  (* Clear out any roots left from a previous profile. They can't remain
+     hanging around if [initPrefs] for the new profile receives an exception
+     before fully completing. *)
+  Globals.uninstallRoots ();
   Globals.setRawRoots !cmdLineRawRoots;
 
   (* Tell the preferences module the name of the profile *)
@@ -668,6 +677,9 @@ let initPrefs ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
     Prefs.parseCmdLine usageMsg;
   end;
 
+  (* Turn on GC messages, if the '-debug gc' flag was provided *)
+  Gc.set {(Gc.get ()) with Gc.verbose = if Trace.enabled "gc" then 0x3F else 0};
+
   (* Install dummy roots and backup directory if we are running self-tests *)
   if Prefs.read runtests then begin
     let tmpdir = makeTempDir "unisontest" in
@@ -691,16 +703,34 @@ let initPrefs ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
   (* If no roots are given either on the command line or in the profile,
      ask the user *)
   if Globals.rawRoots() = [] then begin
-    promptForRoots getFirstRoot getSecondRoot;
+    (* Ask the user for the roots *)
+    match promptForRoots () with
+    | None -> raise (Util.Fatal "no roots given on command line or in profile")
+    | Some (r1, r2) ->
+        begin
+          (* Remember them for this run, ordering them so that the first
+             will come out on the left in the UI *)
+          Globals.setRawRoots [r1; r2];
+          (* Save them in the current profile *)
+          ignore (Prefs.add "root" r1);
+          ignore (Prefs.add "root" r2)
+        end
   end;
+
+  (* Parse the roots to validate them *)
+  let parsedRoots =
+    try Safelist.map Clroot.parseRoot (Globals.rawRoots ()) with
+    | Invalid_argument s | Util.Fatal s | Prefs.IllegalValue s ->
+        raise (Util.Fatal ("There's a problem with one of the roots:\n" ^ s))
+  in
 
   (* Check to be sure that there is at most one remote root *)
   let numRemote =
     Safelist.fold_left
-      (fun n r -> match Clroot.parseRoot r with
+      (fun n (r : Clroot.clroot) -> match r with
         ConnectLocal _ -> n | ConnectByShell _ | ConnectBySocket _ -> n+1)
       0
-      (Globals.rawRoots ()) in
+      parsedRoots in
       if numRemote > 1 then
         raise(Util.Fatal "cannot synchronize more than one remote root");
 
@@ -744,105 +774,61 @@ let _ = Prefs.alias testServer "testServer"
 
 (* ---- *)
 
-let uiInit
-    ?(prepDebug = fun () -> ())
-    ~(reportError : string -> unit)
-    ~(tryAgainOrQuit : string -> bool)
-    ~(displayWaitMessage : unit -> unit)
-    ~(getProfile : unit -> string option)
-    ~(getFirstRoot : unit -> string option)
-    ~(getSecondRoot : unit -> string option)
-    ~(termInteract : (string -> string -> string) option)
-    () =
-
+let uiInitClRootsAndProfile ?(prepDebug = fun () -> ()) () =
   (* Make sure we have a directory for archives and profiles *)
   Os.createUnisonDir();
 
-  (* Extract any command line profile or roots *)
-  let clprofile = ref None in
+  let args = Prefs.scanCmdLine usageMsg in
   begin
-    let args = Prefs.scanCmdLine usageMsg in
-    begin
-      try if Util.StringMap.find "debug" args <> [] then prepDebug ()
-      with Not_found -> ()
-    end;
-
-    try
-      match Util.StringMap.find "rest" args with
-        [] -> ()
-      | [profile] -> clprofile := Some profile
-      | [root2;root1] -> cmdLineRawRoots := [root1;root2]
-      | [root2;root1;profile] ->
-          cmdLineRawRoots := [root1;root2];
-          clprofile := Some profile
-      | _ ->
-          (reportError(Printf.sprintf
-             "%s was invoked incorrectly (too many roots)" Uutil.myName);
-           exit 1)
+    try if Util.StringMap.find "debug" args <> [] then prepDebug ()
     with Not_found -> ()
   end;
 
-  (* Print header for debugging output *)
-  debug (fun() ->
-    Printf.eprintf "%s, version %s\n\n" Uutil.myName Uutil.myVersion);
-  debug (fun() -> Util.msg "initializing UI");
+  (* Extract any command line profile or roots *)
+  match begin
+    try
+      match Util.StringMap.find "rest" args with
+      | [] -> Ok None
+      | [profile] -> Ok (Some profile)
+      | [root2;root1] -> Ok (cmdLineRawRoots := [root1;root2]; None)
+      | [root2;root1;profile] ->
+          Ok (cmdLineRawRoots := [root1;root2]; Some profile)
+      | _ ->
+          Error (Printf.sprintf
+                   "%s was invoked incorrectly (too many roots)" Uutil.myName)
+    with Not_found -> Ok None
+  end with
+  | Error _ as e -> e
+  | Ok clprofile ->
+      debug (fun () ->
+        (* Print header for debugging output *)
+        Printf.eprintf "%s, version %s\n\n" Uutil.myName Uutil.myVersion;
+        Util.msg "initializing UI";
 
-  debug (fun () ->
-    (match !clprofile with
-      None -> Util.msg "No profile given on command line"
-    | Some s -> Printf.eprintf "Profile '%s' given on command line" s);
-    (match !cmdLineRawRoots with
-      [] -> Util.msg "No roots given on command line"
-    | [root1;root2] ->
-        Printf.eprintf "Roots '%s' and '%s' given on command line"
-          root1 root2
-    | _ -> assert false));
+        (match clprofile with
+         | None -> Util.msg "No profile given on command line"
+         | Some s -> Printf.eprintf "Profile '%s' given on command line" s);
+        (match !cmdLineRawRoots with
+         | [] -> Util.msg "No roots given on command line"
+         | [root1;root2] ->
+             Printf.eprintf "Roots '%s' and '%s' given on command line"
+               root1 root2
+         | _ -> assert false));
 
-  let profileName =
-    begin match !clprofile with
-      None ->
-        let clroots_given = !cmdLineRawRoots <> [] in
-        let n =
-          if not(clroots_given) then begin
-            (* Ask the user to choose a profile or create a new one. *)
-            clprofile := getProfile();
-            match !clprofile with
-              None -> exit 0 (* None means the user wants to quit *)
-            | Some x -> x
-          end else begin
-            (* Roots given on command line.
-               The profile should be the default. *)
-            clprofile := Some "default";
-            "default"
-          end in
-        n
-    | Some n ->
-        let f = Prefs.profilePathname n in
-        if not(System.file_exists f)
-        then (reportError (Printf.sprintf "Profile %s does not exist"
-                             (System.fspathToPrintString f));
-              exit 1);
-        n
-    end in
-
-  (* Load the profile and command-line arguments *)
-  initPrefs
-    ~profileName ~displayWaitMessage ~getFirstRoot ~getSecondRoot
-    ~prepDebug ~termInteract ();
-
-  (* Turn on GC messages, if the '-debug gc' flag was provided *)
-  if Trace.enabled "gc" then Gc.set {(Gc.get ()) with Gc.verbose = 0x3F};
-
-  if Prefs.read testServer then exit 0;
-
-  (* BCPFIX: Should/can this be done earlier?? *)
-  Files.processCommitLogs();
-
-  (* Run unit tests if requested *)
-  if Prefs.read runtests then begin
-    (!testFunction)();
-    exit 0
-  end
+      match clprofile with
+      | None when !cmdLineRawRoots = [] ->
+          (* Ask the user to choose a profile or create a new one. *)
+          Ok None
+      | None ->
+          (* Roots given on command line. The profile should be the default. *)
+          Ok (Some "default")
+      | Some n ->
+          let f = Prefs.profilePathname n in
+          if not (System.file_exists f)
+          then Error (Printf.sprintf
+                        "Profile '%s' does not exist (looking for file %s)"
+                        n (System.fspathToPrintString f))
+          else Ok (Some n)
 
 (* Exit codes *)
 let perfectExit = 0   (* when everything's okay *)

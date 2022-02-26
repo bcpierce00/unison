@@ -145,10 +145,18 @@ let toplevelWindow () =
 let busy = ref false
 
 let getLock f =
+  let protect ~(finally : unit -> unit) f =
+    (* Very simple [protect] when we know that [finally] does not raise *)
+    (* FIXME: Switch to [Fun.protect] once OCaml 4.09 is the minimum? *)
+    try let () = f () in finally () with
+    | e ->
+        finally ();
+        raise e
+  in
   if !busy then
     Trace.status "Synchronizer is busy, please wait.."
   else begin
-    busy := true; f (); busy := false
+    busy := true; protect ~finally:(fun () -> busy := false) f
   end
 
 (**********************************************************************
@@ -406,9 +414,9 @@ class ['a] gMenuFactory
       (* Register this accel path *)
       GtkBase.Widget.set_accel_path item#as_widget accel_path accel_group;
       Gaux.may callback ~f:(fun callback -> item#connect#activate ~callback)
-    method add_item ?key ?modi ?callback ?submenu label =
+    method add_item ?key ?modi ?callback ?submenu ?bindname label =
       let item = GMenu.menu_item  ~use_mnemonic:true ~label () in
-      self#bind ?modi ?key ?callback label item;
+      self#bind ?modi ?key ?callback label ?name:bindname item;
       Gaux.may (submenu : GMenu.menu option) ~f:item#set_submenu;
       item
     method add_image_item ?(image : GObj.widget option)
@@ -665,13 +673,21 @@ let file_dialog ~parent ~title ~callback ?filename () =
 
 (* ------ *)
 
-let fatalError message =
+let fatalError ?(quit=false) message =
   let () =
     try Trace.log (message ^ "\n")
     with Util.Fatal _ -> () in (* Can't allow fatal errors in fatal error handler *)
   let title = "Fatal error" in
+  let toplevelWindow =
+    try toplevelWindow ()
+    with Util.Fatal err ->
+      begin
+        Printf.eprintf "\n%s:\n%s\n\n%!" title err;
+        exit 1
+      end
+  in
   let t =
-    GWindow.dialog ~parent:(toplevelWindow ())
+    GWindow.dialog ~parent:toplevelWindow
       ~border_width:6 ~modal:true ~no_separator:true ~allow_grow:false () in
   t#vbox#set_spacing 12;
   let h1 = GPack.hbox ~border_width:6 ~spacing:12 ~packing:t#vbox#pack () in
@@ -683,13 +699,14 @@ let fatalError message =
                      escapeMarkup (transcode message))
             ~line_wrap:true ~selectable:true ~yalign:0. ~packing:v1#add ());
   t#add_button_stock `QUIT `QUIT;
-  t#set_default_response `QUIT;
+  if not quit then t#add_button_stock `CLOSE `CLOSE;
+  t#set_default_response (if quit then `QUIT else `CLOSE);
+  ignore (t#connect#response
+            ~callback:(function `QUIT -> exit 1 | _ -> ()));
   t#show(); ignore (t#run ()); t#destroy ();
-  exit 1
+  if quit then exit 1
 
-(* ------ *)
-
-let tryAgainOrQuit = fatalError
+let fatalErrorHandler = ref (fatalError ~quit:true)
 
 (* ------ *)
 
@@ -719,10 +736,10 @@ let getFirstRoot () =
   let f3 = t#action_area in
   let result = ref None in
   let contCommand() =
-    result := Some(fileE#text);
+    result := Some (Util.trimWhitespace fileE#text);
     t#destroy () in
-  let quitButton = GButton.button ~stock:`QUIT ~packing:f3#add () in
-  ignore (quitButton#connect#clicked
+  let cancelButton = GButton.button ~stock:`CANCEL ~packing:f3#add () in
+  ignore (cancelButton#connect#clicked
             ~callback:(fun () -> result := None; t#destroy()));
   let contButton = GButton.button ~stock:`OK ~packing:f3#add () in
   ignore (contButton#connect#clicked ~callback:contCommand);
@@ -816,10 +833,10 @@ let getSecondRoot () =
   ignore (socketB#connect#clicked ~callback:(fun () -> protoState(`SOCKET)));
   localState();
   let getRoot() =
-    let file = fileE#text in
-    let user = userE#text in
-    let host = hostE#text in
-    let port = portE#text in
+    let file = Util.trimWhitespace fileE#text in
+    let user = Util.trimWhitespace userE#text in
+    let host = Util.trimWhitespace hostE#text in
+    let port = Util.trimWhitespace portE#text in
     match !varLocalRemote with
       `Local ->
         Clroot.clroot2string(Clroot.ConnectLocal(Some file))
@@ -846,13 +863,14 @@ let getSecondRoot () =
         okBox ~parent:t ~title:"Error" ~typ:`ERROR ~message:"Please enter a port"
       else okBox ~parent:t ~title:"Error" ~typ:`ERROR
           ~message:"The port you specify must be an integer"
-    | _ ->
+    | Util.Transient s | Util.Fatal s | Invalid_argument s | Prefs.IllegalValue s ->
       okBox ~parent:t ~title:"Error" ~typ:`ERROR
-        ~message:"Something's wrong with the values you entered, try again" in
+        ~message:("Something's wrong with the values you entered, try again.\n" ^ s) in
   let f3 = t#action_area in
-  let quitButton =
-    GButton.button ~stock:`QUIT ~packing:f3#add () in
-  ignore (quitButton#connect#clicked ~callback:safeExit);
+  let cancelButton =
+    GButton.button ~stock:`CANCEL ~packing:f3#add () in
+  ignore (cancelButton#connect#clicked
+            ~callback:(fun () -> result := None; t#destroy ()));
   let contButton =
     GButton.button ~stock:`OK ~packing:f3#add () in
   ignore (contButton#connect#clicked ~callback:contCommand);
@@ -863,6 +881,15 @@ let getSecondRoot () =
   ignore (t#connect#destroy ~callback:GMain.Main.quit);
   GMain.Main.main ();
   !result
+
+let promptForRoots () =
+  match getFirstRoot () with
+  | None -> None
+  | Some r1 ->
+      begin match getSecondRoot () with
+      | None -> None
+      | Some r2 -> Some (r1, r2)
+      end
 
 (* ------ *)
 
@@ -1498,17 +1525,54 @@ let createProfile parent =
        then
          assistant#set_current_page (p + 1)));
 
+  let conclusionOk = "You have now finished filling in the profile.\n\n\
+             Click \"Apply\" to create it."
+  and conclusionFail = "There was an error when preparing the profile.\n\n\
+             Click \"Back\" to review what you entered." in
   let conclusion =
     GMisc.label
       ~xpad:12 ~ypad:12
-      ~text:"You have now finished filling in the profile.\n\n\
-             Click \"Apply\" to create it."
+      ~text:conclusionOk
     () in
-  ignore
+  let conclusionp =
     (assistant#append_page
        ~title:"Done" ~complete:true
        ~page_type:`CONFIRM
-       conclusion#as_widget);
+       conclusion#as_widget) in
+
+  let makeRemoteRoot () =
+    let secondDir = Util.trimWhitespace (React.state secondDir) in
+    let host = Util.trimWhitespace (React.state host) in
+    let user = match React.state user with "" -> None | u -> Some (Util.trimWhitespace u) in
+    let secondRoot =
+      match React.state kind with
+        `Local  -> Clroot.ConnectLocal (Some secondDir)
+      | `SSH    -> Clroot.ConnectByShell
+                     ("ssh", host, user, None, Some secondDir)
+      | `RSH    -> Clroot.ConnectByShell
+                     ("rsh", host, user, None, Some secondDir)
+      | `SOCKET -> Clroot.ConnectBySocket
+                     (host, React.state port, Some secondDir)
+    in
+    try
+      let root = Clroot.clroot2string (Clroot.fixHost secondRoot) in
+      ignore (Clroot.parseRoot root);
+      Some root
+    with
+    | Util.Transient s | Util.Fatal s | Invalid_argument s | Prefs.IllegalValue s ->
+        begin
+          okBox ~parent ~title:"Error" ~typ:`ERROR
+            ~message:("There was a problem with the remote root "
+              ^ "data you entered.\n\n" ^ s);
+          None
+        end
+  in
+  ignore (assistant#connect#prepare ~callback:(fun () ->
+    if assistant#current_page = conclusionp then
+    let ok = (React.state kind = `Local) || (makeRemoteRoot () <> None) in
+    let () = setPageComplete conclusion ok in
+    if ok then conclusion#set_text conclusionOk
+    else conclusion#set_text conclusionFail));
 
   let profileName = ref None in
   let saveProfile () =
@@ -1521,20 +1585,12 @@ let createProfile parent =
       let label = React.state label in
       if label <> "" then Printf.fprintf ch "label = %s\n" label;
       Printf.fprintf ch "root = %s\n" (React.state firstDir);
-      let secondDir = React.state secondDir in
-      let host = React.state host in
-      let user = match React.state user with "" -> None | u -> Some u in
       let secondRoot =
-        match React.state kind with
-          `Local  -> Clroot.ConnectLocal (Some secondDir)
-        | `SSH    -> Clroot.ConnectByShell
-                       ("ssh", host, user, None, Some secondDir)
-        | `RSH    -> Clroot.ConnectByShell
-                       ("rsh", host, user, None, Some secondDir)
-        | `SOCKET -> Clroot.ConnectBySocket
-                       (host, React.state port, Some secondDir)
+        match makeRemoteRoot () with
+        | None -> assert false (* We should never reach here due to validation above *)
+        | Some s -> s
       in
-      Printf.fprintf ch "root = %s\n" (Clroot.clroot2string (Clroot.fixHost secondRoot));
+      Printf.fprintf ch "root = %s\n" secondRoot;
       if React.state compress && React.state kind = `SSH then
         Printf.fprintf ch "sshargs = -C\n";
 (*
@@ -2583,6 +2639,15 @@ let displayWaitMessage () =
   make_busy (toplevelWindow ());
   Trace.status (Uicommon.contactingServerMsg ())
 
+let prepDebug () =
+  if Sys.os_type = "Win32" then
+    (* As a side-effect, this allocates a console if the process doesn't
+       have one already. This call is here only for the side-effect,
+       because debugging output is produced on stderr and the GUI will
+       crash if there is no stderr. *)
+    try ignore (System.terminalStateFunctions ())
+    with Unix.Unix_error _ -> ()
+
 (* ------ *)
 
 type status = NoStatus | Done | Failed
@@ -3104,10 +3169,11 @@ let createToplevelWindow () =
       displayRow row i r1 r2 action status path;
     done;
     mainWindow#set_model (Some mainWindowModel#coerce);
-    match savedCurrent with
+    begin match savedCurrent with
     | []  -> selectSomethingIfPossible ()
     | [x] -> select x true
-    | _   -> Safelist.iter (fun p -> mainWindow#selection#select_path p) savedCurrent;
+    | _   -> Safelist.iter (fun p -> mainWindow#selection#select_path p) savedCurrent
+    end;
 
     progressBar#set_text ""; progressBar#set_fraction 0.;
     updateDetails ();  (* Do we need this line? *)
@@ -3282,6 +3348,7 @@ let createToplevelWindow () =
     grDisactivateAll ();
     make_busy toplevelWindow;
     mainWindowModel#clear ();
+    theState := [||];
     detailsWindow#buffer#set_text ""
   in
 
@@ -3790,25 +3857,18 @@ let createToplevelWindow () =
   (*********************************************************************
     Rescan button
    *********************************************************************)
+  let profileInitSuccess = ref false in
   let updateFromProfile = ref (fun () -> ()) in
-
-  let prepDebug () =
-    if Sys.os_type = "Win32" then
-      (* As a side-effect, this allocates a console if the process doesn't
-         have one already. This call is here only for the side-effect,
-         because debugging output is produced on stderr and the GUI will
-         crash if there is no stderr. *)
-      try ignore (System.terminalStateFunctions ())
-      with Unix.Unix_error _ -> ()
-  in
 
   let loadProfile p reload =
     debug (fun()-> Util.msg "Loading profile %s..." p);
     Trace.status "Loading profile";
     unsynchronizedPaths := None;
+    profileInitSuccess := false;
     Uicommon.initPrefs ~profileName:p
       ~displayWaitMessage:(fun () -> if not reload then displayWaitMessage ())
-      ~getFirstRoot ~getSecondRoot ~prepDebug ~termInteract ();
+      ~promptForRoots ~prepDebug ~termInteract ();
+    profileInitSuccess := true;
     !updateFromProfile ()
   in
 
@@ -3819,15 +3879,21 @@ let createToplevelWindow () =
       | Some n -> n
     in
     clearMainWindow ();
-    if not (Prefs.profileUnchanged ()) then loadProfile n true
+    if not (Prefs.profileUnchanged ()) || not (!profileInitSuccess) then
+      loadProfile n true
     else Uicommon.refreshConnection ~displayWaitMessage ~termInteract
   in
 
   let detectCmd () =
-    getLock detectUpdatesAndReconcile;
-    updateDetails ();
-    if Prefs.read Globals.batch then begin
-      Prefs.set Globals.batch false; synchronize()
+    if !profileInitSuccess then begin
+      getLock detectUpdatesAndReconcile;
+      updateDetails ();
+      if Prefs.read Globals.batch then begin
+        Prefs.set Globals.batch false; synchronize()
+      end
+    end else begin
+      grSet grRescan true;
+      make_interactive toplevelWindow
     end
   in
 (*  actionBar#insert_space ();*)
@@ -4066,28 +4132,44 @@ let createToplevelWindow () =
        ~image:(GMisc.image ~stock:`OPEN ~icon_size:`MENU () :> GObj.widget)
        "Change _Profile...");
 
-  let fastProf name key =
-    grAdd grRescan
-      (fileMenu#add_item ~key:key
+  let fastProf i key =
+    let item = fileMenu#add_item ~key:key ~bindname:(string_of_int i) "" in
+    item#misc#hide ();
+    grAdd grRescan item;
+    let show name =
+      match item#children with
+      | [] | _::_::_ -> ()
+      | [l] ->
+          let label = (GMisc.label_cast l) in
+          label#set_label ("Select profile " ^ name);
+          ignore (item#connect#activate
             ~callback:(fun _ ->
                if System.file_exists (Prefs.profilePathname name) then begin
                  Trace.status ("Loading profile " ^ name);
                  loadProfile name false; detectCmd ()
                end else
                  Trace.status ("Profile " ^ name ^ " not found"))
-            ("Select profile " ^ name)) in
+            );
+          item#misc#show ()
+    in
+    (item#misc#hide, show) in
 
   let fastKeysyms =
     [| GdkKeysyms._0; GdkKeysyms._1; GdkKeysyms._2; GdkKeysyms._3;
        GdkKeysyms._4; GdkKeysyms._5; GdkKeysyms._6; GdkKeysyms._7;
        GdkKeysyms._8; GdkKeysyms._9 |] in
 
-  Array.iteri
-    (fun i v -> match v with
-      None -> ()
-    | Some(profile, info) ->
-        fastProf profile fastKeysyms.(i))
-    Uicommon.profileKeymap;
+  let fastKeyitems = Array.init 10 (fun i -> fastProf i fastKeysyms.(i)) in
+
+  let updateProfileKeyMenu () =
+    if !Uicommon.profilesAndRoots = [] then Uicommon.scanProfiles ();
+
+    Array.iteri
+      (fun i v -> match v with
+      | None -> (fst fastKeyitems.(i)) ()
+      | Some (profile, info) -> (snd fastKeyitems.(i)) profile)
+      Uicommon.profileKeymap
+  in
 
   ignore (fileMenu#add_separator ());
   ignore (fileMenu#add_item
@@ -4141,13 +4223,32 @@ let createToplevelWindow () =
        setMainWindowColumnHeaders (Uicommon.roots2string ());
        buildActionMenu false);
 
+  fatalErrorHandler :=
+    (fun err ->
+       grDisactivateAll ();
+       make_interactive toplevelWindow;
+       Trace.status ("Fatal error: " ^ err);
+       inExit := true;
+       fatalError err;
+       inExit := false;
+       match !Prefs.profileName with
+       | Some _ -> grSet grRescan true
+       | None ->  (* Normally should never get here; exceptions loading the
+                     very first profile are handled in the [start] function. *)
+           begin match getProfile true with
+           | None -> exit 1
+           | Some p -> clearMainWindow (); loadProfile p false; detectCmd ()
+           end
+    );
+
 
   ignore (toplevelWindow#event#connect#delete ~callback:
             (fun _ -> safeExit (); true));
   toplevelWindow#show ();
-  fun () ->
-    !updateFromProfile ();
+  fun p ->
+    updateProfileKeyMenu ();
     mainWindow#misc#grab_focus ();
+    loadProfile p false;
     detectCmd ()
 
 
@@ -4156,7 +4257,7 @@ let createToplevelWindow () =
  *********************************************************************)
 
 let start _ =
-  begin try
+  try
     (* Initialize the GTK library *)
     ignore (GMain.Main.init ());
 
@@ -4164,10 +4265,9 @@ let start _ =
       Some (fun msg -> warnBox ~parent:(toplevelWindow ()) "Warning" msg);
 
     GtkSignal.user_handler :=
-      (fun exn ->
-         match exn with
-           Util.Transient(s) | Util.Fatal(s) -> fatalError s
-         | exn -> fatalError (Uicommon.exn2string exn));
+      (function
+       | Util.Transient s | Util.Fatal s -> !fatalErrorHandler s
+       | exn -> !fatalErrorHandler (Uicommon.exn2string exn));
 
     (* Ask the Remote module to call us back at regular intervals during
        long network operations. *)
@@ -4177,31 +4277,34 @@ let start _ =
     in
     ignore_result (tick ());
 
-    let prepDebug () =
-      if Sys.os_type = "Win32" then
-        (* As a side-effect, this allocates a console if the process doesn't
-           have one already. This call is here only for the side-effect,
-           because debugging output is produced on stderr and the GUI will
-           crash if there is no stderr. *)
-        try ignore (System.terminalStateFunctions ())
-        with Unix.Unix_error _ -> ()
+    let startGUI = createToplevelWindow () in
+
+    (* Any exceptions here will be caught by the main catch handler
+       and the GUI will exit. *)
+    let getProfile () = match getProfile true with None -> exit 0 | Some x -> x in
+    let profileName =
+      match Uicommon.uiInitClRootsAndProfile ~prepDebug () with
+      | Error s -> begin fatalError s;
+                         Uicommon.clearClRoots (); getProfile () end
+      | Ok None -> getProfile ()
+      | Ok (Some s) -> s
     in
 
-    Os.createUnisonDir();
-    Uicommon.scanProfiles();
-    let detectCmd = createToplevelWindow() in
-
-    Uicommon.uiInit
-      ~prepDebug
-      ~reportError:fatalError
-      ~tryAgainOrQuit
-      ~displayWaitMessage
-      ~getProfile:(fun () -> getProfile true)
-      ~getFirstRoot
-      ~getSecondRoot
-      ~termInteract
-      ();
-    detectCmd ();
+    (* Exceptions from here onwards will be caught by the inner catch handler
+       and the GUI will not exit. Instead, the profile manager is re-opened.
+       User has the option to quit in the profile manager. *)
+    let rec initLoop profileName =
+      try startGUI profileName with
+      | Util.Transient s | Util.Fatal s ->
+          s |> fatalError |> Uicommon.clearClRoots |> getProfile |> initLoop
+      (* Since we have not started the GTK main loop yet, it is easier to
+         handle exceptions here directly. [GtkSignal.safe_call] could be
+         used but it will fail in case of subsequent exceptions without
+         raising, thus escaping further exception handlers.
+         This separate handling sequence could in theory be removed if
+         [startGUI] is called while the GTK main loop is running. *)
+    in
+    initLoop profileName;
 
     (* Display the ui *)
 (*JV: not useful, as Unison does not handle any signal
@@ -4211,9 +4314,8 @@ let start _ =
 *)
     GMain.Main.main ()
   with
-    Util.Transient(s) | Util.Fatal(s) -> fatalError s
-  | exn -> fatalError (Uicommon.exn2string exn)
-  end
+  | Util.Transient s | Util.Fatal s -> fatalError ~quit:true s
+  | exn -> fatalError ~quit:true (Uicommon.exn2string exn)
 
 end (* module Private *)
 
@@ -4233,9 +4335,10 @@ let start = function
         try System.getenv "DISPLAY" <> "" with Not_found -> false
       in
       if displayAvailable then Private.start Uicommon.Graphic
-      else
+      else begin
         Util.warn "DISPLAY not set or empty; starting the Text UI\n";
         Uitext.Body.start Uicommon.Text
+      end
 
 let defaultUi = Uicommon.Graphic
 

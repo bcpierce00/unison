@@ -1417,7 +1417,7 @@ let printAddr host addr =
   | Unix.ADDR_INET (s, p) ->
       Format.sprintf "%s[%s]:%d" host (Unix.string_of_inet_addr s) p
 
-let buildSocket host port kind ai =
+let buildSocket host port kind ?(err="") ai =
   let attemptCreation ai =
     Lwt.catch
       (fun () ->
@@ -1459,12 +1459,13 @@ let buildSocket host port kind ai =
            Unix.Unix_error (error, _, _) ->
              begin match error with
                Unix.EAFNOSUPPORT | Unix.EPROTONOSUPPORT | Unix.EINVAL ->
-                 ()
+                 Lwt.return None
              | _  ->
                  let msg =
                    match kind with
                      `Connect ->
-                       Printf.sprintf "Can't connect to server %s: %s\n"
+                       Printf.sprintf "%s%s: %s\n"
+                         err
                          (printAddr host ai.Unix.ai_addr)
                          (Unix.error_message error)
                    | `Bind when ai.Unix.ai_family <> Unix.PF_UNIX ->
@@ -1483,9 +1484,8 @@ let buildSocket host port kind ai =
                          port
                          (Unix.error_message error)
                  in
-                 Util.warn msg
-              end;
-              Lwt.return None
+                 Lwt.fail (Util.Fatal msg)
+             end
          | _ ->
              Lwt.fail e)
   in
@@ -1503,28 +1503,26 @@ let buildConnectSocketUnix path =
   (* Unix domain socket path from [Clroot] is enclosed in curly braces.
      Extract the real path. *)
   let path = String.sub path 1 ((String.length path) - 2) in
-  buildSocket "" path `Connect (makeUnixSocketAi path) >>= function
+  let err = "Can't connect to Unix domain socket on path " in
+  buildSocket "" path `Connect ~err (makeUnixSocketAi path) >>= function
   | None ->
-      Lwt.fail (Util.Fatal
-        (Printf.sprintf "Can't connect to Unix domain socket on path %s" path))
+      Lwt.fail (Util.Fatal (err ^ path))
   | Some x ->
       Lwt.return x
 
 let buildConnectSocket host port =
   let isHost = String.length host > 0 && host.[0] <> '{' in
   if not isHost then buildConnectSocketUnix host else
-  let attemptCreation ai = buildSocket host port `Connect ai in
+  let err = "Failed to connect to the server on host " in
+  let attemptCreation ai = buildSocket host port `Connect ~err ai in
   let options = [ Unix.AI_SOCKTYPE Unix.SOCK_STREAM ] in
   findFirst attemptCreation (Unix.getaddrinfo host port options) >>= fun res ->
   match res with
     Some socket ->
       Lwt.return socket
   | None ->
-      let msg =
-        Printf.sprintf
-          "Failed to connect to the server on host %s:%s" host port
-      in
-      Lwt.fail (Util.Fatal msg)
+      let hostport = Printf.sprintf "%s:%s" host port in
+      Lwt.fail (Util.Fatal (err ^ hostport))
 
 (* [at_exit] does not provide reliable cleanup (why?), so this
    complex mechanism is needed to unlink Unix domain sockets

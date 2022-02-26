@@ -1284,13 +1284,21 @@ let addProfileKeys list default =
   in
   addKey 0 [] list
 
+let scanProfiles () =
+  let wp = !Util.warnPrinter in
+  (* Replace warn printer with something that doesn't quit
+     the UI just for errors in random scanned profiles. *)
+  Util.warnPrinter := Some (fun s -> alwaysDisplay ("Warning: " ^ s ^ "\n\n"));
+  let () = Uicommon.scanProfiles () in
+  Util.warnPrinter := wp
+
 let getProfile default =
   let cmdArgs = Prefs.scanCmdLine Uicommon.shortUsageMsg in
-  Uicommon.scanProfiles ();
   if Util.StringMap.mem Uicommon.runTestsPrefName cmdArgs ||
     not (Util.StringMap.mem profmgrPrefName cmdArgs) then
     Some default
   else
+  let () = scanProfiles () in
   if (List.length !Uicommon.profilesAndRoots) > 10 then begin
     Trace.log (Format.sprintf "You have too many profiles in %s \
                 for interactive selection. Please specify profile \
@@ -1374,25 +1382,42 @@ let rec start interface =
   begin try
     (* Just to make sure something is there... *)
     setWarnPrinterForInitialization();
-    Uicommon.uiInit
-      ~reportError:
-      (fun s -> Util.msg "%s%s\n\n%s\n" Uicommon.shortUsageMsg profmgrUsageMsg s; exit 1)
-      ~tryAgainOrQuit:
-      (fun s -> Util.msg "%s" Uicommon.shortUsageMsg; exit 1)
+    let errorOut s =
+      Util.msg "%s%s%s\n" Uicommon.shortUsageMsg profmgrUsageMsg s;
+      exit 1
+    in
+    let profileName = match Uicommon.uiInitClRootsAndProfile () with
+      | Error s -> errorOut ("\n\n" ^ s)
+      | Ok None ->
+          let profile = getProfile "default" in
+          let () = restoreTerminal () in
+          begin
+            match profile with
+            | None -> exit 0
+            | Some x -> x
+          end
+      | Ok (Some s) -> s
+    in
+    Uicommon.initPrefs
+      ~profileName
       ~displayWaitMessage:
       (fun () -> setWarnPrinter();
                  if Prefs.read silent then Prefs.set Trace.terse true;
                  if not (Prefs.read silent)
                  then Util.msg "%s\n" (Uicommon.contactingServerMsg()))
-      ~getProfile:
-      (fun () -> let prof = getProfile "default" in restoreTerminal(); prof)
-      ~getFirstRoot:
-      (fun () -> Util.msg "%s%s\n" Uicommon.shortUsageMsg profmgrUsageMsg; exit 1)
-      ~getSecondRoot:
-      (fun () -> Util.msg "%s%s\n" Uicommon.shortUsageMsg profmgrUsageMsg; exit 1)
+      ~promptForRoots:
+      (fun () -> errorOut "")
       ~termInteract:
       None
       ();
+
+    if Prefs.read Uicommon.testServer then exit 0;
+
+    (* Run unit tests if requested *)
+    if Prefs.read Uicommon.runtests then begin
+      !Uicommon.testFunction ();
+      exit 0
+    end;
 
     (* Some preference settings imply others... *)
     if Prefs.read silent then begin

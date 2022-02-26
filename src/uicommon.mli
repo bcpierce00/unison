@@ -44,6 +44,10 @@ val confirmmerge : bool Prefs.t
 
 val runTestsPrefName : string
 
+val runtests : bool Prefs.t
+
+val testServer : bool Prefs.t
+
 (* Format the information about current contents of a path in one replica (the second argument
    is used as a separator) *)
 val details2string : Common.reconItem -> string -> string
@@ -89,27 +93,21 @@ val usageMsg : string
 
 val shortUsageMsg : string
 
-val uiInit :
+val uiInitClRootsAndProfile :
     ?prepDebug:(unit -> unit) ->
-    reportError:(string -> unit) ->
-    tryAgainOrQuit:(string -> bool) ->
-    displayWaitMessage:(unit -> unit) ->
-    getProfile:(unit -> string option) ->
-    getFirstRoot:(unit -> string option) ->
-    getSecondRoot:(unit -> string option) ->
-    termInteract:(string -> string -> string) option ->
     unit ->
-    unit
+    (string option, string) result
 
 val initPrefs :
   profileName:string ->
   displayWaitMessage:(unit->unit) ->
-  getFirstRoot:(unit->string option) ->
-  getSecondRoot:(unit->string option) ->
+  promptForRoots:(unit -> (string * string) option) ->
   ?prepDebug:(unit -> unit) ->
   termInteract:(string -> string -> string) option ->
   unit ->
   unit
+
+val clearClRoots : unit -> unit
 
 (* Make sure remote connections (if any) corresponding to active roots
    are still established and re-establish them if necessary.

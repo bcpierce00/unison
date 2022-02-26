@@ -16,6 +16,9 @@ val installRoots : (string -> string -> string) option -> unit Lwt.t
 (* An alternate method (under development?) *)
 val installRoots2 : unit -> unit
 
+(* Clear previously installed roots; typically used when switching profiles  *)
+val uninstallRoots : unit -> unit
+
 (* The roots of the synchronization (with names canonized, but in the same   *)
 (* order as the user gave them)                                              *)
 val roots : unit -> Common.root * Common.root

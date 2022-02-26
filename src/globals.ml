@@ -51,8 +51,11 @@ let rawRootPair () =
 
 let theroots = ref []
 
+let uninstallRoots () = theroots := []
+
 open Lwt
 let installRoots termInteract =
+  let () = uninstallRoots () in (* Clear out potential old roots *)
   let roots = rawRoots () in
   if Safelist.length roots <> 2 then
     raise (Util.Fatal (Printf.sprintf
@@ -66,6 +69,14 @@ let installRoots termInteract =
        cont >>= (fun l ->
        return (r' :: l))))
     roots (return []) >>= (fun roots' ->
+  let () = match roots' with
+           | [r1; r2] when r1 = r2 ->
+               raise (Util.Fatal (Printf.sprintf
+                   ("That's no good, the roots appear to be the same! Here's "
+                 ^^ "what I found:\nFirst root: %s\nSecond root: %s")
+                   (Common.root2string r1) (Common.root2string r2)))
+           | _ -> ()
+  in
   theroots := roots';
   Negotiate.features (Common.sortRoots roots') >>=
   return)
@@ -73,6 +84,7 @@ let installRoots termInteract =
 (* Alternate interface, should replace old interface eventually *)
 let installRoots2 () =
   debug (fun () -> Util.msg "Installing roots...");
+  let () = uninstallRoots () in (* Clear out potential old roots *)
   let roots = rawRoots () in
   theroots :=
     Safelist.map Remote.canonize ((Safelist.map Clroot.parseRoot) roots);

@@ -89,7 +89,7 @@ let getProtocolSlashSlash s =
                   (Printf.sprintf "protocol unison has been deprecated, use file, ssh, rsh, or socket instead" ))
       | _ ->
           raise(Invalid_argument
-                  (Printf.sprintf "unrecognized protocol %s" protocolName)) in
+                  (Printf.sprintf "\"%s\": unrecognized protocol %s" s protocolName)) in
     Some(protocol,remainder)
   else if Str.string_match slashSlashRegexp s 0
   then Some(File,String.sub s 2 (String.length s - 2))
@@ -100,7 +100,7 @@ let getProtocolSlashSlash s =
       "file:" | "ssh:" | "rsh:" | "socket:" ->
         raise(Util.Fatal
                 (Printf.sprintf
-                   "ill-formed root specification %s (%s must be followed by //)"
+                   "ill-formed root specification \"%s\" (%s must be followed by //)"
                    s matched))
     | _ -> None
   else None
@@ -150,6 +150,7 @@ let getPort s =
    and path is guaranteed to be non-empty
 *)
 let parseUri s =
+  let s = Util.trimWhitespace s in
   match getProtocolSlashSlash s with
     None ->
       (File,None,None,None,Some s)
@@ -199,7 +200,7 @@ let cannotAbbrevFileRx = Rx.rx "(file:|ssh:|rsh:|socket:).*"
 let networkNameRx = Rx.rx "//.*"
 (* Main external printing function *)
 let clroot2string = function
-  ConnectLocal None -> "."
+| ConnectLocal None | ConnectLocal (Some "") -> "."
 | ConnectLocal(Some s) ->
     if Rx.match_string cannotAbbrevFileRx s
     then if Rx.match_string networkNameRx s
@@ -243,7 +244,7 @@ let fixHost = function
 let parseRoot string =
   let illegal2 s = raise(Prefs.IllegalValue
                            (Printf.sprintf
-                              "%s: %s" string s)) in
+                              "\"%s\": %s" string s)) in
   let (protocol,user,host,port,path) = parseUri string in
   let clroot =
     match protocol,user,host,port with

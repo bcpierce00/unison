@@ -1342,7 +1342,6 @@ uigtk2.cmo : \
     ubase/prefs.cmi \
     pixmaps.cmo \
     path.cmi \
-    os.cmi \
     lwt/lwt_util.cmi \
     lwt/lwt_unix.cmi \
     lwt/lwt.cmi \
@@ -1369,7 +1368,6 @@ uigtk2.cmx : \
     ubase/prefs.cmx \
     pixmaps.cmx \
     path.cmx \
-    os.cmx \
     lwt/lwt_util.cmx \
     lwt/lwt_unix.cmx \
     lwt/lwt.cmx \
