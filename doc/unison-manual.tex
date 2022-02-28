@@ -643,9 +643,13 @@ communicating between the client and the server:
   start a ``unison server'' process on the server) and also more
   secure (especially if you use \verb|ssh|).
 
-\item {\em Socket method}: This method requires only that you can get
-  TCP packets from the client to the server and back.  A draconian
-  firewall can prevent this, but otherwise it should work anywhere.
+\item {\em TCP socket method}: This method requires only that you can
+  get TCP packets from the client to the server and back.  It is
+  insecure and should not be used.
+
+\item {\em Unix socket method}: This method only works within a
+  single machine.  It is similar to the TCP sockets method, but it is
+  possible to configure it securely.
 \end{itemize}
 
 Decide which of these you want to try, and continue with
@@ -732,18 +736,6 @@ of the path:
 
 \SUBSECTION{Socket Method}{socketmeth}
 
-\begin{quote}
-  {\bf\ifhevea\red\fi Warning:} The socket method is
-  insecure: not only are the texts of your changes transmitted over
-  the network in unprotected form, it is also possible for anyone in
-  the world to connect to the server process and read out the contents
-  of your filesystem!  (Of course, to do this they must understand the
-  protocol that Unison uses to communicate between client and server,
-  but all they need for this is a copy of the Unison sources.)  The socket
-  method is provided only for expert users with specific needs; everyone
-  else should use the \verb|ssh| method.
-\end{quote}
-
 To run Unison over a socket connection, you must start a Unison
 daemon process on the server.  This process runs continuously,
 waiting for connections over a given socket from client machines
@@ -757,6 +749,19 @@ Note that the Unison daemon process is always started with a command-line
 argument; not from a profile.
 
 \SUBSUBSECTION{TCP Sockets}{socket-tcp}
+
+\begin{quote}
+  {\bf\ifhevea\red\fi Warning:} The TCP socket method is
+  insecure: not only are the texts of your changes transmitted over
+  the network in unprotected form, it is also possible for anyone in
+  the world to connect to the server process and read out the contents
+  of your filesystem!  (Of course, to do this they must understand the
+  protocol that Unison uses to communicate between client and server,
+  but all they need for this is a copy of the Unison sources.)  The socket
+  method is provided only for expert users with specific needs; everyone
+  else should use the \verb|ssh| method.
+\end{quote}
+
 
 To start the daemon for connections over a TCP socket, type
 \begin{verbatim}
@@ -805,8 +810,8 @@ relative path the server process has access to but it must not exist
 yet; the socket is created at that path when the daemon process is
 started.)  You are responsible for securing access to the socket path.
 For example, this can be done by controlling the permissions of
-socket's parent directory and the {\tt umask} value when starting
-Unison.
+socket's parent directory, or ensuring a restrictive {\tt umask} value
+when starting Unison.
 
 Clients can connect to a server over a Unix domain socket by specifying
 the absolute or relative path to the socket, instead of a server address
@@ -814,10 +819,13 @@ and port number:
 \begin{alltt}
        unison a.tmp socket://\{\NT{path/to/unix/socket}\}/a.tmp
 \end{alltt}
-(socket path is enclosed in curly braces).  Note that Unix domain
-sockets are local sockets (they exist in the filesystem namespace).
-To connect over a Unix socket remotely, you have to forward the socket
-by other means, for example by using {\tt spiped} secure pipe daemon.
+(socket path is enclosed in curly braces).
+
+Note that Unix domain sockets are local sockets (they exist in the
+filesystem namespace).
+One could use Unixs socket remotely, by forwarding access to the
+socket by other means, for example by using {\tt spiped} secure pipe
+daemon.
 
 \SUBSECTION{Using Unison for All Your Files}{usingit}
 
