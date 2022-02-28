@@ -233,8 +233,7 @@ line.
 Unison can be used in three different modes: with different directories on a
 single machine, with a local or a remote machine over a direct socket connection, or
 with a remote machine using {\tt ssh} for authentication and secure
-transfer.  If you intend to use the last option, you may need to install
-{\tt ssh} separately.
+transfer.
 
 \SUBSECTION{Running Unison}{afterinstall}
 
@@ -641,7 +640,7 @@ communicating between the client and the server:
   command line, using a facility such as \verb|ssh|.
   This method is more convenient (since there is no need to manually
   start a ``unison server'' process on the server) and also more
-  secure (especially if you use \verb|ssh|).
+  secure, assuming you are using \verb|ssh|).
 
 \item {\em TCP socket method}: This method requires only that you can
   get TCP packets from the client to the server and back.  It is
@@ -659,17 +658,15 @@ Decide which of these you want to try, and continue with
 
 \SUBSECTION{Remote Shell Method}{rshmeth}
 
-The standard remote shell facility on Unix systems is \verb|ssh|, which provides the
-same functionality as the older \verb|rsh| but much better security.  Ssh is available from
-\ONEURL{http://www.openssh.org}.
+The standard remote shell facility on Unix systems is \verb|ssh|,
+which provides the same functionality as the older \verb|rsh| but much
+better security.
 
 Running
 \verb|ssh| requires some coordination between the client and server
 machines to establish that the client is allowed to invoke commands on
 the server; please refer to the \verb|ssh| documentation
-for information on how to set this up.  The examples in this section
-use \verb|ssh|, but you can substitute \verb|rsh| for \verb|ssh| if
-you wish.
+for information on how to set this up.
 
 First, test that we can invoke Unison on the server from the client.
 Typing
@@ -945,7 +942,7 @@ specifies a root relative to the top of the local filesystem,
 independent of where Unison is running.  Remote roots can begin with
 \verb|ssh://|,
 \verb|rsh://|
-to indicate that the remote server should be started with rsh or ssh:
+to indicate that the remote server should be started with ssh or rsh:
 \begin{alltt}
       ssh://\NT{remotehost}//\NT{absolute/path/of/root}
       rsh://\NT{user}@\NT{remotehost}/\NT{relative/path/of/root}
