@@ -614,15 +614,12 @@ when the file has been dealt with.
 Next, we'll get Unison set up to synchronize replicas on two different
 machines.
 
-NB: Unison has not been designed to run with elevated privileges, and
-it has not been audited for that environment.
+NB: Unison has not been designed to run with elevated privileges
+(e.g. setuid), and it has not been audited for that environment.
 Therefore Unison should be run with the userid of the owner of the
-files to be synchronized.
-Note also that some security schemes permit granting privileges to
-bind to low-number ports while at the same time prohibiting reading
-environment variables.
-Problems from this are not bugs in Unison but a consequence of using
-Unison outside its design space.
+files to be synchronized, and should never be run setuid or similar.
+(Problems encountered when running setuid etc. must be reproduced
+without setuid before being reported as bugs.)
 
 Follow the instructions in the Installation section to download or
 build an executable version of Unison on the server machine, and
