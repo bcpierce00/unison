@@ -219,14 +219,8 @@ let clroot2string = function
     let h = if String.contains h ':' then "[" ^ h ^ "]" else h in
     Printf.sprintf "%s://%s%s%s/%s" sh user h port path
 
-let sshversion = Prefs.createString "sshversion" ""
-                "*optional version suffix for ssh command [1 or 2]"
-    ("This preference can be used to control which version "
-     ^ "of ssh should be used to connect to the server.  Legal values are "
-     ^ "1 and 2, which will cause unison to try to use \\verb|ssh1| or"
-     ^ "\\verb|ssh2| instead of just \\verb|ssh| to invoke ssh.  "
-     ^ "The default value is empty, which will make unison use whatever "
-     ^ "version of ssh is installed as the default `ssh' command.")
+(* Pref sshversion removed since 2.52 *)
+let () = Prefs.markRemoved "sshversion"
 
 let fixHost = function
   | ConnectLocal _ as r -> r
@@ -278,5 +272,5 @@ let parseRoot string =
     | Rsh,_,Some h,_ ->
         ConnectByShell("rsh",h,user,port,path)
     | Ssh,_,Some h,_ ->
-        ConnectByShell("ssh"^(Prefs.read sshversion),h,user,port,path) in
+        ConnectByShell("ssh",h,user,port,path) in
   clroot

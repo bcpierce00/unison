@@ -89,6 +89,12 @@ val alias : 'a t              (* existing preference *)
          -> string            (* new name *)
          -> unit
 
+(* Mark a preference name as intentionally removed. A removed preference     *)
+(* does not exist (can't be specified on command line or in a profile) but   *)
+(* will be silently ignored when sent by a remote host (to not break         *)
+(* compatibility with old clients).                                          *)
+val markRemoved : string -> unit
+
 (* Reset all preferences to their initial values                             *)
 val resetToDefaults : unit -> unit
 

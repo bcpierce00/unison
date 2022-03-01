@@ -562,22 +562,6 @@ let sshCmd =
     ("This preference can be used to explicitly set the name of the "
      ^ "ssh executable (e.g., giving a full path name), if necessary.")
 
-let rshCmd =
-  Prefs.createString "rshcmd" "rsh"
-    ("*path to the rsh executable")
-    ("This preference can be used to explicitly set the name of the "
-     ^ "rsh executable (e.g., giving a full path name), if necessary.")
-
-let rshargs =
-  Prefs.createString "rshargs" ""
-    "*other arguments (if any) for remote shell command"
-    ("The string value of this preference will be passed as additional "
-     ^ "arguments (besides the host name and the name of the Unison "
-     ^ "executable on the remote system) to the \\verb|rsh| "
-     ^ "command used to invoke the remote server. The backslash is an "
-     ^ "escape character."
-     )
-
 let sshargs =
   Prefs.createString "sshargs" ""
     "!other arguments (if any) for remote shell command"
@@ -587,6 +571,10 @@ let sshargs =
      ^ "command used to invoke the remote server. The backslash is an "
      ^ "escape character."
      )
+
+(* rsh prefs removed since 2.52 *)
+let () = Prefs.markRemoved "rshcmd"
+let () = Prefs.markRemoved "rshargs"
 
 let serverCmd =
   Prefs.createString "servercmd" ""
@@ -1588,15 +1576,11 @@ let buildShellConnection onClose shell host userOpt portOpt rootName termInterac
   let shellCmd =
     (if shell = "ssh" then
       Prefs.read sshCmd
-    else if shell = "rsh" then
-      Prefs.read rshCmd
     else
       shell) in
   let shellCmdArgs =
     (if shell = "ssh" then
       Prefs.read sshargs
-    else if shell = "rsh" then
-      Prefs.read rshargs
     else
       "") in
   let preargs =
@@ -1870,15 +1854,11 @@ let openConnectionStart clroot =
           let shellCmd =
             (if shell = "ssh" then
               Prefs.read sshCmd
-            else if shell = "rsh" then
-              Prefs.read rshCmd
             else
               shell) in
           let shellCmdArgs =
             (if shell = "ssh" then
               Prefs.read sshargs
-            else if shell = "rsh" then
-              Prefs.read rshargs
             else
               "") in
           let preargs =

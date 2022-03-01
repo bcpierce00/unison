@@ -84,12 +84,16 @@ let mdumpedPrefs = Umarshal.(list (prod3 string bool string id id))
 
 let dumpers = ref ([] : (string * bool * (unit->bool) * (int->string)) list)
 let loaders = ref (Util.StringMap.empty : (int->string->unit) Util.StringMap.t)
+let ignored = ref []
 
 let adddumper name optional send f =
   dumpers := (name,optional,send,f) :: !dumpers
 
 let addloader name f =
   loaders := Util.StringMap.add name f !loaders
+
+let addignored name =
+  ignored := name :: !ignored
 
 let dump rpcVer =
   Safelist.filter (fun (_, _, sf, _) -> sf ()) !dumpers
@@ -104,7 +108,7 @@ let load d rpcVer =
          Some loaderfn ->
            loaderfn rpcVer dumpedval
        | None ->
-           if not opt then
+           if not opt && not (Safelist.mem name !ignored) then
              raise (Util.Fatal
                       ("Preference "^name^" not found: \
                         inconsistent Unison versions??")))
@@ -273,6 +277,9 @@ let createBoolWithDefault name ?(local=false) ?send doc fulldoc =
                  | I31 () -> `True
                  | I32 () -> `False
                  | I33 () -> `Default))
+
+let markRemoved name =
+  addignored name
 
 (*****************************************************************************)
 (*                     Preferences file parsing                              *)
