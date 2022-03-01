@@ -4,7 +4,7 @@
 let docs =
     ("about", ("About Unison", 
      "Unison File Synchronizer\n\
-      Version 2.51.70\n\
+      Version 2.51.71\n\
       \n\
       "))
 ::
@@ -219,8 +219,7 @@ let docs =
       \032  Unison can be used in three different modes: with different directories\n\
       \032  on a single machine, with a local or a remote machine over a direct\n\
       \032  socket connection, or with a remote machine using ssh for\n\
-      \032  authentication and secure transfer. If you intend to use the last\n\
-      \032  option, you may need to install ssh separately.\n\
+      \032  authentication and secure transfer.\n\
       \n\
       Running Unison\n\
       \n\
@@ -561,6 +560,13 @@ let docs =
       \032  Next, we\226\128\153ll get Unison set up to synchronize replicas on two different\n\
       \032  machines.\n\
       \n\
+      \032  NB: Unison has not been designed to run with elevated privileges (e.g.\n\
+      \032  setuid), and it has not been audited for that environment. Therefore\n\
+      \032  Unison should be run with the userid of the owner of the files to be\n\
+      \032  synchronized, and should never be run setuid or similar. (Problems\n\
+      \032  encountered when running setuid etc. must be reproduced without setuid\n\
+      \032  before being reported as bugs.)\n\
+      \n\
       \032  Follow the instructions in the Installation section to download or\n\
       \032  build an executable version of Unison on the server machine, and\n\
       \032  install it somewhere on your search path. (It doesn\226\128\153t matter whether\n\
@@ -579,10 +585,13 @@ let docs =
       \032      invoking remote commands on the server from the client\226\128\153s command\n\
       \032      line, using a facility such as ssh. This method is more convenient\n\
       \032      (since there is no need to manually start a \226\128\156unison server\226\128\157 process\n\
-      \032      on the server) and also more secure (especially if you use ssh).\n\
-      \032    * Socket method: This method requires only that you can get TCP\n\
-      \032      packets from the client to the server and back. A draconian\n\
-      \032      firewall can prevent this, but otherwise it should work anywhere.\n\
+      \032      on the server) and also more secure, assuming you are using ssh).\n\
+      \032    * TCP socket method: This method requires only that you can get TCP\n\
+      \032      packets from the client to the server and back. It is insecure and\n\
+      \032      should not be used.\n\
+      \032    * Unix socket method: This method only works within a single machine.\n\
+      \032      It is similar to the TCP sockets method, but it is possible to\n\
+      \032      configure it securely.\n\
       \n\
       \032  Decide which of these you want to try, and continue with the section\n\
       \032  \226\128\156Remote Shell Method\226\128\157 or the section \226\128\156Socket Method\226\128\157 , as appropriate.\n\
@@ -591,13 +600,12 @@ let docs =
       \n\
       \032  The standard remote shell facility on Unix systems is ssh, which\n\
       \032  provides the same functionality as the older rsh but much better\n\
-      \032  security. Ssh is available from http://www.openssh.org.\n\
+      \032  security.\n\
       \n\
       \032  Running ssh requires some coordination between the client and server\n\
       \032  machines to establish that the client is allowed to invoke commands on\n\
       \032  the server; please refer to the ssh documentation for information on\n\
-      \032  how to set this up. The examples in this section use ssh, but you can\n\
-      \032  substitute rsh for ssh if you wish.\n\
+      \032  how to set this up.\n\
       \n\
       \032  First, test that we can invoke Unison on the server from the client.\n\
       \032  Typing\n\
@@ -649,16 +657,6 @@ let docs =
       \n\
       Socket Method\n\
       \n\
-      \032    Warning: The socket method is insecure: not only are the texts of\n\
-      \032    your changes transmitted over the network in unprotected form, it is\n\
-      \032    also possible for anyone in the world to connect to the server\n\
-      \032    process and read out the contents of your filesystem! (Of course, to\n\
-      \032    do this they must understand the protocol that Unison uses to\n\
-      \032    communicate between client and server, but all they need for this is\n\
-      \032    a copy of the Unison sources.) The socket method is provided only\n\
-      \032    for expert users with specific needs; everyone else should use the\n\
-      \032    ssh method.\n\
-      \n\
       \032  To run Unison over a socket connection, you must start a Unison daemon\n\
       \032  process on the server. This process runs continuously, waiting for\n\
       \032  connections over a given socket from client machines running Unison and\n\
@@ -672,6 +670,16 @@ let docs =
       \032  command-line argument; not from a profile.\n\
       \n\
       TCP Sockets\n\
+      \n\
+      \032    Warning: The TCP socket method is insecure: not only are the texts\n\
+      \032    of your changes transmitted over the network in unprotected form, it\n\
+      \032    is also possible for anyone in the world to connect to the server\n\
+      \032    process and read out the contents of your filesystem! (Of course, to\n\
+      \032    do this they must understand the protocol that Unison uses to\n\
+      \032    communicate between client and server, but all they need for this is\n\
+      \032    a copy of the Unison sources.) The socket method is provided only\n\
+      \032    for expert users with specific needs; everyone else should use the\n\
+      \032    ssh method.\n\
       \n\
       \032  To start the daemon for connections over a TCP socket, type\n\
       \032      unison -socket NNNN\n\
@@ -711,18 +719,20 @@ let docs =
       \032  the server process has access to but it must not exist yet; the socket\n\
       \032  is created at that path when the daemon process is started.) You are\n\
       \032  responsible for securing access to the socket path. For example, this\n\
-      \032  can be done by controlling the permissions of socket\226\128\153s parent directory\n\
-      \032  and the umask value when starting Unison.\n\
+      \032  can be done by controlling the permissions of socket\226\128\153s parent\n\
+      \032  directory, or ensuring a restrictive umask value when starting Unison.\n\
       \n\
       \032  Clients can connect to a server over a Unix domain socket by specifying\n\
       \032  the absolute or relative path to the socket, instead of a server\n\
       \032  address and port number:\n\
       \032      unison a.tmp socket://{path/to/unix/socket}/a.tmp\n\
       \n\
-      \032  (socket path is enclosed in curly braces). Note that Unix domain\n\
-      \032  sockets are local sockets (they exist in the filesystem namespace). To\n\
-      \032  connect over a Unix socket remotely, you have to forward the socket by\n\
-      \032  other means, for example by using spiped secure pipe daemon.\n\
+      \032  (socket path is enclosed in curly braces).\n\
+      \n\
+      \032  Note that Unix domain sockets are local sockets (they exist in the\n\
+      \032  filesystem namespace). One could use Unixs socket remotely, by\n\
+      \032  forwarding access to the socket by other means, for example by using\n\
+      \032  spiped secure pipe daemon.\n\
       \n\
       Using Unison for All Your Files\n\
       \n\
@@ -826,7 +836,7 @@ let docs =
       \032  specifies a root relative to the top of the local filesystem,\n\
       \032  independent of where Unison is running. Remote roots can begin with\n\
       \032  ssh://, rsh:// to indicate that the remote server should be started\n\
-      \032  with rsh or ssh:\n\
+      \032  with ssh or rsh:\n\
       \032     ssh://remotehost//absolute/path/of/root\n\
       \032     rsh://user@remotehost/relative/path/of/root\n\
       \n\
