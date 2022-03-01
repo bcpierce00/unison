@@ -621,10 +621,7 @@ let makeTempDir pattern =
   System.mkdir fspath 0o755; (* ... and create a dir instead. *)
   path ^ Filename.dir_sep
 
-(* The first time we load preferences, we also read the command line
-   arguments; if we re-load prefs (because the user selected a new profile)
-   we ignore the command line *)
-let firstTime = ref(true)
+let initComplete = ref false
 
 (* Roots given on the command line *)
 let cmdLineRawRoots = ref []
@@ -634,8 +631,9 @@ let clearClRoots () = cmdLineRawRoots := []
 (* BCP: WARNING: Some of the code from here is duplicated in uimacbridge...! *)
 let initPrefs ~profileName ~displayWaitMessage ~promptForRoots
               ?(prepDebug = fun () -> ()) ~termInteract () =
-  (* Restore prefs to their default values, if necessary *)
-  if not !firstTime then Prefs.resetToDefaults();
+  initComplete := false;
+  (* Restore prefs to their default values *)
+  Prefs.resetToDefaults ();
   (* Clear out any roots left from a previous profile. They can't remain
      hanging around if [initPrefs] for the new profile receives an exception
      before fully completing. *)
@@ -744,10 +742,10 @@ let initPrefs ~profileName ~displayWaitMessage ~promptForRoots
 
   initRoots displayWaitMessage termInteract;
 
-  firstTime := false
+  initComplete := true
 
 let refreshConnection ~displayWaitMessage ~termInteract =
-  assert (Safelist.length (Globals.rawRoots ()) > 1);
+  if !initComplete &&  (Safelist.length (Globals.rawRoots ()) > 1) then
   let numConn = ref 0 in
   Lwt_unix.run (Globals.allRootsIter
     (fun r -> if Remote.isRootConnected r then incr numConn; Lwt.return ()));
