@@ -3,9 +3,13 @@
 [![Build Status](https://travis-ci.org/bcpierce00/unison.svg?branch=master)](https://travis-ci.org/bcpierce00/unison)
 [![CICD](https://github.com/bcpierce00/unison/workflows/CICD/badge.svg)](https://github.com/bcpierce00/unison/actions?query=workflow%3ACICD)
 
-***Please read this entire README before creating or commenting on a
-github issue.  TL;DR: Do not ask questions or ask for help in
-issues.***
+## Meta
+
+***Please read this entire README and
+https://github.com/bcpierce00/unison/wiki/Reporting-Bugs-and-Feature-Requests
+before creating or commenting on a github issue.***
+
+***TL;DR: Do not ask questions or ask for help in issues.  Upgrade to the latest release.***
 
 ## About
 
@@ -61,8 +65,11 @@ several points where it differs:
 Note that only a very small number of people are actively working on
 maintaining unison.  An estimate is 2.5 people and 0.1 Full-Time
 Equivalents.  This has a substantial impact on the handling of bug
-reports and enhancement reports; see below.  Help in terms of
-high-quality bug reports, fixes, and proposed changes is very welcome.
+reports and enhancement reports; see the wiki page linked at the top.
+Help in terms of high-quality bug reports, fixes, and proposed changes
+is very welcome.  Help in answering mailinglist questions is also
+welcome.  Please do not answer questions asked in the bug tracker,
+which is contrary to bug tracker usage guidance.
 
 While much of Unison activity is now at
 https://github.com/bcpierce00/unison/ additional information can be
@@ -104,42 +111,6 @@ Unison minor version built with the same ocaml version on all systems.
 There are two mailinglists: unison-users and unison-hackers.
 Descriptions and instructions are at
 https://github.com/bcpierce00/unison/wiki/Mailing-Lists
-
-## Asking for Help and Reporting Bugs
-
-For an expanded discussion of asking for help, see
-https://github.com/bcpierce00/unison/wiki/Reporting-Bugs-and-Feature-Requests
-
-The issue tracker is for bug reports and (limited) enhancement
-requests.  Specifically, this means that questions and requests for
-help are not appropriate as issues; those should be directed to
-unison-users (or unison-hackers if the discussion requires reading the
-source code).
-
-Unison's product is the source code.  A packaging system having an old
-version is not a bug in Unison.  The CI-provided binaries exist for
-Continuous Integration and are useful for users as a side benefit.
-Therefore, the CI binaries not working on a particular operating
-system is not a Unison bug.  (In general, binaries should be provided
-by packaging systems.)
-
-A bug means that the reporter can articulate how Unison should have
-behaved and say what it did instead, either as a violation of an
-explicit specification, or an implicit specification that is likely to
-be widely viewed as valid.  Bugs should be phrased as "unison randomly
-deletes files outside of the synchronization root", summarizing the
-bad behavior (that's humor -- Unison has never even been accused of
-doing that!).
-
-An enhancement request should describe how Unison should do something
-different or additional, phrased as an imperative as something like
-"Change wire protocol to be independent of ocaml compiler version".
-Enhancement requests are appropriate if they are clearly articulated,
-and would bring benefits to users that are significant compared to
-their likely implementation effort.  Speculative or "pie in the sky"
-enhancement requests may be closed on the basis that their continued
-presence in the issue tracker has too much cognitive load compared to
-benefit, especially if the submitter doesn't intend to work on it.
 
 ## Development and Submitting Proposed Changes
 
