@@ -2761,13 +2761,6 @@ let createToplevelWindow () =
       GBin.scrolled_window ~packing:(toplevelVBox#pack ~expand:true)
         ~hpolicy:`AUTOMATIC ~vpolicy:`AUTOMATIC ()
   in
-  let sizeMainWindow () =
-    let ctx = mainWindowSW#misc#pango_context in
-    let metrics = ctx#get_metrics () in
-    let h = GPango.to_pixels (metrics#ascent+metrics#descent) in
-    toplevelWindow#set_default_height
-      ((h + 3) * (Prefs.read Uicommon.mainWindowHeight + 1) + 200)
-  in
   let cols = new GTree.column_list in
   let c_replica1 = cols#add Gobject.Data.string in
   let c_action   = cols#add Gobject.Data.gobject in
@@ -2818,7 +2811,6 @@ let createToplevelWindow () =
          " " ^ Unicode.protect (String.sub s 15 12) ^ " "; "  Status  ";
          " Path" |];
   in
-  sizeMainWindow ();
 
   (* See above for comment about tree path index and [theState] array index
      equivalence. *)
@@ -3025,6 +3017,59 @@ let createToplevelWindow () =
   Trace.messageDisplayer := displayStatus;
   Trace.statusFormatter := formatStatus;
   Trace.sendLogMsgsToStderr := false;
+
+
+  (* Window is created before initPrefs but we don't want the size to
+     jump around after window has been shown (which is inevitable when
+     height is specified in a profile). Scan the command line to check
+     for height preference. *)
+  begin try
+    let prefName = List.hd (Prefs.name Uicommon.mainWindowHeight) in
+    let clHeight = List.hd (Util.StringMap.find prefName (Prefs.scanCmdLine "")) in
+    Prefs.set Uicommon.mainWindowHeight (int_of_string clHeight)
+  with Not_found | Invalid_argument _ | Util.Fatal _ -> () end;
+
+  let calcWinSize () =
+    (* (Poor) approximation of row height. It is impossible to get real
+       GTK TreeView row height (and it depends on theme). *)
+    let row_height = (List.hd mainWindow#all_children)#misc#allocation.height in
+    let height =
+      if row_height < 2 then   (* Oops, sizes clearly not allocated yet *)
+        let metrics = mainWindowSW#misc#pango_context#get_metrics () in
+        let h = GPango.to_pixels (metrics#ascent + metrics#descent) in
+        (h + 8) * (8 + (Prefs.read Uicommon.mainWindowHeight)) (* rought default *)
+      else
+          topHBox#misc#allocation.height
+        + actionBar#misc#allocation.height
+        + 2 * mainWindow#border_width  (* top and bottom *)
+        + row_height  (* column headers *)
+        + (row_height - 2) * (Prefs.read Uicommon.mainWindowHeight)
+        + detailsWindowSW#misc#allocation.height
+        + statusHBox#misc#allocation.height
+    in
+    let height = min height (Gdk.Screen.height ~screen:toplevelWindow#screen ()) in
+    (height, -1)
+  in
+
+  let prevHeightPref = ref 0 in
+
+  let sizeMainWindow () =
+    (* Only update height if the preference changed, otherwise risk undoing
+       user's manual height adjustments. Also assume no change if the
+       preference is at the default value. *)
+    let prefHeight = Prefs.read Uicommon.mainWindowHeight in
+    if !prevHeightPref <> prefHeight &&
+        (!prevHeightPref = 0 ||
+          prefHeight <> Prefs.readDefault Uicommon.mainWindowHeight) then begin
+      let (height, _) = calcWinSize ()
+      and width = toplevelWindow#misc#allocation.width in
+      toplevelWindow#resize ~height ~width
+    end;
+    prevHeightPref := prefHeight
+  in
+  let (height, _) = calcWinSize () in
+  toplevelWindow#set_default_height height;
+  ignore (toplevelWindow#misc#connect#show ~callback:sizeMainWindow);
 
   (*********************************************************************
     Functions used to print in the main window
@@ -4221,6 +4266,7 @@ let createToplevelWindow () =
     (fun () ->
        displayNewProfileLabel ();
        setMainWindowColumnHeaders (Uicommon.roots2string ());
+       sizeMainWindow ();
        buildActionMenu false);
 
   fatalErrorHandler :=
