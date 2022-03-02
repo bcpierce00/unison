@@ -938,6 +938,7 @@ let streamReg = Lwt_util.make_region 1
 
 let streamingActivated =
   Prefs.createBool "stream" true
+    ~deprecated:true
     ("!use a streaming protocol for transferring file contents")
     "When this preference is set, Unison will use an experimental \
      streaming protocol for transferring file contents more efficiently. \
@@ -1343,14 +1344,12 @@ let checkServerUpgrade conn header =
 *)
 let halfduplex =
   Prefs.createBool "halfduplex" false
+    ~deprecated:true
     "!force half-duplex communication with the server"
     "When this flag is set to {\\tt true}, Unison network communication \
      is forced to be half duplex (the client and the server never \
      simultaneously emit data).  If you experience unstabilities with \
-     your network link, this may help.  The communication is always \
-     half-duplex when synchronizing with a Windows machine due to a \
-     limitation of Unison current implementation that could result \
-     in a deadlock."
+     your network link, this may help."
 
 let negociateFlowControlLocal conn () =
   disableFlowControl conn.outputQueue;

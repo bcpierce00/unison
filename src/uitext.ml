@@ -888,10 +888,7 @@ let doTransport reconItemList =
 
 let setWarnPrinterForInitialization()=
   Util.warnPrinter :=
-     Some(fun s ->
-            alwaysDisplay "Error: ";
-            alwaysDisplay (s^"\n");
-            exit Uicommon.fatalExit)
+    Some (fun s -> alwaysDisplay ("Warning: " ^ s ^ "\n\n"))
 
 let setWarnPrinter() =
   Util.warnPrinter :=

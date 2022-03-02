@@ -92,6 +92,7 @@ let backupsuffix =
 
 let backups =
   Prefs.createBool "backups" false
+    ~deprecated:true
     "!keep backup copies of all files (see also 'backup')"
     ("Setting this flag to true is equivalent to "
      ^" setting \\texttt{backuplocation} to \\texttt{local}"
