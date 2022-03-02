@@ -128,6 +128,7 @@ let confirmmerge =
 let runTestsPrefName = "selftest"
 let runtests =
   Prefs.createBool runTestsPrefName false
+    ~cli_only:true
     "!run internal tests and exit"
    ("Run internal tests and exit.  This option is mostly for developers and must be used "
   ^ "carefully: in particular, "
@@ -761,6 +762,7 @@ let anonymousArgs =
 
 let testServer =
   Prefs.createBool "testserver" false
+    ~cli_only:true
     "exit immediately after the connection to the server"
     ("Setting this flag on the command line causes Unison to attempt to "
      ^ "connect to the remote server and, if successful, print a message "

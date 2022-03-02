@@ -9,12 +9,17 @@ val name : 'a t -> string list
 val overrideDefault : 'a t -> 'a -> unit
 val readDefault : 'a t -> 'a
 
+(* Note about command line-only preferences. These preferences are never     *)
+(* sent to a server (ignoring [local] and [send] arguments). Should a client *)
+(* send such a preference anyway then the server silently ignores it.        *)
+
 (* Convenient functions for registering simple kinds of preferences.  Note   *)
 (* that createStringPref creates a preference that can only be set once,     *)
 (* while createStringListPref creates a reference to a list of strings that  *)
 (* accumulates a list of values.                                             *)
 val createBool :
         string              (* preference name *)
+     -> ?cli_only:bool      (* only a command line option, not in a profile *)
      -> ?local:bool             (* whether it is local to the client *)
      -> ?send:(unit->bool)  (* whether preference should be sent to server *)
      -> bool                (* initial value *)
@@ -25,6 +30,7 @@ val createBool :
 
 val createInt :
         string              (* preference name *)
+     -> ?cli_only:bool      (* only a command line option, not in a profile *)
      -> ?local:bool             (* whether it is local to the client *)
      -> ?send:(unit->bool)  (* whether preference should be sent to server *)
      -> int                 (* initial value *)
@@ -35,6 +41,7 @@ val createInt :
 
 val createString :
         string              (* preference name *)
+     -> ?cli_only:bool      (* only a command line option, not in a profile *)
      -> ?local:bool             (* whether it is local to the client *)
      -> ?send:(unit->bool)  (* whether preference should be sent to server *)
      -> string              (* initial value *)
@@ -45,6 +52,7 @@ val createString :
 
 val createFspath :
         string              (* preference name *)
+     -> ?cli_only:bool      (* only a command line option, not in a profile *)
      -> ?local:bool             (* whether it is local to the client *)
      -> ?send:(unit->bool)  (* whether preference should be sent to server *)
      -> System.fspath       (* initial value *)
@@ -55,6 +63,7 @@ val createFspath :
 
 val createStringList :
         string              (* preference name *)
+     -> ?cli_only:bool      (* only a command line option, not in a profile *)
      -> ?local:bool             (* whether it is local to the client *)
      -> ?send:(unit->bool)  (* whether preference should be sent to server *)
      -> ?deprecated:bool    (* preference is deprecated (default false) *)
@@ -64,6 +73,7 @@ val createStringList :
 
 val createBoolWithDefault :
         string              (* preference name *)
+     -> ?cli_only:bool      (* only a command line option, not in a profile *)
      -> ?local:bool             (* whether it is local to the client *)
      -> ?send:(unit->bool)  (* whether preference should be sent to server *)
      -> ?deprecated:bool    (* preference is deprecated (default false) *)
@@ -78,6 +88,7 @@ exception IllegalValue of string
 (* IllegalValue if it is passed a string it cannot deal with.                *)
 val create :
         string                  (* preference name *)
+     -> ?cli_only:bool      (* only a command line option, not in a profile *)
      -> ?local:bool             (* whether it is local to the client *)
      -> ?send:(unit->bool)      (* whether the pref should be sent to server *)
      -> 'a                      (* initial value *)

@@ -152,6 +152,7 @@ type apref =
     doc : string;
     pspec : Uarg.spec;
     fulldoc : string;
+    cli_only : bool;
     deprec : bool;
   }
 
@@ -217,21 +218,25 @@ let deprecatedPref name p =
          "\nYou will not lose out on anything; you have currently\n"
        ^ "set this preference to its default value."))
 
-let registerPref name typ cell pspec deprec doc fulldoc =
+let registerPref name typ cell pspec cli_only deprec doc fulldoc =
   if Util.StringMap.mem name !prefs then
     raise (Util.Fatal ("Preference " ^ name ^ " registered twice"));
   let pspec =
     if not deprec then pspec
     else deprecatedPref name cell pspec in
-  prefs := Util.StringMap.add name {doc; pspec; fulldoc; deprec} !prefs;
+  prefs := Util.StringMap.add name {doc; pspec; fulldoc; cli_only; deprec} !prefs;
   (* Ignore internal preferences *)
   if doc = "" || doc.[0] <> '*' then
     prefType := Util.StringMap.add name typ !prefType
 
-let createPrefInternal name typ local send default deprecated doc fulldoc printer parsefn m =
+let createPrefInternal name typ cli_only local send default deprecated doc fulldoc printer parsefn m =
   let m = Umarshal.(prod2 m (list string) id id) in
   let newCell = rawPref default name in
-  registerPref name typ newCell (parsefn newCell) deprecated doc fulldoc;
+  registerPref name typ newCell (parsefn newCell) cli_only deprecated doc fulldoc;
+  let (local, send) =
+    if not cli_only then (local, send)
+    else (true, Some (fun () -> false))
+  in
   adddumper name local
     (fun () -> match send with None -> true | Some f -> f ())
     (function
@@ -243,6 +248,7 @@ let createPrefInternal name typ local send default deprecated doc fulldoc printe
        newCell.setInProfile <- false; newCell.value <- newCell.defaultValue);
   addloader name
     (fun rpcVer s ->
+       if not cli_only then   (* Better for compatibility to not fail if cli_only *)
        let (value, names) =
          match rpcVer with
          | 0 -> Marshal.from_string s 0
@@ -251,44 +257,44 @@ let createPrefInternal name typ local send default deprecated doc fulldoc printe
        newCell.value <- value);
   newCell
 
-let create name ?(local=false) ?send default ?(deprecated=false) doc fulldoc intern printer m =
-  createPrefInternal name `CUSTOM local send default deprecated doc fulldoc printer
+let create name ?(cli_only=false) ?(local=false) ?send default ?(deprecated=false) doc fulldoc intern printer m =
+  createPrefInternal name `CUSTOM cli_only local send default deprecated doc fulldoc printer
     (fun cell -> Uarg.String (fun s -> set cell (intern (read cell) s)))
     m
 
-let createBool name ?(local=false) ?send default ?(deprecated=false) doc fulldoc =
+let createBool name ?(cli_only=false) ?(local=false) ?send default ?(deprecated=false) doc fulldoc =
   let doc = if default then doc ^ " (default true)" else doc in
-  createPrefInternal name `BOOL local send default deprecated doc fulldoc
+  createPrefInternal name `BOOL cli_only local send default deprecated doc fulldoc
     (fun v -> [if v then "true" else "false"])
     (fun cell -> Uarg.Bool (fun b -> set cell b))
     Umarshal.bool
 
-let createInt name ?(local=false) ?send default ?(deprecated=false) doc fulldoc =
-  createPrefInternal name `INT local send default deprecated doc fulldoc
+let createInt name ?(cli_only=false) ?(local=false) ?send default ?(deprecated=false) doc fulldoc =
+  createPrefInternal name `INT cli_only local send default deprecated doc fulldoc
     (fun v -> [string_of_int v])
     (fun cell -> Uarg.Int (fun i -> set cell i))
     Umarshal.int
 
-let createString name ?(local=false) ?send default ?(deprecated=false) doc fulldoc =
-  createPrefInternal name `STRING local send default deprecated doc fulldoc
+let createString name ?(cli_only=false) ?(local=false) ?send default ?(deprecated=false) doc fulldoc =
+  createPrefInternal name `STRING cli_only local send default deprecated doc fulldoc
     (fun v -> [v])
     (fun cell -> Uarg.String (fun s -> set cell s))
     Umarshal.string
 
-let createFspath name ?(local=false) ?send default ?(deprecated=false) doc fulldoc =
-  createPrefInternal name `STRING local send default deprecated doc fulldoc
+let createFspath name ?(cli_only=false) ?(local=false) ?send default ?(deprecated=false) doc fulldoc =
+  createPrefInternal name `STRING cli_only local send default deprecated doc fulldoc
     (fun v -> [System.fspathToString v])
     (fun cell -> Uarg.String (fun s -> set cell (System.fspathFromString s)))
     System.mfspath
 
-let createStringList name ?(local=false) ?send ?(deprecated=false) doc fulldoc =
-  createPrefInternal name `STRING_LIST local send [] deprecated doc fulldoc
+let createStringList name ?(cli_only=false) ?(local=false) ?send ?(deprecated=false) doc fulldoc =
+  createPrefInternal name `STRING_LIST cli_only local send [] deprecated doc fulldoc
     (fun v -> v)
     (fun cell -> Uarg.String (fun s -> set cell (s:: read cell)))
     Umarshal.(list string)
 
-let createBoolWithDefault name ?(local=false) ?send ?(deprecated=false) doc fulldoc =
-  createPrefInternal name `BOOLDEF local send `Default deprecated doc fulldoc
+let createBoolWithDefault name ?(cli_only=false) ?(local=false) ?send ?(deprecated=false) doc fulldoc =
+  createPrefInternal name `BOOLDEF cli_only local send `Default deprecated doc fulldoc
     (fun v -> [match v with
                  `True    -> "true"
                | `False   -> "false"
@@ -408,7 +414,11 @@ let processLines lines =
   Safelist.iter
     (fun (fileName, lineNum, varName,theResult) ->
        try
-         let {pspec = theFunction; _} = Util.StringMap.find varName !prefs in
+         let {pspec = theFunction; cli_only; _} = Util.StringMap.find varName !prefs in
+         if cli_only then
+           raise (IllegalValue ("\"" ^ varName
+             ^ "\" is a command line-only option; "
+             ^ "it must not be present in a profile."));
          match theFunction with
            Uarg.Bool boolFunction ->
              boolFunction (string2bool varName theResult)
@@ -438,17 +448,24 @@ let loadStrings l =
 (*                      Command-line parsing                                 *)
 (*****************************************************************************)
 
-let opts = ref
-    [("source",
-      {pspec = Uarg.String (fun s -> processLines @@ readAFile ~add_ext:false s);
-       doc = "include a file's preferences";
-       fulldoc = "";
-       deprec = false});
-     ("include",
-      {pspec = Uarg.String (fun s -> processLines @@ readAFile s);
-       doc = "include a profile file's preferences";
-       fulldoc = "";
-       deprec = false})]
+let _ = create "source" ()
+  ~cli_only:true
+  "!include a file's preferences"
+  "Include preferences from a file.  \\texttt{source \\ARG{name}} reads the \
+   file \\showtt{name} in the \\texttt{.unison} directory and includes its \
+   contents as if it was part of a profile or given directly on command line."
+  (fun _ s -> processLines (readAFile ~add_ext:false s))
+  (fun v -> []) Umarshal.unit
+
+let _ = create "include" ()
+  ~cli_only:true
+  "!include a profile's preferences"
+  "Include preferences from a profile.  \\texttt{include \\ARG{name}} reads \
+   the profile \\showtt{name} (or file \\showtt{name} in the \\texttt{.unison} \
+   directory if profile \\showtt{name} does not exist) and includes its \
+   contents as if it was part of a profile or given directly on command line."
+  (fun _ s -> processLines (readAFile s))
+  (fun v -> []) Umarshal.unit
 
 let prefArg = function
     Uarg.Bool(_)   -> ""
@@ -458,10 +475,10 @@ let prefArg = function
 
 (* [argspecs hook] returns a list of specs for [Uarg.parse] *)
 let argspecs hook =
-  let f name {doc; pspec; _} l =
-    ("-" ^ name, hook name pspec, "") :: l in
-  Safelist.fold_right (fun (name, pref) -> f name pref) !opts @@
-  Util.StringMap.fold f !prefs []
+  Util.StringMap.fold
+    (fun name pref l ->
+       ("-" ^ name, hook name pref.pspec, "") :: l)
+    !prefs []
 
 let oneLineDocs u =
   let formatOne name {pspec; doc; deprec; _ } p =
@@ -488,9 +505,6 @@ let oneLineDocs u =
   ^ formatAll (fun doc -> doc.[0] <> '!')
   ^ "\nAdvanced options: \n"
   ^ formatAll (fun doc -> doc.[0] = '!')
-  ^ Safelist.fold_right
-      (fun (name, pref) msg -> msg ^ formatOne name pref (fun _ -> true))
-      !opts "\nSpecial command line options: \n"
 
 let printUsage usage = Uarg.usage (argspecs (fun _ s -> s))
                          (oneLineDocs usage)

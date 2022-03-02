@@ -1246,7 +1246,8 @@ let rec synchronizeUntilDone () =
 
 let profmgrPrefName = "i"
 let profmgrPref =
-  Prefs.createBool profmgrPrefName false ~local:true
+  Prefs.createBool profmgrPrefName false
+    ~cli_only:true
     "interactive profile mode (text UI); command-line only"
     ("Provide this preference in the command line arguments to enable "
      ^ "interactive profile manager in the text user interface. Currently "

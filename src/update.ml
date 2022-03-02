@@ -972,6 +972,7 @@ let loadArchiveOnRoot: Common.root -> bool -> (int * string) option Lwt.t =
 
 let dumpArchives =
   Prefs.createBool "dumparchives" false
+    ~cli_only:true
     "*dump contents of archives just after loading"
     ("When this preference is set, Unison will create a file unison.dump "
      ^ "on each host, containing a text summary of the archive, immediately "
