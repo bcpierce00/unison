@@ -184,7 +184,7 @@ type typ =
 val canonicalName : string -> string
 val typ : string -> typ
 val documentation : string -> string * string * bool
-val list : unit -> string list
+val list : bool -> string list
 
 (* ------------------------------------------------------------------------- *)
 

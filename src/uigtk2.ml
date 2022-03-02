@@ -2013,7 +2013,7 @@ let addPreference parent =
            let row = store#append () in
            store#set ~row ~column:c_name nm
          end)
-      (Prefs.list ())
+      (Prefs.list false)
   in
   insert basic_store false;
   insert full_store true;

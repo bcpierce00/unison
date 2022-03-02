@@ -142,16 +142,12 @@ let canonicalName nm =
 type typ =
   [`BOOL | `INT | `STRING | `STRING_LIST | `BOOLDEF | `CUSTOM | `UNKNOWN]
 
-(* prefType : prefName -> type *)
-let prefType = ref (Util.StringMap.empty : typ Util.StringMap.t)
-
-let typ nm = try Util.StringMap.find nm !prefType with Not_found -> `UNKNOWN
-
 type apref =
   {
     doc : string;
     pspec : Uarg.spec;
     fulldoc : string;
+    typ : typ;
     cli_only : bool;
     deprec : bool;
   }
@@ -159,6 +155,10 @@ type apref =
 (* prefs: prefName -> apref                                                  *)
 let prefs =
   ref (Util.StringMap.empty : apref Util.StringMap.t)
+
+let typ nm =
+  try let {typ; _} = Util.StringMap.find nm !prefs in typ with
+  | Not_found -> `UNKNOWN
 
 let documentation nm =
   try
@@ -183,9 +183,14 @@ let documentation nm =
   with Not_found ->
     ("", "", false)
 
-let list () =
+let list include_cli_only =
   List.sort String.compare
-    (Util.StringMap.fold (fun nm _ l -> nm :: l) !prefType [])
+    (Util.StringMap.fold
+      (fun nm {doc; cli_only; _} l ->
+        if (not cli_only || include_cli_only) && (doc = "" || doc.[0] <> '*') then
+          nm :: l
+        else l)
+      !prefs [])
 
 (* aliased pref has *-prefixed doc and empty fulldoc                         *)
 let alias pref newname =
@@ -224,10 +229,8 @@ let registerPref name typ cell pspec cli_only deprec doc fulldoc =
   let pspec =
     if not deprec then pspec
     else deprecatedPref name cell pspec in
-  prefs := Util.StringMap.add name {doc; pspec; fulldoc; cli_only; deprec} !prefs;
-  (* Ignore internal preferences *)
-  if doc = "" || doc.[0] <> '*' then
-    prefType := Util.StringMap.add name typ !prefType
+  let pref = {doc; pspec; fulldoc; typ; cli_only; deprec} in
+  prefs := Util.StringMap.add name pref !prefs
 
 let createPrefInternal name typ cli_only local send default deprecated doc fulldoc printer parsefn m =
   let m = Umarshal.(prod2 m (list string) id id) in
