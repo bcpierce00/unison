@@ -60,13 +60,7 @@ must enter the host to connect to, a user name (if different from
 your user name on this machine), and the directory on the remote machine
 (relative to your home directory on that machine).
 
-2) To synchronize using RSH, there must be an RSH client installed on
-this machine and an RSH server installed on the remote machine.  You
-must enter the host to connect to, a user name (if different from
-your user name on this machine), and the directory on the remote machine
-(relative to your home directory on that machine).
-
-3) To synchronize using %s's socket protocol, there must be a %s
+2) To synchronize using %s's socket protocol, there must be a %s
 server running on the remote machine, listening to the port that you
 specify here.  (Use \"%s -socket xxx\" on the remote machine to
 start the %s server.)  You must enter the host, port, and the directory
@@ -792,8 +786,6 @@ let getSecondRoot () =
   let sshB = GButton.radio_button ~group:localB#group
       ~packing:(f0#pack ~expand:false)
       ~label:"SSH" () in
-  let rshB = GButton.radio_button ~group:localB#group
-      ~packing:(f0#pack ~expand:false) ~label:"RSH" () in
   let socketB = GButton.radio_button ~group:sshB#group
       ~packing:(f0#pack ~expand:false) ~label:"Socket" () in
 
@@ -809,7 +801,7 @@ let getSecondRoot () =
             ~packing:(f2#pack ~expand:false) ());
   let portE = GEdit.entry ~packing:f2#add () in
 
-  let varLocalRemote = ref (`Local : [`Local|`SSH|`RSH|`SOCKET]) in
+  let varLocalRemote = ref (`Local : [`Local|`SSH|`SOCKET]) in
   let localState() =
     varLocalRemote := `Local;
     hostE#misc#set_sensitive false;
@@ -829,7 +821,6 @@ let getSecondRoot () =
     remoteState() in
   ignore (localB#connect#clicked ~callback:localState);
   ignore (sshB#connect#clicked ~callback:(fun () -> protoState(`SSH)));
-  ignore (rshB#connect#clicked ~callback:(fun () -> protoState(`RSH)));
   ignore (socketB#connect#clicked ~callback:(fun () -> protoState(`SOCKET)));
   localState();
   let getRoot() =
@@ -840,9 +831,9 @@ let getSecondRoot () =
     match !varLocalRemote with
       `Local ->
         Clroot.clroot2string(Clroot.ConnectLocal(Some file))
-    | `SSH | `RSH ->
+    | `SSH ->
         Clroot.clroot2string(Clroot.fixHost(
-        Clroot.ConnectByShell((if !varLocalRemote=`SSH then "ssh" else "rsh"),
+        Clroot.ConnectByShell("ssh",
                               host,
                               (if user="" then None else Some user),
                               (if port="" then None else Some port),
@@ -1173,7 +1164,7 @@ let createProfile parent =
       GBin.alignment ~xscale:0. ~xalign:0.
         ~packing:(tbl#attach ~left:1 ~top:0) () in
     GEdit.combo_box_text
-      ~strings:["Local"; "Using SSH"; "Using RSH";
+      ~strings:["Local"; "Using SSH";
                 "Through a plain TCP connection"]
       ~active:0 ~packing:(al#add) ()
   in
@@ -1182,7 +1173,7 @@ let createProfile parent =
             ~packing:(tbl#attach ~left:0 ~top:0 ~expand:`NONE) ());
   let kind =
     GtkReact.text_combo kindCombo
-      >> fun i -> List.nth [`Local; `SSH; `RSH; `SOCKET] i
+      >> fun i -> List.nth [`Local; `SSH; `SOCKET] i
   in
   let isLocal = kind >> fun k -> k = `Local in
   let isSSH = kind >> fun k -> k = `SSH in
@@ -1201,9 +1192,6 @@ let createProfile parent =
           "This is the recommended way to synchronize \
            with a remote machine.  A\xc2\xa0remote instance of Unison is \
            automatically started via SSH."
-     | `RSH ->
-          "Synchronization with a remote machine by starting \
-           automatically a remote instance of Unison via RSH."
      | `SOCKET ->
           "Synchronization with a remote machine by connecting \
            to an instance of Unison already listening \
@@ -1228,9 +1216,6 @@ let createProfile parent =
      | `SSH ->
           "There must be an SSH client installed on this machine, \
            and Unison and an SSH server installed on the remote machine."
-     | `RSH ->
-          "There must be an RSH client installed on this machine, \
-           and Unison and an RSH server installed on the remote machine."
      | `SOCKET ->
           "There must be a Unison server running on the remote machine, \
            listening on the port that you specify here.  \
@@ -1246,8 +1231,6 @@ let createProfile parent =
      match k with
        `Local  -> ""
      | `SSH    -> "Please enter the host to connect to and a user name, \
-                   if different from your user name on this machine."
-     | `RSH    -> "Please enter the host to connect to and a user name, \
                    if different from your user name on this machine."
      | `SOCKET -> "Please enter the host and port to connect to.");
   let tbl =
@@ -1549,8 +1532,6 @@ let createProfile parent =
         `Local  -> Clroot.ConnectLocal (Some secondDir)
       | `SSH    -> Clroot.ConnectByShell
                      ("ssh", host, user, None, Some secondDir)
-      | `RSH    -> Clroot.ConnectByShell
-                     ("rsh", host, user, None, Some secondDir)
       | `SOCKET -> Clroot.ConnectBySocket
                      (host, React.state port, Some secondDir)
     in

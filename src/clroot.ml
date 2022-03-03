@@ -27,7 +27,6 @@
   protocol ::= file
             |  socket
             |  ssh
-            |  rsh
 
   user ::= [-_a-zA-Z0-9]+
 
@@ -48,7 +47,7 @@ type clroot =
     ConnectLocal of
           string option (* root *)
   | ConnectByShell of
-          string        (* shell = "rsh" or "ssh" *)
+          string        (* shell = "ssh" *)
         * string        (* name of host *)
         * string option (* user name to log in as *)
         * string option (* port *)
@@ -59,7 +58,7 @@ type clroot =
         * string option (* root of replica in host fs *)
 
 (* Internal datatypes used in parsing command-line roots *)
-type protocol = File | Rsh | Socket | Ssh
+type protocol = File | Socket | Ssh
 type uri = protocol       (*   - a protocol *)
          * string option  (*   - an optional user *)
          * string option  (*   - an optional host *)
@@ -81,12 +80,14 @@ let getProtocolSlashSlash s =
     let protocol =
       match protocolName with
         "file" -> File
-      | "rsh" -> Rsh
+      | "rsh" ->
+          raise (Invalid_argument
+                  (Printf.sprintf "protocol rsh has been deprecated, use ssh instead (optionally specifying a different sshcmd preference)"))
       | "socket" -> Socket
       | "ssh" -> Ssh
       | "unison" ->
           raise(Invalid_argument
-                  (Printf.sprintf "protocol unison has been deprecated, use file, ssh, rsh, or socket instead" ))
+                  (Printf.sprintf "protocol unison has been deprecated, use file, ssh, or socket instead" ))
       | _ ->
           raise(Invalid_argument
                   (Printf.sprintf "\"%s\": unrecognized protocol %s" s protocolName)) in
@@ -97,7 +98,7 @@ let getProtocolSlashSlash s =
   then
     let matched = Str.matched_string s in
     match matched with
-      "file:" | "ssh:" | "rsh:" | "socket:" ->
+      "file:" | "ssh:" | "socket:" ->
         raise(Util.Fatal
                 (Printf.sprintf
                    "ill-formed root specification \"%s\" (%s must be followed by //)"
@@ -180,10 +181,10 @@ let parseHostPort s =
 (* These should succeed *)
 let t1 = "socket://tjim@saul.cis.upenn.edu:4040/hello/world"
 let t2 = "ssh://tjim@saul/hello/world"
-let t3 = "rsh://saul:4040/hello/world"
+(*let t3 = "rsh://saul:4040/hello/world"
 let t4 = "rsh://saul/hello/world"
 let t5 = "rsh://saul"
-let t6 = "rsh:///hello/world"
+let t6 = "rsh:///hello/world"*)
 let t7 = "///hello/world"
 let t8 = "//raptor/usr/local/bin"
 let t9 = "file://raptor/usr/local/bin"
@@ -196,7 +197,7 @@ let b2 = "RSH://saul/hello"
 let b3 = "rsh:/saul/hello"
 let b4 = "//s%aul/hello"
 
-let cannotAbbrevFileRx = Rx.rx "(file:|ssh:|rsh:|socket:).*"
+let cannotAbbrevFileRx = Rx.rx "(file:|ssh:|socket:).*"
 let networkNameRx = Rx.rx "//.*"
 (* Main external printing function *)
 let clroot2string = function
@@ -245,11 +246,8 @@ let parseRoot string =
     | _,_,None,Some _
     | _,Some _,None,None
     | Socket, _, None, None
-    | Rsh,_,None,_
     | Ssh,_,None,_ ->
         illegal2 "missing host"
-    | Rsh,_,_,Some _ ->
-        illegal2 "ill-formed (cannot use a port number with rsh)"
     | File,_,_,Some _ ->
         illegal2 "ill-formed (cannot use a port number with file)"
     | File,_,Some h,None ->
@@ -269,8 +267,6 @@ let parseRoot string =
         illegal2 "ill-formed (must give a port number with socket)"
     | Socket, _, Some _, Some _ ->
         illegal2 "ill-formed (must not give a port number with Unix domain socket)"
-    | Rsh,_,Some h,_ ->
-        ConnectByShell("rsh",h,user,port,path)
     | Ssh,_,Some h,_ ->
         ConnectByShell("ssh",h,user,port,path) in
   clroot

@@ -6,7 +6,7 @@ type clroot =
     ConnectLocal of
           string option (* root *)
   | ConnectByShell of
-          string        (* shell = "rsh" or "ssh" *)
+          string        (* shell = "ssh" *)
         * string        (* name of host *)
         * string option (* user name to log in as *)
         * string option (* port *)
