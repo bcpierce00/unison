@@ -25,7 +25,8 @@ let debug = Trace.debug "ui"
 let dumbtty =
   Prefs.createBool "dumbtty"
     (try System.getenv "EMACS" <> "" with Not_found -> false)
-    "!do not change terminal settings in text UI"
+    ~category:(`Advanced `CLI)
+    "do not change terminal settings in text UI"
     ("When set to \\verb|true|, this flag makes the text mode user "
      ^ "interface avoid trying to change any of the terminal settings.  "
      ^ "(Normally, Unison puts the terminal in `raw mode', so that it can "
@@ -40,7 +41,9 @@ let dumbtty =
      ^ "interface.")
 
 let silent =
-  Prefs.createBool "silent" false "print nothing except error messages"
+  Prefs.createBool "silent" false
+    ~category:(`Basic `Syncprocess_CLI)
+    "print nothing except error messages"
     ("When this preference is set to {\\tt true}, the textual user "
      ^ "interface will print nothing at all, except in the case of errors.  "
      ^ "Setting \\texttt{silent} to true automatically sets the "
@@ -87,8 +90,9 @@ let setupTerminal() =
       restoreTerminal ()
 
 let colorMode =
-  Prefs.createBoolWithDefault "color" ~local:true
-    "!use color output for text UI (true/false/default)"
+  Prefs.createBoolWithDefault "color"
+    ~category:(`Advanced `CLI) ~local:true
+    "use color output for text UI (true/false/default)"
     ("When set to {\\tt true}, this flag enables color output in "
      ^ "text mode user interface. When set to {\\tt false}, all "
      ^ "color output is disabled. Default is to enable color if "
@@ -1247,6 +1251,7 @@ let rec synchronizeUntilDone () =
 let profmgrPrefName = "i"
 let profmgrPref =
   Prefs.createBool profmgrPrefName false
+    ~category:(`Basic `CLI)
     ~cli_only:true
     "interactive profile mode (text UI); command-line only"
     ("Provide this preference in the command line arguments to enable "

@@ -9,6 +9,26 @@ val name : 'a t -> string list
 val overrideDefault : 'a t -> 'a -> unit
 val readDefault : 'a t -> 'a
 
+type topic = [
+  | `General
+  | `Sync
+  | `Syncprocess
+  | `Syncprocess_CLI
+  | `CLI
+  | `GUI
+  | `Remote
+  | `Archive ]
+
+type group = [
+  | `Basic of topic
+  | `Advanced of topic
+  | `Expert
+  | `Internal of         (* Preferences that are not listed *)
+      [ `Pseudo          (* Pseudo-preferences for internal propagation *)
+      | `Devel           (* Developer-only or build-related preferences *)
+      | `Other ]         (* Other non-listed preferences *)
+  ]
+
 (* Note about command line-only preferences. These preferences are never     *)
 (* sent to a server (ignoring [local] and [send] arguments). Should a client *)
 (* send such a preference anyway then the server silently ignores it.        *)
@@ -19,6 +39,7 @@ val readDefault : 'a t -> 'a
 (* accumulates a list of values.                                             *)
 val createBool :
         string              (* preference name *)
+     -> category:group
      -> ?cli_only:bool      (* only a command line option, not in a profile *)
      -> ?local:bool             (* whether it is local to the client *)
      -> ?send:(unit->bool)  (* whether preference should be sent to server *)
@@ -30,6 +51,7 @@ val createBool :
 
 val createInt :
         string              (* preference name *)
+     -> category:group
      -> ?cli_only:bool      (* only a command line option, not in a profile *)
      -> ?local:bool             (* whether it is local to the client *)
      -> ?send:(unit->bool)  (* whether preference should be sent to server *)
@@ -41,6 +63,7 @@ val createInt :
 
 val createString :
         string              (* preference name *)
+     -> category:group
      -> ?cli_only:bool      (* only a command line option, not in a profile *)
      -> ?local:bool             (* whether it is local to the client *)
      -> ?send:(unit->bool)  (* whether preference should be sent to server *)
@@ -52,6 +75,7 @@ val createString :
 
 val createFspath :
         string              (* preference name *)
+     -> category:group
      -> ?cli_only:bool      (* only a command line option, not in a profile *)
      -> ?local:bool             (* whether it is local to the client *)
      -> ?send:(unit->bool)  (* whether preference should be sent to server *)
@@ -63,6 +87,7 @@ val createFspath :
 
 val createStringList :
         string              (* preference name *)
+     -> category:group
      -> ?cli_only:bool      (* only a command line option, not in a profile *)
      -> ?local:bool             (* whether it is local to the client *)
      -> ?send:(unit->bool)  (* whether preference should be sent to server *)
@@ -73,6 +98,7 @@ val createStringList :
 
 val createBoolWithDefault :
         string              (* preference name *)
+     -> category:group
      -> ?cli_only:bool      (* only a command line option, not in a profile *)
      -> ?local:bool             (* whether it is local to the client *)
      -> ?send:(unit->bool)  (* whether preference should be sent to server *)
@@ -88,6 +114,7 @@ exception IllegalValue of string
 (* IllegalValue if it is passed a string it cannot deal with.                *)
 val create :
         string                  (* preference name *)
+     -> category:group
      -> ?cli_only:bool      (* only a command line option, not in a profile *)
      -> ?local:bool             (* whether it is local to the client *)
      -> ?send:(unit->bool)      (* whether the pref should be sent to server *)

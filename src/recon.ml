@@ -81,7 +81,8 @@ let root2direction root =
 
 let forceRoot: string Prefs.t =
   Prefs.createString "force" ""
-    "!force changes from this replica to the other"
+    ~category:(`Advanced `Sync)
+    "force changes from this replica to the other"
     ("Including the preference \\texttt{-force \\ARG{root}} causes Unison to "
      ^ "resolve all differences (even non-conflicting changes) in favor of "
      ^ "\\ARG{root}.  "
@@ -96,7 +97,8 @@ let forceRoot: string Prefs.t =
      ^ "know what you are doing!")
 
 let forceRootPartial: Pred.t =
-  Pred.create "forcepartial" ~advanced:true
+  Pred.create "forcepartial"
+    ~category:(`Advanced `Sync)
     ("Including the preference \\texttt{forcepartial = \\ARG{PATHSPEC} -> \\ARG{root}} causes Unison to "
      ^ "resolve all differences (even non-conflicting changes) in favor of "
      ^ "\\ARG{root} for the files in \\ARG{PATHSPEC} (see \\sectionref{pathspec}{Path Specification} "
@@ -113,7 +115,8 @@ let forceRootPartial: Pred.t =
 
 let preferRoot: string Prefs.t =
   Prefs.createString "prefer" ""
-    "!choose this replica's version for conflicting changes"
+    ~category:(`Advanced `Sync)
+    "choose this replica's version for conflicting changes"
     ("Including the preference \\texttt{-prefer \\ARG{root}} causes Unison always to "
      ^ "resolve conflicts in favor of \\ARG{root}, rather than asking for "
      ^ "guidance from the user, except for paths marked by the preference "
@@ -125,7 +128,8 @@ let preferRoot: string Prefs.t =
      ^ "know what you are doing!")
 
 let preferRootPartial: Pred.t =
-  Pred.create "preferpartial" ~advanced:true
+  Pred.create "preferpartial"
+    ~category:(`Advanced `Sync)
     ("Including the preference \\texttt{preferpartial = \\ARG{PATHSPEC} -> \\ARG{root}} "
      ^ "causes Unison always to "
      ^ "resolve conflicts in favor of \\ARG{root}, rather than asking for "
@@ -160,6 +164,7 @@ let lookupPreferredRootPartial p =
 
 let noDeletion =
   Prefs.createStringList "nodeletion"
+    ~category:(`Basic `Sync)
     "prevent file deletions on one replica"
     ("Including the preference \\texttt{-nodeletion \\ARG{root}} prevents \
       Unison from performing any file deletion on root \\ARG{root}.\n\n\
@@ -168,6 +173,7 @@ let noDeletion =
 
 let noUpdate =
   Prefs.createStringList "noupdate"
+    ~category:(`Basic `Sync)
     "prevent file updates and deletions on one replica"
     ("Including the preference \\texttt{-noupdate \\ARG{root}} prevents \
       Unison from performing any file update or deletion on root \
@@ -177,6 +183,7 @@ let noUpdate =
 
 let noCreation =
   Prefs.createStringList "nocreation"
+    ~category:(`Basic `Sync)
     "prevent file creations on one replica"
     ("Including the preference \\texttt{-nocreation \\ARG{root}} prevents \
       Unison from performing any file creation on root \\ARG{root}.\n\n\
@@ -184,7 +191,8 @@ let noCreation =
       want to prevent any creation.")
 
 let noDeletionPartial =
-  Pred.create "nodeletionpartial" ~advanced:true
+  Pred.create "nodeletionpartial"
+    ~category:(`Advanced `Sync)
     ("Including the preference \
       \\texttt{nodeletionpartial = \\ARG{PATHSPEC} -> \\ARG{root}} prevents \
       Unison from performing any file deletion in \\ARG{PATHSPEC} \
@@ -193,7 +201,8 @@ let noDeletionPartial =
       patterns when selecting a directory and all its contents.")
 
 let noUpdatePartial =
-  Pred.create "noupdatepartial" ~advanced:true
+  Pred.create "noupdatepartial"
+    ~category:(`Advanced `Sync)
     ("Including the preference \
       \\texttt{noupdatepartial = \\ARG{PATHSPEC} -> \\ARG{root}} prevents \
       Unison from performing any file update or deletion in \
@@ -203,7 +212,8 @@ let noUpdatePartial =
       patterns when selecting a directory and all its contents.")
 
 let noCreationPartial =
-  Pred.create "nocreationpartial" ~advanced:true
+  Pred.create "nocreationpartial"
+    ~category:(`Advanced `Sync)
     ("Including the preference \
       \\texttt{nocreationpartial = \\ARG{PATHSPEC} ->  \\ARG{root}} prevents \
       Unison from performing any file creation in \\ARG{PATHSPEC} \
@@ -214,7 +224,8 @@ let noCreationPartial =
 
 let maxSizeThreshold =
   Prefs.createInt "maxsizethreshold" (-1)
-    "!prevent transfer of files bigger than this (if >=0, in Kb)"
+    ~category:(`Advanced `General)
+    "prevent transfer of files bigger than this (if >=0, in Kb)"
     ("A number indicating above what filesize (in kilobytes) Unison should "
      ^ "flag a conflict instead of transferring the file. "
      ^ "This conflict remains even in the presence of force or prefer options. "

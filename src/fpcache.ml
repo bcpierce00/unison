@@ -248,8 +248,9 @@ let clearlyUnchanged fastCheck path newInfo oldDesc oldStamp oldRess =
   du && ressClearlyUnchanged fastCheck newInfo oldRess du
 
 let fastercheckUNSAFE =
-  Prefs.createBool "fastercheckUNSAFE"
-    false "!skip computing fingerprints for new files (experts only!)"
+  Prefs.createBool "fastercheckUNSAFE" false
+    ~category:`Expert
+    "skip computing fingerprints for new files (experts only!)"
     (  "THIS FEATURE IS STILL EXPERIMENTAL AND SHOULD BE USED WITH EXTREME CAUTION.  "
        ^ "\n\n"
        ^ "When this flag is set to {\\tt true}, Unison will compute a 'pseudo-"

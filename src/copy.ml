@@ -462,7 +462,8 @@ let tryCopyMovedFile fspathTo pathTo realPathTo update desc fp ress id =
 
 let rsyncActivated =
   Prefs.createBool "rsync" true
-    "!activate the rsync transfer mode"
+    ~category:(`Advanced `Remote)
+    "activate the rsync transfer mode"
     ("Unison uses the 'rsync algorithm' for 'diffs-only' transfer "
      ^ "of updates to large files.  Setting this flag to false makes Unison "
      ^ "use whole-file transfers instead.  Under normal circumstances, "
@@ -785,7 +786,8 @@ let rec registerFileTransfer pathTo fp f =
 
 let copyprog =
   Prefs.createString "copyprog" "rsync --partial --inplace --compress"
-    "!external program for copying large files"
+    ~category:(`Advanced `General)
+    "external program for copying large files"
     ("A string giving the name of an "
      ^ "external program that can be used to copy large files efficiently  "
      ^ "(plus command-line switches telling it to copy files in-place).  "
@@ -795,7 +797,8 @@ let copyprog =
 let copyprogrest =
   Prefs.createString
     "copyprogrest" "rsync --partial --append-verify --compress"
-    "!variant of copyprog for resuming partial transfers"
+    ~category:(`Advanced `General)
+    "variant of copyprog for resuming partial transfers"
     ("A variant of {\\tt copyprog} that names an external program "
      ^ "that should be used to continue the transfer of a large file "
      ^ "that has already been partially transferred.  Typically, "
@@ -806,7 +809,8 @@ let copyprogrest =
 
 let copythreshold =
   Prefs.createInt "copythreshold" (-1)
-    "!use copyprog on files bigger than this (if >=0, in Kb)"
+    ~category:(`Advanced `General)
+    "use copyprog on files bigger than this (if >=0, in Kb)"
     ("A number indicating above what filesize (in kilobytes) Unison should "
      ^ "use the external "
      ^ "copying utility specified by {\\tt copyprog}. Specifying 0 will cause "
@@ -818,7 +822,8 @@ let copythreshold =
 
 let copyquoterem =
   Prefs.createBoolWithDefault "copyquoterem"
-    "!add quotes to remote file name for copyprog (true/false/default)"
+    ~category:(`Advanced `General)
+    "add quotes to remote file name for copyprog (true/false/default)"
     ("When set to {\\tt true}, this flag causes Unison to add an extra layer "
      ^ "of quotes to the remote path passed to the external copy program. "
      ^ "This is needed by rsync, for example, which internally uses an ssh "
@@ -829,7 +834,8 @@ let copyquoterem =
 
 let copymax =
   Prefs.createInt "copymax" 1
-    "!maximum number of simultaneous copyprog transfers"
+    ~category:(`Advanced `General)
+    "maximum number of simultaneous copyprog transfers"
     ("A number indicating how many instances of the external copying utility \
       Unison is allowed to run simultaneously (default to 1).")
 

@@ -215,7 +215,8 @@ let addPrefixToFinalName path prefix =
     prefix ^ path
 
 (* Pref controlling whether symlinks are followed. *)
-let followPred = Pred.create ~advanced:true "follow"
+let followPred = Pred.create "follow"
+    ~category:(`Advanced `Sync)
     ("Including the preference \\texttt{-follow \\ARG{pathspec}} causes Unison to \
       treat symbolic links matching \\ARG{pathspec} as `invisible' and \
       behave as if the object pointed to by the link had appeared literally \

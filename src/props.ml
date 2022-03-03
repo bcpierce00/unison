@@ -82,6 +82,7 @@ let wind_mask =
 let permMask =
   Prefs.createInt "perms"
     (0o777 (* rwxrwxrwx *) + 0o1000 (* Sticky bit *))
+    ~category:(`Basic `Sync)
     "part of the permissions which is synchronized"
     "The integer value of this preference is a mask indicating which \
      permission bits should be synchronized.  It is set by default to \
@@ -90,9 +91,9 @@ let permMask =
      hazard).  If you want to synchronize all bits, you can set the \
      value of this preference to $-1$.  If one of the replica is on \
      a FAT [Windows] filesystem, you should consider using the \
-     {\tt fat} preference instead of this preference.  If you need \
+     {\\tt fat} preference instead of this preference.  If you need \
      Unison not to set permissions at all, set the value of this \
-     preference to $0$ and set the preference {\tt dontchmod} to {\tt true}."
+     preference to $0$ and set the preference {\\tt dontchmod} to {\\tt true}."
 
 (* Os-specific local conventions on file permissions                         *)
 let (fileDefault, dirDefault, fileSafe, dirSafe) =
@@ -197,7 +198,8 @@ let syncedPartsToString =
 let dontChmod =
   Prefs.createBool "dontchmod"
   false
-  "!when set, never use the chmod system call"
+  ~category:(`Advanced `Syncprocess)
+  "when set, never use the chmod system call"
   (  "By default, Unison uses the 'chmod' system call to set the permission bits"
   ^ " of files after it has copied them.  But in some circumstances (and under "
   ^ " some operating systems), the chmod call always fails.  Setting this "
@@ -276,7 +278,8 @@ end
 
 let numericIds =
   Prefs.createBool "numericids" false
-    "!don't map uid/gid values by user/group names"
+    ~category:(`Advanced `Syncprocess)
+    "don't map uid/gid values by user/group names"
     "When this flag is set to \\verb|true|, groups and users are \
      synchronized numerically, rather than by name. \n\
      \n\
@@ -394,8 +397,9 @@ end
 module Uid = Id (struct
 
 let sync =
-  Prefs.createBool "owner"
-    false "synchronize owner"
+  Prefs.createBool "owner" false
+    ~category:(`Basic `Sync)
+    "synchronize owner"
     ("When this flag is set to \\verb|true|, the owner attributes "
      ^ "of the files are synchronized.  "
      ^ "Whether the owner names or the owner identifiers are synchronized"
@@ -415,8 +419,9 @@ end)
 module Gid = Id (struct
 
 let sync =
-  Prefs.createBool "group"
-    false "synchronize group attributes"
+  Prefs.createBool "group" false
+    ~category:(`Basic `Sync)
+    "synchronize group attributes"
     ("When this flag is set to \\verb|true|, the group attributes "
      ^ "of the files are synchronized.  "
      ^ "Whether the group names or the group identifiers are synchronized "
@@ -447,8 +452,9 @@ module Time : sig
 end = struct
 
 let sync =
-  Prefs.createBool "times"
-    false "synchronize modification times"
+  Prefs.createBool "times" false
+    ~category:(`Basic `Sync)
+    "synchronize modification times"
     "When this flag is set to \\verb|true|, \
      file modification times (but not directory modtimes) are propagated."
 

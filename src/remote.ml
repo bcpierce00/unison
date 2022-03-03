@@ -558,13 +558,15 @@ let makeMarshalingFunctions payloadMarshalingFunctions string =
    these be part of it too? *)
 let sshCmd =
   Prefs.createString "sshcmd" "ssh"
-    ("!path to the ssh executable")
+    ~category:(`Advanced `Remote)
+    ("path to the ssh executable")
     ("This preference can be used to explicitly set the name of the "
      ^ "ssh executable (e.g., giving a full path name), if necessary.")
 
 let sshargs =
   Prefs.createString "sshargs" ""
-    "!other arguments (if any) for remote shell command"
+    ~category:(`Advanced `Remote)
+    "other arguments (if any) for remote shell command"
     ("The string value of this preference will be passed as additional "
      ^ "arguments (besides the host name and the name of the Unison "
      ^ "executable on the remote system) to the \\verb|ssh| "
@@ -578,14 +580,16 @@ let () = Prefs.markRemoved "rshargs"
 
 let serverCmd =
   Prefs.createString "servercmd" ""
-    ("!name of " ^ Uutil.myName ^ " executable on remote server")
+    ~category:(`Advanced `Remote)
+    ("name of " ^ Uutil.myName ^ " executable on remote server")
     ("This preference can be used to explicitly set the name of the "
      ^ "Unison executable on the remote server (e.g., giving a full "
      ^ "path name), if necessary.")
 
 let addversionno =
   Prefs.createBool "addversionno" false
-    ("!add version number to name of " ^ Uutil.myName ^ " on server")
+    ~category:(`Advanced `Remote)
+    ("add version number to name of " ^ Uutil.myName ^ " on server")
     ("When this flag is set to {\\tt true}, Unison "
      ^ "will use \\texttt{unison-\\ARG{currentmajorversionnumber}} instead of "
      ^ "just \\verb|unison| as the remote server command (note that the minor "
@@ -938,8 +942,9 @@ let streamReg = Lwt_util.make_region 1
 
 let streamingActivated =
   Prefs.createBool "stream" true
+    ~category:(`Advanced `Remote)
     ~deprecated:true
-    ("!use a streaming protocol for transferring file contents")
+    ("use a streaming protocol for transferring file contents")
     "When this preference is set, Unison will use an experimental \
      streaming protocol for transferring file contents more efficiently. \
      The default value is \\texttt{true}."
@@ -1344,8 +1349,9 @@ let checkServerUpgrade conn header =
 *)
 let halfduplex =
   Prefs.createBool "halfduplex" false
+    ~category:(`Advanced `Remote)
     ~deprecated:true
-    "!force half-duplex communication with the server"
+    "force half-duplex communication with the server"
     "When this flag is set to {\\tt true}, Unison network communication \
      is forced to be half duplex (the client and the server never \
      simultaneously emit data).  If you experience unstabilities with \
@@ -2069,7 +2075,8 @@ let commandLoop ~compatMode in_ch out_ch =
 
 let killServer =
   Prefs.createBool "killserver" false
-    "!kill server when done (even when using sockets)"
+    ~category:(`Advanced `Remote)
+    "kill server when done (even when using sockets)"
     ("When set to \\verb|true|, this flag causes Unison to kill the remote "
      ^ "server process when the synchronization is finished.  This behavior "
      ^ "is the default for \\verb|ssh| connections, so this preference is not "

@@ -139,11 +139,43 @@ let aliasMap = ref (Util.StringMap.empty : string Util.StringMap.t)
 let canonicalName nm =
   try Util.StringMap.find nm !aliasMap with Not_found -> nm
 
+type topic = [
+  | `General
+  | `Sync
+  | `Syncprocess
+  | `Syncprocess_CLI
+  | `CLI
+  | `GUI
+  | `Remote
+  | `Archive ]
+
+type group = [
+  | `Basic of topic
+  | `Advanced of topic
+  | `Expert
+  | `Internal of
+      [ `Pseudo | `Devel | `Other ] ]
+
+let isInternal = function
+  | `Internal _ -> true
+  | _ -> false
+
+let topic = function
+  | `General -> "General"
+  | `Sync -> "What to sync"
+  | `Syncprocess -> "How to sync"
+  | `Syncprocess_CLI -> "How to sync (text interface (CLI) only)"
+  | `CLI -> "Text interface (CLI)"
+  | `GUI -> "Graphical interface (GUI)"
+  | `Remote -> "Remote connections"
+  | `Archive -> "Archive management"
+
 type typ =
   [`BOOL | `INT | `STRING | `STRING_LIST | `BOOLDEF | `CUSTOM | `UNKNOWN]
 
 type apref =
   {
+    category : group;
     doc : string;
     pspec : Uarg.spec;
     fulldoc : string;
@@ -162,15 +194,9 @@ let typ nm =
 
 let documentation nm =
   try
-    let {doc; fulldoc; deprec; _} = Util.StringMap.find nm !prefs in
-    if doc <> "" && doc.[0] = '*' then raise Not_found;
-    let basic = doc = "" || doc.[0] <> '!' in
-    let doc =
-      if not basic then
-        String.sub doc 1 (String.length doc - 1)
-      else
-        doc
-    in
+    let {category; doc; fulldoc; deprec; _} = Util.StringMap.find nm !prefs in
+    if isInternal category then raise Not_found;
+    let basic = match category with `Basic _ -> true | _ -> false in
     let doc =
       if not deprec then doc
       else "(Deprecated) " ^ doc
@@ -186,8 +212,8 @@ let documentation nm =
 let list include_cli_only =
   List.sort String.compare
     (Util.StringMap.fold
-      (fun nm {doc; cli_only; _} l ->
-        if (not cli_only || include_cli_only) && (doc = "" || doc.[0] <> '*') then
+      (fun nm {category; cli_only; _} l ->
+        if (not cli_only || include_cli_only) && not (isInternal category) then
           nm :: l
         else l)
       !prefs [])
@@ -197,7 +223,8 @@ let alias pref newname =
   (* pref must have been registered, so name pref is not empty, and will be *)
   (* found in the map, no need for catching exception                       *)
   let pref' = Util.StringMap.find (Safelist.hd (name pref)) !prefs in
-  prefs := Util.StringMap.add newname {pref' with doc = "*"; fulldoc = ""} !prefs;
+  let pref' = {pref' with category = `Internal `Other; doc = "*"; fulldoc = ""} in
+  prefs := Util.StringMap.add newname pref' !prefs;
   let () =
     try
       let loader = Util.StringMap.find (Safelist.hd (name pref)) !loaders in
@@ -223,19 +250,19 @@ let deprecatedPref name p =
          "\nYou will not lose out on anything; you have currently\n"
        ^ "set this preference to its default value."))
 
-let registerPref name typ cell pspec cli_only deprec doc fulldoc =
+let registerPref name typ cell pspec category cli_only deprec doc fulldoc =
   if Util.StringMap.mem name !prefs then
     raise (Util.Fatal ("Preference " ^ name ^ " registered twice"));
   let pspec =
     if not deprec then pspec
     else deprecatedPref name cell pspec in
-  let pref = {doc; pspec; fulldoc; typ; cli_only; deprec} in
+  let pref = {category; doc; pspec; fulldoc; typ; cli_only; deprec} in
   prefs := Util.StringMap.add name pref !prefs
 
-let createPrefInternal name typ cli_only local send default deprecated doc fulldoc printer parsefn m =
+let createPrefInternal name typ category cli_only local send default deprecated doc fulldoc printer parsefn m =
   let m = Umarshal.(prod2 m (list string) id id) in
   let newCell = rawPref default name in
-  registerPref name typ newCell (parsefn newCell) cli_only deprecated doc fulldoc;
+  registerPref name typ newCell (parsefn newCell) category cli_only deprecated doc fulldoc;
   let (local, send) =
     if not cli_only then (local, send)
     else (true, Some (fun () -> false))
@@ -260,44 +287,44 @@ let createPrefInternal name typ cli_only local send default deprecated doc fulld
        newCell.value <- value);
   newCell
 
-let create name ?(cli_only=false) ?(local=false) ?send default ?(deprecated=false) doc fulldoc intern printer m =
-  createPrefInternal name `CUSTOM cli_only local send default deprecated doc fulldoc printer
+let create name ~category ?(cli_only=false) ?(local=false) ?send default ?(deprecated=false) doc fulldoc intern printer m =
+  createPrefInternal name `CUSTOM category cli_only local send default deprecated doc fulldoc printer
     (fun cell -> Uarg.String (fun s -> set cell (intern (read cell) s)))
     m
 
-let createBool name ?(cli_only=false) ?(local=false) ?send default ?(deprecated=false) doc fulldoc =
+let createBool name ~category ?(cli_only=false) ?(local=false) ?send default ?(deprecated=false) doc fulldoc =
   let doc = if default then doc ^ " (default true)" else doc in
-  createPrefInternal name `BOOL cli_only local send default deprecated doc fulldoc
+  createPrefInternal name `BOOL category cli_only local send default deprecated doc fulldoc
     (fun v -> [if v then "true" else "false"])
     (fun cell -> Uarg.Bool (fun b -> set cell b))
     Umarshal.bool
 
-let createInt name ?(cli_only=false) ?(local=false) ?send default ?(deprecated=false) doc fulldoc =
-  createPrefInternal name `INT cli_only local send default deprecated doc fulldoc
+let createInt name ~category ?(cli_only=false) ?(local=false) ?send default ?(deprecated=false) doc fulldoc =
+  createPrefInternal name `INT category cli_only local send default deprecated doc fulldoc
     (fun v -> [string_of_int v])
     (fun cell -> Uarg.Int (fun i -> set cell i))
     Umarshal.int
 
-let createString name ?(cli_only=false) ?(local=false) ?send default ?(deprecated=false) doc fulldoc =
-  createPrefInternal name `STRING cli_only local send default deprecated doc fulldoc
+let createString name ~category ?(cli_only=false) ?(local=false) ?send default ?(deprecated=false) doc fulldoc =
+  createPrefInternal name `STRING category cli_only local send default deprecated doc fulldoc
     (fun v -> [v])
     (fun cell -> Uarg.String (fun s -> set cell s))
     Umarshal.string
 
-let createFspath name ?(cli_only=false) ?(local=false) ?send default ?(deprecated=false) doc fulldoc =
-  createPrefInternal name `STRING cli_only local send default deprecated doc fulldoc
+let createFspath name ~category ?(cli_only=false) ?(local=false) ?send default ?(deprecated=false) doc fulldoc =
+  createPrefInternal name `STRING category cli_only local send default deprecated doc fulldoc
     (fun v -> [System.fspathToString v])
     (fun cell -> Uarg.String (fun s -> set cell (System.fspathFromString s)))
     System.mfspath
 
-let createStringList name ?(cli_only=false) ?(local=false) ?send ?(deprecated=false) doc fulldoc =
-  createPrefInternal name `STRING_LIST cli_only local send [] deprecated doc fulldoc
+let createStringList name ~category ?(cli_only=false) ?(local=false) ?send ?(deprecated=false) doc fulldoc =
+  createPrefInternal name `STRING_LIST category cli_only local send [] deprecated doc fulldoc
     (fun v -> v)
     (fun cell -> Uarg.String (fun s -> set cell (s:: read cell)))
     Umarshal.(list string)
 
-let createBoolWithDefault name ?(cli_only=false) ?(local=false) ?send ?(deprecated=false) doc fulldoc =
-  createPrefInternal name `BOOLDEF cli_only local send `Default deprecated doc fulldoc
+let createBoolWithDefault name ~category ?(cli_only=false) ?(local=false) ?send ?(deprecated=false) doc fulldoc =
+  createPrefInternal name `BOOLDEF category cli_only local send `Default deprecated doc fulldoc
     (fun v -> [match v with
                  `True    -> "true"
                | `False   -> "false"
@@ -417,12 +444,13 @@ let processLines lines =
   Safelist.iter
     (fun (fileName, lineNum, varName,theResult) ->
        try
-         let {pspec = theFunction; cli_only; _} = Util.StringMap.find varName !prefs in
-         if cli_only then
+         let pref = Util.StringMap.find varName !prefs in
+         if pref.category = `Internal `Pseudo then raise Not_found;
+         if pref.cli_only then
            raise (IllegalValue ("\"" ^ varName
              ^ "\" is a command line-only option; "
              ^ "it must not be present in a profile."));
-         match theFunction with
+         match pref.pspec with
            Uarg.Bool boolFunction ->
              boolFunction (string2bool varName theResult)
          | Uarg.Int intFunction ->
@@ -452,8 +480,9 @@ let loadStrings l =
 (*****************************************************************************)
 
 let _ = create "source" ()
+  ~category:(`Advanced `General)
   ~cli_only:true
-  "!include a file's preferences"
+  "include a file's preferences"
   "Include preferences from a file.  \\texttt{source \\ARG{name}} reads the \
    file \\showtt{name} in the \\texttt{.unison} directory and includes its \
    contents as if it was part of a profile or given directly on command line."
@@ -461,8 +490,9 @@ let _ = create "source" ()
   (fun v -> []) Umarshal.unit
 
 let _ = create "include" ()
+  ~category:(`Advanced `General)
   ~cli_only:true
-  "!include a profile's preferences"
+  "include a profile's preferences"
   "Include preferences from a profile.  \\texttt{include \\ARG{name}} reads \
    the profile \\showtt{name} (or file \\showtt{name} in the \\texttt{.unison} \
    directory if profile \\showtt{name} does not exist) and includes its \
@@ -476,38 +506,71 @@ let prefArg = function
   | Uarg.String(_) -> "xxx"
   | _             -> assert false
 
-(* [argspecs hook] returns a list of specs for [Uarg.parse] *)
+(* Prepare a list of specs for [Uarg.parse] *)
 let argspecs hook =
   Util.StringMap.fold
     (fun name pref l ->
-       ("-" ^ name, hook name pref.pspec, "") :: l)
+       if pref.category <> `Internal `Pseudo then
+         ("-" ^ name, hook name pref.pspec, "") :: l
+       else l)
     !prefs []
 
+let title = function
+  | `Advanced `Sync -> "Fine-tune sync"
+  | `Advanced `General -> "Other"
+  | `Basic t | `Advanced t -> topic t
+  | `Expert -> ""
+  | `Internal _ -> assert false
+
+let topicsInOrder = [ `Sync; `Syncprocess; `Syncprocess_CLI; `CLI; `GUI; `Remote; `Archive ]
+
 let oneLineDocs u =
-  let formatOne name {pspec; doc; deprec; _ } p =
-    (* if [p] format a one line message documenting a preference *)
-    if not (String.length doc > 0 && doc.[0] <> '*' && p doc) then "" else
-    let doc = if doc.[0] = '!'
-                then String.sub doc 1 ((String.length doc) - 1)
-                else doc in
-    let doc = if deprec then "(deprecated) " ^ doc else doc in
+  let buf = Buffer.create 1024 in
+  let out = Buffer.add_string buf in
+  let fmt = Format.formatter_of_buffer buf in
+  let () = Format.pp_set_margin fmt 81 in  (* cols + 1 *)
+
+  let formatPref name {pspec; doc; deprec; _ } =
     let arg = prefArg pspec in
-    let arg = if arg = "" then "" else " " ^ arg in
-    let spaces =
-      String.make (max 1 (18 - String.length (name ^ arg))) ' ' in
-    " -" ^ name ^ arg ^ spaces ^ doc ^ "\n" in
-  let formatAll p =
-    (* format a message documenting non hidden preferences matching [p] *)
-    String.concat "" @@
-    Safelist.rev @@
-    Util.StringMap.fold
-      (fun name pref l -> (formatOne name pref p) :: l) !prefs []
+    let s = if arg = "" then name else name ^ " " ^ arg in
+    let l = max 1 (19 - String.length s) in
+    Format.pp_print_string fmt ("   -" ^ s);
+    Format.pp_open_box fmt l;
+    Format.pp_print_break fmt l (1 - l);
+    if deprec then begin
+      Format.pp_print_string fmt "(deprecated)";
+      Format.pp_print_space fmt ()
+    end;
+    Format.pp_print_text fmt doc;
+    Format.pp_close_box fmt ();
+    Format.pp_print_newline fmt ()
   in
-    u ^ "\n"
-  ^ "Basic options: \n"
-  ^ formatAll (fun doc -> doc.[0] <> '!')
-  ^ "\nAdvanced options: \n"
-  ^ formatAll (fun doc -> doc.[0] = '!')
+  let formatTopic t =
+    let m = Util.StringMap.filter (fun _ pref -> pref.category = t) !prefs in
+    if Util.StringMap.cardinal m > 0 then begin
+      let h = title t in
+      if h <> "" then begin
+        out "\n  "; out h; out ":\n"
+      end;
+      Util.StringMap.iter formatPref m
+    end
+  in
+  let formatTopics g =
+    Safelist.iter (fun t -> formatTopic (g t))
+  in
+
+  out u; out "\n";
+
+  out "Basic options:\n";
+  formatTopics (fun t -> `Basic t) (`General :: topicsInOrder);
+
+  out "\nAdvanced options:\n";
+  formatTopics (fun t -> `Advanced t) (topicsInOrder @ [`General]);
+
+  out "\nExpert options:\n";
+  formatTopic (`Expert);
+
+  Buffer.contents buf
 
 let printUsage usage = Uarg.usage (argspecs (fun _ s -> s))
                          (oneLineDocs usage)
@@ -561,8 +624,8 @@ let scanCmdLine usage =
 let listVisiblePrefs () =
   let l =
     Util.StringMap.fold
-      (fun name ({fulldoc; _} as pref) l ->
-         if String.length fulldoc > 0 then begin
+      (fun name ({category; _} as pref) l ->
+         if not (isInternal category) then begin
            (name, pref) :: l
          end else l) !prefs [] in
   Safelist.stable_sort (fun (name1, _) (name2, _) -> compare name1 name2) l
@@ -582,7 +645,8 @@ let printFullDocs () =
 (*****************************************************************************)
 
 let addprefsto = createString "addprefsto" ""
-  "!file to add new prefs to"
+  ~category:(`Advanced `General)
+  "file to add new prefs to"
   "By default, new preferences added by Unison (e.g., new \\verb|ignore| \
    clauses) will be appended to whatever preference file Unison was told \
    to load at the beginning of the run.  Setting the preference \
