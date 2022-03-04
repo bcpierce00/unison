@@ -2285,7 +2285,7 @@ let editProfile parent name =
   in
   let (>>>) x f = f x in
   Prefs.readAFile name
-  >>> List.map (fun (_, _, nm, v) -> Prefs.canonicalName nm, v)
+  >>> List.map (fun (_, nm, v) -> Prefs.canonicalName nm, v)
   >>> List.stable_sort (fun (nm, _) (nm', _) -> compare nm nm')
   >>> group
   >>> List.iter

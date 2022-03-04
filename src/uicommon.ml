@@ -551,7 +551,7 @@ let scanProfiles () =
           match prefs with
           | None -> None
           | Some prefs ->
-          let fileContents = Safelist.map (fun (_, _, n, v) -> (n, v)) prefs in
+          let fileContents = Safelist.map (fun (_, n, v) -> (n, v)) prefs in
           let roots =
             Safelist.map snd
               (Safelist.filter (fun (n, _) -> n = "root") fileContents) in

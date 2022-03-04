@@ -378,12 +378,19 @@ let string2int name string =
 (* Takes a filename and returns a list of "parsed lines" containing
       (filename, lineno, varname, value)
    in the same order as in the file. *)
-let rec readAFile ?(fail=true) ?(add_ext=true) filename
-    : (string * int * string * string) list =
+let rec readAFile ?(fail=true) ?(add_ext=true) filename =
+  let path = profilePathname ~add_ext:add_ext filename in
+  let locname =
+    if add_ext then
+      Printf.sprintf "Profile \"%s\" (file \"%s\")"
+        filename (System.fspathToPrintString path)
+    else
+      Printf.sprintf "File \"%s\"" (System.fspathToPrintString path)
+  in
   let bom = "\xef\xbb\xbf" in (* BOM: UTF-8 byte-order mark *)
-  let rec loop chan lines =
+  let rec loop chan lineNum lines =
     match (try Some(input_line chan) with End_of_file -> None) with
-      None -> close_in chan; parseLines filename lines
+      None -> close_in chan; parseLines lines
     | Some(theLine) ->
         let theLine =
           (* A lot of Windows tools start a UTF-8 encoded file by a
@@ -393,40 +400,52 @@ let rec readAFile ?(fail=true) ?(add_ext=true) filename
           else
             theLine
         in
-        loop chan (theLine::lines)
+        loop chan (lineNum + 1) (((locname, lineNum), theLine) :: lines)
   in
   let chan =
     try
-      let path = profilePathname ~add_ext:add_ext filename in
       profileFiles := (path, System.stat path) :: !profileFiles;
       Some (System.open_in_bin path)
     with Unix.Unix_error _ | Sys_error _ -> None
   in
   match chan, fail with
-    None, true ->
-      raise(Util.Fatal(Printf.sprintf "Preference file %s not found" filename))
+  | None, true when add_ext ->
+      raise (Util.Fatal (Printf.sprintf
+        "Profile %s not found (looking for file %s)"
+        filename (System.fspathToPrintString path)))
+  | None, true ->
+      raise (Util.Fatal (Printf.sprintf
+        "Preference file %s not found"
+        (System.fspathToPrintString path)))
   | None, false -> []
-  | Some chan, _ -> loop chan []
+  | Some chan, _ -> loop chan 1 []
 
 (* Takes a list of strings in reverse order and yields a list of "parsed lines"
    in correct order *)
-and parseLines filename lines =
-  let rec loop lines lineNum res =
+and parseLines lines =
+  let rec loop lines res =
     match lines with
       [] -> res
-    | theLine :: rest ->
+    | (((locname, lineNum) as loc), theLine) :: rest ->
         let theLine = Util.removeTrailingCR theLine in
         let l = Util.trimWhitespace theLine in
         let includes ~fail ~add_ext =
           match Util.splitIntoWords theLine ' ' with
             [_;f] ->
-              let sublines = readAFile f ~fail:fail ~add_ext:add_ext in
-              loop rest (lineNum+1) (Safelist.append sublines res)
+              let sublines =
+                try
+                  readAFile f ~fail:fail ~add_ext:add_ext
+                with Util.Fatal err ->
+                  raise (Util.Fatal (Printf.sprintf
+                    "Included from %s, line %d:\n%s"
+                    (String.uncapitalize_ascii locname) lineNum err))
+              in
+              loop rest (Safelist.append sublines res)
           | _ -> raise (Util.Fatal(Printf.sprintf
-                                     "File \"%s\", line %d:\nGarbled 'include' directive: %s"
-                                     filename lineNum theLine)) in
+                                     "%s, line %d:\nGarbled 'include' directive: %s"
+                                     locname lineNum theLine)) in
         if l = "" || l.[0]='#' then
-          loop rest (lineNum+1) res
+          loop rest res
         else if Util.startswith theLine "include " then
           includes ~fail:true ~add_ext:true
         else if Util.startswith theLine "source " then
@@ -439,16 +458,16 @@ and parseLines filename lines =
           match Util.splitAtChar theLine '=' with
             i, Some j -> let (varName, theResult) = (fun f (i,j) -> (f i,f j))
                   Util.trimWhitespace (i,j) in
-              loop rest (lineNum+1) ((filename, lineNum, varName, theResult)::res)
+              loop rest ((loc, varName, theResult) :: res)
           | _ -> (* theLine does not contain '=' *)
               raise (Util.Fatal(Printf.sprintf
-                                  "File \"%s\", line %d:\nGarbled line (no '='):\n%s"
-                                  filename lineNum theLine)) in
-  loop lines 1 []
+                                  "%s, line %d:\nGarbled line (no '='): %s"
+                                  locname lineNum theLine)) in
+  loop lines []
 
 let processLines lines =
   Safelist.iter
-    (fun (fileName, lineNum, varName,theResult) ->
+    (fun ((locName, lineNum), varName, theResult) ->
        try
          let pref = Util.StringMap.find varName !prefs in
          if pref.category = `Internal `Pseudo then raise Not_found;
@@ -465,11 +484,11 @@ let processLines lines =
              stringFunction theResult
          | _ -> assert false
        with Not_found ->
-         raise (Util.Fatal ("File \""^ fileName ^ "\", line " ^
+         raise (Util.Fatal (locName ^ ", line " ^
                             string_of_int lineNum ^ ": `" ^
                             varName ^ "' is not a valid option"))
        | IllegalValue str ->
-           raise(Util.Fatal("File \""^ fileName ^ "\", line " ^
+           raise (Util.Fatal (locName ^ ", line " ^
                             string_of_int lineNum ^ ": " ^ str)))
     lines
 
@@ -479,7 +498,11 @@ let loadTheFile () =
   | Some(n) -> processLines(readAFile n)
 
 let loadStrings l =
-  processLines (parseLines "<internal>" l)
+  let rec loop n out = function
+    | [] -> processLines (parseLines out)
+    | h :: t -> loop (n + 1) ((("<internal preferences>", n), h) :: out) t
+  in
+  loop 1 [] l
 
 (*****************************************************************************)
 (*                      Command-line parsing                                 *)
