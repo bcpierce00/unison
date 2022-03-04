@@ -7,6 +7,7 @@ module String = struct
 
   let lowercase_ascii = lowercase
   let capitalize_ascii = capitalize
+  let uncapitalize_ascii = uncapitalize
 end
 
 module Unix = struct
