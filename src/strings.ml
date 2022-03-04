@@ -598,9 +598,7 @@ let docs =
       \n\
       Remote Shell Method\n\
       \n\
-      \032  The standard remote shell facility on Unix systems is ssh, which\n\
-      \032  provides the same functionality as the older rsh but much better\n\
-      \032  security.\n\
+      \032  The standard remote shell facility on Unix systems is ssh.\n\
       \n\
       \032  Running ssh requires some coordination between the client and server\n\
       \032  machines to establish that the client is allowed to invoke commands on\n\
@@ -651,9 +649,13 @@ let docs =
       \032      server by using the command-line option \"-servercmd\n\
       \032      /full/path/name/of/unison\" or adding\n\
       \032      \"servercmd=/full/path/name/of/unison\" to your profile (see the\n\
-      \032      section \226\128\156Profiles\226\128\157 ). Similarly, you can specify a explicit path\n\
+      \032      section \226\128\156Profiles\226\128\157 ). Similarly, you can specify an explicit path\n\
       \032      for the ssh program using the \"-sshcmd\" option. Extra arguments can\n\
       \032      be passed to ssh by setting the -sshargs preference.\n\
+      \032    * By leveraging \"-sshcmd\" and \"-sshargs\", you can effectively use any\n\
+      \032      remote shell program, not just ssh; just remember that the roots\n\
+      \032      are still specified with ssh as the protocol, that is, they have to\n\
+      \032      start with \"ssh://\".\n\
       \n\
       Socket Method\n\
       \n\
@@ -835,10 +837,9 @@ let docs =
       \n\
       \032  specifies a root relative to the top of the local filesystem,\n\
       \032  independent of where Unison is running. Remote roots can begin with\n\
-      \032  ssh://, rsh:// to indicate that the remote server should be started\n\
-      \032  with ssh or rsh:\n\
+      \032  ssh:// to indicate that the remote server should be started with ssh:\n\
       \032     ssh://remotehost//absolute/path/of/root\n\
-      \032     rsh://user@remotehost/relative/path/of/root\n\
+      \032     ssh://user@remotehost/relative/path/of/root\n\
       \n\
       \032  If the remote server is already running (in the socket mode), then the\n\
       \032  syntax\n\
@@ -862,7 +863,6 @@ let docs =
       \032 protocol ::= file\n\
       \032           |  socket\n\
       \032           |  ssh\n\
-      \032           |  rsh\n\
       \n\
       \032 user ::= [-_a-zA-Z0-9]+\n\
       \n\
@@ -1260,116 +1260,146 @@ let docs =
       \032   or unison profilename [options]\n\
       \n\
       Basic options:\n\
-      \032-auto              automatically accept default (nonconflicting) actions\n\
-      \032-batch             batch mode: ask no questions at all\n\
-      \032-doc xxx           show documentation ('-doc topics' lists topics)\n\
-      \032-fat               use appropriate options for FAT filesystems\n\
-      \032-group             synchronize group attributes\n\
-      \032-i                 interactive profile mode (text UI); command-line only\n\
-      \032-ignore xxx        add a pattern to the ignore list\n\
-      \032-ignorenot xxx     add a pattern to the ignorenot list\n\
-      \032-nocreation xxx    prevent file creations on one replica\n\
-      \032-nodeletion xxx    prevent file deletions on one replica\n\
-      \032-noupdate xxx      prevent file updates and deletions on one replica\n\
-      \032-owner             synchronize owner\n\
-      \032-path xxx          path to synchronize\n\
-      \032-perms n           part of the permissions which is synchronized\n\
-      \032-root xxx          root of a replica (should be used exactly twice)\n\
-      \032-silent            print nothing except error messages\n\
-      \032-terse             suppress status messages\n\
-      \032-testserver        exit immediately after the connection to the server\n\
-      \032-times             synchronize modification times\n\
-      \032-version           print version and exit\n\
+      \n\
+      \032 General:\n\
+      \032  -doc xxx            show documentation ('-doc topics' lists topics)\n\
+      \032  -version            print version and exit\n\
+      \n\
+      \032 What to sync:\n\
+      \032  -group              synchronize group attributes\n\
+      \032  -ignore xxx         add a pattern to the ignore list\n\
+      \032  -ignorenot xxx      add a pattern to the ignorenot list\n\
+      \032  -nocreation xxx     prevent file creations on one replica\n\
+      \032  -nodeletion xxx     prevent file deletions on one replica\n\
+      \032  -noupdate xxx       prevent file updates and deletions on one replica\n\
+      \032  -owner              synchronize owner\n\
+      \032  -path xxx           path to synchronize\n\
+      \032  -perms n            part of the permissions which is synchronized\n\
+      \032  -root xxx           root of a replica (should be used exactly twice)\n\
+      \032  -times              synchronize modification times\n\
+      \n\
+      \032 How to sync:\n\
+      \032  -batch              batch mode: ask no questions at all\n\
+      \n\
+      \032 How to sync (text interface (CLI) only):\n\
+      \032  -auto               automatically accept default (nonconflicting) actions\n\
+      \032  -silent             print nothing except error messages\n\
+      \032  -terse              suppress status messages\n\
+      \n\
+      \032 Text interface (CLI):\n\
+      \032  -i                  interactive profile mode (text UI); command-line only\n\
       \n\
       Advanced options:\n\
-      \032-addprefsto xxx    file to add new prefs to\n\
-      \032-addversionno      add version number to name of unison on server\n\
-      \032-atomic xxx        add a pattern to the atomic list\n\
-      \032-backup xxx        add a pattern to the backup list\n\
-      \032-backupcurr xxx    add a pattern to the backupcurr list\n\
-      \032-backupcurrnot xxx add a pattern to the backupcurrnot list\n\
-      \032-backupdir xxx     directory for storing centralized backups\n\
-      \032-backuploc xxx     where backups are stored ('local' or 'central')\n\
-      \032-backupnot xxx     add a pattern to the backupnot list\n\
-      \032-backupprefix xxx  prefix for the names of backup files\n\
-      \032-backups           keep backup copies of all files (see also 'backup')\n\
-      \032-backupsuffix xxx  a suffix to be added to names of backup files\n\
-      \032-clientHostName xxx set host name of client\n\
-      \032-color xxx         use color output for text UI (true/false/default)\n\
-      \032-confirmbigdel     ask about whole-replica (or path) deletes (default true)\n\
-      \032-confirmmerge      ask for confirmation before committing results of a merge\n\
-      \032-contactquietly    suppress the 'contacting server' message during startup\n\
-      \032-copymax n         maximum number of simultaneous copyprog transfers\n\
-      \032-copyonconflict    keep copies of conflicting files\n\
-      \032-copyprog xxx      external program for copying large files\n\
-      \032-copyprogrest xxx  variant of copyprog for resuming partial transfers\n\
-      \032-copyquoterem xxx  add quotes to remote file name for copyprog (true/false/defa\n\
-      ult)\n\
-      \032-copythreshold n   use copyprog on files bigger than this (if >=0, in Kb)\n\
-      \032-debug xxx         debug module xxx ('all' -> everything, 'verbose' -> more)\n\
-      \032-diff xxx          set command for showing differences between files\n\
-      \032-dontchmod         when set, never use the chmod system call\n\
-      \032-dumbtty           do not change terminal settings in text UI\n\
-      \032-fastcheck xxx     do fast update detection (true/false/default)\n\
-      \032-fastercheckUNSAFE skip computing fingerprints for new files (experts only!)\n\
-      \032-follow xxx        add a pattern to the follow list\n\
-      \032-force xxx         force changes from this replica to the other\n\
-      \032-forcepartial xxx  add a pattern to the forcepartial list\n\
-      \032-halfduplex        force half-duplex communication with the server\n\
-      \032-height n          height (in lines) of main window in graphical interface\n\
-      \032-ignorearchives    ignore existing archive files\n\
-      \032-ignorecase xxx    identify upper/lowercase filenames (true/false/default)\n\
-      \032-ignoreinodenumbers ignore inode number changes when detecting updates\n\
-      \032-ignorelocks       ignore locks left over from previous run (dangerous!)\n\
-      \032-immutable xxx     add a pattern to the immutable list\n\
-      \032-immutablenot xxx  add a pattern to the immutablenot list\n\
-      \032-key xxx           define a keyboard shortcut for this profile (in some UIs)\n\
-      \032-killserver        kill server when done (even when using sockets)\n\
-      \032-label xxx         provide a descriptive string label for this profile\n\
-      \032-links xxx         allow the synchronization of symbolic links (true/false/defa\n\
-      ult)\n\
-      \032-listen xxx        listen on this name or addr in server socket mode (can repea\n\
-      t)\n\
-      \032-log               record actions in logfile (default true)\n\
-      \032-logfile xxx       logfile name\n\
-      \032-maxbackups n      number of backed up versions of a file\n\
-      \032-maxerrors n       maximum number of errors before a directory transfer is abor\n\
-      ted\n\
-      \032-maxsizethreshold n prevent transfer of files bigger than this (if >=0, in Kb)\n\
-      \032-maxthreads n      maximum number of simultaneous file transfers\n\
-      \032-merge xxx         add a pattern to the merge list\n\
-      \032-mountpoint xxx    abort if this path does not exist\n\
-      \032-nocreationpartial xxx add a pattern to the nocreationpartial list\n\
-      \032-nodeletionpartial xxx add a pattern to the nodeletionpartial list\n\
-      \032-noupdatepartial xxx add a pattern to the noupdatepartial list\n\
-      \032-numericids        don't map uid/gid values by user/group names\n\
-      \032-prefer xxx        choose this replica's version for conflicting changes\n\
-      \032-preferpartial xxx add a pattern to the preferpartial list\n\
-      \032-repeat xxx        synchronize repeatedly (text interface only)\n\
-      \032-retry n           re-try failed synchronizations N times (text ui only)\n\
-      \032-rootalias xxx     register alias for canonical root names\n\
-      \032-rsrc xxx          synchronize resource forks (true/false/default)\n\
-      \032-rsync             activate the rsync transfer mode (default true)\n\
-      \032-selftest          run internal tests and exit\n\
-      \032-servercmd xxx     name of unison executable on remote server\n\
-      \032-showarchive       show 'true names' (for rootalias) of roots and archive\n\
-      \032-socket xxx        act as a server on a socket\n\
-      \032-sortbysize        list changed files by size, not name\n\
-      \032-sortfirst xxx     add a pattern to the sortfirst list\n\
-      \032-sortlast xxx      add a pattern to the sortlast list\n\
-      \032-sortnewfirst      list new before changed files\n\
-      \032-sshargs xxx       other arguments (if any) for remote shell command\n\
-      \032-sshcmd xxx        path to the ssh executable\n\
-      \032-stream            use a streaming protocol for transferring file contents (def\n\
-      ault true)\n\
-      \032-ui xxx            select UI ('text' or 'graphic'); command-line only\n\
-      \032-unicode xxx       assume Unicode encoding in case insensitive mode\n\
-      \032-watch             when set, use a file watcher process to detect changes\n\
-      \032-xferbycopying     optimize transfers using local copies (default true)\n\
       \n\
-      Special command line options:\n\
-      \032-include xxx       include a profile file's preferences\n\
-      \032-source xxx        include a file's preferences\n\
+      \032 Fine-tune sync:\n\
+      \032  -atomic xxx         add a pattern to the atomic list\n\
+      \032  -follow xxx         add a pattern to the follow list\n\
+      \032  -force xxx          force changes from this replica to the other\n\
+      \032  -forcepartial xxx   add a pattern to the forcepartial list\n\
+      \032  -ignorecase xxx     identify upper/lowercase filenames (true/false/default)\n\
+      \032  -immutable xxx      add a pattern to the immutable list\n\
+      \032  -immutablenot xxx   add a pattern to the immutablenot list\n\
+      \032  -links xxx          allow the synchronization of symbolic links\n\
+      \032                      (true/false/default)\n\
+      \032  -merge xxx          add a pattern to the merge list\n\
+      \032  -nocreationpartial xxx add a pattern to the nocreationpartial list\n\
+      \032  -nodeletionpartial xxx add a pattern to the nodeletionpartial list\n\
+      \032  -noupdatepartial xxx add a pattern to the noupdatepartial list\n\
+      \032  -prefer xxx         choose this replica's version for conflicting changes\n\
+      \032  -preferpartial xxx  add a pattern to the preferpartial list\n\
+      \032  -rsrc xxx           synchronize resource forks (true/false/default)\n\
+      \n\
+      \032 How to sync:\n\
+      \032  -backup xxx         add a pattern to the backup list\n\
+      \032  -backupcurr xxx     add a pattern to the backupcurr list\n\
+      \032  -backupcurrnot xxx  add a pattern to the backupcurrnot list\n\
+      \032  -backupdir xxx      directory for storing centralized backups\n\
+      \032  -backuploc xxx      where backups are stored ('local' or 'central')\n\
+      \032  -backupnot xxx      add a pattern to the backupnot list\n\
+      \032  -backupprefix xxx   prefix for the names of backup files\n\
+      \032  -backups            (deprecated) keep backup copies of all files (see also\n\
+      \032                      'backup')\n\
+      \032  -backupsuffix xxx   a suffix to be added to names of backup files\n\
+      \032  -confirmbigdel      ask about whole-replica (or path) deletes (default true)\n\
+      \032  -confirmmerge       ask for confirmation before committing results of a merge\n\
+      \032  -copyonconflict     keep copies of conflicting files\n\
+      \032  -dontchmod          when set, never use the chmod system call\n\
+      \032  -fastcheck xxx      do fast update detection (true/false/default)\n\
+      \032  -fat                use appropriate options for FAT filesystems\n\
+      \032  -ignoreinodenumbers ignore inode number changes when detecting updates\n\
+      \032  -maxbackups n       number of backed up versions of a file\n\
+      \032  -numericids         don't map uid/gid values by user/group names\n\
+      \032  -sortbysize         list changed files by size, not name\n\
+      \032  -sortfirst xxx      add a pattern to the sortfirst list\n\
+      \032  -sortlast xxx       add a pattern to the sortlast list\n\
+      \032  -sortnewfirst       list new before changed files\n\
+      \n\
+      \032 How to sync (text interface (CLI) only):\n\
+      \032  -repeat xxx         synchronize repeatedly (text interface only)\n\
+      \032  -retry n            re-try failed synchronizations N times (text ui only)\n\
+      \n\
+      \032 Text interface (CLI):\n\
+      \032  -color xxx          use color output for text UI (true/false/default)\n\
+      \032  -dumbtty            do not change terminal settings in text UI\n\
+      \n\
+      \032 Graphical interface (GUI):\n\
+      \032  -height n           height (in lines) of main window in graphical interface\n\
+      \n\
+      \032 Remote connections:\n\
+      \032  -addversionno       add version number to name of unison on server\n\
+      \032  -clientHostName xxx set host name of client\n\
+      \032  -halfduplex         (deprecated) force half-duplex communication with the\n\
+      \032                      server\n\
+      \032  -killserver         kill server when done (even when using sockets)\n\
+      \032  -listen xxx         listen on this name or addr in server socket mode (can\n\
+      \032                      repeat)\n\
+      \032  -rsync              activate the rsync transfer mode (default true)\n\
+      \032  -servercmd xxx      name of unison executable on remote server\n\
+      \032  -socket xxx         act as a server on a socket\n\
+      \032  -sshargs xxx        other arguments (if any) for remote shell command\n\
+      \032  -sshcmd xxx         path to the ssh executable\n\
+      \032  -stream             (deprecated) use a streaming protocol for transferring\n\
+      \032                      file contents (default true)\n\
+      \032  -testserver         exit immediately after the connection to the server\n\
+      \032  -xferbycopying      optimize transfers using local copies (default true)\n\
+      \n\
+      \032 Archive management:\n\
+      \032  -ignorearchives     ignore existing archive files\n\
+      \n\
+      \032 Other:\n\
+      \032  -addprefsto xxx     file to add new prefs to\n\
+      \032  -contactquietly     suppress the 'contacting server' message during startup\n\
+      \032  -copymax n          maximum number of simultaneous copyprog transfers\n\
+      \032  -copyprog xxx       external program for copying large files\n\
+      \032  -copyprogrest xxx   variant of copyprog for resuming partial transfers\n\
+      \032  -copyquoterem xxx   add quotes to remote file name for copyprog\n\
+      \032                      (true/false/default)\n\
+      \032  -copythreshold n    use copyprog on files bigger than this (if >=0, in Kb)\n\
+      \032  -diff xxx           set command for showing differences between files\n\
+      \032  -ignorelocks        ignore locks left over from previous run (dangerous!)\n\
+      \032  -include xxx        include a profile's preferences\n\
+      \032  -key xxx            define a keyboard shortcut for this profile (in some UIs)\n\
+      \032  -label xxx          provide a descriptive string label for this profile\n\
+      \032  -log                record actions in logfile (default true)\n\
+      \032  -logfile xxx        logfile name\n\
+      \032  -maxerrors n        maximum number of errors before a directory transfer is\n\
+      \032                      aborted\n\
+      \032  -maxsizethreshold n prevent transfer of files bigger than this (if >=0, in\n\
+      \032                      Kb)\n\
+      \032  -maxthreads n       maximum number of simultaneous file transfers\n\
+      \032  -mountpoint xxx     abort if this path does not exist\n\
+      \032  -rootalias xxx      register alias for canonical root names\n\
+      \032  -showarchive        show 'true names' (for rootalias) of roots and archive\n\
+      \032  -source xxx         include a file's preferences\n\
+      \032  -ui xxx             select UI ('text' or 'graphic'); command-line only\n\
+      \032  -unicode xxx        assume Unicode encoding in case insensitive mode\n\
+      \032  -watch              when set, use a file watcher process to detect changes\n\
+      \n\
+      Expert options:\n\
+      \032  -debug xxx          debug module xxx ('all' -> everything, 'verbose' -> more)\n\
+      \032  -dumparchives       dump contents of archives just after loading\n\
+      \032  -fastercheckUNSAFE  skip computing fingerprints for new files (experts only!)\n\
+      \032  -selftest           run internal tests and exit\n\
       \n\
       \n\
       \032  Here, in more detail, is what they do. Many are discussed in greater\n\
@@ -1483,7 +1513,7 @@ let docs =
       \032         sufficiently different from the names of your real files.\n\
       \n\
       \032  backups\n\
-      \032         Setting this flag to true is equivalent to setting\n\
+      \032         (Deprecated) Setting this flag to true is equivalent to setting\n\
       \032         backuplocation to local and backup to Name *.\n\
       \n\
       \032  backupsuffix xxx\n\
@@ -1740,13 +1770,10 @@ let docs =
       \032         identifiers are synchronized depends on the preference numerids.\n\
       \n\
       \032  halfduplex\n\
-      \032         When this flag is set to true, Unison network communication is\n\
-      \032         forced to be half duplex (the client and the server never\n\
-      \032         simultaneously emit data). If you experience unstabilities with\n\
-      \032         your network link, this may help. The communication is always\n\
-      \032         half-duplex when synchronizing with a Windows machine due to a\n\
-      \032         limitation of Unison current implementation that could result in\n\
-      \032         a deadlock.\n\
+      \032         (Deprecated) When this flag is set to true, Unison network\n\
+      \032         communication is forced to be half duplex (the client and the\n\
+      \032         server never simultaneously emit data). If you experience\n\
+      \032         unstabilities with your network link, this may help.\n\
       \n\
       \032  height n\n\
       \032         Used to set the height (in lines) of the main window in the\n\
@@ -1832,6 +1859,12 @@ let docs =
       \n\
       \032  immutablenot xxx\n\
       \032         This preference overrides immutable.\n\
+      \n\
+      \032  include xxx\n\
+      \032         Include preferences from a profile. include name reads the\n\
+      \032         profile \"name\" (or file \"name\" in the .unison directory if\n\
+      \032         profile \"name\" does not exist) and includes its contents as if\n\
+      \032         it was part of a profile or given directly on command line.\n\
       \n\
       \032  key xxx\n\
       \032         Used in a profile to define a numeric key (0-9) that can be used\n\
@@ -1997,10 +2030,10 @@ let docs =
       \032         synchronised (synchronizing theses latter bits can be a security\n\
       \032         hazard). If you want to synchronize all bits, you can set the\n\
       \032         value of this preference to \226\136\1461. If one of the replica is on a\n\
-      \032         FAT [Windows] filesystem, you should consider using the t fat\n\
+      \032         FAT [Windows] filesystem, you should consider using the fat\n\
       \032         preference instead of this preference. If you need Unison not to\n\
       \032         set permissions at all, set the value of this preference to 0\n\
-      \032         and set the preference t dontchmod to t true.\n\
+      \032         and set the preference dontchmod to true.\n\
       \n\
       \032  prefer xxx\n\
       \032         Including the preference -prefer root causes Unison always to\n\
@@ -2058,16 +2091,6 @@ let docs =
       \032         of roots, Unison replaces any roots matching the left-hand side\n\
       \032         of any rootalias rule by the corresponding right-hand side.\n\
       \n\
-      \032  rshargs xxx\n\
-      \032         The string value of this preference will be passed as additional\n\
-      \032         arguments (besides the host name and the name of the Unison\n\
-      \032         executable on the remote system) to the rsh command used to\n\
-      \032         invoke the remote server. The backslash is an escape character.\n\
-      \n\
-      \032  rshcmd xxx\n\
-      \032         This preference can be used to explicitly set the name of the\n\
-      \032         rsh executable (e.g., giving a full path name), if necessary.\n\
-      \n\
       \032  rsrc xxx\n\
       \032         When set to true, this flag causes Unison to synchronize\n\
       \032         resource forks and HFS meta-data. On filesystems that do not\n\
@@ -2108,12 +2131,17 @@ let docs =
       \032  showarchive\n\
       \032         When this preference is set, Unison will print out the \226\128\153true\n\
       \032         names\226\128\153of the roots, in the same form as is expected by the\n\
-      \032         rootaliaspreference.\n\
+      \032         rootalias preference.\n\
       \n\
       \032  silent\n\
       \032         When this preference is set to true, the textual user interface\n\
       \032         will print nothing at all, except in the case of errors. Setting\n\
       \032         silent to true automatically sets the batch preference to true.\n\
+      \n\
+      \032  socket xxx\n\
+      \032         Start unison as a server listening on a TCP socket (with TCP\n\
+      \032         port number as argument) or a local socket (aka Unix domain\n\
+      \032         socket) (with socket path as argument).\n\
       \n\
       \032  sortbysize\n\
       \032         When this flag is set, the user interface will list changed\n\
@@ -2143,6 +2171,11 @@ let docs =
       \032         for checking that newly created files are not \226\128\152junk\226\128\153, i.e., ones\n\
       \032         that should be ignored or deleted rather than synchronized.\n\
       \n\
+      \032  source xxx\n\
+      \032         Include preferences from a file. source name reads the file\n\
+      \032         \"name\" in the .unison directory and includes its contents as if\n\
+      \032         it was part of a profile or given directly on command line.\n\
+      \n\
       \032  sshargs xxx\n\
       \032         The string value of this preference will be passed as additional\n\
       \032         arguments (besides the host name and the name of the Unison\n\
@@ -2153,18 +2186,10 @@ let docs =
       \032         This preference can be used to explicitly set the name of the\n\
       \032         ssh executable (e.g., giving a full path name), if necessary.\n\
       \n\
-      \032  sshversion xxx\n\
-      \032         This preference can be used to control which version of ssh\n\
-      \032         should be used to connect to the server. Legal values are 1 and\n\
-      \032         2, which will cause unison to try to use ssh1 orssh2 instead of\n\
-      \032         just ssh to invoke ssh. The default value is empty, which will\n\
-      \032         make unison use whatever version of ssh is installed as the\n\
-      \032         default \226\128\152ssh\226\128\153 command.\n\
-      \n\
       \032  stream\n\
-      \032         When this preference is set, Unison will use an experimental\n\
-      \032         streaming protocol for transferring file contents more\n\
-      \032         efficiently. The default value is true.\n\
+      \032         (Deprecated) When this preference is set, Unison will use an\n\
+      \032         experimental streaming protocol for transferring file contents\n\
+      \032         more efficiently. The default value is true.\n\
       \n\
       \032  terse\n\
       \032         When this preference is set to true, the user interface will not\n\
