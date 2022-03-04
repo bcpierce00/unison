@@ -1974,11 +1974,12 @@ let addPreference parent =
     GWindow.dialog ~parent ~border_width:12
       ~no_separator:true ~title:"Add a Preference"
       ~modal:true () in
+  t#set_default_height 575;
   let vb = t#vbox in
 (*  vb#set_spacing 18;*)
   let paned = GPack.paned `VERTICAL ~packing:vb#add () in
 
-  let lvb = GPack.vbox ~spacing:6 ~packing:paned#pack1 () in
+  let lvb = GPack.vbox ~spacing:6 ~packing:(paned#pack1 ~resize:true) () in
   let preferenceLabel =
     GMisc.label
       ~text:"_Preferences:" ~use_underline:true
@@ -1986,8 +1987,9 @@ let addPreference parent =
   in
   let cols = new GTree.column_list in
   let c_name = cols#add Gobject.Data.string in
-  let basic_store = GTree.list_store cols in
-  let full_store = GTree.list_store cols in
+  let c_font = cols#add Gobject.Data.string in
+  let basic_store = GTree.tree_store cols in
+  let full_store = GTree.tree_store cols in
   let lst =
     let sw =
       GBin.scrolled_window ~packing:(lvb#pack ~expand:true)
@@ -1995,14 +1997,73 @@ let addPreference parent =
         ~hpolicy:`AUTOMATIC ~vpolicy:`AUTOMATIC () in
     GTree.view ~headers_visible:false ~packing:sw#add () in
   preferenceLabel#set_mnemonic_widget (Some (lst :> GObj.widget));
-  ignore (lst#append_column
-    (GTree.view_column
-       ~renderer:(GTree.cell_renderer_text [], ["text", c_name]) ()));
+
+  let cell_r = GTree.cell_renderer_text [] in
+  let view_col = (GTree.view_column ~renderer:(cell_r, ["text", c_name]) ()) in
+  view_col#add_attribute cell_r "font" c_font;
+  ignore (lst#append_column view_col);
   let hiddenPrefs =
     ["auto"; "doc"; "silent"; "terse"; "testserver"; "version"] in
   let shownPrefs =
     ["label"; "key"] in
-  let insert (store : #GTree.list_store) all =
+
+  let createGroup (store : #GTree.tree_store) n =
+    let row = store#append () in
+    store#set ~row ~column:c_name n;
+    store#set ~row ~column:c_font "bold";
+    row
+  in
+  let createTopic (store : #GTree.tree_store) parent n =
+    let row = store#append ~parent () in
+    store#set ~row ~column:c_name n;
+    store#set ~row ~column:c_font "italic";
+    row
+  in
+  let createTopics store parent g =
+    Safelist.map (fun t ->
+      let topic = g t in
+      (topic, (createTopic store parent (Prefs.topic_title topic))))
+  in
+
+  let topicsInOrder = [ `Sync; `Syncprocess; `Syncprocess_CLI; `CLI; `GUI; `Remote; `Archive ] in
+
+  let createParents store =
+    let gr = createGroup store "1 — Basic preferences" in
+    let l = createTopics store gr (fun t -> `Basic t) (`General :: topicsInOrder) in
+
+    let gr = createGroup store "2 — Advanced preferences" in
+    let l = l @ createTopics store gr (fun t -> `Advanced t) (topicsInOrder @ [`General]) in
+
+    let l = (`Expert, createGroup store "3 — Expert preferences") :: l in
+
+    (store, l)
+  in
+  let parents = [createParents basic_store; createParents full_store] in
+  let purgeParents (store : #GTree.tree_store) =
+    Safelist.iter (fun (_, row) ->
+        if not (store#iter_has_child row) then begin
+          let parent = store#iter_parent row in
+          ignore (store#remove row);
+          match parent with
+          | None -> ()
+          | Some parent -> if not (store#iter_has_child parent) then
+                             ignore (store#remove parent)
+        end
+      ) (Safelist.assoc store parents)
+  in
+  let categoryParent store nm =
+    match Prefs.category nm with
+    | None -> None
+    | Some cat -> begin
+        try Some (Safelist.assoc cat (Safelist.assoc store parents)) with
+        | Not_found -> None
+      end
+  in
+  let isParent (store : #GTree.tree_store) r =
+    store#iter_has_child r
+  in
+
+  let insert (store : #GTree.tree_store) all =
     List.iter
       (fun nm ->
          if
@@ -2010,10 +2071,15 @@ let addPreference parent =
            (let (_, _, basic) = Prefs.documentation nm in basic &&
             not (List.mem nm hiddenPrefs))
          then begin
-           let row = store#append () in
+           let row =
+             match categoryParent store nm with
+             | None -> store#append ()
+             | Some parent -> store#append ~parent ()
+           in
            store#set ~row ~column:c_name nm
          end)
-      (Prefs.list false)
+      (Prefs.list false);
+    purgeParents store
   in
   insert basic_store false;
   insert full_store true;
@@ -2028,21 +2094,21 @@ let addPreference parent =
        lst#set_model
          (Some (if b then full_store else basic_store :> GTree.model)));
 
+  let getSelectedPref rf =
+    let row = rf#iter in
+    let store = if React.state showAll then full_store else basic_store in
+    if isParent store row then
+      None
+    else
+      Some (store#get ~row ~column:c_name)
+  in
   let selection = GtkReact.tree_view_selection lst in
   let updateDoc = documentPreference ~compact:true ~packing:paned#pack2 in
-  selection >|
-    (fun l ->
-       let nm =
-         match l with
-           [rf] ->
-             let row = rf#iter in
-             let store =
-               if React.state showAll then full_store else basic_store in
-             Some (store#get ~row ~column:c_name)
-         | _ ->
-             None
-       in
-       updateDoc nm);
+  let prefSelection = selection >> (function
+    | [rf] -> getSelectedPref rf
+    | _ -> None)
+  in
+  prefSelection >| updateDoc;
 
   let cancelCommand () = t#destroy () in
   let cancelButton =
@@ -2054,7 +2120,7 @@ let addPreference parent =
   let addButton =
     GButton.button ~stock:`ADD ~packing:t#action_area#add () in
   ignore (addButton#connect#clicked ~callback:addCommand);
-  GtkReact.set_sensitive addButton (selection >> fun l -> l <> []);
+  GtkReact.set_sensitive addButton (prefSelection >> fun nm -> nm <> None);
   ignore (lst#connect#row_activated ~callback:(fun _ _ -> addCommand ()));
   addButton#grab_default ();
 
@@ -2063,11 +2129,8 @@ let addPreference parent =
   GMain.Main.main ();
   if not !ok then None else
     match React.state selection with
-      [rf] ->
-        let row = rf#iter in
-        let store =
-          if React.state showAll then full_store else basic_store in
-        Some (store#get ~row ~column:c_name)
+    | [rf] ->
+        getSelectedPref rf
     | _ ->
         None
 

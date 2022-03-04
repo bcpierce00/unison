@@ -209,6 +209,13 @@ let documentation nm =
   with Not_found ->
     ("", "", false)
 
+let category nm =
+  try
+    let {category; _} = Util.StringMap.find nm !prefs in
+    Some category
+  with Not_found ->
+    None
+
 let list include_cli_only =
   List.sort String.compare
     (Util.StringMap.fold
@@ -521,6 +528,7 @@ let title = function
   | `Basic t | `Advanced t -> topic t
   | `Expert -> ""
   | `Internal _ -> assert false
+let topic_title = title
 
 let topicsInOrder = [ `Sync; `Syncprocess; `Syncprocess_CLI; `CLI; `GUI; `Remote; `Archive ]
 
