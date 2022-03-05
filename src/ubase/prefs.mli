@@ -210,7 +210,7 @@ type typ =
 
 val canonicalName : string -> string
 val typ : string -> typ
-val documentation : string -> string * string * bool
+val documentation : string -> string * string
 val category : string -> group option
 val list : bool -> string list
 val topic_title : group -> string

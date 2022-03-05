@@ -196,7 +196,6 @@ let documentation nm =
   try
     let {category; doc; fulldoc; deprec; _} = Util.StringMap.find nm !prefs in
     if isInternal category then raise Not_found;
-    let basic = match category with `Basic _ -> true | _ -> false in
     let doc =
       if not deprec then doc
       else "(Deprecated) " ^ doc
@@ -205,9 +204,9 @@ let documentation nm =
       if not deprec then fulldoc
       else "{\\em (Deprecated)} " ^ fulldoc
     in
-    (doc, fulldoc, basic)
+    (doc, fulldoc)
   with Not_found ->
-    ("", "", false)
+    ("", "")
 
 let category nm =
   try

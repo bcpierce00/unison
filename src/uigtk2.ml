@@ -1644,7 +1644,7 @@ let editPreference parent nm ty vl =
             ~packing:(tbl#attach ~left:0 ~top:2 ~expand:`NONE) ());
   ignore (GMisc.label ~text:(Unicode.protect nm) ~xalign:0. ~selectable:true ()
             ~packing:(tbl#attach ~left:1 ~top:0 ~expand:`X));
-  let (doc, _, _) = Prefs.documentation nm in
+  let (doc, _) = Prefs.documentation nm in
   ignore (GMisc.label ~text:doc ~xalign:0. ~selectable:true ()
             ~packing:(tbl#attach ~left:1 ~top:1 ~expand:`X));
   ignore (GMisc.label ~text:(nameOfType ty) ~xalign:0. ~selectable:true ()
@@ -1956,14 +1956,14 @@ let documentPreference ~compact ~packing =
      ("tt", create [`FONT_DESC (Lazy.force fontMonospace)])]
   in
   fun nm ->
-    let (short, long, _) =
+    let (short, long) =
       match nm with
         Some nm ->
           tbl#misc#set_sensitive true;
           Prefs.documentation nm
       | _ ->
           tbl#misc#set_sensitive false;
-          ("", "", false)
+          ("", "")
     in
     shortDescr#set_text (String.capitalize_ascii short);
     insertMarkup tags longDescr (formatDoc long)
@@ -1988,8 +1988,7 @@ let addPreference parent =
   let cols = new GTree.column_list in
   let c_name = cols#add Gobject.Data.string in
   let c_font = cols#add Gobject.Data.string in
-  let basic_store = GTree.tree_store cols in
-  let full_store = GTree.tree_store cols in
+  let store = GTree.tree_store cols in
   let lst =
     let sw =
       GBin.scrolled_window ~packing:(lvb#pack ~expand:true)
@@ -2002,44 +2001,41 @@ let addPreference parent =
   let view_col = (GTree.view_column ~renderer:(cell_r, ["text", c_name]) ()) in
   view_col#add_attribute cell_r "font" c_font;
   ignore (lst#append_column view_col);
-  let hiddenPrefs =
-    ["auto"; "doc"; "silent"; "terse"; "testserver"; "version"] in
+  (*let hiddenPrefs =
+    ["auto"; "silent"; "terse"] in*)
   let shownPrefs =
     ["label"; "key"] in
 
-  let createGroup (store : #GTree.tree_store) n =
+  let createGroup n =
     let row = store#append () in
     store#set ~row ~column:c_name n;
     store#set ~row ~column:c_font "bold";
     row
   in
-  let createTopic (store : #GTree.tree_store) parent n =
+  let createTopic parent n =
     let row = store#append ~parent () in
     store#set ~row ~column:c_name n;
     store#set ~row ~column:c_font "italic";
     row
   in
-  let createTopics store parent g =
+  let createTopics parent g =
     Safelist.map (fun t ->
       let topic = g t in
-      (topic, (createTopic store parent (Prefs.topic_title topic))))
+      (topic, (createTopic parent (Prefs.topic_title topic))))
   in
 
   let topicsInOrder = [ `Sync; `Syncprocess; `Syncprocess_CLI; `CLI; `GUI; `Remote; `Archive ] in
 
-  let createParents store =
-    let gr = createGroup store "1 — Basic preferences" in
-    let l = createTopics store gr (fun t -> `Basic t) (`General :: topicsInOrder) in
+  let basic = createGroup "1 — Basic preferences" in
+  let l = createTopics basic (fun t -> `Basic t) (`General :: topicsInOrder) in
 
-    let gr = createGroup store "2 — Advanced preferences" in
-    let l = l @ createTopics store gr (fun t -> `Advanced t) (topicsInOrder @ [`General]) in
+  let adv = createGroup "2 — Advanced preferences" in
+  let l = l @ createTopics adv (fun t -> `Advanced t) (topicsInOrder @ [`General]) in
 
-    let l = (`Expert, createGroup store "3 — Expert preferences") :: l in
+  let l = (`Expert, createGroup "3 — Expert preferences") :: l in
 
-    (store, l)
-  in
-  let parents = [createParents basic_store; createParents full_store] in
-  let purgeParents (store : #GTree.tree_store) =
+  let parents = l in
+  let purgeParents () =
     Safelist.iter (fun (_, row) ->
         if not (store#iter_has_child row) then begin
           let parent = store#iter_parent row in
@@ -2049,55 +2045,38 @@ let addPreference parent =
           | Some parent -> if not (store#iter_has_child parent) then
                              ignore (store#remove parent)
         end
-      ) (Safelist.assoc store parents)
+      ) parents
   in
-  let categoryParent store nm =
+  let categoryParent nm =
     match Prefs.category nm with
     | None -> None
+    | Some _ when List.mem nm shownPrefs -> Some basic
     | Some cat -> begin
-        try Some (Safelist.assoc cat (Safelist.assoc store parents)) with
+        try Some (Safelist.assoc cat parents) with
         | Not_found -> None
       end
   in
-  let isParent (store : #GTree.tree_store) r =
-    store#iter_has_child r
-  in
+  let isParent r = store#iter_has_child r in
 
-  let insert (store : #GTree.tree_store) all =
+  let () =
     List.iter
       (fun nm ->
-         if
-           all || List.mem nm shownPrefs ||
-           (let (_, _, basic) = Prefs.documentation nm in basic &&
-            not (List.mem nm hiddenPrefs))
-         then begin
-           let row =
-             match categoryParent store nm with
-             | None -> store#append ()
-             | Some parent -> store#append ~parent ()
-           in
-           store#set ~row ~column:c_name nm
-         end)
+         let row =
+           match categoryParent nm with
+           | None -> store#append ()
+           | Some parent -> store#append ~parent ()
+         in
+         store#set ~row ~column:c_name nm
+      )
       (Prefs.list false);
-    purgeParents store
   in
-  insert basic_store false;
-  insert full_store true;
+  purgeParents ();
 
-  let showAll =
-    GtkReact.toggle_button
-      (GButton.check_button ~label:"_Show all preferences"
-         ~use_mnemonic:true ~active:false ~packing:(lvb#pack ~expand:false) ())
-  in
-  showAll >|
-    (fun b ->
-       lst#set_model
-         (Some (if b then full_store else basic_store :> GTree.model)));
+  lst#set_model (Some store#coerce);
 
   let getSelectedPref rf =
     let row = rf#iter in
-    let store = if React.state showAll then full_store else basic_store in
-    if isParent store row then
+    if isParent row then
       None
     else
       Some (store#get ~row ~column:c_name)
