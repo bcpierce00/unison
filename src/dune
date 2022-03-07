@@ -18,12 +18,14 @@
 (executable
  (name linktext)
  (public_name unison)
+ (package unison)
  (modules linktext)
  (libraries unison_lib))
 
 (executable
  (name linkgtk2)
  (public_name unison-gui)
+ (package unison-gui)
  (flags :standard -w -3-6-9-27-32-52)
  (modules linkgtk2 uigtk2)
  (libraries threads unison_lib lablgtk2))
