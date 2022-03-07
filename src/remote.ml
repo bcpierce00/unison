@@ -403,9 +403,15 @@ let dumpUrgent conn l =
        flushBuffer conn.outputBuffer)
 
 let enableFlowControl conn isServer =
+  let rec waitDrain () =
+    if not isServer && conn.outputBuffer.length > 0 then
+      Lwt_unix.yield () >>= waitDrain
+    else
+      Lwt.return ()
+  in
   let q = conn.outputQueue in
   q.available <- false;
-  flushBuffer conn.outputBuffer >>= fun () ->
+  waitDrain () >>= fun () ->
   q.flowControl <- true;
   q.canWrite <- isServer;
   if q.canWrite then
