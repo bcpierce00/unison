@@ -3,7 +3,13 @@
 (library
  (name fswatcher)
  (wrapped false)
- (enabled_if (= %{system} "linux"))
+ (enabled_if
+  (or
+   (= %{system} "linux")
+   (= %{system} "linux_elf")
+   (= %{system} "elf")
+   (= %{system} "linux_eabihf")
+   (= %{system} "linux_eabi")))
  (modules :standard \ watcher)
  (flags :standard -w -3-27-39)
  (foreign_stubs
@@ -14,7 +20,13 @@
 (executable
  (name watcher)
  (public_name unison-fsmonitor)
- (enabled_if (= %{system} "linux"))
+ (enabled_if
+  (or
+   (= %{system} "linux")
+   (= %{system} "linux_elf")
+   (= %{system} "elf")
+   (= %{system} "linux_eabihf")
+   (= %{system} "linux_eabi")))
  (modules watcher)
  (flags :standard -w -27)
  (libraries fswatcher))
