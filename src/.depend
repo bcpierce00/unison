@@ -629,7 +629,6 @@ lwt/win/lwt_win.cmi : \
 main.cmo : \
     uutil.cmi \
     ubase/util.cmi \
-    ubase/umarshal.cmi \
     uitext.cmi \
     uicommon.cmi \
     strings.cmi \
@@ -640,7 +639,6 @@ main.cmo : \
 main.cmx : \
     uutil.cmx \
     ubase/util.cmx \
-    ubase/umarshal.cmx \
     uitext.cmx \
     uicommon.cmx \
     strings.cmx \
@@ -1032,19 +1030,22 @@ system/win/system_impl.cmx : \
     system/system_win.cmx \
     system/system_generic.cmx
 terminal.cmo : \
+    ubase/util.cmi \
     system.cmi \
     ubase/rx.cmi \
     lwt/lwt_unix.cmi \
     lwt/lwt.cmi \
     terminal.cmi
 terminal.cmx : \
+    ubase/util.cmx \
     system.cmx \
     ubase/rx.cmx \
     lwt/lwt_unix.cmx \
     lwt/lwt.cmx \
     terminal.cmi
 terminal.cmi : \
-    lwt/lwt_unix.cmi
+    lwt/lwt_unix.cmi \
+    lwt/lwt.cmi
 test.cmo : \
     uutil.cmi \
     ubase/util.cmi \
@@ -1191,6 +1192,8 @@ ubase/prefs.cmi : \
     ubase/util.cmi \
     ubase/umarshal.cmi \
     system.cmi
+ubase/projectInfo.cmo :
+ubase/projectInfo.cmx :
 ubase/proplist.cmo : \
     ubase/util.cmi \
     ubase/umarshal.cmi \
@@ -1247,10 +1250,12 @@ ubase/umarshal.cmi :
 ubase/util.cmo : \
     system.cmi \
     ubase/safelist.cmi \
+    ubase/projectInfo.cmo \
     ubase/util.cmi
 ubase/util.cmx : \
     system.cmx \
     ubase/safelist.cmx \
+    ubase/projectInfo.cmx \
     ubase/util.cmi
 ubase/util.cmi : \
     system.cmi
