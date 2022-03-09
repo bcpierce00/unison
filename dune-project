@@ -54,8 +54,7 @@ the changes in each replica to the other.
    (>= 4.08))
   (dune
    (>= 2.3))
-  (lablgtk2
-   (>= 2.18.6))))
+  lablgtk))
 
 (package
  (name unison-fsmonitor)
