@@ -23,7 +23,7 @@
  (name unison)
  (synopsis "File-synchronization tool for Unix and Windows")
  (description "\
-Text based userinterface for Unison.
+Text based user interface for Unison.
 
 Unison is a file-synchronization tool for Unix and Windows.
 It allows two replicas of a collection of files and directories
@@ -41,7 +41,7 @@ the changes in each replica to the other.
  (name unison-gui)
  (synopsis "File-synchronization tool for Unix and Windows")
  (description "\
-Graphical userinterface for Unison.
+Graphical user interface for Unison.
 
 Unison is a file-synchronization tool for Unix and Windows.
 It allows two replicas of a collection of files and directories
