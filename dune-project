@@ -33,7 +33,7 @@ the changes in each replica to the other.
 ")
  (depends
   (ocaml
-   (>= 4.03))
+   (>= 4.08))
   (dune
    (>= 2.3))))
 
@@ -51,7 +51,7 @@ the changes in each replica to the other.
 ")
  (depends
   (ocaml
-   (>= 4.03))
+   (>= 4.08))
   (dune
    (>= 2.3))
   (lablgtk2
@@ -72,6 +72,6 @@ the changes in each replica to the other.
 ")
  (depends
   (ocaml
-   (>= 4.03))
+   (>= 4.08))
   (dune
    (>= 2.3))))
