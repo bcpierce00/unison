@@ -60,8 +60,8 @@ the changes in each replica to the other.
  (name unison-fsmonitor)
  (synopsis "File-synchronization tool for Unix and Windows")
  (description "\
-This helper application monitors file system changes on all given
-(relative to root) paths.
+This optional add-on for unison monitors file system changes
+on all given (relative to root) paths.
 
 Unison is a file-synchronization tool for Unix and Windows.
 It allows two replicas of a collection of files and directories
