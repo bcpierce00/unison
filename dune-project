@@ -22,7 +22,7 @@
 (package
  (name unison)
  (synopsis "File-synchronization tool for Unix and Windows")
- (description "
+ (description "\
 Text based userinterface for Unison.
 
 Unison is a file-synchronization tool for Unix and Windows.
@@ -40,7 +40,7 @@ the changes in each replica to the other.
 (package
  (name unison-gui)
  (synopsis "File-synchronization tool for Unix and Windows")
- (description "
+ (description "\
 Graphical userinterface for Unison.
 
 Unison is a file-synchronization tool for Unix and Windows.
@@ -59,7 +59,7 @@ the changes in each replica to the other.
 (package
  (name unison-fsmonitor)
  (synopsis "File-synchronization tool for Unix and Windows")
- (description "
+ (description "\
 This helper application monitors file system changes on all given
 (relative to root) paths.
 
