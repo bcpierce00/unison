@@ -1,0 +1,22 @@
+(copy_files# ../watchercommon.ml{,i})
+
+(library
+ (name fswatcher_solaris)
+ (wrapped false)
+ (enabled_if (= %{system} "solaris"))
+ (modules :standard \ watcher)
+ (flags :standard -w -3-27-39)
+ (foreign_stubs
+  (language c)
+  (names fen_stubs))
+ (libraries unix lwt_lib))
+
+(executable
+ (name watcher)
+ (public_name unison-fsmonitor)
+ (package unison-fsmonitor)
+ (enabled_if (= %{system} "solaris"))
+ (modules watcher)
+ (flags :standard -w -27)
+ (libraries fswatcher_solaris))
+
