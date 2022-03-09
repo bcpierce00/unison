@@ -10,7 +10,7 @@
 
 (maintainers "maintainers")
 
-(authors "Trevor Jim, Benjamin C. Pierce and J\195\169r\195\180me Vouillon")
+(authors "Trevor Jim" "Benjamin C. Pierce" "J\195\169r\195\180me Vouillon")
 
 (source
  (github bcpierce00/unison))
