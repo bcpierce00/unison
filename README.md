@@ -11,6 +11,9 @@ before creating or commenting on a github issue.***
 
 ***TL;DR: Do not ask questions or ask for help in issues.  Upgrade to the latest release.***
 
+For compatibility information with version 2.52, see
+https://github.com/bcpierce00/unison/wiki/2.52-Migration-Guide
+
 ## About
 
 Unison is a file-synchronization tool for POSIX-compliant systems
@@ -91,13 +94,20 @@ You may be able to find a pre-built binary for your operating system,
 version, and CPU type.  For a list of sources, See
 https://github.com/bcpierce00/unison/wiki/Downloading-Unison
 
-Generally, you should use the most recent formal release, soon to be
-2.52.0, and currently 2.51.X.  Earlier branches (e.g. 2.48) are no
+Generally, you should use the most recent formal release, currently
+2.52.  Earlier branches (e.g. 2.51 and 2.48) are no
 longer maintained, and bug reports are not accepted about these
 versions.  This is true even though many packaging systems (including
 GNU/Linux distributions) continue to have 2.48.  There are sometimes
 release candidates.  There is always the master branch in git, which
 historically has been quite stable.
+
+### Version compatibility
+
+For Unison versions 2.52 and newer, see
+https://github.com/bcpierce00/unison/wiki/2.52-Migration-Guide
+
+The information below is true for Unison versions older than 2.52.
 
 Beware that Unison uses OCaml's built-in data marshalling, and that
 this facility is unstable across versions of "ocaml" (the standard
