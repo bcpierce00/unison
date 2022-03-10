@@ -13,6 +13,8 @@ Note that formatting for 2.51.x and older is almost certainly incorrect.
 
 ## Changes in 2.52.0
 
+Released 2022-03-12
+
    * Feature negotiation, compatible wtih 2.51.
    * New archive format (independent of ocaml version, based on umarshal)
      Upgrade is automatic.
@@ -25,6 +27,8 @@ Note that formatting for 2.51.x and older is almost certainly incorrect.
 
 ## Changes in 2.51.5
 
+Released 2021-12-18
+
      * Restore OCaml compat to before 4.02
      * dune/opam improvements/fixes
      * Improve GTK UI by using GtkTreeView
@@ -33,6 +37,8 @@ Note that formatting for 2.51.x and older is almost certainly incorrect.
      * Many bugfixes and minor improvements
 
 ## Changes in 2.51.4
+
+Released 2021-06-24
 
      * OCaml 4.12 support
      * fsmonitor improvements and Solaris support
@@ -46,6 +52,8 @@ Note that formatting for 2.51.x and older is almost certainly incorrect.
      * Many bugfixes and minor improvements
 
 ## Changes in 2.51.3
+
+Released 2020-10-21
 
      * Some nontrivial changes to profile parsing (G.raud Meyer)
           + '=' has been considered whitespace until now: several
@@ -87,7 +95,7 @@ Note that formatting for 2.51.x and older is almost certainly incorrect.
           + Added a DockerFile for the convenience of Docker users.
           + Many small bugfixes and UI improvements.
 
-** Changes in 2.48
+## Changes in 2.48
 
      * Incorporated a patch from Christopher Zimmermann to replace the
        Uprintf module (which doesn't work with OCaml 4.02, causing Unison
@@ -147,7 +155,7 @@ Note that formatting for 2.51.x and older is almost certainly incorrect.
           + Fixed Makefile for cross-compiling towards Windows (updated to
             MinGW-w64)
 
-** Changes in very old versions
+## Changes in very old versions
 
 (Note that these are written 'Chagnes since' and thus the content
 applies to the release after that.)
