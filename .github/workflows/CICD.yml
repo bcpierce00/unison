@@ -56,7 +56,6 @@ jobs:
         - { os: macos-10.15   , ocaml-version: 4.04.2 }
         - { os: macos-10.15   , ocaml-version: 4.03.0 }
         - { os: macos-10.15   , ocaml-version: 4.02.3 }
-        - { os: macos-10.15   , ocaml-version: 4.01.0 }
         - { os: ubuntu-20.04  , ocaml-version: 4.12.1 }
         - { os: ubuntu-18.04  , ocaml-version: 4.12.1 }
         - { os: ubuntu-18.04  , ocaml-version: 4.11.2 }
