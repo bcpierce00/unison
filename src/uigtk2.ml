@@ -60,13 +60,7 @@ must enter the host to connect to, a user name (if different from
 your user name on this machine), and the directory on the remote machine
 (relative to your home directory on that machine).
 
-2) To synchronize using RSH, there must be an RSH client installed on
-this machine and an RSH server installed on the remote machine.  You
-must enter the host to connect to, a user name (if different from
-your user name on this machine), and the directory on the remote machine
-(relative to your home directory on that machine).
-
-3) To synchronize using %s's socket protocol, there must be a %s
+2) To synchronize using %s's socket protocol, there must be a %s
 server running on the remote machine, listening to the port that you
 specify here.  (Use \"%s -socket xxx\" on the remote machine to
 start the %s server.)  You must enter the host, port, and the directory
@@ -792,8 +786,6 @@ let getSecondRoot () =
   let sshB = GButton.radio_button ~group:localB#group
       ~packing:(f0#pack ~expand:false)
       ~label:"SSH" () in
-  let rshB = GButton.radio_button ~group:localB#group
-      ~packing:(f0#pack ~expand:false) ~label:"RSH" () in
   let socketB = GButton.radio_button ~group:sshB#group
       ~packing:(f0#pack ~expand:false) ~label:"Socket" () in
 
@@ -809,7 +801,7 @@ let getSecondRoot () =
             ~packing:(f2#pack ~expand:false) ());
   let portE = GEdit.entry ~packing:f2#add () in
 
-  let varLocalRemote = ref (`Local : [`Local|`SSH|`RSH|`SOCKET]) in
+  let varLocalRemote = ref (`Local : [`Local|`SSH|`SOCKET]) in
   let localState() =
     varLocalRemote := `Local;
     hostE#misc#set_sensitive false;
@@ -829,7 +821,6 @@ let getSecondRoot () =
     remoteState() in
   ignore (localB#connect#clicked ~callback:localState);
   ignore (sshB#connect#clicked ~callback:(fun () -> protoState(`SSH)));
-  ignore (rshB#connect#clicked ~callback:(fun () -> protoState(`RSH)));
   ignore (socketB#connect#clicked ~callback:(fun () -> protoState(`SOCKET)));
   localState();
   let getRoot() =
@@ -840,9 +831,9 @@ let getSecondRoot () =
     match !varLocalRemote with
       `Local ->
         Clroot.clroot2string(Clroot.ConnectLocal(Some file))
-    | `SSH | `RSH ->
+    | `SSH ->
         Clroot.clroot2string(Clroot.fixHost(
-        Clroot.ConnectByShell((if !varLocalRemote=`SSH then "ssh" else "rsh"),
+        Clroot.ConnectByShell("ssh",
                               host,
                               (if user="" then None else Some user),
                               (if port="" then None else Some port),
@@ -1173,7 +1164,7 @@ let createProfile parent =
       GBin.alignment ~xscale:0. ~xalign:0.
         ~packing:(tbl#attach ~left:1 ~top:0) () in
     GEdit.combo_box_text
-      ~strings:["Local"; "Using SSH"; "Using RSH";
+      ~strings:["Local"; "Using SSH";
                 "Through a plain TCP connection"]
       ~active:0 ~packing:(al#add) ()
   in
@@ -1182,7 +1173,7 @@ let createProfile parent =
             ~packing:(tbl#attach ~left:0 ~top:0 ~expand:`NONE) ());
   let kind =
     GtkReact.text_combo kindCombo
-      >> fun i -> List.nth [`Local; `SSH; `RSH; `SOCKET] i
+      >> fun i -> List.nth [`Local; `SSH; `SOCKET] i
   in
   let isLocal = kind >> fun k -> k = `Local in
   let isSSH = kind >> fun k -> k = `SSH in
@@ -1201,9 +1192,6 @@ let createProfile parent =
           "This is the recommended way to synchronize \
            with a remote machine.  A\xc2\xa0remote instance of Unison is \
            automatically started via SSH."
-     | `RSH ->
-          "Synchronization with a remote machine by starting \
-           automatically a remote instance of Unison via RSH."
      | `SOCKET ->
           "Synchronization with a remote machine by connecting \
            to an instance of Unison already listening \
@@ -1228,9 +1216,6 @@ let createProfile parent =
      | `SSH ->
           "There must be an SSH client installed on this machine, \
            and Unison and an SSH server installed on the remote machine."
-     | `RSH ->
-          "There must be an RSH client installed on this machine, \
-           and Unison and an RSH server installed on the remote machine."
      | `SOCKET ->
           "There must be a Unison server running on the remote machine, \
            listening on the port that you specify here.  \
@@ -1246,8 +1231,6 @@ let createProfile parent =
      match k with
        `Local  -> ""
      | `SSH    -> "Please enter the host to connect to and a user name, \
-                   if different from your user name on this machine."
-     | `RSH    -> "Please enter the host to connect to and a user name, \
                    if different from your user name on this machine."
      | `SOCKET -> "Please enter the host and port to connect to.");
   let tbl =
@@ -1549,8 +1532,6 @@ let createProfile parent =
         `Local  -> Clroot.ConnectLocal (Some secondDir)
       | `SSH    -> Clroot.ConnectByShell
                      ("ssh", host, user, None, Some secondDir)
-      | `RSH    -> Clroot.ConnectByShell
-                     ("rsh", host, user, None, Some secondDir)
       | `SOCKET -> Clroot.ConnectBySocket
                      (host, React.state port, Some secondDir)
     in
@@ -1663,7 +1644,7 @@ let editPreference parent nm ty vl =
             ~packing:(tbl#attach ~left:0 ~top:2 ~expand:`NONE) ());
   ignore (GMisc.label ~text:(Unicode.protect nm) ~xalign:0. ~selectable:true ()
             ~packing:(tbl#attach ~left:1 ~top:0 ~expand:`X));
-  let (doc, _, _) = Prefs.documentation nm in
+  let (doc, _) = Prefs.documentation nm in
   ignore (GMisc.label ~text:doc ~xalign:0. ~selectable:true ()
             ~packing:(tbl#attach ~left:1 ~top:1 ~expand:`X));
   ignore (GMisc.label ~text:(nameOfType ty) ~xalign:0. ~selectable:true ()
@@ -1975,14 +1956,14 @@ let documentPreference ~compact ~packing =
      ("tt", create [`FONT_DESC (Lazy.force fontMonospace)])]
   in
   fun nm ->
-    let (short, long, _) =
+    let (short, long) =
       match nm with
         Some nm ->
           tbl#misc#set_sensitive true;
           Prefs.documentation nm
       | _ ->
           tbl#misc#set_sensitive false;
-          ("", "", false)
+          ("", "")
     in
     shortDescr#set_text (String.capitalize_ascii short);
     insertMarkup tags longDescr (formatDoc long)
@@ -1993,11 +1974,12 @@ let addPreference parent =
     GWindow.dialog ~parent ~border_width:12
       ~no_separator:true ~title:"Add a Preference"
       ~modal:true () in
+  t#set_default_height 575;
   let vb = t#vbox in
 (*  vb#set_spacing 18;*)
   let paned = GPack.paned `VERTICAL ~packing:vb#add () in
 
-  let lvb = GPack.vbox ~spacing:6 ~packing:paned#pack1 () in
+  let lvb = GPack.vbox ~spacing:6 ~packing:(paned#pack1 ~resize:true) () in
   let preferenceLabel =
     GMisc.label
       ~text:"_Preferences:" ~use_underline:true
@@ -2005,8 +1987,8 @@ let addPreference parent =
   in
   let cols = new GTree.column_list in
   let c_name = cols#add Gobject.Data.string in
-  let basic_store = GTree.list_store cols in
-  let full_store = GTree.list_store cols in
+  let c_font = cols#add Gobject.Data.string in
+  let store = GTree.tree_store cols in
   let lst =
     let sw =
       GBin.scrolled_window ~packing:(lvb#pack ~expand:true)
@@ -2014,54 +1996,98 @@ let addPreference parent =
         ~hpolicy:`AUTOMATIC ~vpolicy:`AUTOMATIC () in
     GTree.view ~headers_visible:false ~packing:sw#add () in
   preferenceLabel#set_mnemonic_widget (Some (lst :> GObj.widget));
-  ignore (lst#append_column
-    (GTree.view_column
-       ~renderer:(GTree.cell_renderer_text [], ["text", c_name]) ()));
-  let hiddenPrefs =
-    ["auto"; "doc"; "silent"; "terse"; "testserver"; "version"] in
+
+  let cell_r = GTree.cell_renderer_text [] in
+  let view_col = (GTree.view_column ~renderer:(cell_r, ["text", c_name]) ()) in
+  view_col#add_attribute cell_r "font" c_font;
+  ignore (lst#append_column view_col);
+  (*let hiddenPrefs =
+    ["auto"; "silent"; "terse"] in*)
   let shownPrefs =
     ["label"; "key"] in
-  let insert (store : #GTree.list_store) all =
+
+  let createGroup n =
+    let row = store#append () in
+    store#set ~row ~column:c_name n;
+    store#set ~row ~column:c_font "bold";
+    row
+  in
+  let createTopic parent n =
+    let row = store#append ~parent () in
+    store#set ~row ~column:c_name n;
+    store#set ~row ~column:c_font "italic";
+    row
+  in
+  let createTopics parent g =
+    Safelist.map (fun t ->
+      let topic = g t in
+      (topic, (createTopic parent (Prefs.topic_title topic))))
+  in
+
+  let topicsInOrder = [ `Sync; `Syncprocess; `Syncprocess_CLI; `CLI; `GUI; `Remote; `Archive ] in
+
+  let basic = createGroup "1 — Basic preferences" in
+  let l = createTopics basic (fun t -> `Basic t) (`General :: topicsInOrder) in
+
+  let adv = createGroup "2 — Advanced preferences" in
+  let l = l @ createTopics adv (fun t -> `Advanced t) (topicsInOrder @ [`General]) in
+
+  let l = (`Expert, createGroup "3 — Expert preferences") :: l in
+
+  let parents = l in
+  let purgeParents () =
+    Safelist.iter (fun (_, row) ->
+        if not (store#iter_has_child row) then begin
+          let parent = store#iter_parent row in
+          ignore (store#remove row);
+          match parent with
+          | None -> ()
+          | Some parent -> if not (store#iter_has_child parent) then
+                             ignore (store#remove parent)
+        end
+      ) parents
+  in
+  let categoryParent nm =
+    match Prefs.category nm with
+    | None -> None
+    | Some _ when List.mem nm shownPrefs -> Some basic
+    | Some cat -> begin
+        try Some (Safelist.assoc cat parents) with
+        | Not_found -> None
+      end
+  in
+  let isParent r = store#iter_has_child r in
+
+  let () =
     List.iter
       (fun nm ->
-         if
-           all || List.mem nm shownPrefs ||
-           (let (_, _, basic) = Prefs.documentation nm in basic &&
-            not (List.mem nm hiddenPrefs))
-         then begin
-           let row = store#append () in
-           store#set ~row ~column:c_name nm
-         end)
-      (Prefs.list ())
+         let row =
+           match categoryParent nm with
+           | None -> store#append ()
+           | Some parent -> store#append ~parent ()
+         in
+         store#set ~row ~column:c_name nm
+      )
+      (Prefs.list false);
   in
-  insert basic_store false;
-  insert full_store true;
+  purgeParents ();
 
-  let showAll =
-    GtkReact.toggle_button
-      (GButton.check_button ~label:"_Show all preferences"
-         ~use_mnemonic:true ~active:false ~packing:(lvb#pack ~expand:false) ())
+  lst#set_model (Some store#coerce);
+
+  let getSelectedPref rf =
+    let row = rf#iter in
+    if isParent row then
+      None
+    else
+      Some (store#get ~row ~column:c_name)
   in
-  showAll >|
-    (fun b ->
-       lst#set_model
-         (Some (if b then full_store else basic_store :> GTree.model)));
-
   let selection = GtkReact.tree_view_selection lst in
   let updateDoc = documentPreference ~compact:true ~packing:paned#pack2 in
-  selection >|
-    (fun l ->
-       let nm =
-         match l with
-           [rf] ->
-             let row = rf#iter in
-             let store =
-               if React.state showAll then full_store else basic_store in
-             Some (store#get ~row ~column:c_name)
-         | _ ->
-             None
-       in
-       updateDoc nm);
+  let prefSelection = selection >> (function
+    | [rf] -> getSelectedPref rf
+    | _ -> None)
+  in
+  prefSelection >| updateDoc;
 
   let cancelCommand () = t#destroy () in
   let cancelButton =
@@ -2073,7 +2099,7 @@ let addPreference parent =
   let addButton =
     GButton.button ~stock:`ADD ~packing:t#action_area#add () in
   ignore (addButton#connect#clicked ~callback:addCommand);
-  GtkReact.set_sensitive addButton (selection >> fun l -> l <> []);
+  GtkReact.set_sensitive addButton (prefSelection >> fun nm -> nm <> None);
   ignore (lst#connect#row_activated ~callback:(fun _ _ -> addCommand ()));
   addButton#grab_default ();
 
@@ -2082,11 +2108,8 @@ let addPreference parent =
   GMain.Main.main ();
   if not !ok then None else
     match React.state selection with
-      [rf] ->
-        let row = rf#iter in
-        let store =
-          if React.state showAll then full_store else basic_store in
-        Some (store#get ~row ~column:c_name)
+    | [rf] ->
+        getSelectedPref rf
     | _ ->
         None
 
@@ -2262,7 +2285,7 @@ let editProfile parent name =
   in
   let (>>>) x f = f x in
   Prefs.readAFile name
-  >>> List.map (fun (_, _, nm, v) -> Prefs.canonicalName nm, v)
+  >>> List.map (fun (_, nm, v) -> Prefs.canonicalName nm, v)
   >>> List.stable_sort (fun (nm, _) (nm', _) -> compare nm nm')
   >>> group
   >>> List.iter

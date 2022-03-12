@@ -20,7 +20,8 @@ let debugV = Util.debug "fileinfo+"
 
 let allowSymlinks =
   Prefs.createBoolWithDefault "links"
-    "!allow the synchronization of symbolic links (true/false/default)"
+    ~category:(`Advanced `Sync)
+    "allow the synchronization of symbolic links (true/false/default)"
     ("When set to {\\tt true}, this flag causes Unison to synchronize \
       symbolic links.  When the flag is set to {\\tt false}, symbolic \
       links will result in an error during update detection.  \
@@ -32,6 +33,7 @@ let allowSymlinks =
 
 let symlinksAllowed =
   Prefs.createBool "links-aux" true
+    ~category:(`Internal `Pseudo)
     "*Pseudo-preference for internal use only" ""
 
 let init b =
@@ -211,7 +213,8 @@ let stamp_of_compat251 (st : stamp251) : stamp =
 
 let ignoreInodeNumbers =
   Prefs.createBool "ignoreinodenumbers" false
-    "!ignore inode number changes when detecting updates"
+    ~category:(`Advanced `Syncprocess)
+    "ignore inode number changes when detecting updates"
     ("When set to true, this preference makes Unison not take advantage \
       of inode numbers during fast update detection. \
       This switch should be used with care, as it \

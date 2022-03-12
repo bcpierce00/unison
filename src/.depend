@@ -800,7 +800,8 @@ pred.cmx : \
     ubase/prefs.cmx \
     case.cmx \
     pred.cmi
-pred.cmi :
+pred.cmi : \
+    ubase/prefs.cmi
 props.cmo : \
     uutil.cmi \
     ubase/util.cmi \

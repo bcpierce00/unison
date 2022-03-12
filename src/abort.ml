@@ -21,7 +21,8 @@ let debug = Trace.debug "abort"
 
 let maxerrors =
   Prefs.createInt "maxerrors" 1
-    "!maximum number of errors before a directory transfer is aborted"
+    ~category:(`Advanced `General)
+    "maximum number of errors before a directory transfer is aborted"
     "This preference controls after how many errors Unison aborts a \
      directory transfer.  Setting it to a large number allows Unison \
      to transfer most of a directory even when some files fail to be \

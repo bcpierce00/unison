@@ -25,7 +25,8 @@ let verbose = Util.debug "stasher+"
 
 let backuplocation =
   Prefs.createString "backuploc" "central"
-    "!where backups are stored ('local' or 'central')"
+    ~category:(`Advanced `Syncprocess)
+    "where backups are stored ('local' or 'central')"
     ("This preference determines whether backups should be kept locally, near the "
      ^ "original files, or"
      ^" in a central directory specified by the \\texttt{backupdir} "
@@ -36,7 +37,8 @@ let backuplocation =
 let _ = Prefs.alias backuplocation "backuplocation"
 
 let backup =
-  Pred.create "backup" ~advanced:true
+  Pred.create "backup"
+    ~category:(`Advanced `Syncprocess)
     ("Including the preference \\texttt{-backup \\ARG{pathspec}} "
      ^ "causes Unison to keep backup files for each path that matches "
      ^ "\\ARG{pathspec}; directories (nor their permissions or any other "
@@ -51,7 +53,8 @@ let backup =
 let _ = Pred.alias backup "mirror"
 
 let backupnot =
-  Pred.create "backupnot" ~advanced:true
+  Pred.create "backupnot"
+    ~category:(`Advanced `Syncprocess)
     ("The values of this preference specify paths or individual files or"
      ^ " regular expressions that should {\\em not} "
      ^ "be backed up, even if the {\\tt backup} preference selects "
@@ -65,7 +68,8 @@ let shouldBackup p =
 
 let backupprefix =
   Prefs.createString "backupprefix" ".bak.$VERSION."
-    "!prefix for the names of backup files"
+    ~category:(`Advanced `Syncprocess)
+    "prefix for the names of backup files"
     ("When a backup for a file \\verb|NAME| is created, it is stored "
      ^ "in a directory specified by \\texttt{backuplocation}, in a file called "
      ^ "\\texttt{backupprefix}\\verb|NAME|\\texttt{backupsuffix}."
@@ -87,12 +91,15 @@ let backupprefix =
 
 let backupsuffix =
   Prefs.createString "backupsuffix" ""
-    "!a suffix to be added to names of backup files"
+    ~category:(`Advanced `Syncprocess)
+    "a suffix to be added to names of backup files"
     ("See \\texttt{backupprefix} for full documentation.")
 
 let backups =
   Prefs.createBool "backups" false
-    "!keep backup copies of all files (see also 'backup')"
+    ~category:(`Advanced `Syncprocess)
+    ~deprecated:true
+    "keep backup copies of all files (see also 'backup')"
     ("Setting this flag to true is equivalent to "
      ^" setting \\texttt{backuplocation} to \\texttt{local}"
      ^" and \\texttt{backup} to \\verb|Name *|.")
@@ -113,7 +120,8 @@ let translateOldPrefs () =
 
 let maxbackups =
   Prefs.createInt "maxbackups" 2
-    "!number of backed up versions of a file"
+    ~category:(`Advanced `Syncprocess)
+    "number of backed up versions of a file"
     ("This preference specifies the number of backup versions that will "
      ^ "be kept by unison, for each path that matches the predicate "
      ^ "\\verb|backup|.  The default is 2.")
@@ -123,7 +131,8 @@ let _ = Prefs.alias maxbackups "backupversions"
 
 let backupdir =
   Prefs.createString "backupdir" ""
-    "!directory for storing centralized backups"
+    ~category:(`Advanced `Syncprocess)
+    "directory for storing centralized backups"
     ("If this preference is set, Unison will use it as the name of the "
      ^ "directory used to store backup files specified by "
      ^ "the {\\tt backup} preference, when {\\tt backuplocation} is set"
@@ -142,7 +151,8 @@ let backupDirectory () =
                (Some (System.fspathToString (Util.fileInUnisonDir "backup"))))
 
 let backupcurrent =
-  Pred.create "backupcurr" ~advanced:true
+  Pred.create "backupcurr"
+    ~category:(`Advanced `Syncprocess)
     ("Including the preference \\texttt{-backupcurr \\ARG{pathspec}} "
      ^" causes Unison to keep a backup of the {\\em current} version of every file "
      ^ "matching \\ARG{pathspec}.  "
@@ -154,7 +164,8 @@ let backupcurrent =
      ^ "\\sectionref{pathspec}{Path Specification}.")
 
 let backupcurrentnot =
-  Pred.create "backupcurrnot" ~advanced:true
+  Pred.create "backupcurrnot"
+    ~category:(`Advanced `Syncprocess)
    "Exceptions to \\verb|backupcurr|, like the \\verb|ignorenot| preference."
 
 let shouldBackupCurrent p =

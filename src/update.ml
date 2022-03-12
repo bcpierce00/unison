@@ -25,7 +25,8 @@ let debugignore = Trace.debug "ignore"
 
 let ignoreArchives =
   Prefs.createBool "ignorearchives" false
-    "!ignore existing archive files"
+    ~category:(`Advanced `Archive)
+    "ignore existing archive files"
     ("When this preference is set, Unison will ignore any existing "
      ^ "archive files and behave as though it were being run for the first "
      ^ "time on these replicas.  It is "
@@ -142,7 +143,9 @@ let archive2string = function
    reasons. *)
 
 let rootsName : string Prefs.t =
-  Prefs.createString "rootsName" "" "*Canonical root names" ""
+  Prefs.createString "rootsName" ""
+    ~category:(`Internal `Pseudo)
+    "*Canonical root names" ""
 
 let getRootsName () = Prefs.read rootsName
 
@@ -154,7 +157,8 @@ let foundArchives = ref true
 
 let rootAliases : string list Prefs.t =
   Prefs.createStringList "rootalias"
-   "!register alias for canonical root names"
+    ~category:(`Advanced `General)
+   "register alias for canonical root names"
    ("When calculating the name of the archive files for a given pair of roots,"
    ^ " Unison replaces any roots matching the left-hand side of any rootalias"
    ^ " rule by the corresponding right-hand side.")
@@ -217,9 +221,10 @@ let marchiveVersion = Umarshal.(sum5 unit unit unit unit unit
 
 let showArchiveName =
   Prefs.createBool "showarchive" false
-    "!show 'true names' (for rootalias) of roots and archive"
+    ~category:(`Advanced `General)
+    "show 'true names' (for rootalias) of roots and archive"
     ("When this preference is set, Unison will print out the 'true names'"
-     ^ "of the roots, in the same form as is expected by the {\\tt rootalias}"
+     ^ "of the roots, in the same form as is expected by the {\\tt rootalias} "
      ^ "preference.")
 
 let _ = Prefs.alias showArchiveName "showArchiveName"
@@ -972,7 +977,9 @@ let loadArchiveOnRoot: Common.root -> bool -> (int * string) option Lwt.t =
 
 let dumpArchives =
   Prefs.createBool "dumparchives" false
-    "*dump contents of archives just after loading"
+    ~category:`Expert
+    ~cli_only:true
+    "dump contents of archives just after loading"
     ("When this preference is set, Unison will create a file unison.dump "
      ^ "on each host, containing a text summary of the archive, immediately "
      ^ "after loading it.")
@@ -1033,7 +1040,8 @@ let unlockArchiveOnRoot: Common.root -> unit -> unit Lwt.t =
 
 let ignorelocks =
   Prefs.createBool "ignorelocks" false
-    "!ignore locks left over from previous run (dangerous!)"
+    ~category:(`Advanced `General)
+    "ignore locks left over from previous run (dangerous!)"
     ("When this preference is set, Unison will ignore any lock files "
      ^ "that may have been left over from a previous run of Unison that "
      ^ "was interrupted while reading or writing archive files; by default, "
@@ -1298,7 +1306,8 @@ let translatePath =
 
 let mountpoints =
   Prefs.createStringList "mountpoint"
-    "!abort if this path does not exist"
+    ~category:(`Advanced `General)
+    "abort if this path does not exist"
     ("Including the preference \\texttt{-mountpoint PATH} causes Unison to "
      ^ "double-check, at the end of update detection, that \\texttt{PATH} exists "
      ^ "and abort if it does not.  This is useful when Unison is used to synchronize "
@@ -1385,7 +1394,8 @@ let rec getSubTree path tree =
 
 let fastcheck =
   Prefs.createBoolWithDefault "fastcheck"
-    "!do fast update detection (true/false/default)"
+    ~category:(`Advanced `Syncprocess)
+    "do fast update detection (true/false/default)"
     ( "When this preference is set to \\verb|true|, \
        Unison will use the modification time and length of a file as a
        `pseudo inode number' \
@@ -1412,7 +1422,8 @@ let useFastChecking () =
       Prefs.read fastcheck = `True
    || (Prefs.read fastcheck = `Default (*&& Util.osType = `Unix*))
 
-let immutable = Pred.create "immutable" ~advanced:true
+let immutable = Pred.create "immutable"
+  ~category:(`Advanced `Sync)
   ("This preference specifies paths for directories whose \
      immediate children are all immutable files --- i.e., once a file has been \
      created, its contents never changes.  When scanning for updates, \
@@ -1420,7 +1431,8 @@ let immutable = Pred.create "immutable" ~advanced:true
      this can speed update detection significantly (in particular, for mail \
      directories).")
 
-let immutablenot = Pred.create "immutablenot" ~advanced:true
+let immutablenot = Pred.create "immutablenot"
+  ~category:(`Advanced `Sync)
   ("This preference overrides {\\tt immutable}.")
 
 type scanInfo =

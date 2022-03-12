@@ -172,7 +172,8 @@ end
 
 let useWatcher =
   Prefs.createBool "watch" false
-    "!when set, use a file watcher process to detect changes"
+    ~category:(`Advanced `General)
+    "when set, use a file watcher process to detect changes"
     "Unison uses a file watcher process, when available, to detect filesystem \
      changes; this is used to speed up update detection. Setting this flag to \
      false disables the use of this process."

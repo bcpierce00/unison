@@ -37,7 +37,8 @@ let fileSize uiFrom uiTo =
 
 let maxthreads =
   Prefs.createInt "maxthreads" 0
-    "!maximum number of simultaneous file transfers"
+    ~category:(`Advanced `General)
+    "maximum number of simultaneous file transfers"
     ("This preference controls how much concurrency is allowed during \
       the transport phase.  Normally, it should be set reasonably high \
       to maximize performance, but when Unison is used over a \

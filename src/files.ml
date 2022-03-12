@@ -82,7 +82,8 @@ let processCommitLogs() =
 (* ------------------------------------------------------------ *)
 
 let copyOnConflict = Prefs.createBool "copyonconflict" false
-  "!keep copies of conflicting files"
+  ~category:(`Advanced `Syncprocess)
+  "keep copies of conflicting files"
   "When this flag is set, Unison will make a copy of files that would \
    otherwise be overwritten or deleted in case of conflicting changes, \
    and more generally whenever the default behavior is overridden. \
@@ -743,7 +744,8 @@ let (>>=) = Lwt.bind
 
 let diffCmd =
   Prefs.createString "diff" "diff -u OLDER NEWER"
-    "!set command for showing differences between files"
+    ~category:(`Advanced `General)
+    "set command for showing differences between files"
     ("This preference can be used to control the name and command-line "
      ^ "arguments of the system "
      ^ "utility used to generate displays of file differences.  The default "
@@ -925,7 +927,9 @@ let copyBack fspathFrom pathFrom rootTo pathTo propsTo uiTo id =
 
 let keeptempfilesaftermerge =
   Prefs.createBool
-    "keeptempfilesaftermerge" false "*" ""
+    "keeptempfilesaftermerge" false
+    ~category:(`Internal `Devel)
+    "*" ""
 
 let showStatus = function
   | Unix.WEXITED i -> Printf.sprintf "exited (%d)" i

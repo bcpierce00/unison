@@ -30,7 +30,8 @@ let redirect x = (traceprinter := x)
 
 let debugmods =
   Prefs.createStringList "debug"
-    "!debug module xxx ('all' -> everything, 'verbose' -> more)"
+    ~category:`Expert
+    "debug module xxx ('all' -> everything, 'verbose' -> more)"
     ("This preference is used to make Unison print various sorts of "
      ^ "information about what it is doing internally on the standard "
      ^ "error stream.  It can be used many times, each time with the name "
@@ -46,8 +47,9 @@ let debugmods =
      ^ "what bytes are being sent across the network).")
 
 let debugtimes =
-  Prefs.createBool "debugtimes"
-    false "*annotate debugging messages with timestamps" ""
+  Prefs.createBool "debugtimes" false
+    ~category:(`Internal `Devel)
+    "*annotate debugging messages with timestamps" ""
 
 let runningasserver = ref false
 
@@ -107,14 +109,16 @@ let _ = Util.debugPrinter := Some(debug)
 
 let logging =
   Prefs.createBool "log" true
-    "!record actions in logfile"
+    ~category:(`Advanced `General)
+    "record actions in logfile"
     "When this flag is set, Unison will log all changes to the filesystems
      on a file."
 
 let logfile =
   Prefs.createFspath "logfile"
     (System.fspathFromString "unison.log")
-    "!logfile name"
+    ~category:(`Advanced `General)
+    "logfile name"
     "By default, logging messages will be appended to the file
      \\verb|unison.log| in your .unison directory.  Set this preference if
      you prefer another file.  It can be a path relative to your .unison directory.
@@ -185,7 +189,9 @@ let writeLog s stripColor =
 (* Formatting and displaying messages *)
 
 let terse =
-  Prefs.createBool "terse" false "suppress status messages"
+  Prefs.createBool "terse" false
+    ~category:(`Basic `Syncprocess_CLI)
+    "suppress status messages"
     ("When this preference is set to {\\tt true}, the user "
      ^ "interface will not print status messages.")
 
@@ -277,6 +283,7 @@ let logverbose s =
 
 let printTimers =
   Prefs.createBool "timers" false
+    ~category:(`Internal `Devel)
     "*print timing information" ""
 
 type timer = string * float

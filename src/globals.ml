@@ -26,6 +26,7 @@ let debug = Trace.debug "globals"
 
 let rawroots =
   Prefs.createStringList "root"
+    ~category:(`Basic `Sync)
     "root of a replica (should be used exactly twice)"
     ("Each use of this preference names the root of one of the replicas "
      ^ "for Unison to synchronize.  Exactly two roots are needed, so normal "
@@ -163,6 +164,7 @@ let allHostsMap f = Safelist.map f (replicaHostnames())
 
 let paths =
   Prefs.create "path" []
+    ~category:(`Basic `Sync)
     "path to synchronize"
     ("When no \\verb|path| preference is given, Unison will simply synchronize "
      ^ "the two entire replicas, beginning from the given pair of roots.  "
@@ -227,14 +229,17 @@ let propagatePrefs () =
 (*****************************************************************************)
 
 let batch =
-  Prefs.createBool "batch" false "batch mode: ask no questions at all"
+  Prefs.createBool "batch" false
+    ~category:(`Basic `Syncprocess)
+    "batch mode: ask no questions at all"
     ("When this is set to {\\tt true}, the user "
      ^ "interface will ask no questions at all.  Non-conflicting changes "
      ^ "will be propagated; conflicts will be skipped.")
 
 let confirmBigDeletes =
   Prefs.createBool "confirmbigdel" true
-    "!ask about whole-replica (or path) deletes"
+    ~category:(`Advanced `Syncprocess)
+    "ask about whole-replica (or path) deletes"
     ("When this is set to {\\tt true}, Unison will request an extra confirmation if it appears "
      ^ "that the entire replica has been deleted, before propagating the change.  If the {\\tt batch} "
      ^ "flag is also set, synchronization will be aborted.  When the {\\tt path} preference is used, "
@@ -245,6 +250,7 @@ let () = Prefs.alias confirmBigDeletes "confirmbigdeletes"
 
 let ignorePred =
   Pred.create "ignore"
+    ~category:(`Basic `Sync)
     ("Including the preference \\texttt{-ignore \\ARG{pathspec}} causes Unison to "
      ^ "completely ignore paths that match \\ARG{pathspec} (as well as their "
      ^ "children).  This is useful for avoiding synchronizing temporary "
@@ -255,6 +261,7 @@ let ignorePred =
 
 let ignorenotPred =
   Pred.create "ignorenot"
+    ~category:(`Basic `Sync)
     ("This preference overrides the preference \\texttt{ignore}.
       It gives a list of patterns
      (in the same format as
@@ -273,7 +280,9 @@ let ignorenotPred =
      synchronized will not work.  Instead, you should use the {\\tt path}
      preference to choose particular paths to synchronize.")
 
-let atomic = Pred.create "atomic" ~local:true ~advanced:true
+let atomic = Pred.create "atomic"
+  ~category:(`Advanced `Sync)
+  ~local:true
   ("This preference specifies paths for directories whose "
    ^ "contents will be considered as a group rather than individually when "
    ^ "they are both modified.  "
@@ -290,7 +299,8 @@ let addRegexpToIgnore re =
   Pred.intern ignorePred newRE
 
 let merge =
-  Pred.create "merge" ~advanced:true
+  Pred.create "merge"
+    ~category:(`Advanced `Sync)
     ("This preference can be used to run a merge program which will create "
      ^ "a new version for each of the files and the backup, "
      ^ "with the last backup and both replicas. "
@@ -304,13 +314,19 @@ let shouldMerge p = Pred.test merge (Path.toString p)
 let mergeCmdForPath p = Pred.assoc merge (Path.toString p)
 
 let someHostIsRunningWindows =
-  Prefs.createBool "someHostIsRunningWindows" false "*" ""
+  Prefs.createBool "someHostIsRunningWindows" false
+    ~category:(`Internal `Pseudo)
+    "*" ""
 
 let allHostsAreRunningWindows =
-  Prefs.createBool "allHostsAreRunningWindows" false "*" ""
+  Prefs.createBool "allHostsAreRunningWindows" false
+    ~category:(`Internal `Pseudo)
+    "*" ""
 
 let fatFilesystem =
-  Prefs.createBool "fat" ~local:true false
+  Prefs.createBool "fat" false
+    ~category:(`Advanced `Syncprocess)
+    ~local:true
     "use appropriate options for FAT filesystems"
     ("When this is set to {\\tt true}, Unison will use appropriate options \
       to synchronize efficiently and without error a replica located on a \

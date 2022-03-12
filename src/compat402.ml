@@ -38,3 +38,29 @@ module Unix = struct
 
   let write_substring = write
 end
+
+module Format = struct
+  include Format
+
+  (* Copied from OCaml source *)
+  let pp_print_text ppf s =
+    let len = String.length s in
+    let left = ref 0 in
+    let right = ref 0 in
+    let flush () =
+      pp_print_string ppf (String.sub s !left (!right - !left));
+      incr right; left := !right;
+    in
+    while (!right <> len) do
+      match s.[!right] with
+        | '\n' ->
+          flush ();
+          pp_force_newline ppf ()
+        | ' ' ->
+          flush (); pp_print_space ppf ()
+        (* there is no specific support for '\t'
+           as it is unclear what a right semantics would be *)
+        | _ -> incr right
+    done;
+    if !left <> len then flush ()
+end

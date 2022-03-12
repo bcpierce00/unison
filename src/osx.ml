@@ -32,7 +32,8 @@ let isMacOSX = isMacOSXPred ()
 
 let rsrcSync =
   Prefs.createBoolWithDefault "rsrc"
-    "!synchronize resource forks (true/false/default)"
+    ~category:(`Advanced `Sync)
+    "synchronize resource forks (true/false/default)"
     "When set to {\\tt true}, this flag causes Unison to synchronize \
      resource forks and HFS meta-data.  On filesystems that do not \
      natively support resource forks, this data is stored in \
@@ -46,6 +47,7 @@ let rsrcSync =
    to the other host during initialization *)
 let rsrc =
   Prefs.createBool "rsrc-aux" false
+    ~category:(`Internal `Pseudo)
     "*synchronize resource forks and HFS meta-data" ""
 
 let init b =

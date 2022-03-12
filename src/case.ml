@@ -22,7 +22,8 @@
 (* the hosts is case insensitive.                                            *)
 let caseInsensitiveMode =
   Prefs.createBoolWithDefault "ignorecase"
-    "!identify upper/lowercase filenames (true/false/default)"
+    ~category:(`Advanced `Sync)
+    "identify upper/lowercase filenames (true/false/default)"
     ("When set to {\\tt true}, this flag causes Unison to treat "
      ^ "filenames as case insensitive---i.e., files in the two "
      ^ "replicas whose names differ in (upper- and lower-case) `spelling' "
@@ -37,11 +38,13 @@ let caseInsensitiveMode =
    to the other host during initialization *)
 let someHostIsInsensitive =
   Prefs.createBool "someHostIsInsensitive" false
+    ~category:(`Internal `Pseudo)
     "*Pseudo-preference for internal use only" ""
 
 let unicode =
   Prefs.createBoolWithDefault "unicode"
-    "!assume Unicode encoding in case insensitive mode"
+    ~category:(`Advanced `General)
+    "assume Unicode encoding in case insensitive mode"
     "When set to {\\tt true}, this flag causes Unison to perform \
      case insensitive file comparisons assuming Unicode encoding.  \
      This is the default.  When the flag is set to {\\tt false}, \
@@ -54,6 +57,7 @@ let unicode =
 
 let unicodeEncoding =
   Prefs.createBool "unicodeEnc" false
+    ~category:(`Internal `Pseudo)
     "*Pseudo-preference for internal use only" ""
 
 let useUnicode () =
@@ -63,7 +67,9 @@ let useUnicode () =
 let useUnicodeAPI = useUnicode
 
 let unicodeCaseSensitive =
-  Prefs.createBool "unicodeCS" ~local:true false
+  Prefs.createBool "unicodeCS" false
+    ~category:(`Internal `Pseudo)
+    ~local:true
     "*Pseudo-preference for internal use only" ""
 
 (* During startup the client determines the case sensitivity of each root.   *)

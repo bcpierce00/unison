@@ -658,9 +658,7 @@ Decide which of these you want to try, and continue with
 
 \SUBSECTION{Remote Shell Method}{rshmeth}
 
-The standard remote shell facility on Unix systems is \verb|ssh|,
-which provides the same functionality as the older \verb|rsh| but much
-better security.
+The standard remote shell facility on Unix systems is \verb|ssh|.
 
 Running
 \verb|ssh| requires some coordination between the client and server
@@ -723,11 +721,16 @@ of the path:
   on the server by using the command-line option \showtt{-servercmd
     /full/path/name/of/unison} or adding
   \showtt{servercmd=/full/path/name/of/unison} to your profile (see
-  \sectionref{profile}{Profiles}).  Similarly, you can specify a
+  \sectionref{profile}{Profiles}).  Similarly, you can specify an
   explicit path for the \verb|ssh| program using the \showtt{-sshcmd}
   option.
   Extra arguments can be passed to \verb|ssh| by setting the
   \verb|-sshargs| preference.
+
+\item By leveraging \showtt{-sshcmd} and \showtt{-sshargs}, you can
+  effectively use any remote shell program, not just \verb|ssh|; just
+  remember that the roots are still specified with \verb|ssh| as the
+  protocol, that is, they have to start with \showtt{ssh://}.
 \end{itemize}
 
 
@@ -940,12 +943,11 @@ started, while
 \noindent
 specifies a root relative to the top of the local filesystem,
 independent of where Unison is running.  Remote roots can begin with
-\verb|ssh://|,
-\verb|rsh://|
-to indicate that the remote server should be started with ssh or rsh:
+\verb|ssh://|
+to indicate that the remote server should be started with ssh:
 \begin{alltt}
       ssh://\NT{remotehost}//\NT{absolute/path/of/root}
-      rsh://\NT{user}@\NT{remotehost}/\NT{relative/path/of/root}
+      ssh://\NT{user}@\NT{remotehost}/\NT{relative/path/of/root}
 \end{alltt}
 If the remote server is already running (in the socket mode), then the syntax
 \begin{alltt}
@@ -974,7 +976,6 @@ The full grammar is:
   \NT{protocol} ::= file
             |  socket
             |  ssh
-            |  rsh
 
   \NT{user} ::= [-\_a-zA-Z0-9]+
 

@@ -57,13 +57,18 @@
 
 let versionPrefName = "version"
 let printVersionAndExit =
-  Prefs.createBool versionPrefName false "print version and exit"
+  Prefs.createBool versionPrefName false
+    ~category:(`Basic `General)
+    ~cli_only:true
+    "print version and exit"
     ("Print the current version number and exit.  "
      ^ "(This option only makes sense on the command line.)")
 
 let docsPrefName = "doc"
 let docs =
   Prefs.createString docsPrefName ""
+    ~category:(`Basic `General)
+    ~cli_only:true
     "show documentation ('-doc topics' lists topics)"
     (  "The command-line argument \\texttt{-doc \\ARG{secname}} causes unison to "
        ^ "display section  \\ARG{secname} of the manual on the standard output "
@@ -76,23 +81,35 @@ let docs =
 let prefsdocsPrefName = "prefsdocs"
 let prefsdocs =
   Prefs.createBool prefsdocsPrefName false
+    ~category:(`Internal `Devel)
+    ~cli_only:true
     "*show full documentation for all preferences (and then exit)"
     ""
 
 let serverPrefName = "server"
 let server =
-  Prefs.createBool serverPrefName false "*normal or server mode" ""
+  Prefs.createBool serverPrefName false
+    ~category:(`Internal `Other)
+    ~cli_only:true
+    "*normal or server mode" ""
 
 let socketPrefName = "socket"
 let socket =
-  Prefs.createString socketPrefName "" ~local:true
-    "!act as a server on a socket" ""
+  Prefs.createString socketPrefName ""
+    ~category:(`Advanced `Remote)
+    ~cli_only:true
+    "act as a server on a socket"
+    ("Start " ^ Uutil.myName ^ " as a server listening on a TCP socket "
+     ^ "(with TCP port number as argument) or a local socket (aka Unix "
+     ^ "domain socket) (with socket path as argument).")
 
 let serverHostNameAlias = "host"
 let serverHostName = "listen"
 let serverHost =
-  Prefs.createString serverHostName "" ~local:true
-    "!listen on this name or addr in server socket mode (can repeat)"
+  Prefs.createString serverHostName ""
+    ~category:(`Advanced `Remote)
+    ~cli_only:true
+    "listen on this name or addr in server socket mode (can repeat)"
     ("When acting as a server on a TCP socket, Unison will by default listen "
      ^ "on \"any\" address (0.0.0.0 and [::]).  This command-line argument "
      ^ "allows to specify a different listening address and can be repeated "
@@ -104,7 +121,9 @@ let () = Prefs.alias serverHost serverHostNameAlias
 let uiPrefName = "ui"
 let interface =
   Prefs.create uiPrefName Uicommon.Graphic
-    "!select UI ('text' or 'graphic'); command-line only"
+    ~category:(`Advanced `General)
+    ~cli_only:true
+    "select UI ('text' or 'graphic'); command-line only"
     ("This preference selects either the graphical or the textual user "
      ^ "interface.  Legal values are \\verb|graphic| or \\verb|text|.  "
      ^ "\n\nBecause this option is processed specially during Unison's "
