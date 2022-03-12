@@ -20,6 +20,7 @@ Released 2022-03-12
      Upgrade is automatic.
    * New wire protocol (independent of ocaml version, based on umarshal)
      New protocol is used if both sides are >= 2.52.0.
+   * Compatibility with 2.48
    * Support for unix-domain sockets
    * Many bugfixes and minor improvements
    * ocaml compatibility is now >= 4.01
