@@ -1,7 +1,7 @@
 (copy_files# ../watchercommon.ml{,i})
 
 (library
- (name fswatcher)
+ (name fswatcher_linux)
  (wrapped false)
  (enabled_if
   (or
@@ -30,4 +30,4 @@
    (= %{system} "linux_eabi")))
  (modules watcher)
  (flags :standard -w -27)
- (libraries fswatcher))
+ (libraries fswatcher_linux))

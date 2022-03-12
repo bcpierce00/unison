@@ -8,9 +8,9 @@
 
 (license GPL-3.0-or-later)
 
-(maintainers "maintainers")
+(maintainers "juergen@hoetzel.info")
 
-(authors "Trevor Jim, Benjamin C. Pierce and J\195\169r\195\180me Vouillon")
+(authors "Trevor Jim" "Benjamin C. Pierce" "J\195\169r\195\180me Vouillon")
 
 (source
  (github bcpierce00/unison))
@@ -22,8 +22,8 @@
 (package
  (name unison)
  (synopsis "File-synchronization tool for Unix and Windows")
- (description "
-Text based userinterface for Unison.
+ (description "\
+Text based user interface for Unison.
 
 Unison is a file-synchronization tool for Unix and Windows.
 It allows two replicas of a collection of files and directories
@@ -33,15 +33,15 @@ the changes in each replica to the other.
 ")
  (depends
   (ocaml
-   (>= 4.03))
+   (>= 4.08))
   (dune
    (>= 2.3))))
 
 (package
  (name unison-gui)
  (synopsis "File-synchronization tool for Unix and Windows")
- (description "
-Graphical userinterface for Unison.
+ (description "\
+Graphical user interface for Unison.
 
 Unison is a file-synchronization tool for Unix and Windows.
 It allows two replicas of a collection of files and directories
@@ -51,18 +51,17 @@ the changes in each replica to the other.
 ")
  (depends
   (ocaml
-   (>= 4.03))
+   (>= 4.08))
   (dune
    (>= 2.3))
-  (lablgtk2
-   (>= 2.18.6))))
+  lablgtk))
 
 (package
  (name unison-fsmonitor)
  (synopsis "File-synchronization tool for Unix and Windows")
- (description "
-This helper application monitors file system changes on all given
-(relative to root) paths.
+ (description "\
+This optional add-on for unison monitors file system changes
+on all given (relative to root) paths.
 
 Unison is a file-synchronization tool for Unix and Windows.
 It allows two replicas of a collection of files and directories
@@ -72,6 +71,6 @@ the changes in each replica to the other.
 ")
  (depends
   (ocaml
-   (>= 4.03))
+   (>= 4.08))
   (dune
    (>= 2.3))))
