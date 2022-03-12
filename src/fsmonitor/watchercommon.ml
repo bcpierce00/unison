@@ -285,7 +285,7 @@ let remove_change dir nm =
 let clear_change_table hash =
   changes := StringMap.remove hash !changes
 
-let rec clear_changes hash time =
+let clear_changes hash time =
   let rec clear_rec f =
     f.changed_children <-
       StringMap.filter

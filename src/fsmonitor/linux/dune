@@ -11,7 +11,7 @@
    (= %{system} "linux_eabihf")
    (= %{system} "linux_eabi")))
  (modules :standard \ watcher)
- (flags :standard -w -3-27-39)
+ (flags :standard -w -3-27)
  (foreign_stubs
   (language c)
   (names inotify_stubs))
