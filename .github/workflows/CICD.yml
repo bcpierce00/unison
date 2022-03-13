@@ -316,8 +316,10 @@ jobs:
       fail-fast: false
       matrix:
         job:
-        - { os: ubuntu-latest  , ocaml-compiler: 4.12.x }
-        - { os: macos-latest  , ocaml-compiler: 4.12.x }
+        - { os: ubuntu-18.04   , ocaml-compiler: 4.11.x }
+        - { os: ubuntu-20.04   , ocaml-compiler: 4.12.x }
+        - { os: macos-10.15    , ocaml-compiler: 4.11.x }
+        - { os: macos-11       , ocaml-compiler: 4.12.x }
 
     runs-on: ${{ matrix.job.os }}
 
