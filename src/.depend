@@ -1384,58 +1384,6 @@ uigtk2.cmx : \
     uigtk2.cmi
 uigtk2.cmi : \
     uicommon.cmi
-uimacbridge.cmo : \
-    xferhint.cmi \
-    uutil.cmi \
-    ubase/util.cmi \
-    update.cmi \
-    uicommon.cmi \
-    transport.cmi \
-    ubase/trace.cmi \
-    terminal.cmi \
-    system.cmi \
-    stasher.cmi \
-    ubase/safelist.cmi \
-    remote.cmi \
-    recon.cmi \
-    ubase/prefs.cmi \
-    path.cmi \
-    os.cmi \
-    main.cmo \
-    lwt/lwt_util.cmi \
-    lwt/lwt_unix.cmi \
-    lwt/lwt.cmi \
-    globals.cmi \
-    fspath.cmi \
-    files.cmi \
-    common.cmi \
-    clroot.cmi
-uimacbridge.cmx : \
-    xferhint.cmx \
-    uutil.cmx \
-    ubase/util.cmx \
-    update.cmx \
-    uicommon.cmx \
-    transport.cmx \
-    ubase/trace.cmx \
-    terminal.cmx \
-    system.cmx \
-    stasher.cmx \
-    ubase/safelist.cmx \
-    remote.cmx \
-    recon.cmx \
-    ubase/prefs.cmx \
-    path.cmx \
-    os.cmx \
-    main.cmx \
-    lwt/lwt_util.cmx \
-    lwt/lwt_unix.cmx \
-    lwt/lwt.cmx \
-    globals.cmx \
-    fspath.cmx \
-    files.cmx \
-    common.cmx \
-    clroot.cmx
 uimacbridgenew.cmo : \
     xferhint.cmi \
     uutil.cmi \
