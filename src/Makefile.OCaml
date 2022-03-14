@@ -446,8 +446,6 @@ win32rc/unison.res.lib: win32rc/unison.rc win32rc/U.ico
 	@echo "$(CAMLC): $< ---> $@"
 	$(CAMLC) $(CAMLFLAGS) $(COMPATCAMLFLAGS) -c $(CWD)/$<
 
-fswatch.cmi : ubase/prefs.cmi
-
 compat%.cmo: compat%.ml
 	@echo "$(OCAMLC): $< ---> $@"
 	$(OCAMLC) $(COMPATCAMLFLAGS) -c $(CWD)/$<
