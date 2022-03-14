@@ -1384,7 +1384,7 @@ uigtk2.cmx : \
     uigtk2.cmi
 uigtk2.cmi : \
     uicommon.cmi
-uimacbridgenew.cmo : \
+uimacbridge.cmo : \
     xferhint.cmi \
     uutil.cmi \
     ubase/util.cmi \
@@ -1411,7 +1411,7 @@ uimacbridgenew.cmo : \
     files.cmi \
     common.cmi \
     clroot.cmi
-uimacbridgenew.cmx : \
+uimacbridge.cmx : \
     xferhint.cmx \
     uutil.cmx \
     ubase/util.cmx \
