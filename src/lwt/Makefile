@@ -48,8 +48,9 @@ uninstall:
 	ocamlfind remove $(NAME)
 
 clean::
-	$(RM) -f *.cmi *.cmo *.cmx *.cma *.cmxa *.a *.o *~ *.bak
-	$(RM) -f win/*.cm[ioxa] win/*.cmxa win/*.a win/*.o win/*~ win/*.bak
+	$(RM) -f *.cmi *.cmo *.cmx *.cma *.cmxa *.a *.{o,obj} *~ *.bak
+	$(RM) -f generic/*.cm[ioxa] generic/*.cmxa generic/*.a generic/*.{o,obj} generic/*~ generic/*.bak
+	$(RM) -f win/*.cm[ioxa] win/*.cmxa win/*.a win/*.{o,obj} win/*~ win/*.bak
 
 clean::
 	cd example && $(MAKE) clean
