@@ -18,6 +18,10 @@ src:
 docs:
 	$(MAKE) -C src UISTYLE=text
 	$(MAKE) -C doc
+	$(MAKE) -C man
+
+manpage:
+	$(MAKE) -C man
 
 include src/Makefile.OCaml
 
@@ -212,6 +216,7 @@ clean::
 	   *.o *.obj *.cmo *.cmx *.cmi core TAGS *~ *.log \
 	   *.aux *.log *.dvi *.out *.backup[0-9] *.bak $(STABLEFLAG)
 	$(MAKE) -C doc clean
+	$(MAKE) -C man clean
 	$(MAKE) -C src clean
 
 install:

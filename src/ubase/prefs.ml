@@ -554,7 +554,7 @@ let topic_title = title
 
 let topicsInOrder = [ `Sync; `Syncprocess; `Syncprocess_CLI; `CLI; `GUI; `Remote; `Archive ]
 
-let oneLineDocs u =
+let oneLineDocs ?(hpre="") ?(hpost="") u =
   let buf = Buffer.create 1024 in
   let out = Buffer.add_string buf in
   let fmt = Format.formatter_of_buffer buf in
@@ -580,7 +580,9 @@ let oneLineDocs u =
     if Util.StringMap.cardinal m > 0 then begin
       let h = title t in
       if h <> "" then begin
-        out "\n  "; out h; out ":\n"
+        out "\n"; out hpre; out "  ";
+        out h;
+        out ":"; out hpost; out "\n"
       end;
       Util.StringMap.iter formatPref m
     end
@@ -589,21 +591,26 @@ let oneLineDocs u =
     Safelist.iter (fun t -> formatTopic (g t))
   in
 
-  out u; out "\n";
+  out u; if u <> "" then out "\n";
 
-  out "Basic options:\n";
+  out (hpre ^ "Basic options:" ^ hpost ^ "\n");
   formatTopics (fun t -> `Basic t) (`General :: topicsInOrder);
 
-  out "\nAdvanced options:\n";
+  out ("\n" ^ hpre ^ "Advanced options:" ^ hpost ^ "\n");
   formatTopics (fun t -> `Advanced t) (topicsInOrder @ [`General]);
 
-  out "\nExpert options:\n";
+  out ("\n" ^ hpre ^ "Expert options:" ^ hpost ^ "\n");
   formatTopic (`Expert);
 
   Buffer.contents buf
 
 let printUsage usage = Uarg.usage (argspecs (fun _ s -> s))
                          (oneLineDocs usage)
+
+let printUsageForMan () =
+  print_string ".Bd -literal\n";
+  print_string (oneLineDocs ~hpre:".Sy \"" ~hpost:"\"" "");
+  print_string ".Ed\n"
 
 let processCmdLine usage hook =
   Uarg.current := 0;
@@ -660,7 +667,7 @@ let listVisiblePrefs () =
          end else l) !prefs [] in
   Safelist.stable_sort (fun (name1, _) (name2, _) -> compare name1 name2) l
 
-let printFullDocs () =
+let printFullTeXDocs () =
   Printf.eprintf "\\begin{description}\n";
   Safelist.iter
     (fun (name, {pspec; fulldoc; deprec; _}) ->
@@ -669,6 +676,86 @@ let printFullDocs () =
     (listVisiblePrefs());
   Printf.eprintf "\\end{description}\n"
 
+let printFullManDocs () =
+  (* The output mangling code is taken from uigtk2.ml with some modifications.
+     Performance is not critical here, it is only run during the build,
+     never by users. *)
+  let (>>>) x f = f x in
+  let emptylineRe = Str.regexp "\n\n+" in
+  let newlineRe = Str.regexp "\n *" in
+  let nodotRe = Str.regexp "^\\([^.\n]+\\)" in
+  let macroRe = Str.regexp "\\(\\.[ \n]*\\)\\([A-Z]\\)" in
+  let styleRe = Str.regexp "\\([^ ]?\\){\\\\\\([a-z]+\\) \\([^{}]*\\)}\\(\\([^ }][^ ]*\\)?\\)" in
+  let verbRe = Str.regexp "\\([^ ]?\\)\\\\verb|\\([^|]*\\)|\\(\\([^ }][^ ]*\\)?\\)" in
+  let argRe = Str.regexp "\\([^ ]?\\)\\\\ARG{\\([^{}]*\\)}\\([^ }]*\\)" in
+  let textttRe = Str.regexp "\\([^ ]?\\)\\\\texttt{\\([^{}]*\\)}\\(\\([^ }][^ ]*\\)?\\)" in
+  let showttRe = Str.regexp "\\([^ ]?\\)\\\\showtt{\\([^{}]*\\)}\\([^ }]*\\)" in
+  let emphRe = Str.regexp "\\([^ ]?\\)\\\\emph{\\([^{}]*\\)}\\([^ }]*\\)" in
+  let sectionRe = Str.regexp "\\\\sectionref{\\([^{}]*\\)}{\\([^{}]*\\)}" in
+  let emdash = Str.regexp_string "---" in
+  let parRe = Str.regexp "\\\\par *" in
+  let underRe = Str.regexp "\\\\_ *" in
+  let dollarRe = Str.regexp "\\\\\\$ *" in
+  let nn1Re = Str.regexp "\\(\\( -NN-\\)+ -NN-\\|\\( -NN-\\)* -NS-\\)\\." in
+  let nn2Re = Str.regexp "\\( -NN-\\)+" in
+  let substMacro m s =
+    (match Str.matched_group 1 s with "" -> " -NN-." | s -> s ^ " -NS-.") ^
+    m ^
+    (Str.matched_group 2 s) ^
+    (match Str.matched_group 3 s with "" -> "" | s -> " Ns " ^ s) ^
+    " -NN-"
+  in
+  let tex2man doc =
+    doc >>>
+    Str.global_replace macroRe "\\1\\&\\2" >>>
+    Str.global_substitute styleRe
+      (fun s ->
+         try
+           let tag =
+             match Str.matched_group 2 s with
+               "em" -> ".Em"
+             | "tt" -> ".Sy"
+             | _ -> raise Exit
+           in
+           Printf.sprintf "%s%s %s%s -NN-"
+             (match Str.matched_group 1 s with "" -> " -NN-" | s -> s ^ " -NS-")
+             tag
+             (Str.matched_group 3 s)
+             (match Str.matched_group 4 s with "" -> "" | s -> " Ns " ^ s)
+         with Exit ->
+           Str.matched_group 0 s) >>>
+    Str.global_substitute verbRe (substMacro "Ic ") >>>
+    Str.global_substitute argRe (substMacro "Ar ") >>>
+    Str.global_substitute textttRe (substMacro "Sy ") >>>
+    Str.global_substitute showttRe (substMacro "Dq ") >>>
+    Str.global_substitute emphRe (substMacro "Em ") >>>
+    Str.global_replace sectionRe "Section\n.Dq \\2\n in the manual" >>>
+    Str.global_replace emdash "\xe2\x80\x94" >>>
+    Str.global_replace parRe "\n" >>>
+    Str.global_replace underRe "_" >>>
+    Str.global_replace dollarRe "$" >>>
+    Str.global_replace nn1Re " Ns " >>>
+    Str.global_replace nn2Re "\n" >>>
+    Str.global_replace newlineRe "\n" >>>
+    Str.global_replace emptylineRe "\n" >>>
+    Str.global_replace nodotRe ".No \\1" >>>
+    Util.trimWhitespace
+  in
+  Printf.printf ".Bl -tag\n";
+  Safelist.iter
+    (fun (name, {pspec; fulldoc; deprec; _}) ->
+       Printf.printf ".It Ic %s%s\n%s%s\n"
+         name
+         (match prefArg pspec with "" -> "" | s -> " Ar " ^ s)
+         (if deprec then ".Em ( Deprecated )\n" else "")
+         (tex2man fulldoc)
+    )
+    (listVisiblePrefs());
+  Printf.printf ".El\n"
+
+let printFullDocs = function
+  | `TeX -> printFullTeXDocs ()
+  | `man -> printFullManDocs ()
 
 (*****************************************************************************)
 (*                  Adding stuff to the prefs file                           *)

@@ -1,0 +1,487 @@
+.\" Unison file synchronizer: man/unison.1
+.\" Copyright 1999-2022, Unison authors
+.\"
+.\" This program is free software: you can redistribute it and/or modify
+.\" it under the terms of the GNU General Public License as published by
+.\" the Free Software Foundation, either version 3 of the License, or
+.\" (at your option) any later version.
+.\"
+.\" This program is distributed in the hope that it will be useful,
+.\" but WITHOUT ANY WARRANTY; without even the implied warranty of
+.\" MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+.\" GNU General Public License for more details.
+.\"
+.\" You should have received a copy of the GNU General Public License
+.\" along with this program.  If not, see <http://www.gnu.org/licenses/>.
+.\"
+.Dd March 17, 2022
+.Os unison
+.Dt UNISON 1 URM
+.Sh NAME
+.Nm unison
+.Nd a multi-platform bi-directional file synchronization tool
+.Sh SYNOPSIS
+.Nm
+.Op Ar options
+.Nm
+.Ar root1 root2
+.Op Ar options
+.Nm
+.Ar profilename
+.Op Ar options
+.Sh DESCRIPTION
+.Nm Unison
+is a file-synchronization tool for POSIX-compliant systems (e.g. *BSD and
+GNU/Linux), macOS and Windows. It allows two replicas of a collection of files
+and directories to be stored on different hosts (or different disks on the same
+host), modified separately, and then brought up to date by propagating the
+changes in each replica to the other.
+.Pp
+Unison has been in use for over 20 years and many people use it to synchronize
+data they care about.
+.Pp
+Unison shares a number of features with other tools. Some of the distinguishing
+features are:
+.Bl -bullet -compact
+.It
+Unlike simple mirroring or backup utilities, Unison can deal with updates to
+both replicas of a distributed directory structure.
+.It
+Unison works across platforms, allowing you to synchronize a Windows laptop
+with a Unix server, for example.
+.It
+Unlike most distributed filesystems, Unison is a user-level program that simply
+uses normal systems calls: there is no need to modify the kernel, to have
+superuser privileges on either host, or to have a FUSE implementation.
+.It
+Unison works between any pair of machines connected to the internet, typically
+communicating over
+.Xr ssh 1 ,
+but also directly over TCP. It is careful with network bandwidth, and runs well
+over slow links. Transfers of small updates to large files are optimized using
+a compression protocol similar to
+.Xr rsync 1 .
+.It
+Unison is resilient to failure. It is careful to leave the replicas and its own
+private structures in a sensible state at all times, even in case of abnormal
+termination or communication failures.
+.El
+.Sh OPTION SUMMARY
+@OPTIONS_SHORT@
+.Sh OPTIONS
+Most of the options can be given as command line arguments or in a profile. On
+command line, but not in a profile, the options are specified with a leading
+dash. Like this:
+.Fl option .
+@OPTIONS_FULL@
+.Sh ROOTS
+A replica’s root tells Unison where to find a set of files to be synchronized,
+either on the local machine or on
+a remote host. For example,
+.Pp
+.Dl relative/path/of/root
+.Pp
+specifies a local root relative to the directory where Unison is started, while
+.Pp
+.Dl /absolute/path/of/root
+.Pp
+specifies a root relative to the top of the local filesystem, independent of
+where Unison is running. Remote roots can begin with
+.Sy ssh://
+to indicate that the remote server should be started with
+.Xr ssh 1 :
+.Pp
+.Dl ssh://remotehost//absolute/path/of/root
+.Dl ssh://user@remotehost/relative/path/of/root
+.Pp
+If the remote server is already running (in the socket mode), then the syntax
+.Pp
+.Dl socket://remotehost:portnum//absolute/path/of/root
+.Dl socket://remotehost:portnum/relative/path/of/root
+.Dl socket://[IPv6literal]:portnum/path
+.Pp
+is used to specify the hostname and the port that the client Unison should use
+to contact it. Syntax
+.Pp
+.Dl socket://{path/of/socket}//absolute/path/of/root
+.Dl socket://{path/of/socket}/relative/path/of/root
+.Pp
+is used to specify the Unix domain socket the client Unison should use to
+contact the server.
+.Pp
+The syntax for roots is based on that of URIs (described in RFC 2396). The full
+grammar is:
+.Bd -literal
+  replica ::= [protocol:]//[user@][host][:port][/path]
+           |  path
+
+  protocol ::= file
+            |  socket
+            |  ssh
+
+  user ::= [-_a-zA-Z0-9]+
+
+  host ::= [-_a-zA-Z0-9.]+
+        |  \e[ [a-f0-9:.]+ zone? \e]     IPv6 literals (no future format).
+        |  { [^}]+ }                   For Unix domain sockets only.
+
+  zone ::= %[-_a-zA-Z0-9~%.]+
+
+  port ::= [0-9]+
+
+.Ed
+When path is given without any protocol prefix, the protocol is assumed to be
+.Sy file: .
+Under Windows, it is possible to synchronize with a remote directory using the
+.Sy file:
+protocol over the Windows Network Neighborhood. For example,
+.Pp
+.Dl unison foo //host/drive/bar
+.Pp
+synchronizes the local directory
+.Pa foo
+with the directory
+.Pa drive:\ebar
+on the machine
+.Sy host ,
+provided that host is accessible via Network Neighborhood. When the
+.Sy file:
+protocol is used in this way, there is no need for a Unison server to be
+running on the remote host. However, running Unison this way is only a good
+idea if the remote host is reached by a very fast network connection, since the
+full contents of every file in the remote replica will have to be transferred
+to the local machine to detect updates.
+.Sh PATHS
+A path refers to a point within a set of files being synchronized; it is
+specified relative to the root of the replica. Formally, a path is just a
+sequence of names, separated by /. Note that the path separator character is
+always a forward slash, no matter what operating system Unison is running on.
+The empty path (i.e., the empty sequence of names) denotes the whole replica.
+.Sh PATH SPECIFICATION
+Several Unison preferences (e.g.,
+.Sy ignore/ignorenot , follow , sortfirst/sortlast , backup , merge ,
+etc.) specify individual paths or sets of paths. These preferences share a
+common syntax based on regular expressions. Each preference is associated with
+a list of path patterns; the paths specified are those that match any one of
+the path pattern.
+.Pp
+Each pattern can have one of three forms. The most general form is a Posix
+extended regular expression introduced by the keyword
+.Sy Regex .
+(The collating sequences and character classes of full Posix regexps are not
+currently supported.)
+.Pp
+.Dl Cm Regex Ar regexp
+.Pp
+For convenience, three other styles of pattern are also recognized:
+.Pp
+.Dl Cm Name Ar name
+.Pp
+matches any path in which the last component matches
+.Ar name ,
+.Pp
+.Dl Cm Path Ar path
+.Pp
+matches exactly the path
+.Ar path ,
+and
+.Pp
+.Dl Cm BelowPath Ar path
+.Pp
+matches the path
+.Ar path
+and any path below. The
+.Ar name
+and
+.Ar path
+arguments of the latter forms of patterns are
+.Em not
+regular expressions. Instead, standard
+.Dq globbing
+conventions can be used in
+.Ar name
+and
+.Ar path :
+.Bl -dash
+.It
+a
+.Sy "*"
+matches any sequence of characters not including / (and not beginning with .,
+when used at the beginning of a
+.Ar name )
+.It
+a
+.Sy \&?
+matches any single character except / (and leading .)
+.It
+.Sy [xyz]
+matches any character from the set {x, y, z}
+.It
+.Sy {a,bb,ccc}
+matches any one of a, bb, or ccc. (Be careful not to put extra spaces after the
+commas: these will be interpreted literally as part of the strings to be
+matched!)
+.El
+.Pp
+The path separator in path patterns is always the forward-slash character
+.Dq /
+— even when the client or server is running under Windows, where the normal
+separator character is a backslash. This makes it possible to use the same set
+of path patterns for both Unix and Windows file systems.
+.Pp
+A path specification may be followed by the separator
+.Dq " -> "
+itself followed by a string which will be associated to the matching paths:
+.Pp
+.Dl Cm Path Ar path No -> Ar "associated string"
+.Pp
+Not all pathspec preferences use these associated strings but all pathspec
+preferences are parsed identically and the strings may be ignored. Only the
+last match of the separator string on the line is used as a delimiter. Thus to
+allow a path specification to contain the separator string, append an
+associated string to it, even if it is not used. The associated string cannot
+contain the separator string.
+.Sh PROFILES
+A profile is a text file that specifies permanent settings for roots, paths,
+ignore patterns, and other preferences, so that they do not need to be typed at
+the command line every time Unison is run. Profiles should reside in the
+.Pa .unison
+directory on the client machine. If Unison is started with just one argument
+.Ar name
+on the
+command line, it looks for a profile called
+.Em name Ns Sy .prf
+in the
+.Pa .unison
+directory. If it is started with no arguments, it scans the
+.Pa .unison
+directory for files whose names end in
+.Sy .prf
+and offers a menu (when using the graphical user interface; for the text
+interface, you have to use the
+.Fl i
+option). If a file named
+.Pa default.prf
+is found, its settings will be used as the default preferences.
+.Pp
+To set the value of a preference
+.Sy p
+permanently, add to the appropriate profile a line of the form
+.Pp
+.Dl p = true
+.Pp
+for a boolean flag or
+.Pp
+.Dl p = <value>
+.Pp
+for a preference of any other type.
+Whitespaces around
+.Sy p
+and the value are ignored. A profile may also include blank lines and lines
+beginning with #; both are ignored.
+.Pp
+When Unison starts, it first reads the profile and then the command line, so
+command-line options will override settings from the profile.
+.Sh ENVIRONMENT
+.Bl -tag
+.It Ev UNISON
+Unison stores a variety of information in a private directory on each host. If
+the environment variable
+.Sy UNISON
+is defined, then its value will be used as the path for this directory. This
+can be just a name, or a path. If
+.Sy UNISON
+is not defined, then the directory depends on which operating system you are
+using. In Unix, the default is to use
+.Pa $HOME/.unison .
+In Windows, if the environment variable
+.Sy USERPROFILE
+is defined, then the directory will be
+.Pa $USERPROFILE\e.unison ;
+otherwise, it will be
+.Pa c:\e.unison .
+On macOS,
+.Pa $HOME/.unison
+will be used if it is present, but
+.Pa "$HOME/Library/Application Support/Unison"
+will be created and used by default.
+.It Ev UNISONLOCALHOSTNAME
+The function that finds the canonical hostname of the local host (which is
+used, for example, in calculating the name of the archive file used to remember
+which files have been synchronized) normally uses the
+.Sy gethostname
+operating system call. However, if the environment variable
+.Sy UNISONLOCALHOSTNAME
+is set, its value will be used instead. This makes it easier to use Unison in
+situations where a machine’s name changes frequently (e.g., because it is a
+laptop and gets moved around a lot).
+.It Ev UNISONBACKUPDIR
+When backups are stored centrally, the directory used to hold them is
+controlled by the preference
+.Sy backupdir
+and the environment variable
+.Sy UNISONBACKUPDIR .
+If both are specified then the environment variable overrides the preference.
+If neither of these are set, then the directory
+.Pa $UNISON/backup
+is used (see environment variable
+.Sy UNISON
+above).
+.It Ev PAGER
+Used by the text interface as the pager when displaying the differences between
+changed files.
+.It Ev NO_COLOR
+If the environment variable
+.Sy NO_COLOR
+is set then Unison's text interface will not produce any color output by
+default. The
+.Sy color
+preference overrides this environment variable.
+.El
+.Sh FILES
+.Bl -tag -compact
+.It Pa ~/.unison
+Unison stores a variety of information in a private directory on each host.
+This is the default path of this private directory. This path may be changed by
+the
+.Sy UNISON
+environment variable.
+.Pp
+.It Pa ~/.unison/*.prf
+Profile files. Each profile is stored in a file named
+.Em profilename Ns Sy .prf .
+.Pp
+.It Pa ~/.unison/ar*
+.It Pa ~/.unison/tm*
+.It Pa ~/.unison/sc*
+Main and temporary archive files. These files may be deleted if you know what
+you are doing. Deleting an archive file is equivalent to using the
+.Fl ignorearchives
+option.
+.Pp
+.It Pa ~/.unison/fp*
+Fingerprint cache files. These files may be safely deleted. Keep in mind that
+deleting a fingerprint cache file means that any unsychronized changes must be
+scanned again. Depending on your replicas, this may mean scanning gigabytes of
+file contents.
+.Pp
+.It Pa ~/.unison/lk*
+Lock files indicating a running Unison process. These files may be deleted if
+you are careful and know that there is no Unison process currently running.
+Deleting a lock file is equivalent to using the
+.Fl ignorelocks
+option.
+.El
+.Sh EXAMPLES
+.Bl -tag -width ""
+.It Sy Synchronize two local directories
+.Pp
+.Dl unison path/to/dir1 /dir2
+.Pp
+This command synchronizes two local directories using the default options.
+Default options are defined by Unison and can be overridden by user in a
+profile called
+.Dq default ,
+which is by default stored in file
+.Pa ~/.unison/default.prf
+.It Sy Synchronize a local and a remote directory
+.Pp
+.Dl unison local/dir ssh://user@host//absolute/path
+.Pp
+This command synchronizes a local directory (here specified by a relative path)
+and a remote directory (here specified by an absolute path) using
+.Xr ssh 1
+and the default options (see example above).
+.It Sy Synchronize with all options specified in a profile
+.Pp
+.Dl unison profilename
+.Pp
+This command reads all the options from the profile named
+.Dq profilename
+and synchronizes according to those options.
+.It Sy Synchronize with options specified in a profile and roots on command line
+.Pp
+.Dl unison profilename /path/to/dir ssh://host/path/on/server
+.Pp
+This command reads all options from the profile named
+.Dq profilename
+with only the roots specified on the command line. Roots must not be specified
+in the profile as the roots from command line will not override roots in the
+profile, rather append to the list of roots.
+.It Sy Synchronize automatically
+.Pp
+.Dl unison -batch /path/to/dir ssh://host/path/on/server
+.Pp
+This command synchronizes all non-conflicting changes automatically, once.
+.It Sy Synchronize continuously
+.Pp
+.Dl unison -repeat watch /path/to/dir ssh://host/path/on/server
+.Pp
+This command first fully synchronizes the roots and then remains dormant,
+waiting for any file changes within either root and then automatically
+synchronizes these changes. This also works in a profile
+.No ( Ns Sy "repeat = watch" ) .
+If the filesystem monitoring helper program is not available or not desired for
+other reasons, it is possible to make Unison synchronize repeatedly with a
+defined time interval:
+.Pp
+.Dl unison -repeat 60 /path/to/dir ssh://host/path/on/server
+.Pp
+This command synchronizes every 60 seconds. Using
+.Fl repeat
+implies
+.Fl batch .
+.Pp
+Currently, continuous synchronization is not possible when using the GUI.
+.El
+.Sh DIAGNOSTICS
+When running in the textual mode, Unison returns an exit status, which
+describes whether, and at which level, the synchronization was successful. The
+exit status could be useful when Unison is invoked from a script. Currently,
+there are four possible values for the exit status:
+.Bl -tag -width 1m
+.It 0
+successful synchronization; everything is up-to-date now.
+.It 1
+some files were skipped, but all file transfers were successful.
+.It 2
+non-fatal failures occurred during file transfer.
+.It 3
+a fatal error occurred, or the execution was interrupted.
+.El
+.Pp
+The graphical interface does not return any useful information through the exit
+status.
+.Sh COMPATIBILITY
+If you are using Unison versions \*(>= 2.52 on all machines, you do not have to
+do anything extra for compatibility.
+.Pp
+Historically (versions \*(Lt 2.52), Unison versions had to be matched
+relatively exactly for them to work together. Additionally, the version of
+compiler used to build Unison also had significant relevance for compatibility.
+.Pp
+As of version 2.52, Unison has a degree of backward and forward compatibility.
+This means three things. First, it is possible for local and remote machines to
+run a different version of Unison. Second, it is possible for local and remote
+machines to run a version (same or different) of Unison built with a different
+version of compiler. Lastly, it is possible to upgrade Unison on the local
+machine and keep the existing archive.
+.Pp
+For more information on co-existence of versions \*(Lt 2.52 and \*(>= 2.52, see
+.Lk https://github.com/bcpierce00/unison/wiki/2.52-Migration-Guide
+.Sh SEE ALSO
+There is a full user manual (pdf, html and txt) included with Unison and
+available online. Depending on your operating system, this manual may have been
+installed at
+.Pa /usr/share/doc/unison/
+or a similar location. The manual can also be read in the GUI (look in the Help
+menu) or on the command line by
+.Sy unison -doc all
+(you probably want to pipe the output to a pager).
+.Pp
+.Lk https://github.com/bcpierce00/unison
+.Pp
+.Lk https://www.cis.upenn.edu/~bcpierce/unison/
+.\" .Sh STANDARDS
+.\" .Sh HISTORY
+.\" .Sh BUGS

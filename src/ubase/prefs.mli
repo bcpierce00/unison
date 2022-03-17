@@ -158,6 +158,7 @@ val parseCmdLine :
 val scanCmdLine : string -> (string list) Util.StringMap.t
 
 val printUsage : string -> unit
+val printUsageForMan : unit -> unit
 
 (* ---------------------------------------------------------------------- *)
 
@@ -217,5 +218,5 @@ val topic_title : group -> string
 
 (* ------------------------------------------------------------------------- *)
 
-val printFullDocs : unit -> unit
+val printFullDocs : [`TeX | `man] -> unit
 val dumpPrefsToStderr : unit -> unit
