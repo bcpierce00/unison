@@ -261,7 +261,7 @@ endif
 
 ## New Mac UI, 2014 version
 ifeq ($(UISTYLE),mac)
-  OCAMLOBJS+=uimacbridgenew.cmo
+  OCAMLOBJS+=uimacbridge.cmo
   OCAMLLIBS+=threads.cma
   INCLFLAGS+=-thread
 endif
