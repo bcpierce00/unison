@@ -15,7 +15,7 @@ Note that formatting for 2.51.x and older is almost certainly incorrect.
 
 Released 2022-03-12
 
-   * Feature negotiation, compatible wtih 2.51.
+   * Feature negotiation, compatible with 2.51.
    * New archive format (independent of ocaml version, based on umarshal)
      Upgrade is automatic.
    * New wire protocol (independent of ocaml version, based on umarshal)
