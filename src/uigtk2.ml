@@ -4110,7 +4110,7 @@ let createToplevelWindow () =
       (actionMenu#add_item
          ~callback:(fun () ->
             doAction (fun ri _ -> Recon.revertToDefaultDirection ri))
-         "_Revert to Unison's Recommendations");
+         "_Revert to Unison's Recommendation");
     grAdd grAction
       (actionMenu#add_item
          ~callback:(fun () ->

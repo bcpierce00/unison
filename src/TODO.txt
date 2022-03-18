@@ -83,12 +83,6 @@ It would be nice if Unison could have the "power" to copy write-protected
 
 *** See if we can get rid of some Osx.XXX stuff (e.g. ressLength!?)
 
-*** Overlapping paths
-    If one -path argument is a prefix of another, the same files will get
-    scanned twice, found to need transferring twice, and transferred twice, but
-    the first transfer messes up the second.  The fix would be to throw
-    away -path arguments that are suffixes of other ones.
-
 * There is no way of selecting files with wildchar. I had to use
      ignorenot = Name opt/root/.unison/*.prf
      ignore = Name opt/root/.unison/*
@@ -196,10 +190,6 @@ should strip symbols from binary files in 'make exportnative'
 * DOCUMENTATION
 * =============
 
-** Put a little more order on the flags and preferences -- e.g.,
-    organize them into "basic preferences", "advanced preferences,"
-    "expert preferences," etc.  Requires hacking the Uarg module.
-
 ** Add something to docs about how to use 'rootalias'.  Include an
    explanation of the semantics, a couple of examples, and a suggestion
    for how to debug what it's doing by turning on appropriate debugging
@@ -264,13 +254,6 @@ should strip symbols from binary files in 'make exportnative'
        - put backups in same dir as files by default
        - otherwise, put them in a central place if one is given
        - Update.incrVersionsOfBackups should not be externally visible
-
-*** Consider altering the socket method, so the server accepts connections
-    only on a particular address? This would be very useful, because many people
-    tunnel unison over an OpenVPN Link, and this software works with virtual
-    devices and additional IP addresses on it. If unison would accept
-    connections only on the virtual device, the security would be enhanced,
-    because the OpenVPN key should be unavailable for the black hats.
 
 *** unison -help doesn't go to stdout so it's hard to pipe it into less
     ===> Probably *all* output should go to stdout, not stderr (but maybe
@@ -418,13 +401,6 @@ should strip symbols from binary files in 'make exportnative'
   start up the GUI from the command line (I would argue that people using the
   GUI regularly will start it anyway by double clicking the app)
 
-Would be nice to have the Unison log file relative to my home directory,
- like this
-       logfile = ~/.unision/log
-  or
-       logfile = $HOME/.unision/log
-  (We should do this for *all* files that the user specifies.)
-
 add a switch '-logerrors' that makes unison log error messages to a
   separate file in addition to the standard logfile
 
@@ -533,9 +509,6 @@ If the connection to the server goes away and then comes back up, it
   would be nice if Unison would transparently re-establish it (at least,
   when this makes sense!)
 
-maybe put backup files somewhere other than in the replica (e.g. in
-  $HOME/tmp, or controlled by preference)
-
 Better documentation of the -backups flag, and a way to expire old backups
 
 Add a preference that makes the reconciler ignore prefs-only differences
@@ -576,13 +549,6 @@ the local host and which side the remote host is.
 
 * USER INTERFACE
 * ==============
-
-** In menu Actions
-    - show Diff applies to the current line, while
-    - revert to unision's recommandation applies to all lines
-   Should be clearer and/or homogeneous behavior.
-   I would also like to have "revert to unision's recommandation" for the
-   current line.
 
 ** in gtk ui, display green checkmark next to finished items even if their
    direction indicates a conflict; do not list such items as "skipped" at
@@ -663,12 +629,6 @@ the local host and which side the remote host is.
   This might be a good use for "tool tips," if I knew how to make them work
   using lablGTK.
 
-* After clicking "Create new profile" in the initial profile window and
-  giving a name for the new profile, it is confusing to get dumped back
-  into the profile window again and have to explicitly select the new
-  profile.  Would be better to skip this step and go straight into
-  filling in its fields.
-
 * The menu help for left/right arrow both said `transfer local to local'.
   Not helpful.  The items in question are pathnames, which you might not
   have to abbreviate.  To save space one might consider replacing any
@@ -690,10 +650,6 @@ the local host and which side the remote host is.
 
 * [Jamey Leifer] I think "unison -doc" should be mapped to "unison
   -doc topics" and the error message for the former eliminated.
-
-* [Jamey Leifer] Typing "unison" results in the Profiles box
-  ("Select an existing profile...").  I think the help topics should be
-  available here.
 
 Unison's gui offers an `Actions' menu with a variety of features
   regarding preferences.  I would love to see an action with the following
@@ -747,9 +703,6 @@ If I have a change I look at the detail window. It would be nice to be
 Also, it would be nice to highlight in the detailed window the
    elements that have changed.
 
-Make it possible to select a bunch of conflicts at the same time and
-  override them all together
-
 The UI window should display the current roots somewhere.
 
 There should be a -geometry command-line interface, following the usual X
@@ -786,9 +739,6 @@ It would be nice if the initial 'usage' message were not so long.  Maybe
 > window...
 The UI for the diff functionality needs some polishing.  (Also, it should
 be merged with the new "merge" functionality.)
-
-consider separating switches into 'ordinary' and 'expert' categories,
-  documented in separate sections
 
 would be nice to be able to "Proceed" just the selected line
 
@@ -838,10 +788,6 @@ Rewrite recon.ml in a more modular way.  Probably, have for each property
   a function taking the previous file state and the state on each
   replicas, and returning in what the synchronization operation should be
   (nothing, left, right, conflict); a combinator then merge the results.
-
-It would be good to have a graphical interface allowing management and
-  editing of profiles, ignore patterns, etc.  Or, less ambitiously, just
-  have UI options for all command-line options (killServer)
 
 How about a facility so that you can specify more than one pair of
   file systems for a single invocation of Unison? This would be like
