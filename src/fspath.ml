@@ -43,12 +43,14 @@ let toDebugString (Fspath f) = String.escaped f
 let toSysPath (Fspath f) = System.fspathFromString f
 
 (* Needed to hack around some ocaml/Windows bugs, see comment at stat, below *)
+(* Note that this regexp conveniently also applies to //?/ style paths *)
 let winRootRx = Rx.rx "(([a-zA-Z]:)?/|//[^/]+/[^/]+/)"
 (* FIX I think we could just check the last character of [d]. *)
 let isRootDir d =
 (* We assume all path separators are slashes in d                            *)
   d="/" ||
   (Util.osType = `Win32 && Rx.match_string winRootRx d)
+(* Note that this regexp conveniently also applies to //?/ style paths *)
 let winRootFixRx = Rx.rx "//[^/]+/[^/]+"
 let winRootFix d =
   if Rx.match_string winRootFixRx d then d^"/" else d
@@ -253,8 +255,8 @@ let canonizeFspath p0 =
           (* fails, we just quit.  This works nicely for most cases of (1),  *)
           (* it works for (2), and on (3) it may leave a mess for someone    *)
           (* else to pick up.                                                *)
-          let p = if Util.osType = `Win32 then Fileutil.backslashes2forwardslashes p else p in
-          if isRootDir p then raise
+          let p'' = if Util.osType = `Win32 then Fileutil.backslashes2forwardslashes p else p in
+          if isRootDir p'' then raise
             (Util.Fatal (Printf.sprintf
                "Cannot find canonical name of root directory %s\n(%s)" p why));
           let parent = Filename.dirname p in

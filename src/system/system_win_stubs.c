@@ -659,8 +659,15 @@ CAMLprim value win_getcwd (value unit)
   /* Normalize the path */
   res = GetLongPathNameW (s, s, NT_MAX_PATH);
   if (res == 0) {
-    win32_maperr(GetLastError());
-    uerror("getcwd", Nothing);
+    DWORD err = GetLastError();
+    /* EINVAL is irrelevant here. We already have the cwd value, so we just
+       pass it on without getting the long path name. EINVAL has been known
+       to be (incorrectly) produced for valid \\?\-style paths like the root
+       dir of a volume: \\?\Volume{aaaa-bbbb-...}\ */
+    if (err != ERROR_INVALID_PARAMETER) {
+      win32_maperr(err);
+      uerror("getcwd", Nothing);
+    }
   }
   /* Convert the drive letter to uppercase */
   if (s[0] >= L'a' && s[0] <= L'z') s[0] -= 32;

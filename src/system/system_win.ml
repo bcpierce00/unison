@@ -48,7 +48,8 @@ let fixPath f =
   done;
   Bytes.to_string buffer
 let winRootRx = Rx.rx "[a-zA-Z]:[/\\].*"
-let winUncRx = Rx.rx "[/\\][/\\][^/\\]+[/\\][^/\\]+[/\\].*"
+let winUncRx = Rx.rx "[/\\][/\\][^?/\\]+[/\\][^/\\]+[/\\].*"
+let winDevPathRx = Rx.rx "//[?]/.+"
 let extendedPath f =
   if not P.useLongUNCPaths then
     f
@@ -56,6 +57,8 @@ let extendedPath f =
     fixPath ("\\\\?\\" ^ f)
   else if Rx.match_string winUncRx f then
     fixPath ("\\\\?\\UNC" ^ String.sub f 1 (String.length f - 1))
+  else if Rx.match_string winDevPathRx f then
+    fixPath f
   else
     f
 
@@ -146,9 +149,11 @@ let getcwd () =
   with e -> sys_error e
 
 let badFileRx = Rx.rx ".*[?*].*"
+let winDevPathRx = Rx.rx "[/\\][/\\][?][/\\].+"
 
 let opendir d =
-  if Rx.match_string badFileRx d then
+  let d' = if Rx.match_string winDevPathRx d then String.sub d 4 (String.length d - 4) else d in
+  if Rx.match_string badFileRx d' then
     raise (Unix.Unix_error (Unix.ENOENT, "opendir", d));
   let (handle, entry_read) =
     try
