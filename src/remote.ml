@@ -1437,7 +1437,8 @@ let buildSocket host port kind ?(err="") ai =
                   if ai.Unix.ai_family = Unix.PF_INET6 then
                     Lwt_unix.setsockopt socket Unix.IPV6_ONLY true;
                   (* Allow reuse of local addresses for bind *)
-                  Lwt_unix.setsockopt socket Unix.SO_REUSEADDR true;
+                  if ai.Unix.ai_family <> Unix.PF_UNIX then
+                    Lwt_unix.setsockopt socket Unix.SO_REUSEADDR true;
                   (* Bind the socket to portnum on the local host
                      or to a filesystem path (when Unix domain socket) *)
                   Lwt_unix.bind socket ai.Unix.ai_addr;
@@ -2103,20 +2104,23 @@ let waitOnPort hosts port =
        let hosts = match hosts with [] -> [""] | _ -> hosts in
        let listening = Lwt_unix.run (buildListenSocket hosts port) in
        let accepting = Array.make (Safelist.length listening) None in
-       let accept i l =
+       let rec accept i l =
          match accepting.(i) with
            | None ->
                let st = Lwt_unix.accept l >>= fun s -> Lwt.return (i, s) in
                let () = accepting.(i) <- Some st in
                st
            | Some st -> st
-       and serve (i, s) = accepting.(i) <- None; s in
+       and serve (i, s) = accepting.(i) <- None; setKeepalive s; s
+       and setKeepalive = function
+         | (_, Unix.ADDR_UNIX _) -> ()
+         | (c, ADDR_INET _) -> Lwt_unix.setsockopt c Unix.SO_KEEPALIVE true
+       in
        Util.msg "server started\n";
        let rec handleClients () =
          let (connected, _) =
            serve @@ Lwt_unix.run (Lwt.choose (List.mapi accept listening))
          in
-         Lwt_unix.setsockopt connected Unix.SO_KEEPALIVE true;
          begin try
            (* Accept a connection *)
            let compatMode = Some (if is248Exe then "2.48" else "2.51") in
