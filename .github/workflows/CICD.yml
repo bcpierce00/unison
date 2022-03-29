@@ -209,6 +209,7 @@ jobs:
     - run: opam exec -- make test
 
     - name: Run self-tests over RPC
+      if: runner.os == 'Windows' && !contains(matrix.job.ocaml-version, '4.14')
       shell: bash
       run: |
         # Separate backup dir must be set for server instance so that the central
@@ -216,6 +217,21 @@ jobs:
         UNISONBACKUPDIR=./src/testbak2 ./src/unison -socket 55443 &
         sleep 1 # Wait for the server to be fully started
         ./src/unison -ui text -selftest testr1 socket://127.0.0.1:55443/testr2 -killserver
+
+    - name: Run self-tests over local socket
+      # Recent Windows versions do support Unix domain sockets
+      # but at least OCaml 4.14 is required to use that support
+      if: runner.os != 'Windows' || contains(matrix.job.ocaml-version, '4.14')
+      shell: bash
+      run: |
+        mkdir localsocket
+        chmod 700 localsocket
+        # Separate backup dir must be set for server instance so that the central
+        # backup location of both instances doesn't overlap
+        UNISONBACKUPDIR=./src/testbak4 ./src/unison -socket ./localsocket/test.sock &
+        sleep 1 # Wait for the server to be fully started
+        ${{ runner.os == 'Windows' }} || test -S ./localsocket/test.sock
+        ./src/unison -ui text -selftest testr3 socket://{./localsocket/test.sock}/testr4 -killserver
 
     - if: steps.vars.outputs.STATIC != 'true' ## unable to build static gtk for linux or windows/Cygwin MinGW platforms
       shell: bash
