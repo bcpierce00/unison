@@ -176,6 +176,45 @@ jobs:
         echo %CYGWIN_ROOT_WRAPPERBIN%>> %GITHUB_PATH%
         echo SHELLOPTS=igncr>> %GITHUB_ENV%
 
+    - shell: bash
+      run: |
+        opam exec -- make src OSTYPE=$OSTYPE UISTYLE=text STATIC=${{ steps.vars.outputs.STATIC }}
+        # stage
+        # * notes: darwin/macos doesn't build `unison-fsmonitor`
+        for file in ${PROJECT_EXES} ; do
+          if [ -f "src/${file}${{ steps.vars.outputs.EXE_suffix }}" ]; then
+            cp "src/${file}${{ steps.vars.outputs.EXE_suffix }}" '${{ steps.vars.outputs.PKG_DIR }}/bin'
+            echo "'src/${file}${{ steps.vars.outputs.EXE_suffix }}' copied to '${{ steps.vars.outputs.PKG_DIR }}/bin'"
+          fi
+        done
+
+    - run: opam exec -- make test
+
+    - name: Run self-tests over RPC
+      if: runner.os == 'Windows' && !contains(matrix.job.ocaml-version, '4.14')
+      shell: bash
+      run: |
+        # Separate backup dir must be set for server instance so that the central
+        # backup location of both instances doesn't overlap
+        UNISONBACKUPDIR=./src/testbak2 ./src/unison -socket 55443 &
+        sleep 1 # Wait for the server to be fully started
+        ./src/unison -ui text -selftest testr1 socket://127.0.0.1:55443/testr2 -killserver
+
+    - name: Run self-tests over local socket
+      # Recent Windows versions do support Unix domain sockets
+      # but at least OCaml 4.14 is required to use that support
+      if: runner.os != 'Windows' || contains(matrix.job.ocaml-version, '4.14')
+      shell: bash
+      run: |
+        mkdir localsocket
+        chmod 700 localsocket
+        # Separate backup dir must be set for server instance so that the central
+        # backup location of both instances doesn't overlap
+        UNISONBACKUPDIR=./src/testbak4 ./src/unison -socket ./localsocket/test.sock &
+        sleep 1 # Wait for the server to be fully started
+        ${{ runner.os == 'Windows' }} || test -S ./localsocket/test.sock
+        ./src/unison -ui text -selftest testr3 socket://{./localsocket/test.sock}/testr4 -killserver
+
     - name: Prepare lablgtk install (Windows)
       if: ${{ runner.os == 'Windows' && contains(matrix.job.ocaml-version, '+mingw') }}
       run: |
@@ -193,29 +232,6 @@ jobs:
       if: ${{ contains(matrix.job.ocaml-version, '+mingw') && matrix.job.ocaml-version < '4.10.0' }}
       shell: cmd
       run: opam depext --install --verbose --yes lablgtk^^^<2.18.12
-
-    - shell: bash
-      run: |
-        opam exec -- make src OSTYPE=$OSTYPE UISTYLE=text STATIC=${{ steps.vars.outputs.STATIC }}
-        # stage
-        # * notes: darwin/macos doesn't build `unison-fsmonitor`
-        for file in ${PROJECT_EXES} ; do
-          if [ -f "src/${file}${{ steps.vars.outputs.EXE_suffix }}" ]; then
-            cp "src/${file}${{ steps.vars.outputs.EXE_suffix }}" '${{ steps.vars.outputs.PKG_DIR }}/bin'
-            echo "'src/${file}${{ steps.vars.outputs.EXE_suffix }}' copied to '${{ steps.vars.outputs.PKG_DIR }}/bin'"
-          fi
-        done
-
-    - run: opam exec -- make test
-
-    - name: Run self-tests over RPC
-      shell: bash
-      run: |
-        # Separate backup dir must be set for server instance so that the central
-        # backup location of both instances doesn't overlap
-        UNISONBACKUPDIR=./src/testbak2 ./src/unison -socket 55443 &
-        sleep 1 # Wait for the server to be fully started
-        ./src/unison -ui text -selftest testr1 socket://127.0.0.1:55443/testr2 -killserver
 
     - if: steps.vars.outputs.STATIC != 'true' ## unable to build static gtk for linux or windows/Cygwin MinGW platforms
       shell: bash
