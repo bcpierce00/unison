@@ -373,7 +373,7 @@ typedef enum _FILE_INFORMATION_CLASS {
 #include <caml/version.h> /* Available since OCaml 4.02 */
 #endif
 
-#if !defined(OCAML_VERSION) || OCAML_VERSION < 40300
+#if !defined(OCAML_VERSION) || OCAML_VERSION < 40300 || OCAML_VERSION >= 41400
 
 typedef struct _REPARSE_DATA_BUFFER {
   ULONG  ReparseTag;
