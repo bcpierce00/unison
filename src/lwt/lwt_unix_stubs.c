@@ -345,28 +345,29 @@ static void after_connect (SOCKET s) {
 static HANDLE events[MAXIMUM_WAIT_OBJECTS];
 //static OVERLAPPED oData[MAXIMUM_WAIT_OBJECTS];
 
-CAMLprim value win_register_wait (value socket, value kind, value idx) {
-  CAMLparam3(socket, kind, idx);
-  long i = Long_val(idx);
+CAMLprim value win_register_wait (value socket, value kind) {
+  CAMLparam2(socket, kind);
+  HANDLE h;
   long mask;
 
-  D(printf("Register: i %ld, kind %ld\n", Long_val(i), Long_val(kind)));
-  events[i] = CreateEvent(NULL, TRUE, FALSE, NULL);
+  D(printf("Register: %lx, kind %ld\n", (long)(Socket_val(socket)), Long_val(kind)));
+  h = CreateEvent(NULL, TRUE, FALSE, NULL);
   mask = (Long_val(kind) == 0) ? FD_CONNECT : FD_ACCEPT;
-  if (WSAEventSelect(Socket_val(socket), events[i], mask) == SOCKET_ERROR) {
+  if (WSAEventSelect(Socket_val(socket), h, mask) == SOCKET_ERROR) {
     win32_maperr(WSAGetLastError ());
     uerror("WSAEventSelect", Nothing);
   }
 
-  CAMLreturn (Val_unit);
+  CAMLreturn(win_alloc_handle(h));
 }
 
-CAMLprim value win_check_connection (value socket, value kind, value idx) {
-  CAMLparam3 (socket, kind, idx);
+CAMLprim value win_check_connection (value socket, value kind, value h) {
+  CAMLparam3 (socket, kind, h);
   WSANETWORKEVENTS evs;
-  int res, err, i = Long_val(idx);
+  int res, err;
 
-  D(printf("Check connection... %d\n", i));
+  D(printf("Check connection... socket = %lx; h = %lx\n",
+              (long)(Socket_val(socket)), Handle_val(h)));
   if (WSAEnumNetworkEvents(Socket_val(socket), NULL, &evs)) {
     win32_maperr(WSAGetLastError ());
     uerror("WSAEnumNetworkEvents", Nothing);
@@ -375,7 +376,7 @@ CAMLprim value win_check_connection (value socket, value kind, value idx) {
     win32_maperr(WSAGetLastError ());
     uerror("WSAEventSelect", Nothing);
   }
-  if (!CloseHandle(events[i])) {
+  if (!CloseHandle(Handle_val(h))) {
     win32_maperr(GetLastError ());
     uerror("CloseHandle", Nothing);
   }
@@ -422,14 +423,16 @@ CAMLprim value init_lwt (value callback) {
   CAMLreturn (Val_long (MAXIMUM_WAIT_OBJECTS));
 }
 
-CAMLprim value win_wait (value timeout, value event_count) {
-  CAMLparam2(timeout, event_count);
+CAMLprim value win_wait (value timeout, value event_list) {
+  CAMLparam2(timeout, event_list);
   DWORD t, t2;
   DWORD res;
-  long ret, n = Long_val(event_count);
+  long ret, n;
   t = Long_val(timeout);
   if (t < 0) t = INFINITE;
   t2 = (compN > 0) ? 0 : t;
+  for (n = 0; event_list != Val_emptylist; event_list = Field(event_list, 1))
+    events[n++] = Handle_val(Field(event_list, 0));
   D(printf("Waiting: %ld events, timeout %ldms -> %ldms\n", n, t, t2));
   res =
     (n > 0) ?
