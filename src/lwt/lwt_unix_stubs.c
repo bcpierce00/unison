@@ -519,7 +519,7 @@ CAMLprim value win_pipe_out (value unit) {
 }
 
 static int socket_domain_table[] = {
-  PF_UNIX, PF_INET
+  PF_UNIX, PF_INET, PF_INET6
 };
 
 static int socket_type_table[] = {
