@@ -84,19 +84,9 @@ external init_lwt :
 
 let max_event_count = init_lwt actionCompleted
 
-let event_count = ref 0
-let free_list = Array.init max_event_count (fun i -> i)
-
-let acquire_event nm =
-  if !event_count = max_event_count then
-    raise (Unix.Unix_error (Unix.EAGAIN, nm, ""));
-  let i = free_list.(!event_count) in
-  incr event_count;
-  i
-
-let release_event i =
-  decr event_count;
-  free_list.(!event_count) <- i
+let acquire_event l nm =
+  if List.length l = max_event_count then
+    raise (Unix.Unix_error (Unix.EAGAIN, nm, ""))
 
 (****)
 
@@ -158,7 +148,6 @@ module IntTbl =
     (struct type t = int let equal (x : int) y = x = y let hash x = x end)
 
 let ioInFlight = IntTbl.create 17
-let connInFlight = IntTbl.create 17
 
 let handleCompletionEvent (id, len, errno, name) =
 if !d then Format.eprintf "Handling event %d (len %d)@." id len;
@@ -178,17 +167,21 @@ if !d then Format.eprintf "Handling event %d (len %d)@." id len;
   else
     Lwt.wakeup res len
 
+type handle
+
+let connInFlight = ref []
+
 type kind = CONNECT | ACCEPT
 
-external win_wait : int -> int -> int = "win_wait"
+external win_wait : int -> handle list -> int = "win_wait"
 
 external win_register_wait :
-  Unix.file_descr -> kind -> int -> unit = "win_register_wait"
+  Unix.file_descr -> kind -> handle = "win_register_wait"
 
 external win_check_connection :
-  Unix.file_descr -> kind -> int -> unit = "win_check_connection"
+  Unix.file_descr -> kind -> handle -> unit = "win_check_connection"
 
-let handle_wait_event i ch kind cont action =
+let handle_wait_event h ch kind cont action =
 if !d then prerr_endline "MMM";
   let res =
     try
@@ -196,20 +189,19 @@ if !d then prerr_endline "MMM";
     with
       Unix.Unix_error ((Unix.EAGAIN | Unix.EWOULDBLOCK | Unix.EINTR), _, _) ->
 if !d then prerr_endline "NNN";
-        win_register_wait ch.fd kind i;
+        let h' = win_register_wait ch.fd kind in
+        connInFlight := List.map (fun el -> if fst el <> h then el else (h', snd el)) !connInFlight;
         None
     | e ->
 if !d then prerr_endline "OOO";
-        release_event i;
-        IntTbl.remove connInFlight i;
+        connInFlight := List.filter (fun (h', _) -> h' <> h) !connInFlight;
         Lwt.wakeup_exn cont e;
         None
   in
   match res with
     Some v ->
 if !d then prerr_endline "PPP";
-      release_event i;
-      IntTbl.remove connInFlight i;
+      connInFlight := List.filter (fun (h', _) -> h' <> h) !connInFlight;
       Lwt.wakeup cont v
   | None ->
       ()
@@ -237,7 +229,7 @@ if !d then Format.eprintf "DONE!@.";
 if !d then Format.eprintf "vvv@.";
       let i =
         try
-          win_wait (truncate (ceil (delay *. 1000.))) !event_count
+          win_wait (truncate (ceil (delay *. 1000.))) (List.map fst !connInFlight)
         with
           Sys.Break as e -> raise e
         | _              -> assert false
@@ -250,18 +242,18 @@ if !d then Format.eprintf "threads restarted@.";
       completionEvents := [];
       List.iter handleCompletionEvent (List.rev ev);
       if i >= 0 then begin
-        let (kind, ch) =
-          try IntTbl.find connInFlight i with Not_found -> assert false in
+        let (h, (kind, ch)) =
+          try List.nth !connInFlight i with Failure _ -> assert false in
         match kind with
           `CheckSocket res  ->
 if !d then prerr_endline "CHECK CONN";
-            handle_wait_event i ch CONNECT res
-               (fun () -> win_check_connection ch.fd CONNECT i)
+            handle_wait_event h ch CONNECT res
+               (fun () -> win_check_connection ch.fd CONNECT h)
         | `Accept res ->
 if !d then prerr_endline "ACCEPT";
-            handle_wait_event i ch ACCEPT res
+            handle_wait_event h ch ACCEPT res
               (fun () ->
-                 win_check_connection ch.fd ACCEPT i;
+                 win_check_connection ch.fd ACCEPT h;
                  let (v, info) = Unix.accept ch.fd in
                  (wrap_async v, info))
       end;
@@ -418,16 +410,16 @@ let close ch = Unix.close ch.fd; kill_threads ch
 
 let accept ch =
   let res = Lwt.wait () in
-  let i = acquire_event "accept" in
-  IntTbl.add connInFlight i (`Accept res, ch);
-  win_register_wait ch.fd ACCEPT i;
+  let () = acquire_event !connInFlight "accept" in
+  let h = win_register_wait ch.fd ACCEPT in
+  connInFlight := (h, (`Accept res, ch)) :: !connInFlight;
   res
 
 let check_socket ch =
   let res = Lwt.wait () in
-  let i = acquire_event "connect" in
-  IntTbl.add connInFlight i (`CheckSocket res, ch);
-  win_register_wait ch.fd CONNECT i;
+  let () = acquire_event !connInFlight "connect" in
+  let h = win_register_wait ch.fd CONNECT in
+  connInFlight := (h, (`CheckSocket res, ch)) :: !connInFlight;
   res
 
 let connect s addr =
