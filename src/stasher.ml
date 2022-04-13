@@ -276,19 +276,33 @@ let updateBackupNamingFunctions () =
 
 (*------------------------------------------------------------------------------------*)
 
-let makeBackupName path i =
+let makeBackupName fspath path i =
+  (* In the special case when the root itself is a file, use the root's name
+     as the backup file name. Empty path will break backups.
+     We only check the path being empty, and not its type, because the root
+     can change from file to dir and vice versa between syncs. *)
+  let path' =
+    if Path.isEmpty path then
+      Path.fromString (Filename.basename (Fspath.toString fspath))
+    else path in
+
   (* if backups are kept centrally, the current version has exactly
      the same name as the original, for convenience. *)
   if i=0 && Prefs.read backuplocation = "central" then
-    path
+    path'
   else
     Path.addSuffixToFinalName
-      (Path.addPrefixToFinalName path (!make_prefix i))
+      (Path.addPrefixToFinalName path' (!make_prefix i))
       (!make_suffix i)
 
-let stashDirectory fspath =
+let stashDirectory fspath path =
   match Prefs.read backuplocation with
     "central" -> backupDirectory ()
+  | "local" when Path.isEmpty path ->
+      (* Special case when the root itself is a file. Can't use the root
+         as the backup location, which must be a directory. Use the root's
+         parent instead. *)
+      Fspath.canonize (Some (Filename.dirname (Fspath.toString fspath)))
   | "local" -> fspath
   |  _ -> raise (Util.Fatal ("backuplocation preference should be set"
                              ^"to central or local."))
@@ -309,15 +323,15 @@ let showContent typ fspath path =
    sufficiently large number!
 *)
 let backupPath fspath path =
-  let sFspath = stashDirectory fspath in
+  let sFspath = stashDirectory fspath path in
 
-  let rec f path i =
-    let tempPath = makeBackupName path i in
+  let rec f fspath path i =
+    let tempPath = makeBackupName fspath path i in
     verbose (fun () -> Util.msg "backupPath f %s %d\n" (Path.toString path) i);
     if Os.exists sFspath tempPath then
       if i < Prefs.read maxbackups then begin
         verbose (fun () -> Util.msg "need to rename backup file\n");
-        Os.rename "backupPath" sFspath tempPath sFspath (f path (i + 1))
+        Os.rename "backupPath" sFspath tempPath sFspath (f fspath path (i + 1))
       end
       else if i >= Prefs.read maxbackups then
         Os.delete sFspath tempPath;
@@ -344,10 +358,10 @@ let backupPath fspath path =
                 will create a separate directory tree. *)
         if (Prefs.read backuplocation = "central") &&
           (Fileinfo.get false sFspath backdir).Fileinfo.typ != `DIRECTORY then
-          let backdir = f backdir 0 in
+          let backdir = f sFspath backdir 0 in
           Os.createDir sFspath backdir props in
 
-  let path0 = makeBackupName path 0 in
+  let path0 = makeBackupName fspath path 0 in
   let sourceTyp = (Fileinfo.get true fspath path).Fileinfo.typ in
   let path0Typ = (Fileinfo.get false sFspath path0).Fileinfo.typ in
 
@@ -369,7 +383,7 @@ let backupPath fspath path =
       (showContent path0Typ sFspath path0)
       (Fspath.toDebugString fspath) (Path.toString path)
       (showContent sourceTyp fspath path));
-    let sPath = f path 0 in
+    let sPath = f fspath path 0 in
     (* Make sure the parent directory exists *)
     begin match Path.deconstructRev sPath with
      | None -> mkdirectories Path.empty
@@ -475,9 +489,9 @@ let getRecentVersion fspath path fingerprint =
       (Path.toString path)
       (Fspath.toDebugString fspath));
   Util.convertUnixErrorsToTransient "getRecentVersion" (fun () ->
-    let dir = stashDirectory fspath in
+    let dir = stashDirectory fspath path in
     let rec aux_find i =
-      let path = makeBackupName path i in
+      let path = makeBackupName fspath path i in
       if Os.exists dir path &&
         (* FIX: should check that the existing file has the same size, to
            avoid computing the fingerprint if it is obviously going to be
