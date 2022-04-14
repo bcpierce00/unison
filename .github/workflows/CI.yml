@@ -1,4 +1,4 @@
-name: CICD
+name: CI
 
 env:
   PROJECT_NAME: unison

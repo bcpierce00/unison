@@ -1,6 +1,6 @@
 # Unison File Synchronizer
 
-[![Build status](https://github.com/bcpierce00/unison/workflows/CICD/badge.svg)](https://github.com/bcpierce00/unison/actions?query=workflow%3ACICD)
+[![Build status](https://github.com/bcpierce00/unison/workflows/CI/badge.svg)](https://github.com/bcpierce00/unison/actions?query=workflow%3ACI)
 
 ## Meta
 
