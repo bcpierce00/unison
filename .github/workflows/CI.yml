@@ -254,6 +254,7 @@ jobs:
         path: ${{ steps.vars.outputs.PKG_DIR }}/bin/*
 
     - name: Copy user manual
+      continue-on-error: ${{ !(steps.vars.outputs.DEPLOY && matrix.job.publish) }}
       uses: actions/download-artifact@v2
       with:
         name: unison-docs
