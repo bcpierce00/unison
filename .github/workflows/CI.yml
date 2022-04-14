@@ -139,6 +139,8 @@ jobs:
         PKG_NAME="${PKG_BASENAME}${PKG_suffix}"
         PKG_DIR="${STAGING_DIR}/${PKG_BASENAME}"
         outputs PKG_VER PKG_BASENAME PKG_DIR PKG_NAME PKG_OS PKG_suffix
+        COMPRESS_CMD='tar czf'; case '${{ matrix.job.os }}' in windows-*) COMPRESS_CMD='7z -y a' ;; esac;
+        outputs COMPRESS_CMD
 
     - name: Create/configure any needed build/workspace
       shell: bash
@@ -260,7 +262,7 @@ jobs:
         name: unison-docs
         path: '${{ steps.vars.outputs.PKG_DIR }}'
 
-    - name: Package
+    - name: Prepare package
       # if: steps.vars.outputs.DEPLOY
       shell: bash
       run: |
@@ -271,32 +273,32 @@ jobs:
         # README and LICENSE
         (shopt -s nullglob; for f in [R]'EADME'{,.*}; do cp $f "${PKG_DIR}"/ ; done)
         (shopt -s nullglob; for f in [L]'ICENSE'{-*,}{,.*}; do cp $f "${PKG_DIR}"/ ; done)
+
+    - if: runner.os == 'Windows'
+      name: "Windows: Package gtk"
+      shell: bash
+      run: |
+        ## package artifact(s)
+        PKG_DIR='${{ steps.vars.outputs.PKG_DIR }}'
         # collect any needed dlls/libraries
-        case '${{ matrix.job.os }}' in
-          windows-*)
-            # dlls
-            dll_refs() { eval "$(opam env)" ; eval "$(ocaml-env cygwin)" ; objdump -x "$@" | grep -Po "\S+[.]dll$" | xargs -I{} 2>/dev/null which "{}" | sort -u ; }
-            filtered_dll_refs() { list="$(dll_refs "$@" | grep -vF "$(cygpath ${WINDIR})" | perl -lape '$_ = qq/@{[sort @F]}/')" ; echo "$list" ; }
-            recursive_filtered_dll_refs() { list="$(filtered_dll_refs "$@")" ; n=0 ; while [ $n -lt $(echo "$list" | wc -l) ]; do n=$(echo "$list" | wc -l) ; list="$(filtered_dll_refs $list)" ; done ; echo "$list" ; }
-            IFS=$'\n' DLL_list=( "$(recursive_filtered_dll_refs "${PKG_DIR}"/bin/*)" )
-            for dll in ${DLL_list[@]} ; do cp "${dll}" "${PKG_DIR}"/bin ; done
-            TARGET_ARCH_ID='x86_64'; case '${{ matrix.job.ocaml-version }}' in *+mingw32*|*+msvc32*) TARGET_ARCH_ID='i686' ;; esac
-            # required gdk support files
-            mkdir "${PKG_DIR}"/lib
-            cp -r /usr/${TARGET_ARCH_ID}-w64-mingw32/sys-root/mingw/lib/gdk-pixbuf-2.0 "${PKG_DIR}"/lib/
-            # update loader.cache to point to local relative installation
-            mv "${PKG_DIR}"/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache "${PKG_DIR}"/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache.original
-            cat "${PKG_DIR}"/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache.original | sed -E 's#([^"]*)(lib/gdk-pixbuf-2.0/2.10.0/loaders/[^"]*[.]dll)#../\2#' > "${PKG_DIR}"/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache
-            rm "${PKG_DIR}"/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache.original
-            ;;
-        esac
-        # create compressed package
-        pushd "${PKG_DIR}"/ >/dev/null
-        case '${{ matrix.job.os }}' in
-          windows-*) 7z -y a '../${{ steps.vars.outputs.PKG_NAME }}' * | tail -2 ;;
-          *) tar czf '../${{ steps.vars.outputs.PKG_NAME }}' * ;;
-        esac
-        popd >/dev/null
+        # dlls
+        dll_refs() { eval "$(opam env)" ; eval "$(ocaml-env cygwin)" ; objdump -x "$@" | grep -Po "\S+[.]dll$" | xargs -I{} 2>/dev/null which "{}" | sort -u ; }
+        filtered_dll_refs() { list="$(dll_refs "$@" | grep -vF "$(cygpath ${WINDIR})" | perl -lape '$_ = qq/@{[sort @F]}/')" ; echo "$list" ; }
+        recursive_filtered_dll_refs() { list="$(filtered_dll_refs "$@")" ; n=0 ; while [ $n -lt $(echo "$list" | wc -l) ]; do n=$(echo "$list" | wc -l) ; list="$(filtered_dll_refs $list)" ; done ; echo "$list" ; }
+        IFS=$'\n' DLL_list=( "$(recursive_filtered_dll_refs "${PKG_DIR}"/bin/*)" )
+        for dll in ${DLL_list[@]} ; do cp "${dll}" "${PKG_DIR}"/bin ; done
+        TARGET_ARCH_ID='x86_64'; case '${{ matrix.job.ocaml-version }}' in *+mingw32*|*+msvc32*) TARGET_ARCH_ID='i686' ;; esac
+        # required gdk support files
+        mkdir "${PKG_DIR}"/lib
+        cp -r /usr/${TARGET_ARCH_ID}-w64-mingw32/sys-root/mingw/lib/gdk-pixbuf-2.0 "${PKG_DIR}"/lib/
+        # update loader.cache to point to local relative installation
+        mv "${PKG_DIR}"/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache "${PKG_DIR}"/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache.original
+        cat "${PKG_DIR}"/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache.original | sed -E 's#([^"]*)(lib/gdk-pixbuf-2.0/2.10.0/loaders/[^"]*[.]dll)#../\2#' > "${PKG_DIR}"/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache
+        rm "${PKG_DIR}"/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache.original
+
+    - name: Package
+      shell: bash
+      run: cd '${{ steps.vars.outputs.PKG_DIR }}/' && ${{ steps.vars.outputs.COMPRESS_CMD }} '../${{ steps.vars.outputs.PKG_NAME }}' *
 
     - name: Publish
       if: steps.vars.outputs.DEPLOY && matrix.job.publish
