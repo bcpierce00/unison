@@ -496,7 +496,18 @@ let safeMarshal marshalPayload tag data rem =
             let start = String.escaped start in
             Util.msg "send [%s] '%s' %d bytes\n"
               (Bytearray.to_string tag) start length);
-  (encodeInt (l + length) :: (tag, 0, l) :: rem')
+  let len = l + length in
+  if (len lsr 31) lsr 1 <> 0 then (* [encodeInt] can only encode 32 bits *)
+    raise (Util.Fatal
+            "Protocol error: message data too big. This may be a bug or it\n\
+             may be that your replicas are huge and the amount of updates\n\
+             can't be handled by the current protocol implementation. If you\n\
+             believe it is a bug then please consider reporting it.\n\
+             Otherwise, try reducing the amount of updates by syncing the\n\
+             replicas in smaller steps (using the \"path\" preference, for\n\
+             example). You may have to do this for the initial sync only.")
+  else
+    (encodeInt len :: (tag, 0, l) :: rem')
 
 let safeUnmarshal unmarshalPayload tag buf =
   let taglength = Bytearray.length tag in
