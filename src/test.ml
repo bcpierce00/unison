@@ -455,7 +455,7 @@ let test() =
     (* Create a file and a directory *)
     put R1 (Dir ["foo", File "1"]); sync();
     check "1" R1 (Dir [("foo", File "1")]);
-    check "2" R1 (Dir [("foo", File "1")]);
+    check "2" R2 (Dir [("foo", File "1")]);
     put R1 (Dir ["foo", File "2"]); sync();
     check "3" R1 (Dir [("foo", File "2")]);
     check "4" R2 (Dir [("foo", File "2"); (".bak.0.foo", File "1")]);
