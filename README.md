@@ -1,7 +1,6 @@
 # Unison File Synchronizer
 
-[![Build Status](https://travis-ci.org/bcpierce00/unison.svg?branch=master)](https://travis-ci.org/bcpierce00/unison)
-[![CICD](https://github.com/bcpierce00/unison/workflows/CICD/badge.svg)](https://github.com/bcpierce00/unison/actions?query=workflow%3ACICD)
+[![Build status](https://github.com/bcpierce00/unison/workflows/CI/badge.svg)](https://github.com/bcpierce00/unison/actions?query=workflow%3ACI)
 
 ## Meta
 

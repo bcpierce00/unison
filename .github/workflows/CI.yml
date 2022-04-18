@@ -1,4 +1,4 @@
-name: CICD
+name: CI
 
 env:
   PROJECT_NAME: unison
@@ -45,50 +45,50 @@ jobs:
       matrix:
         job:
         - { os: macos-11      , ocaml-version: 4.14.0 }
-        - { os: macos-10.15   , ocaml-version: 4.14.0 }
-        - { os: macos-10.15   , ocaml-version: 4.13.1 }
-        - { os: macos-10.15   , ocaml-version: 4.12.1 }
-        - { os: macos-10.15   , ocaml-version: 4.11.2 }
-        - { os: macos-10.15   , ocaml-version: 4.10.2 }
-        - { os: macos-10.15   , ocaml-version: 4.09.1 }
-        - { os: macos-10.15   , ocaml-version: 4.08.1 }
-        - { os: macos-10.15   , ocaml-version: 4.07.1 }
-        - { os: macos-10.15   , ocaml-version: 4.06.1 }
-        - { os: macos-10.15   , ocaml-version: 4.05.0 }
-        - { os: macos-10.15   , ocaml-version: 4.04.2 }
-        - { os: macos-10.15   , ocaml-version: 4.03.0 }
-        - { os: macos-10.15   , ocaml-version: 4.02.3 }
+        - { os: macos-10.15   , ocaml-version: 4.14.0  , publish: true }
+        - { os: macos-10.15   , ocaml-version: 4.13.1  , publish: true }
+        - { os: macos-10.15   , ocaml-version: 4.12.1  , publish: true }
+        - { os: macos-10.15   , ocaml-version: 4.11.2  , publish: true }
+        - { os: macos-10.15   , ocaml-version: 4.10.2  , publish: true }
+        - { os: macos-10.15   , ocaml-version: 4.09.1  , publish: true }
+        - { os: macos-10.15   , ocaml-version: 4.08.1  , publish: true }
+        - { os: macos-10.15   , ocaml-version: 4.07.1  , publish: true }
+        - { os: macos-10.15   , ocaml-version: 4.06.1  , publish: true }
+        - { os: macos-10.15   , ocaml-version: 4.05.0  , publish: true }
+        - { os: macos-10.15   , ocaml-version: 4.04.2  , publish: true }
+        - { os: macos-10.15   , ocaml-version: 4.03.0  , publish: true }
+        - { os: macos-10.15   , ocaml-version: 4.02.3  , publish: true }
         - { os: ubuntu-20.04  , ocaml-version: 4.14.0 }
-        - { os: ubuntu-18.04  , ocaml-version: 4.14.0 }
-        - { os: ubuntu-18.04  , ocaml-version: 4.13.1 }
-        - { os: ubuntu-18.04  , ocaml-version: 4.12.1 }
-        - { os: ubuntu-18.04  , ocaml-version: 4.11.2 }
-        - { os: ubuntu-18.04  , ocaml-version: 4.10.2 }
-        - { os: ubuntu-18.04  , ocaml-version: 4.10.2+musl+static+flambda }
-        - { os: ubuntu-18.04  , ocaml-version: 4.09.1 }
-        - { os: ubuntu-18.04  , ocaml-version: 4.08.1 }
-        - { os: ubuntu-18.04  , ocaml-version: 4.07.1 }
-        - { os: ubuntu-18.04  , ocaml-version: 4.06.1 }
-        - { os: ubuntu-18.04  , ocaml-version: 4.05.0 }
-        - { os: ubuntu-18.04  , ocaml-version: 4.04.2 }
-        - { os: ubuntu-18.04  , ocaml-version: 4.03.0 }
-        - { os: ubuntu-18.04  , ocaml-version: 4.02.3 }
-        - { os: ubuntu-18.04  , ocaml-version: 4.01.0 }
-        - { os: windows-2019  , ocaml-version: 4.14.0+mingw64c }
-        - { os: windows-2019  , ocaml-version: 4.13.1+mingw64c }
-        - { os: windows-2019  , ocaml-version: 4.12.1+mingw64c }
-        - { os: windows-2019  , ocaml-version: 4.11.2+mingw64c }
-        - { os: windows-2019  , ocaml-version: 4.10.2+mingw64c }
-        - { os: windows-2019  , ocaml-version: 4.10.2+mingw32c }
-        - { os: windows-2019  , ocaml-version: 4.09.1+mingw64c }
-        - { os: windows-2019  , ocaml-version: 4.08.1+mingw64c }
-        - { os: windows-2019  , ocaml-version: 4.07.1+mingw64c }
-        - { os: windows-2019  , ocaml-version: 4.06.1+mingw64c }
-        - { os: windows-2019  , ocaml-version: 4.05.0+mingw64c }
-        - { os: windows-2019  , ocaml-version: 4.04.2+mingw64c }
-        - { os: windows-2019  , ocaml-version: 4.03.0+mingw64c }
-        - { os: windows-2019  , ocaml-version: 4.02.3+mingw64c }
-        - { os: windows-2019  , ocaml-version: 4.01.0+mingw64c }
+        - { os: ubuntu-18.04  , ocaml-version: 4.14.0  , publish: true }
+        - { os: ubuntu-18.04  , ocaml-version: 4.13.1  , publish: true }
+        - { os: ubuntu-18.04  , ocaml-version: 4.12.1  , publish: true }
+        - { os: ubuntu-18.04  , ocaml-version: 4.11.2  , publish: true }
+        - { os: ubuntu-18.04  , ocaml-version: 4.10.2  , publish: true }
+        - { os: ubuntu-18.04  , ocaml-version: 4.10.2+musl+static+flambda  , publish: true }
+        - { os: ubuntu-18.04  , ocaml-version: 4.09.1  , publish: true }
+        - { os: ubuntu-18.04  , ocaml-version: 4.08.1  , publish: true }
+        - { os: ubuntu-18.04  , ocaml-version: 4.07.1  , publish: true }
+        - { os: ubuntu-18.04  , ocaml-version: 4.06.1  , publish: true }
+        - { os: ubuntu-18.04  , ocaml-version: 4.05.0  , publish: true }
+        - { os: ubuntu-18.04  , ocaml-version: 4.04.2  , publish: true }
+        - { os: ubuntu-18.04  , ocaml-version: 4.03.0  , publish: true }
+        - { os: ubuntu-18.04  , ocaml-version: 4.02.3  , publish: true }
+        - { os: ubuntu-18.04  , ocaml-version: 4.01.0  , publish: true }
+        - { os: windows-2019  , ocaml-version: 4.14.0+mingw64c  , publish: true }
+        - { os: windows-2019  , ocaml-version: 4.13.1+mingw64c  , publish: true }
+        - { os: windows-2019  , ocaml-version: 4.12.1+mingw64c  , publish: true }
+        - { os: windows-2019  , ocaml-version: 4.11.2+mingw64c  , publish: true }
+        - { os: windows-2019  , ocaml-version: 4.10.2+mingw64c  , publish: true }
+        - { os: windows-2019  , ocaml-version: 4.10.2+mingw32c  , publish: true }
+        - { os: windows-2019  , ocaml-version: 4.09.1+mingw64c  , publish: true }
+        - { os: windows-2019  , ocaml-version: 4.08.1+mingw64c  , publish: true }
+        - { os: windows-2019  , ocaml-version: 4.07.1+mingw64c  , publish: true }
+        - { os: windows-2019  , ocaml-version: 4.06.1+mingw64c  , publish: true }
+        - { os: windows-2019  , ocaml-version: 4.05.0+mingw64c  , publish: true }
+        - { os: windows-2019  , ocaml-version: 4.04.2+mingw64c  , publish: true }
+        - { os: windows-2019  , ocaml-version: 4.03.0+mingw64c  , publish: true }
+        - { os: windows-2019  , ocaml-version: 4.02.3+mingw64c  , publish: true }
+        - { os: windows-2019  , ocaml-version: 4.01.0+mingw64c  , publish: true }
 
     runs-on: ${{ matrix.job.os }}
 
@@ -139,6 +139,8 @@ jobs:
         PKG_NAME="${PKG_BASENAME}${PKG_suffix}"
         PKG_DIR="${STAGING_DIR}/${PKG_BASENAME}"
         outputs PKG_VER PKG_BASENAME PKG_DIR PKG_NAME PKG_OS PKG_suffix
+        COMPRESS_CMD='tar czf'; case '${{ matrix.job.os }}' in windows-*) COMPRESS_CMD='7z -y a' ;; esac;
+        outputs COMPRESS_CMD
 
     - name: Create/configure any needed build/workspace
       shell: bash
@@ -254,12 +256,13 @@ jobs:
         path: ${{ steps.vars.outputs.PKG_DIR }}/bin/*
 
     - name: Copy user manual
+      continue-on-error: ${{ !(steps.vars.outputs.DEPLOY && matrix.job.publish) }}
       uses: actions/download-artifact@v2
       with:
         name: unison-docs
         path: '${{ steps.vars.outputs.PKG_DIR }}'
 
-    - name: Package
+    - name: Prepare package
       # if: steps.vars.outputs.DEPLOY
       shell: bash
       run: |
@@ -270,35 +273,35 @@ jobs:
         # README and LICENSE
         (shopt -s nullglob; for f in [R]'EADME'{,.*}; do cp $f "${PKG_DIR}"/ ; done)
         (shopt -s nullglob; for f in [L]'ICENSE'{-*,}{,.*}; do cp $f "${PKG_DIR}"/ ; done)
+
+    - if: runner.os == 'Windows'
+      name: "Windows: Package gtk"
+      shell: bash
+      run: |
+        ## package artifact(s)
+        PKG_DIR='${{ steps.vars.outputs.PKG_DIR }}'
         # collect any needed dlls/libraries
-        case '${{ matrix.job.os }}' in
-          windows-*)
-            # dlls
-            dll_refs() { eval "$(opam env)" ; eval "$(ocaml-env cygwin)" ; objdump -x "$@" | grep -Po "\S+[.]dll$" | xargs -I{} 2>/dev/null which "{}" | sort -u ; }
-            filtered_dll_refs() { list="$(dll_refs "$@" | grep -vF "$(cygpath ${WINDIR})" | perl -lape '$_ = qq/@{[sort @F]}/')" ; echo "$list" ; }
-            recursive_filtered_dll_refs() { list="$(filtered_dll_refs "$@")" ; n=0 ; while [ $n -lt $(echo "$list" | wc -l) ]; do n=$(echo "$list" | wc -l) ; list="$(filtered_dll_refs $list)" ; done ; echo "$list" ; }
-            IFS=$'\n' DLL_list=( "$(recursive_filtered_dll_refs "${PKG_DIR}"/bin/*)" )
-            for dll in ${DLL_list[@]} ; do cp "${dll}" "${PKG_DIR}"/bin ; done
-            TARGET_ARCH_ID='x86_64'; case '${{ matrix.job.ocaml-version }}' in *+mingw32*|*+msvc32*) TARGET_ARCH_ID='i686' ;; esac
-            # required gdk support files
-            mkdir "${PKG_DIR}"/lib
-            cp -r /usr/${TARGET_ARCH_ID}-w64-mingw32/sys-root/mingw/lib/gdk-pixbuf-2.0 "${PKG_DIR}"/lib/
-            # update loader.cache to point to local relative installation
-            mv "${PKG_DIR}"/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache "${PKG_DIR}"/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache.original
-            cat "${PKG_DIR}"/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache.original | sed -E 's#([^"]*)(lib/gdk-pixbuf-2.0/2.10.0/loaders/[^"]*[.]dll)#../\2#' > "${PKG_DIR}"/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache
-            rm "${PKG_DIR}"/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache.original
-            ;;
-        esac
-        # create compressed package
-        pushd "${PKG_DIR}"/ >/dev/null
-        case '${{ matrix.job.os }}' in
-          windows-*) 7z -y a '../${{ steps.vars.outputs.PKG_NAME }}' * | tail -2 ;;
-          *) tar czf '../${{ steps.vars.outputs.PKG_NAME }}' * ;;
-        esac
-        popd >/dev/null
+        # dlls
+        dll_refs() { eval "$(opam env)" ; eval "$(ocaml-env cygwin)" ; objdump -x "$@" | grep -Po "\S+[.]dll$" | xargs -I{} 2>/dev/null which "{}" | sort -u ; }
+        filtered_dll_refs() { list="$(dll_refs "$@" | grep -vF "$(cygpath ${WINDIR})" | perl -lape '$_ = qq/@{[sort @F]}/')" ; echo "$list" ; }
+        recursive_filtered_dll_refs() { list="$(filtered_dll_refs "$@")" ; n=0 ; while [ $n -lt $(echo "$list" | wc -l) ]; do n=$(echo "$list" | wc -l) ; list="$(filtered_dll_refs $list)" ; done ; echo "$list" ; }
+        IFS=$'\n' DLL_list=( "$(recursive_filtered_dll_refs "${PKG_DIR}"/bin/*)" )
+        for dll in ${DLL_list[@]} ; do cp "${dll}" "${PKG_DIR}"/bin ; done
+        TARGET_ARCH_ID='x86_64'; case '${{ matrix.job.ocaml-version }}' in *+mingw32*|*+msvc32*) TARGET_ARCH_ID='i686' ;; esac
+        # required gdk support files
+        mkdir "${PKG_DIR}"/lib
+        cp -r /usr/${TARGET_ARCH_ID}-w64-mingw32/sys-root/mingw/lib/gdk-pixbuf-2.0 "${PKG_DIR}"/lib/
+        # update loader.cache to point to local relative installation
+        mv "${PKG_DIR}"/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache "${PKG_DIR}"/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache.original
+        cat "${PKG_DIR}"/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache.original | sed -E 's#([^"]*)(lib/gdk-pixbuf-2.0/2.10.0/loaders/[^"]*[.]dll)#../\2#' > "${PKG_DIR}"/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache
+        rm "${PKG_DIR}"/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache.original
+
+    - name: Package
+      shell: bash
+      run: cd '${{ steps.vars.outputs.PKG_DIR }}/' && ${{ steps.vars.outputs.COMPRESS_CMD }} '../${{ steps.vars.outputs.PKG_NAME }}' *
 
     - name: Publish
-      if: steps.vars.outputs.DEPLOY
+      if: steps.vars.outputs.DEPLOY && matrix.job.publish
       uses: softprops/action-gh-release@v1
       with:
         files: |
@@ -325,7 +328,7 @@ jobs:
         name: Unison-${{ steps.vars.outputs.REF_SHAS }}.ocaml-${{ matrix.job.ocaml-version }}.${{ matrix.job.os }}.app
         path: ${{ steps.macapp.outputs.APP_NAME }}
 
-    - if: runner.os == 'macOS' && steps.vars.outputs.DEPLOY
+    - if: runner.os == 'macOS' && steps.vars.outputs.DEPLOY && matrix.job.publish
       name: "macOS: Publish Unison.app"
       uses: softprops/action-gh-release@v1
       with:
