@@ -679,3 +679,28 @@ jobs:
     - run: opam exec -- dune build && cp -L ./_build/install/default/bin/unison* ./src/
 
 #    - run: opam exec -- make test
+
+  bytecode_build:
+    strategy:
+      fail-fast: false
+      matrix:
+        job:
+        - { os: ubuntu-18.04   , ocaml-compiler: 4.14.x }
+        - { os: ubuntu-18.04   , ocaml-compiler: 4.05.x }
+
+    runs-on: ${{ matrix.job.os }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Use OCaml ${{ matrix.job.ocaml-compiler }}
+      uses: ocaml/setup-ocaml@v2
+      with:
+        ocaml-compiler: "${{ matrix.job.ocaml-compiler }}"
+        opam-pin: false
+        opam-depext: false
+
+    - run: opam exec -- make src UISTYLE=text NATIVE=false
+
+    - run: opam exec -- make test
