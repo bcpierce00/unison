@@ -336,6 +336,323 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+
+  rpc_abicheck:
+    needs: build
+
+    strategy:
+      fail-fast: false
+      matrix:
+        job:
+        - { os: ubuntu-18.04  , ocaml-version: 4.14.x  , ref: v2.52.0 }
+        - { os: ubuntu-18.04  , ocaml-version: 4.14.x  , ref: v2.51.5 }
+        - { os: ubuntu-18.04  , ocaml-version: 4.08.x  , ref: v2.51.5 }
+        - { os: ubuntu-18.04  , ocaml-version: 4.05.x  , ref: v2.51.5 }
+        - { os: ubuntu-18.04  , ocaml-version: 4.08.x  , ref: v2.51.2 }
+        - { os: ubuntu-18.04  , ocaml-version: 4.05.x  , ref: v2.51.2 }
+        - { os: ubuntu-18.04  , ocaml-version: 4.02.3  , ref: v2.51.0 }
+        - { os: ubuntu-18.04  , ocaml-version: 4.08.x  , ref: 2.48.4 }
+        - { os: ubuntu-18.04  , ocaml-version: 4.05.x  , ref: 2.48.4 }
+        - { os: ubuntu-18.04  , ocaml-version: 4.01.x  , ref: 2.48.4 }
+
+    runs-on: ${{ matrix.job.os }}
+
+    steps:
+    - name: Use OCaml ${{ matrix.job.ocaml-version }}
+      uses: ocaml/setup-ocaml@v2
+      with:
+        ocaml-compiler: "${{ matrix.job.ocaml-version }}"
+        opam-pin: false
+        opam-depext: false
+      # setup-ocaml can prepare the build environment from unison.opam
+      # We're not relying on that capability here, to make sure the builds
+      # also work without using unison.opam
+
+    - name: Checkout HEAD to _new
+      uses: actions/checkout@v3
+      with:
+        path: _new
+
+    - name: "2.48: Patch tests in _new"
+      if: contains(matrix.job.ref, '2.48')
+      shell: bash
+      run: |
+        # 'atomic' was introduced in 2.51.0
+        cd _new && git apply - <<"EOF"
+        diff --git a/src/test.ml b/src/test.ml
+        index 60ccd05..45395e5 100644
+        --- a/src/test.ml
+        +++ b/src/test.ml
+        @@ -338,43 +338,6 @@ let test() =
+              running fast enough that the whole thing happens within a second, then the
+              update will be missed! *)
+         
+        -  (* Test that .git is treated atomically. *)
+        -  runtest "Atomicity of certain directories 1" ["atomic = Name .git";
+        -                                                "force = newer"] (fun() ->
+        -      let orig = (Dir ["foo", Dir [".git", Dir ["a", File "foo";
+        -                                                "b", File "bar";
+        -                                                "c", File "baz"]]]) in
+        -      put R1 orig;
+        -      Unix.sleep 2; (* in case time granularity is coarse on this FS *)
+        -      put R2 orig; sync();
+        -      let expected = (Dir ["foo", Dir [".git", Dir ["a", File "modified on R1";
+        -                                                    "b", File "bar";
+        -                                                    "c", File "modified on R1"]]]) in
+        -      put R2 (Dir ["foo", Dir [".git",
+        -                               Dir ["a", File "foo";
+        -                                    "b", File "modified on R2";
+        -                                    "c", File "modified on R2"]]]);
+        -      Unix.sleep 2; 
+        -      put R1 expected;
+        -      sync ();
+        -      check "1" R2 expected;
+        -      check "2" R1 expected
+        -    );
+        -
+        -  runtest "Atomicity of certain directories 2" ["atomic = Name .git"] (fun() ->
+        -      let a = (Dir ["foo", Dir [".git", Dir ["a", File "foo";
+        -                                             "b", File "bar";
+        -                                             "c", File "baz";
+        -                                             "d", File "quux"]]]) in
+        -      let b = (Dir ["foo", Dir [".git", Dir ["a", File "foo";
+        -                                             "b", File "bar";
+        -                                             "c", File "baz";
+        -                                             "e", File "quux"]]]) in
+        -      put R1 a; put R2 b; sync();
+        -      check "1" R1 a;
+        -      check "2" R2 b
+        -    );
+        -
+           (* Check for the bug reported by Ralf Lehmann *)
+           if not bothRootsLocal then
+             runtest "backups 1 (remote)" ["backup = Name *"] (fun() ->
+        EOF
+
+    - run: cd _new && opam exec -- make src UISTYLE=text
+
+    - name: Checkout ${{ matrix.job.ref }} to _prev
+      uses: actions/checkout@v3
+      with:
+        ref: "${{ matrix.job.ref }}"
+        path: _prev
+
+    - name: "2.48: Patch tests in _prev"
+      if: contains(matrix.job.ref, '2.48')
+      shell: bash
+      run: |
+        # Self-tests were broken in 2.48.4 release
+        cd _prev && git apply - <<"EOF"
+        diff --git a/src/test.ml b/src/test.ml
+        index 6e8f943c..6c0bbded 100644
+        --- a/src/test.ml
+        +++ b/src/test.ml
+        @@ -324,7 +324,7 @@ let test() =
+        
+           (* Check for the bug reported by Ralf Lehmann *)
+           if not bothRootsLocal then 
+        -    runtest "backups 1 (remote)" ["backup = Name *"] (fun() -> 
+        +    runtest "backups 1 (remote)" ["backup = Name *"; "fastcheck = false"] (fun() ->
+               put R1 (Dir []); put R2 (Dir []); sync();
+               debug (fun () -> Util.msg "First check\n");
+               checkmissing "1" BACKUP1;
+        @@ -370,7 +370,6 @@ let test() =
+               check "4" R2 (Dir ["x", File "foo"]);
+             );
+        
+        -  (raise (Util.Fatal "Skipping some tests -- remove me!\n") : unit); 
+        
+           if bothRootsLocal then 
+             runtest "backups 1 (local)" ["backup = Name *"] (fun() -> 
+        @@ -397,12 +397,12 @@ let test() =
+             check "1" R2 (Dir [(".bak.0.x", File "foo"); (".bak.0.d", Dir [("a", File "barr")])]);
+           );
+        
+        -  runtest "backups 2a" ["backup = Name *"; "backuplocation = local"] (fun() -> 
+        +  runtest "backups 2a" ["backup = Name *"; "backuplocation = local"; "fastcheck = false"] (fun() ->
+             put R1 (Dir []); put R2 (Dir []); sync();
+             (* Create a file and a directory *)
+             put R1 (Dir ["foo", File "1"]); sync();
+             check "1" R1 (Dir [("foo", File "1")]);
+        -    check "2" R1 (Dir [("foo", File "1")]);
+        +    check "2" R2 (Dir [("foo", File "1")]);
+             put R1 (Dir ["foo", File "2"]); sync();
+             check "3" R1 (Dir [("foo", File "2")]);
+             check "4" R2 (Dir [("foo", File "2"); (".bak.0.foo", File "1")]); 
+        EOF
+
+    - name: "2.48: Patch _prev for newer compilers"
+      if: contains(matrix.job.ref, '2.48') && matrix.job.ocaml-version >= '4.03'
+      shell: bash
+      run: |
+        cd _prev && git apply - <<"EOF"
+        diff --git a/src/Makefile.OCaml b/src/Makefile.OCaml
+        index 21610ce6..75499079 100644
+        --- a/src/Makefile.OCaml
+        +++ b/src/Makefile.OCaml
+        @@ -95,7 +95,7 @@ buildexecutable::
+         ### Default parameters
+        
+         # Generate backtrace information for exceptions
+        -CAMLFLAGS+=-g
+        +CAMLFLAGS+=-g -unsafe-string
+        
+         INCLFLAGS=-I lwt -I ubase -I system
+         CAMLFLAGS+=$(INCLFLAGS)
+        diff --git a/src/files.ml b/src/files.ml
+        index ba42ad57..5babf21e 100644
+        --- a/src/files.ml
+        +++ b/src/files.ml
+        @@ -722,7 +722,7 @@ let get_files_in_directory dir =
+           with End_of_file ->
+             dirh.System.closedir ()
+           end;
+        -  Sort.list (<) !files
+        +  List.sort String.compare !files
+        
+         let ls dir pattern =
+           Util.convertUnixErrorsToTransient
+        diff --git a/src/recon.ml b/src/recon.ml
+        index 5ed358d7..0df2cfe4 100644
+        --- a/src/recon.ml
+        +++ b/src/recon.ml
+        @@ -651,8 +651,8 @@ let rec reconcile
+        
+         (* Sorts the paths so that they will be displayed in order                   *)
+         let sortPaths pathUpdatesList =
+        -  Sort.list
+        -    (fun (p1, _) (p2, _) -> Path.compare p1 p2 <= 0)
+        +  List.sort
+        +    Path.compare
+             pathUpdatesList
+        
+         let rec enterPath p1 p2 t =
+        diff --git a/src/system/system_generic.ml b/src/system/system_generic.ml
+        index 9230cdc1..140bd849 100755
+        --- a/src/system/system_generic.ml
+        +++ b/src/system/system_generic.ml
+        @@ -47,7 +47,7 @@ let open_out_gen = open_out_gen
+         let chmod = Unix.chmod
+         let chown = Unix.chown
+         let utimes = Unix.utimes
+        -let link = Unix.link
+        +let link x y = Unix.link x y
+         let openfile = Unix.openfile
+         let opendir f =
+           let h = Unix.opendir f in
+        EOF
+
+    - name: "2.51.0: Patch connection header in _prev"
+      if: contains(matrix.job.ref, '2.51.0')
+      shell: bash
+      run: |
+        # Connection header string was broken in 2.51.0
+        cd _prev && git apply - <<"EOF"
+        diff --git a/src/remote.ml b/src/remote.ml
+        index ddca0d77..7f819eab 100644
+        --- a/src/remote.ml
+        +++ b/src/remote.ml
+        @@ -920,7 +920,7 @@ let connectionHeader =
+             Scanf.sscanf Sys.ocaml_version "%d.%d.%d" (fun x y z -> (x,y,z)) in
+           let compiler =
+             if    major < 4 
+        -       || major = 4 && minor <= 2
+        +       || major = 4 && minor < 2
+                || major = 4 && minor = 2 && patchlevel <= 1
+             then "<= 4.01.1"
+             else ">= 4.01.2"
+        EOF
+
+    - name: "2.51.2: Patch _prev for newer compilers"
+      if: contains(matrix.job.ref, '2.51.2')
+      shell: bash
+      run: |
+        cd _prev && git apply - <<"EOF"
+        diff --git a/src/files.ml b/src/files.ml
+        index 5ff18810..1d1fbcc6 100644
+        --- a/src/files.ml
+        +++ b/src/files.ml
+        @@ -734,7 +734,7 @@ let get_files_in_directory dir =
+           with End_of_file ->
+             dirh.System.closedir ()
+           end;
+        -  Sort.list (<) !files
+        +  List.sort String.compare !files
+        
+         let ls dir pattern =
+           Util.convertUnixErrorsToTransient
+        diff --git a/src/recon.ml b/src/recon.ml
+        index 2c619bb8..2412c18e 100644
+        --- a/src/recon.ml
+        +++ b/src/recon.ml
+        @@ -661,8 +661,8 @@ let rec reconcile
+        
+         (* Sorts the paths so that they will be displayed in order                   *)
+         let sortPaths pathUpdatesList =
+        -  Sort.list
+        -    (fun (p1, _) (p2, _) -> Path.compare p1 p2 <= 0)
+        +  List.sort
+        +    Path.compare
+             pathUpdatesList
+        
+         let rec enterPath p1 p2 t =
+        diff --git a/src/system/system_generic.ml b/src/system/system_generic.ml
+        index 453027d0..290851e1 100755
+        --- a/src/system/system_generic.ml
+        +++ b/src/system/system_generic.ml
+        @@ -47,7 +47,7 @@ let open_out_gen = open_out_gen
+         let chmod = Unix.chmod
+         let chown = Unix.chown
+         let utimes = Unix.utimes
+        -let link = Unix.link
+        +let link x y = Unix.link x y
+         let openfile = Unix.openfile
+         let opendir f =
+           let h = Unix.opendir f in
+        EOF
+
+    - run: cd _prev && opam exec -- make src UISTYLE=text
+
+    # IMPORTANT! These tests do not exercise the entire RPC API. Yet, they
+    # should work fine as a smoke test.
+
+    - name: Run self-tests over RPC - new client to prev server
+      env:
+        UNISON: test1
+      shell: bash
+      run: |
+        # Separate backup dir must be set for server instance so that the central
+        # backup location of both instances doesn't overlap
+        UNISONBACKUPDIR=./_prev/src/testbak_s _prev/src/unison -socket 55443 &
+        sleep 1 # Wait for the server to be fully started
+        _new/src/unison -ui text -selftest testr_c socket://127.0.0.1:55443/testr_s -killserver
+
+    - name: "2.48: Run self-tests over RPC - prev client to new server"
+      if: contains(matrix.job.ref, '2.48')
+      env:
+        UNISON: test2
+      shell: bash
+      run: |
+        cp _new/src/unison _new/src/unison-2.48
+        # Separate backup dir must be set for server instance so that the central
+        # backup location of both instances doesn't overlap
+        UNISONBACKUPDIR=./_new/src/testbak_s _new/src/unison-2.48 -socket 55443 &
+        sleep 1 # Wait for the server to be fully started
+        _prev/src/unison -ui text -selftest testr_c socket://127.0.0.1:55443/testr_s -killserver
+
+    - name: Run self-tests over RPC - prev client to new server
+      if: ${{ !contains(matrix.job.ref, '2.48') }}
+      env:
+        UNISON: test2
+      shell: bash
+      run: |
+        # Separate backup dir must be set for server instance so that the central
+        # backup location of both instances doesn't overlap
+        UNISONBACKUPDIR=./_new/src/testbak_s _new/src/unison -socket 55443 &
+        sleep 1 # Wait for the server to be fully started
+        _prev/src/unison -ui text -selftest testr_c socket://127.0.0.1:55443/testr_s -killserver
+
+
   opam_dune_build:
     strategy:
       fail-fast: false
