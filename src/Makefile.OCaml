@@ -248,6 +248,7 @@ OCAMLLIBS+=unix.cma str.cma bigarray.cma
 else
 OCAMLLIBS+=unix.cma str.cma
 endif
+INCLFLAGS+=-I +unix -I +str
 
 COBJS+=osxsupport$(OBJ_EXT) pty$(OBJ_EXT) bytearray_stubs$(OBJ_EXT) hash_compat$(OBJ_EXT)
 
@@ -263,7 +264,7 @@ endif
 ifeq ($(UISTYLE),mac)
   OCAMLOBJS+=uimacbridge.cmo
   OCAMLLIBS+=threads.cma
-  INCLFLAGS+=-thread
+  INCLFLAGS+=-I +threads
 endif
 
 ## Graphic UI
