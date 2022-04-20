@@ -911,7 +911,7 @@ let formatMergeCmd p f1 f2 backup out1 out2 outarch batchmode =
                 (Uutil.quotes (Path.toString p)) in
   cooked
 
-let copyBack fspathFrom pathFrom rootTo pathTo propsTo uiTo id =
+let copyBack fspathFrom pathFrom rootTo pathTo propsTo uiTo archTo id =
   setupTargetPaths rootTo pathTo
     >>= (fun (workingDirForCopy, realPathTo, tempPathTo, localPathTo) ->
   let info = Fileinfo.get false fspathFrom pathFrom in
@@ -923,7 +923,7 @@ let copyBack fspathFrom pathFrom rootTo pathTo propsTo uiTo id =
     `Copy newprops fp None stamp id >>= fun info ->
   debugverbose (fun () -> Util.msg "rename from copyBack\n");
   rename rootTo localPathTo workingDirForCopy tempPathTo realPathTo
-    uiTo None false)
+    uiTo archTo false)
 
 let keeptempfilesaftermerge =
   Prefs.createBool
@@ -1187,15 +1187,13 @@ let merge root1 path1 ui1 root2 path2 ui2 id showMergeFn =
 
       Lwt_unix.run
         (debug (fun () -> Util.msg "Committing results of merge\n");
-         copyBack workingDirForMerge working1 root1 path1 desc1 ui1 id >>= (fun () ->
-         copyBack workingDirForMerge working2 root2 path2 desc2 ui2 id >>= (fun () ->
+         let archTo =
          let arch_fspath = Fspath.concat workingDirForMerge workingarch in
          if Fs.file_exists arch_fspath then begin
            debug (fun () -> Util.msg "Updating unison archives for %s to reflect results of merge\n"
                    (Path.toString path1));
            if not (Stasher.shouldBackupCurrent path1) then
              Util.msg "Warning: 'backupcurrent' is not set for path %s\n" (Path.toString path1);
-           Stasher.stashCurrentVersion workingDirForMerge localPath1 (Some workingarch);
            let infoarch = Fileinfo.get false workingDirForMerge workingarch in
            let fp = Os.fingerprint arch_fspath Path.empty infoarch in
            debug (fun () -> Util.msg "New fingerprint is %s\n" (Os.fullfingerprint_to_string fp));
@@ -1204,11 +1202,13 @@ let merge root1 path1 ui1 root2 path2 ui2 id showMergeFn =
                (Props.get (Fs.stat arch_fspath) infoarch.osX, fp,
                 Fileinfo.stamp (Fileinfo.get true arch_fspath Path.empty),
                 Osx.stamp infoarch.osX) in
-           Update.replaceArchive root1 path1 new_archive_entry >>= fun _ ->
-           Update.replaceArchive root2 path2 new_archive_entry >>= fun _ ->
-           Lwt.return ()
+           Some new_archive_entry
          end else
-           (Lwt.return ()) )))) )
+           None
+         in
+         copyBack workingDirForMerge working1 root1 path1 desc1 ui1 archTo id >>= (fun () ->
+         copyBack workingDirForMerge working2 root2 path2 desc2 ui2 archTo id >>= (fun () ->
+         Lwt.return () )))) )
     (fun _ ->
       Util.ignoreTransientErrors
         (fun () ->
