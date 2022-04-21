@@ -518,7 +518,7 @@ let override t t' =
 
 let replace t v =
   match t with
-    Synced _    -> t
+    Synced _    -> Synced v
   | NotSynced _ -> NotSynced v
 
 let strip t =
