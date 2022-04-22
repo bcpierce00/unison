@@ -1187,24 +1187,26 @@ let merge root1 path1 ui1 root2 path2 ui2 id showMergeFn =
 
       Lwt_unix.run
         (debug (fun () -> Util.msg "Committing results of merge\n");
-         let archTo =
+         let (desc1, desc2, archTo) =
          let arch_fspath = Fspath.concat workingDirForMerge workingarch in
          if Fs.file_exists arch_fspath then begin
            debug (fun () -> Util.msg "Updating unison archives for %s to reflect results of merge\n"
                    (Path.toString path1));
            if not (Stasher.shouldBackupCurrent path1) then
              Util.msg "Warning: 'backupcurrent' is not set for path %s\n" (Path.toString path1);
-           let infoarch = Fileinfo.get false workingDirForMerge workingarch in
+           let infoarch = Fileinfo.get true arch_fspath Path.empty in
            let fp = Os.fingerprint arch_fspath Path.empty infoarch in
            debug (fun () -> Util.msg "New fingerprint is %s\n" (Os.fullfingerprint_to_string fp));
            let new_archive_entry =
              Update.ArchiveFile
-               (Props.get (Fs.stat arch_fspath) infoarch.osX, fp,
-                Fileinfo.stamp (Fileinfo.get true arch_fspath Path.empty),
+               (infoarch.desc, fp,
+                Fileinfo.stamp infoarch,
                 Osx.stamp infoarch.osX) in
-           Some new_archive_entry
+           (Props.setTime desc1 (Props.time infoarch.Fileinfo.desc),
+            Props.setTime desc2 (Props.time infoarch.Fileinfo.desc),
+            Some new_archive_entry)
          end else
-           None
+           (desc1, desc2, None)
          in
          copyBack workingDirForMerge working1 root1 path1 desc1 ui1 archTo id >>= (fun () ->
          copyBack workingDirForMerge working2 root2 path2 desc2 ui2 archTo id >>= (fun () ->
