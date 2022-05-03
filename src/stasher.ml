@@ -75,7 +75,7 @@ let backupprefix =
      ^ "\\texttt{backupprefix}\\verb|NAME|\\texttt{backupsuffix}."
      ^ " \\texttt{backupprefix} can include a directory name (causing Unison to "
      ^ "keep all backup files for a given directory in a subdirectory with this name), and both "
-     ^ " \\texttt{backupprefix} and \\texttt{backupsuffix} can contain the string"
+     ^ " \\texttt{backupprefix} and \\texttt{backupsuffix} can contain the string "
      ^ "\\ARG{\\$VERSION}, which will be replaced by the \\emph{age} of the backup "
      ^ "(1 for the most recent, 2 for the second most recent, and so on...)."
      ^ " This keyword is ignored if it appears in a directory name"

@@ -53,6 +53,8 @@ doc/unison-manual.pdf
 doc/unison-manual.ps
 doc/unison-manual.txt
 doc/unisonversion.tex
+man/*.tmp
+man/unison.1
 
 _build
 .merlin

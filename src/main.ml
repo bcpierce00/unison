@@ -86,6 +86,14 @@ let prefsdocs =
     "*show full documentation for all preferences (and then exit)"
     ""
 
+let prefsmanPrefName = "prefsman"
+let prefsman =
+  Prefs.createString prefsmanPrefName ""
+    ~category:(`Internal `Devel)
+    ~cli_only:true
+    "*show manpage documentation for all preferences (and then exit)"
+    ""
+
 let serverPrefName = "server"
 let server =
   Prefs.createBool serverPrefName false
@@ -172,7 +180,16 @@ let init () = begin
   (* Print docs for all preferences if requested (this is used when building
      the manual) *)
   if Util.StringMap.mem prefsdocsPrefName argv then begin
-    Prefs.printFullDocs();
+    Prefs.printFullDocs `TeX;
+    exit 0
+  end;
+
+  if Util.StringMap.mem prefsmanPrefName argv then begin
+    begin match Util.StringMap.find prefsmanPrefName argv with
+      | "short" :: _ -> Prefs.printUsageForMan ()
+      | "full" :: _ -> Prefs.printFullDocs `man
+      | _ -> ()
+    end;
     exit 0
   end;
 
