@@ -4,7 +4,7 @@
 let docs =
     ("about", ("About Unison", 
      "Unison File Synchronizer\n\
-      Version 2.52.0.60\n\
+      Version 2.52.0.70\n\
       \n\
       "))
 ::
@@ -1498,7 +1498,7 @@ let docs =
       \032         backupprefixNAMEbackupsuffix. backupprefix can include a\n\
       \032         directory name (causing Unison to keep all backup files for a\n\
       \032         given directory in a subdirectory with this name), and both\n\
-      \032         backupprefix and backupsuffix can contain the string$VERSION,\n\
+      \032         backupprefix and backupsuffix can contain the string $VERSION,\n\
       \032         which will be replaced by the age of the backup (1 for the most\n\
       \032         recent, 2 for the second most recent, and so on...). This\n\
       \032         keyword is ignored if it appears in a directory name in the\n\
@@ -2242,7 +2242,7 @@ let docs =
       \032         transferring file contents across the network by recognizing\n\
       \032         when a file with the required contents already exists in the\n\
       \032         target replica. This usually allows file moves to be propagated\n\
-      \032         very quickly. The default value istrue.\n\
+      \032         very quickly. The default value is true.\n\
       \n\
       Profiles\n\
       \n\
