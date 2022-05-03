@@ -11,6 +11,14 @@ unison uses git history for that, and thus there is no changelog file.
 
 Note that formatting for 2.51.x and older is almost certainly incorrect.
 
+## Changes in 2.52.1
+
+Not Released
+
+   * Remove rsh protocol
+   * Restore compatibility with Ocaml 4.02.  Deprecate 4.01.
+   * Significant bugfixes and minor improvements
+
 ## Changes in 2.52.0
 
 Released 2022-03-12
