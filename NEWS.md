@@ -15,9 +15,12 @@ Note that formatting for 2.51.x and older is almost certainly incorrect.
 
 Not Released
 
-   * Remove rsh protocol
-   * Restore compatibility with Ocaml 4.02.  Deprecate 4.01.
+   * Deprecate ocaml < 4.08: 2.53.0 will reqire 4.08 or higher.
+   * Add man page
+   * Remove rsh:// URI scheme (ssh:// of course remains).
    * Significant bugfixes and minor improvements
+   * Deprecate "backups" preference (see manual for alternatives)
+   * Deprecate "stream" and "halfduplex" preferences
 
 ## Changes in 2.52.0
 
