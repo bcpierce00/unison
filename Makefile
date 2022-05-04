@@ -8,7 +8,7 @@ text:
 test:
 	./src/unison -ui text -selftest
 
-all: src
+all: src manpage
 
 src:
 	$(MAKE) -C src
