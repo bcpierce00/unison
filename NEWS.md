@@ -9,11 +9,11 @@ As of 2022, this file (NEWS.md at top level) is used for news.
 Some software has a "changelog" file that records all changes, but
 unison uses git history for that, and thus there is no changelog file.
 
-Note that formatting for 2.51.x and older is almost certainly incorrect.
-
 ## Changes in 2.52.1
 
-   * Deprecate ocaml < 4.08: 2.53.0 will reqire 4.08 or higher.
+Released 2022-05-08
+
+   * Deprecate ocaml < 4.08: 2.53.0 will require 4.08 or higher
    * Add man page
    * Remove rsh:// URI scheme (ssh:// of course remains).
    * Significant bugfixes and minor improvements
