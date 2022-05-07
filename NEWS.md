@@ -13,8 +13,6 @@ Note that formatting for 2.51.x and older is almost certainly incorrect.
 
 ## Changes in 2.52.1
 
-Not Released
-
    * Deprecate ocaml < 4.08: 2.53.0 will reqire 4.08 or higher.
    * Add man page
    * Remove rsh:// URI scheme (ssh:// of course remains).
