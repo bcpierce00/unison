@@ -353,6 +353,7 @@ jobs:
       fail-fast: false
       matrix:
         job:
+        - { os: ubuntu-18.04  , ocaml-version: 4.14.x  , ref: v2.52.1 }
         - { os: ubuntu-18.04  , ocaml-version: 4.14.x  , ref: v2.52.0 }
         - { os: ubuntu-18.04  , ocaml-version: 4.14.x  , ref: v2.51.5 }
         - { os: ubuntu-18.04  , ocaml-version: 4.08.x  , ref: v2.51.5 }
