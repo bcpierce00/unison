@@ -86,8 +86,6 @@ common.cmi : \
     name.cmi \
     fspath.cmi \
     fileinfo.cmi
-configure.cmo :
-configure.cmx :
 copy.cmo : \
     xferhint.cmi \
     uutil.cmi \
