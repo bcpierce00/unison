@@ -1,7 +1,5 @@
 (* Functions added in OCaml 4.03 *)
 
-type ('a,'b) result = Ok of 'a | Error of 'b
-
 module String = struct
   include String
 
