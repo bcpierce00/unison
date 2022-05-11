@@ -4,8 +4,7 @@ let (major, minor, patch) =
 let compat4pred v = major < 4 || major = 4 && minor < v
 
 let compat4 =
-  [
-    compat4pred 8, "Compat408", "compat408.cmo" ]
+  []
 
 let objects =
   List.fold_left (fun acc (p, _, n) -> if p then acc ^ " " ^ n else acc) ""
