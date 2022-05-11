@@ -52,12 +52,6 @@ jobs:
         - { os: macos-10.15   , ocaml-version: 4.10.2  , publish: true }
         - { os: macos-10.15   , ocaml-version: 4.09.1  , publish: true }
         - { os: macos-10.15   , ocaml-version: 4.08.1  , publish: true }
-        - { os: macos-10.15   , ocaml-version: 4.07.1  , publish: true }
-        - { os: macos-10.15   , ocaml-version: 4.06.1  , publish: true }
-        - { os: macos-10.15   , ocaml-version: 4.05.0  , publish: true }
-        - { os: macos-10.15   , ocaml-version: 4.04.2  , publish: true }
-        - { os: macos-10.15   , ocaml-version: 4.03.0  , publish: true }
-        - { os: macos-10.15   , ocaml-version: 4.02.3  , publish: true }
         - { os: ubuntu-20.04  , ocaml-version: 4.14.0 }
         - { os: ubuntu-18.04  , ocaml-version: 4.14.0  , publish: true }
         - { os: ubuntu-18.04  , ocaml-version: 4.13.1  , publish: true }
@@ -67,13 +61,6 @@ jobs:
         - { os: ubuntu-18.04  , ocaml-version: 4.10.2+musl+static+flambda  , publish: true }
         - { os: ubuntu-18.04  , ocaml-version: 4.09.1  , publish: true }
         - { os: ubuntu-18.04  , ocaml-version: 4.08.1  , publish: true }
-        - { os: ubuntu-18.04  , ocaml-version: 4.07.1  , publish: true }
-        - { os: ubuntu-18.04  , ocaml-version: 4.06.1  , publish: true }
-        - { os: ubuntu-18.04  , ocaml-version: 4.05.0  , publish: true }
-        - { os: ubuntu-18.04  , ocaml-version: 4.04.2  , publish: true }
-        - { os: ubuntu-18.04  , ocaml-version: 4.03.0  , publish: true }
-        - { os: ubuntu-18.04  , ocaml-version: 4.02.3  , publish: true }
-        - { os: ubuntu-18.04  , ocaml-version: 4.01.0  , publish: true }
         - { os: windows-2022  , ocaml-version: 4.14.0+mingw64c }
         - { os: windows-2019  , ocaml-version: 4.14.0+mingw64c  , publish: true }
         - { os: windows-2019  , ocaml-version: 4.13.1+mingw64c  , publish: true }
@@ -83,13 +70,6 @@ jobs:
         - { os: windows-2019  , ocaml-version: 4.10.2+mingw32c  , publish: true }
         - { os: windows-2019  , ocaml-version: 4.09.1+mingw64c  , publish: true }
         - { os: windows-2019  , ocaml-version: 4.08.1+mingw64c  , publish: true }
-        - { os: windows-2019  , ocaml-version: 4.07.1+mingw64c  , publish: true }
-        - { os: windows-2019  , ocaml-version: 4.06.1+mingw64c  , publish: true }
-        - { os: windows-2019  , ocaml-version: 4.05.0+mingw64c  , publish: true }
-        - { os: windows-2019  , ocaml-version: 4.04.2+mingw64c  , publish: true }
-        - { os: windows-2019  , ocaml-version: 4.03.0+mingw64c  , publish: true }
-        - { os: windows-2019  , ocaml-version: 4.02.3+mingw64c  , publish: true }
-        - { os: windows-2019  , ocaml-version: 4.01.0+mingw64c  , publish: true }
 
     runs-on: ${{ matrix.job.os }}
 
@@ -158,12 +138,6 @@ jobs:
         mkdir -p '${{ steps.vars.outputs.STAGING_DIR }}'
         mkdir -p '${{ steps.vars.outputs.PKG_DIR }}'
         mkdir -p '${{ steps.vars.outputs.PKG_DIR }}'/bin
-
-    - name: Select Xcode version 11.7 for OCaml 4.05 (macOS)
-      if: runner.os == 'macOS' && matrix.job.ocaml-version == '4.05.0'
-      ## Xcode >= 12 breaks building lablgtk with OCaml 4.05 (a bug fixed in OCaml >= 4.06)
-      run: |
-        sudo xcode-select -s "/Applications/Xcode_11.7.app"
 
     - name: Enable/config MSVC environment (if/when needed)
       uses: ilammy/msvc-dev-cmd@v1
@@ -357,13 +331,8 @@ jobs:
         - { os: ubuntu-18.04  , ocaml-version: 4.14.x  , ref: v2.52.0 }
         - { os: ubuntu-18.04  , ocaml-version: 4.14.x  , ref: v2.51.5 }
         - { os: ubuntu-18.04  , ocaml-version: 4.08.x  , ref: v2.51.5 }
-        - { os: ubuntu-18.04  , ocaml-version: 4.05.x  , ref: v2.51.5 }
         - { os: ubuntu-18.04  , ocaml-version: 4.08.x  , ref: v2.51.2 }
-        - { os: ubuntu-18.04  , ocaml-version: 4.05.x  , ref: v2.51.2 }
-        - { os: ubuntu-18.04  , ocaml-version: 4.02.3  , ref: v2.51.0 }
         - { os: ubuntu-18.04  , ocaml-version: 4.08.x  , ref: 2.48.4 }
-        - { os: ubuntu-18.04  , ocaml-version: 4.05.x  , ref: 2.48.4 }
-        - { os: ubuntu-18.04  , ocaml-version: 4.01.x  , ref: 2.48.4 }
 
     runs-on: ${{ matrix.job.os }}
 
@@ -696,7 +665,6 @@ jobs:
       matrix:
         job:
         - { os: ubuntu-18.04   , ocaml-compiler: 4.14.x }
-        - { os: ubuntu-18.04   , ocaml-compiler: 4.05.x }
 
     runs-on: ${{ matrix.job.os }}
 
