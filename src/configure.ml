@@ -5,7 +5,6 @@ let compat4pred v = major < 4 || major = 4 && minor < v
 
 let compat4 =
   [
-    compat4pred 3, "Compat403", "compat403.cmo";
     compat4pred 8, "Compat408", "compat408.cmo" ]
 
 let objects =
