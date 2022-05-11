@@ -193,11 +193,6 @@ endif
 .PHONY: macexecutable
 macexecutable:
 	(cd $(UIMACDIR); $(RM) -f ExternalSettings.xcconfig ; echo MARKETING_VERSION = $(VERSION) > ExternalSettings.xcconfig ; echo OCAMLLIBDIR = $(OCAMLLIBDIR) >> ExternalSettings.xcconfig)
-ifeq ($(word 1,$(sort 4.08 $(shell ocamlc -version))),4.08)
-	(cd $(UIMACDIR); echo LIB_BIGARRAY = >> ExternalSettings.xcconfig)
-else
-	(cd $(UIMACDIR); echo LIB_BIGARRAY = -lbigarray >> ExternalSettings.xcconfig)
-endif
 	(cd $(UIMACDIR); xcodebuild $(XCODEFLAGS) SYMROOT=build)
 	$(CC) $(CFLAGS) -mmacosx-version-min=$(MINOSXVERSION) $(UIMACDIR)/cltool.c -o $(UIMACDIR)/build/Default/Unison.app/Contents/MacOS/cltool -framework Carbon
 
@@ -234,11 +229,7 @@ OCAMLOBJS+=main.cmo
 
 # OCaml libraries for the bytecode version
 # File extensions will be substituted for the native code version
-ifeq ($(shell ocamlc -version | grep ^5.0),)
-OCAMLLIBS+=unix.cma str.cma bigarray.cma
-else
 OCAMLLIBS+=unix.cma str.cma
-endif
 INCLFLAGS+=-I +unix -I +str
 
 COBJS+=osxsupport$(OBJ_EXT) pty$(OBJ_EXT) bytearray_stubs$(OBJ_EXT) hash_compat$(OBJ_EXT)
