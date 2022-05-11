@@ -87,10 +87,9 @@ let icon =
 *)
 let icon =
   let p = GdkPixbuf.create ~width:48 ~height:48 ~has_alpha:true () in
-  let pxs = GdkPixbuf.get_pixels p in
-  (* This little hack is here to support compiling with lablgtk versions both
-     < 2.18.6 and >= 2.18.6 *)
-  String.iteri (fun i c -> Gpointer.set_byte pxs ~pos:i (Char.code c)) Pixmaps.icon_data;
+  Gpointer.blit
+    ~src:(Gpointer.region_of_bytes (Bytes.of_string Pixmaps.icon_data))
+    ~dst:(GdkPixbuf.get_pixels p);
   p
 
 let leftPtrWatch =
