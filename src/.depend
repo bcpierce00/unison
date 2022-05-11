@@ -86,8 +86,6 @@ common.cmi : \
     name.cmi \
     fspath.cmi \
     fileinfo.cmi
-compat402.cmo :
-compat402.cmx :
 compat403.cmo :
 compat403.cmx :
 compat408.cmo : \

@@ -24,14 +24,6 @@
 
 #include <caml/mlvalues.h>
 #include <caml/custom.h>
-#ifndef Bytes_val /* Hack to know that we are on OCaml < 4.06.
-                     #include <caml/version.h> is not always found, for some reason. */
-extern value caml_hash_univ_param(value count, value limit, value obj);
-CAMLprim value unsn_hash_univ_param(value count, value limit, value obj)
-{
-  return caml_hash_univ_param(count, limit, obj);
-}
-#else
 #include <caml/address_class.h>
 
 struct hash_state {
@@ -171,4 +163,3 @@ static void hash_aux(struct hash_state* h, value obj)
       break;
     }
 }
-#endif
