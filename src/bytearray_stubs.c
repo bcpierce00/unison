@@ -21,11 +21,6 @@ CAMLprim value ml_marshal_to_bigarray(value v, value flags)
 
 #define Array_data(a, i) (((char *) Caml_ba_data_val(a)) + Long_val(i))
 
-#ifndef Bytes_val
-#define Bytes_val(x) ((unsigned char *) Bp_val(x))
-#endif
-
-
 CAMLprim value ml_unmarshal_from_bigarray(value b, value ofs)
 {
   CAMLparam2(b, ofs);

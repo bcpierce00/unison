@@ -16,7 +16,6 @@
 #include <caml/memory.h>   // Store_field
 #include <caml/fail.h>     // failwith
 #include <caml/unixsupport.h> // uerror, unix_error
-#include <caml/version.h>
 #include <errno.h>         // ENOSYS
 
 // openpty
@@ -103,25 +102,6 @@ static int Twin_multi_byte_to_wide_char(const char *s, int slen,
   }
 
   return retcode;
-}
-
-#if OCAML_VERSION < 40600
-static void* caml_stat_alloc_noexc(asize_t sz)
-{
-  return malloc(sz);
-}
-#endif /* OCAML_VERSION < 40600 */
-
-static wchar_t* Tcaml_stat_strdup_to_utf16(const char *s)
-{
-  wchar_t * ws;
-  int retcode;
-
-  retcode = Twin_multi_byte_to_wide_char(s, -1, NULL, 0);
-  ws = caml_stat_alloc_noexc(retcode * sizeof(*ws));
-  Twin_multi_byte_to_wide_char(s, -1, ws, retcode);
-
-  return ws;
 }
 
 #define PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE 0x00020016
@@ -274,7 +254,7 @@ CAMLprim value w_create_process_pty_native
 #ifndef PROC_THREAD_ATTRIBUTE_HANDLE_LIST
   unix_error(ENOSYS, "create_process_pty", prog);
 #else
-  wprog = Tcaml_stat_strdup_to_utf16(String_val(prog));
+  wprog = caml_stat_strdup_to_utf16(String_val(prog));
 
   res = SearchPathW(NULL, wprog, L".exe", MAX_PATH, fullname, NULL);
   caml_stat_free(wprog);
@@ -320,7 +300,7 @@ CAMLprim value w_create_process_pty_native
   flags = GetPriorityClass(GetCurrentProcess());
   flags |= EXTENDED_STARTUPINFO_PRESENT;
 
-  wargs = Tcaml_stat_strdup_to_utf16(String_val(args));
+  wargs = caml_stat_strdup_to_utf16(String_val(args));
   res = CreateProcessW(fullname, wargs, NULL, NULL, TRUE, flags,
           NULL, NULL, &si.StartupInfo, &pi);
   caml_stat_free(wargs);
