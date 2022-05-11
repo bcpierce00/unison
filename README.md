@@ -1,7 +1,5 @@
 # Unison File Synchronizer
 
-[![Build status](https://github.com/bcpierce00/unison/workflows/CI/badge.svg)](https://github.com/bcpierce00/unison/actions?query=workflow%3ACI)
-
 ## Meta
 
 ***Please read this entire README and
