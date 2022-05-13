@@ -209,6 +209,14 @@ else
 endif
 	(cd $(UIMACDIR); xcodebuild $(XCODEFLAGS) SYMROOT=build)
 	$(CC) $(CFLAGS) -mmacosx-version-min=$(MINOSXVERSION) $(UIMACDIR)/cltool.c -o $(UIMACDIR)/build/Default/Unison.app/Contents/MacOS/cltool -framework Carbon
+	codesign --remove-signature $(UIMACDIR)/build/Default/Unison.app
+	codesign --force --sign - $(UIMACDIR)/build/Default/Unison.app/Contents/MacOS/cltool
+	codesign --force --sign - --entitlements $(UIMACDIR)/build/uimac*.build/Default/uimac.build/Unison.app.xcent $(UIMACDIR)/build/Default/Unison.app
+	codesign --verify --deep --strict $(UIMACDIR)/build/Default/Unison.app
+# cltool was added into the .app after it was signed, so the signature is now
+# broken. It must be removed, cltool separately signed, and then the entire
+# .app (re-)signed.
+
 
 # OCaml objects for the bytecode version
 # File extensions will be substituted for the native code version
