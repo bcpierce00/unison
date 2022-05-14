@@ -342,38 +342,22 @@ system.cmx fspath.cmx fs.cmx: system/$(SYSTEM)/system_impl.cmx
 lwt/lwt_unix.cmo: lwt/$(SYSTEM)/lwt_unix_impl.cmo
 lwt/lwt_unix.cmx: lwt/$(SYSTEM)/lwt_unix_impl.cmx
 
-ifeq ($(OSARCH), OpenBSD)
-  ifeq ($(shell echo type ocamldot | ksh), file)
-    OCAMLDOT=true
-  endif
-else
-  # \todo POSIX does not specify a -t option to type, or the presence
-  # of bash.
-  ifeq ($(shell echo type -t ocamldot | bash), file)
-    OCAMLDOT=true
-  endif
-endif
-
-ifeq ($(OSARCH), NetBSD)
-  OCAMLDOT=false
-endif
-
-# Rebuild dependencies (must be invoked manually)
-.PHONY: depend
+.PHONY: depend dependgraph
 depend::
 	ocamldep $(DEP_INCLFLAGS) *.mli *.ml */*.ml */*.mli */*/*.ml */*/*.mli > .depend
-ifdef OCAMLDOT
-	echo 'digraph G {' > dot.tmp
+
+dependgraph: depend
+	echo 'digraph G {' > .depend.dot.tmp
 	echo '{ rank = same; "Fileinfo"; "Props"; "Fspath"; "Os"; "Path"; }'\
-           >>dot.tmp
-	echo '{ rank = same; "Uitext"; "Uigtk"; }'>>dot.tmp
+           >>.depend.dot.tmp
+	echo '{ rank = same; "Uitext"; "Uigtk"; }'>>.depend.dot.tmp
 	echo '{ rank = same; "Recon"; "Update"; "Transport"; "Files"; }'\
-           >>dot.tmp
-	echo '{ rank = same; "Tree"; "Safelist"; }'>>dot.tmp
-	echo '{ rank = same; "Uarg"; "Prefs"; }'>>dot.tmp
-	ocamldot .depend | tail -n +2 >> dot.tmp
-	-dot -Tps -o DEPENDENCIES.ps dot.tmp
-endif
+           >>.depend.dot.tmp
+	echo '{ rank = same; "Tree"; "Safelist"; }'>>.depend.dot.tmp
+	echo '{ rank = same; "Uarg"; "Prefs"; }'>>.depend.dot.tmp
+	echo 'Attempting to use ocamldot and dot to produce a dependency graph:'
+	-ocamldot .depend | tail -n +2 >> .depend.dot.tmp
+	-dot -Tps -o DEPENDENCIES.ps .depend.dot.tmp
 
 ####################################################################
 ### Compilation boilerplate
@@ -476,6 +460,7 @@ clean::
 	-$(RM) system/generic/*.cm[iox] system/generic/*.{o,obj} system/generic/*~
 	-$(RM) system/win/*.cm[iox] system/win/*.{o,obj} system/win/*~
 	-$(RM) fsmonitor/*.cm[iox] fsmonitor/*.{o,obj}
+	-$(RM) .depend.dot.tmp DEPNDEENCIES.ps
 
 .PHONY: paths
 paths:

@@ -55,6 +55,8 @@ doc/unison-manual.txt
 doc/unisonversion.tex
 man/*.tmp
 man/unison.1
+src/.depend.dot.tmp
+src/DEPENDENCIES.ps
 
 _build
 .merlin
