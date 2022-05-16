@@ -1,8 +1,6 @@
-#######################################################################
-# $I1: Unison file synchronizer: src/Makefile $
-# $I2: Last modified by bcpierce on Sun, 22 Aug 2004 22:29:04 -0400 $
-# $I3: Copyright 1999-2020 (see COPYING for details) $
-#######################################################################
+# Unison file synchronizer: src/Makefile
+# Copyright 1999-2020 (see ../LICENSE for terms).
+
 ## User Settings
 
 # Set NATIVE=false if you are not using the native code compiler (ocamlopt)
@@ -83,31 +81,6 @@ doinstall: buildexecutable
 
 ######################################################################
 # Demo
-
-setupdemo-old: all
-	-mkdir alice.tmp bob.tmp
-	-touch alice.tmp/letter alice.tmp/curriculum
-	-mkdir bob.tmp/curriculum
-	-touch bob.tmp/curriculum/french
-	-touch bob.tmp/curriculum/german
-	-mkdir bob.tmp/good_friends
-	-mkdir bob.tmp/good_friends/addresses
-	-mkdir alice.tmp/good_friends
-	-touch alice.tmp/good_friends/addresses
-	-touch bob.tmp/good_friends/addresses/alice
-	-mkdir alice.tmp/book
-	-mkdir bob.tmp/book
-	echo "first name:alice \n 2234 Chesnut Street \n Philadelphia" \
-	   > bob.tmp/good_friends/addresses/alice
-	echo "ADDRESS 1 : BOB \n firstName : bob \n 2233 Walnut Street" \
-	   > alice.tmp/good_friends/addresses
-	echo "Born in Paris in 1976 ..." > alice.tmp/curriculum
-	echo "Ne a Paris en 1976 ..." > bob.tmp/curriculum/french
-	echo "Geboren in Paris im jahre 1976 ..." > bob.tmp/curriculum/german
-	echo "Dear friend, I received your letter ..."    > alice.tmp/letter
-	echo "And then the big bad wolf" > bob.tmp/book/page3
-	echo "Title : three little pigs" > alice.tmp/book/page1
-	echo "there was upon a time ..." > alice.tmp/book/page2
 
 setupdemo:
 	rm -rf a.tmp b.tmp
@@ -359,14 +332,6 @@ clean::
 	-(cd $(UIMACDIR); xcodebuild clean)
 	-(cd $(UIMACDIR); $(RM) -r build ExternalSettings.xcconfig)
 endif
-
-checkin:
-	$(MAKE) -C .. checkin
-
-installremote:
-	$(MAKE) UISTYLE=text
-	-unison eniac -path current/unison/trunk/src -batch
-	ssh eniac.seas.upenn.edu make -C current/unison/trunk/src installtext
 
 ####################################################################
 # Documentation strings
