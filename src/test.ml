@@ -411,7 +411,6 @@ let test() =
       put R1 (Dir ["x", File "foo"]);
       put R2 (Dir ["x", File "bar"]); sync();
       (* Change contents without changing size and check that change is propagated *)
-      Unix.sleep 2; (* in case time granularity is coarse on this FS *)
       put R1 (Dir ["x", File "f00"]); sync();
 
       check "3a" R1 (Dir ["x", File "f00"]);

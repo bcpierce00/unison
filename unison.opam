@@ -11,7 +11,7 @@ bug-reports: "https://github.com/bcpierce00/unison/issues"
 dev-repo: "git://github.com/bcpierce00/unison.git"
 build: ["dune" "build" "-p" name "-j" jobs]
 depends: [
-  "ocaml" {build & >= "4.03"}
+  "ocaml" {build & >= "4.08"}
   "dune" {build & >= "2.3"}
   "lablgtk" {build & >= "2.18.6"}
 ]

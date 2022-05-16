@@ -496,7 +496,6 @@
 					"-lthreadsnat",
 					"-lcamlstr",
 					"-lasmrun",
-					"$(LIB_BIGARRAY)",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = edu.upenn.cis.Unison;
 				PRODUCT_NAME = Unison;
@@ -528,7 +527,6 @@
 					"-lthreadsnat",
 					"-lcamlstr",
 					"-lasmrun",
-					"$(LIB_BIGARRAY)",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = edu.upenn.cis.Unison;
 				PRODUCT_NAME = Unison;
@@ -558,7 +556,6 @@
 					"-lthreadsnat",
 					"-lcamlstr",
 					"-lasmrun",
-					"$(LIB_BIGARRAY)",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = edu.upenn.cis.Unison;
 				PRODUCT_NAME = Unison;

@@ -159,15 +159,6 @@ else
   endif
 endif
 
-ifeq ($(NATIVE), true)
-  COMPATCAMLFLAGS=$(subst .cmo,.cmx, $(shell ocaml $(CWD)/configure.ml))
-  COMPATOCAMLOBJS=$(subst .cmo,.cmx, $(subst .cma,.cmxa, $(shell ocaml $(CWD)/configure.ml objs)))
-else
-  COMPATCAMLFLAGS=$(shell ocaml $(CWD)/configure.ml)
-  COMPATOCAMLOBJS=$(shell ocaml $(CWD)/configure.ml objs)
-endif
-OCAMLOBJS+=$(COMPATOCAMLOBJS)
-
 .PHONY: buildexecutable
 buildexecutable::
 	@echo NATIVE = $(NATIVE)
@@ -202,11 +193,6 @@ endif
 .PHONY: macexecutable
 macexecutable:
 	(cd $(UIMACDIR); $(RM) -f ExternalSettings.xcconfig ; echo MARKETING_VERSION = $(VERSION) > ExternalSettings.xcconfig ; echo OCAMLLIBDIR = $(OCAMLLIBDIR) >> ExternalSettings.xcconfig)
-ifeq ($(word 1,$(sort 4.08 $(shell ocamlc -version))),4.08)
-	(cd $(UIMACDIR); echo LIB_BIGARRAY = >> ExternalSettings.xcconfig)
-else
-	(cd $(UIMACDIR); echo LIB_BIGARRAY = -lbigarray >> ExternalSettings.xcconfig)
-endif
 	(cd $(UIMACDIR); xcodebuild $(XCODEFLAGS) SYMROOT=build)
 	$(CC) $(CFLAGS) -mmacosx-version-min=$(MINOSXVERSION) $(UIMACDIR)/cltool.c -o $(UIMACDIR)/build/Default/Unison.app/Contents/MacOS/cltool -framework Carbon
 	codesign --remove-signature $(UIMACDIR)/build/Default/Unison.app
@@ -251,11 +237,7 @@ OCAMLOBJS+=main.cmo
 
 # OCaml libraries for the bytecode version
 # File extensions will be substituted for the native code version
-ifeq ($(shell ocamlc -version | grep ^5.0),)
-OCAMLLIBS+=unix.cma str.cma bigarray.cma
-else
 OCAMLLIBS+=unix.cma str.cma
-endif
 INCLFLAGS+=-I +unix -I +str
 
 COBJS+=osxsupport$(OBJ_EXT) pty$(OBJ_EXT) bytearray_stubs$(OBJ_EXT) hash_compat$(OBJ_EXT)
@@ -453,23 +435,15 @@ win32rc/unison.res.lib: win32rc/unison.rc win32rc/U.ico
 
 %.cmi : %.mli
 	@echo "$(CAMLC): $< ---> $@"
-	$(CAMLC) $(CAMLFLAGS) $(COMPATCAMLFLAGS) -c $(CWD)/$<
+	$(CAMLC) $(CAMLFLAGS) -c $(CWD)/$<
 
-compat%.cmo: compat%.ml
+%.cmo: %.ml
 	@echo "$(OCAMLC): $< ---> $@"
-	$(OCAMLC) $(COMPATCAMLFLAGS) -c $(CWD)/$<
+	$(OCAMLC) $(CAMLFLAGS) -c $(CWD)/$<
 
-%.cmo: %.ml $(COMPATOCAMLOBJS)
-	@echo "$(OCAMLC): $< ---> $@"
-	$(OCAMLC) $(CAMLFLAGS) $(COMPATCAMLFLAGS) -c $(CWD)/$<
-
-compat%.cmx: compat%.ml
+%.cmx: %.ml
 	@echo "$(OCAMLOPT): $< ---> $@"
-	$(OCAMLOPT) $(COMPATCAMLFLAGS) -c $(CWD)/$<
-
-%.cmx: %.ml $(COMPATOCAMLOBJS)
-	@echo "$(OCAMLOPT): $< ---> $@"
-	$(OCAMLOPT) $(CAMLFLAGS) $(COMPATCAMLFLAGS) -c $(CWD)/$<
+	$(OCAMLOPT) $(CAMLFLAGS) -c $(CWD)/$<
 
 %.o %.obj: %.c
 	@echo "$(CAMLC): $< ---> $@"

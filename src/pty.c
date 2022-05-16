@@ -75,10 +75,6 @@ CAMLprim value c_openpty(value unit) {
 
 #ifdef _WIN32
 
-#ifndef CAMLassert
-#define CAMLassert(x) ((void) 0)
-#endif
-
 #include <windows.h>
 
 extern void win32_maperr(DWORD errcode);
@@ -107,30 +103,6 @@ static int Twin_multi_byte_to_wide_char(const char *s, int slen,
 
   return retcode;
 }
-
-#ifndef Bytes_val /* Hack to know that we are on OCaml < 4.06.
-                     #include <caml/version.h> is not always found, for some reason. */
-static void* caml_stat_alloc_noexc(asize_t sz)
-{
-  return malloc(sz);
-}
-#endif /* OCAML_VERSION < 40600 */
-
-static wchar_t* Tcaml_stat_strdup_to_utf16(const char *s)
-{
-  wchar_t * ws;
-  int retcode;
-
-  retcode = Twin_multi_byte_to_wide_char(s, -1, NULL, 0);
-  ws = caml_stat_alloc_noexc(retcode * sizeof(*ws));
-  Twin_multi_byte_to_wide_char(s, -1, ws, retcode);
-
-  return ws;
-}
-
-#ifndef Data_abstract_val /* OCaml < 4.05 */
-#define Data_abstract_val(v) ((void*) Op_val(v))
-#endif
 
 #define PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE 0x00020016
 
@@ -282,7 +254,7 @@ CAMLprim value w_create_process_pty_native
 #ifndef PROC_THREAD_ATTRIBUTE_HANDLE_LIST
   unix_error(ENOSYS, "create_process_pty", prog);
 #else
-  wprog = Tcaml_stat_strdup_to_utf16(String_val(prog));
+  wprog = caml_stat_strdup_to_utf16(String_val(prog));
 
   res = SearchPathW(NULL, wprog, L".exe", MAX_PATH, fullname, NULL);
   caml_stat_free(wprog);
@@ -328,7 +300,7 @@ CAMLprim value w_create_process_pty_native
   flags = GetPriorityClass(GetCurrentProcess());
   flags |= EXTENDED_STARTUPINFO_PRESENT;
 
-  wargs = Tcaml_stat_strdup_to_utf16(String_val(args));
+  wargs = caml_stat_strdup_to_utf16(String_val(args));
   res = CreateProcessW(fullname, wargs, NULL, NULL, TRUE, flags,
           NULL, NULL, &si.StartupInfo, &pi);
   caml_stat_free(wargs);
