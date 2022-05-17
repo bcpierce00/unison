@@ -460,7 +460,7 @@ clean::
 	-$(RM) system/generic/*.cm[iox] system/generic/*.{o,obj} system/generic/*~
 	-$(RM) system/win/*.cm[iox] system/win/*.{o,obj} system/win/*~
 	-$(RM) fsmonitor/*.cm[iox] fsmonitor/*.{o,obj}
-	-$(RM) .depend.dot.tmp DEPNDEENCIES.ps
+	-$(RM) .depend.dot.tmp DEPENDENCIES.ps
 
 .PHONY: paths
 paths:
