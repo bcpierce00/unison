@@ -1,4 +1,4 @@
-(* Unison file synchronizer: src/linkgtk.ml *)
+(* Unison file synchronizer: src/linkgtk3.ml *)
 (* Copyright 1999-2020, Benjamin C. Pierce
 
     This program is free software: you can redistribute it and/or modify
@@ -16,4 +16,4 @@
 *)
 
 
-module TopLevel = Main.Body(Uigtk.Body)
+module TopLevel = Main.Body(Uigtk3.Body)

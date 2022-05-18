@@ -1,4 +1,4 @@
-(* Unison file synchronizer: src/uigtk2.ml *)
+(* Unison file synchronizer: src/uigtk3.ml *)
 (* Copyright 1999-2020, Benjamin C. Pierce
 
     This program is free software: you can redistribute it and/or modify
@@ -93,15 +93,7 @@ let icon =
   p
 
 let leftPtrWatch =
-  lazy
-     (let bitmap =
-        Gdk.Bitmap.create_from_data
-          ~width:32 ~height:32 Pixmaps.left_ptr_watch
-      in
-      let color =
-        Gdk.Color.alloc ~colormap:(Gdk.Color.get_system_colormap ()) `BLACK in
-      Gdk.Cursor.create_from_pixmap
-        (bitmap :> Gdk.pixmap) ~mask:bitmap ~fg:color ~bg:color ~x:2 ~y:2)
+  lazy (Gdk.Cursor.create `WATCH)
 
 let make_busy w =
   if Util.osType <> `Win32 then
@@ -267,21 +259,21 @@ let transcode s =
                        USEFUL LOW-LEVEL WIDGETS
  **********************************************************************)
 
-class scrolled_text ?editable ?shadow_type ?word_wrap
-    ~width ~height ?packing ?show
+class scrolled_text ?editable ?shadow_type ?(wrap_mode=`WORD) ?packing ?show
     () =
   let sw =
     GBin.scrolled_window ?packing ~show:false
-      ?shadow_type ~hpolicy:`NEVER ~vpolicy:`AUTOMATIC ()
+      ?shadow_type ~hpolicy:`AUTOMATIC ~vpolicy:`AUTOMATIC ()
   in
-  let text = GText.view ?editable ~wrap_mode:`WORD ~packing:sw#add () in
+  let text = GText.view ?editable ~wrap_mode ~packing:sw#add () in
+  let () = text#set_left_margin 4
+  and () = text#set_right_margin 4 in
   object
     inherit GObj.widget_full sw#as_widget
     method text = text
     method insert s = text#buffer#set_text s;
     method show () = sw#misc#show ()
     initializer
-      text#misc#set_size_chars ~height ~width ();
       if show <> Some false then sw#misc#show ()
   end
 
@@ -307,8 +299,8 @@ let primaryText msg =
    chosen, false if the second button is chosen. *)
 let twoBox ?(kind=`DIALOG_WARNING) ~parent ~title ~astock ~bstock message =
   let t =
-    GWindow.dialog ~parent ~border_width:6 ~modal:true ~no_separator:true
-      ~allow_grow:false () in
+    GWindow.dialog ~parent ~border_width:6 ~modal:true
+      ~resizable:false () in
   t#vbox#set_spacing 12;
   let h1 = GPack.hbox ~border_width:6 ~spacing:12 ~packing:t#vbox#pack () in
   ignore (GMisc.image ~stock:kind ~icon_size:`DIALOG
@@ -354,7 +346,7 @@ let warnBox ~parent title message =
     (* In batch mode, just pop up a window and go ahead *)
     let t =
       GWindow.dialog ~parent
-        ~border_width:6 ~modal:true ~no_separator:true ~allow_grow:false () in
+        ~border_width:6 ~modal:true ~resizable:false () in
     t#vbox#set_spacing 12;
     let h1 = GPack.hbox ~border_width:6 ~spacing:12 ~packing:t#vbox#pack () in
     ignore (GMisc.image ~stock:`DIALOG_INFO ~icon_size:`DIALOG
@@ -414,20 +406,21 @@ class ['a] gMenuFactory
       item
     method add_image_item ?(image : GObj.widget option)
         ?modi ?key ?callback ?stock ?name label =
+      (* GTK 3 does not provide image menu items (there is a way to
+         manually create a workaround but that does not work with
+         lablgtk. Let's create a regular menu item instead. *)
       let item =
-        GMenu.image_menu_item ~use_mnemonic:true ?image ~label ?stock () in
+        GMenu.menu_item ~use_mnemonic:true ~label () in
       match stock  with
       | None ->
-          self#bind ?modi ?key ?callback label ?name
-            (item : GMenu.image_menu_item :> GMenu.menu_item);
+          self#bind ?modi ?key ?callback label ?name item;
           item
       | Some s ->
           try
             let st = GtkStock.Item.lookup s in
             self#bind
               ?modi ?key:(if st.GtkStock.keyval=0 then key else None)
-              ?callback label ?name
-              (item : GMenu.image_menu_item :> GMenu.menu_item);
+              ?callback label ?name item;
             item
           with Not_found -> item
 
@@ -450,54 +443,83 @@ end
                          HIGHER-LEVEL WIDGETS
 ***********************************************************************)
 
+(* FIXME: This is a lowest-effort port of GTK2 pixmap-based code to GTK3.
+   It works but is probably needlessly inefficient(??). It should be
+   rewritten from scratch to match the new GTK(+Cairo) API and only draw
+   updated regions. *)
 class stats width height =
-  let pixmap = GDraw.pixmap ~width ~height () in
   let area =
-    pixmap#set_foreground `WHITE;
-    pixmap#rectangle ~filled:true ~x:0 ~y:0 ~width ~height ();
-    GMisc.pixmap pixmap ~width ~height ~xpad:4 ~ypad:8 ()
+    let d = GMisc.drawing_area () in
+    d#set_width_request width;
+    d#set_height_request height;
+    d#set_margin_left 4;
+    d#set_margin_right 4;
+    d#set_margin_top 8;
+    d#set_margin_bottom 8;
+    d#set_hexpand true;
+    d#set_vexpand true;
+    d
   in
   object (self)
     inherit GObj.widget_full area#as_widget
     val mutable maxim = ref 0.
     val mutable scale = ref 1.
     val mutable min_scale = 1.
-    val values = Array.make width 0.
+    val mutable values = Array.make width 0.
     val mutable active = false
+    val mutable width = float_of_int width
+    val mutable height = float_of_int height
+    initializer
+      ignore (area#misc#connect#size_allocate ~callback:self#resize);
+      ignore (area#misc#connect#draw ~callback:self#redraw)
 
-    method redraw () =
+    method resize rect =
+      let oldw = truncate width in
+      let neww = min rect.Gtk.width 640 in
+      if neww > oldw then
+        values <- Array.append (Array.make (neww - oldw) 0.) (Array.sub values 0 oldw)
+      else if neww < oldw then begin
+        Array.blit values (oldw - neww) values 0 neww
+      end;
+      width <- float_of_int neww;
+      height <- float_of_int (min rect.Gtk.height 200);
+      area#misc#queue_draw ()
+
+    method redraw cr =
       scale := min_scale;
       while !maxim > !scale do
         scale := !scale *. 1.5
       done;
-      pixmap#set_foreground `WHITE;
-      pixmap#rectangle ~filled:true ~x:0 ~y:0 ~width ~height ();
-      pixmap#set_foreground `BLACK;
-      for i = 0 to width - 1 do
-        self#rect i values.(max 0 (i - 1)) values.(i)
-      done
+      Cairo.set_source_rgb cr 1. 1. 1.;
+      Cairo.rectangle cr 0. 0. ~w:width ~h:height;
+      Cairo.fill cr;
+      for i = 0 to truncate width - 1 do
+        self#rect cr i values.(max 0 (i - 1)) values.(i)
+      done;
+      true
 
-    method activate a = active <- a; if a then self#redraw ()
+    method activate a = active <- a; if a then area#misc#queue_draw ()
 
-    method scale h = truncate ((float height) *. h /. !scale)
+    method scale h = height *. h /. !scale
 
-    method private rect i v' v =
+    method private rect cr i v' v =
       let h = self#scale v in
       let h' = self#scale v' in
       let h1 = min h' h in
       let h2 = max h' h in
-      pixmap#set_foreground `BLACK;
-      pixmap#rectangle
-        ~filled:true ~x:i ~y:(height - h1) ~width:1 ~height:h1 ();
-      for h = h1 + 1 to h2 do
-        let v = truncate (65535. *. (float (h - h1) /. float (h2 - h1))) in
-        let v = (v / 4096) * 4096 in (* Only use 16 gray levels *)
-        pixmap#set_foreground (`RGB (v, v, v));
-        pixmap#rectangle
-          ~filled:true ~x:i ~y:(height - h) ~width:1 ~height:1 ();
+      Cairo.set_source_rgb cr 0. 0. 0.;
+      Cairo.rectangle cr (float_of_int i) (height -. h1) ~w:1. ~h:h1;
+      Cairo.fill cr;
+      for h = (truncate h1) + 1 to (truncate h2) do
+        let v = ((float h -. h1) /. (h2 -. h1)) in
+        Cairo.set_source_rgb cr v v v;
+        Cairo.rectangle cr (float_of_int i) (height -. float h) ~w:1. ~h:1.;
+        Cairo.fill cr;
+        ()
       done
 
     method push v =
+      let width = truncate width in
       let need_max = values.(0) = !maxim in
       for i = 0 to width - 2 do
         values.(i) <- values.(i + 1)
@@ -509,18 +531,7 @@ class stats width height =
       end else
         maxim := max !maxim v;
       if active then begin
-        let need_resize =
-          !maxim > !scale || (!maxim > min_scale && !maxim < !scale /. 1.5) in
-        if need_resize then
-          self#redraw ()
-        else begin
-          pixmap#put_pixmap ~x:0 ~y:0 ~xsrc:1 (pixmap#pixmap);
-          pixmap#set_foreground `WHITE;
-          pixmap#rectangle
-            ~filled:true ~x:(width - 1) ~y:0 ~width:1 ~height ();
-          self#rect (width - 1) values.(width - 2) values.(width - 1)
-        end;
-        area#misc#draw None
+        area#misc#queue_draw ()
       end
   end
 
@@ -546,9 +557,20 @@ let rate2str v =
       " "
   end
 
+let mib = 1024. *. 1024.
+let kib2str v =
+  if v > 100_000_000. then
+    Format.sprintf "%.0f MiB" (v /. mib)
+  else if v > 1_000_000. then
+    Format.sprintf "%.1f MiB" (v /. mib)
+  else if v > 1024. then
+    Format.sprintf "%.1f KiB" (v /. 1024.)
+  else
+    Format.sprintf "%.0f B" v
+
 let statistics () =
   let title = "Statistics" in
-  let t = GWindow.dialog ~title () in
+  let t = GWindow.dialog ~title ~parent:(toplevelWindow ()) () in
   let t_dismiss = GButton.button ~stock:`CLOSE ~packing:t#action_area#add () in
   t_dismiss#grab_default ();
   let dismiss () = t#misc#hide () in
@@ -560,22 +582,28 @@ let statistics () =
   let reception = new stats 320 50 in
   t#vbox#pack ~expand:false ~padding:4 (reception :> GObj.widget);
 
-  let lst =
-    GList.clist
-      ~packing:(t#vbox#add)
-      ~titles_active:false
-      ~titles:[""; "Client"; "Server"; "Total"] ()
-  in
-  lst#set_column ~auto_resize:true 0;
-  lst#set_column ~auto_resize:true ~justification:`RIGHT 1;
-  lst#set_column ~auto_resize:true ~justification:`RIGHT 2;
-  lst#set_column ~auto_resize:true ~justification:`RIGHT 3;
-  ignore (lst#append ["Reception rate"]);
-  ignore (lst#append ["Data received"]);
-  ignore (lst#append ["File data written"]);
-  for r = 0 to 2 do
-    lst#set_row ~selectable:false r
-  done;
+  let cols = new GTree.column_list in
+  let c_1 = cols#add Gobject.Data.string in
+  let c_client = cols#add Gobject.Data.string in
+  let c_server = cols#add Gobject.Data.string in
+  let c_total = cols#add Gobject.Data.string in
+  let lst = GTree.list_store cols in
+  let l = GTree.view ~model:lst ~enable_search:false ~packing:(t#vbox#add) () in
+  l#selection#set_mode `NONE;
+  ignore (l#append_column (GTree.view_column ~title:""
+    ~renderer:(GTree.cell_renderer_text [], ["text", c_1]) ()));
+  ignore (l#append_column (GTree.view_column ~title:"Client"
+    ~renderer:(GTree.cell_renderer_text [`XALIGN 1.0], ["text", c_client]) ()));
+  ignore (l#append_column (GTree.view_column ~title:"Server"
+    ~renderer:(GTree.cell_renderer_text [`XALIGN 1.0], ["text", c_server]) ()));
+  ignore (l#append_column (GTree.view_column ~title:"Total"
+    ~renderer:(GTree.cell_renderer_text [`XALIGN 1.0], ["text", c_total]) ()));
+  let rate_row = lst#append () in
+  ignore (lst#set ~row:rate_row ~column:c_1 "Reception rate");
+  let receive_row = lst#append () in
+  ignore (lst#set ~row:receive_row ~column:c_1 "Data received");
+  let data_row = lst#append () in
+  ignore (lst#set ~row:data_row ~column:c_1 "File data written");
 
   ignore (t#event#connect#map ~callback:(fun _ ->
     emission#activate true;
@@ -598,19 +626,18 @@ let statistics () =
   let stopCounter = ref 0 in
 
   let updateTable () =
-    let kib2str v = Format.sprintf "%.0f B" v in
-    lst#set_cell ~text:(rate2str !receiveRate2) 0 1;
-    lst#set_cell ~text:(rate2str !emitRate2) 0 2;
-    lst#set_cell ~text:
-      (rate2str (!receiveRate2 +. !emitRate2)) 0 3;
-    lst#set_cell ~text:(kib2str !receivedBytes) 1 1;
-    lst#set_cell ~text:(kib2str !emittedBytes) 1 2;
-    lst#set_cell ~text:
-      (kib2str (!receivedBytes +. !emittedBytes)) 1 3;
-    lst#set_cell ~text:(kib2str !clientWritten) 2 1;
-    lst#set_cell ~text:(kib2str !serverWritten) 2 2;
-    lst#set_cell ~text:
-      (kib2str (!clientWritten +. !serverWritten)) 2 3
+    let row = rate_row in
+    lst#set ~row ~column:c_client (rate2str !receiveRate2);
+    lst#set ~row ~column:c_server (rate2str !emitRate2);
+    lst#set ~row ~column:c_total (rate2str (!receiveRate2 +. !emitRate2));
+    let row = receive_row in
+    lst#set ~row ~column:c_client (kib2str !receivedBytes);
+    lst#set ~row ~column:c_server (kib2str !emittedBytes);
+    lst#set ~row ~column:c_total (kib2str (!receivedBytes +. !emittedBytes));
+    let row = data_row in
+    lst#set ~row ~column:c_client (kib2str !clientWritten);
+    lst#set ~row ~column:c_server (kib2str !serverWritten);
+    lst#set ~row ~column:c_total (kib2str (!clientWritten +. !serverWritten))
   in
   let timeout _ =
     emitRate :=
@@ -649,21 +676,6 @@ let statistics () =
   let stopStats () = stopCounter := 10 in
   (t, startStats, stopStats)
 
-(****)
-
-(* Standard file dialog *)
-let file_dialog ~parent ~title ~callback ?filename () =
-  let sel = GWindow.file_selection ~parent ~title ~modal:true ?filename () in
-  ignore (sel#cancel_button#connect#clicked ~callback:sel#destroy);
-  ignore (sel#ok_button#connect#clicked ~callback:
-            (fun () ->
-               let name = sel#filename in
-               sel#destroy ();
-               callback name));
-  sel#show ();
-  ignore (sel#connect#destroy ~callback:GMain.Main.quit);
-  GMain.Main.main ()
-
 (* ------ *)
 
 let fatalError ?(quit=false) message =
@@ -681,7 +693,7 @@ let fatalError ?(quit=false) message =
   in
   let t =
     GWindow.dialog ~parent:toplevelWindow
-      ~border_width:6 ~modal:true ~no_separator:true ~allow_grow:false () in
+      ~border_width:6 ~modal:true ~resizable:false () in
   t#vbox#set_spacing 12;
   let h1 = GPack.hbox ~border_width:6 ~spacing:12 ~packing:t#vbox#pack () in
   ignore (GMisc.image ~stock:`DIALOG_ERROR ~icon_size:`DIALOG
@@ -705,7 +717,7 @@ let fatalErrorHandler = ref (fatalError ~quit:true)
 
 let getFirstRoot () =
   let t = GWindow.dialog ~parent:(toplevelWindow ()) ~title:"Root selection"
-      ~modal:true ~allow_grow:true () in
+      ~modal:true ~resizable:true () in
   t#misc#grab_focus ();
 
   let hb = GPack.hbox
@@ -719,12 +731,14 @@ let getFirstRoot () =
   ignore (GMisc.label ~text:"Dir:" ~packing:(f1#pack ~expand:false) ());
   let fileE = GEdit.entry ~packing:f1#add () in
   fileE#misc#grab_focus ();
-  let browseCommand() =
-    file_dialog ~parent:t ~title:"Select a local directory"
-      ~callback:fileE#set_text ~filename:fileE#text () in
-  let b = GButton.button ~label:"Browse"
-      ~packing:(f1#pack ~expand:false) () in
-  ignore (b#connect#clicked ~callback:browseCommand);
+  let b = GFile.chooser_button ~action:`SELECT_FOLDER
+    ~title:"Select a local directory"
+    ~packing:(f1#pack ~expand:false) () in
+  ignore (b#connect#selection_changed ~callback:(fun () ->
+            if not fileE#is_focus then
+              fileE#set_text (match b#filename with None -> "" | Some s -> s)));
+  ignore (fileE#connect#changed ~callback:(fun () ->
+            if fileE#is_focus then ignore (b#set_filename fileE#text)));
 
   let f3 = t#action_area in
   let result = ref None in
@@ -749,7 +763,7 @@ let getFirstRoot () =
 
 let getSecondRoot () =
   let t = GWindow.dialog ~parent:(toplevelWindow ()) ~title:"Root selection"
-      ~modal:true ~allow_grow:true () in
+      ~modal:true ~resizable:true () in
   t#misc#grab_focus ();
 
   let message = "Please enter the second directory you want to synchronize." in
@@ -772,12 +786,14 @@ let getSecondRoot () =
   ignore (GMisc.label ~text:"Directory:" ~packing:(f1#pack ~expand:false) ());
   let fileE = GEdit.entry ~packing:f1#add () in
   fileE#misc#grab_focus ();
-  let browseCommand() =
-    file_dialog ~parent:t ~title:"Select a local directory"
-      ~callback:fileE#set_text ~filename:fileE#text () in
-  let b = GButton.button ~label:"Browse"
-      ~packing:(f1#pack ~expand:false) () in
-  ignore (b#connect#clicked ~callback:browseCommand);
+  let b = GFile.chooser_button ~action:`SELECT_FOLDER
+    ~title:"Select a local directory"
+    ~packing:(f1#pack ~expand:false) () in
+  ignore (b#connect#selection_changed ~callback:(fun () ->
+            if not fileE#is_focus then
+              fileE#set_text (match b#filename with None -> "" | Some s -> s)));
+  ignore (fileE#connect#changed ~callback:(fun () ->
+            if fileE#is_focus then ignore (b#set_filename fileE#text)));
 
   let f0 = GPack.hbox ~spacing:4 ~packing:f#add () in
   let localB = GButton.radio_button ~packing:(f0#pack ~expand:false)
@@ -887,7 +903,7 @@ let getPassword rootName msg =
   let t =
     GWindow.dialog ~parent:(toplevelWindow ())
       ~title:"Unison: SSH connection" ~position:`CENTER
-      ~no_separator:true ~modal:true ~allow_grow:false ~border_width:6 () in
+      ~modal:true ~resizable:false ~border_width:6 () in
   t#misc#grab_focus ();
 
   t#vbox#set_spacing 12;
@@ -1080,7 +1096,7 @@ let createProfile parent =
     GMisc.label
       ~xpad:12 ~ypad:12
       ~text:"Welcome to the Unison Profile Creation Assistant.\n\n\
-             Click \"Forward\" to begin."
+             Click \"Next\" to begin."
     () in
   ignore
     (assistant#append_page
@@ -1620,7 +1636,7 @@ let defaultValue t =
 let editPreference parent nm ty vl =
   let t =
     GWindow.dialog ~parent ~border_width:12
-      ~no_separator:true ~title:"Edit the Preference"
+      ~title:"Edit the Preference"
       ~modal:true () in
   let vb = t#vbox in
   vb#set_spacing 6;
@@ -1911,6 +1927,10 @@ let documentPreference ~compact ~packing =
     in
     GText.view ~editable:false ~packing:sw#add ~wrap_mode:`WORD ()
   in
+  let () = longDescr#set_left_margin 4
+  and () = longDescr#set_right_margin 4
+  and () = longDescr#set_top_margin 1
+  and () = longDescr#set_bottom_margin 2 in
   let (>>>) x f = f x in
   let newlineRe = Str.regexp "\n *" in
   let styleRe = Str.regexp "{\\\\\\([a-z]+\\) \\([^{}]*\\)}" in
@@ -1971,7 +1991,7 @@ let documentPreference ~compact ~packing =
 let addPreference parent =
   let t =
     GWindow.dialog ~parent ~border_width:12
-      ~no_separator:true ~title:"Add a Preference"
+      ~title:"Add a Preference"
       ~modal:true () in
   t#set_default_height 575;
   let vb = t#vbox in
@@ -2115,7 +2135,7 @@ let addPreference parent =
 let editProfile parent name =
   let t =
     GWindow.dialog ~parent ~border_width:12
-      ~no_separator:true ~title:(Format.sprintf "%s - Profile Editor" name)
+      ~title:(Format.sprintf "%s - Profile Editor" name)
       ~modal:true () in
   let vb = t#vbox in
 (*  t#vbox#set_spacing 18;*)
@@ -2360,15 +2380,21 @@ TODO:
 
 (* ------ *)
 
+let documentationFn = ref (fun ~parent _ -> ())
+
 let getProfile quit =
   let ok = ref false in
+  let parent = toplevelWindow () in
 
   (* Build the dialog *)
   let t =
-    GWindow.dialog ~parent:(toplevelWindow ()) ~border_width:12
-      ~no_separator:true ~title:"Profile Selection"
-      ~modal:true () in
+    GWindow.dialog ~parent ~border_width:12
+      ~title:"Profile Selection"
+      ~modal:false () in
   t#set_default_width 550;
+  (* Simulate modal dialog (allowing to open other windows, such as help) *)
+  parent#set_sensitive false;
+  ignore (t#connect#destroy ~callback:(fun () -> parent#set_sensitive true));
 
   let cancelCommand _ = t#destroy () in
   let cancelButton =
@@ -2434,10 +2460,10 @@ let getProfile quit =
             ~packing:(tbl#attach ~left:0 ~top:1 ~expand:`NONE) ());
   let root1 =
     GMisc.label ~packing:(tbl#attach ~left:1 ~top:0 ~expand:`X)
-      ~xalign:0. ~selectable:true () in
+      ~xalign:0. ~selectable:true ~ellipsize:`MIDDLE () in
   let root2 =
     GMisc.label ~packing:(tbl#attach ~left:1 ~top:1 ~expand:`X)
-      ~xalign:0. ~selectable:true () in
+      ~xalign:0. ~selectable:true ~ellipsize:`MIDDLE () in
 
   let fillLst default =
     Uicommon.scanProfiles();
@@ -2480,9 +2506,10 @@ let getProfile quit =
            tbl#misc#set_sensitive false);
   GtkReact.set_sensitive okButton hasSel;
 
+  let box = GPack.vbox ~packing:(hb#pack ~expand:false) () in
   let vb =
     GPack.button_box
-      `VERTICAL ~layout:`START ~spacing:6 ~packing:(hb#pack ~expand:false) ()
+      `VERTICAL ~layout:`START ~spacing:6 ~packing:(box#pack ~expand:false) ()
   in
   let addButton =
     GButton.button ~stock:`ADD ~packing:(vb#pack ~expand:false) () in
@@ -2522,6 +2549,13 @@ let getProfile quit =
   GtkReact.set_sensitive deleteButton hasSel;
   List.iter (fun b -> b#set_xalign 0.) [addButton; editButton; deleteButton];
 
+  ignore (GPack.vbox ~packing:(box#pack ~expand:true) ());
+  let helpButton =
+    GButton.button ~stock:`HELP ~packing:(box#pack ~expand:false) () in
+  helpButton#set_xalign 0.;
+  ignore (helpButton#connect#clicked
+     ~callback:(fun () -> !documentationFn ~parent:t ""));
+
   ignore (lst#connect#row_activated ~callback:(fun _ _ -> okCommand ()));
   fillLst None;
   lst#misc#grab_focus ();
@@ -2534,9 +2568,14 @@ let getProfile quit =
 
 (* ------ *)
 
-let documentation sect =
+let get_size_chars obj ?desc ?lang ~height ~width () =
+  let metrics = obj#misc#pango_context#get_metrics ?desc ?lang () in
+  (width * GPango.to_pixels metrics#approx_digit_width,
+   height * GPango.to_pixels (metrics#ascent+metrics#descent))
+
+let documentation ~parent sect =
   let title = "Documentation" in
-  let t = GWindow.dialog ~title () in
+  let t = GWindow.dialog ~title ~parent () in
   let t_dismiss =
     GButton.button ~stock:`CLOSE ~packing:t#action_area#add () in
   t_dismiss#grab_default ();
@@ -2544,48 +2583,53 @@ let documentation sect =
   ignore (t_dismiss#connect#clicked ~callback:dismiss);
   ignore (t#event#connect#delete ~callback:(fun _ -> dismiss (); true));
 
-  let (name, docstr) = Safelist.assoc sect Strings.docs in
-  let hb = GPack.hbox ~packing:(t#vbox#pack ~expand:false ~padding:2) () in
-  let optionmenu =
-    GMenu.option_menu ~packing:(hb#pack ~expand:true ~fill:false) () in
-
-  let t_text =
-    new scrolled_text ~editable:false
-      ~width:80 ~height:20 ~packing:t#vbox#add ()
-  in
-  t_text#insert docstr;
+  let nb = GPack.notebook ~show_tabs:true ~tab_pos:`LEFT ~border_width:5
+    ~packing:(t#vbox#pack ~expand:true) () in
 
   let sect_idx = ref 0 in
-  let idx = ref 0 in
-  let menu = GMenu.menu () in
+  let add_nb_page label active w =
+    let i = nb#append_page ~tab_label:label#coerce w in
+    if active then sect_idx := i
+  in
+
+  let lw = ref 1 in
   let addDocSection (shortname, (name, docstr)) =
-    if shortname <> "" && name <> "" then begin
-      if shortname = sect then sect_idx := !idx;
-      incr idx;
-      let item = GMenu.menu_item ~label:name ~packing:menu#append () in
-      ignore
-        (item#connect#activate ~callback:(fun () -> t_text#insert docstr))
-    end
+    if shortname = "" || name = "" then () else
+    let () = lw := max !lw (String.length name) in
+    let label = GMisc.label ~markup:("<b>" ^ name ^ "</b>")
+                  ~xalign:1. ~justify:`LEFT ~ellipsize:`NONE () in
+    let box = GBin.frame ~border_width:8
+                ~packing:(add_nb_page label (shortname = sect)) () in
+    let text = new scrolled_text ~editable:false ~wrap_mode:`NONE
+                 ~packing:box#add () in
+    text#insert docstr
   in
   Safelist.iter addDocSection Strings.docs;
-  optionmenu#set_menu menu;
-  optionmenu#set_history !sect_idx;
+
+  nb#goto_page !sect_idx;
+
+  let (width, height) = get_size_chars t ~width:(80 + !lw) ~height:25 () in
+  t#set_default_size ~width ~height;
 
   t#show ()
+let () = documentationFn := documentation
 
 (* ------ *)
 
 let messageBox ~title ?(action = fun t -> t#destroy) message =
   let utitle = transcode title in
-  let t = GWindow.dialog ~title:utitle ~position:`CENTER () in
+  let t = GWindow.dialog ~title:utitle ~parent:(toplevelWindow ())
+            ~position:`CENTER () in
   let t_dismiss = GButton.button ~stock:`CLOSE ~packing:t#action_area#add () in
   t_dismiss#grab_default ();
   ignore (t_dismiss#connect#clicked ~callback:(action t));
   let t_text =
-    new scrolled_text ~editable:false
-      ~width:80 ~height:20 ~packing:t#vbox#add ()
+    new scrolled_text ~editable:false ~wrap_mode:`NONE
+      ~packing:(t#vbox#pack ~expand:true) ()
   in
   t_text#insert message;
+  let (width, height) = get_size_chars t_text ~width:82 ~height:20 () in
+  t#set_default_size ~width ~height;
   ignore (t#event#connect#delete ~callback:(fun _ -> action t (); true));
   t#show ()
 
@@ -2596,8 +2640,8 @@ let messageBox ~title ?(action = fun t -> t#destroy) message =
 let twoBoxAdvanced
       ~parent ~title ~message ~longtext ~advLabel ~astock ~bstock =
   let t =
-    GWindow.dialog ~parent ~border_width:6 ~modal:true ~no_separator:true
-      ~allow_grow:false () in
+    GWindow.dialog ~parent ~border_width:6 ~modal:true
+      ~resizable:false () in
   t#vbox#set_spacing 12;
   let h1 = GPack.hbox ~border_width:6 ~spacing:12 ~packing:t#vbox#pack () in
   ignore (GMisc.image ~stock:`DIALOG_QUESTION ~icon_size:`DIALOG
@@ -2629,8 +2673,8 @@ let twoBoxAdvanced
 
 let summaryBox ~parent ~title ~message ~f =
   let t =
-    GWindow.dialog ~parent ~border_width:6 ~modal:true ~no_separator:true
-      ~allow_grow:false ~focus_on_map:false () in
+    GWindow.dialog ~parent ~border_width:6 ~modal:true
+      ~resizable:true ~focus_on_map:true () in
   t#vbox#set_spacing 12;
   let h1 = GPack.hbox ~border_width:6 ~spacing:12 ~packing:t#vbox#pack () in
   ignore (GMisc.image ~stock:`DIALOG_INFO ~icon_size:`DIALOG
@@ -2638,12 +2682,15 @@ let summaryBox ~parent ~title ~message ~f =
   let v1 = GPack.vbox ~spacing:12 ~packing:h1#pack () in
   ignore (GMisc.label
             ~markup:(primaryText title ^ "\n\n" ^ escapeMarkup message)
-            ~selectable:true ~xalign:0. ~yalign:0. ~packing:v1#add ());
-  let exp = GBin.expander ~spacing:12 ~label:"Show details" ~packing:v1#add () in
+            ~selectable:true ~xalign:0. ~yalign:0. ~packing:(v1#pack ~expand:false) ());
+  let exp = GBin.expander ~spacing:12 ~label:"Show details"
+              ~packing:(v1#pack ~expand:true) () in
   let t_text =
-    new scrolled_text ~editable:false ~shadow_type:`IN
-      ~width:60 ~height:10 ~packing:exp#add ()
-  in
+    new scrolled_text ~editable:false ~shadow_type:`IN ~packing:exp#add () in
+  t_text#set_expand true;
+  let (width, height) = get_size_chars t_text ~width:60 ~height:10 () in
+  t_text#set_width_request width;
+  t_text#set_height_request height;
   f (t_text#text);
   t#add_button_stock `OK `OK;
   t#set_default_response `OK;
@@ -2747,9 +2794,11 @@ let createToplevelWindow () =
       | "default", _  -> label
       | _             -> Format.sprintf "%s (%s)" p label
     in
+    let roots = String.concat " ↔ " (Globals.rawRoots ()) in
+    let roots = if roots = "" then "" else "   |   " ^ roots in
     toplevelWindow#set_title
       (if s = "" then myNameCapitalized else
-       Format.sprintf "%s [%s]" myNameCapitalized s);
+       Format.sprintf "%s [%s]%s" myNameCapitalized s roots);
     let s = if s="" then "No profile" else "Profile: " ^ s in
     profileLabel#set_text (transcode s)
   in
@@ -2768,13 +2817,12 @@ let createToplevelWindow () =
     Action bar
    *********************************************************************)
   let actionBar =
-    let hb = GBin.handle_box ~packing:(toplevelVBox#pack ~expand:false) () in
     GButton.toolbar ~style:`BOTH
       (* 2003-0519 (stse): how to set space size in gtk 2.0? *)
       (* Answer from Jacques Garrigue: this can only be done in
          the user's.gtkrc, not programmatically *)
-      ~orientation:`HORIZONTAL ~tooltips:true (* ~space_size:10 *)
-      ~packing:(hb#add) () in
+      ~orientation:`HORIZONTAL (* ~space_size:10 *)
+      ~packing:(toplevelVBox#pack ~expand:false) () in
 
   (*********************************************************************
     Create the main window
@@ -2907,17 +2955,20 @@ let createToplevelWindow () =
 
   let detailsWindowSW =
     GBin.scrolled_window ~packing:(toplevelVBox#pack ~expand:false)
-        ~shadow_type:`IN ~hpolicy:`NEVER ~vpolicy:`AUTOMATIC ()
+        ~shadow_type:`IN ~hpolicy:`AUTOMATIC ~vpolicy:`AUTOMATIC ()
   in
   let detailsWindow =
     GText.view ~editable:false ~packing:detailsWindowSW#add ()
   in
+  let (width, height) = get_size_chars detailsWindow ~height:4 ~width:112 () in
+  let () = detailsWindowSW#set_height_request height in
+  (* width is set in [sizeMainWindow] *)
+
   let detailsWindowPath = detailsWindow#buffer#create_tag [] in
   let detailsWindowInfo =
     detailsWindow#buffer#create_tag [`FONT_DESC (Lazy.force fontMonospace)] in
   let detailsWindowError =
     detailsWindow#buffer#create_tag [`WRAP_MODE `WORD] in
-  detailsWindow#misc#set_size_chars ~height:3 ~width:112 ();
   detailsWindow#misc#set_can_focus false;
 
   let updateButtons () =
@@ -3016,12 +3067,16 @@ let createToplevelWindow () =
   let progressBar =
     GRange.progress_bar ~packing:(statusHBox#pack ~expand:false) () in
 
-  progressBar#misc#set_size_chars ~height:1 ~width:28 ();
+  progressBar#misc#modify_font detailsWindow#misc#pango_context#font_description;
+  let (w, _) = get_size_chars progressBar ~width:28 ~height:1 () in
+  progressBar#set_width_request w;
+  progressBar#set_show_text true;
   progressBar#set_pulse_step 0.02;
   let progressBarPulse = ref false in
 
   let statusWindow =
     GMisc.statusbar ~packing:(statusHBox#pack ~expand:true) () in
+  statusWindow#set_margin 0;
   let statusContext = statusWindow#new_context ~name:"status" in
   ignore (statusContext#push "");
 
@@ -3065,12 +3120,18 @@ let createToplevelWindow () =
         + actionBar#misc#allocation.height
         + 2 * mainWindow#border_width  (* top and bottom *)
         + row_height  (* column headers *)
-        + (row_height - 2) * (Prefs.read Uicommon.mainWindowHeight)
+        + (row_height - 3) * (Prefs.read Uicommon.mainWindowHeight)
         + detailsWindowSW#misc#allocation.height
         + statusHBox#misc#allocation.height
     in
     let height = min height (Gdk.Screen.height ~screen:toplevelWindow#screen ()) in
-    (height, -1)
+    let width =
+      let metrics = mainWindowSW#misc#pango_context#get_metrics () in
+      let w = GPango.to_pixels metrics#approx_digit_width in
+      max (w * 112) 840
+    in
+    let width = min width (Gdk.Screen.width ~screen:toplevelWindow#screen ()) in
+    (height, width)
   in
 
   let prevHeightPref = ref 0 in
@@ -3089,8 +3150,8 @@ let createToplevelWindow () =
     end;
     prevHeightPref := prefHeight
   in
-  let (height, _) = calcWinSize () in
-  toplevelWindow#set_default_height height;
+  let (height, width) = calcWinSize () in
+  toplevelWindow#set_default_size ~height ~width;
   ignore (toplevelWindow#misc#connect#show ~callback:sizeMainWindow);
 
   (*********************************************************************
@@ -3476,13 +3537,14 @@ let createToplevelWindow () =
     Help menu
    *********************************************************************)
   let addDocSection (shortname, (name, docstr)) =
+    let parent = toplevelWindow in
     if shortname = "about" then
       ignore (helpMenu#add_image_item
-                ~stock:`ABOUT ~callback:(fun () -> documentation shortname)
+                ~stock:`ABOUT ~callback:(fun () -> documentation ~parent shortname)
                 name)
     else if shortname <> "" && name <> "" then
       ignore (helpMenu#add_item
-                ~callback:(fun () -> documentation shortname)
+                ~callback:(fun () -> documentation ~parent shortname)
                 name) in
   Safelist.iter addDocSection Strings.docs;
 
@@ -3747,7 +3809,7 @@ let createToplevelWindow () =
           ~title:"Synchronization summary" ~message ~f:
           (fun t ->
              let bullet = "\xe2\x80\xa2 " in
-             let layout = t#misc#pango_context#create_layout in
+             let layout = Pango.Layout.create t#misc#pango_context#as_context in
              Pango.Layout.set_text layout bullet;
              let (n, _) = Pango.Layout.get_pixel_size layout in
              let path =
@@ -3813,35 +3875,39 @@ let createToplevelWindow () =
   let questionAction _ = doAction (fun _ diff -> diff.direction <- Conflict "") in
   let mergeAction    _ = doAction (fun _ diff -> diff.direction <- Merge) in
 
+  let insert_button (toolbar : #GButton.toolbar) ~stock ~text ~tooltip ~callback () =
+    let b = GButton.tool_button ~stock ~label:text ~packing:toolbar#insert () in
+    ignore (b#connect#clicked ~callback);
+    b#misc#set_tooltip_text tooltip;
+    b
+  in
+
 (*  actionBar#insert_space ();*)
   grAdd grAction
-    (actionBar#insert_button
-(*       ~icon:((GMisc.pixmap rightArrowBlack ())#coerce)*)
-       ~icon:((GMisc.image ~stock:`GO_FORWARD ())#coerce)
+    (insert_button actionBar
+       ~stock:`GO_FORWARD
        ~text:"Left to Right"
        ~tooltip:"Propagate selected items\n\
                  from the left replica to the right one"
        ~callback:rightAction ());
 (*  actionBar#insert_space ();*)
   grAdd grAction
-    (actionBar#insert_button ~text:"Skip"
-       ~icon:((GMisc.image ~stock:`NO ())#coerce)
+    (insert_button actionBar ~text:"Skip"
+       ~stock:`NO
        ~tooltip:"Skip selected items"
        ~callback:questionAction ());
 (*  actionBar#insert_space ();*)
   grAdd grAction
-    (actionBar#insert_button
-(*       ~icon:((GMisc.pixmap leftArrowBlack ())#coerce)*)
-       ~icon:((GMisc.image ~stock:`GO_BACK ())#coerce)
+    (insert_button actionBar
+       ~stock:`GO_BACK
        ~text:"Right to Left"
        ~tooltip:"Propagate selected items\n\
                  from the right replica to the left one"
        ~callback:leftAction ());
 (*  actionBar#insert_space ();*)
   grAdd grAction
-    (actionBar#insert_button
-(*       ~icon:((GMisc.pixmap mergeLogoBlack())#coerce)*)
-       ~icon:((GMisc.image ~stock:`ADD ())#coerce)
+    (insert_button actionBar
+       ~stock:`ADD
        ~text:"Merge"
        ~tooltip:"Merge selected files"
        ~callback:mergeAction ());
@@ -3874,9 +3940,9 @@ let createToplevelWindow () =
     | None ->
         () in
 
-  actionBar#insert_space ();
-  grAdd grDiff (actionBar#insert_button ~text:"Diff"
-                  ~icon:((GMisc.image ~stock:`DIALOG_INFO ())#coerce)
+  actionBar#insert (GButton.separator_tool_item ());
+  grAdd grDiff (insert_button actionBar ~text:"Diff"
+                  ~stock:`DIALOG_INFO
                   ~tooltip:"Compare the two files at each replica"
                   ~callback:diffCmd ());
 
@@ -3884,8 +3950,8 @@ let createToplevelWindow () =
     Detail button
    *********************************************************************)
 (*  actionBar#insert_space ();*)
-  grAdd grDetail (actionBar#insert_button ~text:"Details"
-                    ~icon:((GMisc.image ~stock:`INFO ())#coerce)
+  grAdd grDetail (insert_button actionBar ~text:"Details"
+                    ~stock:`INFO
                     ~tooltip:"Show detailed information about\n\
                               an item, when available"
                     ~callback:showDetCommand ());
@@ -3903,11 +3969,11 @@ let createToplevelWindow () =
   (*********************************************************************
     go button
    *********************************************************************)
-  actionBar#insert_space ();
+  actionBar#insert (GButton.separator_tool_item ());
   grAdd grGo
-    (actionBar#insert_button ~text:"Go"
+    (insert_button actionBar ~text:"Go"
        (* tooltip:"Go with displayed actions" *)
-       ~icon:((GMisc.image ~stock:`EXECUTE ())#coerce)
+       ~stock:`EXECUTE
        ~tooltip:"Perform the synchronization"
        ~callback:(fun () ->
                     getLock synchronize) ());
@@ -3965,22 +4031,22 @@ let createToplevelWindow () =
   in
 (*  actionBar#insert_space ();*)
   grAdd grRescan
-    (actionBar#insert_button ~text:"Rescan"
-       ~icon:((GMisc.image ~stock:`REFRESH ())#coerce)
+    (insert_button actionBar ~text:"Rescan"
+       ~stock:`REFRESH
        ~tooltip:"Check for updates"
        ~callback: (fun () -> reloadProfile(); detectCmd()) ());
 
   (*********************************************************************
     Profile change button
    *********************************************************************)
-  actionBar#insert_space ();
+  actionBar#insert (GButton.separator_tool_item ());
   let profileChange _ =
     match getProfile false with
       None   -> ()
     | Some p -> clearMainWindow (); loadProfile p false; detectCmd ()
   in
-  grAdd grRescan (actionBar#insert_button ~text:"Change Profile"
-                    ~icon:((GMisc.image ~stock:`OPEN ())#coerce)
+  grAdd grRescan (insert_button actionBar ~text:"Change Profile"
+                    ~stock:`OPEN
                     ~tooltip:"Select a different profile"
                     ~callback:profileChange ());
 
@@ -4059,6 +4125,7 @@ let createToplevelWindow () =
         "Do _Not Propagate Changes" in
     grAdd grAction skip;
     skip#add_accelerator ~group:accel_group ~modi:[`SHIFT] GdkKeysyms._minus;
+    skip#add_accelerator ~group:accel_group GdkKeysyms._KP_Divide;
 
     let merge =
       actionMenu#add_image_item ~key:GdkKeysyms._m ~callback:mergeAction
@@ -4258,11 +4325,9 @@ let createToplevelWindow () =
     let (expertMenu, _) = add_submenu "Expert" in
 
     let addDebugToggle modname =
-      let cm =
-        expertMenu#add_check_item ~active:(Trace.enabled modname)
-          ~callback:(fun b -> Trace.enable modname b)
-          ("Debug '" ^ modname ^ "'") in
-      cm#set_show_toggle true in
+      ignore (expertMenu#add_check_item ~active:(Trace.enabled modname)
+        ~callback:(fun b -> Trace.enable modname b)
+        ("Debug '" ^ modname ^ "'")) in
 
     addDebugToggle "all";
     addDebugToggle "verbose";
@@ -4326,6 +4391,14 @@ let createToplevelWindow () =
 
 let start _ =
   try
+    (* Stop GTK 3 from forcing client-side decorations in Windows *)
+    if Util.osType = `Win32 then begin
+      try ignore (Unix.getenv "GTK_CSD") with
+      | Unix.Unix_error _ | Not_found ->
+          try Unix.putenv "GTK_CSD" "0" with
+          | Unix.Unix_error _ -> ()
+    end;
+
     (* Initialize the GTK library *)
     ignore (GMain.Main.init ());
 

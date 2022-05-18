@@ -171,6 +171,7 @@ jobs:
       run: |
         echo %CYGWIN_ROOT_BIN%>> %GITHUB_PATH%
         echo %CYGWIN_ROOT_WRAPPERBIN%>> %GITHUB_PATH%
+        echo "/usr/${{ steps.vars.outputs.MinGW_ARCH }}-w64-mingw32/sys-root/mingw/bin">> %GITHUB_PATH%
         echo SHELLOPTS=igncr>> %GITHUB_ENV%
 
     - shell: bash
@@ -216,28 +217,22 @@ jobs:
       if: ${{ runner.os == 'Windows' && contains(matrix.job.ocaml-version, '+mingw') }}
       run: |
         opam install opam-depext depext-cygwinports
-        echo "/usr/${{ steps.vars.outputs.MinGW_ARCH }}-w64-mingw32/sys-root/mingw/bin" >> $GITHUB_PATH
+        setup-x86_64.exe --quiet-mode --root $env:CYGWIN_ROOT --site http://cygwin.mirror.constant.com --symlink-type=sys --packages mingw64-${{ steps.vars.outputs.MinGW_ARCH }}-hicolor-icon-theme,mingw64-${{ steps.vars.outputs.MinGW_ARCH }}-adwaita-icon-theme
 
     - name: lablgtk install
       ## [2020-09] non-working/unavailable for MSVC or musl OCaml variants ; also, non-working for 32bit OCaml variant (see [GH:garrigue/lablgtk#64](https://github.com/garrigue/lablgtk/issues/64))
       ## [2022-01] lablgtk 2.18.12 builds seem to hang on Windows with OCaml < 4.10.0
-      if: ${{ ! ( contains(matrix.job.ocaml-version, '+msvc') || contains(matrix.job.ocaml-version, '+musl') || contains(matrix.job.ocaml-version, '+32bit') || (contains(matrix.job.ocaml-version, '+mingw') && matrix.job.ocaml-version < '4.10.0') ) }}
-      run: opam depext --install --verbose --yes lablgtk
-
-    - name: lablgtk install compatibility hack
-      ## [2022-01] lablgtk 2.18.12 builds seem to hang on Windows with OCaml < 4.10.0; this is a hack to work around the issue
-      if: ${{ contains(matrix.job.ocaml-version, '+mingw') && matrix.job.ocaml-version < '4.10.0' }}
-      shell: cmd
-      run: opam depext --install --verbose --yes lablgtk^^^<2.18.12
+      if: ${{ ! ( contains(matrix.job.ocaml-version, '+msvc') || contains(matrix.job.ocaml-version, '+musl') || contains(matrix.job.ocaml-version, '+32bit') ) }}
+      run: opam depext --install --verbose --yes lablgtk3 && opam install ocamlfind
 
     - if: steps.vars.outputs.STATIC != 'true' ## unable to build static gtk for linux or windows/Cygwin MinGW platforms
       shell: bash
       run: |
-        opam exec -- make src OSTYPE=$OSTYPE UISTYLE=gtk2 STATIC=${{ steps.vars.outputs.STATIC }}
+        opam exec -- make src OSTYPE=$OSTYPE UISTYLE=gtk3 STATIC=${{ steps.vars.outputs.STATIC }}
         # stage
         # * copy only main/first project binary
         project_exe_stem=${PROJECT_EXES%% *}
-        cp "src/${project_exe_stem}${{ steps.vars.outputs.EXE_suffix }}" "${{ steps.vars.outputs.PKG_DIR }}/bin/${project_exe_stem}-gtk2${{ steps.vars.outputs.EXE_suffix }}"
+        cp "src/${project_exe_stem}${{ steps.vars.outputs.EXE_suffix }}" "${{ steps.vars.outputs.PKG_DIR }}/bin/${project_exe_stem}-gui${{ steps.vars.outputs.EXE_suffix }}"
 
     - uses: actions/upload-artifact@v2
       with:
@@ -284,10 +279,25 @@ jobs:
         mv "${PKG_DIR}"/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache "${PKG_DIR}"/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache.original
         cat "${PKG_DIR}"/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache.original | sed -E 's#([^"]*)(lib/gdk-pixbuf-2.0/2.10.0/loaders/[^"]*[.]dll)#../\2#' > "${PKG_DIR}"/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache
         rm "${PKG_DIR}"/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache.original
+        # required icons
+        mkdir "${PKG_DIR}"/share
+        cp -r /usr/${TARGET_ARCH_ID}-w64-mingw32/sys-root/mingw/share/icons "${PKG_DIR}"/share
+        # compile glib settings schema
+        mkdir -p "${PKG_DIR}"/share/glib-2.0
+        cp -r /usr/${TARGET_ARCH_ID}-w64-mingw32/sys-root/mingw/share/glib-2.0/schemas "${PKG_DIR}"/share/glib-2.0
+        glib-compile-schemas "${PKG_DIR}"/share/glib-2.0/schemas
+        # add gtk configuration
+        mkdir -p "${PKG_DIR}"/etc/gtk-3.0
+        printf "[Settings]\ngtk-button-images=true\ngtk-font-name=Segoe UI 9\n" > "${PKG_DIR}"/etc/gtk-3.0/settings.ini
 
     - name: Package
       shell: bash
       run: cd '${{ steps.vars.outputs.PKG_DIR }}/' && ${{ steps.vars.outputs.COMPRESS_CMD }} '../${{ steps.vars.outputs.PKG_NAME }}' *
+
+    - uses: actions/upload-artifact@v2
+      with:
+        name: unison-${{ steps.vars.outputs.REF_SHAS }}.ocaml-${{ matrix.job.ocaml-version }}.${{ matrix.job.os }}-publish
+        path: ${{ steps.vars.outputs.STAGING_DIR }}/${{ steps.vars.outputs.PKG_NAME }}
 
     - name: Publish
       if: steps.vars.outputs.DEPLOY && matrix.job.publish
