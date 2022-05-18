@@ -76,14 +76,14 @@ OCAMLLIBDIR=$(shell ocamlc -v | tail -1 | sed -e 's/.* //g' | tr '\\' '/' | tr -
 # This should be set to an appropriate value automatically, depending
 # on whether the lablgtk library is available
 LABLGTKLIB=$(OCAMLLIBDIR)/lablgtk
-LABLGTK2LIB=$(OCAMLLIBDIR)/lablgtk2
+LABLGTK2LIB=$(OCAMLLIBDIR)/lablgtk3
 ifeq ($(OSARCH),osx)
   UISTYLE=mac
 else
   ifeq ($(wildcard $(LABLGTK2LIB)),$(LABLGTK2LIB))
     UISTYLE=gtk2
   else
-    LABLGTK2LIB=$(abspath $(OCAMLLIBDIR)/../lablgtk2)
+    LABLGTK2LIB=$(abspath $(OCAMLLIBDIR)/../lablgtk3)
     ifeq ($(wildcard $(LABLGTK2LIB)),$(LABLGTK2LIB))
       UISTYLE=gtk2
     else
@@ -291,12 +291,13 @@ OCAMLFIND := $(shell command -v ocamlfind 2> /dev/null)
 
 ifeq ($(UISTYLE), gtk2)
   ifndef OCAMLFIND
-    CAMLFLAGS+=-I +lablgtk2
+    CAMLFLAGS+=-I +lablgtk3 -I +cairo2
   else
-    CAMLFLAGS+=$(shell $(OCAMLFIND) query -i-format lablgtk2 )
+    CAMLFLAGS+=$(shell $(OCAMLFIND) query -i-format lablgtk3 )
+    CAMLFLAGS+=$(shell $(OCAMLFIND) query -i-format cairo2 )
   endif
   OCAMLOBJS+=pixmaps.cmo uigtk2.cmo linkgtk2.cmo
-  OCAMLLIBS+=lablgtk.cma
+  OCAMLLIBS+=lablgtk3.cma cairo.cma
 endif
 
 ########################################################################
