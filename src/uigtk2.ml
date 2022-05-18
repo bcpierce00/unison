@@ -546,6 +546,17 @@ let rate2str v =
       " "
   end
 
+let mib = 1024. *. 1024.
+let kib2str v =
+  if v > 100_000_000. then
+    Format.sprintf "%.0f MiB" (v /. mib)
+  else if v > 1_000_000. then
+    Format.sprintf "%.1f MiB" (v /. mib)
+  else if v > 1024. then
+    Format.sprintf "%.1f KiB" (v /. 1024.)
+  else
+    Format.sprintf "%.0f B" v
+
 let statistics () =
   let title = "Statistics" in
   let t = GWindow.dialog ~title () in
@@ -560,22 +571,28 @@ let statistics () =
   let reception = new stats 320 50 in
   t#vbox#pack ~expand:false ~padding:4 (reception :> GObj.widget);
 
-  let lst =
-    GList.clist
-      ~packing:(t#vbox#add)
-      ~titles_active:false
-      ~titles:[""; "Client"; "Server"; "Total"] ()
-  in
-  lst#set_column ~auto_resize:true 0;
-  lst#set_column ~auto_resize:true ~justification:`RIGHT 1;
-  lst#set_column ~auto_resize:true ~justification:`RIGHT 2;
-  lst#set_column ~auto_resize:true ~justification:`RIGHT 3;
-  ignore (lst#append ["Reception rate"]);
-  ignore (lst#append ["Data received"]);
-  ignore (lst#append ["File data written"]);
-  for r = 0 to 2 do
-    lst#set_row ~selectable:false r
-  done;
+  let cols = new GTree.column_list in
+  let c_1 = cols#add Gobject.Data.string in
+  let c_client = cols#add Gobject.Data.string in
+  let c_server = cols#add Gobject.Data.string in
+  let c_total = cols#add Gobject.Data.string in
+  let lst = GTree.list_store cols in
+  let l = GTree.view ~model:lst ~enable_search:false ~packing:(t#vbox#add) () in
+  l#selection#set_mode `NONE;
+  ignore (l#append_column (GTree.view_column ~title:""
+    ~renderer:(GTree.cell_renderer_text [], ["text", c_1]) ()));
+  ignore (l#append_column (GTree.view_column ~title:"Client"
+    ~renderer:(GTree.cell_renderer_text [`XALIGN 1.0], ["text", c_client]) ()));
+  ignore (l#append_column (GTree.view_column ~title:"Server"
+    ~renderer:(GTree.cell_renderer_text [`XALIGN 1.0], ["text", c_server]) ()));
+  ignore (l#append_column (GTree.view_column ~title:"Total"
+    ~renderer:(GTree.cell_renderer_text [`XALIGN 1.0], ["text", c_total]) ()));
+  let rate_row = lst#append () in
+  ignore (lst#set ~row:rate_row ~column:c_1 "Reception rate");
+  let receive_row = lst#append () in
+  ignore (lst#set ~row:receive_row ~column:c_1 "Data received");
+  let data_row = lst#append () in
+  ignore (lst#set ~row:data_row ~column:c_1 "File data written");
 
   ignore (t#event#connect#map ~callback:(fun _ ->
     emission#activate true;
@@ -598,19 +615,18 @@ let statistics () =
   let stopCounter = ref 0 in
 
   let updateTable () =
-    let kib2str v = Format.sprintf "%.0f B" v in
-    lst#set_cell ~text:(rate2str !receiveRate2) 0 1;
-    lst#set_cell ~text:(rate2str !emitRate2) 0 2;
-    lst#set_cell ~text:
-      (rate2str (!receiveRate2 +. !emitRate2)) 0 3;
-    lst#set_cell ~text:(kib2str !receivedBytes) 1 1;
-    lst#set_cell ~text:(kib2str !emittedBytes) 1 2;
-    lst#set_cell ~text:
-      (kib2str (!receivedBytes +. !emittedBytes)) 1 3;
-    lst#set_cell ~text:(kib2str !clientWritten) 2 1;
-    lst#set_cell ~text:(kib2str !serverWritten) 2 2;
-    lst#set_cell ~text:
-      (kib2str (!clientWritten +. !serverWritten)) 2 3
+    let row = rate_row in
+    lst#set ~row ~column:c_client (rate2str !receiveRate2);
+    lst#set ~row ~column:c_server (rate2str !emitRate2);
+    lst#set ~row ~column:c_total (rate2str (!receiveRate2 +. !emitRate2));
+    let row = receive_row in
+    lst#set ~row ~column:c_client (kib2str !receivedBytes);
+    lst#set ~row ~column:c_server (kib2str !emittedBytes);
+    lst#set ~row ~column:c_total (kib2str (!receivedBytes +. !emittedBytes));
+    let row = data_row in
+    lst#set ~row ~column:c_client (kib2str !clientWritten);
+    lst#set ~row ~column:c_server (kib2str !serverWritten);
+    lst#set ~row ~column:c_total (kib2str (!clientWritten +. !serverWritten))
   in
   let timeout _ =
     emitRate :=
