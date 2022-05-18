@@ -1,4 +1,4 @@
-(* Unison file synchronizer: src/uigtk2.ml *)
+(* Unison file synchronizer: src/uigtk3.ml *)
 (* Copyright 1999-2020, Benjamin C. Pierce
 
     This program is free software: you can redistribute it and/or modify

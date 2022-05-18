@@ -69,26 +69,34 @@ OCAMLLIBDIR=$(shell ocamlc -v | tail -1 | sed -e 's/.* //g' | tr '\\' '/' | tr -
 # User interface style:
 #   Legal values are
 #     UISTYLE=text
-#     UISTYLE=gtk2
+#     UISTYLE=gtk3
 #     UISTYLE=mac
 #
 # This should be set to an appropriate value automatically, depending
 # on whether the lablgtk library is available
-LABLGTK2LIB=$(OCAMLLIBDIR)/lablgtk3
+LABLGTK3LIB=$(OCAMLLIBDIR)/lablgtk3
 ifeq ($(OSARCH),osx)
   UISTYLE=mac
 else
-  ifeq ($(wildcard $(LABLGTK2LIB)),$(LABLGTK2LIB))
-    UISTYLE=gtk2
+  ifeq ($(wildcard $(LABLGTK3LIB)),$(LABLGTK3LIB))
+    UISTYLE=gtk3
   else
-    LABLGTK2LIB=$(abspath $(OCAMLLIBDIR)/../lablgtk3)
-    ifeq ($(wildcard $(LABLGTK2LIB)),$(LABLGTK2LIB))
-      UISTYLE=gtk2
+    LABLGTK3LIB=$(abspath $(OCAMLLIBDIR)/../lablgtk3)
+    ifeq ($(wildcard $(LABLGTK3LIB)),$(LABLGTK3LIB))
+      UISTYLE=gtk3
     else
       UISTYLE=text
     endif
   endif
 endif
+ifeq ($(UISTYLE), gtk2)
+buildexecutable::
+	@echo
+	@echo "gtk2 GUI is no longer available.    Use  UISTYLE=gtk3  or don't specify any UISTYLE."
+	@echo
+	@exit 1
+endif
+
 buildexecutable::
 	@echo UISTYLE = $(UISTYLE)
 
@@ -277,17 +285,17 @@ ifeq ($(OSARCH), win32)
   endif
 endif
 
-# Gtk2 GUI
+# Gtk3 GUI
 OCAMLFIND := $(shell command -v ocamlfind 2> /dev/null)
 
-ifeq ($(UISTYLE), gtk2)
+ifeq ($(UISTYLE), gtk3)
   ifndef OCAMLFIND
     CAMLFLAGS+=-I +lablgtk3 -I +cairo2
   else
     CAMLFLAGS+=$(shell $(OCAMLFIND) query -i-format lablgtk3 )
     CAMLFLAGS+=$(shell $(OCAMLFIND) query -i-format cairo2 )
   endif
-  OCAMLOBJS+=pixmaps.cmo uigtk2.cmo linkgtk2.cmo
+  OCAMLOBJS+=pixmaps.cmo uigtk3.cmo linkgtk3.cmo
   OCAMLLIBS+=lablgtk3.cma cairo.cma
 endif
 

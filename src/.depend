@@ -535,11 +535,11 @@ globals.cmi : \
     path.cmi \
     lwt/lwt.cmi \
     common.cmi
-linkgtk2.cmo : \
-    uigtk2.cmi \
+linkgtk3.cmo : \
+    uigtk3.cmi \
     main.cmo
-linkgtk2.cmx : \
-    uigtk2.cmx \
+linkgtk3.cmx : \
+    uigtk3.cmx \
     main.cmx
 linktext.cmo : \
     uitext.cmi \
@@ -1313,7 +1313,7 @@ uicommon.cmi : \
     path.cmi \
     lwt/lwt.cmi \
     common.cmi
-uigtk2.cmo : \
+uigtk3.cmo : \
     uutil.cmi \
     ubase/util.cmi \
     update.cmi \
@@ -1338,8 +1338,8 @@ uigtk2.cmo : \
     common.cmi \
     clroot.cmi \
     case.cmi \
-    uigtk2.cmi
-uigtk2.cmx : \
+    uigtk3.cmi
+uigtk3.cmx : \
     uutil.cmx \
     ubase/util.cmx \
     update.cmx \
@@ -1364,8 +1364,8 @@ uigtk2.cmx : \
     common.cmx \
     clroot.cmx \
     case.cmx \
-    uigtk2.cmi
-uigtk2.cmi : \
+    uigtk3.cmi
+uigtk3.cmi : \
     uicommon.cmi
 uimacbridge.cmo : \
     xferhint.cmi \

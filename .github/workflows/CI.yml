@@ -228,11 +228,11 @@ jobs:
     - if: steps.vars.outputs.STATIC != 'true' ## unable to build static gtk for linux or windows/Cygwin MinGW platforms
       shell: bash
       run: |
-        opam exec -- make src OSTYPE=$OSTYPE UISTYLE=gtk2 STATIC=${{ steps.vars.outputs.STATIC }}
+        opam exec -- make src OSTYPE=$OSTYPE UISTYLE=gtk3 STATIC=${{ steps.vars.outputs.STATIC }}
         # stage
         # * copy only main/first project binary
         project_exe_stem=${PROJECT_EXES%% *}
-        cp "src/${project_exe_stem}${{ steps.vars.outputs.EXE_suffix }}" "${{ steps.vars.outputs.PKG_DIR }}/bin/${project_exe_stem}-gtk2${{ steps.vars.outputs.EXE_suffix }}"
+        cp "src/${project_exe_stem}${{ steps.vars.outputs.EXE_suffix }}" "${{ steps.vars.outputs.PKG_DIR }}/bin/${project_exe_stem}-gui${{ steps.vars.outputs.EXE_suffix }}"
 
     - uses: actions/upload-artifact@v2
       with:
