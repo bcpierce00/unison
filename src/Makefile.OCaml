@@ -69,13 +69,11 @@ OCAMLLIBDIR=$(shell ocamlc -v | tail -1 | sed -e 's/.* //g' | tr '\\' '/' | tr -
 # User interface style:
 #   Legal values are
 #     UISTYLE=text
-#     UISTYLE=gtk
 #     UISTYLE=gtk2
 #     UISTYLE=mac
 #
 # This should be set to an appropriate value automatically, depending
 # on whether the lablgtk library is available
-LABLGTKLIB=$(OCAMLLIBDIR)/lablgtk
 LABLGTK2LIB=$(OCAMLLIBDIR)/lablgtk3
 ifeq ($(OSARCH),osx)
   UISTYLE=mac
@@ -277,13 +275,6 @@ ifeq ($(OSARCH), win32)
 #    COBJS+=winmain.c
     CFLAGS+=-ccopt "-link -Wl,--subsystem,windows"
   endif
-endif
-
-# Gtk GUI
-ifeq ($(UISTYLE), gtk)
-  CAMLFLAGS+=-I +lablgtk
-  OCAMLOBJS+=pixmaps.cmo uigtk.cmo linkgtk.cmo
-  OCAMLLIBS+=lablgtk.cma
 endif
 
 # Gtk2 GUI

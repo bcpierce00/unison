@@ -535,10 +535,6 @@ globals.cmi : \
     path.cmi \
     lwt/lwt.cmi \
     common.cmi
-linkgtk.cmo : \
-    main.cmo
-linkgtk.cmx : \
-    main.cmx
 linkgtk2.cmo : \
     uigtk2.cmi \
     main.cmo
