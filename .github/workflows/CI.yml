@@ -294,6 +294,11 @@ jobs:
       shell: bash
       run: cd '${{ steps.vars.outputs.PKG_DIR }}/' && ${{ steps.vars.outputs.COMPRESS_CMD }} '../${{ steps.vars.outputs.PKG_NAME }}' *
 
+    - uses: actions/upload-artifact@v2
+      with:
+        name: unison-${{ steps.vars.outputs.REF_SHAS }}.ocaml-${{ matrix.job.ocaml-version }}.${{ matrix.job.os }}-publish
+        path: ${{ steps.vars.outputs.STAGING_DIR }}/${{ steps.vars.outputs.PKG_NAME }}
+
     - name: Publish
       if: steps.vars.outputs.DEPLOY && matrix.job.publish
       uses: softprops/action-gh-release@v1
