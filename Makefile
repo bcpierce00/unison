@@ -1,23 +1,17 @@
 # Unison file synchronizer: Makefile
 # See LICENSE for terms.
 
-.PHONY: all src
-
-default: text
-
-text:
-	$(MAKE) -C src UISTYLE=text
-
-test:
-	./src/unison -ui text -selftest
+.PHONY: all src docs manpage test depend clean install
 
 all: src manpage
 
 src:
 	$(MAKE) -C src
 
--include src/Makefile.ProjectInfo
-
+# It's a wart that docs need "unison" built (vs some docs utility).
+# Having docs build src/unison points out that UISTYLE is a bug; either
+# docs might build the GUI (not wanted as too heavy for docs use), or
+# whatever is built might not be rebuilt later.
 docs:
 	$(MAKE) -C src UISTYLE=text
 	$(MAKE) -C doc
@@ -26,22 +20,19 @@ docs:
 manpage:
 	$(MAKE) -C man
 
-depend::
+test:
+	./src/unison -ui text -selftest
+
+depend:
 	$(MAKE) -C src depend
 
-clean::
-	$(RM) -r *.tmp \
-	   *.o *.obj *.cmo *.cmx *.cmi core TAGS *~ *.log \
-	   *.aux *.log *.dvi *.out *.backup[0-9] *.bak $(STABLEFLAG)
+clean:
 	$(MAKE) -C doc clean
 	$(MAKE) -C man clean
 	$(MAKE) -C src clean
 
 install:
-	(cd src; $(MAKE) install)
+	$(MAKE) -C src install
 
 installtext:
-	(cd src; $(MAKE) install UISTYLE=text)
-
-src/$(NAME):
-	$(MAKE) -C src
+	$(MAKE) -C src install UISTYLE=text
