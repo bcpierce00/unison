@@ -1,5 +1,5 @@
 # Unison file synchronizer: src/Makefile
-# Copyright 1999-2020 (see ../LICENSE for terms).
+# Copyright 1999-2022 (see ../LICENSE for terms).
 
 ## User Settings
 
@@ -24,19 +24,10 @@ NATIVE=true
 
 all:: strings.ml buildexecutable
 
-all:: INSTALL
-
 .PHONY: all clean install doinstall installtext text \
 	runtest repeattest \
 	selftest selftestdebug selftestremote testmerge \
 	checkin installremote
-
-.DELETE_ON_ERROR:
-# to avoid problems when something fails to run
-
-INSTALL: $(NAME)$(EXEC_EXT)
-# file isn't made for OS X, so check that it's there first
-	(if [ -f $(NAME) ]; then ./$(NAME) -doc install > INSTALLATION; fi)
 
 ########################################################################
 ## Miscellaneous developer-only switches
@@ -231,8 +222,6 @@ clean::
 	-$(RM) -r obsolete
 	-$(RM) $(NAME) $(NAME).exe
 	-$(RM) $(NAME)-blob.o
-
-clean::
 	$(MAKE) -C ubase clean
 	$(MAKE) -C lwt clean
 	$(MAKE) -C fsmonitor/windows clean
