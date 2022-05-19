@@ -26,8 +26,6 @@ docs:
 manpage:
 	$(MAKE) -C man
 
-include src/Makefile.OCaml
-
 depend::
 	$(MAKE) -C src depend
 
