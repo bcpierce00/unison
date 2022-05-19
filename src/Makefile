@@ -27,9 +27,7 @@ all:: strings.ml buildexecutable
 all:: INSTALL
 
 .PHONY: all clean install doinstall installtext text \
-	setupdemo-old setupdemo modifydemo demo \
-	run runbatch runt rundebug runp runtext runsort runprefer \
-	prefsdocs runtest repeattest \
+	runtest repeattest \
 	selftest selftestdebug selftestremote testmerge \
 	checkin installremote
 
@@ -78,94 +76,6 @@ doinstall: buildexecutable
 	-mv $(INSTALLDIR)/$(NAME)$(EXEC_EXT) /tmp/$(NAME)-$(shell echo $$$$)
 	cp $(NAME)$(EXEC_EXT) $(INSTALLDIR)
 	cp $(NAME)$(EXEC_EXT) $(INSTALLDIR)$(NAME)-$(MAJORVERSION)$(EXEC_EXT)
-
-######################################################################
-# Demo
-
-setupdemo:
-	rm -rf a.tmp b.tmp
-	mkdir a.tmp
-	touch a.tmp/a a.tmp/b a.tmp/c
-	mkdir a.tmp/d
-	touch a.tmp/d/f
-	touch a.tmp/d/g
-	cp -r a.tmp b.tmp
-
-modifydemo:
-	-rm a.tmp/a
-	echo "Hello" > a.tmp/b
-	echo "Hello" > b.tmp/b
-	date > b.tmp/c
-	echo "Hi there" > a.tmp/d/h
-	echo "Hello there" > b.tmp/d/h
-
-demo: all setupdemo
-	@$(MAKE) run
-	@$(MAKE) modifydemo
-	@$(MAKE) run
-
-run: all
-	-mkdir a.tmp b.tmp
-	-date > a.tmp/x
-	-date > b.tmp/y
-	./$(NAME) default a.tmp b.tmp
-
-runbatch: all
-	-mkdir a.tmp b.tmp
-	-date > a.tmp/x
-	-date > b.tmp/y
-	./$(NAME) default a.tmp b.tmp -batch
-
-runt: all
-	-mkdir a.tmp b.tmp
-	-date > a.tmp/x
-	-date > b.tmp/y
-	./$(NAME) default a.tmp b.tmp -timers
-
-rundebug: all
-	-date > a.tmp/x
-	-date > b.tmp/y
-	./$(NAME) a.tmp b.tmp -debug all  -ui text
-
-runp: all
-	-echo cat > a.tmp/cat
-	-echo cat > b.tmp/cat
-	-chmod 765 a.tmp/cat
-	-chmod 700 b.tmp/cat
-	./$(NAME) a.tmp b.tmp
-
-runtext: all
-	-mkdir a.tmp b.tmp
-	-date > a.tmp/x
-	-date > b.tmp/y
-	./$(NAME) -ui text a.tmp b.tmp
-
-runsort: all
-	-mkdir a.tmp b.tmp
-	-date > a.tmp/b
-	-date > b.tmp/m
-	-date > b.tmp/z
-	-date > b.tmp/f
-	-date >> b.tmp/f
-	-date > b.tmp/c.$(shell echo $$$$)
-	-date > b.tmp/y.$(shell echo $$$$)
-	./$(NAME) default a.tmp b.tmp -debug sort
-
-runprefer: all
-	-mkdir a.tmp b.tmp
-	-date > a.tmp/b
-	-date > b.tmp/m
-	-date > b.tmp/z
-	-echo Hello > a.tmp/z
-	-date > b.tmp/f
-	-date >> b.tmp/f
-	-date > b.tmp/c.$(shell echo $$$$)
-	-date > b.tmp/y.$(shell echo $$$$)
-	./$(NAME) default a.tmp b.tmp -force b.tmp
-
-prefsdocs: all
-	./$(NAME) -prefsdocs 2> prefsdocsjunk.tmp
-	mv -f prefsdocsjunk.tmp prefsdocs.tmp
 
 # For developers
 runtest:
@@ -342,3 +252,4 @@ endif
 strings.ml:
 	echo "(* Dummy strings.ml *)" > strings.ml
 	echo "let docs = []" >> strings.ml
+
