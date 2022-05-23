@@ -554,6 +554,77 @@ let test() =
     *)
   end;
 
+  if not bothRootsLocal then
+  begin
+    let localR, remoteR, localRaw =
+      match r1 with
+      | Common.Local, _ -> R1, R2, r1
+      | _ -> R2, R1, r2
+    in
+
+    (* Test RPC function "fingerprintSubfile" *)
+    runtest "RPC: transfer append" [] (fun () ->
+      let prefixLen = 1024 * 1024 + 1 in
+      let len = prefixLen + 31 in
+      let contents = String.make len '.' in
+      let fileName = "bigfile" in
+      let prefixPath = Path.fromString fileName in
+      let (workingDir, _) = Fspath.findWorkingDir (snd localRaw) prefixPath in
+      let prefixName = Path.toString (Os.tempPath ~fresh:false workingDir prefixPath) in
+      put remoteR (Dir [(fileName, File contents)]);
+      put localR (Dir [(prefixName, File (String.sub contents 0 prefixLen))]);
+      sync ();
+      check "1" localR (Dir [(fileName, File contents)]);
+    );
+
+    (* Test RPC function "updateProps" *)
+    runtest "RPC: update props" ["times = true"] (fun () ->
+      let state = [("a", File "x")] in
+      put remoteR (Dir state);
+      put localR (Dir []);
+      sync ();
+      (* Having to sleep here is an unfortunate side-effect of the current
+         Windows limitations-inspired time comparison algorithm which is
+         designed to work on FAT filesystems (2-second granularity). *)
+      Unix.sleep 2;
+      put remoteR (Dir state);
+      sync ();
+      check "1" localR (Dir state);
+    );
+
+    (* Test RPC function "replaceArchive" *)
+    runtest "RPC: replaceArchive" [] (fun () ->
+      put localR (Dir [("n", File "to delete")]);
+      put remoteR (Dir []);
+      sync ();
+      put remoteR (Dir []);
+      sync ();
+      check "1" localR (Dir []);
+    );
+
+    (* Test RPC functions "mkdir" and "setDirProp" *)
+    runtest "RPC: mkdir, setDirProp" [] (fun () ->
+      let state = [("subd", Dir [])] in
+      put localR (Dir state);
+      put remoteR (Dir []);
+      sync ();
+      check "1" remoteR (Dir state);
+    );
+
+    (* Test RPC function "setupTargetPaths" *)
+    runtest "RPC: merge" ["merge = Name ma -> echo x> NEW"; "backupcurr = Name ma"] (fun () ->
+      let result = match Sys.os_type with
+        | "Win32" -> ("ma", File "x\r\n")
+        | _ -> ("ma", File "x\n")
+      in
+      put localR (Dir [("ma", File "a")]);
+      put remoteR (Dir [("ma", File "b")]);
+      sync ();
+      check "1" localR (Dir [result]);
+      check "2" remoteR (Dir [result]);
+    );
+  end;
+
   if !failures = 0 then
     Util.msg "Success :-)\n"
   else
