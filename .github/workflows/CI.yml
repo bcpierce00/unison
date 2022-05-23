@@ -349,6 +349,12 @@ jobs:
         - { os: ubuntu-18.04  , ocaml-version: 4.08.x  , ref: v2.51.5 }
         - { os: ubuntu-18.04  , ocaml-version: 4.08.x  , ref: v2.51.2 }
         - { os: ubuntu-18.04  , ocaml-version: 4.08.x  , ref: 2.48.4 }
+        - { os: windows-2019  , ocaml-version: ocaml-variants.4.14.0+mingw64c  , ref: v2.52.1 }
+        - { os: windows-2019  , ocaml-version: ocaml-variants.4.14.0+mingw64c  , ref: v2.52.0 }
+        - { os: windows-2019  , ocaml-version: ocaml-variants.4.14.0+mingw64c  , ref: v2.51.5 }
+        - { os: windows-2019  , ocaml-version: ocaml-variants.4.08.1+mingw32c  , ref: v2.51.5 }
+        - { os: windows-2019  , ocaml-version: ocaml-variants.4.08.1+mingw64c  , ref: v2.51.2 }
+        - { os: windows-2019  , ocaml-version: ocaml-variants.4.08.1+mingw64c  , ref: 2.48.4 }
 
     runs-on: ${{ matrix.job.os }}
 
@@ -365,6 +371,14 @@ jobs:
       # setup-ocaml can prepare the build environment from unison.opam
       # We're not relying on that capability here, to make sure the builds
       # also work without using unison.opam
+
+    - name: Prepare Cygwin environment (Windows)
+      if: runner.os == 'Windows'
+      shell: cmd
+      run: |
+        echo %CYGWIN_ROOT_BIN%>> %GITHUB_PATH%
+        echo %CYGWIN_ROOT_WRAPPERBIN%>> %GITHUB_PATH%
+        echo SHELLOPTS=igncr>> %GITHUB_ENV%
 
     - name: Checkout HEAD to _new
       uses: actions/checkout@v3
@@ -427,7 +441,8 @@ jobs:
              runtest "backups 1 (remote)" ["backup = Name *"] (fun() ->
         EOF
 
-    - run: cd _new && opam exec -- make src UISTYLE=text
+    - run: cd _new && opam exec -- make src UISTYLE=text OSTYPE=$OSTYPE
+      shell: bash
 
     - name: Checkout ${{ matrix.job.ref }} to _prev
       uses: actions/checkout@v3
@@ -556,6 +571,69 @@ jobs:
            else
         EOF
 
+    - name: "2.48: Patch bugs in _prev"
+      if: contains(matrix.job.ref, '2.48')
+      shell: bash
+      run: |
+        cd _prev && git apply - <<"EOF"
+        diff --git a/src/bytearray_stubs.c b/src/bytearray_stubs.c
+        index 1ec18aef..664e3d96 100644
+        --- a/src/bytearray_stubs.c
+        +++ b/src/bytearray_stubs.c
+        @@ -9,7 +9,7 @@
+         CAMLprim value ml_marshal_to_bigarray(value v, value flags)
+         {
+           char *buf;
+        -  long len;
+        +  intnat len;
+           output_value_to_malloc(v, flags, &buf, &len);
+           return alloc_bigarray(BIGARRAY_UINT8 | BIGARRAY_C_LAYOUT | BIGARRAY_MANAGED,
+                                 1, buf, &len);
+        EOF
+
+    - name: "2.48: Patch _prev for mingw compilers"
+      if: contains(matrix.job.ref, '2.48')
+      shell: bash
+      run: |
+        cd _prev && git apply --ignore-whitespace - <<"EOF"
+        diff --git a/src/Makefile.OCaml b/src/Makefile.OCaml
+        index 21610ce6..4d605bbd 100644
+        --- a/src/Makefile.OCaml
+        +++ b/src/Makefile.OCaml
+        @@ -104,8 +104,8 @@ CAMLFLAGS+=-I system/$(SYSTEM) -I lwt/$(SYSTEM)
+         ifeq ($(OSARCH),win32)
+           # Win32 system
+           EXEC_EXT=.exe
+        -  OBJ_EXT=.obj
+        -  OUTPUT_SEL=/Fo
+        +  OBJ_EXT=.o
+        +  OUTPUT_SEL=-o
+           CWD=.
+         #  Fix suggested by Karl M, Jan 2009:
+         #    "The new flexlink wrapper that OCaml 3.11 uses was gagging on the res
+        @@ -117,8 +117,6 @@ ifeq ($(OSARCH),win32)
+           COBJS+=system/system_win_stubs$(OBJ_EXT) lwt/lwt_unix_stubs$(OBJ_EXT)
+           WINOBJS=system/system_win.cmo
+           SYSTEM=win
+        -  CLIBS+=-cclib "-link win32rc/unison.res" shell32.lib
+        -  STATICLIBS+=-cclib "-link win32rc/unison.res" shell32.lib
+           buildexecutable::
+         	@echo Building for Windows
+         else
+        diff --git a/src/lwt/lwt_unix_stubs.c b/src/lwt/lwt_unix_stubs.c
+        index aa85e5bb..3717ddc2 100644
+        --- a/src/lwt/lwt_unix_stubs.c
+        +++ b/src/lwt/lwt_unix_stubs.c
+        @@ -79,6 +79,7 @@ static value completionCallback;
+        
+         static void invoke_completion_callback
+         (long id, long len, long errCode, long action) {
+        +  CAMLparam0();
+           CAMLlocal2 (err, name);
+           value args[4];
+           err = Val_long(0);
+        EOF
+
     - name: "2.48: Patch _prev for newer compilers"
       if: contains(matrix.job.ref, '2.48') && matrix.job.ocaml-version >= '4.03'
       shell: bash
@@ -636,6 +714,77 @@ jobs:
                 || major = 4 && minor = 2 && patchlevel <= 1
              then "<= 4.01.1"
              else ">= 4.01.2"
+        EOF
+
+    - name: "2.51.{2,3}: Patch bugs in _prev"
+      if: contains(matrix.job.ref, '2.51.2') || contains(matrix.job.ref, '2.51.3')
+      shell: bash
+      run: |
+        cd _prev && git apply - <<"EOF"
+        diff --git a/src/bytearray_stubs.c b/src/bytearray_stubs.c
+        index 2b29421a..2850f2d8 100644
+        --- a/src/bytearray_stubs.c
+        +++ b/src/bytearray_stubs.c
+        @@ -10,7 +10,7 @@
+         CAMLprim value ml_marshal_to_bigarray(value v, value flags)
+         {
+           char *buf;
+        -  long len;
+        +  intnat len;
+           output_value_to_malloc(v, flags, &buf, &len);
+           return alloc_bigarray(BIGARRAY_UINT8 | BIGARRAY_C_LAYOUT | BIGARRAY_MANAGED,
+                                 1, buf, &len);
+        diff --git a/src/uicommon.ml b/src/uicommon.ml
+        index 9fa94cf5..65fc37a5 100644
+        --- a/src/uicommon.ml
+        +++ b/src/uicommon.ml
+        @@ -494,10 +494,11 @@ let promptForRoots getFirstRoot getSecondRoot =
+         (* ---- *)
+         
+         let makeTempDir pattern =
+        -  let ic = Unix.open_process_in (Printf.sprintf "(mktemp --tmpdir -d %s.XXXXXX || mktemp -d -t %s) 2>/dev/null" pattern pattern) in
+        -  let path = input_line ic in
+        -  ignore (Unix.close_process_in ic);
+        -  path
+        +  let path = Filename.temp_file pattern "" in
+        +  let fspath = System.fspathFromString path in
+        +  System.unlink fspath; (* Remove file created by [temp_file]... *)
+        +  System.mkdir fspath 0o755; (* ... and create a dir instead. *)
+        +  path ^ Filename.dir_sep
+         
+         (* The first time we load preferences, we also read the command line
+            arguments; if we re-load prefs (because the user selected a new profile)
+        EOF
+
+    - name: "2.51.2: Patch _prev for mingw compilers"
+      if: contains(matrix.job.ref, '2.51.2')
+      shell: bash
+      run: |
+        cd _prev && git apply - <<"EOF"
+        diff --git a/src/Makefile.OCaml b/src/Makefile.OCaml
+        index 7cefa2ec..95b1bec4 100644
+        --- a/src/Makefile.OCaml
+        +++ b/src/Makefile.OCaml
+        @@ -107,8 +107,8 @@ CAMLFLAGS+=-I system/$(SYSTEM) -I lwt/$(SYSTEM)
+         ifeq ($(OSARCH),win32)
+           # Win32 system
+           EXEC_EXT=.exe
+        -  OBJ_EXT=.obj
+        -  OUTPUT_SEL=/Fo
+        +  OBJ_EXT=.o
+        +  OUTPUT_SEL=-o
+           CWD=.
+         #  Fix suggested by Karl M, Jan 2009:
+         #    "The new flexlink wrapper that OCaml 3.11 uses was gagging on the res
+        @@ -120,8 +120,6 @@ ifeq ($(OSARCH),win32)
+           COBJS+=system/system_win_stubs$(OBJ_EXT) lwt/lwt_unix_stubs$(OBJ_EXT)
+           WINOBJS=system/system_win.cmo
+           SYSTEM=win
+        -  CLIBS+=-cclib "-link win32rc/unison.res" shell32.lib
+        -  STATICLIBS+=-cclib "-link win32rc/unison.res" shell32.lib
+           buildexecutable::
+         	@echo Building for Windows
+         else
         EOF
 
     - name: "2.51.2: Patch _prev for newer compilers"
@@ -775,7 +924,28 @@ jobs:
            else
         EOF
 
-    - run: cd _prev && opam exec -- make src UISTYLE=text
+    - name: "2.52.0: Patch _prev for newer compilers"
+      if: contains(matrix.job.ref, '2.52.0')
+      shell: bash
+      run: |
+        cd _prev && git apply - <<"EOF"
+        diff --git a/src/system/system_win_stubs.c b/src/system/system_win_stubs.c
+        index 50ea663f..57940d98 100644
+        --- a/src/system/system_win_stubs.c
+        +++ b/src/system/system_win_stubs.c
+        @@ -373,7 +373,7 @@ typedef enum _FILE_INFORMATION_CLASS {
+         #include <caml/version.h> /* Available since OCaml 4.02 */
+         #endif
+        
+        -#if !defined(OCAML_VERSION) || OCAML_VERSION < 40300
+        +#if !defined(OCAML_VERSION) || OCAML_VERSION < 40300 || OCAML_VERSION >= 41400
+        
+         typedef struct _REPARSE_DATA_BUFFER {
+           ULONG  ReparseTag;
+        EOF
+
+    - run: cd _prev && opam exec -- make src UISTYLE=text OSTYPE=$OSTYPE
+      shell: bash
 
     # IMPORTANT! These tests do not exercise the entire RPC API. Yet, they
     # should work fine as a smoke test.
