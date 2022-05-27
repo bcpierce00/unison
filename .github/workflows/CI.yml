@@ -152,7 +152,7 @@ jobs:
       if: contains(matrix.job.ocaml-version, '+msvc')
 
     - name: Use OCaml ${{ matrix.job.ocaml-version }}
-      uses: ocaml/setup-ocaml@v2
+      uses: ocaml/setup-ocaml@v2.0.3
       with:
         ocaml-compiler: "${{ steps.vars.outputs.OCAML_COMPILER }}"
         opam-pin: false
@@ -363,7 +363,7 @@ jobs:
       run: sudo apt-get update
 
     - name: Use OCaml ${{ matrix.job.ocaml-version }}
-      uses: ocaml/setup-ocaml@v2
+      uses: ocaml/setup-ocaml@v2.0.3
       with:
         ocaml-compiler: "${{ matrix.job.ocaml-version }}"
         opam-pin: false
