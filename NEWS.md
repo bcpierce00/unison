@@ -2,12 +2,26 @@
 
 This file contains a summary of user-visible or important changes, in
 the style of the GNU coding standards.  By user-visible, we include
-changes relevant for those building unison from source.
+changes relevant for those building unison from source.  We omit
+most bugfixes and minor improvements.
 
 As of 2022, this file (NEWS.md at top level) is used for news.
 
 Some software has a "changelog" file that records all changes, but
 unison uses git history for that, and thus there is no changelog file.
+
+## Changes in 2.53.0
+
+NOT YET RELEASED
+
+  * Change OCaml requirement to >= 4.08
+  * Clean up a variety of unmaintained and unused bits, mainly
+    build-related
+  * Change GUI to use GTK3 (via lablgtk3) instead of GTK2 (via lablgtk2)
+  * Add workaround for bugs in the github CI Windows builds, one of
+    which resulted in the 2.52.1 GUI version failing, in the Windows
+    CI build artifacts.  (This does not affect platforms other than
+    Windows, and may not affect other Windows builds.)
 
 ## Changes in 2.52.1
 
