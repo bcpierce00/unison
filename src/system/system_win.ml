@@ -133,7 +133,40 @@ let chown _ _ _ = raise (Unix.Unix_error (Unix.ENOSYS, "chown", ""))
 let utimes f t1 t2 = utimes_impl f (epath f) t1 t2
 let link f1 f2 = link_impl f1 (epath f1) (epath f2)
 let openfile f flags perm = open_impl f (epath f) flags perm
-let readlink = Unix.readlink
+
+let readlink f =
+  (* Windows apparently mangles the link values if the value is an absolute
+     path. With [readlink] you're not getting back the same value you set
+     with [symlink] (except if it was a relative path). It's not clear if
+     this happens always or under certain circumstances only.
+
+     It's unclear how this mangling works, but it appears to convert the link
+     value to an NT namespace path under the \?? directory (with \DosDevices
+     being a symlink to it?). For regular DOS paths with a drive letter, this
+     is usually ok in terms of nearly-preserving the original link value, as it
+     only adds the \??\ prefix. For \\server\share\ network paths, it changes
+     the prefix to \??\UNC\server\share\.
+
+     https://docs.microsoft.com/en-us/windows-hardware/drivers/kernel/introduction-to-ms-dos-device-names
+     https://docs.microsoft.com/en-us/windows-hardware/drivers/kernel/object-directories
+     https://docs.microsoft.com/en-us/windows-hardware/drivers/kernel/object-names
+
+     This conversion happens to all(?) absolute paths to targets, whether they
+     were originally in the common DOS format, UNC, or already in Win32 file
+     namespace format (with \\?\ prefix).
+
+     Since we don't know what was the link value set by [symlink], we do as
+     little modification as possible to the output of [readlink]. This means
+     changing the prefix to \\?\ (because that's at least somewhat known to
+     user-space and something we can deal with) and hoping that the resulting
+     path is correct.  Without this change the path will be rejected by some
+     (all?) filesystem syscalls. *)
+  let l = Unix.readlink f in
+  let len = String.length l in
+  if len > 3 && l.[0] = '\\' && l.[1] = '?' && l.[2] = '?' && l.[3] = '\\' then
+    "\\\\?\\" ^ (String.sub l 4 (len - 4))
+  else l
+
 let symlink f t = Unix.symlink f t
 
 let chdir f =
