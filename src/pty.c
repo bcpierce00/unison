@@ -9,6 +9,12 @@
 #define UNICODE
 #endif
 
+#include <caml/version.h>
+#if CAML_VERSION < 41300
+#define CAML_INTERNALS /* was needed from OCaml 4.06 to 4.12 */
+#endif
+#include <caml/osdeps.h>
+
 #endif /* _WIN32 */
 
 #include <caml/mlvalues.h>
