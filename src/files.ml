@@ -46,20 +46,26 @@ let writeCommitLog source target tempname =
        Printf.fprintf c "(and delete this notice when you've done so).\n";
        close_out c)
 
-let clearCommitLog pathTo =
+let clearCommitLog tmpName =
   debug (fun() -> (Util.msg "Deleting commit log\n"));
 
-  let tmpPathDir = Fspath.canonize (Some Util.unisonDirStr) in  (* tmpPathDir is a Fspath.t *)
-  (* Use pathTo in the temporary name (instead of DANGER.README) to reduce chance of reuse *)
-  let tmpPath = Os.tempPath tmpPathDir pathTo in  (* tmpPath is a Path.local *)
-  let dangerFspath = Fspath.canonize (Some (System.fspathToString commitLogName)) in
-  let dangerFsPathTmp = Fspath.concat tmpPathDir tmpPath in
+  let commitLogNameWin () =
+    (* Work around an issue in Windows where unlink may not be immediate. *)
+    let p = System.fspathAddSuffixToFinalName commitLogName (Filename.basename (Path.toString tmpName)) in
+    let rec tmp n =
+      let p = System.fspathAddSuffixToFinalName p (string_of_int n) in
+      if System.file_exists p then tmp (n + 1)
+      else (System.rename commitLogName p; p)
+    in
+    try tmp 0 with
+    | Sys_error _ | Unix.Unix_error _ -> commitLogName
+  in
+  let commitLogUnlinkPath =
+    if Util.osType = `Win32 then commitLogNameWin () else commitLogName in
 
-  Os.renameFspath "DANGER.README" dangerFspath dangerFsPathTmp;
-  
   Util.convertUnixErrorsToFatal
     "clearing commit log"
-      (fun () -> System.unlink (System.fspathFromString (Fspath.toString dangerFsPathTmp)) )
+      (fun () -> System.unlink commitLogUnlinkPath)
 
 let processCommitLog () =
   if System.file_exists commitLogName then begin
@@ -350,7 +356,7 @@ let performRename fspathTo localPathTo workingDir pathFrom pathTo prevArch =
                        (Fspath.toDebugString target));
               Os.rename "renameLocal(2)"
                 source Path.empty target Path.empty))
-          (fun _ -> clearCommitLog pathTo);
+          (fun _ -> clearCommitLog tmpPath);
         (* It is ok to leave a temporary file.  So, the log can be
            cleared before deleting it. *)
         Os.delete temp Path.empty
