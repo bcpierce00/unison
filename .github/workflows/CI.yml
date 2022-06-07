@@ -164,7 +164,7 @@ jobs:
       run: .\setup-x86_64.exe --quiet-mode --root D:\cygwin --site http://cygwin.mirror.constant.com --symlink-type=sys --packages mingw64-i686-binutils=2.37-2,mingw64-x86_64-binutils=2.37-2
 
     - name: Use OCaml ${{ matrix.job.ocaml-version }}
-      uses: ocaml/setup-ocaml@v2.0.3
+      uses: ocaml/setup-ocaml@v2
       with:
         ocaml-compiler: "${{ steps.vars.outputs.OCAML_COMPILER }}"
         opam-pin: false
@@ -375,7 +375,7 @@ jobs:
       run: sudo apt-get update
 
     - name: Use OCaml ${{ matrix.job.ocaml-version }}
-      uses: ocaml/setup-ocaml@v2.0.3
+      uses: ocaml/setup-ocaml@v2
       with:
         ocaml-compiler: "${{ matrix.job.ocaml-version }}"
         opam-pin: false
