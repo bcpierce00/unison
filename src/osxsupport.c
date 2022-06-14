@@ -4,6 +4,7 @@
 #include <caml/mlvalues.h>
 #include <caml/alloc.h>
 #include <caml/memory.h>
+#include <caml/unixsupport.h>
 #ifdef __APPLE__
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -14,9 +15,6 @@
 #include <string.h>
 #endif
 #include <errno.h>
-
-extern void unix_error (int errcode, char * cmdname, value arg) Noreturn;
-extern void uerror (char * cmdname, value arg) Noreturn;
 
 CAMLprim value isMacOSX (value nothing) {
   CAMLparam0();
