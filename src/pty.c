@@ -9,12 +9,6 @@
 #define UNICODE
 #endif
 
-#include <caml/version.h>
-#if CAML_VERSION < 41300
-#define CAML_INTERNALS /* was needed from OCaml 4.06 to 4.12 */
-#endif
-#include <caml/osdeps.h>
-
 #endif /* _WIN32 */
 
 #include <caml/mlvalues.h>
@@ -23,6 +17,18 @@
 #include <caml/fail.h>     // failwith
 #include <caml/unixsupport.h> // uerror, unix_error
 #include <errno.h>         // ENOSYS
+#include <caml/version.h>
+#if OCAML_VERSION < 41300
+#define CAML_INTERNALS /* was needed from OCaml 4.06 to 4.12 */
+#endif
+#include <caml/osdeps.h>
+
+#if OCAML_VERSION_MAJOR < 5
+#define caml_unix_error unix_error
+#define caml_uerror uerror
+#define caml_win32_maperr win32_maperr
+#define caml_win32_alloc_handle win_alloc_handle
+#endif
 
 // openpty
 #if defined(__linux)
@@ -50,7 +56,7 @@ CAMLprim value setControllingTerminal(value fdVal) {
   CAMLparam1(fdVal);
   int fd = Int_val(fdVal);
   if (ioctl(fd, TIOCSCTTY, (char *) 0) < 0)
-    uerror("ioctl", (value) 0);
+    caml_uerror("ioctl", (value) 0);
   CAMLreturn(Val_unit);
 }
 
@@ -60,7 +66,7 @@ CAMLprim value c_openpty(value unit) {
   CAMLlocal1(pair);
   int master, slave;
   if (openpty(&master,&slave,NULL,NULL,NULL) < 0)
-    uerror("openpty", (value) 0);
+    caml_uerror("openpty", (value) 0);
   pair = caml_alloc_tuple(2);
   Store_field(pair,0,Val_int(master));
   Store_field(pair,1,Val_int(slave));
@@ -70,11 +76,11 @@ CAMLprim value c_openpty(value unit) {
 #else // not HAS_OPENPTY
 
 CAMLprim value setControllingTerminal(value fdVal) {
-  unix_error (ENOSYS, "setControllingTerminal", Nothing);
+  caml_unix_error(ENOSYS, "setControllingTerminal", Nothing);
 }
 
 CAMLprim value c_openpty(value unit) {
-  unix_error (ENOSYS, "openpty", Nothing);
+  caml_unix_error(ENOSYS, "openpty", Nothing);
 }
 
 #endif
@@ -105,7 +111,7 @@ CAMLprim value win_openpty(value unit)
 
   HMODULE kernel32_module = GetModuleHandleW(L"kernel32.dll");
   if (kernel32_module == NULL) {
-    unix_error(ENOSYS, "openpty", Nothing);
+    caml_unix_error(ENOSYS, "openpty", Nothing);
   }
 
   /* This is the only way to use the new API while remaining compatible
@@ -113,7 +119,7 @@ CAMLprim value win_openpty(value unit)
   pCreatePseudoConsole = (sCreatePseudoConsole)
       GetProcAddress(kernel32_module, "CreatePseudoConsole");
   if (pCreatePseudoConsole == NULL) {
-    unix_error(ENOSYS, "openpty", Nothing);
+    caml_unix_error(ENOSYS, "openpty", Nothing);
   }
 
   /* Read-write pipes don't seem to work well with PTY and cause deadlocks.
@@ -122,35 +128,35 @@ CAMLprim value win_openpty(value unit)
    * emulation by PF_UNIX sockets is only supported starting Windows 10 1803).
    * Simpler to use two separate pipes then. */
   if (!CreatePipe(&i1, &o1, NULL, 0)) {
-    win32_maperr(GetLastError());
-    uerror("openpty", Nothing);
+    caml_win32_maperr(GetLastError());
+    caml_uerror("openpty", Nothing);
   }
   if (!CreatePipe(&i2, &o2, NULL, 0)) {
-    win32_maperr(GetLastError());
+    caml_win32_maperr(GetLastError());
     if (o1 != INVALID_HANDLE_VALUE) CloseHandle(o1);
     if (i1 != INVALID_HANDLE_VALUE) CloseHandle(i1);
-    uerror("openpty", Nothing);
+    caml_uerror("openpty", Nothing);
   }
 
   if (pCreatePseudoConsole(size, i1, o2, 0, &pty) != S_OK) {
-    win32_maperr(GetLastError());
+    caml_win32_maperr(GetLastError());
     if (o1 != INVALID_HANDLE_VALUE) CloseHandle(o1);
     if (i1 != INVALID_HANDLE_VALUE) CloseHandle(i1);
     if (o2 != INVALID_HANDLE_VALUE) CloseHandle(o2);
     if (i2 != INVALID_HANDLE_VALUE) CloseHandle(i2);
-    uerror("openpty", Nothing);
+    caml_uerror("openpty", Nothing);
   }
 
   tmp1 = caml_alloc_tuple(2);
-  Store_field(tmp1, 0, win_alloc_handle(i2));
-  Store_field(tmp1, 1, win_alloc_handle(o1));
+  Store_field(tmp1, 0, caml_win32_alloc_handle(i2));
+  Store_field(tmp1, 1, caml_win32_alloc_handle(o1));
 
   tmp2 = caml_alloc(1, Abstract_tag);
   *((HPCON *) Data_abstract_val(tmp2)) = pty;
 
   tmp3 = caml_alloc_tuple(2);
-  Store_field(tmp3, 0, win_alloc_handle(i1));
-  Store_field(tmp3, 1, win_alloc_handle(o2));
+  Store_field(tmp3, 0, caml_win32_alloc_handle(i1));
+  Store_field(tmp3, 1, caml_win32_alloc_handle(o2));
 
   tup = caml_alloc_tuple(3);
   Store_field(tup, 0, tmp1);
@@ -166,7 +172,7 @@ CAMLprim value win_closepty(value pty)
 
   HMODULE kernel32_module = GetModuleHandleW(L"kernel32.dll");
   if (kernel32_module == NULL) {
-    unix_error(ENOSYS, "closepty", Nothing);
+    caml_unix_error(ENOSYS, "closepty", Nothing);
   }
 
   /* This is the only way to use the new API while remaining compatible
@@ -174,7 +180,7 @@ CAMLprim value win_closepty(value pty)
   pClosePseudoConsole = (sClosePseudoConsole)
       GetProcAddress(kernel32_module, "ClosePseudoConsole");
   if (pClosePseudoConsole == NULL) {
-    unix_error(ENOSYS, "closepty", Nothing);
+    caml_unix_error(ENOSYS, "closepty", Nothing);
   }
 
   pClosePseudoConsole(*((HPCON *) Data_abstract_val(pty)));
@@ -185,7 +191,7 @@ CAMLprim value win_closepty(value pty)
 static void prepareSiWithPty(value prog, STARTUPINFOEX *si, HPCON pty)
 {
 #ifndef PROC_THREAD_ATTRIBUTE_HANDLE_LIST
-  unix_error(ENOSYS, "create_process_pty", prog);
+  caml_unix_error(ENOSYS, "create_process_pty", prog);
 #else
   SIZE_T size;
 
@@ -196,21 +202,21 @@ static void prepareSiWithPty(value prog, STARTUPINFOEX *si, HPCON pty)
   InitializeProcThreadAttributeList(NULL, 2, 0, &size);
   si->lpAttributeList = malloc(size);
   if (!si->lpAttributeList) {
-    unix_error(ENOMEM, "create_process_pty", prog);
+    caml_unix_error(ENOMEM, "create_process_pty", prog);
   }
 
   if (!InitializeProcThreadAttributeList(si->lpAttributeList, 2, 0, &size)) {
-    win32_maperr(GetLastError());
+    caml_win32_maperr(GetLastError());
     free(si->lpAttributeList);
-    uerror("create_process_pty", prog);
+    caml_uerror("create_process_pty", prog);
   }
 
   if (!UpdateProcThreadAttribute(si->lpAttributeList, 0,
       PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE, pty, sizeof(pty), NULL, NULL)) {
-    win32_maperr(GetLastError());
+    caml_win32_maperr(GetLastError());
     DeleteProcThreadAttributeList(si->lpAttributeList);
     free(si->lpAttributeList);
-    uerror("create_process_pty", prog);
+    caml_uerror("create_process_pty", prog);
   }
 #endif
 }
@@ -231,15 +237,15 @@ CAMLprim value w_create_process_pty_native
   HPCON hpc = *((HPCON *) Data_abstract_val(pty));
 
 #ifndef PROC_THREAD_ATTRIBUTE_HANDLE_LIST
-  unix_error(ENOSYS, "create_process_pty", prog);
+  caml_unix_error(ENOSYS, "create_process_pty", prog);
 #else
   wprog = caml_stat_strdup_to_utf16(String_val(prog));
 
   res = SearchPathW(NULL, wprog, L".exe", MAX_PATH, fullname, NULL);
   caml_stat_free(wprog);
   if (res == 0) {
-    win32_maperr(GetLastError());
-    uerror("create_process_pty", prog);
+    caml_win32_maperr(GetLastError());
+    caml_uerror("create_process_pty", prog);
   }
 
   prepareSiWithPty(prog, &si, hpc);
@@ -247,19 +253,19 @@ CAMLprim value w_create_process_pty_native
   hp = GetCurrentProcess();
   if (!DuplicateHandle(hp, Handle_val(fd1), hp, &(si.StartupInfo.hStdInput),
       0, TRUE, DUPLICATE_SAME_ACCESS)) {
-    win32_maperr(GetLastError());
+    caml_win32_maperr(GetLastError());
     err = TRUE;
     goto clean1;
   }
   if (!DuplicateHandle(hp, Handle_val(fd2), hp, &(si.StartupInfo.hStdOutput),
       0, TRUE, DUPLICATE_SAME_ACCESS)) {
-    win32_maperr(GetLastError());
+    caml_win32_maperr(GetLastError());
     err = TRUE;
     goto clean2;
   }
   if (!DuplicateHandle(hp, Handle_val(fd3), hp, &(si.StartupInfo.hStdError),
       0, TRUE, DUPLICATE_SAME_ACCESS)) {
-    win32_maperr(GetLastError());
+    caml_win32_maperr(GetLastError());
     err = TRUE;
     goto clean3;
   }
@@ -271,7 +277,7 @@ CAMLprim value w_create_process_pty_native
   if (!UpdateProcThreadAttribute(si.lpAttributeList, 0,
       PROC_THREAD_ATTRIBUTE_HANDLE_LIST, inherit, sizeof(HANDLE) * 3,
       NULL, NULL)) {
-    win32_maperr(GetLastError());
+    caml_win32_maperr(GetLastError());
     err = TRUE;
     goto clean4;
   }
@@ -284,7 +290,7 @@ CAMLprim value w_create_process_pty_native
           NULL, NULL, &si.StartupInfo, &pi);
   caml_stat_free(wargs);
   if (res == 0) {
-    win32_maperr(GetLastError());
+    caml_win32_maperr(GetLastError());
     err = TRUE;
   }
 
@@ -299,7 +305,7 @@ clean1:
   free(si.lpAttributeList);
 
   if (err) {
-    uerror("create_process_pty", prog);
+    caml_uerror("create_process_pty", prog);
   }
 
   CloseHandle(pi.hThread);
@@ -318,22 +324,22 @@ CAMLprim value w_create_process_pty(value *argv, int argn)
 CAMLprim value w_create_process_pty_native
   (value prog, value args, value pty, value fd1, value fd2, value fd3)
 {
-  unix_error(ENOSYS, "create_process_pty", Nothing);
+  caml_unix_error(ENOSYS, "create_process_pty", Nothing);
 }
 
 CAMLprim value w_create_process_pty(value *argv, int argn)
 {
-  unix_error(ENOSYS, "create_process_pty", Nothing);
+  caml_unix_error(ENOSYS, "create_process_pty", Nothing);
 }
 
 CAMLprim value win_openpty()
 {
-  unix_error(ENOSYS, "openpty", Nothing);
+  caml_unix_error(ENOSYS, "openpty", Nothing);
 }
 
 CAMLprim value win_closepty(value pty)
 {
-  unix_error(ENOSYS, "closepty", Nothing);
+  caml_unix_error(ENOSYS, "closepty", Nothing);
 }
 
 #endif

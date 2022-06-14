@@ -12,6 +12,13 @@
 #include <caml/memory.h>
 #include <caml/fail.h>
 #include <caml/unixsupport.h>
+#include <caml/version.h>
+
+#if OCAML_VERSION_MAJOR < 5
+#define caml_uerror uerror
+#define caml_win32_maperr win32_maperr
+#define caml_win32_alloc_handle win_alloc_handle
+#endif
 
 #define NT_MAX_PATH 32768
 
@@ -25,8 +32,6 @@ value copy_wstring(LPCWSTR s)
   memmove((char *)String_val(res), s, len);
   return res;
 }
-
-extern value cst_to_constr (int n, int * tbl, int size, int deflt);
 
 static int open_access_flags[12] = {
   GENERIC_READ, GENERIC_WRITE, GENERIC_READ|GENERIC_WRITE,
@@ -369,10 +374,6 @@ typedef enum _FILE_INFORMATION_CLASS {
   FileMaximumInformation
 } FILE_INFORMATION_CLASS, *PFILE_INFORMATION_CLASS;
 
-#ifndef init_exceptions /* Removed since OCaml 4.02 */
-#include <caml/version.h> /* Available since OCaml 4.02 */
-#endif
-
 #if !defined(OCAML_VERSION) || OCAML_VERSION < 40300 || OCAML_VERSION >= 41400
 
 typedef struct _REPARSE_DATA_BUFFER {
@@ -511,8 +512,8 @@ CAMLprim value win_stat(value path, value wpath, value lstat)
                    (Bool_val(lstat) ? FILE_FLAG_OPEN_REPARSE_POINT : 0), NULL);
 
   if (h == INVALID_HANDLE_VALUE) {
-    win32_maperr (GetLastError ());
-    uerror(fname, path);
+    caml_win32_maperr(GetLastError());
+    caml_uerror(fname, path);
   }
 
   if (nt_api_available) {
@@ -521,17 +522,17 @@ CAMLprim value win_stat(value path, value wpath, value lstat)
 
     /* Buffer overflow (a warning status code) is expected here. */
     if (NT_ERROR(nt_status)) {
-      win32_maperr(pRtlNtStatusToDosError(nt_status));
+      caml_win32_maperr(pRtlNtStatusToDosError(nt_status));
       (void) CloseHandle(h);
-      uerror(fname, path);
+      caml_uerror(fname, path);
     }
   }
 
   res = GetFileInformationByHandle (h, &info);
   if (res == 0) {
-    win32_maperr (GetLastError ());
+    caml_win32_maperr(GetLastError());
     (void) CloseHandle (h);
-    uerror(fname, path);
+    caml_uerror(fname, path);
   }
 
   if (Bool_val(lstat) &&
@@ -552,8 +553,8 @@ CAMLprim value win_stat(value path, value wpath, value lstat)
 
   res = CloseHandle (h);
   if (res == 0) {
-    win32_maperr (GetLastError ());
-    uerror(fname, path);
+    caml_win32_maperr(GetLastError());
+    caml_uerror(fname, path);
   }
 
   if (Bool_val(lstat) && !syml) {
@@ -881,17 +882,17 @@ CAMLprim value win_init_console(value unit)
     /* Return only handles that are not already redirected by user. */
     if (!GetFileType(in_orig)) {
       tmp = caml_alloc_small(1, 0);
-      Store_field(tmp, 0, win_alloc_handle(in));
+      Store_field(tmp, 0, caml_win32_alloc_handle(in));
       Store_field(ret, 0, tmp);
     }
     if (!GetFileType(out_orig)) {
       tmp = caml_alloc_small(1, 0);
-      Store_field(tmp, 0, win_alloc_handle(out));
+      Store_field(tmp, 0, caml_win32_alloc_handle(out));
       Store_field(ret, 1, tmp);
     }
     if (!GetFileType(err_orig)) {
       tmp = caml_alloc_small(1, 0);
-      Store_field(tmp, 0, win_alloc_handle(err));
+      Store_field(tmp, 0, caml_win32_alloc_handle(err));
       Store_field(ret, 2, tmp);
     }
   }
@@ -908,8 +909,8 @@ static void init_conin ()
                         FILE_SHARE_READ | FILE_SHARE_WRITE, NULL,
                         OPEN_EXISTING, 0, 0);
     if (conin == INVALID_HANDLE_VALUE) {
-      win32_maperr (GetLastError ());
-      uerror("init_conin", Nothing);
+      caml_win32_maperr(GetLastError());
+      caml_uerror("init_conin", Nothing);
     }
   }
 }
@@ -924,8 +925,8 @@ CAMLprim value win_get_console_mode (value unit)
 
   res = GetConsoleMode (conin, &mode);
   if (res == 0) {
-    win32_maperr (GetLastError ());
-    uerror("get_console_mode", Nothing);
+    caml_win32_maperr(GetLastError());
+    caml_uerror("get_console_mode", Nothing);
   }
 
   CAMLreturn(Val_int(mode));
@@ -940,8 +941,8 @@ CAMLprim value win_set_console_mode (value mode)
 
   res = SetConsoleMode (conin, Int_val(mode));
   if (res == 0) {
-    win32_maperr (GetLastError ());
-    uerror("set_console_mode", Nothing);
+    caml_win32_maperr(GetLastError());
+    caml_uerror("set_console_mode", Nothing);
   }
   CAMLreturn(Val_unit);
 }
@@ -956,8 +957,8 @@ CAMLprim value win_set_console_output_cp (value cp) {
   BOOL res;
   res = SetConsoleOutputCP (Int_val (cp));
   if (res == 0) {
-    win32_maperr (GetLastError ());
-    uerror("set_console_cp", Nothing);
+    caml_win32_maperr(GetLastError());
+    caml_uerror("set_console_cp", Nothing);
   }
   CAMLreturn(Val_unit);
 }
