@@ -83,33 +83,6 @@ CAMLprim value c_openpty(value unit) {
 
 #include <windows.h>
 
-extern void win32_maperr(DWORD errcode);
-extern value win_alloc_handle(HANDLE h);
-
-static int Twin_multi_byte_to_wide_char(const char *s, int slen,
-                                        wchar_t *out, int outlen)
-{
-  int retcode;
-
-  CAMLassert (s != NULL);
-
-  if (slen == 0)
-    return 0;
-
-  retcode =
-    MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS,
-                        s, slen, out, outlen);
-  if (retcode == 0)
-    retcode = MultiByteToWideChar(CP_ACP, 0, s, slen, out, outlen);
-
-  if (retcode == 0) {
-    win32_maperr(GetLastError());
-    uerror("", Nothing);
-  }
-
-  return retcode;
-}
-
 #define PROC_THREAD_ATTRIBUTE_PSEUDOCONSOLE 0x00020016
 
 typedef VOID* HPCON;
