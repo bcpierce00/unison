@@ -16,6 +16,12 @@
 #endif
 #include <errno.h>
 
+#include <caml/version.h>
+#if OCAML_VERSION_MAJOR < 5
+#define caml_unix_error unix_error
+#define caml_uerror uerror
+#endif
+
 CAMLprim value isMacOSX (value nothing) {
   CAMLparam0();
 #ifdef __APPLE__
@@ -53,14 +59,14 @@ CAMLprim value getFileInfos (value path, value need_size) {
   retcode = getattrlist(String_val (path), &attrList, &attrBuf,
                         sizeof attrBuf, options);
 
-  if (retcode == -1) uerror("getattrlist", path);
+  if (retcode == -1) caml_uerror("getattrlist", path);
 
   if (Bool_val (need_size)) {
     if (attrBuf.length != sizeof attrBuf)
-      unix_error (EINVAL, "getattrlist", path);
+      caml_unix_error(EINVAL, "getattrlist", path);
   } else {
     if (attrBuf.length != sizeof (u_int32_t) + 32)
-      unix_error (EINVAL, "getattrlist", path);
+      caml_unix_error(EINVAL, "getattrlist", path);
   }
 
   fInfo = caml_alloc_string (32);
@@ -78,7 +84,7 @@ CAMLprim value getFileInfos (value path, value need_size) {
 
 #else
 
-  unix_error (ENOSYS, "getattrlist", path);
+  caml_unix_error(ENOSYS, "getattrlist", path);
 
 #endif
 }
@@ -113,9 +119,9 @@ CAMLprim value setFileInfos (value path, value fInfo) {
        if file is read-only.  Try making it writable temporarily. */
     struct stat st;
     int r = stat(String_val(path), &st);
-    if (r == -1) uerror("setattrlist", path);
+    if (r == -1) caml_uerror("setattrlist", path);
     r = chmod(String_val(path), st.st_mode | S_IWUSR);
-    if (r == -1) uerror("setattrlist", path);
+    if (r == -1) caml_uerror("setattrlist", path);
     /* Try again */
     retcode = setattrlist(String_val (path), &attrList, attrBuf.finderInfo,
                           sizeof attrBuf.finderInfo, options);
@@ -123,13 +129,13 @@ CAMLprim value setFileInfos (value path, value fInfo) {
     chmod(String_val(path), st.st_mode);
   }
 
-  if (retcode == -1) uerror("setattrlist", path);
+  if (retcode == -1) caml_uerror("setattrlist", path);
 
   CAMLreturn (Val_unit);
 
 #else
 
-  unix_error (ENOSYS, "setattrlist", path);
+  caml_unix_error(ENOSYS, "setattrlist", path);
 
 #endif
 }

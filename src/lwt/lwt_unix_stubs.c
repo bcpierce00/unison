@@ -11,6 +11,15 @@
 #include <caml/callback.h>
 #include <caml/unixsupport.h>
 #include <caml/socketaddr.h>
+#include <caml/version.h>
+
+#if OCAML_VERSION_MAJOR < 5
+#define caml_unix_error_of_code unix_error_of_code
+#define caml_uerror uerror
+#define caml_win32_maperr win32_maperr
+#define caml_win32_alloc_handle win_alloc_handle
+#define caml_win32_alloc_socket win_alloc_socket
+#endif
 
 //#define D(x) x
 #define D(x) while(0){}
@@ -76,8 +85,8 @@ static void invoke_completion_callback
   err = Val_long(0);
   if (errCode != NO_ERROR) {
     len = -1;
-    win32_maperr (errCode);
-    err = unix_error_of_code(errno);
+    caml_win32_maperr(errCode);
+    err = caml_unix_error_of_code(errno);
   }
   name = caml_copy_string(action_name[action]);
   D(printf("Action %s completed: id %ld -> len %ld / err %d (errCode %ld)\n",
@@ -154,8 +163,8 @@ static HANDLE get_helper_thread (value threads, int kind) {
 
   h = CreateThread (NULL, 0, helper_thread, NULL, 0, NULL);
   if (h == NULL) {
-    win32_maperr (GetLastError ());
-    uerror("createHelperThread", Nothing);
+    caml_win32_maperr(GetLastError());
+    caml_uerror("createHelperThread", Nothing);
   }
   Field(threads, kind) = (value) h;
   return h;
@@ -238,7 +247,7 @@ static void thread_io
   ioInfo * info = GlobalAlloc(GPTR, sizeof(ioInfo));
   if (info == NULL) {
     errno = ENOMEM;
-    uerror(action_name[action], Nothing);
+    caml_uerror(action_name[action], Nothing);
   }
 
   info->action = action;
@@ -267,7 +276,7 @@ static void overlapped_action(long action, long id,
   completionData * d = GlobalAlloc(GPTR, sizeof(completionData));
   if (d == NULL) {
     errno = ENOMEM;
-    uerror(action_name[action], Nothing);
+    caml_uerror(action_name[action], Nothing);
   }
   d->id = id;
   d->action = action;
@@ -281,10 +290,10 @@ static void overlapped_action(long action, long id,
   if (!res) {
     err = GetLastError ();
     if (err != ERROR_IO_PENDING) {
-      win32_maperr (err);
+      caml_win32_maperr(err);
   D(printf("Action %s failed: id %ld -> err %d (errCode %ld)\n",
            action_name[action], id, errno, err));
-      uerror("ReadFileEx", Nothing);
+      caml_uerror("ReadFileEx", Nothing);
     }
   }
 }
@@ -354,11 +363,11 @@ CAMLprim value win_register_wait (value socket, value kind) {
   h = CreateEvent(NULL, TRUE, FALSE, NULL);
   mask = (Long_val(kind) == 0) ? FD_CONNECT : FD_ACCEPT;
   if (WSAEventSelect(Socket_val(socket), h, mask) == SOCKET_ERROR) {
-    win32_maperr(WSAGetLastError ());
-    uerror("WSAEventSelect", Nothing);
+    caml_win32_maperr(WSAGetLastError());
+    caml_uerror("WSAEventSelect", Nothing);
   }
 
-  CAMLreturn(win_alloc_handle(h));
+  CAMLreturn(caml_win32_alloc_handle(h));
 }
 
 CAMLprim value win_check_connection (value socket, value kind, value h) {
@@ -369,23 +378,23 @@ CAMLprim value win_check_connection (value socket, value kind, value h) {
   D(printf("Check connection... socket = %lx; h = %lx\n",
               (long)(Socket_val(socket)), Handle_val(h)));
   if (WSAEnumNetworkEvents(Socket_val(socket), NULL, &evs)) {
-    win32_maperr(WSAGetLastError ());
-    uerror("WSAEnumNetworkEvents", Nothing);
+    caml_win32_maperr(WSAGetLastError());
+    caml_uerror("WSAEnumNetworkEvents", Nothing);
   }
   if (WSAEventSelect(Socket_val(socket), NULL, 0) == SOCKET_ERROR) {
-    win32_maperr(WSAGetLastError ());
-    uerror("WSAEventSelect", Nothing);
+    caml_win32_maperr(WSAGetLastError());
+    caml_uerror("WSAEventSelect", Nothing);
   }
   if (!CloseHandle(Handle_val(h))) {
-    win32_maperr(GetLastError ());
-    uerror("CloseHandle", Nothing);
+    caml_win32_maperr(GetLastError());
+    caml_uerror("CloseHandle", Nothing);
   }
   err =
     evs.iErrorCode[(Long_val(kind) == 0) ? FD_CONNECT_BIT : FD_ACCEPT_BIT];
   D(printf("Check connection: %ld, err %d\n", evs.lNetworkEvents, err));
   if (err != 0) {
-    win32_maperr(err);
-    uerror("check_connection", Nothing);
+    caml_win32_maperr(err);
+    caml_uerror("check_connection", Nothing);
   }
   CAMLreturn (Val_unit);
 }
@@ -452,8 +461,8 @@ CAMLprim value win_wait (value timeout, value event_list) {
   case WAIT_FAILED:
     D(printf("Wait failed\n"));
     ret = 0;
-    win32_maperr (GetLastError ());
-    uerror("WaitForMultipleObjectsEx", Nothing);
+    caml_win32_maperr(GetLastError());
+    caml_uerror("WaitForMultipleObjectsEx", Nothing);
     break;
   default:
     ret = res;
@@ -486,8 +495,8 @@ value win_pipe(long readMode, long writeMode) {
      1, UNIX_BUFFER_SIZE, UNIX_BUFFER_SIZE, 0, &attr);
 
   if (readh == INVALID_HANDLE_VALUE) {
-    win32_maperr(GetLastError());
-    uerror("CreateNamedPipe", Nothing);
+    caml_win32_maperr(GetLastError());
+    caml_uerror("CreateNamedPipe", Nothing);
     return FALSE;
   }
 
@@ -497,14 +506,14 @@ value win_pipe(long readMode, long writeMode) {
      FILE_ATTRIBUTE_NORMAL | writeMode, NULL);
 
   if (writeh == INVALID_HANDLE_VALUE) {
-    win32_maperr(GetLastError());
+    caml_win32_maperr(GetLastError());
     CloseHandle(readh);
-    uerror("CreateFile", Nothing);
+    caml_uerror("CreateFile", Nothing);
     return FALSE;
   }
 
-  readfd = win_alloc_handle(readh);
-  writefd = win_alloc_handle(writeh);
+  readfd = caml_win32_alloc_handle(readh);
+  writefd = caml_win32_alloc_handle(writeh);
   res = caml_alloc_small(2, 0);
   Store_field(res, 0, readfd);
   Store_field(res, 1, writefd);
@@ -539,10 +548,10 @@ CAMLprim value win_socket (value domain, value type, value proto) {
                 NULL, 0, WSA_FLAG_OVERLAPPED);
   D(printf("Created socket %lx\n", (long)s));
   if (s == INVALID_SOCKET) {
-    win32_maperr(WSAGetLastError ());
-    uerror("WSASocket", Nothing);
+    caml_win32_maperr(WSAGetLastError());
+    caml_uerror("WSASocket", Nothing);
   }
-  CAMLreturn(win_alloc_socket(s));
+  CAMLreturn(caml_win32_alloc_socket(s));
 }
 
 /*
@@ -613,7 +622,7 @@ CAMLprim value win_readdirtorychanges
   completionData * d = GlobalAlloc(GPTR, sizeof(completionData));
   if (d == NULL) {
     errno = ENOMEM;
-    uerror(action_name[action], Nothing);
+    caml_uerror(action_name[action], Nothing);
   }
   d->id = id;
   d->action = action;
@@ -627,10 +636,10 @@ CAMLprim value win_readdirtorychanges
   if (!res) {
     err = GetLastError ();
     if (err != ERROR_IO_PENDING) {
-      win32_maperr (err);
+      caml_win32_maperr(err);
   D(printf("Action %s failed: id %ld -> err %d (errCode %ld)\n",
            action_name[action], id, errno, err));
-      uerror("ReadDirectoryChangesW", Nothing);
+      caml_uerror("ReadDirectoryChangesW", Nothing);
     }
   }
   CAMLreturn (Val_unit);
@@ -671,10 +680,10 @@ CAMLprim value win_open_directory (value path, value wpath) {
                   FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED,
                   NULL);
   if (h == INVALID_HANDLE_VALUE) {
-    win32_maperr (GetLastError ());
-    uerror("open", path);
+    caml_win32_maperr(GetLastError());
+    caml_uerror("open", path);
   }
-  CAMLreturn(win_alloc_handle(h));
+  CAMLreturn(caml_win32_alloc_handle(h));
 }
 
 value copy_wstring(LPCWSTR s);

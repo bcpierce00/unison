@@ -25,6 +25,12 @@
 #include <caml/memory.h>
 #include <caml/alloc.h>
 #include <caml/unixsupport.h>
+#include <caml/version.h>
+
+#if OCAML_VERSION_MAJOR < 5
+#define caml_unix_error unix_error
+#define caml_uerror uerror
+#endif
 
 
 /* We define the flags here rather than pass in from OCaml code
@@ -39,7 +45,7 @@ CAMLprim value unsn_port_create(value unit)
 
   int port = port_create();
   if (port == -1) {
-    uerror("port_create", Nothing);
+    caml_uerror("port_create", Nothing);
   }
 
   CAMLreturn(Val_int(port));
@@ -51,7 +57,7 @@ CAMLprim value unsn_port_close(value v)
 
   int status = close(Int_val(v));
   if (status == -1) {
-    uerror("port_close", Nothing);
+    caml_uerror("port_close", Nothing);
   }
 
   CAMLreturn(Val_unit);
@@ -132,7 +138,7 @@ CAMLprim value unsn_port_associate(value port, value path, value follow, value c
 
   struct event_obj *eo = malloc(sizeof(struct event_obj));
   if (eo == NULL) {
-    unix_error(ENOMEM, "port_associate", path);
+    caml_unix_error(ENOMEM, "port_associate", path);
   }
 
   eo->cookie = Int_val(cookie);
@@ -141,7 +147,7 @@ CAMLprim value unsn_port_associate(value port, value path, value follow, value c
   int status = port_associate_aux(Int_val(port), eo, Bool_val(follow));
   if (status == -1) {
     free_eo(eo);
-    uerror("port_associate", path);
+    caml_uerror("port_associate", path);
   }
 
   /* Returning a malloc'ed pointer as a value is not fully safe as it's not
@@ -163,7 +169,7 @@ CAMLprim value unsn_port_reassociate(value port, value eo_val, value follow)
 
   struct event_obj *eo = EvObj_val(eo_val);
   if (eo == NULL) {
-    unix_error(EINVAL, "port_reassociate",
+    caml_unix_error(EINVAL, "port_reassociate",
         caml_copy_string("NULL eo; this indicates a BUG!"));
   }
 
@@ -193,13 +199,13 @@ CAMLprim value unsn_port_dissociate(value port, value eo_val)
 
   struct event_obj *eo = EvObj_val(eo_val);
   if (eo == NULL) {
-    unix_error(EINVAL, "port_dissociate",
+    caml_unix_error(EINVAL, "port_dissociate",
         caml_copy_string("NULL eo; this indicates a BUG!"));
   }
 
   int status = port_dissociate(Int_val(port), PORT_SOURCE_FILE, (uintptr_t) &(eo->fo));
   if (status == -1 && errno != ENOENT) {
-    uerror("port_dissociate", caml_copy_string(eo->fo.fo_name));
+    caml_uerror("port_dissociate", caml_copy_string(eo->fo.fo_name));
   }
 
   CAMLreturn(Val_unit);
@@ -229,13 +235,13 @@ CAMLprim value unsn_port_get(value port)
 
   pel = malloc(cnt * sizeof(port_event_t));
   if (pel == NULL) {
-    unix_error(ENOMEM, "port_getn", Nothing);
+    caml_unix_error(ENOMEM, "port_getn", Nothing);
   }
 
   status = port_getn(Int_val(port), pel, cnt, &cnt, &timeout);
   if (status == -1 && errno != ETIME && errno != EINTR) {
     free(pel);
-    uerror("port_getn", Nothing);
+    caml_uerror("port_getn", Nothing);
   }
 
   for (int j = 0; j < cnt; j++) {
@@ -247,7 +253,7 @@ CAMLprim value unsn_port_get(value port)
 
     if (eo == NULL) {
       free(pel);
-      unix_error(EINVAL, "portev_user",
+      caml_unix_error(EINVAL, "portev_user",
           caml_copy_string("NULL eo; this indicates a BUG!"));
     }
 
