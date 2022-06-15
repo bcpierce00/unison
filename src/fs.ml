@@ -72,5 +72,3 @@ let canSetTime f = System.canSetTime (Fspath.toString f)
 let hasInodeNumbers () = System.hasInodeNumbers ()
 let hasSymlink () = System.hasSymlink ()
 let hasCorrectCTime = System.hasCorrectCTime
-
-let setUnicodeEncoding = System.setUnicodeEncoding

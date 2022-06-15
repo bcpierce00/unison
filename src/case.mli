@@ -3,7 +3,6 @@
 
 val caseInsensitiveMode : [`True|`False|`Default] Prefs.t
 val unicodeEncoding : bool Prefs.t
-val useUnicodeAPI : unit -> bool
 
 type mode = Sensitive | Insensitive | UnicodeSensitive | UnicodeInsensitive
 

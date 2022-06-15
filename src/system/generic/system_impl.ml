@@ -16,8 +16,4 @@
 *)
 
 module System = System_generic
-module Fs = struct
-  include System_generic
-
-  let setUnicodeEncoding _ = ()
-end
+module Fs = System_generic

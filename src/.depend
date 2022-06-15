@@ -868,10 +868,8 @@ remote.cmo : \
     lwt/lwt_unix.cmi \
     lwt/lwt.cmi \
     fspath.cmi \
-    fs.cmi \
     common.cmi \
     clroot.cmi \
-    case.cmi \
     bytearray.cmi \
     remote.cmi
 remote.cmx : \
@@ -888,10 +886,8 @@ remote.cmx : \
     lwt/lwt_unix.cmx \
     lwt/lwt.cmx \
     fspath.cmx \
-    fs.cmx \
     common.cmx \
     clroot.cmx \
-    case.cmx \
     bytearray.cmx \
     remote.cmi
 remote.cmi : \
@@ -1008,11 +1004,9 @@ system/system_win.cmx : \
     system/system_generic.cmx \
     ubase/rx.cmx
 system/win/system_impl.cmo : \
-    system/system_win.cmo \
-    system/system_generic.cmo
+    system/system_win.cmo
 system/win/system_impl.cmx : \
-    system/system_win.cmx \
-    system/system_generic.cmx
+    system/system_win.cmx
 terminal.cmo : \
     ubase/util.cmi \
     system.cmi \

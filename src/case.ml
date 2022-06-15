@@ -48,10 +48,11 @@ let unicode =
     "When set to {\\tt true}, this flag causes Unison to perform \
      case insensitive file comparisons assuming Unicode encoding.  \
      This is the default.  When the flag is set to {\\tt false}, \
-     a Latin 1 encoding is assumed.  When Unison runs in case sensitive \
-     mode, this flag only makes a difference if one host is running \
-     Windows or Mac OS X.  Under Windows, the flag selects between using \
-     the Unicode or 8bit Windows API for accessing the filesystem. \
+     Latin 1 encoding is assumed (this means that all bytes that are \
+     not letters in Latin 1 encoding will be compared byte-for-byte, \
+     even if they may be valid characters in some other encoding).  \
+     When Unison runs in case sensitive mode, this flag only makes \
+     a difference if one host is running Mac OS X.  \
      Under Mac OS X, it selects whether comparing the filenames up to \
      decomposition, or byte-for-byte."
 
@@ -63,8 +64,6 @@ let unicodeEncoding =
 let useUnicode () =
   let pref = Prefs.read unicode in
   pref = `True || pref = `Default
-
-let useUnicodeAPI = useUnicode
 
 let unicodeCaseSensitive =
   Prefs.createBool "unicodeCS" false
