@@ -29,11 +29,14 @@ include System_generic
 let fixPath f = String.map (function '/' -> '\\' | c -> c) f
 let winRootRx = Rx.rx "[a-zA-Z]:[/\\].*"
 let winUncRx = Rx.rx "[/\\][/\\][^?/\\]+[/\\][^/\\]+[/\\].*"
+let winFileNsPathRx = Rx.rx "//[?]/.+"
 let extendedPath f =
   if Rx.match_string winRootRx f then
     fixPath ("\\\\?\\" ^ f)
   else if Rx.match_string winUncRx f then
     fixPath ("\\\\?\\UNC" ^ String.sub f 1 (String.length f - 1))
+  else if Rx.match_string winFileNsPathRx f then
+    fixPath f
   else
     f
 

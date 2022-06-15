@@ -40,15 +40,46 @@ let toPrintString (Fspath f) = f
 let toDebugString (Fspath f) = String.escaped f
 
 (* Needed to hack around some ocaml/Windows bugs, see comment at stat, below *)
-let winRootRx = Rx.rx "(([a-zA-Z]:)?/|//[^/]+/[^/]+/)"
+let winRootRx = Rx.rx "(([a-zA-Z]:)?/|//[^?/]+/[^/]+/|//[?]/[Uu][Nn][Cc]/[^/]+/[^/]+/)|//[?]/([^Uu][^/]*|[Uu]|[Uu][^Nn][^/]*|[Uu][Nn]|[Uu][Nn][^Cc][^/]*|[Uu][Nn][Cc][^/]+)/"
 (* FIX I think we could just check the last character of [d]. *)
 let isRootDir d =
 (* We assume all path separators are slashes in d                            *)
   d="/" ||
   (Util.osType = `Win32 && Rx.match_string winRootRx d)
-let winRootFixRx = Rx.rx "//[^/]+/[^/]+"
+(* Here, backslashes are allowed as path separators in Windows               *)
+let isRootDirLocalString d =
+  let d =
+    if Util.osType = `Win32 then Fileutil.backslashes2forwardslashes d else d
+  in
+  isRootDir ((Fileutil.removeTrailingSlashes d) ^ "/")
 let winRootFix d =
-  if Rx.match_string winRootFixRx d then d^"/" else d
+  if Rx.match_string winRootRx (d ^ "/") then d ^ "/" else d
+let winFNsPrefixRx = Rx.rx "[\\/][\\/][?][\\/][^\\/]+"
+let isInvalidWinPath p =
+  Rx.match_string winFNsPrefixRx p (* Is there a path after the prefix? *)
+let winSafeDirname p =
+  if Util.osType <> `Win32 then
+    Filename.dirname p
+  else
+    (* [Filename.dirname] can't handle Windows paths prefixed with \\?\
+       (Win32 file namespace) if [dirname] goes all the way up to the fs root.
+       Most paths are still processed correctly because they are basically a
+       DOS path prefixed with \\?\ or something similar to \\server\share\
+       paths. Only paths right at the fs root are problematic.
+
+       \\?\C:\ becomes \\? (correct is \\?\C:\)
+       \\?\C:\sub becomes \\?\C (correct is \\?\C:\)
+       \\?\Volume{GUID}\ becomes \\? (correct is \\?\Volume{GUID}\)
+       \\?\Volume{GUID}\sub becomes \\?\Volume{GUID} (correct is \\?\Volume{GUID}\)
+
+       As a workaround, first remove the \\?\ prefix and the first component of
+       the path (usually this would be the "volume", except for UNC paths).
+       Then add the removed prefix back to the result of [dirname]. *)
+    match Rx.match_prefix winFNsPrefixRx p 0 with
+    | None -> Filename.dirname p
+    | Some pos ->
+        String.sub p 0 pos ^
+          Filename.dirname (String.sub p pos (String.length p - pos))
 
 (* [differentSuffix: fspath -> fspath -> (string * string)] returns the      *)
 (* least distinguishing suffixes of two fspaths, for displaying in the user  *)
@@ -250,11 +281,12 @@ let canonizeFspath p0 =
           (* fails, we just quit.  This works nicely for most cases of (1),  *)
           (* it works for (2), and on (3) it may leave a mess for someone    *)
           (* else to pick up.                                                *)
-          let p = if Util.osType = `Win32 then Fileutil.backslashes2forwardslashes p else p in
-          if isRootDir p then raise
+          if isRootDirLocalString p || isInvalidWinPath p then raise
             (Util.Fatal (Printf.sprintf
-               "Cannot find canonical name of root directory %s\n(%s)" p why));
-          let parent = Filename.dirname p in
+               "Cannot find canonical name of root directory %s\n(%s)%s" p why
+               (if isInvalidWinPath p then "\nMaybe you need to add a "
+                 ^ "backslash at end of the root path?" else "")));
+          let parent = winSafeDirname p in
           let parent' = begin
             (try System.chdir parent with
                Sys_error why2 -> raise (Util.Fatal (Printf.sprintf
@@ -333,7 +365,7 @@ let findWorkingDir fspath path =
 
                [chdir] hack from [canonizeFspath] above seems to be the current
                best compromise. *)
-            Filename.concat (Filename.dirname p) link
+            Filename.concat (winSafeDirname p) link
             |> fun l ->
               if Util.osType = `Win32 then
                 let Fspath l' = canonizeFspath (Some l) in
@@ -345,19 +377,18 @@ let findWorkingDir fspath path =
       | Unix.Unix_error _ | Util.Fatal _ -> p
     in
     followlinks 0 abspath in
-  if isRootDir realpath then
+  if isRootDirLocalString realpath then
     raise (Util.Transient(Printf.sprintf
                             "The path %s is a root directory" abspath));
-  let realpath = Fileutil.removeTrailingSlashes realpath in
   let p = Filename.basename realpath in
   debug
     (fun() ->
       Util.msg "Os.findWorkingDir(%s,%s) = (%s,%s)\n"
         (toString fspath)
         (Path.toString path)
-        (Filename.dirname realpath)
+        (winSafeDirname realpath)
         p);
-  (localString2fspath (Filename.dirname realpath), Path.fromString p)
+  (localString2fspath (winSafeDirname realpath), Path.fromString p)
 
 let quotes (Fspath f) = Uutil.quotes f
 let compare (Fspath f1) (Fspath f2) = compare f1 f2
