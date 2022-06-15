@@ -22,18 +22,7 @@ http://www.codeproject.com/KB/cpp/unicode_console_output.aspx?display=Print
 
 *)
 
-type fspath = string
-
-let mfspath = Umarshal.string
-
-let fspathFromString f = f
-let fspathToPrintString f = f
-let fspathToString f = f
-let fspathToDebugString f = String.escaped f
-
-let fspathConcat = Filename.concat
-let fspathDirname = Filename.dirname
-let fspathAddSuffixToFinalName f suffix = f ^ suffix
+include System_generic
 
 (****)
 
@@ -61,21 +50,10 @@ let sys_error e =
 
 (****)
 
-let getenv = Sys.getenv
-let putenv = Unix.putenv
-let argv () = Sys.argv
-
-(****)
-
-type dir_handle = System_generic.dir_handle
-                = { readdir : unit -> string; closedir : unit -> unit }
-
 external stat_impl : string -> bool -> Unix.LargeFile.stats = "win_stat"
 let stat f = stat_impl f false
 let lstat f = stat_impl f true
-let rmdir = Unix.rmdir
-let mkdir = Unix.mkdir
-let unlink = Unix.unlink
+
 let rename f1 f2 =
   (* Comment from original C stub implementation:
      Windows Unicode API: when a file cannot be renamed due to a sharing
@@ -95,10 +73,9 @@ let rename f1 f2 =
     | e -> raise e
   in
   ren_aux 0.01
-let chmod = Unix.chmod
+
 let chown _ _ _ = raise (Unix.Unix_error (Unix.ENOSYS, "chown", ""))
-let utimes = Unix.utimes
-let link s d = Unix.link s d
+
 let openfile f flags perm =
   let fd = Unix.openfile f flags perm in
   (* Comment from original C stub implementation:
@@ -144,9 +121,6 @@ let readlink f =
     "\\\\?\\" ^ (String.sub l 4 (len - 4))
   else l
 
-let symlink f t = Unix.symlink f t
-
-let chdir = Sys.chdir
 external long_name : string -> string = "win_long_path_name"
 let getcwd () =
   try
@@ -168,44 +142,12 @@ let opendir d =
   let d' = if Rx.match_string winFileNsPathRx d then String.sub d 4 (String.length d - 4) else d in
   if Rx.match_string badFileRx d' then
     raise (Unix.Unix_error (Unix.ENOENT, "opendir", d));
-  let h = Unix.opendir d in
-  { readdir =  (fun () -> Unix.readdir h);
-    closedir = (fun () -> Unix.closedir h) }
-
-let open_in_gen = open_in_gen
-let open_out_gen = open_out_gen
-
-(****)
-
-let file_exists = Sys.file_exists
-let open_in_bin = open_in_bin
-
-(****)
-
-let create_process = Unix.create_process
-
-(****)
-
-let open_process_in = Unix.open_process_in
-let open_process_out = Unix.open_process_out
-let open_process_full cmd = Unix.open_process_full cmd (Unix.environment ())
-let close_process_in = Unix.close_process_in
-let close_process_out = Unix.close_process_out
-let close_process_full = Unix.close_process_full
+  System_generic.opendir d
 
 (****)
 
 (* Works in Windows since OCaml 4.07 *)
 let canSetTime f = true
-
-(* Best effort inode numbers are provided in Windows since OCaml 4.03 *)
-(* We provide some kind of inode numbers *)
-(* However, these inode numbers are not usable on FAT filesystems, as
-   renaming a file "b" over a file "a" does not change the inode
-   number of "a". *)
-let hasInodeNumbers () = true
-
-let hasSymlink = Unix.has_symlink
 
 external hasCorrectCTime_impl : unit -> bool = "win_has_correct_ctime"
 
@@ -219,10 +161,6 @@ external getConsoleMode : unit -> int = "win_get_console_mode"
 external setConsoleMode : int -> unit = "win_set_console_mode"
 external getConsoleOutputCP : unit -> int = "win_get_console_output_cp"
 external setConsoleOutputCP : int -> unit = "win_set_console_output_cp"
-
-type terminalStateFunctions =
-  { defaultTerminal : unit -> unit; rawTerminal : unit -> unit;
-    startReading : unit -> unit; stopReading : unit -> unit }
 
 let terminalStateFunctions () =
   (* First, allocate a console in case we don't already have one.
@@ -260,11 +198,3 @@ let terminalStateFunctions () =
     rawTerminal = (fun () -> setConsoleMode 0x19; setConsoleOutputCP 65001);
     startReading = (fun () -> setConsoleMode 0x18);
     stopReading = (fun () -> setConsoleMode 0x19) }
-
-(****)
-
-let fingerprint f =
-  let ic = open_in_bin f in
-  let d = Digest.channel ic (-1) in
-  close_in ic;
-  d

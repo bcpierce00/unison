@@ -219,7 +219,7 @@ OCAMLOBJS += \
           ubase/rx.cmo \
 	  \
           unicode_tables.cmo unicode.cmo bytearray.cmo \
-          $(WINOBJS) system/system_generic.cmo \
+          system/system_generic.cmo $(WINOBJS) \
           system/$(SYSTEM)/system_impl.cmo \
           system.cmo \
           \

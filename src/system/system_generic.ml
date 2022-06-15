@@ -95,7 +95,11 @@ let canSetTime f =
 
 (* Note that Cygwin provides some kind of inode numbers, but we only
    have access to the lower 32 bits on 32bit systems... *)
-let hasInodeNumbers () = isNotWindows
+(* Best effort inode numbers are provided in Windows since OCaml 4.03 *)
+(* However, these inode numbers are not usable on FAT filesystems, as
+   renaming a file "b" over a file "a" does not change the inode
+   number of "a". *)
+let hasInodeNumbers () = true
 
 let hasSymlink = Unix.has_symlink
 

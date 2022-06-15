@@ -998,11 +998,9 @@ system/system_intf.cmo : \
 system/system_intf.cmx : \
     ubase/umarshal.cmx
 system/system_win.cmo : \
-    ubase/umarshal.cmi \
     system/system_generic.cmo \
     ubase/rx.cmi
 system/system_win.cmx : \
-    ubase/umarshal.cmx \
     system/system_generic.cmx \
     ubase/rx.cmx
 system/win/system_impl.cmo : \
