@@ -88,7 +88,7 @@ let get_win_path root dir ((ev_path, act) as ev) =
   let p = if event_kind ev = `DEL then None else
     follow_win_path dir (Lwt_win.longpathname root ev_path) 0 in
   match p with
-  | Some _ as pathnm -> (pathnm, ev)
+  | Some _ -> (p, ev)
   | None ->
     (* If path is not found or event is a deletion then look up the
        parent directory and report a modification on it. It is not
@@ -110,21 +110,11 @@ let flags =
 let watch_root_directory path dir =
   let h = Lwt_win.open_directory path in
   let path = Lwt_win.longpathname "" path in
-  let path =
-    if String.sub path 0 4 = "\\\\?\\" then begin
-      let n = String.sub path 4 (String.length path - 4) in
-      if String.sub n 0 3 = "UNC" then
-        "\\" ^ String.sub n 3 (String.length n - 3)
-      else
-        n
-    end else
-      path
-  in
   let rec loop () =
     Lwt_win.readdirectorychanges h true flags >>= fun l ->
     let time = Unix.gettimeofday () in
     List.iter
-      (fun ((ev_path, _) as ev) ->
+      (fun ev ->
          if !previous_event <> Some ev then begin
            previous_event := Some ev;
            if !Watchercommon.debug then print_event ev;
