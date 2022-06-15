@@ -64,16 +64,7 @@ let encodingError p =
     (Sys_error
        (Format.sprintf "The file path '%s' is not encoded in Unicode." p))
 
-let utf8 = Unicode.from_utf_16
-let utf16 s =
-  try
-    Unicode.to_utf_16 s
-  with Unicode.Invalid ->
-    raise (Sys_error
-             (Format.sprintf "The text '%s' is not encoded in Unicode" s))
 let path8 = Unicode.from_utf_16(*_filename*)
-let path16 f =
-  try Unicode.to_utf_16(*_filename*) f with Unicode.Invalid -> encodingError f
 let epath f =
   try
     Unicode.to_utf_16(*_filename*) (extendedPath f)
@@ -91,48 +82,55 @@ let sys_error e =
 
 (****)
 
-external getenv_impl : string -> string = "win_getenv"
-external putenv_impl : string -> string -> string -> unit = "win_putenv"
-external argv_impl : unit -> string array = "win_argv"
-
-let getenv nm = utf8 (getenv_impl (utf16 nm))
-let putenv nm v = putenv_impl nm (utf16 nm) (utf16 v)
-let argv () = Array.map utf8 (argv_impl ())
+let getenv = Sys.getenv
+let putenv = Unix.putenv
+let argv () = Sys.argv
 
 (****)
 
-type dir_entry = Dir_empty | Dir_read of string | Dir_toread
 type dir_handle = System_generic.dir_handle
                 = { readdir : unit -> string; closedir : unit -> unit }
 
 external stat_impl : string -> string -> bool -> Unix.LargeFile.stats = "win_stat"
-external rmdir_impl : string -> string -> unit = "win_rmdir"
-external mkdir_impl : string -> string -> unit = "win_mkdir"
-external unlink_impl : string -> string -> unit = "win_unlink"
-external rename_impl : string -> string -> string -> unit = "win_rename"
-external link_impl : string -> string -> string -> unit = "win_link"
-external chmod_impl : string -> string -> int -> unit = "win_chmod"
-external utimes_impl :
-  string -> string -> float -> float -> unit = "win_utimes"
-external open_impl :
-  string -> string -> Unix.open_flag list -> Unix.file_perm -> Unix.file_descr = "win_open"
-external chdir_impl : string -> string -> unit = "win_chdir"
-external getcwd_impl : unit -> string = "win_getcwd"
-external findfirst : string -> string * int = "win_findfirstw"
-external findnext : int -> string = "win_findnextw"
-external findclose : int -> unit = "win_findclosew"
-
 let stat f = stat_impl f (epath f) false
 let lstat f = stat_impl f (epath f) true
-let rmdir f = rmdir_impl f (epath f)
-let mkdir f perms = mkdir_impl f (epath f)
-let unlink f = unlink_impl f (epath f)
-let rename f1 f2 = rename_impl f1 (epath f1) (epath f2)
-let chmod f perm = chmod_impl f (epath f) perm
+let rmdir = Unix.rmdir
+let mkdir = Unix.mkdir
+let unlink = Unix.unlink
+let rename f1 f2 =
+  (* Comment from original C stub implementation:
+     Windows Unicode API: when a file cannot be renamed due to a sharing
+     violation error or an access denied error, retry for up to 1 second,
+     in case the file is temporarily opened by an indexer or an anti-virus. *)
+  let rec ren_aux delay =
+    try
+      Unix.rename f1 f2
+    with
+    | (Unix.Unix_error ((Unix.EACCES | Unix.EUNKNOWNERR (-32)), _, _)) as e ->
+                                       (* ERROR_SHARING_VIOLATION *)
+        if (delay < 1.) then begin
+          Unix.sleepf delay;
+          ren_aux (delay *. 2.)
+        end else
+          raise e
+    | e -> raise e
+  in
+  ren_aux 0.01
+let chmod = Unix.chmod
 let chown _ _ _ = raise (Unix.Unix_error (Unix.ENOSYS, "chown", ""))
-let utimes f t1 t2 = utimes_impl f (epath f) t1 t2
-let link f1 f2 = link_impl f1 (epath f1) (epath f2)
-let openfile f flags perm = open_impl f (epath f) flags perm
+let utimes = Unix.utimes
+let link s d = Unix.link s d
+let openfile f flags perm =
+  let fd = Unix.openfile f flags perm in
+  (* Comment from original C stub implementation:
+     Windows: implement somewhat the O_APPEND flag, so that appending
+     lines to a profile (ignored files, for instance) works instead of
+     overwriting the beginning of the file (the file pointer is moved to
+     the end when the file is opened, rather that each time something is
+     written, which is good enough here) *)
+  if List.mem Unix.O_APPEND flags then
+    ignore (Unix.LargeFile.lseek fd 0L Unix.SEEK_END);
+  fd
 
 let readlink f =
   (* Windows apparently mangles the link values if the value is an absolute
@@ -169,13 +167,16 @@ let readlink f =
 
 let symlink f t = Unix.symlink f t
 
-let chdir f =
-  try
-    chdir_impl f (path16 f) (* Better not to use [epath] here *)
-  with e -> sys_error e
+let chdir = Sys.chdir
+external long_name : string -> string = "win_long_path_name"
 let getcwd () =
   try
-    path8 (getcwd_impl ())
+    (* Normalize the path *)
+    let s = long_name (Sys.getcwd ()) in
+    (* Convert the drive letter to uppercase *)
+    match s.[0] with
+    | 'a' .. 'z' -> String.capitalize_ascii s
+    | _ -> s
   with e -> sys_error e
 
 let badFileRx = Rx.rx ".*[?*].*"
@@ -183,165 +184,37 @@ let badFileRx = Rx.rx ".*[?*].*"
 let opendir d =
   if Rx.match_string badFileRx d then
     raise (Unix.Unix_error (Unix.ENOENT, "opendir", d));
-  let (handle, entry_read) =
-    try
-      let (first_entry, handle) = findfirst (epath (fspathConcat d "*")) in
-      (handle, ref (Dir_read first_entry))
-    with End_of_file ->
-      (0, ref Dir_empty)
-  in
-  { readdir =
-      (fun () ->
-         match !entry_read with
-           Dir_empty     -> raise End_of_file
-         | Dir_read name -> entry_read := Dir_toread; path8 name
-         | Dir_toread    -> path8 (findnext handle));
-    closedir =
-      (fun () ->
-         match !entry_read with
-           Dir_empty -> ()
-         | _         -> findclose handle) }
+  let h = Unix.opendir d in
+  { readdir =  (fun () -> Unix.readdir h);
+    closedir = (fun () -> Unix.closedir h) }
 
-let rec conv_flags fl =
-  match fl with
-    Open_rdonly :: rem   -> Unix.O_RDONLY :: conv_flags rem
-  | Open_wronly :: rem   -> Unix.O_WRONLY :: conv_flags rem
-  | Open_append :: rem   -> Unix.O_APPEND :: conv_flags rem
-  | Open_creat :: rem    -> Unix.O_CREAT :: conv_flags rem
-  | Open_trunc :: rem    -> Unix.O_TRUNC :: conv_flags rem
-  | Open_excl :: rem     -> Unix.O_EXCL :: conv_flags rem
-  | Open_binary :: rem   -> conv_flags rem
-  | Open_text :: rem     -> conv_flags rem
-  | Open_nonblock :: rem -> Unix.O_NONBLOCK :: conv_flags rem
-  | []                   -> []
-
-let open_in_gen flags perms f =
-  try
-    Unix.in_channel_of_descr (openfile f (conv_flags flags) perms)
-  with e ->
-    sys_error e
-let open_out_gen flags perms f =
-  try
-    Unix.out_channel_of_descr (openfile f (conv_flags flags) perms)
-  with e ->
-    sys_error e
+let open_in_gen = open_in_gen
+let open_out_gen = open_out_gen
 
 (****)
 
-let file_exists f =
-  try
-    ignore (stat f); true
-  with
-    Unix.Unix_error ((Unix.ENOENT | Unix.ENOTDIR), _, _) ->
-      false
-  | e ->
-      sys_error e
-
-let open_in_bin f = open_in_gen [Open_rdonly; Open_binary] 0 f
+let file_exists = Sys.file_exists
+let open_in_bin = open_in_bin
 
 (****)
 
-external win_create_process :
-  string -> string -> string ->
-  Unix.file_descr -> Unix.file_descr -> Unix.file_descr -> int
-  = "w_create_process" "w_create_process_native"
-
-let make_cmdline args =
-  let maybe_quote f =
-    if String.contains f ' ' || String.contains f '\"'
-    then Filename.quote f
-    else f in
-  String.concat " " (List.map maybe_quote (Array.to_list args))
-
-let create_process prog args fd1 fd2 fd3 =
-  win_create_process
-    prog (utf16 prog) (utf16 (make_cmdline args)) fd1 fd2 fd3
+let create_process = Unix.create_process
 
 (****)
 
-(* The following is by Xavier Leroy and Pascal Cuoq,
-   projet Cristal, INRIA Rocquencourt.
-   Taken from the Objective Caml win32unix library. *)
-
-type popen_process =
-    Process of in_channel * out_channel
-  | Process_in of in_channel
-  | Process_out of out_channel
-  | Process_full of in_channel * out_channel * in_channel
-
-let popen_processes = (Hashtbl.create 7 : (popen_process, int) Hashtbl.t)
-
-let open_proc cmd proc input output error =
-  let shell =
-    try getenv "COMSPEC"
-    with Not_found -> raise(Unix.Unix_error(Unix.ENOEXEC, "open_proc", cmd)) in
-  let pid =
-    win_create_process
-      shell (utf16 shell) (utf16 (shell ^ " /c " ^ cmd)) input output error in
-  Hashtbl.add popen_processes proc pid
-
-let open_process_in cmd =
-  let (in_read, in_write) = Unix.pipe() in
-  Unix.set_close_on_exec in_read;
-  let inchan = Unix.in_channel_of_descr in_read in
-  open_proc cmd (Process_in inchan) Unix.stdin in_write Unix.stderr;
-  Unix.close in_write;
-  inchan
-
-let open_process_out cmd =
-  let (out_read, out_write) = Unix.pipe() in
-  Unix.set_close_on_exec out_write;
-  let outchan = Unix.out_channel_of_descr out_write in
-  open_proc cmd (Process_out outchan) out_read Unix.stdout Unix.stderr;
-  Unix.close out_read;
-  outchan
-
-let open_process_full cmd =
-  let (in_read, in_write) = Unix.pipe() in
-  let (out_read, out_write) = Unix.pipe() in
-  let (err_read, err_write) = Unix.pipe() in
-  Unix.set_close_on_exec in_read;
-  Unix.set_close_on_exec out_write;
-  Unix.set_close_on_exec err_read;
-  let inchan = Unix.in_channel_of_descr in_read in
-  let outchan = Unix.out_channel_of_descr out_write in
-  let errchan = Unix.in_channel_of_descr err_read in
-  open_proc cmd (Process_full(inchan, outchan, errchan))
-                out_read in_write err_write;
-  Unix.close out_read; Unix.close in_write; Unix.close err_write;
-  (inchan, outchan, errchan)
-
-let find_proc_id fun_name proc =
-  try
-    let pid = Hashtbl.find popen_processes proc in
-    Hashtbl.remove popen_processes proc;
-    pid
-  with Not_found ->
-    raise(Unix.Unix_error(Unix.EBADF, fun_name, ""))
-
-let close_process_in inchan =
-  let pid = find_proc_id "close_process_in" (Process_in inchan) in
-  close_in inchan;
-  snd(Unix.waitpid [] pid)
-
-let close_process_out outchan =
-  let pid = find_proc_id "close_process_out" (Process_out outchan) in
-  close_out outchan;
-  snd(Unix.waitpid [] pid)
-
-let close_process_full (inchan, outchan, errchan) =
-  let pid =
-    find_proc_id "close_process_full"
-                 (Process_full(inchan, outchan, errchan)) in
-  close_in inchan; close_out outchan; close_in errchan;
-  snd(Unix.waitpid [] pid)
+let open_process_in = Unix.open_process_in
+let open_process_out = Unix.open_process_out
+let open_process_full cmd = Unix.open_process_full cmd (Unix.environment ())
+let close_process_in = Unix.close_process_in
+let close_process_out = Unix.close_process_out
+let close_process_full = Unix.close_process_full
 
 (****)
 
-(* The new implementation of utimes does not have the limitation of
-   the standard one *)
+(* Works in Windows since OCaml 4.07 *)
 let canSetTime f = true
 
+(* Best effort inode numbers are provided in Windows since OCaml 4.03 *)
 (* We provide some kind of inode numbers *)
 (* However, these inode numbers are not usable on FAT filesystems, as
    renaming a file "b" over a file "a" does not change the inode
