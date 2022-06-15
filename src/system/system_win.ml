@@ -146,9 +146,6 @@ let opendir d =
 
 (****)
 
-(* Works in Windows since OCaml 4.07 *)
-let canSetTime f = true
-
 external hasCorrectCTime_impl : unit -> bool = "win_has_correct_ctime"
 
 let hasCorrectCTime = hasCorrectCTime_impl ()

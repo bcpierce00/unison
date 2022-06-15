@@ -45,7 +45,6 @@ val fingerprint : fspath -> Digest.t
 
 (****)
 
-val canSetTime : fspath -> bool
 val hasInodeNumbers : unit -> bool
 val hasSymlink : unit -> bool
 

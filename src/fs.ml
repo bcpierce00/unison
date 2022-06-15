@@ -70,7 +70,6 @@ let file_exists f =
 
 let fingerprint f = System.fingerprint (path f)
 
-let canSetTime f = System.canSetTime (path f)
 let hasInodeNumbers () = System.hasInodeNumbers ()
 let hasSymlink () = System.hasSymlink ()
 let hasCorrectCTime = System.hasCorrectCTime
