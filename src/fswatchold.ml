@@ -49,8 +49,8 @@ let watchercmd archHash root =
     let cmd = Printf.sprintf "python \"%s\" \"%s\" --outfile \"%s\" --statefile \"%s\" %s %s\n"
                 fsmonfile
                 root
-                (System.fspathToPrintString changefile)
-                (System.fspathToPrintString statefile)
+                changefile
+                statefile
                 (String.concat " " follow)
                 (String.concat " " paths) in
     debug (fun() -> Util.msg "watchercmd = %s\n" cmd);
@@ -59,7 +59,7 @@ let watchercmd archHash root =
 
 module StringSet= Set.Make (String)
 module RootMap = Map.Make (String)
-type watcherinfo = {file: System.fspath;
+type watcherinfo = {file: string;
                     mutable ch:in_channel option;
                     chars: Buffer.t;
                     mutable lines: string list}
@@ -106,7 +106,7 @@ let readChanges wi =
       (* Wait for change file to be built *)
       debug (fun() -> Util.msg
         "Waiting for change file %s\n"
-        (System.fspathToPrintString wi.file))
+        wi.file)
     end
   else
     (* Watcher running and channel built: go ahead and read *)

@@ -205,7 +205,6 @@ fileinfo.cmx : \
     fileinfo.cmi
 fileinfo.cmi : \
     ubase/umarshal.cmi \
-    system.cmi \
     props.cmi \
     ubase/prefs.cmi \
     path.cmi \
@@ -275,7 +274,6 @@ files.cmx : \
     files.cmi
 files.cmi : \
     uutil.cmi \
-    system.cmi \
     props.cmi \
     path.cmi \
     lwt/lwt_util.cmi \
@@ -338,7 +336,6 @@ fpcache.cmx : \
     fileinfo.cmx \
     fpcache.cmi
 fpcache.cmi : \
-    system.cmi \
     props.cmi \
     path.cmi \
     osx.cmi \
@@ -415,7 +412,6 @@ fspath.cmo : \
     uutil.cmi \
     ubase/util.cmi \
     ubase/umarshal.cmi \
-    system.cmi \
     ubase/rx.cmi \
     path.cmi \
     name.cmi \
@@ -425,7 +421,6 @@ fspath.cmx : \
     uutil.cmx \
     ubase/util.cmx \
     ubase/umarshal.cmx \
-    system.cmx \
     ubase/rx.cmx \
     path.cmx \
     name.cmx \
@@ -433,7 +428,6 @@ fspath.cmx : \
     fspath.cmi
 fspath.cmi : \
     ubase/umarshal.cmi \
-    system.cmi \
     path.cmi \
     name.cmi
 fswatch.cmo : \
@@ -557,8 +551,7 @@ lock.cmx : \
     ubase/util.cmx \
     system.cmx \
     lock.cmi
-lock.cmi : \
-    system.cmi
+lock.cmi :
 lwt/example/editor.cmo : \
     lwt/lwt_unix.cmi
 lwt/example/editor.cmx : \
@@ -715,7 +708,6 @@ osx.cmo : \
     ubase/util.cmi \
     ubase/umarshal.cmi \
     ubase/trace.cmi \
-    system.cmi \
     ubase/safelist.cmi \
     ubase/prefs.cmi \
     path.cmi \
@@ -729,7 +721,6 @@ osx.cmx : \
     ubase/util.cmx \
     ubase/umarshal.cmx \
     ubase/trace.cmx \
-    system.cmx \
     ubase/safelist.cmx \
     ubase/prefs.cmx \
     path.cmx \
@@ -1168,8 +1159,7 @@ ubase/prefs.cmx : \
     ubase/prefs.cmi
 ubase/prefs.cmi : \
     ubase/util.cmi \
-    ubase/umarshal.cmi \
-    system.cmi
+    ubase/umarshal.cmi
 ubase/projectInfo.cmo :
 ubase/projectInfo.cmx :
 ubase/proplist.cmo : \
@@ -1235,8 +1225,7 @@ ubase/util.cmx : \
     ubase/safelist.cmx \
     ubase/projectInfo.cmx \
     ubase/util.cmi
-ubase/util.cmi : \
-    system.cmi
+ubase/util.cmi :
 ui.cmi :
 uicommon.cmo : \
     xferhint.cmi \

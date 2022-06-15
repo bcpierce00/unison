@@ -2,7 +2,7 @@
 (* Copyright 1999-2020, Benjamin C. Pierce (see COPYING for details) *)
 
 (* Initialize the cache *)
-val init : bool -> bool -> System.fspath -> unit
+val init : bool -> bool -> string -> unit
 
 (* Close the cache file and clear the in-memory cache *)
 val finish : unit -> unit

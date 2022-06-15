@@ -73,18 +73,6 @@ val createString :
      -> string              (* full (tex) documentation string *)
      -> string t            (*   -> new preference value *)
 
-val createFspath :
-        string              (* preference name *)
-     -> category:group
-     -> ?cli_only:bool      (* only a command line option, not in a profile *)
-     -> ?local:bool             (* whether it is local to the client *)
-     -> ?send:(unit->bool)  (* whether preference should be sent to server *)
-     -> System.fspath       (* initial value *)
-     -> ?deprecated:bool    (* preference is deprecated (default false) *)
-     -> string              (* documentation string *)
-     -> string              (* full (tex) documentation string *)
-     -> System.fspath t     (*   -> new preference value *)
-
 val createStringList :
         string              (* preference name *)
      -> category:group
@@ -166,7 +154,7 @@ val printUsageForMan : unit -> unit
 val profileName : string option ref
 
 (* Calculate the full pathname of a preference file                          *)
-val profilePathname : ?add_ext:bool -> string -> System.fspath
+val profilePathname : ?add_ext:bool -> string -> string
 
 (* Check whether the profile file is unchanged                               *)
 val profileUnchanged : unit -> bool

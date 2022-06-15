@@ -21,14 +21,7 @@ let mfspath = Umarshal.string
 
 let extendedPath f = f
 
-let fspathFromString f = f
-let fspathToPrintString f = f
-let fspathToString f = f
 let fspathToDebugString f = String.escaped f
-
-let fspathConcat = Filename.concat
-let fspathDirname = Filename.dirname
-let fspathAddSuffixToFinalName f suffix = f ^ suffix
 
 (****)
 

@@ -40,7 +40,6 @@ let m = Umarshal.(sum1 string (function Fspath a -> a) (function a -> Fspath a))
 let toString (Fspath f) = f
 let toPrintString (Fspath f) = f
 let toDebugString (Fspath f) = String.escaped f
-let toSysPath (Fspath f) = System.fspathFromString f
 
 (* Needed to hack around some ocaml/Windows bugs, see comment at stat, below *)
 let winRootRx = Rx.rx "(([a-zA-Z]:)?/|//[^/]+/[^/]+/)"
@@ -336,7 +335,7 @@ let findWorkingDir fspath path =
 
                [chdir] hack from [canonizeFspath] above seems to be the current
                best compromise. *)
-            Fs.fspathConcat (Fs.fspathDirname p) link
+            Filename.concat (Filename.dirname p) link
             |> fun l ->
               if Util.osType = `Win32 then
                 let Fspath l' = canonizeFspath (Some l) in

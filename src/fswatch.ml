@@ -222,26 +222,24 @@ let read_line i =
 (****)
 
 let path =
-  List.map System.fspathFromString
-    (try
+    try
        Str.split (Str.regexp (if Util.osType = `Win32 then ";" else ":"))
          (Sys.getenv "PATH")
      with Not_found ->
-       [])
+       []
 
 let search_in_path ?(path = path) name =
-  System.fspathConcat
+  Filename.concat
     (List.find (fun dir ->
-       let p = System.fspathConcat dir name in
+       let p = Filename.concat dir name in
        let found = System.file_exists p in
-       debug (fun () -> Util.msg "'%s' ...%s\n"
-         (System.fspathToString p)
+       debug (fun () -> Util.msg "'%s' ...%s\n" p
          (match found with true -> "found" | false -> "not found"));
        found)
     path)
     name
 
-let exec_path = [System.fspathFromString Sys.executable_name]
+let exec_path = [Sys.executable_name]
 (*
   try
     (* Linux *)
@@ -259,13 +257,12 @@ let exec_path = [System.fspathFromString Sys.executable_name]
       [System.fspathConcat (System.getcwd ()) name]
 *)
 
-let exec_dir = List.map System.fspathDirname exec_path
+let exec_dir = List.map Filename.dirname exec_path
 
 let watcher =
   lazy
     (let suffix = if Util.osType = `Win32 then ".exe" else "" in
      debug (fun () -> Util.msg "File monitoring helper program...\n");
-     System.fspathToString
        (try
           search_in_path ~path:(exec_dir @ path)
             ("unison-fsmonitor-" ^ Uutil.myMajorVersion ^ suffix)

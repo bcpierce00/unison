@@ -14,7 +14,6 @@ val canonize : string option -> t
 val toString : t -> string
 val toPrintString : t -> string
 val toDebugString : t -> string
-val toSysPath : t -> System.fspath
 
 (* If fspath+path refers to a (followed) symlink, then return the directory  *)
 (* of the symlink's target; otherwise return the parent dir of path.  If     *)

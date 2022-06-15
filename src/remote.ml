@@ -2151,7 +2151,7 @@ let beAServer () =
     let home = System.getenv "HOME" in
     Util.convertUnixErrorsToFatal
       "changing working directory"
-      (fun () -> System.chdir (System.fspathFromString home))
+      (fun () -> System.chdir home)
   with Not_found ->
     Util.msg
       "Environment variable HOME unbound: \

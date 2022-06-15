@@ -471,7 +471,7 @@ let loadArchiveLocal fspath (thisRoot: string) :
                          ^ (String.concat ", " (Safelist.filter
                              (fun x -> not (Safelist.mem x commonFts)) featrs))
                          ^ "\nArchive file: "
-                         ^ System.fspathToPrintString fspath ^ "\n\
+                         ^ fspath ^ "\n\
                          You should either upgrade Unison or invoke Unison \
                          once with -ignorearchives flag and then try again."));
         try
@@ -1005,7 +1005,7 @@ let loadArchives (optimistic: bool) =
       ^ "     (in case they may be useful for debugging).\n"
       ^ "     The archive files on this machine are in the directory\n"
       ^ (Printf.sprintf "       %s\n"
-           (System.fspathToPrintString Util.unisonDir))
+           Util.unisonDir)
       ^ "     and have names of the form\n"
       ^ "       arXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n"
       ^ "     where the X's are hexadecimal numbers.\n"
@@ -1024,7 +1024,7 @@ let lockArchiveLocal fspath =
     None
   else
     Some (Printf.sprintf "The file %s on host %s should be deleted"
-            (System.fspathToPrintString lockFile) (Os.myCanonicalHostName ()))
+            lockFile (Os.myCanonicalHostName ()))
 
 let lockArchiveOnRoot: Common.root -> unit -> string option Lwt.t =
   Remote.registerRootCmd

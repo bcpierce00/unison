@@ -462,7 +462,6 @@ let padto n s = s ^ (String.make (max 0 (n - String.length s)) ' ')
 (*****************************************************************************)
 
 let homeDir () =
-  System.fspathFromString
     (if (osType = `Unix) || isCygwin then
        safeGetenv "HOME"
      else if osType = `Win32 then
@@ -483,7 +482,7 @@ let homeDir () =
      else
        assert false (* osType can't be anything else *))
 
-let fileInHomeDir n = System.fspathConcat (homeDir ()) n
+let fileInHomeDir n = Filename.concat (homeDir ()) n
 
 (*****************************************************************************)
 (*                       .unison dir                                         *)
@@ -495,7 +494,7 @@ let isMacOSX = isMacOSXPred ()
 
 let unisonDir =
   try
-    System.fspathFromString (System.getenv "UNISON")
+    System.getenv "UNISON"
   with Not_found ->
     let genericName =
       fileInHomeDir (Printf.sprintf ".%s" ProjectInfo.myName) in
@@ -504,11 +503,9 @@ let unisonDir =
     else
       genericName
 
-let unisonDirStr = System.fspathToString unisonDir
-
-let fileInUnisonDir str = System.fspathConcat unisonDir str
+let fileInUnisonDir str = Filename.concat unisonDir str
 
 let fileMaybeRelToUnisonDir n =
   if Filename.is_relative n
   then fileInUnisonDir n
-  else System.fspathFromString n
+  else n
