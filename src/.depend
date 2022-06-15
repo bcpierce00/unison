@@ -412,6 +412,7 @@ fspath.cmo : \
     uutil.cmi \
     ubase/util.cmi \
     ubase/umarshal.cmi \
+    system.cmi \
     ubase/rx.cmi \
     path.cmi \
     name.cmi \
@@ -421,6 +422,7 @@ fspath.cmx : \
     uutil.cmx \
     ubase/util.cmx \
     ubase/umarshal.cmx \
+    system.cmx \
     ubase/rx.cmx \
     path.cmx \
     name.cmx \

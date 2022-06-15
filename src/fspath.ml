@@ -28,8 +28,6 @@
 (*      All fspaths are absolute                                             *)
 (*                                                                         - *)
 
-module Fs = System_impl
-
 let debug = Util.debug "fspath"
 let debugverbose = Util.debug "fsspath+"
 
@@ -233,12 +231,12 @@ let canonizeFspath p0 =
   let p = match p0 with None -> "." | Some "" -> "." | Some s -> s in
   let p' =
     begin
-      let original = Fs.getcwd() in
+      let original = System.getcwd () in
       try
         let newp =
-          (Fs.chdir p; (* This might raise Sys_error *)
-           Fs.getcwd()) in
-        Fs.chdir original;
+          System.chdir p; (* This might raise Sys_error *)
+          System.getcwd () in
+        System.chdir original;
         newp
       with
         Sys_error why ->
@@ -258,12 +256,12 @@ let canonizeFspath p0 =
                "Cannot find canonical name of root directory %s\n(%s)" p why));
           let parent = Filename.dirname p in
           let parent' = begin
-            (try Fs.chdir parent with
+            (try System.chdir parent with
                Sys_error why2 -> raise (Util.Fatal (Printf.sprintf
                  "Cannot find canonical name of %s: unable to cd either to it \
 (%s)\nor to its parent %s\n(%s)" p why parent why2)));
-            Fs.getcwd() end in
-          Fs.chdir original;
+            System.getcwd () end in
+          System.chdir original;
           let bn = Filename.basename p in
           if bn="" then parent'
           else toString(child (localString2fspath parent')
@@ -310,7 +308,7 @@ let findWorkingDir fspath path =
            is an absolute path) - such paths are potentially unsuitable as
            input to [extendedPath] - or already extended (when concatenating
            a relative path). *)
-        let link = Fs.readlink (if n = 0 then Fs.extendedPath p else p) in
+        let link = System.readlink (if n = 0 then System.extendedPath p else p) in
         let linkabs =
           if Filename.is_relative link then
             (* FIXME? On Windows, this concatenation will potentially create
@@ -339,7 +337,7 @@ let findWorkingDir fspath path =
             |> fun l ->
               if Util.osType = `Win32 then
                 let Fspath l' = canonizeFspath (Some l) in
-                Fs.extendedPath l'
+                System.extendedPath l'
               else l
           else link in
         followlinks (n+1) linkabs
