@@ -12,6 +12,10 @@
 #include <caml/unixsupport.h>
 #include <caml/socketaddr.h>
 #include <caml/version.h>
+#if OCAML_VERSION < 41300
+#define CAML_INTERNALS /* was needed from OCaml 4.06 to 4.12 */
+#endif
+#include <caml/osdeps.h>
 
 #if OCAML_VERSION_MAJOR < 5
 #define caml_unix_error_of_code unix_error_of_code
@@ -650,14 +654,16 @@ CAMLprim value win_parse_directory_changes (value buf_val) {
   CAMLlocal4(lst, tmp, elt, filename);
   char * pos = Array_data(buf_val, 0);
   FILE_NOTIFY_INFORMATION * entry;
+  wchar_t *namebuf;
 
   lst = Val_long(0);
   while (1) {
     entry = (FILE_NOTIFY_INFORMATION *)pos;
+    namebuf = calloc(entry->FileNameLength + 2, 1);
+    memmove(namebuf, entry->FileName, entry->FileNameLength);
     elt = caml_alloc_tuple(2);
-    filename = caml_alloc_string(entry->FileNameLength);
-    memmove((char *)String_val(filename), entry->FileName, entry->FileNameLength);
-    Store_field (elt, 0, filename);
+    Store_field (elt, 0, caml_copy_string_of_utf16(namebuf));
+    free(namebuf);
     Store_field (elt, 1, Val_long(entry->Action - 1));
     tmp = caml_alloc_tuple(2);
     Store_field (tmp, 0, elt);
@@ -669,16 +675,19 @@ CAMLprim value win_parse_directory_changes (value buf_val) {
   CAMLreturn(lst);
 }
 
-CAMLprim value win_open_directory (value path, value wpath) {
-  CAMLparam2 (path, wpath);
+CAMLprim value win_open_directory (value path) {
+  CAMLparam1 (path);
   HANDLE h;
-  h = CreateFileW((LPCWSTR) String_val(wpath),
+  wchar_t *wpath = caml_stat_strdup_to_utf16(String_val(path));
+
+  h = CreateFileW(wpath,
                   FILE_LIST_DIRECTORY,
                   FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
                   NULL,
                   OPEN_EXISTING,
                   FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED,
                   NULL);
+  caml_stat_free(wpath);
   if (h == INVALID_HANDLE_VALUE) {
     caml_win32_maperr(GetLastError());
     caml_uerror("open", path);
@@ -686,14 +695,14 @@ CAMLprim value win_open_directory (value path, value wpath) {
   CAMLreturn(caml_win32_alloc_handle(h));
 }
 
-value copy_wstring(LPCWSTR s);
-
 CAMLprim value win_long_path_name(value path) {
   CAMLparam1(path);
+  wchar_t *wpath = caml_stat_strdup_to_utf16(String_val(path));
   wchar_t lbuf[32768] = L"";
   DWORD res;
 
-  res = GetLongPathNameW((LPCWSTR) String_val(path), lbuf, 32768);
+  res = GetLongPathNameW(wpath, lbuf, 32768);
+  caml_stat_free(wpath);
 
-  CAMLreturn(res == 0 || res > 32767 ? path : copy_wstring(lbuf));
+  CAMLreturn(res == 0 || res > 32767 ? path : caml_copy_string_of_utf16(lbuf));
 }

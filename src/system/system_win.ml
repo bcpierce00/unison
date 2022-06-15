@@ -48,17 +48,7 @@ let extendedPath f =
   else
     f
 
-let encodingError p =
-  raise
-    (Sys_error
-       (Format.sprintf "The file path '%s' is not encoded in Unicode." p))
-
-let path8 = Unicode.from_utf_16(*_filename*)
-let epath f =
-  try
-    Unicode.to_utf_16(*_filename*) (extendedPath f)
-  with
-    Unicode.Invalid -> encodingError f
+(****)
 
 let sys_error e =
   match e with
@@ -80,9 +70,9 @@ let argv () = Sys.argv
 type dir_handle = System_generic.dir_handle
                 = { readdir : unit -> string; closedir : unit -> unit }
 
-external stat_impl : string -> string -> bool -> Unix.LargeFile.stats = "win_stat"
-let stat f = stat_impl f (epath f) false
-let lstat f = stat_impl f (epath f) true
+external stat_impl : string -> bool -> Unix.LargeFile.stats = "win_stat"
+let stat f = stat_impl f false
+let lstat f = stat_impl f true
 let rmdir = Unix.rmdir
 let mkdir = Unix.mkdir
 let unlink = Unix.unlink

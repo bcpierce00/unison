@@ -13,24 +13,16 @@
 #include <caml/fail.h>
 #include <caml/unixsupport.h>
 #include <caml/version.h>
+#if OCAML_VERSION < 41300
+#define CAML_INTERNALS /* was needed from OCaml 4.06 to 4.12 */
+#endif
+#include <caml/osdeps.h>
 
 #if OCAML_VERSION_MAJOR < 5
 #define caml_uerror uerror
 #define caml_win32_maperr win32_maperr
 #define caml_win32_alloc_handle win_alloc_handle
 #endif
-
-value copy_wstring(LPCWSTR s)
-{
-  int len;
-  value res;
-
-  len = 2 * wcslen(s) + 2;  /* NULL character included */
-  res = caml_alloc_string(len);
-  memmove((char *)String_val(res), s, len);
-  return res;
-}
-
 
 
 /* Parts of code in the following section are originally copied from libuv.
@@ -288,7 +280,7 @@ CAMLprim value win_has_correct_ctime(value unit)
 #define FILETIME_TO_TIME(ft) WINTIME_TO_TIME((((ULONGLONG) ft.dwHighDateTime) << 32) + ft.dwLowDateTime)
 #define FILETIME_NT_TO_TIME(ft) WINTIME_TO_TIME(ft.QuadPart)
 
-CAMLprim value win_stat(value path, value wpath, value lstat)
+CAMLprim value win_stat(value path, value lstat)
 {
   uintnat dev;
   uintnat ino;
@@ -307,17 +299,20 @@ CAMLprim value win_stat(value path, value wpath, value lstat)
   BY_HANDLE_FILE_INFORMATION info;
   IO_STATUS_BLOCK io_status;
   FILE_ALL_INFORMATION file_info;
-  CAMLparam3(path,wpath, lstat);
+  CAMLparam2(path, lstat);
   CAMLlocal1 (v);
   char *fname = Bool_val(lstat) ? "lstat" : "stat";
 
   win_init();
 
-  h = CreateFileW ((LPCWSTR) String_val (wpath), FILE_READ_ATTRIBUTES,
+  wchar_t *wpath = caml_stat_strdup_to_utf16(String_val(path));
+
+  h = CreateFileW (wpath, FILE_READ_ATTRIBUTES,
                    FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE,
                    NULL, OPEN_EXISTING,
                    FILE_FLAG_BACKUP_SEMANTICS | FILE_ATTRIBUTE_READONLY |
                    (Bool_val(lstat) ? FILE_FLAG_OPEN_REPARSE_POINT : 0), NULL);
+  caml_stat_free(wpath);
 
   if (h == INVALID_HANDLE_VALUE) {
     caml_win32_maperr(GetLastError());
@@ -366,7 +361,7 @@ CAMLprim value win_stat(value path, value wpath, value lstat)
   }
 
   if (Bool_val(lstat) && !syml) {
-    CAMLreturn(win_stat(path, wpath, Val_false));
+    CAMLreturn(win_stat(path, Val_false));
   }
 
   dev = info.dwVolumeSerialNumber;
