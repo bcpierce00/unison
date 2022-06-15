@@ -15,5 +15,4 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 *)
 
-module System = System_generic
-module Fs = System_generic
+include System_generic

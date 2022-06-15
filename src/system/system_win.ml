@@ -22,8 +22,6 @@ http://www.codeproject.com/KB/cpp/unicode_console_output.aspx?display=Print
 
 *)
 
-module M (P : sig val useLongUNCPaths : bool end) = struct
-
 type fspath = string
 
 let mfspath = Umarshal.string
@@ -39,20 +37,11 @@ let fspathAddSuffixToFinalName f suffix = f ^ suffix
 
 (****)
 
-let fixPath f =
-  let length = String.length f in
-  let buffer = Bytes.create length in
-  String.blit f 0 buffer 0 length;
-  for i = 0 to length - 1 do
-    if Bytes.get buffer i = '/' then Bytes.set buffer i '\\'
-  done;
-  Bytes.to_string buffer
+let fixPath f = String.map (function '/' -> '\\' | c -> c) f
 let winRootRx = Rx.rx "[a-zA-Z]:[/\\].*"
-let winUncRx = Rx.rx "[/\\][/\\][^/\\]+[/\\][^/\\]+[/\\].*"
+let winUncRx = Rx.rx "[/\\][/\\][^?/\\]+[/\\][^/\\]+[/\\].*"
 let extendedPath f =
-  if not P.useLongUNCPaths then
-    f
-  else if Rx.match_string winRootRx f then
+  if Rx.match_string winRootRx f then
     fixPath ("\\\\?\\" ^ f)
   else if Rx.match_string winUncRx f then
     fixPath ("\\\\?\\UNC" ^ String.sub f 1 (String.length f - 1))
@@ -180,9 +169,14 @@ let getcwd () =
   with e -> sys_error e
 
 let badFileRx = Rx.rx ".*[?*].*"
+let winFileNsPathRx = Rx.rx "[/\\][/\\][?][/\\].+"
 
 let opendir d =
-  if Rx.match_string badFileRx d then
+  (* Windows uses wildcards to retrieve the list of files in a directory.
+     It is not possible to list files in a directory when the path name
+     itself contains the wildcards "*" or "?". *)
+  let d' = if Rx.match_string winFileNsPathRx d then String.sub d 4 (String.length d - 4) else d in
+  if Rx.match_string badFileRx d' then
     raise (Unix.Unix_error (Unix.ENOENT, "opendir", d));
   let h = Unix.opendir d in
   { readdir =  (fun () -> Unix.readdir h);
@@ -284,5 +278,3 @@ let fingerprint f =
   let d = Digest.channel ic (-1) in
   close_in ic;
   d
-
-end

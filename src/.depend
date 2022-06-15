@@ -346,9 +346,11 @@ fpcache.cmi : \
     fspath.cmi \
     fileinfo.cmi
 fs.cmo : \
+    system.cmi \
     fspath.cmi \
     fs.cmi
 fs.cmx : \
+    system.cmx \
     fspath.cmx \
     fs.cmi
 fs.cmi : \
@@ -598,9 +600,11 @@ lwt/pqueue.cmx : \
     lwt/pqueue.cmi
 lwt/pqueue.cmi :
 lwt/win/lwt_unix_impl.cmo : \
+    system/system_win.cmo \
     lwt/pqueue.cmi \
     lwt/lwt.cmi
 lwt/win/lwt_unix_impl.cmx : \
+    system/system_win.cmx \
     lwt/pqueue.cmx \
     lwt/lwt.cmx
 lwt/win/lwt_win.cmo : \

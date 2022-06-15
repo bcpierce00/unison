@@ -62,6 +62,8 @@ module type Full = sig
 
 include Core
 
+val extendedPath : string -> fspath
+
 val putenv : string -> string -> unit
 val getenv : string -> string
 val argv : unit -> string array

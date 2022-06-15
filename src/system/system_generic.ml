@@ -19,6 +19,8 @@ type fspath = string
 
 let mfspath = Umarshal.string
 
+let extendedPath f = f
+
 let fspathFromString f = f
 let fspathToPrintString f = f
 let fspathToString f = f

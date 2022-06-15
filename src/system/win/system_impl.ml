@@ -15,6 +15,4 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 *)
 
-module System = System_win.M (struct let useLongUNCPaths = false end)
-
-module Fs = System_win.M (struct let useLongUNCPaths = true end)
+include System_win

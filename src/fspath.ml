@@ -28,7 +28,7 @@
 (*      All fspaths are absolute                                             *)
 (*                                                                         - *)
 
-module Fs = System_impl.Fs
+module Fs = System_impl
 
 let debug = Util.debug "fspath"
 let debugverbose = Util.debug "fsspath+"
@@ -304,14 +304,49 @@ let findWorkingDir fspath path =
           (Util.Transient (Printf.sprintf
              "Too many symbolic links from %s" abspath));
       try
-        let link = Fs.readlink p in
+        (* Relevant on Windows: We can (and should) use [extendedPath] only
+           on the very first input, which is known to satisfy [Fspath.t]
+           invariants. Inputs used for all following loops come from the ouput
+           of [readlink] either without any processing done on it (if the link
+           is an absolute path) - such paths are potentially unsuitable as
+           input to [extendedPath] - or already extended (when concatenating
+           a relative path). *)
+        let link = Fs.readlink (if n = 0 then Fs.extendedPath p else p) in
         let linkabs =
           if Filename.is_relative link then
+            (* FIXME? On Windows, this concatenation will potentially create
+               an invalid path if [link] contains components like "." and "..".
+               These components will not be processed by Windows if [p] has
+               prefix \\?\ or //?/ or if the resulting path is later used as
+               input to a syscall via [Fs] module (then the said prefix could be
+               added automatically).
+               https://docs.microsoft.com/en-us/windows/win32/fileio/naming-a-file#win32-file-namespaces
+
+               The solution is perhaps to replace the entire [followlinks]
+               function with realpath(3) on POSIX platforms. The respective
+               function in Windows seems to be GetFinalPathNameByHandle, which
+               is available since Windows Vista.
+               [Unix.realpath] first appeared in OCaml 4.13.
+
+               However, realpath(3) does not have exactly the same semantics as
+               the current [followlinks] function. [followlinks] will go as far
+               as it can and gives the last successful intermediary path as the
+               result when an error happens. realpath(3) will give you all or
+               nothing.
+
+               [chdir] hack from [canonizeFspath] above seems to be the current
+               best compromise. *)
             Fs.fspathConcat (Fs.fspathDirname p) link
+            |> fun l ->
+              if Util.osType = `Win32 then
+                let Fspath l' = canonizeFspath (Some l) in
+                Fs.extendedPath l'
+              else l
           else link in
         followlinks (n+1) linkabs
       with
-        Unix.Unix_error _ -> p in
+      | Unix.Unix_error _ | Util.Fatal _ -> p
+    in
     followlinks 0 abspath in
   if isRootDir realpath then
     raise (Util.Transient(Printf.sprintf
