@@ -33,7 +33,7 @@ let create name mode =
     false
 
 let rec unique name i mode =
-  let nm = System.fspathAddSuffixToFinalName name (string_of_int i) in
+  let nm = name ^ (string_of_int i) in
   if create nm mode then nm else
     (* highly unlikely *)
     unique name (i + 1) mode

@@ -543,29 +543,7 @@ let set fspath path kind t =
         "setting modification time"
         (fun () ->
            let abspath = Fspath.concat fspath path in
-           if not (Fs.canSetTime abspath) then
-             begin
-              (* Nb. This workaround was proposed by Dmitry Bely, to
-                 work around the fact that Unix.utimes fails on readonly
-                 files under windows.  I'm [bcp] a little bit uncomfortable
-                 with it for two reasons: (1) if we crash in the middle,
-                 the permissions might be left in a bad state, and (2) I
-                 don't understand the Win32 permissions model enough to
-                 know whether it will always work -- e.g., what if the
-                 UID of the unison process is not the same as that of the
-                 file itself (under Unix, this case would fail, but we
-                 certainly don't want to make it WORLD-writable, even
-                 briefly!). *)
-               let oldPerms =
-                 (Fs.lstat abspath).Unix.LargeFile.st_perm in
-               Util.finalize
-                 (fun()->
-                    Fs.chmod abspath 0o600;
-                    Fs.utimes abspath (if v = 0. then 1e-12 else v) v)
-                    (* See comment about this statement further below *)
-                 (fun()-> Fs.chmod abspath oldPerms)
-             end
-           else if false then begin
+           if false then begin
              (* A special hack for Rasmus, who has a special situation that
                 requires the utimes-setting program to run 'setuid root'
                 (and we do not want all of Unison to run setuid, so we just

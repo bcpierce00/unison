@@ -28,8 +28,6 @@
 (*      All fspaths are absolute                                             *)
 (*                                                                         - *)
 
-module Fs = System_impl.Fs
-
 let debug = Util.debug "fspath"
 let debugverbose = Util.debug "fsspath+"
 
@@ -40,18 +38,48 @@ let m = Umarshal.(sum1 string (function Fspath a -> a) (function a -> Fspath a))
 let toString (Fspath f) = f
 let toPrintString (Fspath f) = f
 let toDebugString (Fspath f) = String.escaped f
-let toSysPath (Fspath f) = System.fspathFromString f
 
 (* Needed to hack around some ocaml/Windows bugs, see comment at stat, below *)
-let winRootRx = Rx.rx "(([a-zA-Z]:)?/|//[^/]+/[^/]+/)"
+let winRootRx = Rx.rx "(([a-zA-Z]:)?/|//[^?/]+/[^/]+/|//[?]/[Uu][Nn][Cc]/[^/]+/[^/]+/)|//[?]/([^Uu][^/]*|[Uu]|[Uu][^Nn][^/]*|[Uu][Nn]|[Uu][Nn][^Cc][^/]*|[Uu][Nn][Cc][^/]+)/"
 (* FIX I think we could just check the last character of [d]. *)
 let isRootDir d =
 (* We assume all path separators are slashes in d                            *)
   d="/" ||
   (Util.osType = `Win32 && Rx.match_string winRootRx d)
-let winRootFixRx = Rx.rx "//[^/]+/[^/]+"
+(* Here, backslashes are allowed as path separators in Windows               *)
+let isRootDirLocalString d =
+  let d =
+    if Util.osType = `Win32 then Fileutil.backslashes2forwardslashes d else d
+  in
+  isRootDir ((Fileutil.removeTrailingSlashes d) ^ "/")
 let winRootFix d =
-  if Rx.match_string winRootFixRx d then d^"/" else d
+  if Rx.match_string winRootRx (d ^ "/") then d ^ "/" else d
+let winFNsPrefixRx = Rx.rx "[\\/][\\/][?][\\/][^\\/]+"
+let isInvalidWinPath p =
+  Rx.match_string winFNsPrefixRx p (* Is there a path after the prefix? *)
+let winSafeDirname p =
+  if Util.osType <> `Win32 then
+    Filename.dirname p
+  else
+    (* [Filename.dirname] can't handle Windows paths prefixed with \\?\
+       (Win32 file namespace) if [dirname] goes all the way up to the fs root.
+       Most paths are still processed correctly because they are basically a
+       DOS path prefixed with \\?\ or something similar to \\server\share\
+       paths. Only paths right at the fs root are problematic.
+
+       \\?\C:\ becomes \\? (correct is \\?\C:\)
+       \\?\C:\sub becomes \\?\C (correct is \\?\C:\)
+       \\?\Volume{GUID}\ becomes \\? (correct is \\?\Volume{GUID}\)
+       \\?\Volume{GUID}\sub becomes \\?\Volume{GUID} (correct is \\?\Volume{GUID}\)
+
+       As a workaround, first remove the \\?\ prefix and the first component of
+       the path (usually this would be the "volume", except for UNC paths).
+       Then add the removed prefix back to the result of [dirname]. *)
+    match Rx.match_prefix winFNsPrefixRx p 0 with
+    | None -> Filename.dirname p
+    | Some pos ->
+        String.sub p 0 pos ^
+          Filename.dirname (String.sub p pos (String.length p - pos))
 
 (* [differentSuffix: fspath -> fspath -> (string * string)] returns the      *)
 (* least distinguishing suffixes of two fspaths, for displaying in the user  *)
@@ -234,12 +262,12 @@ let canonizeFspath p0 =
   let p = match p0 with None -> "." | Some "" -> "." | Some s -> s in
   let p' =
     begin
-      let original = Fs.getcwd() in
+      let original = System.getcwd () in
       try
         let newp =
-          (Fs.chdir p; (* This might raise Sys_error *)
-           Fs.getcwd()) in
-        Fs.chdir original;
+          System.chdir p; (* This might raise Sys_error *)
+          System.getcwd () in
+        System.chdir original;
         newp
       with
         Sys_error why ->
@@ -253,18 +281,19 @@ let canonizeFspath p0 =
           (* fails, we just quit.  This works nicely for most cases of (1),  *)
           (* it works for (2), and on (3) it may leave a mess for someone    *)
           (* else to pick up.                                                *)
-          let p = if Util.osType = `Win32 then Fileutil.backslashes2forwardslashes p else p in
-          if isRootDir p then raise
+          if isRootDirLocalString p || isInvalidWinPath p then raise
             (Util.Fatal (Printf.sprintf
-               "Cannot find canonical name of root directory %s\n(%s)" p why));
-          let parent = Filename.dirname p in
+               "Cannot find canonical name of root directory %s\n(%s)%s" p why
+               (if isInvalidWinPath p then "\nMaybe you need to add a "
+                 ^ "backslash at end of the root path?" else "")));
+          let parent = winSafeDirname p in
           let parent' = begin
-            (try Fs.chdir parent with
+            (try System.chdir parent with
                Sys_error why2 -> raise (Util.Fatal (Printf.sprintf
                  "Cannot find canonical name of %s: unable to cd either to it \
 (%s)\nor to its parent %s\n(%s)" p why parent why2)));
-            Fs.getcwd() end in
-          Fs.chdir original;
+            System.getcwd () end in
+          System.chdir original;
           let bn = Filename.basename p in
           if bn="" then parent'
           else toString(child (localString2fspath parent')
@@ -304,28 +333,62 @@ let findWorkingDir fspath path =
           (Util.Transient (Printf.sprintf
              "Too many symbolic links from %s" abspath));
       try
-        let link = Fs.readlink p in
+        (* Relevant on Windows: We can (and should) use [extendedPath] only
+           on the very first input, which is known to satisfy [Fspath.t]
+           invariants. Inputs used for all following loops come from the ouput
+           of [readlink] either without any processing done on it (if the link
+           is an absolute path) - such paths are potentially unsuitable as
+           input to [extendedPath] - or already extended (when concatenating
+           a relative path). *)
+        let link = System.readlink (if n = 0 then System.extendedPath p else p) in
         let linkabs =
           if Filename.is_relative link then
-            Fs.fspathConcat (Fs.fspathDirname p) link
+            (* FIXME? On Windows, this concatenation will potentially create
+               an invalid path if [link] contains components like "." and "..".
+               These components will not be processed by Windows if [p] has
+               prefix \\?\ or //?/ or if the resulting path is later used as
+               input to a syscall via [Fs] module (then the said prefix could be
+               added automatically).
+               https://docs.microsoft.com/en-us/windows/win32/fileio/naming-a-file#win32-file-namespaces
+
+               The solution is perhaps to replace the entire [followlinks]
+               function with realpath(3) on POSIX platforms. The respective
+               function in Windows seems to be GetFinalPathNameByHandle, which
+               is available since Windows Vista.
+               [Unix.realpath] first appeared in OCaml 4.13.
+
+               However, realpath(3) does not have exactly the same semantics as
+               the current [followlinks] function. [followlinks] will go as far
+               as it can and gives the last successful intermediary path as the
+               result when an error happens. realpath(3) will give you all or
+               nothing.
+
+               [chdir] hack from [canonizeFspath] above seems to be the current
+               best compromise. *)
+            Filename.concat (winSafeDirname p) link
+            |> fun l ->
+              if Util.osType = `Win32 then
+                let Fspath l' = canonizeFspath (Some l) in
+                System.extendedPath l'
+              else l
           else link in
         followlinks (n+1) linkabs
       with
-        Unix.Unix_error _ -> p in
+      | Unix.Unix_error _ | Util.Fatal _ -> p
+    in
     followlinks 0 abspath in
-  if isRootDir realpath then
+  if isRootDirLocalString realpath then
     raise (Util.Transient(Printf.sprintf
                             "The path %s is a root directory" abspath));
-  let realpath = Fileutil.removeTrailingSlashes realpath in
   let p = Filename.basename realpath in
   debug
     (fun() ->
       Util.msg "Os.findWorkingDir(%s,%s) = (%s,%s)\n"
         (toString fspath)
         (Path.toString path)
-        (Filename.dirname realpath)
+        (winSafeDirname realpath)
         p);
-  (localString2fspath (Filename.dirname realpath), Path.fromString p)
+  (localString2fspath (winSafeDirname realpath), Path.fromString p)
 
 let quotes (Fspath f) = Uutil.quotes f
 let compare (Fspath f1) (Fspath f2) = compare f1 f2

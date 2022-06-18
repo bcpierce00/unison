@@ -68,7 +68,7 @@ val diff :
 val processCommitLogs : unit -> unit
 
 (* List the files in a directory matching a pattern. *)
-val ls : System.fspath -> string -> string list
+val ls : string -> string -> string list
 
 val merge :
      Common.root                  (* first root *)

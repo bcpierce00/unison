@@ -100,14 +100,13 @@ val debug : string -> (unit->unit) -> unit
 val warnPrinter : (string -> unit) option ref
 val warn : string -> unit
 
-(* Gives the fspath of the archive directory on the machine, depending on    *)
+(* Gives the path of the archive directory on the machine, depending on      *)
 (* which OS we use                                                           *)
-val unisonDir : System.fspath
+val unisonDir : string
 
-(* build a fspath representing an archive child path whose name is given     *)
-val fileInUnisonDir : string -> System.fspath
-val fileMaybeRelToUnisonDir : string -> System.fspath
-val unisonDirStr : string
+(* build a path representing an archive child path whose name is given       *)
+val fileInUnisonDir : string -> string
+val fileMaybeRelToUnisonDir : string -> string
 
 (* Printing and formatting functions *)
 

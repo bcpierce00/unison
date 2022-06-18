@@ -20,7 +20,7 @@ type stateItem = { mutable ri : reconItem;
 let theState = ref [| |];;
 let unsynchronizedPaths = ref None;;
 
-let unisonDirectory() = System.fspathToString Util.unisonDir
+let unisonDirectory() = Util.unisonDir
 ;;
 Callback.register "unisonDirectory" unisonDirectory;;
 
@@ -193,7 +193,7 @@ let unisonInit0() =
       let f = Prefs.profilePathname n in
       if not(System.file_exists f)
       then (Printf.eprintf "Profile %s does not exist"
-              (System.fspathToPrintString f);
+              f;
             exit 1)
   end;
   !clprofile

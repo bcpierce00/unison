@@ -15,9 +15,4 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 *)
 
-module System = System_generic
-module Fs = struct
-  include System_generic
-
-  let setUnicodeEncoding _ = ()
-end
+include System_generic

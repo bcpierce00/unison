@@ -318,7 +318,7 @@ let createUnisonDir() =
   with Unix.Unix_error(_) ->
     Util.convertUnixErrorsToFatal
       (Printf.sprintf "creating unison directory %s"
-         (System.fspathToPrintString Util.unisonDir))
+         Util.unisonDir)
       (fun () ->
          ignore (System.mkdir Util.unisonDir 0o700))
 

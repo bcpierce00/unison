@@ -1692,23 +1692,24 @@ let buildShellConnection onClose shell host userOpt portOpt rootName termInterac
                    Lwt.fail e)
         (fun _ ->  Lwt.fail e))
 
-let canonizeLocally s unicode =
-  (* We need to select the proper API in order to compute correctly the
-     canonical fspath *)
-  Fs.setUnicodeEncoding unicode;
+let canonizeLocally s =
   Fspath.canonize s
 
 let canonizeOnServer =
   registerServerCmd "canonizeOnServer"
     Umarshal.(prod2 (option string) bool id id)
     Umarshal.(prod2 string Fspath.m id id)
-    (fun _ (s, unicode) ->
-       Lwt.return (Os.myCanonicalHostName (), canonizeLocally s unicode))
+    (fun _ (s, _) -> (* The tuple is kept for backwards API compatibility *)
+       Lwt.return (Os.myCanonicalHostName (), canonizeLocally s))
+
+let canonizeOnServer conn s =
+  (* The second tuple item is required for compatibility with <= 2.52 *)
+  canonizeOnServer conn (s, true)
 
 let canonize clroot = (* connection for clroot must have been set up already *)
   match clroot with
     Clroot.ConnectLocal s ->
-      (Common.Local, canonizeLocally s (Case.useUnicodeAPI ()))
+      (Common.Local, canonizeLocally s)
   | _ ->
       match
         try
@@ -1778,18 +1779,17 @@ let onClose clroot cleanup e =
     else Lwt.return ()
 
 let canonizeRoot rootName clroot termInteract =
-  let unicode = Case.useUnicodeAPI () in
   let finish ioServer s =
-    (* We need to always compute the fspath as it depends on
-       unicode settings *)
-    canonizeOnServer ioServer (s, unicode) >>= (fun (host, fspath) ->
+    (* We need to always compute the fspath as it may have changed
+       due to profile configuration changes *)
+    canonizeOnServer ioServer s >>= (fun (host, fspath) ->
     connectedHosts :=
       listReplace (clroot, (host, fspath, ioServer)) !connectedHosts;
     connectionsByHosts := listReplace (host, ioServer) !connectionsByHosts;
     Lwt.return (Common.Remote host,fspath)) in
   match clroot with
     Clroot.ConnectLocal s ->
-      Lwt.return (Common.Local, canonizeLocally s unicode)
+      Lwt.return (Common.Local, canonizeLocally s)
   | Clroot.ConnectBySocket(host,port,s) ->
       begin match hostFspath clroot with
         Some x -> x
@@ -1827,10 +1827,9 @@ let openConnectionStart clroot =
            Some x -> x
          | None   -> buildSocketConnection (onClose clroot) host port
          end >>= fun ioServer ->
-         (* We need to always compute the fspath as it depends on
-            unicode settings *)
-         let unicode = Case.useUnicodeAPI () in
-         canonizeOnServer ioServer (s, unicode) >>= fun (host, fspath) ->
+         (* We need to always compute the fspath as it may have changed
+            due to profile configuration changes *)
+         canonizeOnServer ioServer s >>= fun (host, fspath) ->
          connectedHosts :=
            listReplace (clroot, (host, fspath, ioServer)) !connectedHosts;
          connectionsByHosts :=
@@ -1840,12 +1839,11 @@ let openConnectionStart clroot =
   | Clroot.ConnectByShell(shell,host,userOpt,portOpt,s) ->
       match hostFspath clroot with
          Some x ->
-           let unicode = Case.useUnicodeAPI () in
            (* We recompute the fspath as it may have changed due to
-              unicode settings *)
+              profile configuration changes *)
            Lwt_unix.run
              (x >>= fun ioServer ->
-              canonizeOnServer ioServer (s, unicode) >>= fun (host, fspath) ->
+              canonizeOnServer ioServer s >>= fun (host, fspath) ->
               connectedHosts :=
                 listReplace (clroot, (host, fspath, ioServer)) !connectedHosts;
               connectionsByHosts :=
@@ -1931,8 +1929,7 @@ let openConnectionEnd (i1,i2,o1,o2,s,fdopt,clroot,pid) =
       in
       Lwt_unix.run
         (initConnection (onClose clroot cleanup) i2 o1 >>= fun ioServer ->
-         let unicode = Case.useUnicodeAPI () in
-         canonizeOnServer ioServer (s, unicode) >>= fun (host, fspath) ->
+         canonizeOnServer ioServer s >>= fun (host, fspath) ->
          connectedHosts :=
            listReplace (clroot, (host, fspath, ioServer)) !connectedHosts;
          connectionsByHosts :=
@@ -2154,7 +2151,7 @@ let beAServer () =
     let home = System.getenv "HOME" in
     Util.convertUnixErrorsToFatal
       "changing working directory"
-      (fun () -> System.chdir (System.fspathFromString home))
+      (fun () -> System.chdir home)
   with Not_found ->
     Util.msg
       "Environment variable HOME unbound: \

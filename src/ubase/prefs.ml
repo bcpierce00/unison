@@ -317,12 +317,6 @@ let createString name ~category ?(cli_only=false) ?(local=false) ?send default ?
     (fun cell -> Uarg.String (fun s -> set cell s))
     Umarshal.string
 
-let createFspath name ~category ?(cli_only=false) ?(local=false) ?send default ?(deprecated=false) doc fulldoc =
-  createPrefInternal name `STRING category cli_only local send default deprecated doc fulldoc
-    (fun v -> [System.fspathToString v])
-    (fun cell -> Uarg.String (fun s -> set cell (System.fspathFromString s)))
-    System.mfspath
-
 let createStringList name ~category ?(cli_only=false) ?(local=false) ?send ?(deprecated=false) doc fulldoc =
   createPrefInternal name `STRING_LIST category cli_only local send [] deprecated doc fulldoc
     (fun v -> v)
@@ -382,10 +376,9 @@ let rec readAFile ?(fail=true) ?(add_ext=true) filename =
   let path = profilePathname ~add_ext:add_ext filename in
   let locname =
     if add_ext then
-      Printf.sprintf "Profile \"%s\" (file \"%s\")"
-        filename (System.fspathToPrintString path)
+      Printf.sprintf "Profile \"%s\" (file \"%s\")" filename path
     else
-      Printf.sprintf "File \"%s\"" (System.fspathToPrintString path)
+      Printf.sprintf "File \"%s\"" path
   in
   let bom = "\xef\xbb\xbf" in (* BOM: UTF-8 byte-order mark *)
   let rec loop chan lineNum lines =
@@ -411,12 +404,10 @@ let rec readAFile ?(fail=true) ?(add_ext=true) filename =
   match chan, fail with
   | None, true when add_ext ->
       raise (Util.Fatal (Printf.sprintf
-        "Profile %s not found (looking for file %s)"
-        filename (System.fspathToPrintString path)))
+        "Profile %s not found (looking for file %s)" filename path))
   | None, true ->
       raise (Util.Fatal (Printf.sprintf
-        "Preference file %s not found"
-        (System.fspathToPrintString path)))
+        "Preference file %s not found" path))
   | None, false -> []
   | Some chan, _ -> loop chan 1 []
 
@@ -779,7 +770,7 @@ let addLine l =
     debug (fun() ->
       Util.msg "Adding '%s' to %s\n" l (System.fspathToDebugString filename));
     let resultmsg =
-      l ^ "' added to profile " ^ System.fspathToPrintString filename in
+      l ^ "' added to profile " ^ filename in
     let ochan =
       System.open_out_gen [Open_wronly; Open_creat; Open_append] 0o600 filename
     in

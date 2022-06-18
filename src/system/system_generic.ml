@@ -19,14 +19,9 @@ type fspath = string
 
 let mfspath = Umarshal.string
 
-let fspathFromString f = f
-let fspathToPrintString f = f
-let fspathToString f = f
-let fspathToDebugString f = String.escaped f
+let extendedPath f = f
 
-let fspathConcat = Filename.concat
-let fspathDirname = Filename.dirname
-let fspathAddSuffixToFinalName f suffix = f ^ suffix
+let fspathToDebugString f = String.escaped f
 
 (****)
 
@@ -83,17 +78,13 @@ let close_process_full = Unix.close_process_full
 
 let isNotWindows = Sys.os_type <> "Win32"
 
-let canSetTime f =
-  isNotWindows ||
-  try
-    Unix.access f [Unix.W_OK];
-    true
-  with
-    Unix.Unix_error _ -> false
-
 (* Note that Cygwin provides some kind of inode numbers, but we only
    have access to the lower 32 bits on 32bit systems... *)
-let hasInodeNumbers () = isNotWindows
+(* Best effort inode numbers are provided in Windows since OCaml 4.03 *)
+(* However, these inode numbers are not usable on FAT filesystems, as
+   renaming a file "b" over a file "a" does not change the inode
+   number of "a". *)
+let hasInodeNumbers () = true
 
 let hasSymlink = Unix.has_symlink
 

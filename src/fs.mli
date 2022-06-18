@@ -4,5 +4,3 @@
 (* Operations on fspaths *)
 
 include System_intf.Core with type fspath = Fspath.t
-
-val setUnicodeEncoding : bool -> unit

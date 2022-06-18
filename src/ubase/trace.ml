@@ -115,8 +115,8 @@ let logging =
      on a file."
 
 let logfile =
-  Prefs.createFspath "logfile"
-    (System.fspathFromString "unison.log")
+  Prefs.createString "logfile"
+    "unison.log"
     ~category:(`Advanced `General)
     "logfile name"
     "By default, logging messages will be appended to the file
@@ -146,7 +146,7 @@ let rec getLogch() =
   Util.convertUnixErrorsToFatal "getLogch" (fun() ->
   match !logch with
     None ->
-      let prefstr = System.fspathToString (Prefs.read logfile) in
+      let prefstr = Prefs.read logfile in
       let file = Util.fileMaybeRelToUnisonDir prefstr in
       let ch =
         System.open_out_gen [Open_wronly; Open_creat; Open_append] 0o600 file in

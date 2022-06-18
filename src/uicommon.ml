@@ -517,16 +517,16 @@ let provideProfileKey filename k profile info =
       | Some(otherProfile,_) ->
           raise (Util.Fatal
             ("Error scanning profile "^
-                System.fspathToPrintString filename ^":\n"
+                filename ^":\n"
              ^ "shortcut key "^k^" is already bound to profile "
              ^ otherProfile))
     else
       raise (Util.Fatal
-        ("Error scanning profile "^ System.fspathToPrintString filename ^":\n"
+        ("Error scanning profile "^ filename ^":\n"
          ^ "Value of 'key' preference must be a single digit (0-9), "
          ^ "not " ^ k))
   with Failure _ -> raise (Util.Fatal
-    ("Error scanning profile "^ System.fspathToPrintString filename ^":\n"
+    ("Error scanning profile "^ filename ^":\n"
      ^ "Value of 'key' preference must be a single digit (0-9), "
      ^ "not " ^ k))
 
@@ -545,7 +545,7 @@ let scanProfiles () =
             | Util.Fatal s -> begin
                 Util.warn ("Error when reading list of profiles.\n"
                          ^ "Skipping file with error: "
-                         ^ System.fspathToPrintString filename
+                         ^ filename
                          ^ "\n\n" ^ s);
                 None end in
           match prefs with
@@ -629,9 +629,8 @@ let initRoots displayWaitMessage termInteract =
 
 let makeTempDir pattern =
   let path = Filename.temp_file pattern "" in
-  let fspath = System.fspathFromString path in
-  System.unlink fspath; (* Remove file created by [temp_file]... *)
-  System.mkdir fspath 0o755; (* ... and create a dir instead. *)
+  System.unlink path; (* Remove file created by [temp_file]... *)
+  System.mkdir path 0o755; (* ... and create a dir instead. *)
   path ^ Filename.dir_sep
 
 let initComplete = ref false
@@ -841,7 +840,7 @@ let uiInitClRootsAndProfile ?(prepDebug = fun () -> ()) () =
           if not (System.file_exists f)
           then Error (Printf.sprintf
                         "Profile '%s' does not exist (looking for file %s)"
-                        n (System.fspathToPrintString f))
+                        n f)
           else Ok (Some n)
 
 (* Exit codes *)

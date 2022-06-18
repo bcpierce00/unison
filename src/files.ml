@@ -51,9 +51,9 @@ let clearCommitLog tmpName =
 
   let commitLogNameWin () =
     (* Work around an issue in Windows where unlink may not be immediate. *)
-    let p = System.fspathAddSuffixToFinalName commitLogName (Filename.basename (Path.toString tmpName)) in
+    let p = commitLogName ^ (Filename.basename (Path.toString tmpName)) in
     let rec tmp n =
-      let p = System.fspathAddSuffixToFinalName p (string_of_int n) in
+      let p = p ^ (string_of_int n) in
       if System.file_exists p then tmp (n + 1)
       else (System.rename commitLogName p; p)
     in
@@ -74,7 +74,7 @@ let processCommitLog () =
             "Warning: the previous run of %s terminated in a dangerous state.
             Please consult the file %s, delete it, and try again."
                 Uutil.myName
-                (System.fspathToPrintString commitLogName)))
+                commitLogName))
   end else
     Lwt.return ()
 

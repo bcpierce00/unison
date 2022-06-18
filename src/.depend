@@ -205,7 +205,6 @@ fileinfo.cmx : \
     fileinfo.cmi
 fileinfo.cmi : \
     ubase/umarshal.cmi \
-    system.cmi \
     props.cmi \
     ubase/prefs.cmi \
     path.cmi \
@@ -275,7 +274,6 @@ files.cmx : \
     files.cmi
 files.cmi : \
     uutil.cmi \
-    system.cmi \
     props.cmi \
     path.cmi \
     lwt/lwt_util.cmi \
@@ -338,7 +336,6 @@ fpcache.cmx : \
     fileinfo.cmx \
     fpcache.cmi
 fpcache.cmi : \
-    system.cmi \
     props.cmi \
     path.cmi \
     osx.cmi \
@@ -346,9 +343,11 @@ fpcache.cmi : \
     fspath.cmi \
     fileinfo.cmi
 fs.cmo : \
+    system.cmi \
     fspath.cmi \
     fs.cmi
 fs.cmx : \
+    system.cmx \
     fspath.cmx \
     fs.cmi
 fs.cmi : \
@@ -431,7 +430,6 @@ fspath.cmx : \
     fspath.cmi
 fspath.cmi : \
     ubase/umarshal.cmi \
-    system.cmi \
     path.cmi \
     name.cmi
 fswatch.cmo : \
@@ -555,8 +553,7 @@ lock.cmx : \
     ubase/util.cmx \
     system.cmx \
     lock.cmi
-lock.cmi : \
-    system.cmi
+lock.cmi :
 lwt/example/editor.cmo : \
     lwt/lwt_unix.cmi
 lwt/example/editor.cmx : \
@@ -598,9 +595,11 @@ lwt/pqueue.cmx : \
     lwt/pqueue.cmi
 lwt/pqueue.cmi :
 lwt/win/lwt_unix_impl.cmo : \
+    system/system_win.cmo \
     lwt/pqueue.cmi \
     lwt/lwt.cmi
 lwt/win/lwt_unix_impl.cmx : \
+    system/system_win.cmx \
     lwt/pqueue.cmx \
     lwt/lwt.cmx
 lwt/win/lwt_win.cmo : \
@@ -711,7 +710,6 @@ osx.cmo : \
     ubase/util.cmi \
     ubase/umarshal.cmi \
     ubase/trace.cmi \
-    system.cmi \
     ubase/safelist.cmi \
     ubase/prefs.cmi \
     path.cmi \
@@ -725,7 +723,6 @@ osx.cmx : \
     ubase/util.cmx \
     ubase/umarshal.cmx \
     ubase/trace.cmx \
-    system.cmx \
     ubase/safelist.cmx \
     ubase/prefs.cmx \
     path.cmx \
@@ -868,10 +865,8 @@ remote.cmo : \
     lwt/lwt_unix.cmi \
     lwt/lwt.cmi \
     fspath.cmi \
-    fs.cmi \
     common.cmi \
     clroot.cmi \
-    case.cmi \
     bytearray.cmi \
     remote.cmi
 remote.cmx : \
@@ -888,10 +883,8 @@ remote.cmx : \
     lwt/lwt_unix.cmx \
     lwt/lwt.cmx \
     fspath.cmx \
-    fs.cmx \
     common.cmx \
     clroot.cmx \
-    case.cmx \
     bytearray.cmx \
     remote.cmi
 remote.cmi : \
@@ -998,21 +991,15 @@ system/system_intf.cmo : \
 system/system_intf.cmx : \
     ubase/umarshal.cmx
 system/system_win.cmo : \
-    unicode.cmi \
-    ubase/umarshal.cmi \
     system/system_generic.cmo \
     ubase/rx.cmi
 system/system_win.cmx : \
-    unicode.cmx \
-    ubase/umarshal.cmx \
     system/system_generic.cmx \
     ubase/rx.cmx
 system/win/system_impl.cmo : \
-    system/system_win.cmo \
-    system/system_generic.cmo
+    system/system_win.cmo
 system/win/system_impl.cmx : \
-    system/system_win.cmx \
-    system/system_generic.cmx
+    system/system_win.cmx
 terminal.cmo : \
     ubase/util.cmi \
     system.cmi \
@@ -1174,8 +1161,7 @@ ubase/prefs.cmx : \
     ubase/prefs.cmi
 ubase/prefs.cmi : \
     ubase/util.cmi \
-    ubase/umarshal.cmi \
-    system.cmi
+    ubase/umarshal.cmi
 ubase/projectInfo.cmo :
 ubase/projectInfo.cmx :
 ubase/proplist.cmo : \
@@ -1241,8 +1227,7 @@ ubase/util.cmx : \
     ubase/safelist.cmx \
     ubase/projectInfo.cmx \
     ubase/util.cmi
-ubase/util.cmi : \
-    system.cmi
+ubase/util.cmi :
 ui.cmi :
 uicommon.cmo : \
     xferhint.cmi \

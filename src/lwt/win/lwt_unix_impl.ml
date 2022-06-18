@@ -666,8 +666,8 @@ let intern_in_channel _ = assert false (*XXXXX*)
 
 type directory_handle = Unix.file_descr
 
-external open_dir : string -> string -> directory_handle = "win_open_directory"
-let open_directory f = open_dir f (System_impl.Fs.W.epath f)
+external open_dir : string -> directory_handle = "win_open_directory"
+let open_directory f = open_dir (System_win.extendedPath f)
 
 type notify_filter_flag =
     FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_DIR_NAME
@@ -699,9 +699,7 @@ if !d then Format.eprintf "Reading started@.";
   if len = 0 then
     Lwt.return []
   else
-    Lwt.return (List.rev_map (fun (nm, act) ->
-                                (System_impl.Fs.W.path8 nm, act))
-                        (parse_directory_changes buf)))
+    Lwt.return (List.rev (parse_directory_changes buf)))
 
 let close_dir = Unix.close
 
@@ -710,12 +708,10 @@ external long_name : string -> string = "win_long_path_name"
 let longpathname root path =
   (* Parameter [path] can be relative. Result value must then also be relative.
      Input parameter to [long_name] must always be absolute path. *)
-  let epath = System_impl.Fs.W.epath (Filename.concat root path)
-  and root = System_impl.Fs.W.epath (Filename.concat root "") in
-  let root = String.sub root 0 (String.length root - 2) in (* Remove trailing \000\000 *)
+  let epath = System_win.extendedPath (Filename.concat root path)
+  and root = System_win.extendedPath (Filename.concat root "") in
   let start = String.length root
   and ln = long_name epath in
-  let n =
   try
     (* The assumption is that [root] does not change in [long_name]. The
        Windows fsmonitor operates under this assumption, so it is ok here.
@@ -724,4 +720,3 @@ let longpathname root path =
     String.sub ln start (String.length ln - start)
   with
   | Invalid_argument _ -> ln
-  in System_impl.Fs.W.path8 n

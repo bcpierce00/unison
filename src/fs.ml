@@ -15,48 +15,50 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 *)
 
-module System = System_impl.Fs
-
 type fspath = Fspath.t
 let mfspath = Fspath.m
 type dir_handle = System.dir_handle
                 = { readdir : unit -> string; closedir : unit -> unit }
 
-let symlink l f = System.symlink l (Fspath.toString f)
-
-let readlink f = System.readlink (Fspath.toString f)
-
-let chown f usr grp = System.chown (Fspath.toString f) usr grp
-
-let chmod f mode = System.chmod (Fspath.toString f) mode
-
-let utimes f t1 t2 = System.utimes (Fspath.toString f) t1 t2
-
-let unlink f = System.unlink (Fspath.toString f)
-
-let rmdir f = System.rmdir (Fspath.toString f)
-
-let mkdir f mode = System.mkdir (Fspath.toString f) mode
-
-let rename f f' = System.rename (Fspath.toString f) (Fspath.toString f')
-
-let stat f = System.stat (Fspath.toString f)
-
-let lstat f = System.lstat (Fspath.toString f)
-
-let openfile f flags perms = System.openfile (Fspath.toString f) flags perms
-
-let opendir f = System.opendir (Fspath.toString f)
-
-let open_in_gen flags mode f =
-  System.open_in_gen flags mode (Fspath.toString f)
-
-let open_out_gen flags mode f =
-  System.open_out_gen flags mode (Fspath.toString f)
+let path p = Fspath.toString p |> System.extendedPath
 
 (****)
 
-let open_in_bin f = open_in_gen [Open_rdonly; Open_binary] 0 f
+let symlink l f = System.symlink l (path f)
+
+let readlink f = System.readlink (path f)
+
+let chown f usr grp = System.chown (path f) usr grp
+
+let chmod f mode = System.chmod (path f) mode
+
+let utimes f t1 t2 = System.utimes (path f) t1 t2
+
+let unlink f = System.unlink (path f)
+
+let rmdir f = System.rmdir (path f)
+
+let mkdir f mode = System.mkdir (path f) mode
+
+let rename f f' = System.rename (path f) (path f')
+
+let stat f = System.stat (path f)
+
+let lstat f = System.lstat (path f)
+
+let openfile f flags perms = System.openfile (path f) flags perms
+
+let opendir f = System.opendir (path f)
+
+let open_in_gen flags mode f =
+  System.open_in_gen flags mode (path f)
+
+let open_out_gen flags mode f =
+  System.open_out_gen flags mode (path f)
+
+(****)
+
+let open_in_bin f = System.open_in_bin (path f)
 
 let file_exists f =
   try
@@ -66,11 +68,8 @@ let file_exists f =
 
 (****)
 
-let fingerprint f = System.fingerprint (Fspath.toString f)
+let fingerprint f = System.fingerprint (path f)
 
-let canSetTime f = System.canSetTime (Fspath.toString f)
 let hasInodeNumbers () = System.hasInodeNumbers ()
 let hasSymlink () = System.hasSymlink ()
 let hasCorrectCTime = System.hasCorrectCTime
-
-let setUnicodeEncoding = System.setUnicodeEncoding

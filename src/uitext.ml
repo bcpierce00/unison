@@ -465,7 +465,7 @@ let interact prilist rilist =
           begin match !Prefs.profileName with None -> assert false |
             Some(n) ->
               display ("  To un-ignore, edit "
-                       ^ System.fspathToPrintString (Prefs.profilePathname n)
+                       ^ Prefs.profilePathname n
                        ^ " and restart " ^ Uutil.myName ^ "\n") end;
           let nukeIgnoredRis =
             Safelist.filter (fun ri -> not (Globals.shouldIgnore ri.path1)) in
@@ -1306,7 +1306,7 @@ let getProfile default =
     Trace.log (Format.sprintf "You have too many profiles in %s \
                 for interactive selection. Please specify profile \
                 or roots on command line.\n"
-                (System.fspathToPrintString Util.unisonDir));
+                Util.unisonDir);
     Trace.log "The profile names are:\n";
     Safelist.iter (fun (p, _) -> Trace.log (Format.sprintf "  %s\n" p))
       !Uicommon.profilesAndRoots;

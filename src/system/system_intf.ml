@@ -45,7 +45,6 @@ val fingerprint : fspath -> Digest.t
 
 (****)
 
-val canSetTime : fspath -> bool
 val hasInodeNumbers : unit -> bool
 val hasSymlink : unit -> bool
 
@@ -60,19 +59,15 @@ end
 
 module type Full = sig
 
-include Core
+include Core with type fspath = string
+
+val extendedPath : string -> fspath
 
 val putenv : string -> string -> unit
 val getenv : string -> string
 val argv : unit -> string array
 
-val fspathFromString : string -> fspath
-val fspathToPrintString : fspath -> string
 val fspathToDebugString : fspath -> string
-val fspathToString : fspath -> string
-val fspathConcat : fspath -> string -> fspath
-val fspathDirname : fspath -> fspath
-val fspathAddSuffixToFinalName : fspath -> string -> fspath
 
 val open_in_gen : open_flag list -> int -> fspath -> in_channel
 

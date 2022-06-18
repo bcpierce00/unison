@@ -215,9 +215,9 @@ let minfo = Umarshal.(prod2 (mressInfo (prod2 Fspath.m int64 id id)) string
                         (fun (ressInfo, finfo) -> {ressInfo; finfo}))
 
 external getFileInfosInternal :
-  System.fspath -> bool -> string * int64 = "getFileInfos"
+  string -> bool -> string * int64 = "getFileInfos"
 external setFileInfosInternal :
-  System.fspath -> string -> unit = "setFileInfos"
+  string -> string -> unit = "setFileInfos"
 
 let defaultInfos typ =
   match typ with
@@ -263,7 +263,7 @@ let getFileInfos dataFspath dataPath typ =
         try
           let (fInfo, rsrcLength) =
             getFileInfosInternal
-              (Fspath.toSysPath (Fspath.concat dataFspath dataPath))
+              (Fspath.toString (Fspath.concat dataFspath dataPath))
               (typ = `FILE)
           in
           { ressInfo =
@@ -361,7 +361,7 @@ let setFileInfos dataFspath dataPath finfo =
   assert (finfo <> "");
   Util.convertUnixErrorsToTransient "setting file information" (fun () ->
     try
-      let p = Fspath.toSysPath (Fspath.concat dataFspath dataPath) in
+      let p = Fspath.toString (Fspath.concat dataFspath dataPath) in
       let (fullFinfo, _) = getFileInfosInternal p false in
       setFileInfosInternal p (insertInfo (Bytes.of_string fullFinfo) finfo)
     with Unix.Unix_error ((Unix.EOPNOTSUPP | Unix.ENOSYS), _, _) ->

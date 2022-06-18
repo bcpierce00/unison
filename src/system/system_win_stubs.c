@@ -13,216 +13,16 @@
 #include <caml/fail.h>
 #include <caml/unixsupport.h>
 #include <caml/version.h>
+#if OCAML_VERSION < 41300
+#define CAML_INTERNALS /* was needed from OCaml 4.06 to 4.12 */
+#endif
+#include <caml/osdeps.h>
 
 #if OCAML_VERSION_MAJOR < 5
 #define caml_uerror uerror
 #define caml_win32_maperr win32_maperr
 #define caml_win32_alloc_handle win_alloc_handle
 #endif
-
-#define NT_MAX_PATH 32768
-
-value copy_wstring(LPCWSTR s)
-{
-  int len;
-  value res;
-
-  len = 2 * wcslen(s) + 2;  /* NULL character included */
-  res = caml_alloc_string(len);
-  memmove((char *)String_val(res), s, len);
-  return res;
-}
-
-static int open_access_flags[12] = {
-  GENERIC_READ, GENERIC_WRITE, GENERIC_READ|GENERIC_WRITE,
-  0, 0, 0, 0, 0, 0, 0, 0, 0
-};
-
-static int open_create_flags[12] = {
-  0, 0, 0, 0, O_APPEND, O_CREAT, O_TRUNC, O_EXCL, 0, 0, 0, 0
-};
-
-/****/
-
-CAMLprim value win_rmdir(value path, value wpath)
-{
-  CAMLparam2(path, wpath);
-  if (!RemoveDirectoryW((LPWSTR)String_val(wpath))) {
-    win32_maperr (GetLastError ());
-    uerror("rmdir", path);
-  }
-  CAMLreturn (Val_unit);
-}
-
-CAMLprim value win_mkdir(value path, value wpath)
-{
-  CAMLparam2(path, wpath);
-  if (!CreateDirectoryW((LPWSTR)String_val(wpath), NULL)) {
-    win32_maperr (GetLastError ());
-    uerror("mkdir", path);
-  }
-  CAMLreturn (Val_unit);
-}
-
-CAMLprim value win_unlink(value path, value wpath)
-{
-  CAMLparam2(path, wpath);
-  if (!DeleteFileW((LPWSTR)String_val(wpath))) {
-    win32_maperr (GetLastError ());
-    uerror("unlink", path);
-  }
-  CAMLreturn (Val_unit);
-}
-
-CAMLprim value win_rename(value path1, value wpath1, value wpath2)
-{
-  int err, t;
-  CAMLparam3(path1, wpath1, wpath2);
-
-  t = 10;
- retry:
-  if (!MoveFileExW((LPWSTR)String_val(wpath1), (LPWSTR)String_val(wpath2),
-                  MOVEFILE_REPLACE_EXISTING)) {
-    err = GetLastError ();
-    if ((err == ERROR_SHARING_VIOLATION || err == ERROR_ACCESS_DENIED) &&
-        t < 1000) {
-      /* The renaming may fail due to an indexer or an anti-virus.
-         We retry after a short time in the hope that this other
-         program is done with the file. */
-      Sleep (t);
-      t *= 2;
-      goto retry;
-    }
-    win32_maperr (err);
-    uerror("rename", path1);
-  }
-  CAMLreturn (Val_unit);
-}
-
-CAMLprim value win_link(value path1, value wpath1, value wpath2)
-{
-  CAMLparam3(path1, wpath1, wpath2);
-
-  if (!CreateHardLinkW((LPWSTR)String_val(wpath2), (LPWSTR)String_val(wpath1),
-                       NULL)) {
-    win32_maperr (GetLastError ());
-    uerror("rename", path1);
-  }
-  CAMLreturn (Val_unit);
-}
-
-CAMLprim value win_chmod (value path, value wpath, value perm) {
-  DWORD attr;
-  CAMLparam3(path, wpath, perm);
-
-  attr = GetFileAttributesW ((LPCWSTR)String_val (wpath));
-  if (attr == INVALID_FILE_ATTRIBUTES) {
-    win32_maperr (GetLastError ());
-    uerror("chmod", path);
-  }
-  if (Int_val(perm) & _S_IWRITE)
-    attr &= ~FILE_ATTRIBUTE_READONLY;
-  else
-    attr |= FILE_ATTRIBUTE_READONLY;
-
-  if (!SetFileAttributesW ((LPCWSTR)String_val (wpath), attr)) {
-    win32_maperr (GetLastError ());
-    uerror("chmod", path);
-  }
-
-  CAMLreturn (Val_unit);
-}
-
-CAMLprim value win_utimes (value path, value wpath, value atime, value mtime) {
-  HANDLE h;
-  BOOL res;
-  ULARGE_INTEGER iatime, imtime;
-  FILETIME fatime, fmtime;
-
-  CAMLparam4(path, wpath, atime, mtime);
-
-  iatime.QuadPart = Double_val(atime);
-  imtime.QuadPart = Double_val(mtime);
-
-  /* http://www.filewatcher.com/p/Win32-UTCFileTime-1.44.tar.gz.93147/Win32-UTCFileTime-1.44/UTCFileTime.xs.html */
-  /* http://savannah.nongnu.org/bugs/?22781#comment0 */
-  if (iatime.QuadPart || imtime.QuadPart) {
-    iatime.QuadPart += 11644473600ull;
-    iatime.QuadPart *= 10000000ull;
-    fatime.dwLowDateTime = iatime.LowPart;
-    fatime.dwHighDateTime = iatime.HighPart;
-    imtime.QuadPart += 11644473600ull;
-    imtime.QuadPart *= 10000000ull;
-    fmtime.dwLowDateTime = imtime.LowPart;
-    fmtime.dwHighDateTime = imtime.HighPart;
-  } else {
-    GetSystemTimeAsFileTime (&fatime);
-    fmtime = fatime;
-  }
-  h = CreateFileW ((LPWSTR) wpath, FILE_WRITE_ATTRIBUTES,
-                   FILE_SHARE_READ | FILE_SHARE_WRITE,
-                   NULL, OPEN_EXISTING, 0, NULL);
-  if (h == INVALID_HANDLE_VALUE) {
-    win32_maperr (GetLastError ());
-    uerror("utimes", path);
-  }
-  res = SetFileTime (h, NULL, &fatime, &fmtime);
-  if (res == 0) {
-    win32_maperr (GetLastError ());
-    (void)CloseHandle (h);
-    uerror("utimes", path);
-  }
-  res = CloseHandle (h);
-  if (res == 0) {
-    win32_maperr (GetLastError ());
-    uerror("utimes", path);
-  }
-  CAMLreturn (Val_unit);
-}
-
-CAMLprim value win_open (value path, value wpath, value flags, value perm) {
-  int fileaccess, createflags, fileattrib, filecreate;
-  SECURITY_ATTRIBUTES attr;
-  HANDLE h;
-
-  CAMLparam4 (path, wpath, flags, perm);
-
-  fileaccess = caml_convert_flag_list(flags, open_access_flags);
-
-  createflags = caml_convert_flag_list(flags, open_create_flags);
-  if ((createflags & (O_CREAT | O_EXCL)) == (O_CREAT | O_EXCL))
-    filecreate = CREATE_NEW;
-  else if ((createflags & (O_CREAT | O_TRUNC)) == (O_CREAT | O_TRUNC))
-    filecreate = CREATE_ALWAYS;
-  else if (createflags & O_TRUNC)
-    filecreate = TRUNCATE_EXISTING;
-  else if (createflags & O_CREAT)
-    filecreate = OPEN_ALWAYS;
-  else
-    filecreate = OPEN_EXISTING;
-
-  if ((createflags & O_CREAT) && (Int_val(perm) & 0200) == 0)
-    fileattrib = FILE_ATTRIBUTE_READONLY;
-  else
-    fileattrib = FILE_ATTRIBUTE_NORMAL;
-
-  attr.nLength = sizeof(attr);
-  attr.lpSecurityDescriptor = NULL;
-  attr.bInheritHandle = TRUE;
-
-  h = CreateFileW((LPCWSTR) String_val(wpath), fileaccess,
-                  FILE_SHARE_READ | FILE_SHARE_WRITE, &attr,
-                  filecreate, fileattrib, NULL);
-
-  if (h == INVALID_HANDLE_VALUE) {
-    win32_maperr (GetLastError ());
-    uerror("open", path);
-  }
-
-  if (createflags & O_APPEND) SetFilePointer (h, 0, NULL, FILE_END);
-
-  CAMLreturn(win_alloc_handle(h));
-}
 
 
 /* Parts of code in the following section are originally copied from libuv.
@@ -480,7 +280,7 @@ CAMLprim value win_has_correct_ctime(value unit)
 #define FILETIME_TO_TIME(ft) WINTIME_TO_TIME((((ULONGLONG) ft.dwHighDateTime) << 32) + ft.dwLowDateTime)
 #define FILETIME_NT_TO_TIME(ft) WINTIME_TO_TIME(ft.QuadPart)
 
-CAMLprim value win_stat(value path, value wpath, value lstat)
+CAMLprim value win_stat(value path, value lstat)
 {
   uintnat dev;
   uintnat ino;
@@ -499,17 +299,20 @@ CAMLprim value win_stat(value path, value wpath, value lstat)
   BY_HANDLE_FILE_INFORMATION info;
   IO_STATUS_BLOCK io_status;
   FILE_ALL_INFORMATION file_info;
-  CAMLparam3(path,wpath, lstat);
+  CAMLparam2(path, lstat);
   CAMLlocal1 (v);
   char *fname = Bool_val(lstat) ? "lstat" : "stat";
 
   win_init();
 
-  h = CreateFileW ((LPCWSTR) String_val (wpath), FILE_READ_ATTRIBUTES,
+  wchar_t *wpath = caml_stat_strdup_to_utf16(String_val(path));
+
+  h = CreateFileW (wpath, FILE_READ_ATTRIBUTES,
                    FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE,
                    NULL, OPEN_EXISTING,
                    FILE_FLAG_BACKUP_SEMANTICS | FILE_ATTRIBUTE_READONLY |
                    (Bool_val(lstat) ? FILE_FLAG_OPEN_REPARSE_POINT : 0), NULL);
+  caml_stat_free(wpath);
 
   if (h == INVALID_HANDLE_VALUE) {
     caml_win32_maperr(GetLastError());
@@ -558,7 +361,7 @@ CAMLprim value win_stat(value path, value wpath, value lstat)
   }
 
   if (Bool_val(lstat) && !syml) {
-    CAMLreturn(win_stat(path, wpath, Val_false));
+    CAMLreturn(win_stat(path, Val_false));
   }
 
   dev = info.dwVolumeSerialNumber;
@@ -633,207 +436,6 @@ CAMLprim value win_stat(value path, value wpath, value lstat)
   Store_field(v, 11, caml_copy_double(ctime));
 
   CAMLreturn (v);
-}
-
-CAMLprim value win_chdir (value path, value wpath)
-{
-  CAMLparam2(path,wpath);
-  if (!SetCurrentDirectoryW ((LPWSTR)wpath)) {
-    win32_maperr(GetLastError());
-    uerror("chdir", path);
-  }
-  CAMLreturn (Val_unit);
-}
-
-CAMLprim value win_getcwd (value unit)
-{
-  int res;
-  wchar_t s[NT_MAX_PATH];
-  CAMLparam0();
-  CAMLlocal1 (path);
-
-  res = GetCurrentDirectoryW (NT_MAX_PATH, s);
-  if (res == 0) {
-    win32_maperr(GetLastError());
-    uerror("getcwd", Nothing);
-  }
-  /* Normalize the path */
-  res = GetLongPathNameW (s, s, NT_MAX_PATH);
-  if (res == 0) {
-    win32_maperr(GetLastError());
-    uerror("getcwd", Nothing);
-  }
-  /* Convert the drive letter to uppercase */
-  if (s[0] >= L'a' && s[0] <= L'z') s[0] -= 32;
-  path = copy_wstring(s);
-  CAMLreturn (path);
-}
-
-CAMLprim value win_findfirstw(value name)
-{
-  HANDLE h;
-  WIN32_FIND_DATAW fileinfo;
-
-  CAMLparam1(name);
-  CAMLlocal3(v, valname, valh);
-
-  h = FindFirstFileW((LPCWSTR) String_val(name),&fileinfo);
-  if (h == INVALID_HANDLE_VALUE) {
-    DWORD err = GetLastError();
-    if ((err == ERROR_NO_MORE_FILES) || (err == ERROR_FILE_NOT_FOUND))
-      caml_raise_end_of_file();
-    else {
-      win32_maperr(err);
-      uerror("opendir", Nothing);
-    }
-  }
-  valname = copy_wstring(fileinfo.cFileName);
-  valh = win_alloc_handle(h);
-  v = caml_alloc_small(2, 0);
-  Field(v,0) = valname;
-  Field(v,1) = valh;
-  CAMLreturn (v);
-}
-
-CAMLprim value win_findnextw(value valh)
-{
-  WIN32_FIND_DATAW fileinfo;
-  BOOL retcode;
-
-  CAMLparam1(valh);
-
-  retcode = FindNextFileW(Handle_val(valh), &fileinfo);
-  if (!retcode) {
-    DWORD err = GetLastError();
-    if (err == ERROR_NO_MORE_FILES)
-      caml_raise_end_of_file();
-    else {
-      win32_maperr(err);
-      uerror("readdir", Nothing);
-    }
-  }
-  CAMLreturn (copy_wstring(fileinfo.cFileName));
-}
-
-CAMLprim value win_findclosew(value valh)
-{
-  CAMLparam1(valh);
-
-  if (! FindClose(Handle_val(valh))) {
-    win32_maperr(GetLastError());
-    uerror("closedir", Nothing);
-  }
-  CAMLreturn (Val_unit);
-}
-
-CAMLprim value win_getenv(value var)
-{
-  LPWSTR s;
-  DWORD len;
-  CAMLparam1(var);
-  CAMLlocal1(res);
-
-  s = caml_stat_alloc(65536);
-
-  len = GetEnvironmentVariableW((LPCWSTR) String_val(var), s, 65536);
-  if (len == 0) { caml_stat_free(s); caml_raise_not_found(); }
-
-  res = copy_wstring(s);
-  caml_stat_free(s);
-  CAMLreturn (res);
-
-}
-
-CAMLprim value win_putenv(value var, value wvar, value v)
-{
-  BOOL res;
-  CAMLparam3(var, wvar, v);
-
-  res = SetEnvironmentVariableW((LPCWSTR) String_val(wvar), (LPCWSTR) v);
-  if (res == 0) {
-    win32_maperr (GetLastError ());
-    uerror("putenv", var);
-  }
-  CAMLreturn (Val_unit);
-}
-
-CAMLprim value win_argv(value unit)
-{
-  int n, i;
-  LPWSTR * l;
-
-  CAMLparam0();
-  CAMLlocal2(v,res);
-
-  l = CommandLineToArgvW (GetCommandLineW (), &n);
-
-  if (l == NULL) {
-    win32_maperr (GetLastError ());
-    uerror("argv", Nothing);
-  }
-  res = caml_alloc (n, 0);
-  for (i = 0; i < n; i++) {
-    v = copy_wstring (l[i]);
-    Store_field (res, i, v);
-  }
-  LocalFree (l);
-  CAMLreturn (res);
-}
-
-CAMLprim value w_create_process_native
-(value prog, value wprog, value wargs, value fd1, value fd2, value fd3)
-{
-  int res, flags;
-  PROCESS_INFORMATION pi;
-  STARTUPINFOW si;
-  wchar_t fullname [MAX_PATH];
-  HANDLE h;
-  CAMLparam5(wprog, wargs, fd1, fd2, fd3);
-
-  res = SearchPathW (NULL, (LPCWSTR) String_val(wprog), L".exe",
-                     MAX_PATH, fullname, NULL);
-  if (res == 0) {
-    win32_maperr (GetLastError ());
-    uerror("create_process", prog);
-  }
-
-  ZeroMemory(&si, sizeof(STARTUPINFO));
-
-  si.cb = sizeof(STARTUPINFO);
-  si.dwFlags = STARTF_USESTDHANDLES;
-  si.hStdInput = Handle_val(fd1);
-  si.hStdOutput = Handle_val(fd2);
-  si.hStdError = Handle_val(fd3);
-
-  flags = GetPriorityClass (GetCurrentProcess ());
-  /*
-  h = CreateFile ("CONOUT$", GENERIC_WRITE, FILE_SHARE_WRITE, NULL,
-                  OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-  if (h != INVALID_HANDLE_VALUE)
-    CloseHandle (h);
-  else {
-    flags |= CREATE_NEW_CONSOLE;
-    //    si.dwFlags |= STARTF_USESHOWWINDOW;
-    //    si.wShowWindow = SW_MINIMIZE;
-  }
-  */
-
-  res = CreateProcessW (fullname, (LPWSTR) String_val(wargs),
-                        NULL, NULL, TRUE, flags,
-                        NULL, NULL, &si, &pi);
-  if (res == 0) {
-    win32_maperr (GetLastError ());
-    uerror("create_process", prog);
-  }
-
-  CloseHandle (pi.hThread);
-  CAMLreturn (Val_long (pi.hProcess));
-}
-
-CAMLprim value w_create_process(value * argv, int argn)
-{
-  return w_create_process_native(argv[0], argv[1], argv[2],
-                                 argv[3], argv[4], argv[5]);
 }
 
 /****/
