@@ -225,12 +225,8 @@ let followPred = Pred.create "follow"
       The syntax of \\ARG{pathspec} is \
       described in \\sectionref{pathspec}{Path Specification}.")
 
-let winHasReadlink =
-  Scanf.sscanf Sys.ocaml_version "%d.%d.%d" (fun x y z -> x > 4 || x = 4 && y >= 3)
-
 let followLink path =
-     (Util.osType = `Unix || Util.isCygwin || winHasReadlink)
-  && Pred.test followPred (toString path)
+  Pred.test followPred (toString path)
 
 let forceLocal p = p
 let makeGlobal p = p

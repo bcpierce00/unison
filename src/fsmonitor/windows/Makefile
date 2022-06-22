@@ -13,7 +13,7 @@ FSMOCAMLOBJS = \
 FSMCOBJS = \
    bytearray_stubs$(OBJ_EXT) \
    system/system_win_stubs$(OBJ_EXT) lwt/lwt_unix_stubs$(OBJ_EXT)
-FSMOCAMLLIBS=bigarray.cma unix.cma
+FSMOCAMLLIBS=unix.cma
 
 ifeq ($(NATIVE), true)
   FSMCAMLOBJS=$(subst .cmo,.cmx, $(FSMOCAMLOBJS))
