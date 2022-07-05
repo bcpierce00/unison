@@ -150,3 +150,13 @@ val registerStreamCmd :
   (connection -> Bytearray.t -> int -> 'a) ->
   (connection -> 'a -> unit) ->
   connection -> (('a -> unit Lwt.t) -> 'b Lwt.t) -> 'b Lwt.t
+
+(* Register a function to be run when the connection between client and server
+   is closed. The function should not raise exceptions. If it does then running
+   some of the other registered functions may be skipped (which is not an issue
+   as the exception is likely going to quit the process).
+
+   Registered functions are only expected to be run when the connection is
+   closed but the process keeps running (a socket server, for example). Do not
+   use it as a substitute for [at_exit]. *)
+val at_conn_close : ?only_server:bool -> (unit -> unit) -> unit

@@ -628,6 +628,17 @@ let hostConnection host =
 *)
 let connectedHosts = ref []
 
+(****)
+
+let atCloseHandlers = ref []
+
+let at_conn_close ?(only_server = false) f =
+  atCloseHandlers := (only_server, f) :: !atCloseHandlers
+
+let runConnCloseHandlers isServer =
+  Safelist.iter (fun (only_server, f) ->
+    if not only_server || isServer then f ()) !atCloseHandlers
+
 (**********************************************************************
                        CLIENT/SERVER PROTOCOLS
  **********************************************************************)
@@ -747,6 +758,12 @@ let streamAbortedSrc = ref 0
 let streamAbortedDst = ref false
 
 let streamError = Hashtbl.create 7
+
+let resetStreamErroState () =
+  streamAbortedSrc := 0;
+  streamAbortedDst := false;
+  Hashtbl.reset streamError
+let () = at_conn_close resetStreamErroState
 
 let abortStream conn id =
   if not !streamAbortedDst then begin
@@ -946,7 +963,11 @@ let registerRootCmdWithConnection (cmdName : string)
     | _  -> let conn = hostConnection (hostOfRoot localRoot) in
             client0 conn args
 
-let streamReg = Lwt_util.make_region 1
+let streamReg = ref (Lwt_util.make_region 1)
+let resetStreamReg () =
+  (* The remaining threads should be collected by GC *)
+  streamReg := Lwt_util.make_region 1
+let () = at_conn_close resetStreamReg
 
 let streamingActivated =
   Prefs.createBool "stream" true
@@ -1009,7 +1030,7 @@ let registerStreamCmd
       let id = newMsgId () in (* Message ID *)
       Lwt.try_bind
         (fun () ->
-           Lwt_util.run_in_region streamReg 1
+           Lwt_util.run_in_region !streamReg 1
              (fun () -> sender (fun v -> client conn id v)))
         (fun v -> ping conn id >>= fun () -> Lwt.return v)
         (fun e ->
@@ -2132,7 +2153,10 @@ let waitOnPort hosts port =
          with Util.Fatal "Lost connection with the server" -> () end;
          (* The client has closed its end of the connection *)
          begin try Lwt_unix.close connected with Unix.Unix_error _ -> () end;
-         if not (Prefs.read killServer) then handleClients ()
+         if not (Prefs.read killServer) then begin
+           runConnCloseHandlers true;
+           handleClients ()
+         end
        in
        try
          Sys.catch_break true;
