@@ -24,19 +24,14 @@ let debug = Trace.debug "copy"
 let protect f g =
   try
     f ()
-  with Sys_error _ | Unix.Unix_error _ | Util.Transient _ as e ->
+  with e ->
     begin try g () with Sys_error _  | Unix.Unix_error _ -> () end;
     raise e
 
 let lwt_protect f g =
   Lwt.catch f
     (fun e ->
-       begin match e with
-         Sys_error _ | Unix.Unix_error _ | Util.Transient _ ->
-           begin try g () with Sys_error _  | Unix.Unix_error _ -> () end
-       | _ ->
-           ()
-       end;
+       begin try g () with Sys_error _  | Unix.Unix_error _ -> () end;
        Lwt.fail e)
 
 (****)
