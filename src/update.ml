@@ -434,6 +434,10 @@ let loadArchiveLocal fspath (thisRoot: string) :
   Util.convertUnixErrorsToFatal "loading archive" (fun () ->
     if System.file_exists fspath then
       let c = System.open_in_bin fspath in
+      let close_on_error f =
+        try f () with e -> close_in_noerr c; raise e
+      in
+      close_on_error (fun () ->
       let header = input_line c in
       (* Sanity check on archive format *)
       if header<>formatString then begin
@@ -488,7 +492,8 @@ let loadArchiveLocal fspath (thisRoot: string) :
           Some (archive, hash, magic, properties)
         with Failure s | Umarshal.Error s -> raise (Util.Fatal (Printf.sprintf
            "Archive file seems damaged (%s): \
-            use the -ignorearchives option, or throw away archives on both machines and try again" s))
+            use the -ignorearchives option, or \
+            throw away archives on both machines and try again" s)))
     else
       (debug (fun() ->
          Util.msg "Archive %s not found\n"
