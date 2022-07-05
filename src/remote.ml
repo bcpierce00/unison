@@ -753,6 +753,18 @@ let processRequest conn id cmdName buf =
          dump conn ((id, 0, intSize) :: marshalHeader conn (FatalExn s) [])
      | e ->
          Lwt.fail e)
+  (* With the current RPC protocol it is not possible to recover from situations
+     where an RPC packet is not completely transmitted (due to an interrupted
+     write syscall). The other side will hang forever, waiting for the complete
+     packet to arrive. New packets (here, transmitting the exception) can't be
+     sent because the receiver can't read them until the previous packet is
+     complete. (Best case, the server quits with a protocol error.)
+
+     Therefore, it is important that exceptions that can interrupt syscalls
+     (for example, Sys.Break (Ctrl-C)) are never wrapped into Util.Transient or
+     Util.Fatal, unless the connection is already known to be broken. Likewise,
+     other exception handlers than the one just above must avoid writing out
+     additional data to the RPC connection. *)
 
 let streamAbortedSrc = ref 0
 let streamAbortedDst = ref false
@@ -1034,9 +1046,12 @@ let registerStreamCmd
              (fun () -> sender (fun v -> client conn id v)))
         (fun v -> ping conn id >>= fun () -> Lwt.return v)
         (fun e ->
-           debugE (fun () ->
-             Util.msg "Pinging remote end after streaming error\n");
-           ping conn id >>= fun () -> Lwt.fail e)
+           if !streamAbortedSrc = id then begin
+             debugE (fun () ->
+               Util.msg "Pinging remote end after streaming error\n");
+             ping conn id >>= fun () -> Lwt.fail e
+           end else
+             Lwt.fail e)
     end
 
 let commandAvailable =
