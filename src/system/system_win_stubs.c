@@ -276,7 +276,7 @@ CAMLprim value win_has_correct_ctime(value unit)
 }
 
 #define MAKEDWORDLONG(a,b) ((DWORDLONG)(((DWORD)(a))|(((DWORDLONG)((DWORD)(b)))<<32)))
-#define WINTIME_TO_TIME(t) (((ULONGLONG) t) / 10000000ull - 11644473600ull)
+#define WINTIME_TO_TIME(t) ((((ULONGLONG) t) - 116444736000000000ull) / 10000000ull)
 #define FILETIME_TO_TIME(ft) WINTIME_TO_TIME((((ULONGLONG) ft.dwHighDateTime) << 32) + ft.dwLowDateTime)
 #define FILETIME_NT_TO_TIME(ft) WINTIME_TO_TIME(ft.QuadPart)
 
