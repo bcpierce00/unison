@@ -24,19 +24,14 @@ let debug = Trace.debug "copy"
 let protect f g =
   try
     f ()
-  with Sys_error _ | Unix.Unix_error _ | Util.Transient _ as e ->
+  with e ->
     begin try g () with Sys_error _  | Unix.Unix_error _ -> () end;
     raise e
 
 let lwt_protect f g =
   Lwt.catch f
     (fun e ->
-       begin match e with
-         Sys_error _ | Unix.Unix_error _ | Util.Transient _ ->
-           begin try g () with Sys_error _  | Unix.Unix_error _ -> () end
-       | _ ->
-           ()
-       end;
+       begin try g () with Sys_error _  | Unix.Unix_error _ -> () end;
        Lwt.fail e)
 
 (****)
@@ -477,7 +472,7 @@ let processTransferInstruction conn (file_id, ti) =
   Util.convertUnixErrorsToTransient
     "processing a transfer instruction"
     (fun () ->
-       ignore (Remote.MsgIdMap.find file_id !decompressor ti))
+       ignore ((fst (Remote.MsgIdMap.find file_id !decompressor)) ti))
 
 let marshalTransferInstruction =
   (fun _ (file_id, (data, pos, len)) rem ->
@@ -497,6 +492,20 @@ let showPrefixProgress id kind =
     `DATA_APPEND len -> Uutil.showProgress id len "r"
   | _                -> ()
 
+(* There is an issue that not all threads are immediately cancelled when there
+   is a connection error. A waiting thread (in this case probably a thread
+   in the Lwt region for RPC streaming) may get started and open the infd but
+   never complete. lwt_protect is never triggered in this scenario. Not sure
+   why exactly but probably because the thread just stops (as eventually the
+   connection cleanup kicks in and all threads are stopped). As a hacky
+   solution, keep track of all open fds and close them when the connection
+   breaks. *)
+let compressorFds = Hashtbl.create 17
+let closeCompressors () =
+  Hashtbl.iter (fun fd _ -> close_in_noerr fd) compressorFds;
+  Hashtbl.clear compressorFds
+let () = Remote.at_conn_close closeCompressors
+
 let compress conn
      ((biOpt, fspathFrom, pathFrom, fileKind), (sizeFrom, id, file_id)) =
   Lwt.catch
@@ -507,6 +516,7 @@ let compress conn
                already started *)
             if fileKind <> `RESS then Abort.check id;
             let infd = openFileIn fspathFrom pathFrom fileKind in
+            Hashtbl.add compressorFds infd true;
             lwt_protect
               (fun () ->
                  showPrefixProgress id fileKind;
@@ -523,10 +533,11 @@ let compress conn
                  compr
                    (fun ti -> processTransferInstructionRemotely (file_id, ti))
                        >>= fun () ->
+                 Hashtbl.remove compressorFds infd;
                  close_in infd;
                  Lwt.return ())
               (fun () ->
-                 close_in_noerr infd)))
+                 Hashtbl.remove compressorFds infd; close_in_noerr infd)))
     (fun e ->
        (* We cannot wrap the code above with the handler below,
           as the code is executed asynchronously. *)
@@ -675,7 +686,7 @@ let transferFileContents
     Lwt.catch
       (fun () ->
          debug (fun () -> Util.msg "Starting the actual transfer\n");
-         decompressor := Remote.MsgIdMap.add file_id decompr !decompressor;
+         decompressor := Remote.MsgIdMap.add file_id (decompr, (infd, outfd)) !decompressor;
          compressRemotely connFrom
            ((bi, fspathFrom, pathFrom, fileKind), (srcFileSize, id, file_id))
            >>= fun () ->
@@ -689,6 +700,13 @@ let transferFileContents
            Remote.MsgIdMap.remove file_id !decompressor; (* For GC *)
          close_all_no_error infd outfd;
          Lwt.fail e))
+
+let closeDecompressors () =
+  let tmp = !decompressor in
+  decompressor := Remote.MsgIdMap.empty;
+  tmp |> Remote.MsgIdMap.iter (fun _ (_, (infd, outfd)) ->
+    close_all_no_error infd outfd)
+let () = Remote.at_conn_close closeDecompressors
 
 (****)
 
@@ -743,6 +761,11 @@ let reallyTransferFile
 (****)
 
 let filesBeingTransferred = Hashtbl.create 17
+
+let resetFileTransferState () =
+  (* The waiting threads should be collected by GC *)
+  Hashtbl.clear filesBeingTransferred
+let () = Remote.at_conn_close resetFileTransferState
 
 let wakeupNextTransfer fp =
   match
