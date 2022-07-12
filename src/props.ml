@@ -31,7 +31,6 @@ module type S = sig
   val syncedPartsToString : t -> string
   val set : Fspath.t -> t -> unit
   val get : Unix.LargeFile.stats -> t
-  val init : bool -> unit
 end
 
 (* Nb: the syncedPartsToString call is only used for archive dumping, for    *)
@@ -50,6 +49,7 @@ module Perm : sig
   val validatePrefs : unit -> unit
   val permMask : int Prefs.t
   val dontChmod : bool Prefs.t
+  val init : bool -> unit
 end = struct
 
 (* We introduce a type, Perm.t, that holds a file's permissions along with   *)
@@ -297,7 +297,10 @@ module Id (M : sig
   val syncedPartsToString : int -> string
   val set : Fspath.t -> int -> unit
   val get : Unix.LargeFile.stats -> int
-end) : S = struct
+end) : sig
+  include S
+  val init : bool -> unit
+end = struct
 
 type t =
     IdIgnored
@@ -606,8 +609,6 @@ let same p p' =
       let delta = extract p -. extract p' in
       delta = 0. || delta = 3600. || delta = -3600.
 
-let init _ = ()
-
 end
 
 (* ------------------------------------------------------------------------- *)
@@ -666,8 +667,6 @@ let get stats info =
     Some info.Osx.finfo
   else
     None
-
-let init _ = ()
 
 end
 
@@ -828,9 +827,7 @@ let check fspath path stats p =
 let init someHostIsRunningWindows =
   Perm.init someHostIsRunningWindows;
   Uid.init someHostIsRunningWindows;
-  Gid.init someHostIsRunningWindows;
-  Time.init someHostIsRunningWindows;
-  TypeCreator.init someHostIsRunningWindows
+  Gid.init someHostIsRunningWindows
 
 let fileDefault = template Perm.fileDefault
 let fileSafe = template Perm.fileSafe
