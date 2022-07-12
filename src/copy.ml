@@ -279,11 +279,9 @@ let saveTempFileLocal (fspathTo, (pathTo, realPathTo, reason)) =
         reason
         (Fspath.toDebugString (Fspath.concat fspathTo savepath))))
 
-let convV0 = Remote.makeConvV0FunRet Fileinfo.to_compat251 Fileinfo.of_compat251
-
 let saveTempFileOnRoot =
-  Remote.registerRootCmd "saveTempFile" ~convV0
-    Umarshal.(prod3 Path.mlocal Path.mlocal string id id) Fileinfo.m
+  Remote.registerRootCmd "saveTempFile"
+    Umarshal.(prod3 Path.mlocal Path.mlocal string id id) Umarshal.unit
     saveTempFileLocal
 
 (****)
@@ -1164,7 +1162,8 @@ let file rootFrom pathFrom rootTo fspathTo pathTo realPathTo
       checkForChangesToSource rootFrom pathFrom desc fp stamp ress None true
         >>= fun () ->
       (* This function never returns (it is supposed to fail) *)
-      saveTempFileOnRoot rootTo (pathTo, realPathTo, reason)
+      saveTempFileOnRoot rootTo (pathTo, realPathTo, reason) >>= fun () ->
+      assert false
 
 (****)
 
