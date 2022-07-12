@@ -29,8 +29,8 @@ module type S = sig
   val diff : t -> t -> t
   val toString : t -> string
   val syncedPartsToString : t -> string
-  val set : Fspath.t -> Path.local -> [`Set | `Update] -> t -> unit
-  val get : Unix.LargeFile.stats -> Osx.info -> t
+  val set : Fspath.t -> t -> unit
+  val get : Unix.LargeFile.stats -> t
   val init : bool -> unit
 end
 
@@ -45,6 +45,7 @@ module Perm : sig
   val fileSafe : t
   val dirDefault : t
   val extract : t -> int
+  val set : Fspath.t -> [`Set | `Update] -> t -> unit
   val check : Fspath.t -> Path.local -> Unix.LargeFile.stats -> t -> unit
   val validatePrefs : unit -> unit
   val permMask : int Prefs.t
@@ -209,7 +210,7 @@ let validatePrefs () =
   if Prefs.read dontChmod && (Prefs.read permMask <> 0) then raise (Util.Fatal
     "If the 'dontchmod' preference is set, the 'perms' preference should be 0")
 
-let set fspath path kind (fp, mask) =
+let set abspath kind (fp, mask) =
   (* BCP: removed "|| kind <> `Update" on 10/2005, but reinserted it on 11/2008.
      I'd removed it to make Dale Worley happy -- he wanted a way to make sure that
      Unison would never call chmod, and setting prefs to 0 seemed like a reasonable
@@ -219,7 +220,6 @@ let set fspath path kind (fp, mask) =
     Util.convertUnixErrorsToTransient
     "setting permissions"
       (fun () ->
-        let abspath = Fspath.concat fspath path in
         debug
           (fun() ->
             Util.msg "Setting permissions for %s to %s (%s)\n"
@@ -238,7 +238,7 @@ let set fspath path kind (fp, mask) =
                        or else set preference \"perms\" to 0 and \
                        preference \"dontchmod\" to true to avoid this error")))
 
-let get stats _ = (stats.Unix.LargeFile.st_perm, Prefs.read permMask)
+let get stats = (stats.Unix.LargeFile.st_perm, Prefs.read permMask)
 
 let check fspath path stats (fp, mask) =
   let fp' = stats.Unix.LargeFile.st_perm in
@@ -364,7 +364,7 @@ let extern id =
         Hashtbl.add tbl nm id;
         id
 
-let set fspath path kind id =
+let set abspath id =
   match extern id with
     -1 ->
       ()
@@ -372,12 +372,11 @@ let set fspath path kind id =
       Util.convertUnixErrorsToTransient
         "setting file ownership"
         (fun () ->
-           let abspath = Fspath.concat fspath path in
            M.set abspath id)
 
 let tbl = Hashtbl.create 17
 
-let get stats _ =
+let get stats =
   if not (Prefs.read M.sync) then IdIgnored else
   let id = M.get stats in
   if id = 0 || Prefs.read numericIds then IdNumeric id else
@@ -536,13 +535,12 @@ let syncedPartsToString t = match t with
 
 (* FIX: Probably there should be a check here that prevents us from ever     *)
 (* setting a file's modtime into the future.                                 *)
-let set fspath path kind t =
+let set abspath t =
   match t with
     Synced v ->
       Util.convertUnixErrorsToTransient
         "setting modification time"
         (fun () ->
-           let abspath = Fspath.concat fspath path in
            if false then begin
              (* A special hack for Rasmus, who has a special situation that
                 requires the utimes-setting program to run 'setuid root'
@@ -574,7 +572,7 @@ let set fspath path kind t =
   | _ ->
       ()
 
-let get stats _ =
+let get stats =
   let v = stats.Unix.LargeFile.st_mtime in
   if stats.Unix.LargeFile.st_kind = Unix.S_REG && Prefs.read sync then
     Synced v
@@ -616,7 +614,12 @@ end
 (*                          Type and creator                                 *)
 (* ------------------------------------------------------------------------- *)
 
-module TypeCreator : S = struct
+module TypeCreator :
+  sig
+    include S
+    val set : Fspath.t -> Path.local -> t -> unit
+    val get : Unix.LargeFile.stats -> Osx.info -> t
+  end = struct
 
 type t = string option
 
@@ -649,7 +652,7 @@ let toString t =
 
 let syncedPartsToString = toString
 
-let set fspath path kind t =
+let set fspath path t =
   match t with
     None   -> ()
   | Some t -> Osx.setFileInfos fspath path t
@@ -798,10 +801,10 @@ let diff p p' =
     length = p'.length }
 
 let get stats infos =
-  { perm = Perm.get stats infos;
-    uid = Uid.get stats infos;
-    gid = Gid.get stats infos;
-    time = Time.get stats infos;
+  { perm = Perm.get stats;
+    uid = Uid.get stats;
+    gid = Gid.get stats;
+    time = Time.get stats;
     typeCreator = TypeCreator.get stats infos;
     length =
       if stats.Unix.LargeFile.st_kind = Unix.S_REG then
@@ -810,11 +813,12 @@ let get stats infos =
         Uutil.Filesize.zero }
 
 let set fspath path kind p =
-  Uid.set fspath path kind p.uid;
-  Gid.set fspath path kind p.gid;
-  TypeCreator.set fspath path kind p.typeCreator;
-  Time.set fspath path kind p.time;
-  Perm.set fspath path kind p.perm
+  let abspath = Fspath.concat fspath path in
+  Uid.set abspath p.uid;
+  Gid.set abspath p.gid;
+  TypeCreator.set fspath path p.typeCreator;
+  Time.set abspath p.time;
+  Perm.set abspath kind p.perm
 
 (* Paranoid checks *)
 let check fspath path stats p =
