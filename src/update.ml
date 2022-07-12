@@ -638,6 +638,14 @@ let commitArchiveLocal ((fspath: Fspath.t), ())
 let commitArchiveOnRoot: Common.root -> unit -> unit Lwt.t =
   Remote.registerRootCmd "commitArchive" Umarshal.unit Umarshal.unit commitArchiveLocal
 
+let getArchiveInfo f =
+  Util.convertUnixErrorsToTransient "querying file information"
+    (fun () ->
+       try
+         Some (System.stat f)
+       with Unix.Unix_error ((Unix.ENOENT | Unix.ENOTDIR), _, _) ->
+         None)
+
 let archiveInfoCache = Hashtbl.create 7
 (* [postCommitArchive (fspath, v)] finishes the committing protocol by
    copying files from NewArch-files to MainArch-files *)
@@ -669,8 +677,7 @@ let postCommitArchiveLocal (fspath,())
          close_out outFd
        end;
        let arcFspath = Util.fileInUnisonDir toname in
-       let info = Fileinfo.get' arcFspath in
-       Hashtbl.replace archiveInfoCache thisRoot info))
+       Hashtbl.replace archiveInfoCache thisRoot (getArchiveInfo arcFspath)))
 
 (* [postCommitArchiveOnRoot root v] invokes [postCommitArchive fspath v] on
    the server, where [fspath] is the path to root on the server *)
@@ -707,19 +714,22 @@ let setArchivePropsLocal (thisRoot: string) (props: Proplist.t) =
   Hashtbl.replace archivePropCache thisRoot props
 
 let fileUnchanged oldInfo newInfo =
-  oldInfo.Fileinfo.typ = `FILE && newInfo.Fileinfo.typ = `FILE
-    &&
-  Props.same_time oldInfo.Fileinfo.desc newInfo.Fileinfo.desc
-    &&
-  Props.length oldInfo.Fileinfo.desc = Props.length newInfo.Fileinfo.desc
-    &&
-  match Fileinfo.stamp oldInfo, Fileinfo.stamp newInfo with
-    Fileinfo.InodeStamp in1, Fileinfo.InodeStamp in2 -> in1 = in2
-  | Fileinfo.NoStamp,        Fileinfo.NoStamp        -> true
-  | _                                                -> false
+  match oldInfo, newInfo with
+  | None, _ | _, None -> false
+  | Some o, Some n ->
+      o.Unix.LargeFile.st_kind = S_REG && n.Unix.LargeFile.st_kind = S_REG
+        &&
+      o.Unix.LargeFile.st_mtime = n.Unix.LargeFile.st_mtime
+        &&
+      o.Unix.LargeFile.st_size = n.Unix.LargeFile.st_size
+        &&
+      (o.Unix.LargeFile.st_ino = n.Unix.LargeFile.st_ino
+          ||
+        Prefs.read Fileinfo.ignoreInodeNumbers
+          ||
+        not (System.hasInodeNumbers ()))
 
-let archiveUnchanged fspath newInfo =
-  let (arcName, thisRoot) = archiveName fspath MainArch in
+let archiveUnchanged thisRoot newInfo =
   try
     fileUnchanged (Hashtbl.find archiveInfoCache thisRoot) newInfo
   with Not_found ->
@@ -930,17 +940,15 @@ let loadArchiveOnRoot: Common.root -> bool -> (int * string) option Lwt.t =
          then
            Lwt.return None
          else
-           let (arcName,thisRoot) = archiveName fspath MainArch in
-           let arcFspath = Util.fileInUnisonDir arcName in
-           let info = Fileinfo.get' arcFspath in
-           if archiveUnchanged fspath info then
+           let info = getArchiveInfo arcFspath in
+           if archiveUnchanged thisRoot info then
              (* The archive is unchanged.  So, we don't need to do
                 anything. *)
              Lwt.return (Some (0, ""))
            else begin
              match loadArchiveLocal arcFspath thisRoot with
                Some archData ->
-                 let info' = Fileinfo.get' arcFspath in
+                 let info' = getArchiveInfo arcFspath in
                  if fileUnchanged info info' then
                    setArchiveData thisRoot fspath archData info
                  else
@@ -958,13 +966,13 @@ let loadArchiveOnRoot: Common.root -> bool -> (int * string) option Lwt.t =
                    | Some archData ->
                        loadedCompatArchive := fspath :: !loadedCompatArchive;
                        setArchiveData thisRoot fspath archData
-                         (Fileinfo.get' arcFspath)
+                         (getArchiveInfo arcFspath)
                    | None -> Lwt.return None
            end
        end else begin
          match loadArchiveLocal arcFspath thisRoot with
            Some archData ->
-             setArchiveData thisRoot fspath archData (Fileinfo.get' arcFspath)
+             setArchiveData thisRoot fspath archData (getArchiveInfo arcFspath)
          | None ->
              (* No archive found, try 2.51 upgrade mode *)
              (* IMPORTANT! This code is for smoother upgrades from
@@ -976,7 +984,7 @@ let loadArchiveOnRoot: Common.root -> bool -> (int * string) option Lwt.t =
              match loadArchiveLocal251 arcFspath thisRoot with
              | Some archData ->
                  loadedCompatArchive := fspath :: !loadedCompatArchive;
-                 setArchiveData thisRoot fspath archData (Fileinfo.get' arcFspath)
+                 setArchiveData thisRoot fspath archData (getArchiveInfo arcFspath)
              | None -> clearArchiveData thisRoot
        end)
 

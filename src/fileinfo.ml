@@ -246,24 +246,3 @@ let unchanged fspath path info =
   (info', dataUnchanged,
    Osx.ressUnchanged info.osX.Osx.ressInfo info'.osX.Osx.ressInfo
      (Some t0) dataUnchanged)
-
-(****)
-
-let get' f =
-  Util.convertUnixErrorsToTransient
-  "querying file information"
-    (fun () ->
-       try
-         let stats = System.stat f in
-         let typ = `FILE in
-         let osxInfos = Osx.defaultInfos typ in
-         { typ   = typ;
-           inode = stats.Unix.LargeFile.st_ino land 0x3FFFFFFF;
-           desc  = Props.get stats osxInfos;
-           osX   = osxInfos }
-       with
-         Unix.Unix_error((Unix.ENOENT | Unix.ENOTDIR),_,_) ->
-         { typ = `ABSENT;
-           inode    = 0;
-           desc     = Props.dummy;
-           osX      = Osx.defaultInfos `ABSENT })
