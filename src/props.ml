@@ -721,11 +721,12 @@ let template perm =
 let dummy = template Perm.dummy
 
 let hash p h =
-  Perm.hash p.perm
-    (Uid.hash p.uid
-       (Gid.hash p.gid
-          (Time.hash p.time
-             (TypeCreator.hash p.typeCreator h))))
+  h
+  |> TypeCreator.hash p.typeCreator
+  |> Time.hash p.time
+  |> Gid.hash p.gid
+  |> Uid.hash p.uid
+  |> Perm.hash p.perm
 
 (* IMPORTANT!
    This is the 2.51-compatible version of [hash]. It must always produce exactly
