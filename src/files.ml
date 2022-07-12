@@ -1200,17 +1200,50 @@ let merge root1 path1 ui1 root2 path2 ui2 id showMergeFn =
                    (Path.toString path1));
            if not (Stasher.shouldBackupCurrent path1) then
              Util.msg "Warning: 'backupcurrent' is not set for path %s\n" (Path.toString path1);
-           let infoarch = Fileinfo.get true arch_fspath Path.empty in
+           let infoarch = Fileinfo.get false arch_fspath Path.empty in
            let fp = Os.fingerprint arch_fspath Path.empty infoarch in
            debug (fun () -> Util.msg "New fingerprint is %s\n" (Os.fullfingerprint_to_string fp));
+           let pseudoMergeDesc merge_desc =
+             (* Length and times (because the merge result's mtime is set in
+                both replicas) must come from the merge result. The remaining
+                props should be as close as possible to one of the original
+                files to reduce the possibility of props conflicts at the next
+                sync.
+
+                Current props, desc1 and desc2, can't be compared before having
+                same time and length (taken from the merge result). *)
+             let fixup_desc desc n =
+               let desc' = Props.setTime desc (Props.time n) in
+               Props.setLength desc' (Props.length n)
+             in
+             let desc1' = fixup_desc desc1 merge_desc
+             and desc2' = fixup_desc desc2 merge_desc in
+             let pref_desc =
+               if Props.similar desc1' desc2' then Some desc1 else
+               match ui1, ui2 with
+               | Updates (_, Previous (_, pdesc1, _, _)),
+                 Updates (_, Previous (_, pdesc2, _, _)) ->
+                   if Props.similar pdesc1 desc1 then Some desc1 else
+                   if Props.similar pdesc2 desc2 then Some desc2 else
+                   if Props.similar pdesc1 pdesc2 then Some pdesc1 else
+                   None (* Is it possible to arrive here? *)
+               | NoUpdates, (NoUpdates | Updates _) -> Some desc1
+               | Updates _, NoUpdates -> Some desc2
+               | _ -> None
+             in
+             match pref_desc with
+             | None -> None
+             | Some pref_desc -> Some (fixup_desc pref_desc merge_desc)
+           in
            let new_archive_entry =
-             Update.ArchiveFile
-               (infoarch.desc, fp,
-                Fileinfo.stamp infoarch,
-                Osx.stamp infoarch.osX) in
+             match pseudoMergeDesc infoarch.desc with
+             | None -> None
+             | Some new_arch_desc ->
+                 Some (Update.ArchiveFile (new_arch_desc, fp,
+                   Fileinfo.stamp infoarch, Osx.stamp infoarch.osX)) in
            (Props.setTime desc1 (Props.time infoarch.Fileinfo.desc),
             Props.setTime desc2 (Props.time infoarch.Fileinfo.desc),
-            Some new_archive_entry)
+            new_archive_entry)
          end else
            (desc1, desc2, None)
          in
