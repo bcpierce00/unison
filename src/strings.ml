@@ -2220,13 +2220,13 @@ let docs =
       \032  unicode xxx\n\
       \032         When set to true, this flag causes Unison to perform case\n\
       \032         insensitive file comparisons assuming Unicode encoding. This is\n\
-      \032         the default. When the flag is set to false, a Latin 1 encoding\n\
-      \032         is assumed. When Unison runs in case sensitive mode, this flag\n\
-      \032         only makes a difference if one host is running Windows or Mac OS\n\
-      \032         X. Under Windows, the flag selects between using the Unicode or\n\
-      \032         8bit Windows API for accessing the filesystem. Under Mac OS X,\n\
-      \032         it selects whether comparing the filenames up to decomposition,\n\
-      \032         or byte-for-byte.\n\
+      \032         the default. When the flag is set to false, Latin 1 encoding is\n\
+      \032         assumed (this means that all bytes that are not letters in Latin\n\
+      \032         1 encoding will be compared byte-for-byte, even if they may be\n\
+      \032         valid characters in some other encoding). When Unison runs in\n\
+      \032         case sensitive mode, this flag only makes a difference if one\n\
+      \032         host is running Mac OS X. Under Mac OS X, it selects whether\n\
+      \032         comparing the filenames up to decomposition, or byte-for-byte.\n\
       \n\
       \032  version\n\
       \032         Print the current version number and exit. (This option only\n\
