@@ -30,9 +30,22 @@ type t
 
 val mapSeparator : string
 
-(* Create a new predicate and register it with the preference module.  The first
-   arg is the name of the predicate; the second is full (latex) documentation. *)
-val create : string -> category:Prefs.group -> ?local:bool -> ?send:(unit -> bool) -> string -> t
+(* Create a new predicate and register it with the preference module. *)
+val create :
+    string               (* Name of the predicate *)
+ -> category:Prefs.group
+ -> ?local:bool
+ -> ?send:(unit -> bool)
+ -> ?initial:string list (* Initial value for the "current patterns", separate
+                            from the persistent default patterns that are
+                            modified by [addDefaultPatterns]. User preferences
+                            will be added to this value, but this value is not
+                            persistent when the associated preference is cleared
+                            (for example, [intern] will overwrite it). This
+                            value will be returned by [extern] (if it hasn't
+                            been cleared before). *)
+ -> string               (* Full (latex) documentation *)
+ -> t
 
 (* Check whether a given path matches one of the default or current patterns *)
 val test : t -> string -> bool
