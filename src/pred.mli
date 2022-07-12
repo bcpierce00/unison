@@ -32,7 +32,7 @@ val mapSeparator : string
 
 (* Create a new predicate and register it with the preference module.  The first
    arg is the name of the predicate; the second is full (latex) documentation. *)
-val create : string -> category:Prefs.group -> ?local:bool -> string -> t
+val create : string -> category:Prefs.group -> ?local:bool -> ?send:(unit -> bool) -> string -> t
 
 (* Check whether a given path matches one of the default or current patterns *)
 val test : t -> string -> bool
