@@ -1097,7 +1097,7 @@ let checkForDangerousPath dangerousPaths =
     end
   end
 
-let synchronizeOnce ?wantWatcher ?skipRecentFiles pathsOpt =
+let synchronizeOnce ?wantWatcher pathsOpt =
   let showStatus path =
     if path = "" then Util.set_infos "" else
     let max_len = 70 in
@@ -1181,7 +1181,7 @@ let synchronizePathsFromFilesystemWatcher () =
         delayInfo ([], [])
     in
     let (exitStatus, failedPaths) =
-      synchronizeOnce ~wantWatcher:() ~skipRecentFiles:()
+      synchronizeOnce ~wantWatcher:true
         (if isStart then None else Some (readyPaths, delayedPaths))
     in
     (* After a failure, we retry at once, then use an exponential backoff *)
@@ -1211,10 +1211,10 @@ let synchronizePathsFromFilesystemWatcher () =
 (* ----------------- Repetition ---------------- *)
 
 let synchronizeUntilNoFailures repeatMode =
+  let wantWatcher = repeatMode in
   let rec loop triesLeft pathsOpt =
     let (exitStatus, failedPaths) =
-      synchronizeOnce
-        ?wantWatcher:(if repeatMode then Some () else None) pathsOpt in
+      synchronizeOnce ~wantWatcher pathsOpt in
     if failedPaths <> [] && triesLeft <> 0 then begin
       loop (triesLeft - 1) (Some (failedPaths, []))
     end else begin

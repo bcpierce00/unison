@@ -2326,7 +2326,7 @@ let findOnRoot =
     (fun (fspath, (wantWatcher, pathList, subpaths)) ->
        Lwt.return (findLocal wantWatcher fspath pathList subpaths))
 
-let findUpdatesOnPaths ?wantWatcher pathList subpaths =
+let findUpdatesOnPaths ?(wantWatcher=false) pathList subpaths =
   Lwt_unix.run
     (loadArchives true >>= (fun (ok, checksums) ->
      begin if ok then Lwt.return checksums else begin
@@ -2349,7 +2349,7 @@ let findUpdatesOnPaths ?wantWatcher pathList subpaths =
      let t = Trace.startTimer "Collecting changes" in
      Globals.allRootsMapWithWaitingAction (fun r ->
        debug (fun() -> Util.msg "findOnRoot %s\n" (root2string r));
-       findOnRoot r (wantWatcher <> None, pathList, subpaths))
+       findOnRoot r (wantWatcher, pathList, subpaths))
        (fun (host, _) ->
          begin match host with
            Remote _ -> Uutil.showUpdateStatus "";

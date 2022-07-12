@@ -3488,7 +3488,7 @@ let createToplevelWindow () =
     let findUpdates () =
       let t = Trace.startTimer "Checking for updates" in
       Trace.status "Looking for changes";
-      let updates = Update.findUpdates ~wantWatcher:() !unsynchronizedPaths in
+      let updates = Update.findUpdates ~wantWatcher:true !unsynchronizedPaths in
       Trace.showTimer t;
       updates in
     let reconcile updates =

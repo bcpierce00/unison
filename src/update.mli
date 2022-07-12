@@ -35,7 +35,7 @@ val getRootsName : unit -> string
    given in the -path preference). An option controls whether we
    would like to use the external filesytem monitoring process. *)
 val findUpdates :
-  ?wantWatcher:unit ->
+  ?wantWatcher:bool ->
   (Path.t list * Path.t list) option ->
   ((Path.local * Common.updateItem * Props.t list) *
       (Path.local * Common.updateItem * Props.t list)) list
