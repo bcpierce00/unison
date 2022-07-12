@@ -17,7 +17,7 @@ val readLink : Fspath.t -> Path.local -> string
 val symlink : Fspath.t -> Path.local -> string -> unit
 
 val rename : string -> Fspath.t -> Path.local -> Fspath.t -> Path.local -> unit
-val createDir : Fspath.t -> Path.local -> Props.t -> unit
+val createDir : Fspath.t -> Path.local -> int -> unit
 val delete : Fspath.t -> Path.local -> unit
 
 (* We define a new type of fingerprints here so that clients of
@@ -43,7 +43,7 @@ val safeFingerprint :
                             (* current fileinfo, fingerprint and fork info *)
 val fingerprint :
   Fspath.t -> Path.local -> (* coordinates of file to fingerprint *)
-  Fileinfo.t ->             (* old fileinfo *)
+  Fileinfo.typ ->           (* old fileinfo *)
   fullfingerprint           (* current fingerprint *)
 
 val pseudoFingerprint :

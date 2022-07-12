@@ -69,19 +69,26 @@ let type2string = function
    changed type also a 2.51-compatible version must be created. *)
 type t251 = { typ : typ; inode : int; desc : Props.t251; osX : Osx.info}
 
-type t = { typ : typ; inode : int; desc : Props.t; osX : Osx.info}
+type ('a, 'b) info = { typ : typ; inode : int; desc : 'a; osX : Osx.info }
+     constraint 'a = _ Props.props
+type t = (Props.t, [`WithRess]) info
+type basic = (Props.basic, [`NoRess]) info
+type bress = (Props.basic, [`WithRess]) info
 
-let m = Umarshal.(prod4 mtyp int Props.m Osx.minfo
+let minfo propsm = Umarshal.(prod4 mtyp int propsm Osx.minfo
                     (fun {typ; inode; desc; osX} -> typ, inode, desc, osX)
                     (fun (typ, inode, desc, osX) -> {typ; inode; desc; osX}))
 
-let to_compat251 (x : t) : t251 =
+let m = minfo Props.m
+let mbasic = minfo Props.mbasic
+
+let to_compat251 (x : basic) : t251 =
   { typ = x.typ;
     inode = x.inode;
     desc = Props.to_compat251 x.desc;
     osX = x.osX }
 
-let of_compat251 (x : t251) : t =
+let of_compat251 (x : t251) : basic =
   { typ = x.typ;
     inode = x.inode;
     desc = Props.of_compat251 x.desc;
@@ -104,7 +111,7 @@ let statFn fromRoot fspath path =
   end else
     stats
 
-let get fromRoot fspath path =
+let getAux fromRoot fspath path getProps =
   Util.convertUnixErrorsToTransient
   "querying file information"
     (fun () ->
@@ -137,7 +144,7 @@ let get fromRoot fspath path =
            inode    = (* The inode number is truncated so that
                          it fits in a 31 bit ocaml integer *)
                       stats.Unix.LargeFile.st_ino land 0x3FFFFFFF;
-           desc     = Props.get stats osxInfos;
+           desc     = getProps stats osxInfos;
            osX      = osxInfos }
        with
          Unix.Unix_error((Unix.ENOENT | Unix.ENOTDIR),_,_) ->
@@ -145,6 +152,24 @@ let get fromRoot fspath path =
            inode    = 0;
            desc     = Props.dummy;
            osX      = Osx.getFileInfos fspath path `ABSENT })
+
+let getType fromRoot fspath path =
+  (getAux fromRoot fspath path (fun _ _ -> Props.dummy)).typ
+
+let getBasic fromRoot fspath path =
+  getAux fromRoot fspath path (fun st _ -> Props.get' st)
+
+let getBasicWithRess fromRoot fspath path =
+  getAux fromRoot fspath path Props.getWithRess
+
+let get fromRoot fspath path =
+  getAux fromRoot fspath path Props.get
+
+let basic x =
+  { typ = x.typ;
+    inode = x.inode;
+    desc = x.desc;
+    osX = x.osX }
 
 let check fspath path props =
   Util.convertUnixErrorsToTransient

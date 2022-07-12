@@ -471,7 +471,12 @@ let stamp info =
   | AppleDoubleRess (inode, mtime, ctime, len, _) ->
       AppleDoubleRess (inode, mtime, ctime, len, ())
 
-let ressFingerprint fspath path info =
+let ressFingerprint fspath path typ =
+  (* This function used to get ready-made info passed in. (Re-)getting the
+     info here may consume one or a few additional syscalls. This is not
+     thought to be a problem unless there are hundreds of thousands of files
+     with resource forks. That is really unlikely. *)
+  let info = getFileInfos fspath path typ in
   match info.ressInfo with
     NoRess ->
       Fingerprint.dummy

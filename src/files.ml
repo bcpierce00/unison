@@ -99,7 +99,7 @@ let copyOnConflict = Prefs.createBool "copyonconflict" false
 
 let prepareCopy workingDir path notDefault =
   if notDefault && Prefs.read copyOnConflict then begin
-    match (Fileinfo.get true workingDir path).Fileinfo.typ with
+    match Fileinfo.getType true workingDir path with
     | `ABSENT -> Some (workingDir, path, None)
     | _ ->
       begin
@@ -247,9 +247,9 @@ let mkdirOnRoot =
   Remote.registerRootCmd
     "mkdir" ~convV0
     Umarshal.(prod2 Fspath.m Path.mlocal id id)
-    Umarshal.(prod2 bool Props.m id id)
+    Umarshal.(prod2 bool Props.mbasic id id)
     (fun (fspath,(workingDir,path)) ->
-       let info = Fileinfo.get false workingDir path in
+       let info = Fileinfo.getBasic false workingDir path in
        if info.Fileinfo.typ = `DIRECTORY then begin
          begin try
            (* Make sure the directory is writable *)
@@ -260,8 +260,8 @@ let mkdirOnRoot =
        end else begin
          if info.Fileinfo.typ <> `ABSENT then
            Os.delete workingDir path;
-         Os.createDir workingDir path Props.dirDefault;
-         Lwt.return (false, (Fileinfo.get false workingDir path).Fileinfo.desc)
+         Os.createDir workingDir path (Props.perms Props.dirDefault);
+         Lwt.return (false, (Fileinfo.getBasic false workingDir path).desc)
        end)
 
 let convV0 = Remote.makeConvV0FunArg
@@ -275,7 +275,7 @@ let convV0 = Remote.makeConvV0FunArg
 let setDirPropOnRoot =
   Remote.registerRootCmd
     "setDirProp" ~convV0
-    Umarshal.(prod4 Fspath.m Path.mlocal Props.m Props.m id id)
+    Umarshal.(prod4 Fspath.m Path.mlocal Props.mbasic Props.m id id)
     Umarshal.unit
     (fun (_, (workingDir, path, initialDesc, newDesc)) ->
       Fileinfo.set workingDir path (`Set initialDesc) newDesc;
@@ -307,15 +307,15 @@ let performRename fspathTo localPathTo workingDir pathFrom pathTo prevArch =
        (Fspath.toDebugString source) (Fspath.toDebugString target))
     (fun () ->
       debugverbose (fun() ->
-        Util.msg "calling Fileinfo.get from renameLocal\n");
+        Util.msg "calling Fileinfo.getType from renameLocal\n");
       let filetypeFrom =
-        (Fileinfo.get false source Path.empty).Fileinfo.typ in
+        Fileinfo.getType false source Path.empty in
       debugverbose (fun() ->
-        Util.msg "back from Fileinfo.get from renameLocal\n");
+        Util.msg "back from Fileinfo.getType from renameLocal\n");
       if filetypeFrom = `ABSENT then raise (Util.Transient (Printf.sprintf
            "Error while renaming %s to %s -- source file has disappeared!"
            (Fspath.toPrintString source) (Fspath.toPrintString target)));
-      let filetypeTo = (Fileinfo.get false target Path.empty).Fileinfo.typ in
+      let filetypeTo = Fileinfo.getType false target Path.empty in
 
        (* Windows and Unix operate differently if the target path of a
           rename already exists: in Windows an exception is raised, in
@@ -920,8 +920,8 @@ let formatMergeCmd p f1 f2 backup out1 out2 outarch batchmode =
 let copyBack fspathFrom pathFrom rootTo pathTo propsTo uiTo archTo id =
   setupTargetPaths rootTo pathTo
     >>= (fun (workingDirForCopy, realPathTo, tempPathTo, localPathTo) ->
-  let info = Fileinfo.get false fspathFrom pathFrom in
-  let fp = Os.fingerprint fspathFrom pathFrom info in
+  let info = Fileinfo.getBasicWithRess false fspathFrom pathFrom in
+  let fp = Os.fingerprint fspathFrom pathFrom info.Fileinfo.typ in
   let stamp = Osx.stamp info.Fileinfo.osX in
   let newprops = Props.setLength propsTo (Props.length info.Fileinfo.desc) in
   Copy.file
@@ -1042,10 +1042,10 @@ let merge root1 path1 ui1 root2 path2 ui2 id showMergeFn =
       Os.delete workingDirForMerge new1;
       Os.delete workingDirForMerge new2;
       Os.delete workingDirForMerge newarch;
-      let info1 = Fileinfo.get false workingDirForMerge working1 in
+      let info1 = Fileinfo.getType false workingDirForMerge working1 in
       (* FIX: Why split out the parts of the pair?  Why is it not abstract anyway??? *)
       let fp1 = Os.fingerprint workingDirForMerge working1 info1 in
-      let info2 = Fileinfo.get false workingDirForMerge working2 in
+      let info2 = Fileinfo.getType false workingDirForMerge working2 in
       let fp2 = Os.fingerprint workingDirForMerge working2 info2 in
       let cmd = formatMergeCmd
           path1
@@ -1095,8 +1095,8 @@ let merge root1 path1 ui1 root2 path2 ui2 id showMergeFn =
           say (fun () -> Util.msg "Three outputs detected \n")
         else
           say (fun () -> Util.msg "Two outputs detected \n");
-        let info1 = Fileinfo.get false workingDirForMerge new1 in
-        let info2 = Fileinfo.get false workingDirForMerge new2 in
+        let info1 = Fileinfo.getType false workingDirForMerge new1 in
+        let info2 = Fileinfo.getType false workingDirForMerge new2 in
         let fp1' = Os.fingerprint workingDirForMerge new1 info1 in
         let fp2' = Os.fingerprint workingDirForMerge new2 info2 in
         if fp1'=fp2' then begin
@@ -1136,9 +1136,9 @@ let merge root1 path1 ui1 root2 path2 ui2 id showMergeFn =
 
         if working1_still_exists && working2_still_exists then begin
           say (fun () -> Util.msg "No output from merge cmd and both original files are still present\n");
-          let info1' = Fileinfo.get false workingDirForMerge working1 in
+          let info1' = Fileinfo.getType false workingDirForMerge working1 in
           let fp1' = Os.fingerprint workingDirForMerge working1 info1' in
-          let info2' = Fileinfo.get false workingDirForMerge working2 in
+          let info2' = Fileinfo.getType false workingDirForMerge working2 in
           let fp2' = Os.fingerprint workingDirForMerge working2 info2' in
           if fp1 = fp1' && fp2 = fp2' then
             raise (Util.Transient "Merge program didn't change either temp file");
@@ -1200,8 +1200,8 @@ let merge root1 path1 ui1 root2 path2 ui2 id showMergeFn =
                    (Path.toString path1));
            if not (Stasher.shouldBackupCurrent path1) then
              Util.msg "Warning: 'backupcurrent' is not set for path %s\n" (Path.toString path1);
-           let infoarch = Fileinfo.get false arch_fspath Path.empty in
-           let fp = Os.fingerprint arch_fspath Path.empty infoarch in
+           let infoarch = Fileinfo.getBasicWithRess false arch_fspath Path.empty in
+           let fp = Os.fingerprint arch_fspath Path.empty infoarch.typ in
            debug (fun () -> Util.msg "New fingerprint is %s\n" (Os.fullfingerprint_to_string fp));
            let pseudoMergeDesc merge_desc =
              (* Length and times (because the merge result's mtime is set in
