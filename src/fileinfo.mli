@@ -23,7 +23,7 @@ val of_compat251 : t251 -> basic
 val getType : bool (* fromRoot *) -> Fspath.t -> Path.local -> typ
 val getBasic : bool (* fromRoot *) -> Fspath.t -> Path.local -> basic
 val getBasicWithRess : bool (* fromRoot *) -> Fspath.t -> Path.local -> bress
-val get : bool (* fromRoot *) -> Fspath.t -> Path.local -> t
+val get : ?archProps:Props.t -> bool (* fromRoot *) -> Fspath.t -> Path.local -> t
 val set : Fspath.t -> Path.local ->
           [`Set of Props.basic | `Copy of Path.local | `Update of Props.t] ->
           Props.x -> unit

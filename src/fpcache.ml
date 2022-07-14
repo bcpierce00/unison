@@ -302,7 +302,7 @@ let fingerprint ?(newfile=false) fastCheck currfspath path info optFp =
         if Prefs.read fastercheckUNSAFE && newfile then begin
           debug (fun()-> Util.msg "skipping initial fingerprint of %s\n"
                             (Fspath.toDebugString (Fspath.concat currfspath path)));
-          (Fileinfo.get false currfspath path,
+          (Fileinfo.get ~archProps:info.desc false currfspath path,
            Os.pseudoFingerprint path (Props.length info.Fileinfo.desc))
         end else begin
           Os.safeFingerprint currfspath path info optFp

@@ -1234,7 +1234,7 @@ let merge root1 path1 ui1 root2 path2 ui2 id showMergeFn =
                 Current props, desc1 and desc2, can't be compared before having
                 same time and length (taken from the merge result). *)
              let fixup_desc desc n =
-               let desc' = Props.setTime desc (Props.time n) in
+               let desc' = Props.setTime desc n in
                Props.setLength desc' (Props.length n)
              in
              let desc1' = fixup_desc desc1 merge_desc
@@ -1262,8 +1262,8 @@ let merge root1 path1 ui1 root2 path2 ui2 id showMergeFn =
              | Some new_arch_desc ->
                  Some (Update.ArchiveFile (new_arch_desc, fp,
                    Fileinfo.stamp infoarch, Osx.stamp infoarch.osX)) in
-           (Props.setTime desc1 (Props.time infoarch.Fileinfo.desc),
-            Props.setTime desc2 (Props.time infoarch.Fileinfo.desc),
+           (Props.setTime desc1 infoarch.Fileinfo.desc,
+            Props.setTime desc2 infoarch.Fileinfo.desc,
             new_archive_entry)
          end else
            (desc1, desc2, None)

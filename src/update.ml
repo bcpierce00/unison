@@ -1566,8 +1566,9 @@ let directoryCheckContentUnchanged
       (archDesc, updated)
     else
       let updated =
-        updated || not (Props.same_time info.Fileinfo.desc archDesc) in
-      (Props.setTime archDesc (Props.time info.Fileinfo.desc), updated)
+        updated || not (Props.same_time info.Fileinfo.desc archDesc)
+          || not (Props.same_ctime info.desc archDesc) in
+      (Props.setTime archDesc info.Fileinfo.desc, updated)
   end else begin
     let (archDesc, updated) =
       Props.setDirChangeFlag archDesc Props.changedDirStamp 0 in
@@ -1643,7 +1644,19 @@ let checkContentsChange
   in
   if dataClearlyUnchanged && ressClearlyUnchanged then begin
     Xferhint.insertEntry currfspath path archFp;
-    None, checkPropChange info.Fileinfo.desc archive archDesc
+    let propsUpdates = checkPropChange info.Fileinfo.desc archive archDesc in
+    let propsChanged = propsUpdates <> NoUpdates in
+    (* Only update the archive if there is nothing to propagate. Otherwise,
+       if propagation fails and times in archive are updated anyway then the
+       changes that failed to propagate may be missed at the next scan. *)
+    let optArch =
+      if propsChanged || Props.same_ctime info.Fileinfo.desc archDesc then
+        None
+      else
+        let newprops = Props.setTime archDesc info.Fileinfo.desc in
+        Some (ArchiveFile (newprops, archFp, archStamp, archRess))
+    in
+    optArch, propsUpdates
   end else begin
     debugverbose (fun() -> Util.msg "  Double-check possibly updated file\n");
     showStatusAddLength scanInfo info;
@@ -1663,7 +1676,7 @@ let checkContentsChange
       begin if propsChanged then
         None
       else
-      let newprops = Props.setTime archDesc (Props.time newDesc) in
+      let newprops = Props.setTime archDesc newDesc in
       let newarch = ArchiveFile (newprops, archFp, newStamp, newRess) in
       debugverbose (fun() ->
         Util.msg "  Contents match: update archive with new time...%f\n"
@@ -1889,7 +1902,13 @@ and buildUpdateRec archive currfspath path scanInfo =
     debug (fun() ->
       Util.msg "buildUpdateRec: %s\n"
         (Fspath.toDebugString (Fspath.concat currfspath path)));
-    let info = Fileinfo.get true currfspath path in
+    let archProps =
+      match scanInfo.fastCheck, archive with
+      | true, ArchiveFile (archDesc, _, _, _) -> Some archDesc
+      | true, ArchiveDir (archDesc, _) -> Some archDesc
+      | _ -> None
+    in
+    let info = Fileinfo.get ?archProps true currfspath path in
     match (info.Fileinfo.typ, archive) with
       (`ABSENT, NoArchive) ->
         debug (fun() -> Util.msg "  buildUpdate -> Absent and no archive\n");
@@ -2101,7 +2120,13 @@ let rec buildUpdate archive fspath fullpath here path pathTree scanInfo =
        end,
        ui, here, [])
   | Some(name, path') ->
-      let info = Fileinfo.get true fspath here in
+      let archProps =
+        match scanInfo.fastCheck, archive with
+        | true, ArchiveFile (archDesc, _, _, _) -> Some archDesc
+        | true, ArchiveDir (archDesc, _) -> Some archDesc
+        | _ -> None
+      in
+      let info = Fileinfo.get ?archProps true fspath here in
       if info.Fileinfo.typ <> `DIRECTORY && info.Fileinfo.typ <> `ABSENT then
         let error =
           if Path.isEmpty here then

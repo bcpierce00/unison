@@ -162,8 +162,10 @@ let getBasic fromRoot fspath path =
 let getBasicWithRess fromRoot fspath path =
   getAux fromRoot fspath path (fun _ _ st i -> Props.getWithRess st i)
 
-let get fromRoot fspath path =
-  getAux fromRoot fspath path Props.get
+let get ?(archProps = Props.dummy) fromRoot fspath path =
+  let getProps fspath path stats typ =
+    Props.get ~archProps fspath path stats typ in
+  getAux fromRoot fspath path getProps
 
 let basic x =
   { typ = x.typ;
@@ -256,7 +258,7 @@ let ressStamp info = Osx.stamp info.osX
 let unchanged fspath path info =
   (* The call to [Util.time] must be before the call to [get] *)
   let t0 = Util.time () in
-  let info' = get true fspath path in
+  let info' = get ~archProps:info.desc true fspath path in
   let dataUnchanged =
     Props.same_time info.desc info'.desc
       &&

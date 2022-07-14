@@ -24,7 +24,7 @@ val toString : t -> string
 val syncedPartsToString : t -> string
 val set : Fspath.t -> Path.local -> [`Set | `Update] -> x -> unit
 val get' : Unix.LargeFile.stats -> basic
-val get : Fspath.t -> Path.local -> Unix.LargeFile.stats -> Osx.info -> t
+val get : ?archProps:t -> Fspath.t -> Path.local -> Unix.LargeFile.stats -> Osx.info -> t
 val getWithRess : Unix.LargeFile.stats -> Osx.info -> basic
 val check : Fspath.t -> Path.local -> Unix.LargeFile.stats -> x -> unit
 val init : bool -> unit
@@ -35,10 +35,11 @@ val purgeExtData : x -> t
 val withExtData : t -> x
 
 val same_time : _ props -> t -> bool
+val same_ctime : _ props -> t -> bool
 val length : _ props -> Uutil.Filesize.t
 val setLength : t -> Uutil.Filesize.t -> t
 val time : _ props -> float
-val setTime : t -> float -> t
+val setTime : t -> _ props -> t
 val perms : _ props -> int
 
 val fileDefault : basic

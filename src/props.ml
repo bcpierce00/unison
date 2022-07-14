@@ -672,6 +672,47 @@ let get stats info =
 end
 
 (* ------------------------------------------------------------------------- *)
+(*                               Change time                                 *)
+(* ------------------------------------------------------------------------- *)
+
+(* ctime itself is never synchronized. It is only leveraged for faster
+   metadata update detection; and stored in archive for this purpose. *)
+
+module CTime : sig
+  type t
+  val m : t Umarshal.t
+  val dummy : t
+  val override : t -> t -> t
+  val get : Unix.LargeFile.stats -> t
+  val same_time : t -> t -> bool
+end = struct
+
+type t = float
+
+let m = Umarshal.float
+
+let dummy = -1.
+
+(* Currently [override] does not work for ctime because the real on-disk
+   ctime will inevitably change when the final props are set on disk by
+   [Files.setProp] or the final rename after copying is done in [Files.copy]
+   (these happen after [override]). There is no [stat] done after these
+   operations, so this final ctime will not get stored in the archive.
+   It is not a major issue and doesn't break anything. The only side-effect is
+   that at next updates scan the entire set of metadata for this file/dir is
+   scanned (as if fastcheck was disabled); which may even be a good thing.
+   Not worth changing or adding the cost of an additional [stat]. But if it
+   is changed in future then the proper ctime value must be extracted in
+   [Props.get']. *)
+let override t t' = t
+
+let get stats = stats.Unix.LargeFile.st_ctime
+
+let same_time t t' = System.hasCorrectCTime && t = t'
+
+end
+
+(* ------------------------------------------------------------------------- *)
 (*                        Extended attributes (xattr)                        *)
 (* ------------------------------------------------------------------------- *)
 
@@ -1024,6 +1065,7 @@ type t =
     time : Time.t;
     typeCreator : TypeCreator.t;
     length : Uutil.Filesize.t;
+    ctime : CTime.t;
     xattr : Xattr.t;
   }
 
@@ -1031,13 +1073,14 @@ type _ props = t
 type basic = [`Basic] props
 type x = [`ExtLoaded] props
 
-let m = Umarshal.(prod2
+let m = Umarshal.(prod3
                     (prod6 Perm.m Uid.m Gid.m Time.m TypeCreator.m Uutil.Filesize.m id id)
+                    (cond xattrEnabled CTime.dummy CTime.m)
                     Xattr.m
-                    (fun {perm; uid; gid; time; typeCreator; length; xattr} ->
-                       ((perm, uid, gid, time, typeCreator, length), xattr))
-                    (fun ((perm, uid, gid, time, typeCreator, length), xattr) ->
-                       {perm; uid; gid; time; typeCreator; length; xattr}))
+                    (fun {perm; uid; gid; time; typeCreator; length; ctime; xattr} ->
+                       ((perm, uid, gid, time, typeCreator, length), ctime, xattr))
+                    (fun ((perm, uid, gid, time, typeCreator, length), ctime, xattr) ->
+                       {perm; uid; gid; time; typeCreator; length; ctime; xattr}))
 
 let mbasic = m
 let mx = m
@@ -1057,6 +1100,7 @@ let of_compat251 (p : t251) : t =
     time = p.time;
     typeCreator = p.typeCreator;
     length = p.length;
+    ctime = CTime.dummy;
     xattr = Xattr.dummy;
   }
 
@@ -1064,6 +1108,7 @@ let template perm =
   { perm = perm; uid = Uid.dummy; gid = Gid.dummy;
     time = Time.dummy; typeCreator = TypeCreator.dummy;
     length = Uutil.Filesize.dummy;
+    ctime = CTime.dummy;
     xattr = Xattr.dummy;
   }
 
@@ -1110,6 +1155,7 @@ let override p p' =
     time = Time.override p.time p'.time;
     typeCreator = TypeCreator.override p.typeCreator p'.typeCreator;
     length = p'.length;
+    ctime = CTime.override p.ctime p'.ctime;
     xattr = Xattr.override p.xattr p'.xattr;
   }
 
@@ -1120,6 +1166,7 @@ let strip p =
     time = Time.strip p.time;
     typeCreator = TypeCreator.strip p.typeCreator;
     length = p.length;
+    ctime = p.ctime;
     xattr = Xattr.strip p.xattr;
   }
 
@@ -1154,6 +1201,7 @@ let diff p p' =
     time = Time.diff p.time p'.time;
     typeCreator = TypeCreator.diff p.typeCreator p'.typeCreator;
     length = p'.length;
+    ctime = p'.ctime;
     xattr = Xattr.diff p.xattr p'.xattr;
   }
 
@@ -1168,6 +1216,7 @@ let get' stats =
         Uutil.Filesize.fromStats stats
       else
         Uutil.Filesize.zero;
+    ctime = CTime.dummy;
     xattr = Xattr.dummy;
   }
 
@@ -1177,12 +1226,20 @@ let get' stats =
    is important then it can be easily checked by seeing if [stats.st_kind]
    is S_LNK or not. If it is not S_LNK then any syscalls/functions on this
    path are expected to follow symlinks (and not follow otherwise). *)
-let get fspath path stats infos =
+let get ?(archProps = dummy) fspath path stats infos =
   let abspath = Fspath.concat fspath path in
+  (* Note for future: ctime could very well be included in [get'] but it
+     does not seem necessary at the moment. See the comment at
+     [CTime.override]. *)
+  let ctime = CTime.get stats in
+  let ctimeChanged = not (CTime.same_time ctime archProps.ctime) in
   let props = get' stats in
   { props with
     typeCreator = TypeCreator.get stats infos;
-    xattr = Xattr.get abspath stats;
+    ctime;
+    xattr =
+      if ctimeChanged || not Xattr.ctimeDetect then Xattr.get abspath stats
+      else archProps.xattr;
   }
 
 let getWithRess stats osXinfo =
@@ -1216,11 +1273,12 @@ let fileSafe = template Perm.fileSafe
 let dirDefault = template Perm.dirDefault
 
 let same_time p p' = Time.same p.time p'.time
+let same_ctime p p' = CTime.same_time p.ctime p'.ctime
 let length p = p.length
 let setLength p l = {p with length=l}
 
 let time p = Time.extract p.time
-let setTime p t = {p with time = Time.replace p.time t}
+let setTime p p' = {p with time = Time.replace p.time (time p'); ctime = p'.ctime}
 
 let perms p = Perm.extract p.perm
 
