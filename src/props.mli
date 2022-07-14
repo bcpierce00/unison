@@ -7,25 +7,32 @@ type t251
 type _ props
 type basic = [`Basic] props
 type t = [`Full] props
+type x = [`ExtLoaded] props
 val m : t Umarshal.t
 val mbasic : basic Umarshal.t
+val mx : x Umarshal.t
 val to_compat251 : _ props -> t251
 val of_compat251 : t251 -> _ props
 val dummy : _ props
 val hash : t -> int -> int
 val hash251 : t251 -> int -> int
 val similar : t -> t -> bool
-val override : _ props -> t -> t
+val override : _ props -> 'a props -> 'a props
 val strip : t -> t
-val diff : t -> t -> t
+val diff : t -> x -> x
 val toString : t -> string
 val syncedPartsToString : t -> string
-val set : Fspath.t -> Path.local -> [`Set | `Update] -> t -> unit
+val set : Fspath.t -> Path.local -> [`Set | `Update] -> x -> unit
 val get' : Unix.LargeFile.stats -> basic
 val get : Fspath.t -> Path.local -> Unix.LargeFile.stats -> Osx.info -> t
 val getWithRess : Unix.LargeFile.stats -> Osx.info -> basic
-val check : Fspath.t -> Path.local -> Unix.LargeFile.stats -> t -> unit
+val check : Fspath.t -> Path.local -> Unix.LargeFile.stats -> x -> unit
 val init : bool -> unit
+
+val missingExtData : t -> bool
+val loadExtData : Fspath.t -> Path.local -> t -> x
+val purgeExtData : x -> t
+val withExtData : t -> x
 
 val same_time : _ props -> t -> bool
 val length : _ props -> Uutil.Filesize.t
@@ -41,6 +48,8 @@ val dirDefault : basic
 val syncModtimes : bool Prefs.t
 val permMask : int Prefs.t
 val dontChmod : bool Prefs.t
+
+val xattrEnabled : unit -> bool
 
 (* We are reusing the directory length to store a flag indicating that
    the directory is unchanged *)

@@ -751,6 +751,9 @@ module Xattr : sig
   include S
   val ctimeDetect : bool
   val get : Fspath.t -> Unix.LargeFile.stats -> t
+  val missingExtData : t -> bool
+  val readAll : Fspath.t -> t -> t
+  val purge : t -> t
   val check : Fspath.t -> Path.local -> Unix.LargeFile.stats -> t -> unit
 end = struct
 
@@ -759,14 +762,17 @@ module Size = Uutil.Filesize
 type attrvalue =
   | String of string
   | Hash of string
+  | Loaded of (string * string) (* full value, hash *)
 
-let mattrvalue = Umarshal.(sum2 string string
+let mattrvalue = Umarshal.(sum3 string string (prod2 string string id id)
                             (function
-                             | String v -> I21 v
-                             | Hash v -> I22 v)
+                             | String v -> I31 v
+                             | Hash v -> I32 v
+                             | Loaded v -> I33 v)
                             (function
-                             | I21 v -> String v
-                             | I22 v -> Hash v))
+                             | I31 v -> String v
+                             | I32 v -> Hash v
+                             | I33 v -> Loaded v))
 
 type attrlist = (string * attrvalue) list
 
@@ -787,12 +793,17 @@ let m = Umarshal.cond xattrEnabled dummy Umarshal.(option msizeandattrs)
 
 let ctimeDetect = System.xattrUpdatesCTime
 
+(* Since [hash] is supposed to be run after [purge] (resulting in the
+   data that is stored in the archives) then we don't need to take
+   into account the difference between Hash and Loaded. *)
 let hash t h = if Prefs.read syncXattrs then Uutil.hash2 (Uutil.hash t) h else h
 
 let attrToString = function
   | (n, String v) ->
       Printf.sprintf "Name: %s    Value: %s" n (String.escaped v)
   | (n, Hash h) ->
+      Printf.sprintf "Name: %s    Fingerprint: %s" n (Digest.to_hex h)
+  | (n, Loaded (_, h)) ->
       Printf.sprintf "Name: %s    Fingerprint: %s" n (Digest.to_hex h)
 
 let toString' style = function
@@ -821,6 +832,23 @@ let toDebugString t = toString' `Simple t
 
 let toStringVerb t = toString' `Verbose t
 
+let attrEqual (n, v) (n', v') =
+  String.equal n n' &&
+  match v, v' with
+  | String a, String b
+  | String a, Loaded (b, _)
+  | Hash a, Hash b
+  | Hash a, Loaded (_, b)
+  | Loaded (a, _), String b
+  | Loaded (_, a), Hash b
+  | Loaded (_, a), Loaded (_, b) -> String.equal a b
+  | String s, Hash h
+  | Hash h, String s -> String.equal h (Digest.string s)
+
+let rec attrlist_mem x = function
+  | [] -> false
+  | a :: l -> attrEqual a x || attrlist_mem x l
+
 let similar t t' =
   not (Prefs.read syncXattrs)
     ||
@@ -829,7 +857,7 @@ let similar t t' =
   | Some (l, z), Some (l', z') ->
       Int64.equal (Size.toInt64 z) (Size.toInt64 z') &&
       Safelist.length l = Safelist.length l' &&
-        Safelist.for_all (fun m -> Safelist.mem m l') l
+        Safelist.for_all (fun m -> attrlist_mem m l') l
   | _ -> false
 
 let override t t' = t'
@@ -844,6 +872,34 @@ let wrapFail default f =
   | Failure msg ->
       raise (Util.Transient (msg ^
         ". You can set preference \"xattrs\" to false to avoid this error."))
+
+let optMap f = function None -> None | Some x -> Some (f x)
+let optAttrsMap f = optMap (fun (l, z) -> (Safelist.map f l, z))
+
+let missingExtData = function
+  | None -> false
+  | Some (l, _) -> Safelist.exists (function (_, Hash _) -> true | _ -> false) l
+
+let purge t =
+  optAttrsMap (function (n, Loaded (_, h)) -> (n, Hash h) | x -> x) t
+
+let readAll path t =
+  let f = function
+    | (n, Hash h) ->
+        debugverbose (fun () ->
+          Util.msg "Reading xattr %s for %s\n" n (Fspath.toDebugString path));
+        let v' = Fs.xattr_get path n in
+        if Digest.string v' <> h then
+          raise (Util.Transient (
+            Printf.sprintf "The value of extended attribute '%s' has \
+              changed on source file %s" n (Fspath.toPrintString path)));
+        (n, Loaded (v', h))
+    | x -> x
+  in
+  if Prefs.read syncXattrs then
+    wrapFail t (fun () -> optAttrsMap f t)
+  else
+    t
 
 let skipIgnoredXattr l =
   Safelist.filter (fun (n, _) ->
@@ -876,12 +932,12 @@ let setXattrs path t =
           try
             let xattrs = skipIgnoredXattr l in
             xattrs |> Safelist.iter (fun ((n, v) as m) ->
-              if not (Safelist.mem m xattrs0) then
+              if not (attrlist_mem m xattrs0) then
               begin
                 debugverbose (fun () -> Util.msg "Writing xattr: %s\n" n);
                 match v with
-                | String x -> Fs.xattr_set path n x
-                | Hash _ -> ()
+                | String x | Loaded (x, _) -> Fs.xattr_set path n x
+                | Hash _ -> () (* This should not happen; just skip it *)
               end);
             xattrs0 |> Safelist.iter (fun (n, _) ->
               if not (Safelist.exists (fun (n', _) -> n' = n) xattrs) then
@@ -973,6 +1029,7 @@ type t =
 
 type _ props = t
 type basic = [`Basic] props
+type x = [`ExtLoaded] props
 
 let m = Umarshal.(prod2
                     (prod6 Perm.m Uid.m Gid.m Time.m TypeCreator.m Uutil.Filesize.m id id)
@@ -983,6 +1040,7 @@ let m = Umarshal.(prod2
                        {perm; uid; gid; time; typeCreator; length; xattr}))
 
 let mbasic = m
+let mx = m
 
 let to_compat251 (p : t) : t251 =
   { perm = p.perm;
@@ -1171,6 +1229,22 @@ let permMask = Perm.permMask
 let dontChmod = Perm.dontChmod
 
 let validatePrefs = Perm.validatePrefs
+
+let missingExtData p =
+  Xattr.missingExtData p.xattr
+
+let loadExtData fspath path p =
+  let abspath = Fspath.concat fspath path in
+  { p with
+    xattr = Xattr.readAll abspath p.xattr;
+  }
+
+let purgeExtData p =
+  { p with
+    xattr = Xattr.purge p.xattr;
+  }
+
+let withExtData p = p
 
 (* ------------------------------------------------------------------------- *)
 (*                          Directory change stamps                          *)

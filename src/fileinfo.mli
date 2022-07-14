@@ -26,7 +26,7 @@ val getBasicWithRess : bool (* fromRoot *) -> Fspath.t -> Path.local -> bress
 val get : bool (* fromRoot *) -> Fspath.t -> Path.local -> t
 val set : Fspath.t -> Path.local ->
           [`Set of Props.basic | `Copy of Path.local | `Update of Props.t] ->
-          Props.t -> unit
+          Props.x -> unit
 
 (* IF THIS CHANGES, MAKE SURE TO INCREMENT THE ARCHIVE VERSION NUMBER!       *)
 type stamp251 =
