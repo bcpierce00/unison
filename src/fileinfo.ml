@@ -144,7 +144,7 @@ let getAux fromRoot fspath path getProps =
            inode    = (* The inode number is truncated so that
                          it fits in a 31 bit ocaml integer *)
                       stats.Unix.LargeFile.st_ino land 0x3FFFFFFF;
-           desc     = getProps stats osxInfos;
+           desc     = getProps fspath path stats osxInfos;
            osX      = osxInfos }
        with
          Unix.Unix_error((Unix.ENOENT | Unix.ENOTDIR),_,_) ->
@@ -154,13 +154,13 @@ let getAux fromRoot fspath path getProps =
            osX      = Osx.getFileInfos fspath path `ABSENT })
 
 let getType fromRoot fspath path =
-  (getAux fromRoot fspath path (fun _ _ -> Props.dummy)).typ
+  (getAux fromRoot fspath path (fun _ _ _ _ -> Props.dummy)).typ
 
 let getBasic fromRoot fspath path =
-  getAux fromRoot fspath path (fun st _ -> Props.get' st)
+  getAux fromRoot fspath path (fun _ _ st _ -> Props.get' st)
 
 let getBasicWithRess fromRoot fspath path =
-  getAux fromRoot fspath path Props.getWithRess
+  getAux fromRoot fspath path (fun _ _ st i -> Props.getWithRess st i)
 
 let get fromRoot fspath path =
   getAux fromRoot fspath path Props.get

@@ -785,24 +785,32 @@ props.cmo : \
     uutil.cmi \
     ubase/util.cmi \
     ubase/umarshal.cmi \
+    system.cmi \
+    ubase/safelist.cmi \
     ubase/prefs.cmi \
+    pred.cmi \
     path.cmi \
     osx.cmi \
     lwt/lwt_unix.cmi \
     fspath.cmi \
     fs.cmi \
+    features.cmi \
     external.cmi \
     props.cmi
 props.cmx : \
     uutil.cmx \
     ubase/util.cmx \
     ubase/umarshal.cmx \
+    system.cmx \
+    ubase/safelist.cmx \
     ubase/prefs.cmx \
+    pred.cmx \
     path.cmx \
     osx.cmx \
     lwt/lwt_unix.cmx \
     fspath.cmx \
     fs.cmx \
+    features.cmx \
     external.cmx \
     props.cmi
 props.cmi : \

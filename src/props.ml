@@ -17,6 +17,7 @@
 
 
 let debug = Util.debug "props"
+let debugverbose = Util.debug "props+"
 
 module type S = sig
   type t
@@ -671,6 +672,279 @@ let get stats info =
 end
 
 (* ------------------------------------------------------------------------- *)
+(*                        Extended attributes (xattr)                        *)
+(* ------------------------------------------------------------------------- *)
+
+let featXattrValid = ref (fun _ _ -> None)
+
+let featXattr =
+  Features.register "Sync: xattr" ~arcFormatChange:true
+  (Some (fun a b -> !featXattrValid a b))
+
+let xattrEnabled () = Features.enabled featXattr
+
+let syncXattrs =
+  Prefs.createBool "xattrs" false
+    ~category:(`Advanced `Sync)
+    ~send:xattrEnabled
+    "synchronize extended attributes (xattrs)"
+    ("When this flag is set to \\verb|true|, the extended attributes of \
+     files and directories are synchronized. System extended attributes \
+     are not synchronized.")
+
+let () = featXattrValid :=
+  fun _ enabledThis ->
+    if not enabledThis && Prefs.read syncXattrs then
+      Some ("You have requested synchronization of extended attributes (the \
+        \"xattrs\" preference) but the server does not support this.")
+    else None
+
+let xattrIgnorePred =
+  Pred.create "xattrignore"
+    ~category:(`Advanced `Sync)
+    ~send:xattrEnabled
+    (* By default ignore the Linux xattr security and trusted namespaces *)
+    ~initial:["Regex !(security|trusted)[.].*"]
+    ("Preference \\texttt{-xattrignore \\ARG{namespec}} causes Unison to \
+     ignore extended attributes with names that match \\ARG{namespec}. \
+     This can be used to exclude extended attributes that would fail \
+     synchronization due to lack of permissions or technical differences \
+     at replicas. The syntax of \\ARG{namespec} is the same as used \
+     for path specification (described in \
+     \\sectionref{pathspec}{Path Specification}); prefer the \\verb|Path| \
+     and \\verb|Regex| forms over the \\verb|Name| form. The pattern is \
+     applied to the {\\em name} of extended attribute, not to path. \
+     {\\em On Linux}, attributes in the security and trusted namespaces \
+     are ignored by default (this is achieved by pattern \\texttt{Regex \
+     !(security|trusted)[.].*}). To sync attributes in one or both of \
+     these namespaces, see the \\verb|xattrignorenot| preference. \
+     Note that the namespace name must be prefixed with a \"!\" (applies \
+     on Linux only). All names not prefixed with a \"!\" are taken \
+     as strictly belonging to the user namespace and therefore the \
+     \"!user.\" prefix is never used.")
+
+let xattrIgnorenotPred =
+  Pred.create "xattrignorenot"
+    ~category:(`Advanced `Sync)
+    ~send:xattrEnabled
+    ("This preference overrides the preference \\texttt{xattrignore}. \
+     It gives a list of patterns (in the same format as \
+     \\verb|xattrignore|) for extended attributes that should {\\em not} \
+     be ignored, whether or not they happen to match one of the \
+     \\verb|xattrignore| patterns. It is possible to synchronize only \
+     desired attributes by ignoring all attributes (for example, by \
+     setting \\verb|xattrignore| to \\texttt{Path *} and then adding \
+     \\verb|xattrignorenot| for extended attributes that should be \
+     synchronized. \
+     {\\em On Linux}, attributes in the security and trusted namespaces \
+     are ignored by default. To sync attributes in one or both of these \
+     namespaces, you may add an \\verb|xattrignorenot| pattern like \
+     \\texttt{Path !security.*} to sync all attributes in the \
+     security namespace, or \\texttt{Path !security.selinux} to sync \
+     a specific attribute in an otherwise ignored namespace. \
+     Note that the namespace name must be prefixed with a \"!\" (applies \
+     on Linux only). All names not prefixed with a \"!\" are taken \
+     as strictly belonging to the user namespace and therefore the \
+     \"!user.\" prefix is never used.")
+
+module Xattr : sig
+  include S
+  val ctimeDetect : bool
+  val get : Fspath.t -> Unix.LargeFile.stats -> t
+  val check : Fspath.t -> Path.local -> Unix.LargeFile.stats -> t -> unit
+end = struct
+
+module Size = Uutil.Filesize
+
+type attrvalue =
+  | String of string
+  | Hash of string
+
+let mattrvalue = Umarshal.(sum2 string string
+                            (function
+                             | String v -> I21 v
+                             | Hash v -> I22 v)
+                            (function
+                             | I21 v -> String v
+                             | I22 v -> Hash v))
+
+type attrlist = (string * attrvalue) list
+
+let mattrlist = Umarshal.(list (prod2 string mattrvalue id id))
+
+type sizeandattrs = attrlist * Uutil.Filesize.t
+
+let msizeandattrs = Umarshal.(prod2 mattrlist Uutil.Filesize.m id id)
+
+(* None indicates xattrs are not supported. This is not synchronized.
+ * An empty list means xattrs are supported but there are none on the file.
+ * This will be synchronized. *)
+type t = sizeandattrs option
+
+let dummy = None
+
+let m = Umarshal.cond xattrEnabled dummy Umarshal.(option msizeandattrs)
+
+let ctimeDetect = System.xattrUpdatesCTime
+
+let hash t h = if Prefs.read syncXattrs then Uutil.hash2 (Uutil.hash t) h else h
+
+let attrToString = function
+  | (n, String v) ->
+      Printf.sprintf "Name: %s    Value: %s" n (String.escaped v)
+  | (n, Hash h) ->
+      Printf.sprintf "Name: %s    Fingerprint: %s" n (Digest.to_hex h)
+
+let toString' style = function
+  | Some ([], _) -> "0 xattrs"
+  | Some ([(n, _) as x], z) ->
+      Printf.sprintf "1 xattr (%s bytes)%s" (Size.toString z)
+        (match style with
+        | `Summary -> ""
+        | `Simple -> ": " ^ n
+        | `Verbose -> ": " ^ attrToString x)
+  | Some (l, z) ->
+      Printf.sprintf "%u xattrs (%s bytes)%s" (Safelist.length l) (Size.toString z)
+        (match style with
+        | `Summary -> ""
+        | `Simple -> ": " ^ (String.concat ", " (Safelist.map (fun (n, _) -> n) l))
+        | `Verbose -> "\n  " ^ (String.concat "\n  " (Safelist.map attrToString l)))
+  | None -> ""
+
+let toString = function
+  | None -> ""
+  | t -> " " ^ toString' `Summary t
+
+let syncedPartsToString t = " " ^ toString' `Simple t
+
+let toDebugString t = toString' `Simple t
+
+let toStringVerb t = toString' `Verbose t
+
+let similar t t' =
+  not (Prefs.read syncXattrs)
+    ||
+  match t, t' with
+  | None, None -> true
+  | Some (l, z), Some (l', z') ->
+      Int64.equal (Size.toInt64 z) (Size.toInt64 z') &&
+      Safelist.length l = Safelist.length l' &&
+        Safelist.for_all (fun m -> Safelist.mem m l') l
+  | _ -> false
+
+let override t t' = t'
+
+let strip t = if Prefs.read syncXattrs then t else None
+
+let diff t t' = if similar t t' then None else t'
+
+let wrapFail default f =
+  try f () with
+  | Fs.XattrNotSupported -> default
+  | Failure msg ->
+      raise (Util.Transient (msg ^
+        ". You can set preference \"xattrs\" to false to avoid this error."))
+
+let skipIgnoredXattr l =
+  Safelist.filter (fun (n, _) ->
+    let keep =
+      not (Pred.test xattrIgnorePred n) || (Pred.test xattrIgnorenotPred n) in
+    debugverbose (fun () ->
+      Util.msg "Xattr: attribute %s %s\n" n
+        (if keep then "not ignored" else "IGNORED by user request"));
+    keep) l
+
+let getXattrs path =
+  let sumSize total (_, len) = total + len in (* No fear of overflow *)
+  let readXattr (n, len) =
+    if len > 16777211 then (* Max length of strings on 32-bit OCaml *)
+      failwith ("The value of extended attribute '" ^ n ^
+        "' is larger than 16 MB. This is currently not supported") else
+    let v = Fs.xattr_get path n in
+    (n, if len <= 32 then String v else Hash (Digest.string v))
+  in
+  wrapFail None (fun () ->
+    let names = skipIgnoredXattr (Fs.xattr_list path) in
+    let size = Size.ofInt (Safelist.fold_left sumSize 0 names) in
+    Some (Safelist.map readXattr names, size))
+
+let setXattrs path t =
+  match t with
+  | Some (l, _) -> begin
+      match getXattrs path with
+      | Some (xattrs0, _) -> begin
+          try
+            let xattrs = skipIgnoredXattr l in
+            xattrs |> Safelist.iter (fun ((n, v) as m) ->
+              if not (Safelist.mem m xattrs0) then
+              begin
+                debugverbose (fun () -> Util.msg "Writing xattr: %s\n" n);
+                match v with
+                | String x -> Fs.xattr_set path n x
+                | Hash _ -> ()
+              end);
+            xattrs0 |> Safelist.iter (fun (n, _) ->
+              if not (Safelist.exists (fun (n', _) -> n' = n) xattrs) then
+              begin
+                debugverbose (fun () -> Util.msg "Removing xattr: %s\n" n);
+                Fs.xattr_remove path n
+              end)
+          with
+          | Fs.XattrNotSupported ->
+              raise (Util.Transient ("Extended attributes are not supported. \
+                       You can set preference \"xattrs\" to false \
+                       to avoid this error."))
+          | Failure msg ->
+              raise (Util.Transient (msg ^
+                       ". You can set preference \"xattrs\" to false \
+                       to avoid this error. You can add a 'debug' preference \
+                       with value \"props+\" to see more details."))
+        end
+      | _ -> ()
+    end
+  | _ -> ()
+
+let set abspath t =
+  match t with
+  | Some _ when Prefs.read syncXattrs ->
+      debug (fun () ->
+        Util.msg "Setting xattrs for %s (%s)\n"
+          (Fspath.toDebugString abspath) (toDebugString t));
+      setXattrs abspath t
+  | _ -> ()
+
+let get abspath stats =
+  if Prefs.read syncXattrs &&
+    (stats.Unix.LargeFile.st_kind = Unix.S_REG ||
+     stats.Unix.LargeFile.st_kind = Unix.S_DIR)
+    (* Theoretically could sync xattrs on symlinks (if C stubs are
+       enhanced accordingly). However, in the current implementation
+       there are no props stored for symlinks in the archive. *)
+  then
+    let xattrs = getXattrs abspath in
+    debug (fun () ->
+      Util.msg "Xattr: got %s for %s\n"
+        (toDebugString xattrs) (Fspath.toDebugString abspath));
+    xattrs
+  else
+    None
+
+let check fspath path stats t =
+  match t with
+  | None -> ()
+  | Some _ ->
+      let abspath = Fspath.concat fspath path in
+      let t' = get abspath stats in
+      if not (similar t t') then
+        let msg = Format.sprintf ("Failed to set requested extended attributes \
+          on %s.\nThe following attributes were requested to be set:\n%s\n\
+          Actual attributes after setting:\n%s")
+          (Fspath.toPrintString abspath) (toStringVerb t) (toStringVerb t') in
+        raise (Util.Transient msg)
+
+end
+
+(* ------------------------------------------------------------------------- *)
 (*                           Properties                                      *)
 (* ------------------------------------------------------------------------- *)
 
@@ -693,14 +967,20 @@ type t =
     gid : Gid.t;
     time : Time.t;
     typeCreator : TypeCreator.t;
-    length : Uutil.Filesize.t }
+    length : Uutil.Filesize.t;
+    xattr : Xattr.t;
+  }
 
 type _ props = t
 type basic = [`Basic] props
 
-let m = Umarshal.(prod6 Perm.m Uid.m Gid.m Time.m TypeCreator.m Uutil.Filesize.m
-                    (fun {perm; uid; gid; time; typeCreator; length} -> perm, uid, gid, time, typeCreator, length)
-                    (fun (perm, uid, gid, time, typeCreator, length) -> {perm; uid; gid; time; typeCreator; length}))
+let m = Umarshal.(prod2
+                    (prod6 Perm.m Uid.m Gid.m Time.m TypeCreator.m Uutil.Filesize.m id id)
+                    Xattr.m
+                    (fun {perm; uid; gid; time; typeCreator; length; xattr} ->
+                       ((perm, uid, gid, time, typeCreator, length), xattr))
+                    (fun ((perm, uid, gid, time, typeCreator, length), xattr) ->
+                       {perm; uid; gid; time; typeCreator; length; xattr}))
 
 let mbasic = m
 
@@ -718,17 +998,22 @@ let of_compat251 (p : t251) : t =
     gid = p.gid;
     time = p.time;
     typeCreator = p.typeCreator;
-    length = p.length }
+    length = p.length;
+    xattr = Xattr.dummy;
+  }
 
 let template perm =
   { perm = perm; uid = Uid.dummy; gid = Gid.dummy;
     time = Time.dummy; typeCreator = TypeCreator.dummy;
-    length = Uutil.Filesize.dummy }
+    length = Uutil.Filesize.dummy;
+    xattr = Xattr.dummy;
+  }
 
 let dummy = template Perm.dummy
 
 let hash p h =
   h
+  |> Xattr.hash p.xattr
   |> TypeCreator.hash p.typeCreator
   |> Time.hash p.time
   |> Gid.hash p.gid
@@ -757,6 +1042,8 @@ let similar p p' =
   Time.similar p.time p'.time
     &&
   TypeCreator.similar p.typeCreator p'.typeCreator
+    &&
+  Xattr.similar p.xattr p'.xattr
 
 let override p p' =
   { perm = Perm.override p.perm p'.perm;
@@ -764,7 +1051,9 @@ let override p p' =
     gid = Gid.override p.gid p'.gid;
     time = Time.override p.time p'.time;
     typeCreator = TypeCreator.override p.typeCreator p'.typeCreator;
-    length = p'.length }
+    length = p'.length;
+    xattr = Xattr.override p.xattr p'.xattr;
+  }
 
 let strip p =
   { perm = Perm.strip p.perm;
@@ -772,28 +1061,32 @@ let strip p =
     gid = Gid.strip p.gid;
     time = Time.strip p.time;
     typeCreator = TypeCreator.strip p.typeCreator;
-    length = p.length }
+    length = p.length;
+    xattr = Xattr.strip p.xattr;
+  }
 
 let toString p =
   Printf.sprintf
-    "modified on %s  size %-9.0f %s%s%s%s"
+    "modified on %s  size %-9.0f %s%s%s%s%s"
     (Time.toString p.time)
     (Uutil.Filesize.toFloat p.length)
     (Perm.toString p.perm)
     (Uid.toString p.uid)
     (Gid.toString p.gid)
+    (Xattr.toString p.xattr)
     (TypeCreator.toString p.typeCreator)
 
 let syncedPartsToString p =
   let tm = Time.syncedPartsToString p.time in
   Printf.sprintf
-    "%s%s  size %-9.0f %s%s%s%s"
+    "%s%s  size %-9.0f %s%s%s%s%s"
     (if tm = "" then "" else "modified at ")
     tm
     (Uutil.Filesize.toFloat p.length)
     (Perm.syncedPartsToString p.perm)
     (Uid.syncedPartsToString p.uid)
     (Gid.syncedPartsToString p.gid)
+    (Xattr.syncedPartsToString p.xattr)
     (TypeCreator.syncedPartsToString p.typeCreator)
 
 let diff p p' =
@@ -802,7 +1095,9 @@ let diff p p' =
     gid = Gid.diff p.gid p'.gid;
     time = Time.diff p.time p'.time;
     typeCreator = TypeCreator.diff p.typeCreator p'.typeCreator;
-    length = p'.length }
+    length = p'.length;
+    xattr = Xattr.diff p.xattr p'.xattr;
+  }
 
 let get' stats =
   { perm = Perm.get stats;
@@ -814,12 +1109,22 @@ let get' stats =
       if stats.Unix.LargeFile.st_kind = Unix.S_REG then
         Uutil.Filesize.fromStats stats
       else
-        Uutil.Filesize.zero }
+        Uutil.Filesize.zero;
+    xattr = Xattr.dummy;
+  }
 
-let get stats infos =
+(* Important note about [fspath] and [path] arguments to [get]:
+   If the path points to a symlink then the [stats] argument may be the
+   result of either stat(2) or lstat(2) on said path. When this distinction
+   is important then it can be easily checked by seeing if [stats.st_kind]
+   is S_LNK or not. If it is not S_LNK then any syscalls/functions on this
+   path are expected to follow symlinks (and not follow otherwise). *)
+let get fspath path stats infos =
+  let abspath = Fspath.concat fspath path in
   let props = get' stats in
   { props with
     typeCreator = TypeCreator.get stats infos;
+    xattr = Xattr.get abspath stats;
   }
 
 let getWithRess stats osXinfo =
@@ -833,11 +1138,13 @@ let set fspath path kind p =
   Uid.set abspath p.uid;
   Gid.set abspath p.gid;
   TypeCreator.set fspath path p.typeCreator;
+  Xattr.set abspath p.xattr;
   Time.set abspath p.time;
   Perm.set abspath kind p.perm
 
 (* Paranoid checks *)
 let check fspath path stats p =
+  Xattr.check fspath path stats p.xattr;
   Time.check fspath path stats p.time;
   Perm.check fspath path stats p.perm
 

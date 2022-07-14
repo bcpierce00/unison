@@ -247,7 +247,7 @@ OCAMLOBJS+=main.cmo
 OCAMLLIBS+=unix.cma str.cma
 INCLFLAGS+=-I +unix -I +str
 
-COBJS+=osxsupport$(OBJ_EXT) pty$(OBJ_EXT) bytearray_stubs$(OBJ_EXT) hash_compat$(OBJ_EXT)
+COBJS+=osxsupport$(OBJ_EXT) pty$(OBJ_EXT) bytearray_stubs$(OBJ_EXT) hash_compat$(OBJ_EXT) props_xattr$(OBJ_EXT)
 
 ########################################################################
 ### User Interface setup

@@ -55,6 +55,21 @@ val hasSymlink : unit -> bool
  * [hasCorrectCTime] can have a different value on different systems. *)
 val hasCorrectCTime : bool
 
+(****)
+
+exception XattrNotSupported
+
+val xattr_list : fspath -> (string * int) list
+val xattr_get : fspath -> string -> string
+val xattr_set : fspath -> string -> string -> unit
+val xattr_remove : fspath -> string -> unit
+
+(* [xattrUpdatesCTime] is true if changes to extended attributes update the
+ * file ctime. This means that extended attribute changes can be quickly
+ * detected by looking at ctime change. If file ctime is not updated then
+ * xattrs have to be scanned every time to detect changes. *)
+val xattrUpdatesCTime : bool
+
 end
 
 module type Full = sig

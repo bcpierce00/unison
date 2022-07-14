@@ -22,7 +22,7 @@ val toString : t -> string
 val syncedPartsToString : t -> string
 val set : Fspath.t -> Path.local -> [`Set | `Update] -> t -> unit
 val get' : Unix.LargeFile.stats -> basic
-val get : Unix.LargeFile.stats -> Osx.info -> t
+val get : Fspath.t -> Path.local -> Unix.LargeFile.stats -> Osx.info -> t
 val getWithRess : Unix.LargeFile.stats -> Osx.info -> basic
 val check : Fspath.t -> Path.local -> Unix.LargeFile.stats -> t -> unit
 val init : bool -> unit

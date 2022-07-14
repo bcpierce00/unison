@@ -100,6 +100,8 @@ val sum5 : 'a t -> 'b t -> 'c t -> 'd t -> 'e t -> ('r -> ('a, 'b, 'c, 'd, 'e) s
 type ('a, 'b, 'c, 'd, 'e, 'f) sum6 = I61 of 'a | I62 of 'b | I63 of 'c | I64 of 'd | I65 of 'e | I66 of 'f
 val sum6 : 'a t -> 'b t -> 'c t -> 'd t -> 'e t -> 'f t -> ('r -> ('a, 'b, 'c, 'd, 'e, 'f) sum6) -> (('a, 'b, 'c, 'd, 'e, 'f) sum6 -> 'r) -> 'r t
 
+val cond : (unit -> bool) -> 'a -> 'a t -> 'a t
+
 module type PROPLIST_S = sig
   type key = string
   type value = Obj.t

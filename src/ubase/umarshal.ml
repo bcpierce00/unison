@@ -591,6 +591,18 @@ let sum6 ma mb mc md me mf f g =
       );
   }
 
+let cond c d m =
+  {
+    read =
+      (fun recv ->
+        if c () then m.read recv else d
+      );
+    write =
+      (fun send x ->
+        if c () then m.write send x else ()
+      );
+  }
+
 module type PROPLIST_S = sig
   type key = string
   type value = Obj.t
