@@ -817,6 +817,7 @@ props.cmi : \
     uutil.cmi \
     ubase/umarshal.cmi \
     ubase/prefs.cmi \
+    pred.cmi \
     path.cmi \
     osx.cmi \
     fspath.cmi

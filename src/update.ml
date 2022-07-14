@@ -1453,6 +1453,7 @@ type scanInfo =
     { fastCheck : bool;
       dirFastCheck : bool;
       dirStamp : Props.dirChangedStamp;
+      rescanProps : bool;
       archHash : string;
       showStatus : bool }
 
@@ -1903,9 +1904,9 @@ and buildUpdateRec archive currfspath path scanInfo =
       Util.msg "buildUpdateRec: %s\n"
         (Fspath.toDebugString (Fspath.concat currfspath path)));
     let archProps =
-      match scanInfo.fastCheck, archive with
-      | true, ArchiveFile (archDesc, _, _, _) -> Some archDesc
-      | true, ArchiveDir (archDesc, _) -> Some archDesc
+      match scanInfo.fastCheck, scanInfo.rescanProps, archive with
+      | true, false, ArchiveFile (archDesc, _, _, _) -> Some archDesc
+      | true, false, ArchiveDir (archDesc, _) -> Some archDesc
       | _ -> None
     in
     let info = Fileinfo.get ?archProps true currfspath path in
@@ -2121,9 +2122,9 @@ let rec buildUpdate archive fspath fullpath here path pathTree scanInfo =
        ui, here, [])
   | Some(name, path') ->
       let archProps =
-        match scanInfo.fastCheck, archive with
-        | true, ArchiveFile (archDesc, _, _, _) -> Some archDesc
-        | true, ArchiveDir (archDesc, _) -> Some archDesc
+        match scanInfo.fastCheck, scanInfo.rescanProps, archive with
+        | true, false, ArchiveFile (archDesc, _, _, _) -> Some archDesc
+        | true, false, ArchiveDir (archDesc, _) -> Some archDesc
         | _ -> None
       in
       let info = Fileinfo.get ?archProps true fspath here in
@@ -2218,11 +2219,11 @@ let predKey : (string * string list) list Proplist.key =
   Proplist.register "update predicates" Umarshal.(list (prod2 string (list string) id id))
 let rsrcKey : bool Proplist.key = Proplist.register "rsrc pref" Umarshal.bool
 
-let checkNoUpdatePredicateChange thisRoot =
+let checkNoUpdatePredicateChange thisRoot rescanProps =
   let props = getArchiveProps thisRoot in
   let oldPreds = try Proplist.find predKey props with Not_found -> [] in
   let newPreds =
-    List.map (fun (nm, p) -> (nm, Pred.extern p)) updatePredicates in
+    Safelist.map (fun (nm, p) -> (nm, Pred.extern p)) updatePredicates in
 (*
 List.iter
   (fun (nm, l) ->
@@ -2235,7 +2236,8 @@ Format.eprintf "==> %b@." (oldPreds = newPreds);
     try Some (Proplist.find rsrcKey props) with Not_found -> None in
   let newRsrc = Prefs.read Osx.rsrc in
   try
-    if oldPreds <> newPreds || oldRsrc <> Some newRsrc then raise Not_found;
+    if oldPreds <> newPreds || oldRsrc <> Some newRsrc || rescanProps then
+      raise Not_found;
     Proplist.find dirStampKey props
   with Not_found ->
     let stamp = Props.freshDirStamp () in
@@ -2244,6 +2246,41 @@ Format.eprintf "==> %b@." (oldPreds = newPreds);
          (Proplist.add predKey newPreds
             (Proplist.add rsrcKey newRsrc props)));
     stamp
+
+(* All the predicates that may change the set of props scanned during
+   update detection *)
+let propsPredicates =
+  [ ("xattrignore", Props.xattrIgnorePred, Props.xattrEnabled);
+    ("xattrignorenot", Props.xattrIgnorenotPred, Props.xattrEnabled);
+  ]
+
+let pred2Key : (string * string list) list Proplist.key =
+  Proplist.register "props predicates" Umarshal.(list (prod2 string (list string) id id))
+let xattrsKey : bool Proplist.key = Proplist.register "xattrs pref" Umarshal.bool
+
+let mustRescanProps thisRoot =
+  let props = getArchiveProps thisRoot in
+  let oldPreds = try Proplist.find pred2Key props with Not_found -> [] in
+  let newPreds =
+    Safelist.filterMap (fun (nm, p, c) ->
+      if c () then Some (nm, Pred.extern p) else None) propsPredicates in
+  let oldXattrs =
+    try Some (Proplist.find xattrsKey props) with Not_found -> None in
+  let newXattrs =
+    if Props.xattrEnabled () then Some (Prefs.read Props.syncXattrs) else None in
+  if oldPreds = newPreds && oldXattrs = newXattrs then
+    false
+  else begin
+    let props =
+      match newXattrs with
+      | Some x -> Proplist.add xattrsKey x props
+      | None -> props in
+    let props =
+      if newPreds <> [] then Proplist.add pred2Key newPreds props
+      else props in
+    let () = setArchivePropsLocal thisRoot props in
+    newXattrs = Some true
+  end
 
 (* This contains the list of synchronized paths and the directory stamps
    used by the previous update detection, when a watcher process is used.
@@ -2268,7 +2305,8 @@ let findLocal wantWatcher fspath pathList subpaths :
      deleted.  --BCP 2006 *)
   let (arcName,thisRoot) = archiveName fspath MainArch in
   let archive = getArchive thisRoot in
-  let dirStamp = checkNoUpdatePredicateChange thisRoot in
+  let rescanProps = mustRescanProps thisRoot in
+  let dirStamp = checkNoUpdatePredicateChange thisRoot rescanProps in
 (*
 let t1 = Unix.gettimeofday () in
 *)
@@ -2278,7 +2316,7 @@ let t1 = Unix.gettimeofday () in
          as Windows does not update directory modification times
          on FAT filesystems. *)
       dirFastCheck = useFastChecking () && Util.osType = `Unix;
-      dirStamp = dirStamp; archHash = archiveHash fspath;
+      dirStamp; rescanProps; archHash = archiveHash fspath;
       showStatus = not !Trace.runningasserver }
   in
   let (cacheFilename, _) = archiveName fspath FPCache in
@@ -2853,8 +2891,8 @@ let checkNoUpdates fspath pathInArchive ui =
   (* ...and check that this is a good description of what's out in the world *)
   let scanInfo =
     { fastCheck = false; dirFastCheck = false;
-      dirStamp = Props.changedDirStamp; archHash = "" (* Not used *);
-      showStatus = false } in
+      dirStamp = Props.changedDirStamp; rescanProps = true;
+      archHash = "" (* Not used *); showStatus = false } in
   let (_, uiNew) = buildUpdateRec archive fspath localPath scanInfo in
   markPossiblyUpdatedRec fspath pathInArchive uiNew;
   explainUpdate pathInArchive uiNew;

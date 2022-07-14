@@ -49,8 +49,12 @@ val dirDefault : basic
 val syncModtimes : bool Prefs.t
 val permMask : int Prefs.t
 val dontChmod : bool Prefs.t
+val syncXattrs : bool Prefs.t
 
 val xattrEnabled : unit -> bool
+
+val xattrIgnorePred : Pred.t
+val xattrIgnorenotPred : Pred.t
 
 (* We are reusing the directory length to store a flag indicating that
    the directory is unchanged *)
