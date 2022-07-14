@@ -792,13 +792,30 @@ module Xattr : sig
   include S
   val ctimeDetect : bool
   val get : Fspath.t -> Unix.LargeFile.stats -> t
-  val missingExtData : t -> bool
   val readAll : Fspath.t -> t -> t
+  val getAll : t -> t
   val purge : t -> t
   val check : Fspath.t -> Path.local -> Unix.LargeFile.stats -> t -> unit
+  module Data : Propsdata.S
 end = struct
 
 module Size = Uutil.Filesize
+
+module Data = Propsdata.Xattr
+
+module Cache = struct
+  let get key = Data.find_opt key
+
+  let add key value =
+    (* Cache relatively small data in a relatively small quantity to keep
+       the memory pressure and network traffic at updates scanning low.
+
+       There is no cache management. Once it's full, it's full. This can be
+       enhanced in future, if needed. *)
+    if String.length value < 1024 && Data.length () < 200 then
+      Data.add key value;
+    value
+end
 
 type attrvalue =
   | String of string
@@ -917,10 +934,6 @@ let wrapFail default f =
 let optMap f = function None -> None | Some x -> Some (f x)
 let optAttrsMap f = optMap (fun (l, z) -> (Safelist.map f l, z))
 
-let missingExtData = function
-  | None -> false
-  | Some (l, _) -> Safelist.exists (function (_, Hash _) -> true | _ -> false) l
-
 let purge t =
   optAttrsMap (function (n, Loaded (_, h)) -> (n, Hash h) | x -> x) t
 
@@ -929,12 +942,37 @@ let readAll path t =
     | (n, Hash h) ->
         debugverbose (fun () ->
           Util.msg "Reading xattr %s for %s\n" n (Fspath.toDebugString path));
-        let v' = Fs.xattr_get path n in
-        if Digest.string v' <> h then
-          raise (Util.Transient (
-            Printf.sprintf "The value of extended attribute '%s' has \
-              changed on source file %s" n (Fspath.toPrintString path)));
+        let v' =
+          match Cache.get h with
+          | Some v ->
+              debugverbose (fun () -> Util.msg "Read xattr %s from cache\n" n);
+              v
+          | None ->
+              let v = Fs.xattr_get path n in
+              if Digest.string v <> h then
+                raise (Util.Transient (
+                  Printf.sprintf "The value of extended attribute '%s' has \
+                    changed on source file %s" n (Fspath.toPrintString path)))
+              else
+                Cache.add h v
+        in
         (n, Loaded (v', h))
+    | x -> x
+  in
+  if Prefs.read syncXattrs then
+    wrapFail t (fun () -> optAttrsMap f t)
+  else
+    t
+
+let getAll t =
+  let f = function
+    | (n, Hash h) ->
+        begin match Cache.get h with
+        | Some v ->
+            debugverbose (fun () -> Util.msg "Got xattr %s from cache\n" n);
+            (n, Loaded (v, h))
+        | None -> raise Not_found
+        end
     | x -> x
   in
   if Prefs.read syncXattrs then
@@ -958,7 +996,14 @@ let getXattrs path =
       failwith ("The value of extended attribute '" ^ n ^
         "' is larger than 16 MB. This is currently not supported") else
     let v = Fs.xattr_get path n in
-    (n, if len <= 32 then String v else Hash (Digest.string v))
+    let value =
+      if len <= 32 then String v
+      else
+        let h = Digest.string v in
+        let _ = Cache.add h v in
+        Hash h
+    in
+    (n, value)
   in
   wrapFail None (fun () ->
     let names = skipIgnoredXattr (Fs.xattr_list path) in
@@ -1288,9 +1333,6 @@ let dontChmod = Perm.dontChmod
 
 let validatePrefs = Perm.validatePrefs
 
-let missingExtData p =
-  Xattr.missingExtData p.xattr
-
 let loadExtData fspath path p =
   let abspath = Fspath.concat fspath path in
   { p with
@@ -1302,7 +1344,55 @@ let purgeExtData p =
     xattr = Xattr.purge p.xattr;
   }
 
-let withExtData p = p
+let withExtData p =
+  { p with
+    xattr = Xattr.getAll p.xattr;
+  }
+
+(* ------------------------------------------------------------------------- *)
+(*                          Shared data for props                            *)
+(* ------------------------------------------------------------------------- *)
+
+module Data = struct
+
+  type e = string * (string * string) list
+  type d = e list
+
+  let m = Umarshal.(list (prod2 string (list (prod2 string string id id)) id id))
+
+  let enabled () =
+    xattrEnabled ()
+
+  let extract k pd = try Safelist.assoc k pd with Not_found -> []
+
+  let extern kind =
+    let add_nonempty k v pd =
+      match v with
+      | [] -> pd
+      | _ -> (k, v) :: pd
+    in
+    []
+    |> add_nonempty "xattr" (Xattr.Data.get kind)
+
+  let intern pd =
+    Xattr.Data.set (extract "xattr" pd);
+    ()
+
+  let merge pd =
+    Xattr.Data.merge (extract "xattr" pd);
+    ()
+
+  let gcInit () =
+    Xattr.Data.clear `Kept;
+    ()
+
+  let gcKeep p =
+    (* Xattr data cache is not persisted *)
+    ()
+
+  let gcDone () = extern `Kept
+
+end
 
 (* ------------------------------------------------------------------------- *)
 (*                          Directory change stamps                          *)

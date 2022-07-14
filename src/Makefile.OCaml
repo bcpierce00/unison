@@ -232,7 +232,7 @@ OCAMLOBJS += \
           \
           features.cmo uutil.cmo case.cmo pred.cmo \
           fileutil.cmo name.cmo path.cmo fspath.cmo fs.cmo fingerprint.cmo \
-          abort.cmo osx.cmo external.cmo fswatch.cmo \
+          abort.cmo osx.cmo external.cmo fswatch.cmo propsdata.cmo \
           props.cmo fileinfo.cmo os.cmo lock.cmo clroot.cmo common.cmo \
           tree.cmo checksum.cmo terminal.cmo transfer.cmo xferhint.cmo \
           remote.cmo negotiate.cmo globals.cmo fswatchold.cmo \

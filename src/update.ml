@@ -735,6 +735,53 @@ let archiveUnchanged thisRoot newInfo =
   with Not_found ->
     false
 
+
+(*************************************************************************)
+(*                     Shared props data in archive                      *)
+(*************************************************************************)
+
+let debugpd = Util.debug "propsdata+"
+
+let propsDataKey = Proplist.register "props data" Props.Data.m
+
+let prunePropsdata archive =
+  (* Do propsdata-GC by keeping live props *)
+  let rec prunePropsdata = function
+    | ArchiveDir (props, children) ->
+        Props.Data.gcKeep props;
+        NameMap.iter (fun _ c -> prunePropsdata c) children
+    | ArchiveFile (props, _, _, _) ->
+        Props.Data.gcKeep props
+    | ArchiveSymlink _ -> ()
+    | NoArchive -> ()
+  in
+  let t0 = Unix.gettimeofday () in
+  debugpd (fun () -> Util.msg "Pruning shared props data...\n");
+  Props.Data.gcInit ();
+  prunePropsdata archive;
+  let pd = Props.Data.gcDone () in
+  debugpd (fun () ->
+    let t1 = Unix.gettimeofday () in
+    Util.msg "Shared props data pruning took %.3f milliseconds\n"
+      ((t1 -. t0) *. 1000.));
+  pd
+
+let externArchivePropsdata archive props =
+  match prunePropsdata archive with
+  | [] -> props
+  | pd -> Proplist.add propsDataKey pd props
+
+let internArchivePropsdata props =
+  let t0 = Unix.gettimeofday () in
+  debugpd (fun () -> Util.msg "Restoring shared props data...\n");
+  let data = try Proplist.find propsDataKey props with Not_found -> [] in
+  Props.Data.intern data;
+  debugpd (fun () ->
+    let t1 = Unix.gettimeofday () in
+    Util.msg "Shared props data restoring took %.3f milliseconds\n"
+      ((t1 -. t0) *. 1000.))
+
+
 (*************************************************************************
                            DUMPING ARCHIVES
  *************************************************************************)
@@ -904,6 +951,7 @@ let setArchiveData thisRoot fspath (arch, hash, magic, properties) info =
   let properties = Proplist.add caseKey archMode properties in
   setArchiveLocal thisRoot arch;
   setArchivePropsLocal thisRoot properties;
+  internArchivePropsdata properties;
   Hashtbl.replace archiveInfoCache thisRoot info;
   if archMode <> curMode then populateCacheFromArchive fspath arch;
   Lwt.return (Some (hash, magic))
@@ -912,6 +960,7 @@ let clearArchiveData thisRoot =
   setArchiveLocal thisRoot NoArchive;
   setArchivePropsLocal thisRoot
     (Proplist.add caseKey (Case.ops ())#modeDesc Proplist.empty);
+  internArchivePropsdata Proplist.empty;
   Hashtbl.remove archiveInfoCache thisRoot;
   Lwt.return (Some (0, ""))
 
@@ -2415,6 +2464,12 @@ let findOnRoot =
     (fun (fspath, (wantWatcher, pathList, subpaths)) ->
        Lwt.return (findLocal wantWatcher fspath pathList subpaths))
 
+let mergePropsdataOnRoot =
+  Remote.registerRootCmd "propsdata" Props.Data.m Props.Data.m
+  (fun (fspath, propsdata) ->
+     Props.Data.merge propsdata;
+     Lwt.return (Props.Data.extern `New))
+
 let findUpdatesOnPaths ?(wantWatcher=false) pathList subpaths =
   Lwt_unix.run
     (loadArchives true >>= (fun (ok, checksums) ->
@@ -2446,6 +2501,16 @@ let findUpdatesOnPaths ?(wantWatcher=false) pathList subpaths =
          | _        -> ()
          end)
        >>= (fun updates ->
+     begin Globals.allRootsIter (fun r ->
+       match r with
+       | (Local, _) -> Lwt.return ()
+       | (Remote _, _) when not (Props.Data.enabled ()) -> Lwt.return ()
+       | (Remote _, _) -> begin
+           mergePropsdataOnRoot r (Props.Data.extern `New) >>= fun propsdata ->
+           Props.Data.merge propsdata;
+           Lwt.return ()
+         end)
+     end >>= fun () ->
      Trace.showTimer t;
      let result =
        Safelist.map
@@ -2505,6 +2570,7 @@ let prepareCommitLocal compatMode (fspath, magic) =
     if not compatMode then checkArchive true [] archive 0
     else checkArchive251 true [] (to_compat251 archive) 0 in
   let props = getArchiveProps root in
+  let props = externArchivePropsdata archive props in
   storeArchiveLocal
     (Util.fileInUnisonDir newName) root archive archiveHash magic props;
   Lwt.return (Some archiveHash)

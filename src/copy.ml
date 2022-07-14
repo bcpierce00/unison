@@ -363,12 +363,12 @@ let loadPropsExtDataOnServer = Remote.registerServerCmd "propsExtData"
   (fun connFrom args -> Lwt.return (loadPropsExtDataLocal args))
 
 let propsWithExtDataLocal fspath path desc =
-  if not (Props.missingExtData desc) then (None, Props.withExtData desc)
-  else loadPropsExtDataLocal (fspath, path, desc)
+  try (None, Props.withExtData desc)
+  with Not_found -> loadPropsExtDataLocal (fspath, path, desc)
 
 let propsWithExtDataConn connFrom fspath path desc =
-  if not (Props.missingExtData desc) then Lwt.return (None, Props.withExtData desc)
-  else loadPropsExtDataOnServer connFrom (fspath, path, desc)
+  try Lwt.return (None, Props.withExtData desc)
+  with Not_found -> loadPropsExtDataOnServer connFrom (fspath, path, desc)
 
 let propsExtDataOnRoot root path desc =
   match root with

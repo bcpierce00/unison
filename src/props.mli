@@ -29,10 +29,11 @@ val getWithRess : Unix.LargeFile.stats -> Osx.info -> basic
 val check : Fspath.t -> Path.local -> Unix.LargeFile.stats -> x -> unit
 val init : bool -> unit
 
-val missingExtData : t -> bool
 val loadExtData : Fspath.t -> Path.local -> t -> x
 val purgeExtData : x -> t
 val withExtData : t -> x
+(* [withExtData] will raise Not_found if some ext data is missing. In that
+   case, [loadExtData] must be used to load any missing ext data. *)
 
 val same_time : _ props -> t -> bool
 val same_ctime : _ props -> t -> bool
@@ -66,3 +67,20 @@ val setDirChangeFlag : t -> dirChangedStamp -> int -> t * bool
 val dirMarkedUnchanged : t -> dirChangedStamp -> int -> bool
 
 val validatePrefs: unit -> unit
+
+module Data : sig
+  type e
+  type d = e list
+
+  val m : d Umarshal.t
+
+  val enabled : unit -> bool
+
+  val extern : [`New] -> d
+  val intern : d -> unit
+  val merge : d -> unit
+
+  val gcInit : unit -> unit
+  val gcKeep : t -> unit
+  val gcDone : unit -> d
+end
