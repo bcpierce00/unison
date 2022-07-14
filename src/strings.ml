@@ -1308,6 +1308,9 @@ let docs =
       \032  -prefer xxx         choose this replica's version for conflicting changes\n\
       \032  -preferpartial xxx  add a pattern to the preferpartial list\n\
       \032  -rsrc xxx           synchronize resource forks (true/false/default)\n\
+      \032  -xattrignore xxx    add a pattern to the xattrignore list\n\
+      \032  -xattrignorenot xxx add a pattern to the xattrignorenot list\n\
+      \032  -xattrs             synchronize extended attributes (xattrs)\n\
       \n\
       \032 How to sync:\n\
       \032  -backup xxx         add a pattern to the backup list\n\
@@ -2237,6 +2240,48 @@ let docs =
       \032         filesystem changes; this is used to speed up update detection.\n\
       \032         Setting this flag to false disables the use of this process.\n\
       \n\
+      \032  xattrignore xxx\n\
+      \032         Preference -xattrignore namespec causes Unison to ignore\n\
+      \032         extended attributes with names that match namespec. This can be\n\
+      \032         used to exclude extended attributes that would fail\n\
+      \032         synchronization due to lack of permissions or technical\n\
+      \032         differences at replicas. The syntax of namespec is the same as\n\
+      \032         used for path specification (described in the section \226\128\156Path\n\
+      \032         Specification\226\128\157 ); prefer the Path and Regex forms over the Name\n\
+      \032         form. The pattern is applied to the name of extended attribute,\n\
+      \032         not to path. On Linux, attributes in the security and trusted\n\
+      \032         namespaces are ignored by default (this is achieved by pattern\n\
+      \032         Regex !(security|trusted)[.].*). To sync attributes in one or\n\
+      \032         both of these namespaces, see the xattrignorenot preference.\n\
+      \032         Note that the namespace name must be prefixed with a \"!\"\n\
+      \032         (applies on Linux only). All names not prefixed with a \"!\" are\n\
+      \032         taken as strictly belonging to the user namespace and therefore\n\
+      \032         the \"!user.\" prefix is never used.\n\
+      \n\
+      \032  xattrignorenot xxx\n\
+      \032         This preference overrides the preference xattrignore. It gives a\n\
+      \032         list of patterns (in the same format as xattrignore) for\n\
+      \032         extended attributes that should not be ignored, whether or not\n\
+      \032         they happen to match one of the xattrignore patterns. It is\n\
+      \032         possible to synchronize only desired attributes by ignoring all\n\
+      \032         attributes (for example, by setting xattrignore to Path * and\n\
+      \032         then adding xattrignorenot for extended attributes that should\n\
+      \032         be synchronized. On Linux, attributes in the security and\n\
+      \032         trusted namespaces are ignored by default. To sync attributes in\n\
+      \032         one or both of these namespaces, you may add an xattrignorenot\n\
+      \032         pattern like Path !security.* to sync all attributes in the\n\
+      \032         security namespace, or Path !security.selinux to sync a specific\n\
+      \032         attribute in an otherwise ignored namespace. Note that the\n\
+      \032         namespace name must be prefixed with a \"!\" (applies on Linux\n\
+      \032         only). All names not prefixed with a \"!\" are taken as strictly\n\
+      \032         belonging to the user namespace and therefore the \"!user.\"\n\
+      \032         prefix is never used.\n\
+      \n\
+      \032  xattrs\n\
+      \032         When this flag is set to true, the extended attributes of files\n\
+      \032         and directories are synchronized. System extended attributes are\n\
+      \032         not synchronized.\n\
+      \n\
       \032  xferbycopying\n\
       \032         When this preference is set, Unison will try to avoid\n\
       \032         transferring file contents across the network by recognizing\n\
@@ -2858,6 +2903,69 @@ let docs =
       \032    * The Unix owner and group ids are not propagated. (What would this\n\
       \032      mean, in general?) All files are created with the owner and group\n\
       \032      of the server process.\n\
+      \n\
+      Extended Attributes - xattrs\n\
+      \n\
+      \032  Unison allows synchronizing extended attributes on platforms and\n\
+      \032  filesystems that support them. System attributes are not synchronized.\n\
+      \032  What exactly is considered a system attribute is platform-dependent.\n\
+      \032  Synchronization is possible cross-platform, but see caveats below.\n\
+      \n\
+      \032  If one of the replicas does not support extended attributes then Unison\n\
+      \032  will not attempt attribute synchronization. If the other replica does\n\
+      \032  support extended attributes then those will remain intact.\n\
+      \n\
+      \032  If both replicas support extended attributes then you can request\n\
+      \032  Unison to try attribute synchronization (xattrs preference). Extended\n\
+      \032  attributes from both replicas will not be merged, all extended\n\
+      \032  attributes are propagated as a set from one replica to another.\n\
+      \n\
+      \032  Unison currently supports extended attributes on the following\n\
+      \032  platforms:\n\
+      \032    * Linux Attributes in user, trusted and security namespaces.\n\
+      \032      Synchronization of the latter two namespaces depends on unison\n\
+      \032      process privileges and is disabled by default. To sync one or more\n\
+      \032      attributes in the security namespace, for example, you can set the\n\
+      \032      preference xattrignorenot to Path !security.* (for all) or to Path\n\
+      \032      !security.selinux (for one specific attribute).\n\
+      \032    * Solaris, OpenSolaris and illumos-based OS (OpenIndiana, SmartOS,\n\
+      \032      OmniOS, etc.)\n\
+      \032    * FreeBSD, NetBSD Attributes in user namespace.\n\
+      \032    * Darwin (macOS)\n\
+      \n\
+      \032  Not all filesystems on the listed platforms may support extended\n\
+      \032  attributes.\n\
+      \n\
+      \032  Caveats:\n\
+      \032    * Some platforms and file systems support very large extended\n\
+      \032      attribute values. Unison synchronizes only up to 16 MB of each\n\
+      \032      attribute value.\n\
+      \032    * Attributes are synchronized as simple name-value pairs. More\n\
+      \032      complex extended attribute concepts supported by some platforms are\n\
+      \032      not synchronized.\n\
+      \032    * On Linux, attribute names always have a fully qualified form\n\
+      \032      (namespace.attribute). Other platforms do not have the same\n\
+      \032      constraint. The consequence of this is that Unison will sync the\n\
+      \032      attribute names on Linux as follows: an ! is prepended to the\n\
+      \032      namespace name, except for the user namespace; the user. prefix is\n\
+      \032      stripped from attribute names instead. This allows syncing extended\n\
+      \032      attributes from Linux to other platforms. These transformations are\n\
+      \032      reversed when syncing to Linux, resulting in correct fully\n\
+      \032      qualified attribute names. The xattrignore and xattrignorenot\n\
+      \032      preferences work on the transformed attribute names. This means\n\
+      \032      that any patterns for the user namespace must be specified without\n\
+      \032      the user. prefix and any patterns intended for other namespaces\n\
+      \032      must begin with an !.\n\
+      \n\
+      \032  The xattrignore preference can be used to filter the names of extended\n\
+      \032  attributes that will be synchronized. The most useful ignore patterns\n\
+      \032  can be constructed with the Path form (where shell wildcards * and ?\n\
+      \032  are supported) and with the Regex form. The xattrignorenot preference\n\
+      \032  can be used to override xattrignore.\n\
+      \n\
+      \032  Disabling the security and trusted namespaces on Linux is achieved by\n\
+      \032  setting a default xattrignore pattern of Regex\n\
+      \032  !(security|trusted)[.].*.\n\
       \n\
       Cross-Platform Synchronization\n\
       \n\
