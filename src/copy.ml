@@ -42,13 +42,14 @@ let lwt_protect f g =
 let checkForChangesToSourceLocal
       fspathFrom pathFrom archDesc archFp archStamp archRess newFpOpt paranoid =
   (* Retrieve attributes of current source file *)
-  let sourceInfo = Fileinfo.get true fspathFrom pathFrom in
+  let sourceInfo = Fileinfo.getBasicWithRess true fspathFrom pathFrom in
+  let sourceType = sourceInfo.Fileinfo.typ in
   match newFpOpt with
     None ->
       (* no newfp provided: so we need to compare the archive with the
          current source *)
       let clearlyChanged =
-           sourceInfo.Fileinfo.typ <> `FILE
+           sourceType <> `FILE
         || Props.length sourceInfo.Fileinfo.desc <> Props.length archDesc
         || Osx.ressLength sourceInfo.Fileinfo.osX.Osx.ressInfo <>
            Osx.ressLength archRess    in
@@ -67,7 +68,7 @@ let checkForChangesToSourceLocal
                              None dataClearlyUnchanged   in
       if dataClearlyUnchanged && ressClearlyUnchanged then begin
         if paranoid && not (Os.isPseudoFingerprint archFp) then begin
-          let newFp = Os.fingerprint fspathFrom pathFrom sourceInfo in
+          let newFp = Os.fingerprint fspathFrom pathFrom sourceType in
           if archFp <> newFp then begin
             Update.markPossiblyUpdated fspathFrom pathFrom;
             raise (Util.Transient (Printf.sprintf
@@ -80,7 +81,7 @@ let checkForChangesToSourceLocal
         end
       end else if
            clearlyChanged
-        || archFp <> Os.fingerprint fspathFrom pathFrom sourceInfo
+        || archFp <> Os.fingerprint fspathFrom pathFrom sourceType
       then
         raise (Util.Transient (Printf.sprintf
           "The source file %s\nhas been modified during synchronization.  \
@@ -91,7 +92,7 @@ let checkForChangesToSourceLocal
       assert (Os.isPseudoFingerprint archFp);
       (* ... so we can't compare the archive with the source; instead we
          need to compare the current source to the new fingerprint: *)
-      if newfp <> Os.fingerprint fspathFrom pathFrom sourceInfo then
+      if newfp <> Os.fingerprint fspathFrom pathFrom sourceType then
         raise (Util.Transient (Printf.sprintf
           "Current source file %s\n not same as transferred file.  \
            Transfer aborted."
@@ -141,8 +142,8 @@ let checkForChangesToSource
 (****)
 
 let fileIsTransferred fspathTo pathTo desc fp ress =
-  let info = Fileinfo.get false fspathTo pathTo in
-  (info,
+  let info = Fileinfo.getBasicWithRess false fspathTo pathTo in
+  (Fileinfo.basic info,
    info.Fileinfo.typ = `FILE
      &&
    Props.length info.Fileinfo.desc = Props.length desc
@@ -150,7 +151,7 @@ let fileIsTransferred fspathTo pathTo desc fp ress =
    Osx.ressLength info.Fileinfo.osX.Osx.ressInfo =
    Osx.ressLength ress
      &&
-   let fp' = Os.fingerprint fspathTo pathTo info in
+   let fp' = Os.fingerprint fspathTo pathTo info.Fileinfo.typ in
    fp' = fp)
 
 (* We slice the files in 1GB chunks because that's the limit for
@@ -204,13 +205,13 @@ type transferStatus251 =
   | TransferFailed of string
 
 type transferStatus =
-    TransferSucceeded of Fileinfo.t
-  | TransferNeedsDoubleCheckAgainstCurrentSource of Fileinfo.t * Os.fullfingerprint
+    TransferSucceeded of Fileinfo.basic
+  | TransferNeedsDoubleCheckAgainstCurrentSource of Fileinfo.basic * Os.fullfingerprint
   | TransferFailed of string
 
 let mtransferStatus = Umarshal.(sum3
-                                  Fileinfo.m
-                                  (prod2 Fileinfo.m Os.mfullfingerprint id id)
+                                  Fileinfo.mbasic
+                                  (prod2 Fileinfo.mbasic Os.mfullfingerprint id id)
                                   string
                                   (function
                                    | TransferSucceeded a -> I31 a
@@ -244,8 +245,8 @@ let transferStatus_of_compat251 (st : transferStatus251) : transferStatus =
    calculated the current source fingerprint.
  *)
 let paranoidCheck fspathTo pathTo realPathTo desc fp ress =
-  let info = Fileinfo.get false fspathTo pathTo in
-  let fp' = Os.fingerprint fspathTo pathTo info in
+  let info = Fileinfo.getBasic false fspathTo pathTo in
+  let fp' = Os.fingerprint fspathTo pathTo info.Fileinfo.typ in
   if Os.isPseudoFingerprint fp then begin
     Lwt.return (TransferNeedsDoubleCheckAgainstCurrentSource (info,fp'))
   end else if fp' <> fp then begin
@@ -279,11 +280,9 @@ let saveTempFileLocal (fspathTo, (pathTo, realPathTo, reason)) =
         reason
         (Fspath.toDebugString (Fspath.concat fspathTo savepath))))
 
-let convV0 = Remote.makeConvV0FunRet Fileinfo.to_compat251 Fileinfo.of_compat251
-
 let saveTempFileOnRoot =
-  Remote.registerRootCmd "saveTempFile" ~convV0
-    Umarshal.(prod3 Path.mlocal Path.mlocal string id id) Fileinfo.m
+  Remote.registerRootCmd "saveTempFile"
+    Umarshal.(prod3 Path.mlocal Path.mlocal string id id) Umarshal.unit
     saveTempFileLocal
 
 (****)
@@ -404,7 +403,7 @@ let tryCopyMovedFile fspathTo pathTo realPathTo update desc fp ress id =
              [true] is correct.  Otherwise, we don't expect to point
              to a symlink, and therefore we still get the correct
              result. *)
-          let info = Fileinfo.get true candidateFspath candidatePath in
+          let info = Fileinfo.getBasic true candidateFspath candidatePath in
           if
             info.Fileinfo.typ <> `ABSENT &&
             Props.length info.Fileinfo.desc = Props.length desc
@@ -893,7 +892,7 @@ let shouldUseExternalCopyprog update desc =
   && update = `Copy
 
 let prepareExternalTransfer fspathTo pathTo =
-  let info = Fileinfo.get false fspathTo pathTo in
+  let info = Fileinfo.getBasic false fspathTo pathTo in
   match info.Fileinfo.typ with
     `FILE when Props.length info.Fileinfo.desc > Uutil.Filesize.zero ->
       let perms = Props.perms info.Fileinfo.desc in
@@ -913,7 +912,7 @@ let prepareExternalTransfer fspathTo pathTo =
 let finishExternalTransferLocal connFrom
       ((fspathFrom, pathFrom, fspathTo, pathTo, realPathTo),
        (update, desc, fp, ress, id)) =
-  let info = Fileinfo.get false fspathTo pathTo in
+  let info = Fileinfo.getBasic false fspathTo pathTo in
   if
     info.Fileinfo.typ <> `FILE ||
     Props.length info.Fileinfo.desc <> Props.length desc
@@ -1164,7 +1163,8 @@ let file rootFrom pathFrom rootTo fspathTo pathTo realPathTo
       checkForChangesToSource rootFrom pathFrom desc fp stamp ress None true
         >>= fun () ->
       (* This function never returns (it is supposed to fail) *)
-      saveTempFileOnRoot rootTo (pathTo, realPathTo, reason)
+      saveTempFileOnRoot rootTo (pathTo, realPathTo, reason) >>= fun () ->
+      assert false
 
 (****)
 
@@ -1188,7 +1188,7 @@ let recursively fspathFrom pathFrom fspathTo pathTo =
         debug (fun () -> Util.msg "  Copying directory %s / %s to %s / %s\n"
           (Fspath.toDebugString fspathFrom) (Path.toString pFrom)
           (Fspath.toDebugString fspathTo) (Path.toString pTo));
-        Os.createDir fspathTo pTo info.Fileinfo.desc;
+        Os.createDir fspathTo pTo (Props.perms info.Fileinfo.desc);
         let ch = Os.childrenOf fspathFrom pFrom in
         Safelist.iter
           (fun n -> copy (Path.child pFrom n) (Path.child pTo n)) ch

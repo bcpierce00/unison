@@ -653,6 +653,9 @@ let rec reconcile
                        (oldType prev) equals unequals
        | ContentsSame, ContentsSame when Props.similar desc1 desc2 ->
            (add_equal counter equals (uc1, uc2), unequals)
+       | ContentsSame, ContentsSame ->
+           different uc1 uc2 "properties changed on both sides"
+                     (oldType prev) equals unequals
        | ContentsUpdated _, ContentsUpdated _
              when Globals.shouldMerge path ->
            toBeMerged uc1 uc2 (oldType prev) equals unequals

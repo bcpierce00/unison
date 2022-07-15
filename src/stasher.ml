@@ -342,13 +342,13 @@ let backupPath fspath path =
       "mkdirectories %s %s\n"
          (Fspath.toDebugString sFspath) (Path.toString backdir));
     if not (Os.exists sFspath Path.empty) then
-      Os.createDir sFspath Path.empty Props.dirDefault;
+      Os.createDir sFspath Path.empty (Props.perms Props.dirDefault);
     match Path.deconstructRev backdir with
       None -> ()
     | Some (_, parent) ->
         mkdirectories parent;
-        let props = (Fileinfo.get false sFspath Path.empty).Fileinfo.desc in
-        if not (Os.exists sFspath backdir) then Os.createDir sFspath backdir props
+        let perms = Props.perms (Fileinfo.getBasic false sFspath Path.empty).desc in
+        if not (Os.exists sFspath backdir) then Os.createDir sFspath backdir perms
         else (* Do not just check with Os.exists. It must also be a directory.
                 https://github.com/bcpierce00/unison/issues/30
                 If a non-directory with the same name exists, it must be moved
@@ -357,13 +357,13 @@ let backupPath fspath path =
                 This is only applicable with backuplocation "central" as it
                 will create a separate directory tree. *)
         if (Prefs.read backuplocation = "central") &&
-          (Fileinfo.get false sFspath backdir).Fileinfo.typ != `DIRECTORY then
+          Fileinfo.getType false sFspath backdir != `DIRECTORY then
           let backdir = f sFspath backdir 0 in
-          Os.createDir sFspath backdir props in
+          Os.createDir sFspath backdir perms in
 
   let path0 = makeBackupName fspath path 0 in
-  let sourceTyp = (Fileinfo.get true fspath path).Fileinfo.typ in
-  let path0Typ = (Fileinfo.get false sFspath path0).Fileinfo.typ in
+  let sourceTyp = Fileinfo.getType true fspath path in
+  let path0Typ = Fileinfo.getType false sFspath path0 in
 
   if   (   sourceTyp = `FILE && path0Typ = `FILE
        && (Fingerprint.file fspath path) = (Fingerprint.file sFspath path0))
@@ -496,7 +496,7 @@ let getRecentVersion fspath path fingerprint =
         (* FIX: should check that the existing file has the same size, to
            avoid computing the fingerprint if it is obviously going to be
            different... *)
-        (let dig = Os.fingerprint dir path (Fileinfo.get false dir path) in
+        (let dig = Os.fingerprint dir path (Fileinfo.getType false dir path) in
 	 dig = fingerprint)
       then begin
         debug (fun () ->

@@ -4,34 +4,39 @@
 (* File properties: time, permission, length, etc. *)
 
 type t251
-type t
+type _ props
+type basic = [`Basic] props
+type t = [`Full] props
 val m : t Umarshal.t
-val to_compat251 : t -> t251
-val of_compat251 : t251 -> t
-val dummy : t
+val mbasic : basic Umarshal.t
+val to_compat251 : _ props -> t251
+val of_compat251 : t251 -> _ props
+val dummy : _ props
 val hash : t -> int -> int
 val hash251 : t251 -> int -> int
 val similar : t -> t -> bool
-val override : t -> t -> t
+val override : _ props -> t -> t
 val strip : t -> t
 val diff : t -> t -> t
 val toString : t -> string
 val syncedPartsToString : t -> string
 val set : Fspath.t -> Path.local -> [`Set | `Update] -> t -> unit
+val get' : Unix.LargeFile.stats -> basic
 val get : Unix.LargeFile.stats -> Osx.info -> t
+val getWithRess : Unix.LargeFile.stats -> Osx.info -> basic
 val check : Fspath.t -> Path.local -> Unix.LargeFile.stats -> t -> unit
 val init : bool -> unit
 
-val same_time : t -> t -> bool
-val length : t -> Uutil.Filesize.t
+val same_time : _ props -> t -> bool
+val length : _ props -> Uutil.Filesize.t
 val setLength : t -> Uutil.Filesize.t -> t
-val time : t -> float
+val time : _ props -> float
 val setTime : t -> float -> t
-val perms : t -> int
+val perms : _ props -> int
 
-val fileDefault : t
+val fileDefault : basic
 val fileSafe : t
-val dirDefault : t
+val dirDefault : basic
 
 val syncModtimes : bool Prefs.t
 val permMask : int Prefs.t

@@ -60,7 +60,7 @@ let isTempFile file =
 (*****************************************************************************)
 
 let exists fspath path =
-  (Fileinfo.get false fspath path).Fileinfo.typ <> `ABSENT
+  Fileinfo.getType false fspath path <> `ABSENT
 
 let readLink fspath path =
   Util.convertUnixErrorsToTransient
@@ -137,7 +137,7 @@ let rec childrenOf fspath path =
        else if isTempFile file then begin
          if Util.endswith file !tempFileSuffix then begin
            let p = Path.child path filename in
-           let i = Fileinfo.get false fspath p in
+           let i = Fileinfo.getBasic false fspath p in
            let secondsinthirtydays = 2592000.0 in
            if Props.time i.Fileinfo.desc +. secondsinthirtydays < Util.time()
            then begin
@@ -164,7 +164,7 @@ and delete fspath path =
     "deleting"
     (fun () ->
       let absolutePath = Fspath.concat fspath path in
-      match (Fileinfo.get false fspath path).Fileinfo.typ with
+      match Fileinfo.getType false fspath path with
         `DIRECTORY ->
           begin try
             Fs.chmod absolutePath 0o700
@@ -232,12 +232,12 @@ let symlink =
                ))
 
 (* Create a new directory, using the permissions from the given props        *)
-let createDir fspath path props =
+let createDir fspath path perms =
   Util.convertUnixErrorsToTransient
   "creating directory"
     (fun () ->
        let absolutePath = Fspath.concat fspath path in
-       Fs.mkdir absolutePath (Props.perms props))
+       Fs.mkdir absolutePath perms)
 
 (*****************************************************************************)
 (*                              FINGERPRINTS                                 *)
@@ -247,9 +247,9 @@ type fullfingerprint = Fingerprint.t * Fingerprint.t
 
 let mfullfingerprint = Umarshal.(prod2 Fingerprint.m Fingerprint.m id id)
 
-let fingerprint fspath path info =
+let fingerprint fspath path typ =
   (Fingerprint.file fspath path,
-   Osx.ressFingerprint fspath path info.Fileinfo.osX)
+   Osx.ressFingerprint fspath path typ)
 
 let pseudoFingerprint path size =
   (Fingerprint.pseudo path size, Fingerprint.dummy)
@@ -275,7 +275,7 @@ let safeFingerprint fspath path info optFp =
         in
         let ressFp =
           match optRessFp with
-            None      -> Osx.ressFingerprint fspath path info.Fileinfo.osX
+            None      -> Osx.ressFingerprint fspath path info.Fileinfo.typ
           | Some ress -> ress
         in
         let (info', dataUnchanged, ressUnchanged) =

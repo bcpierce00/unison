@@ -367,6 +367,12 @@ jobs:
         - { os: windows-2019  , ocaml-version: ocaml-variants.4.08.1+mingw32c  , ref: v2.51.5 }
         - { os: windows-2019  , ocaml-version: ocaml-variants.4.08.1+mingw64c  , ref: v2.51.2 }
         - { os: windows-2019  , ocaml-version: ocaml-variants.4.08.1+mingw64c  , ref: 2.48.4 }
+        - { os: macos-11      , ocaml-version: 4.14.x  , ref: v2.52.1 }
+        - { os: macos-11      , ocaml-version: 4.14.x  , ref: v2.52.0 }
+        - { os: macos-11      , ocaml-version: 4.14.x  , ref: v2.51.5 }
+        - { os: macos-10.15   , ocaml-version: 4.08.x  , ref: v2.51.5 }
+        - { os: macos-10.15   , ocaml-version: 4.08.x  , ref: v2.51.2 }
+        - { os: macos-10.15   , ocaml-version: 4.08.x  , ref: 2.48.4 }
 
     runs-on: ${{ matrix.job.os }}
 
@@ -646,7 +652,7 @@ jobs:
            err = Val_long(0);
         EOF
 
-    - name: "2.48: Patch _prev for newer compilers"
+    - name: "2.48: Patch _prev for newer compilers/OS"
       if: contains(matrix.job.ref, '2.48') && matrix.job.ocaml-version >= '4.03'
       shell: bash
       run: |
@@ -664,6 +670,15 @@ jobs:
         
          INCLFLAGS=-I lwt -I ubase -I system
          CAMLFLAGS+=$(INCLFLAGS)
+        @@ -187,7 +187,7 @@ endif
+         endif
+         endif
+         
+        -MINOSXVERSION=10.5
+        +MINOSXVERSION=10.7
+         # XCODEFLAGS=-sdk macosx$(MINOSXVERSION)
+         ifeq ($(OSARCH),osx)
+           CAMLFLAGS+=-ccopt -mmacosx-version-min=$(MINOSXVERSION)
         diff --git a/src/files.ml b/src/files.ml
         index ba42ad57..5babf21e 100644
         --- a/src/files.ml
@@ -799,11 +814,24 @@ jobs:
          else
         EOF
 
-    - name: "2.51.2: Patch _prev for newer compilers"
+    - name: "2.51.2: Patch _prev for newer compilers/OS"
       if: contains(matrix.job.ref, '2.51.2')
       shell: bash
       run: |
         cd _prev && git apply - <<"EOF"
+        diff --git a/src/Makefile.OCaml b/src/Makefile.OCaml
+        index 7cefa2ec..ffc3ab9e 100644
+        --- a/src/Makefile.OCaml
+        +++ b/src/Makefile.OCaml
+        @@ -180,7 +180,7 @@ else
+           buildexecutable:: $(NAME)$(EXEC_EXT)
+         endif
+         
+        -MINOSXVERSION=10.5
+        +MINOSXVERSION=10.7
+         # XCODEFLAGS=-sdk macosx$(MINOSXVERSION)
+         ifeq ($(OSARCH),osx)
+           CAMLFLAGS+=-ccopt -mmacosx-version-min=$(MINOSXVERSION)
         diff --git a/src/files.ml b/src/files.ml
         index 5ff18810..1d1fbcc6 100644
         --- a/src/files.ml

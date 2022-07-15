@@ -98,9 +98,9 @@ let compile_pattern clause =
     end in
   (compiled, v)
 
-let create name ~category ?(local=false) fulldoc =
+let create name ~category ?(local=false) ?send ?(initial = []) fulldoc =
   let pref =
-    Prefs.create name ~category ~local []
+    Prefs.create name ~category ~local ?send initial
       ("add a pattern to the " ^ name ^ " list")
       fulldoc
       (fun oldList string ->

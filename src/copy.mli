@@ -13,7 +13,7 @@ val file :
  -> Fileinfo.stamp option (* source file stamp, if available *)
  -> Osx.ressStamp       (* resource info of file *)
  -> Uutil.File.t        (* file's index in UI (for progress bars) *)
- -> Fileinfo.t Lwt.t    (* information regarding the transferred file *)
+ -> Fileinfo.basic Lwt.t (* information regarding the transferred file *)
 
 val localFile :
     Fspath.t             (* fspath of source *)

@@ -355,7 +355,7 @@ let do_unisonInit2 () =
   let t = Trace.startTimer "Checking for updates" in
   let findUpdates () =
     Trace.status "Looking for changes";
-    let updates = Update.findUpdates ~wantWatcher:() !unsynchronizedPaths in
+    let updates = Update.findUpdates ~wantWatcher:true !unsynchronizedPaths in
     Trace.showTimer t;
     updates in
   let reconcile updates = Recon.reconcileAll updates in

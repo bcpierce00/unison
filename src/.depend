@@ -700,7 +700,6 @@ os.cmx : \
 os.cmi : \
     uutil.cmi \
     ubase/umarshal.cmi \
-    props.cmi \
     path.cmi \
     name.cmi \
     fspath.cmi \
