@@ -483,17 +483,17 @@ CAMLprim value win_init_console(value unit)
 
     /* Return only handles that are not already redirected by user. */
     if (!GetFileType(in_orig)) {
-      tmp = caml_alloc_small(1, 0);
+      tmp = caml_alloc(1, 0);
       Store_field(tmp, 0, caml_win32_alloc_handle(in));
       Store_field(ret, 0, tmp);
     }
     if (!GetFileType(out_orig)) {
-      tmp = caml_alloc_small(1, 0);
+      tmp = caml_alloc(1, 0);
       Store_field(tmp, 0, caml_win32_alloc_handle(out));
       Store_field(ret, 1, tmp);
     }
     if (!GetFileType(err_orig)) {
-      tmp = caml_alloc_small(1, 0);
+      tmp = caml_alloc(1, 0);
       Store_field(tmp, 0, caml_win32_alloc_handle(err));
       Store_field(ret, 2, tmp);
     }

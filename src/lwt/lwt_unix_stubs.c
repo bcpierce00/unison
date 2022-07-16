@@ -519,8 +519,8 @@ value win_pipe(long readMode, long writeMode) {
   readfd = caml_win32_alloc_handle(readh);
   writefd = caml_win32_alloc_handle(writeh);
   res = caml_alloc_small(2, 0);
-  Store_field(res, 0, readfd);
-  Store_field(res, 1, writefd);
+  Field(res, 0) = readfd;
+  Field(res, 1) = writefd;
   CAMLreturn (res);
 }
 
