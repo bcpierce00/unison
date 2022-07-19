@@ -2174,10 +2174,72 @@ propagated.  The values of the other bits are set to default values
 Unix system).
 \item For security reasons, the Unix \verb|setuid| and \verb|setgid|
 bits are not propagated.
-\item The Unix owner and group ids are not propagated.  (What would
-this mean, in general?)  All files are created with the owner and
-group of the server process.
+\item The Unix owner and group ids can be propagated (see \verb|owner|
+and \verb|group| preferences) by mapping names or by numberic ids (see
+\verb|numericids| preference).
 \end{itemize}
+
+
+\SUBSECTION{Access Control Lists - ACLs}{acls}
+
+Unison allows synchronizing access control lists (ACLs) on platforms
+and filesystems that support them. In general, synchronization makes
+sense only in case both replicas support the same type of ACLs and
+recognize same users and groups. In some cases you may be able to
+go beyond that and synchronize ACLs to a replica that couldn't fully
+use them---this may be be useful for the purpose of preserving ACLs.
+
+If one of the replicas does not support any type of ACLs then
+Unison will not attempt ACL synchronization. If the other replica
+does support ACLs then those will remain intact.
+
+If both replicas support ACLs of any supported type then you can
+request Unison to try ACL synchronization (\verb|acl| preference).
+Success of synchronization depends on permissions of the owner and
+group of Unison process (Unison must have permissions to set ACL)
+and the compatibility of ACL types on both replicas.
+
+An ACL is propagated as a single unit, with all ACEs. There is no
+merging of ACEs from the replicas.
+
+{\em Caveat}: ACE inheritance may in certain scenarios cause synchronization
+inconsistencies. In Windows, only explicit ACEs are synchronized; inherited
+ACEs are not actively synchronized, but Windows will propagate ACEs from parent
+directories (unless inheritance is explicitly prevented on a file or a
+directory---this prevention is also synchronized). Due to inheritance, the
+ultimately effective ACL may be different, or provide different access, even
+after synchronization.
+
+Unison currently supports the following platforms and ACL types:
+\begin{itemize}
+  \item Windows (Windows XP SP2 and later)
+  \begin{itemize}
+    \item NTFS ACL (discrete ACL (DACL) only)
+  \end{itemize}
+\item Solaris, OpenSolaris and illumos-based OS (OpenIndiana, SmartOS,
+  OmniOS, etc.)
+  \begin{itemize}
+  \item NFSv4 ACL (ZFS ACL)
+  \item POSIX-draft ACL
+  \item Some NFSv4 ACL (ZFS ACL) cross-synchronization with
+  POSIX-draft ACL
+  \item Full cross-synchronization with other platforms that support
+  NFSv4 ACLs; limited cross-synchronization with POSIX-draft ACLs
+  \end{itemize}
+\item FreeBSD, NetBSD
+  \begin{itemize}
+  \item NFSv4 ACL (ZFS ACL)
+  \item Limited POSIX-draft ACL (access ACL only; not default ACL)
+  \item Full cross-synchronization with other platforms that support
+  NFSv4 ACLs
+  \end{itemize}
+\item Darwin (macOS)
+  \begin{itemize}
+  \item Extended ACL
+  \end{itemize}
+\end{itemize}
+Not all filesystems on the listed platforms support all ACL types
+(or any ACLs at all).
 
 
 \SUBSECTION{Extended Attributes - xattrs}{xattrs}

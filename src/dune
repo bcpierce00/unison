@@ -9,7 +9,7 @@
         -no-strict-sequence)
  (foreign_stubs
   (language c)
-  (names bytearray_stubs osxsupport pty hash_compat props_xattr))
+  (names bytearray_stubs osxsupport pty hash_compat props_xattr props_acl))
  (c_library_flags -lutil)
  (libraries str unix lwt_lib bigarray))
 

@@ -79,6 +79,11 @@ let xattrUpdatesCTime = System.xattrUpdatesCTime
 
 (****)
 
+let acl_get_text f = System.acl_get_text (path f)
+let acl_set_text f acl = System.acl_set_text (path f) acl
+
+(****)
+
 let fingerprint f = System.fingerprint (path f)
 
 let hasInodeNumbers () = System.hasInodeNumbers ()

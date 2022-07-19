@@ -1087,6 +1087,163 @@ let check fspath path stats t =
 end
 
 (* ------------------------------------------------------------------------- *)
+(*                                   ACL                                     *)
+(* ------------------------------------------------------------------------- *)
+
+let featACLValid = ref (fun _ _ -> None)
+
+let featACL =
+  Features.register "Sync: ACL" ~arcFormatChange:true
+  (Some (fun a b -> !featACLValid a b))
+
+let aclEnabled () = Features.enabled featACL
+
+let syncACL =
+  Prefs.createBool "acl" false
+    ~category:(`Advanced `Sync)
+    ~send:aclEnabled
+    "synchronize ACLs"
+    ("When this flag is set to \\verb|true|, the ACLs of files and \
+     directories are synchronized. The type of ACLs depends on the \
+     platform and filesystem support. On Unix-like platforms it \
+     can be NFSv4 ACLs, for example.")
+
+let () = featACLValid :=
+  fun _ enabledThis ->
+    if not enabledThis && Prefs.read syncACL then
+      Some ("You have requested synchronization of ACLs (the \
+        \"acl\" preference) but the server does not support this.")
+    else None
+
+module ACL : sig
+  include S
+  val get : Fspath.t -> Unix.LargeFile.stats -> t
+  val check : Fspath.t -> Path.local -> Unix.LargeFile.stats -> t -> unit
+end = struct
+
+(* None indicates ACLs are not supported. This is not synchronized.
+   An empty string represents a trivial/removed ACL. This will be
+   synchronized. *)
+type t = string option
+
+let dummy = None
+
+let m = Umarshal.cond aclEnabled dummy Umarshal.(option string)
+
+let hash t h = if Prefs.read syncACL then Uutil.hash2 (Uutil.hash t) h else h
+
+let toString = function
+  | Some "" -> " <trivial ACL>"
+  | Some s -> " A=" ^ s
+  | None -> if not (Prefs.read syncACL) then "" else " !No ACL support!"
+
+let syncedPartsToString = toString
+
+let aclIds = Str.regexp
+  "\\(\\(user\\|group\\):\\)[^:]+:\\([^:]+:[^:]+:[^:]+:[0-9]+\\($\\|,\\)\\)"
+let removeAclNames s =
+  Str.global_replace aclIds "\\1\\3" s
+
+let similar2 t t' =
+  Prefs.read numericIds
+    &&
+  (* Try to strip out the user/group names and compare only numeric ids.
+     Format of ACE is expected to be as follows:
+       user:name:rw------------:------I:allow:1300 *)
+  String.equal (removeAclNames t) (removeAclNames t')
+
+let similar t t' =
+  not (Prefs.read syncACL)
+    ||
+  (* This is a direct string comparison. It does not take into account
+     changes in ACE ordering because ACE ordering is considered to be
+     significant and different ordering means different ACL. *)
+  let result =
+    match t, t' with
+    | None, None -> true
+    | Some acl, Some acl' when String.equal acl acl' -> true
+    | Some acl, Some acl' -> similar2 acl acl'
+    | _ -> false in
+  debugverbose (fun () ->
+    Util.msg "Comparing ACLs |%s| and |%s| => %s%s\n"
+      (toString t) (toString t')
+      (match result with true -> "same" | false -> "different")
+      (if Prefs.read numericIds then
+        " (comparing numeric user/group ids)" else ""));
+  result
+
+let override t t' = t'
+
+let strip t = if Prefs.read syncACL then t else None
+
+let diff t t' = if similar t t' then None else t'
+
+let wrapFail f =
+  try f () with
+  | Failure msg ->
+      raise (Util.Transient (msg ^
+        ". You can set preference \"acl\" to false to avoid this error."))
+
+let getACLAsText path =
+  wrapFail (fun () ->
+    match Fs.acl_get_text path with
+    | "-1" -> None (* "-1" is used as a special code for no ACL support *)
+    | acl -> Some acl)
+
+let setACLFromText path t =
+  match t with
+  | Some acl -> wrapFail (fun () -> Fs.acl_set_text path acl)
+  | _ -> ()
+
+let set abspath t =
+  match t with
+  | Some _ when Prefs.read syncACL ->
+      debug (fun () ->
+        Util.msg "Setting ACL for %s from text |%s|\n"
+          (Fspath.toDebugString abspath) (toString t));
+      setACLFromText abspath t
+  | _ -> ()
+
+let get abspath stats =
+  if Prefs.read syncACL &&
+    (stats.Unix.LargeFile.st_kind = Unix.S_REG ||
+     stats.Unix.LargeFile.st_kind = Unix.S_DIR)
+    (* Theoretically could sync ACLs on symlinks (if C stubs are
+       enhanced accordingly). However, in the current implementation
+       there are no props stored for symlinks in the archive. *)
+  then
+    let acltext = getACLAsText abspath in
+    debug (fun () ->
+      Util.msg "Got text ACL |%s| for %s\n"
+        (toString acltext) (Fspath.toDebugString abspath));
+    acltext
+  else
+    None
+
+let check fspath path stats acl =
+  match acl with
+  | None -> ()
+  | Some _ ->
+      let abspath = Fspath.concat fspath path in
+      let acl' = get abspath stats in
+      if not (similar acl acl') then
+        let msg = Format.sprintf
+          "Failed to set ACL of file %s to\n%s\n\
+          The ACL was instead set to\n%s\n\
+          The filesystem probably does not have full ACL support or \
+          the synchronized ACL is of different type, or there \
+          are other incompatibilities between systems. \
+          If this is a filesystem without correct ACL support, you \
+          should set the \"acl\" preference to false.%s"
+          (Fspath.toPrintString abspath) (toString acl) (toString acl')
+          (if Prefs.read numericIds then "" else " Or, you may want to \
+             try setting the \"numericids\" preference to true if the \
+             user/group names don't match on both systems.") in
+        raise (Util.Transient msg)
+
+end
+
+(* ------------------------------------------------------------------------- *)
 (*                           Properties                                      *)
 (* ------------------------------------------------------------------------- *)
 
@@ -1112,20 +1269,22 @@ type t =
     length : Uutil.Filesize.t;
     ctime : CTime.t;
     xattr : Xattr.t;
+    acl : ACL.t;
   }
 
 type _ props = t
 type basic = [`Basic] props
 type x = [`ExtLoaded] props
 
-let m = Umarshal.(prod3
+let m = Umarshal.(prod4
                     (prod6 Perm.m Uid.m Gid.m Time.m TypeCreator.m Uutil.Filesize.m id id)
-                    (cond xattrEnabled CTime.dummy CTime.m)
+                    (cond (fun () -> xattrEnabled () || aclEnabled ()) CTime.dummy CTime.m)
                     Xattr.m
-                    (fun {perm; uid; gid; time; typeCreator; length; ctime; xattr} ->
-                       ((perm, uid, gid, time, typeCreator, length), ctime, xattr))
-                    (fun ((perm, uid, gid, time, typeCreator, length), ctime, xattr) ->
-                       {perm; uid; gid; time; typeCreator; length; ctime; xattr}))
+                    ACL.m
+                    (fun {perm; uid; gid; time; typeCreator; length; ctime; xattr; acl} ->
+                       ((perm, uid, gid, time, typeCreator, length), ctime, xattr, acl))
+                    (fun ((perm, uid, gid, time, typeCreator, length), ctime, xattr, acl) ->
+                       {perm; uid; gid; time; typeCreator; length; ctime; xattr; acl}))
 
 let mbasic = m
 let mx = m
@@ -1147,6 +1306,7 @@ let of_compat251 (p : t251) : t =
     length = p.length;
     ctime = CTime.dummy;
     xattr = Xattr.dummy;
+    acl = ACL.dummy;
   }
 
 let template perm =
@@ -1155,12 +1315,14 @@ let template perm =
     length = Uutil.Filesize.dummy;
     ctime = CTime.dummy;
     xattr = Xattr.dummy;
+    acl = ACL.dummy;
   }
 
 let dummy = template Perm.dummy
 
 let hash p h =
   h
+  |> ACL.hash p.acl
   |> Xattr.hash p.xattr
   |> TypeCreator.hash p.typeCreator
   |> Time.hash p.time
@@ -1192,6 +1354,8 @@ let similar p p' =
   TypeCreator.similar p.typeCreator p'.typeCreator
     &&
   Xattr.similar p.xattr p'.xattr
+    &&
+  ACL.similar p.acl p'.acl
 
 let override p p' =
   { perm = Perm.override p.perm p'.perm;
@@ -1202,6 +1366,7 @@ let override p p' =
     length = p'.length;
     ctime = CTime.override p.ctime p'.ctime;
     xattr = Xattr.override p.xattr p'.xattr;
+    acl = ACL.override p.acl p'.acl;
   }
 
 let strip p =
@@ -1213,11 +1378,12 @@ let strip p =
     length = p.length;
     ctime = p.ctime;
     xattr = Xattr.strip p.xattr;
+    acl = ACL.strip p.acl;
   }
 
 let toString p =
   Printf.sprintf
-    "modified on %s  size %-9.0f %s%s%s%s%s"
+    "modified on %s  size %-9.0f %s%s%s%s%s%s"
     (Time.toString p.time)
     (Uutil.Filesize.toFloat p.length)
     (Perm.toString p.perm)
@@ -1225,11 +1391,12 @@ let toString p =
     (Gid.toString p.gid)
     (Xattr.toString p.xattr)
     (TypeCreator.toString p.typeCreator)
+    (ACL.toString p.acl)
 
 let syncedPartsToString p =
   let tm = Time.syncedPartsToString p.time in
   Printf.sprintf
-    "%s%s  size %-9.0f %s%s%s%s%s"
+    "%s%s  size %-9.0f %s%s%s%s%s%s"
     (if tm = "" then "" else "modified at ")
     tm
     (Uutil.Filesize.toFloat p.length)
@@ -1238,6 +1405,7 @@ let syncedPartsToString p =
     (Gid.syncedPartsToString p.gid)
     (Xattr.syncedPartsToString p.xattr)
     (TypeCreator.syncedPartsToString p.typeCreator)
+    (ACL.syncedPartsToString p.acl)
 
 let diff p p' =
   { perm = Perm.diff p.perm p'.perm;
@@ -1248,6 +1416,7 @@ let diff p p' =
     length = p'.length;
     ctime = p'.ctime;
     xattr = Xattr.diff p.xattr p'.xattr;
+    acl = ACL.diff p.acl p'.acl;
   }
 
 let get' stats =
@@ -1263,6 +1432,7 @@ let get' stats =
         Uutil.Filesize.zero;
     ctime = CTime.dummy;
     xattr = Xattr.dummy;
+    acl = ACL.dummy;
   }
 
 (* Important note about [fspath] and [path] arguments to [get]:
@@ -1285,6 +1455,9 @@ let get ?(archProps = dummy) fspath path stats infos =
     xattr =
       if ctimeChanged || not Xattr.ctimeDetect then Xattr.get abspath stats
       else archProps.xattr;
+    acl =
+      if ctimeChanged then ACL.get abspath stats
+      else archProps.acl;
   }
 
 let getWithRess stats osXinfo =
@@ -1300,10 +1473,14 @@ let set fspath path kind p =
   TypeCreator.set fspath path p.typeCreator;
   Xattr.set abspath p.xattr;
   Time.set abspath p.time;
-  Perm.set abspath kind p.perm
+  Perm.set abspath kind p.perm;
+  (* ACLs must always be set after chmod,
+   * otherwise chmod may replace the ACL. *)
+  ACL.set abspath p.acl
 
 (* Paranoid checks *)
 let check fspath path stats p =
+  ACL.check fspath path stats p.acl;
   Xattr.check fspath path stats p.xattr;
   Time.check fspath path stats p.time;
   Perm.check fspath path stats p.perm

@@ -51,7 +51,9 @@ val syncModtimes : bool Prefs.t
 val permMask : int Prefs.t
 val dontChmod : bool Prefs.t
 val syncXattrs : bool Prefs.t
+val syncACL : bool Prefs.t
 
+val aclEnabled : unit -> bool
 val xattrEnabled : unit -> bool
 
 val xattrIgnorePred : Pred.t

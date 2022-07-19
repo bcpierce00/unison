@@ -70,6 +70,11 @@ val xattr_remove : fspath -> string -> unit
  * xattrs have to be scanned every time to detect changes. *)
 val xattrUpdatesCTime : bool
 
+(****)
+
+val acl_get_text : fspath -> string
+val acl_set_text : fspath -> string -> unit
+
 end
 
 module type Full = sig
