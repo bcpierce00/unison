@@ -103,3 +103,10 @@ module Xattr = struct
 
   let length () = Hashtbl.length mainStore
 end
+
+
+(* ------------------------------------------------------------------------- *)
+(*                                  ACL                                      *)
+(* ------------------------------------------------------------------------- *)
+
+module ACL = KVStore (struct let initSize = 25 end)

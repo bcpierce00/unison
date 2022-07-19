@@ -1119,7 +1119,31 @@ module ACL : sig
   include S
   val get : Fspath.t -> Unix.LargeFile.stats -> t
   val check : Fspath.t -> Path.local -> Unix.LargeFile.stats -> t -> unit
+  module Data : sig
+    include Propsdata.S
+    val keep : t -> unit
+  end
 end = struct
+
+module Data = struct
+  include Propsdata.ACL
+
+  let keep = function
+    | None | Some "" -> ()
+    | Some s -> keep s (* [keep] of Propsdata.ACL *)
+end
+
+(* The result value of this function must be deterministic for its input
+   (over both roots, and over time, as long as it is the same archive). *)
+let deflate acl =
+  if acl = "" then acl
+  else begin
+    let key = Digest.string acl in
+    Data.add key acl;
+    key
+  end
+
+let inflate t = if t = "" then t else Data.find t
 
 (* None indicates ACLs are not supported. This is not synchronized.
    An empty string represents a trivial/removed ACL. This will be
@@ -1134,7 +1158,7 @@ let hash t h = if Prefs.read syncACL then Uutil.hash2 (Uutil.hash t) h else h
 
 let toString = function
   | Some "" -> " <trivial ACL>"
-  | Some s -> " A=" ^ s
+  | Some s -> " A=" ^ (inflate s)
   | None -> if not (Prefs.read syncACL) then "" else " !No ACL support!"
 
 let syncedPartsToString = toString
@@ -1142,7 +1166,7 @@ let syncedPartsToString = toString
 let aclIds = Str.regexp
   "\\(\\(user\\|group\\):\\)[^:]+:\\([^:]+:[^:]+:[^:]+:[0-9]+\\($\\|,\\)\\)"
 let removeAclNames s =
-  Str.global_replace aclIds "\\1\\3" s
+  Str.global_replace aclIds "\\1\\3" (inflate s)
 
 let similar2 t t' =
   Prefs.read numericIds
@@ -1188,11 +1212,11 @@ let getACLAsText path =
   wrapFail (fun () ->
     match Fs.acl_get_text path with
     | "-1" -> None (* "-1" is used as a special code for no ACL support *)
-    | acl -> Some acl)
+    | acl -> Some (deflate acl))
 
 let setACLFromText path t =
   match t with
-  | Some acl -> wrapFail (fun () -> Fs.acl_set_text path acl)
+  | Some acl -> wrapFail (fun () -> Fs.acl_set_text path (inflate acl))
   | _ -> ()
 
 let set abspath t =
@@ -1538,7 +1562,7 @@ module Data = struct
   let m = Umarshal.(list (prod2 string (list (prod2 string string id id)) id id))
 
   let enabled () =
-    xattrEnabled ()
+    xattrEnabled () || aclEnabled ()
 
   let extract k pd = try Safelist.assoc k pd with Not_found -> []
 
@@ -1550,21 +1574,26 @@ module Data = struct
     in
     []
     |> add_nonempty "xattr" (Xattr.Data.get kind)
+    |> add_nonempty "ACL" (ACL.Data.get kind)
 
   let intern pd =
     Xattr.Data.set (extract "xattr" pd);
+    ACL.Data.set (extract "ACL" pd);
     ()
 
   let merge pd =
     Xattr.Data.merge (extract "xattr" pd);
+    ACL.Data.merge (extract "ACL" pd);
     ()
 
   let gcInit () =
     Xattr.Data.clear `Kept;
+    ACL.Data.clear `Kept;
     ()
 
   let gcKeep p =
     (* Xattr data cache is not persisted *)
+    ACL.Data.keep p.acl;
     ()
 
   let gcDone () = extern `Kept
