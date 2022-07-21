@@ -1540,7 +1540,7 @@ let rec noChildChange childUpdates =
 (* Check whether the directory contents is different from what is in
    the archive *)
 let directoryCheckContentUnchanged
-      currfspath path info archDesc childUpdates scanInfo =
+      currfspath path info propsChanged archDesc childUpdates scanInfo =
   if
     noChildChange childUpdates
       &&
@@ -1552,13 +1552,22 @@ let directoryCheckContentUnchanged
       let inode =
         match Fileinfo.stamp info with Fileinfo.InodeStamp i -> i | _ -> 0 in
       Props.setDirChangeFlag archDesc scanInfo.dirStamp inode in
-    let updated =
-      updated || not (Props.same_time info.Fileinfo.desc archDesc) in
     if updated then
       debugverbose (fun()->
         Util.msg "Contents of directory %s marked unchanged\n"
           (Fspath.toDebugString (Fspath.concat currfspath path)));
-    (Props.setTime archDesc (Props.time info.Fileinfo.desc), updated)
+    (* Only update the times in archive if there is nothing to propagate for
+       the dir itself. Otherwise, if propagation fails and times in archive
+       are updated anyway then the changes that failed to propagate may be
+       missed at the next scan. If there is something to propagate then all
+       archive changes must go through propagation. With the exception of
+       dirChangeFlag, which is safe to update without upating mtime. *)
+    if propsChanged then
+      (archDesc, updated)
+    else
+      let updated =
+        updated || not (Props.same_time info.Fileinfo.desc archDesc) in
+      (Props.setTime archDesc (Props.time info.Fileinfo.desc), updated)
   end else begin
     let (archDesc, updated) =
       Props.setDirChangeFlag archDesc Props.changedDirStamp 0 in
@@ -1646,12 +1655,20 @@ let checkContentsChange
              (Os.fullfingerprint_to_string archFp)
              (Os.fullfingerprint_to_string newFp));
     if archFp = newFp then begin
+      let propsUpdates = checkPropChange newDesc archive archDesc in
+      let propsChanged = propsUpdates <> NoUpdates in
+      (* Only update the archive if there is nothing to propagate. Otherwise,
+         if propagation fails and times in archive are updated anyway then the
+         changes that failed to propagate may be missed at the next scan. *)
+      begin if propsChanged then
+        None
+      else
       let newprops = Props.setTime archDesc (Props.time newDesc) in
       let newarch = ArchiveFile (newprops, archFp, newStamp, newRess) in
       debugverbose (fun() ->
         Util.msg "  Contents match: update archive with new time...%f\n"
                    (Props.time newprops));
-      Some newarch, checkPropChange newDesc archive archDesc
+      Some newarch end, propsUpdates
     end else begin
       debug (fun() -> Util.msg "  Updated file\n");
       (* [BCP 5/2011] We might add a sanity check here: if the file contents
@@ -1945,8 +1962,9 @@ and buildUpdateRec archive currfspath path scanInfo =
              (These are files or directories which used not to be
              ignored and are now ignored.) *)
           if hasIgnoredChildren then (archDesc, true) else
+          let propsChanged = permchange <> PropsSame in
           directoryCheckContentUnchanged
-            currfspath path info archDesc childUpdates scanInfo in
+            currfspath path info propsChanged archDesc childUpdates scanInfo in
         (begin match newChildren with
            Some ch ->
              Some (ArchiveDir (archDesc, ch))
