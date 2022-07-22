@@ -227,9 +227,10 @@ jobs:
 
     - name: Prepare lablgtk install (Windows)
       if: ${{ runner.os == 'Windows' && contains(matrix.job.ocaml-version, '+mingw') }}
+      shell: bash
       run: |
         opam install opam-depext depext-cygwinports
-        setup-x86_64.exe --quiet-mode --root $env:CYGWIN_ROOT --site http://cygwin.mirror.constant.com --symlink-type=sys --packages mingw64-${{ steps.vars.outputs.MinGW_ARCH }}-hicolor-icon-theme,mingw64-${{ steps.vars.outputs.MinGW_ARCH }}-adwaita-icon-theme
+        setup-x86_64.exe --quiet-mode --root "${CYGWIN_ROOT}" --site http://cygwin.mirror.constant.com --symlink-type=sys --packages hicolor-icon-theme,adwaita-icon-theme
 
     - name: lablgtk install
       ## [2020-09] non-working/unavailable for MSVC or musl OCaml variants ; also, non-working for 32bit OCaml variant (see [GH:garrigue/lablgtk#64](https://github.com/garrigue/lablgtk/issues/64))
@@ -293,7 +294,7 @@ jobs:
         rm "${PKG_DIR}"/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache.original
         # required icons
         mkdir "${PKG_DIR}"/share
-        cp -r /usr/${TARGET_ARCH_ID}-w64-mingw32/sys-root/mingw/share/icons "${PKG_DIR}"/share
+        cp -rL /usr/share/icons "${PKG_DIR}"/share
         # compile glib settings schema
         mkdir -p "${PKG_DIR}"/share/glib-2.0
         cp -r /usr/${TARGET_ARCH_ID}-w64-mingw32/sys-root/mingw/share/glib-2.0/schemas "${PKG_DIR}"/share/glib-2.0
