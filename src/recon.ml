@@ -360,7 +360,7 @@ let rec checkForError ui =
     NoUpdates ->
       ()
   | Error err ->
-      raise (UpdateError err)
+      if not (Fileinfo.shouldIgnore err) then raise (UpdateError err)
   | Updates (uc, _) ->
       match uc with
         Dir (_, children, _, _) ->
@@ -373,7 +373,7 @@ let rec collectErrors ui rem =
     NoUpdates ->
       rem
   | Error err ->
-      err :: rem
+      if Fileinfo.shouldIgnore err then rem else err :: rem
   | Updates (uc, _) ->
       match uc with
         Dir (_, children, _, _) ->
@@ -401,6 +401,22 @@ let propagateErrors allowPartial (rplc: Common.replicas): Common.replicas =
           Problem ("[root 2]: " ^ err)
       with UpdateError err ->
         Problem ("[root 1]: " ^ err)
+
+(* Using the error message to ignore symlinks is a bit fragile but this is
+   the easiest way to keep code changes local and avoid a huge backwards
+   compatibility burden. *)
+
+let skipIgnored result s othUi =
+  match Fileinfo.shouldIgnore s, othUi with
+  | false, _ -> Tree.add result (Problem s)
+  | true, Error s2 ->
+      if Fileinfo.shouldIgnore s2 then result else Tree.add result (Problem s2)
+  | true, NoUpdates
+  | true, Updates (Symlink _, _) -> result
+  | true, Updates _ ->
+      Tree.add result (Problem "Syncing symbolic links is disabled, but \
+        this path represents a symbolic link in one of the replicas and \
+        a non-link in the other replica.")
 
 type singleUpdate = Rep1Updated | Rep2Updated
 
@@ -488,7 +504,7 @@ let rec reconcileNoConflict allowPartial path props' ui props whatIsUpdated
   match ui with
   | NoUpdates -> result
   | Error err ->
-      Tree.add result (Problem err)
+      skipIgnored result err NoUpdates
   | Updates (Dir (desc, children, permchg, _),
              Previous(`DIRECTORY, _, _, _)) ->
       let r =
@@ -577,9 +593,9 @@ let rec reconcile
                       errors1 = []; errors2 = []}))) in
   match (ui1, ui2) with
     (Error s, _) ->
-      (equals, Tree.add unequals (Problem s))
+      (equals, skipIgnored unequals s ui2)
   | (_, Error s) ->
-      (equals, Tree.add unequals (Problem s))
+      (equals, skipIgnored unequals s ui1)
   | (NoUpdates, _)  ->
       (equals,
        reconcileNoConflict

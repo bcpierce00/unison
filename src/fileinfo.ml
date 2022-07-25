@@ -24,12 +24,14 @@ let allowSymlinks =
     "allow the synchronization of symbolic links (true/false/default)"
     ("When set to {\\tt true}, this flag causes Unison to synchronize \
       symbolic links.  When the flag is set to {\\tt false}, symbolic \
-      links will result in an error during update detection.  \
+      links will be ignored during update detection.  \
       Ordinarily, when the flag is set to {\\tt default}, symbolic \
       links are synchronized except when one of the hosts is running \
       Windows.  On a Windows client, Unison makes an attempt to detect \
       if symbolic links are supported and allowed by user privileges.  \
-      You may have to get elevated privileges to create symbolic links.")
+      You may have to get elevated privileges to create symbolic links.  \
+      When the flag is set to {\\t default} and symbolic links can't be \
+      synchronized then an error is produced during update detection.")
 
 let symlinksAllowed =
   Prefs.createBool "links-aux" true
@@ -111,6 +113,20 @@ let statFn fromRoot fspath path =
   end else
     stats
 
+(* Warning! Do not change this string without some backwards compatibility
+   code in place. This string is not only meant for humans, it is also
+   processed by code. *)
+let symlinkErr = " is a symbolic link"
+let symlinkErrLen = String.length symlinkErr
+
+let shouldIgnore s =
+  Prefs.read allowSymlinks = `False &&
+    let l = String.length s in
+    if l > symlinkErrLen then
+      String.sub s (l - symlinkErrLen) symlinkErrLen = symlinkErr
+    else
+      false
+
 let getAux fromRoot fspath path getProps =
   Util.convertUnixErrorsToTransient
   "querying file information"
@@ -131,8 +147,9 @@ let getAux fromRoot fspath path getProps =
                else
                  raise
                    (Util.Transient
-                      (Format.sprintf "path %s is a symbolic link"
-                         (Fspath.toPrintString (Fspath.concat fspath path))))
+                      ("path " ^
+                       (Fspath.toPrintString (Fspath.concat fspath path)) ^
+                       symlinkErr))
            | _ ->
                raise (Util.Transient
                         ("path " ^

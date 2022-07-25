@@ -55,4 +55,5 @@ val unchanged : Fspath.t -> Path.local -> t -> (t * bool * bool)
 
 val init : bool -> unit
 val allowSymlinks : [`True|`False|`Default] Prefs.t
+val shouldIgnore : string (* error message *) -> bool
 val ignoreInodeNumbers : bool Prefs.t
