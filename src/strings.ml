@@ -1899,12 +1899,14 @@ let docs =
       \032  links xxx\n\
       \032         When set to true, this flag causes Unison to synchronize\n\
       \032         symbolic links. When the flag is set to false, symbolic links\n\
-      \032         will result in an error during update detection. Ordinarily,\n\
-      \032         when the flag is set to default, symbolic links are synchronized\n\
-      \032         except when one of the hosts is running Windows. On a Windows\n\
-      \032         client, Unison makes an attempt to detect if symbolic links are\n\
+      \032         will be ignored during update detection. Ordinarily, when the\n\
+      \032         flag is set to default, symbolic links are synchronized except\n\
+      \032         when one of the hosts is running Windows. On a Windows client,\n\
+      \032         Unison makes an attempt to detect if symbolic links are\n\
       \032         supported and allowed by user privileges. You may have to get\n\
-      \032         elevated privileges to create symbolic links.\n\
+      \032         elevated privileges to create symbolic links. When the flag is\n\
+      \032         set to default and symbolic links can\226\128\153t be synchronized then an\n\
+      \032         error is produced during update detection.\n\
       \n\
       \032  listen xxx\n\
       \032         When acting as a server on a TCP socket, Unison will by default\n\
