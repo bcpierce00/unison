@@ -274,7 +274,8 @@ let getFileInfos dataFspath dataPath typ =
           (* Not a HFS volume.  Look for an AppleDouble file *)
           try
             let (workingDir, realPath) =
-              Fspath.findWorkingDir dataFspath dataPath in
+              try Fspath.findWorkingDir dataFspath dataPath with
+              | Util.Transient _ -> raise Not_found in
             let (doubleFspath, inch, entries) =
               openDouble workingDir realPath in
             let (rsrcOffset, rsrcLength) =
