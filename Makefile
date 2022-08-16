@@ -17,7 +17,9 @@ docs:
 	$(MAKE) -C doc
 	$(MAKE) -C man
 
-manpage:
+# "src" is a prerequisite to prevent parallel build errors.
+# manpage builds currently require a pre-built "unison" binary.
+manpage: src
 	$(MAKE) -C man
 
 test:
