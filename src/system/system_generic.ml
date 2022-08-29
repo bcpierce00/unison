@@ -122,3 +122,28 @@ let fingerprint f =
   let d = Digest.channel ic (-1) in
   close_in ic;
   d
+
+(****)
+
+exception XattrNotSupported
+let _ = Callback.register_exception "XattrNotSupported" XattrNotSupported
+
+external xattr_list : string -> (string * int) list = "unison_xattrs_list"
+external xattr_get_ : string -> string -> string = "unison_xattr_get"
+external xattr_set_ : string -> string -> string -> unit = "unison_xattr_set"
+external xattr_remove_ : string -> string -> unit = "unison_xattr_remove"
+external xattr_updates_ctime : unit -> bool = "unison_xattr_updates_ctime"
+
+let xattrUpdatesCTime = xattr_updates_ctime ()
+
+let xattr_get p n =
+  try xattr_get_ p n with
+  | Failure e -> failwith ("(attr: " ^ n ^ ") " ^ e)
+
+let xattr_set p n v =
+  try xattr_set_ p n v with
+  | Failure e -> failwith ("(attr: " ^ n ^ ") " ^ e)
+
+let xattr_remove p n =
+  try xattr_remove_ p n with
+  | Failure e -> failwith ("(attr: " ^ n ^ ") " ^ e)

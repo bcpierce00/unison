@@ -2180,6 +2180,70 @@ group of the server process.
 \end{itemize}
 
 
+\SUBSECTION{Extended Attributes - xattrs}{xattrs}
+
+Unison allows synchronizing extended attributes on platforms and
+filesystems that support them. System attributes are not synchronized.
+What exactly is considered a system attribute is platform-dependent.
+Synchronization is possible cross-platform, but see caveats below.
+
+If one of the replicas does not support extended attributes then
+Unison will not attempt attribute synchronization. If the other
+replica does support extended attributes then those will remain intact.
+
+If both replicas support extended attributes then you can request
+Unison to try attribute synchronization (\verb|xattrs| preference).
+Extended attributes from both replicas will not be merged, all extended
+attributes are propagated as a set from one replica to another.
+
+Unison currently supports extended attributes on the following platforms:
+\begin{itemize}
+\item {\em Linux}
+Attributes in user, trusted and security namespaces. Synchronization of
+the latter two namespaces depends on \verb|unison| process privileges
+and is disabled by default. To sync one or more attributes in the security
+namespace, for example, you can set the preference
+\verb|xattrignorenot| to \verb|Path !security.*| (for all) or to
+\verb|Path !security.selinux| (for one specific attribute).
+\item {\em Solaris, OpenSolaris and illumos-based OS (OpenIndiana, SmartOS,
+  OmniOS, etc.)}
+\item {\em FreeBSD, NetBSD}
+Attributes in user namespace.
+\item {\em Darwin (macOS)}
+\end{itemize}
+Not all filesystems on the listed platforms may support extended attributes.
+
+\noindent {\it Caveats:}
+\begin{itemize}
+\item Some platforms and file systems support very large extended attribute
+values. Unison synchronizes only up to 16 MB of each attribute value.
+\item Attributes are synchronized as simple name-value pairs. More complex
+extended attribute concepts supported by some platforms are not synchronized.
+\item On Linux, attribute names always have a fully qualified form
+(\texttt{namespace.attribute}). Other platforms do not have the same constraint.
+The consequence of this is that Unison will sync the attribute names on Linux
+as follows: an \verb|!| is prepended to the namespace name, except for the
+\verb|user| namespace; the \verb|user.| prefix is stripped from attribute names
+instead. This allows syncing extended attributes from Linux to other platforms.
+These transformations are reversed when syncing {\em to} Linux, resulting in
+correct fully qualified attribute names.
+The \verb|xattrignore| and \verb|xattrignorenot| preferences work on the
+transformed attribute names. This means that any patterns for the user
+namespace must be specified without the \verb|user.| prefix and any patterns
+intended for other namespaces must begin with an \verb|!|.
+\end{itemize}
+
+The \verb|xattrignore| preference can be used to filter the names of extended
+attributes that will be synchronized. The most useful ignore patterns can
+be constructed with the \verb|Path| form (where shell wildcards \verb|*| and
+\verb|?| are supported) and with the \verb|Regex| form. The
+\verb|xattrignorenot| preference can be used to override \verb|xattrignore|.
+
+Disabling the security and trusted namespaces on Linux is achieved by setting
+a default \verb|xattrignore| pattern of
+\texttt{Regex !(security|trusted)[.].*}.
+
+
 \SUBSECTION{Cross-Platform Synchronization}{crossplatform}
 
 If you use Unison to synchronize files between Windows and Unix

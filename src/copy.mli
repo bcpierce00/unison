@@ -33,3 +33,16 @@ val recursively :
  -> Fspath.t             (* fspath of target *)
  -> Path.local           (* path of target *)
  -> unit
+
+val readPropsExtData :
+    Common.root          (* root of source *)
+ -> Path.local           (* path of source *)
+ -> Props.t              (* props of source *)
+ -> Props.x Lwt.t        (* props with all ext data included *)
+
+val readPropsExtDataG :
+    Common.root          (* root of source *)
+ -> Path.t               (* path of source *)
+ -> Props.t              (* props of source *)
+ -> (Path.local option * Props.x) Lwt.t (* props with all ext data included
+                                           and path translated to local path *)

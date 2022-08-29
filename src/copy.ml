@@ -345,6 +345,51 @@ let setFileinfo fspathTo pathTo realPathTo update desc =
 
 (****)
 
+(* This unfortunate complexity is here to reduce network round-trips
+   and calls to [Update.translatePath], primarily in [Files.setProp]. *)
+let mxpath = Umarshal.(sum2 Path.mlocal Path.m)
+               (function `Local p -> I21 p | `Global p -> I22 p)
+               (function I21 p -> `Local p | I22 p -> `Global p)
+
+let loadPropsExtDataLocal (fspath, path, desc) =
+  let localPath = match path with
+    | `Local p -> p
+    | `Global p -> Update.translatePathLocal fspath p in
+  (Some localPath, Props.loadExtData fspath localPath desc)
+
+let loadPropsExtDataOnServer = Remote.registerServerCmd "propsExtData"
+  Umarshal.(prod3 Fspath.m mxpath Props.m id id)
+  Umarshal.(prod2 (option Path.mlocal) Props.mx id id)
+  (fun connFrom args -> Lwt.return (loadPropsExtDataLocal args))
+
+let propsWithExtDataLocal fspath path desc =
+  try (None, Props.withExtData desc)
+  with Not_found -> loadPropsExtDataLocal (fspath, path, desc)
+
+let propsWithExtDataConn connFrom fspath path desc =
+  try Lwt.return (None, Props.withExtData desc)
+  with Not_found -> loadPropsExtDataOnServer connFrom (fspath, path, desc)
+
+let propsExtDataOnRoot root path desc =
+  match root with
+  | (Common.Local, fspath) ->
+      Lwt.return (propsWithExtDataLocal fspath path desc)
+  | (Remote _, fspath) ->
+      propsWithExtDataConn (Remote.connectionToRoot root) fspath path desc
+
+let propsWithExtData connFrom fspath path desc =
+  propsWithExtDataConn connFrom fspath (`Local path) desc >>= fun x ->
+  Lwt.return (snd x)
+
+let readPropsExtData root path desc =
+  propsExtDataOnRoot root (`Local path) desc >>= fun x ->
+  Lwt.return (snd x)
+
+let readPropsExtDataG root path desc =
+  propsExtDataOnRoot root (`Global path) desc
+
+(****)
+
 let copyContents fspathFrom pathFrom fspathTo pathTo fileKind fileLength ido =
   let use_id f = match ido with Some id -> f id | None -> () in
   let inFd = openFileIn fspathFrom pathFrom fileKind in
@@ -365,8 +410,7 @@ let copyContents fspathFrom pathFrom fspathTo pathTo fileKind fileLength ido =
          (fun () -> close_out_noerr outFd))
     (fun () -> close_in_noerr inFd)
 
-let localFile
-     fspathFrom pathFrom fspathTo pathTo realPathTo update desc ressLength ido =
+let localFileContents fspathFrom pathFrom fspathTo pathTo desc ressLength ido =
   Util.convertUnixErrorsToTransient
     "copying locally"
     (fun () ->
@@ -379,19 +423,26 @@ let localFile
         fspathFrom pathFrom fspathTo pathTo `DATA (Props.length desc) ido;
       if ressLength > Uutil.Filesize.zero then
         copyContents
-          fspathFrom pathFrom fspathTo pathTo `RESS ressLength ido;
-      setFileinfo fspathTo pathTo realPathTo update desc)
+          fspathFrom pathFrom fspathTo pathTo `RESS ressLength ido)
+
+let localFile
+     fspathFrom pathFrom fspathTo pathTo realPathTo update desc ressLength ido =
+  Util.convertUnixErrorsToTransient "copying locally" (fun () ->
+    localFileContents fspathFrom pathFrom fspathTo pathTo desc ressLength ido;
+    let (_, desc) = propsWithExtDataLocal fspathFrom (`Local pathFrom) desc in
+    setFileinfo fspathTo pathTo realPathTo update desc)
 
 (****)
 
-let tryCopyMovedFile fspathTo pathTo realPathTo update desc fp ress id =
-  if not (Prefs.read Xferhint.xferbycopying) then None else
+let tryCopyMovedFile connFrom fspathFrom pathFrom fspathTo pathTo realPathTo
+      update desc fp ress id =
+  if not (Prefs.read Xferhint.xferbycopying) then Lwt.return None else
   Util.convertUnixErrorsToTransient "tryCopyMovedFile" (fun() ->
     debug (fun () -> Util.msg "tryCopyMovedFile: -> %s /%s/\n"
       (Path.toString pathTo) (Os.fullfingerprint_to_string fp));
     match Xferhint.lookup fp with
       None ->
-        None
+        Lwt.return None
     | Some (candidateFspath, candidatePath, hintHandle) ->
         debug (fun () ->
           Util.msg
@@ -408,9 +459,10 @@ let tryCopyMovedFile fspathTo pathTo realPathTo update desc fp ress id =
             info.Fileinfo.typ <> `ABSENT &&
             Props.length info.Fileinfo.desc = Props.length desc
           then begin
-            localFile
-              candidateFspath candidatePath fspathTo pathTo realPathTo
-              update desc (Osx.ressLength ress) (Some id);
+            localFileContents candidateFspath candidatePath fspathTo pathTo desc
+              (Osx.ressLength ress) (Some id);
+            propsWithExtData connFrom fspathFrom pathFrom desc >>= fun desc ->
+            setFileinfo fspathTo pathTo realPathTo update desc;
             let (info, isTransferred) =
               fileIsTransferred fspathTo pathTo desc fp ress in
             if isTransferred then begin
@@ -423,29 +475,29 @@ let tryCopyMovedFile fspathTo pathTo realPathTo update desc fp ress id =
                  (Fspath.toPrintString candidateFspath)
                  (Path.toString candidatePath)
               in
-              Some (info, msg)
+              Lwt.return (Some (info, msg))
             end else begin
               debug (fun () ->
                 Util.msg "tryCopyMoveFile: candidate file %s modified!\n"
                   (Path.toString candidatePath));
               Xferhint.deleteEntry hintHandle;
-              None
+              Lwt.return None
             end
           end else begin
             debug (fun () ->
               Util.msg "tryCopyMoveFile: candidate file %s disappeared!\n"
                 (Path.toString candidatePath));
             Xferhint.deleteEntry hintHandle;
-            None
+            Lwt.return None
           end
         with
           Util.Transient s ->
             debug (fun () ->
               Util.msg
-                "tryCopyMovedFile: local copy from %s didn't work [%s]"
+                "tryCopyMovedFile: local copy from %s didn't work [%s]\n"
                 (Path.toString candidatePath) s);
             Xferhint.deleteEntry hintHandle;
-            None)
+            Lwt.return None)
 
 (****)
 
@@ -725,6 +777,7 @@ let transferResourceForkAndSetFileinfo
   end else
     Lwt.return ()
   end >>= fun () ->
+  propsWithExtData connFrom fspathFrom pathFrom desc >>= fun desc ->
   setFileinfo fspathTo pathTo realPathTo update desc;
   debug (fun() -> Util.msg "Resource fork transferred for %s; doing last paranoid check\n"
     (Path.toString realPathTo));
@@ -1016,16 +1069,16 @@ let transferFileLocal connFrom
         (Fspath.toDebugString fspathTo) (Path.toString realPathTo) in
     let len = Uutil.Filesize.add (Props.length desc) (Osx.ressLength ress) in
     Uutil.showProgress id len "alr";
+    propsWithExtData connFrom fspathFrom pathFrom desc >>= fun desc ->
     setFileinfo fspathTo pathTo realPathTo update desc;
     Xferhint.insertEntry fspathTo pathTo fp;
     Lwt.return (`DONE (TransferSucceeded tempInfo, Some msg))
   end else
     registerFileTransfer pathTo fp
       (fun () ->
-         match
-           tryCopyMovedFile fspathTo pathTo realPathTo update desc fp ress id
-         with
-           Some (info, msg) ->
+         tryCopyMovedFile connFrom fspathFrom pathFrom
+           fspathTo pathTo realPathTo update desc fp ress id >>= function
+         | Some (info, msg) ->
              (* Transfer was performed by copying *)
              Xferhint.insertEntry fspathTo pathTo fp;
              Lwt.return (`DONE (TransferSucceeded info, Some msg))

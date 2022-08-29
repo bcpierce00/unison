@@ -177,6 +177,7 @@ let setPropLocal (fspath, (path, ui, newDesc, oldDesc)) =
   let localPath = Update.translatePathLocal fspath path in
   let (workingDir,realPath) = Fspath.findWorkingDir fspath localPath in
   Fileinfo.set workingDir realPath (`Update oldDesc) newDesc;
+  let newDesc = Props.purgeExtData newDesc in
   if fileUpdated ui then Stasher.stashCurrentVersion fspath localPath None;
   (* Archive update must be done last *)
   Update.updateProps fspath localPath (Some newDesc) ui;
@@ -191,7 +192,7 @@ let convV0 = Remote.makeConvV0FunArg
          Props.of_compat251 newDesc, Props.of_compat251 oldDesc)))
 
 let setPropOnRoot = Remote.registerRootCmd "setProp" ~convV0
-  Umarshal.(prod4 Path.m Common.mupdateItem Props.m Props.m id id) Umarshal.unit
+  Umarshal.(prod4 Path.m Common.mupdateItem Props.mx Props.m id id) Umarshal.unit
   setPropLocal
 
 let propOpt_to_compat251 = function
@@ -204,17 +205,21 @@ let propOpt_of_compat251 = function
 
 let convV0 = Remote.makeConvV0FunArg
   (fun (fspath, (path, propOpt, ui)) ->
-       (fspath, (path, propOpt_to_compat251 propOpt, Common.ui_to_compat251 ui)))
+       (fspath, (Path.makeGlobal path, propOpt_to_compat251 propOpt,
+         Common.ui_to_compat251 ui)))
   (fun (fspath, (path, propOpt, ui)) ->
-       (fspath, (path, propOpt_of_compat251 propOpt, Common.ui_of_compat251 ui)))
+       (fspath, (Path.forceLocal path,
+         propOpt_of_compat251 propOpt, Common.ui_of_compat251 ui)))
 
 let updatePropsOnRoot =
   Remote.registerRootCmd
    "updateProps" ~convV0
-   Umarshal.(prod3 Path.m (option Props.m) Common.mupdateItem id id)
+   Umarshal.(prod3 Path.mlocal (option Props.m) Common.mupdateItem id id)
    Umarshal.unit
      (fun (fspath, (path, propOpt, ui)) ->
-        let localPath = Update.translatePathLocal fspath path in
+        (* Previous versions of this function received a global path as input *)
+        let localPath = if Props.xattrEnabled () then path
+          else Update.translatePathLocal fspath (Path.makeGlobal path) in
         (* Archive update must be done first *)
         Update.updateProps fspath localPath propOpt ui;
         if fileUpdated ui then
@@ -234,8 +239,12 @@ let setProp rootFrom pathFrom rootTo pathTo newDesc oldDesc uiFrom uiTo =
       (Props.toString newDesc)
       (root2string rootTo) (Path.toString pathTo)
       (Props.toString oldDesc));
+  Copy.readPropsExtDataG rootFrom pathFrom newDesc >>= fun (p, newDesc) ->
   setPropOnRoot rootTo (pathTo, uiTo, newDesc, oldDesc) >>= fun _ ->
-  updateProps rootFrom pathFrom None uiFrom
+  (match p with
+  | None -> Update.translatePath rootFrom pathFrom
+  | Some path -> Lwt.return path) >>= fun localPathFrom ->
+  updateProps rootFrom localPathFrom None uiFrom
 
 (* ------------------------------------------------------------ *)
 
@@ -275,7 +284,7 @@ let convV0 = Remote.makeConvV0FunArg
 let setDirPropOnRoot =
   Remote.registerRootCmd
     "setDirProp" ~convV0
-    Umarshal.(prod4 Fspath.m Path.mlocal Props.mbasic Props.m id id)
+    Umarshal.(prod4 Fspath.m Path.mlocal Props.mbasic Props.mx id id)
     Umarshal.unit
     (fun (_, (workingDir, path, initialDesc, newDesc)) ->
       Fileinfo.set workingDir path (`Set initialDesc) newDesc;
@@ -508,9 +517,18 @@ let convV0 = Remote.makeConvV0FunArg
 
 let setupTargetPathsAndCreateParentDirectory =
   Remote.registerRootCmd "setupTargetPathsAndCreateParentDirectory" ~convV0
-    Umarshal.(prod2 Path.m (list Props.m) id id)
+    Umarshal.(prod2 Path.m (list Props.mx) id id)
     Umarshal.(prod4 Fspath.m Path.mlocal Path.mlocal Path.mlocal id id)
     setupTargetPathsAndCreateParentDirectoryLocal
+
+let rec readParentsExtData rootFrom pathFrom acc = function
+  | [] -> Safelist.rev acc |> Lwt.return
+  | desc :: rem ->
+      match Path.deconstructRev pathFrom with
+      | None -> assert false
+      | Some (_, parentPath) ->
+          Copy.readPropsExtData rootFrom parentPath desc >>= fun desc' ->
+          readParentsExtData rootFrom parentPath (desc' :: acc) rem
 
 (* ------------------------------------------------------------ *)
 
@@ -606,9 +624,13 @@ let copy
       "copy %s %s ---> %s %s \n"
       (root2string rootFrom) (Path.toString pathFrom)
       (root2string rootTo) (Path.toString pathTo));
+  (* Calculate source path *)
+  Update.translatePath rootFrom pathFrom >>= fun localPathFrom ->
   (* Calculate target paths *)
+  normalizeProps propsFrom propsTo
+  |> readParentsExtData rootFrom localPathFrom [] >>= fun parentProps ->
   setupTargetPathsAndCreateParentDirectory rootTo
-    (pathTo, normalizeProps propsFrom propsTo)
+    (pathTo, parentProps)
      >>= fun (workingDir, realPathTo, tempPathTo, localPathTo) ->
   (* When in Unicode case-insensitive mode, we want to create files
      with NFC normal-form filenames. *)
@@ -623,8 +645,6 @@ let copy
         | Some (name, parentPath) ->
             Path.child parentPath (Name.normalize name)
   in
-  (* Calculate source path *)
-  Update.translatePath rootFrom pathFrom >>= fun localPathFrom ->
   let errors = ref [] in
   (* Inner loop for recursive copy... *)
   let rec copyRec pFrom      (* Path to copy from *)
@@ -700,11 +720,12 @@ let copy
              else
                Lwt.return ()
              end >>= fun () ->
+             Copy.readPropsExtData rootFrom pFrom desc >>= fun desc' ->
              Lwt_util.run_in_region copyReg 1 (fun () ->
                (* We use the actual file permissions so as to preserve
                   inherited bits *)
                setDirPropOnRoot rootTo
-                 (workingDir, pTo, initialDesc, desc)) >>= fun () ->
+                 (workingDir, pTo, initialDesc, desc')) >>= fun () ->
              Lwt.return (Update.ArchiveDir (desc, newChildren),
                          List.flatten pathl)
          | Update.NoArchive ->
@@ -1213,7 +1234,7 @@ let merge root1 path1 ui1 root2 path2 ui2 id showMergeFn =
                 Current props, desc1 and desc2, can't be compared before having
                 same time and length (taken from the merge result). *)
              let fixup_desc desc n =
-               let desc' = Props.setTime desc (Props.time n) in
+               let desc' = Props.setTime desc n in
                Props.setLength desc' (Props.length n)
              in
              let desc1' = fixup_desc desc1 merge_desc
@@ -1241,8 +1262,8 @@ let merge root1 path1 ui1 root2 path2 ui2 id showMergeFn =
              | Some new_arch_desc ->
                  Some (Update.ArchiveFile (new_arch_desc, fp,
                    Fileinfo.stamp infoarch, Osx.stamp infoarch.osX)) in
-           (Props.setTime desc1 (Props.time infoarch.Fileinfo.desc),
-            Props.setTime desc2 (Props.time infoarch.Fileinfo.desc),
+           (Props.setTime desc1 infoarch.Fileinfo.desc,
+            Props.setTime desc2 infoarch.Fileinfo.desc,
             new_archive_entry)
          end else
            (desc1, desc2, None)

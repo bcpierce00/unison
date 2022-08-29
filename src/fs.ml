@@ -68,6 +68,17 @@ let file_exists f =
 
 (****)
 
+exception XattrNotSupported = System.XattrNotSupported
+
+let xattr_list f = System.xattr_list (path f)
+let xattr_get f n = System.xattr_get (path f) n
+let xattr_set f n v = System.xattr_set (path f) n v
+let xattr_remove f n = System.xattr_remove (path f) n
+
+let xattrUpdatesCTime = System.xattrUpdatesCTime
+
+(****)
+
 let fingerprint f = System.fingerprint (path f)
 
 let hasInodeNumbers () = System.hasInodeNumbers ()

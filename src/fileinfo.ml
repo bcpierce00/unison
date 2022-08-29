@@ -144,7 +144,7 @@ let getAux fromRoot fspath path getProps =
            inode    = (* The inode number is truncated so that
                          it fits in a 31 bit ocaml integer *)
                       stats.Unix.LargeFile.st_ino land 0x3FFFFFFF;
-           desc     = getProps stats osxInfos;
+           desc     = getProps fspath path stats osxInfos;
            osX      = osxInfos }
        with
          Unix.Unix_error((Unix.ENOENT | Unix.ENOTDIR),_,_) ->
@@ -154,16 +154,18 @@ let getAux fromRoot fspath path getProps =
            osX      = Osx.getFileInfos fspath path `ABSENT })
 
 let getType fromRoot fspath path =
-  (getAux fromRoot fspath path (fun _ _ -> Props.dummy)).typ
+  (getAux fromRoot fspath path (fun _ _ _ _ -> Props.dummy)).typ
 
 let getBasic fromRoot fspath path =
-  getAux fromRoot fspath path (fun st _ -> Props.get' st)
+  getAux fromRoot fspath path (fun _ _ st _ -> Props.get' st)
 
 let getBasicWithRess fromRoot fspath path =
-  getAux fromRoot fspath path Props.getWithRess
+  getAux fromRoot fspath path (fun _ _ st i -> Props.getWithRess st i)
 
-let get fromRoot fspath path =
-  getAux fromRoot fspath path Props.get
+let get ?(archProps = Props.dummy) fromRoot fspath path =
+  let getProps fspath path stats typ =
+    Props.get ~archProps fspath path stats typ in
+  getAux fromRoot fspath path getProps
 
 let basic x =
   { typ = x.typ;
@@ -256,7 +258,7 @@ let ressStamp info = Osx.stamp info.osX
 let unchanged fspath path info =
   (* The call to [Util.time] must be before the call to [get] *)
   let t0 = Util.time () in
-  let info' = get true fspath path in
+  let info' = get ~archProps:info.desc true fspath path in
   let dataUnchanged =
     Props.same_time info.desc info'.desc
       &&
