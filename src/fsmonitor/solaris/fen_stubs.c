@@ -33,6 +33,11 @@
 #endif
 
 
+/* FILE_TRUNC was added in illumos and may not be present in Solaris */
+#ifndef FILE_TRUNC
+#define FILE_TRUNC 0
+#endif
+
 /* We define the flags here rather than pass in from OCaml code
  * because they're constant and it reduces extra processing. */
 #define EV_FLAGS_FOLLOW FILE_MODIFIED | FILE_ATTRIB
