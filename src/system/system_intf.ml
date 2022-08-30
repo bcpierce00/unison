@@ -107,4 +107,7 @@ type terminalStateFunctions =
     startReading : unit -> unit; stopReading : unit -> unit }
 val terminalStateFunctions : unit -> terminalStateFunctions
 
+val has_stdout : info:string -> bool
+val has_stderr : info:string -> bool
+
 end

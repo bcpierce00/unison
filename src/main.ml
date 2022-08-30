@@ -164,6 +164,13 @@ let catch_all f =
   with e ->
     Util.msg "Unison server failed: %s\n" (Uicommon.exn2string e); exit 1;;
 
+let gui_safe_printf fmt =
+  Printf.ksprintf (fun s ->
+    if System.has_stdout ~info:s then Printf.printf "%s" s) fmt
+
+let verify_stdout () =
+  if not (System.has_stdout ~info:"") then exit 37
+
 let init () = begin
   ignore (Gc.set {(Gc.get ()) with Gc.max_overhead = 150});
   (* Make sure exception descriptions include backtraces *)
@@ -173,7 +180,7 @@ let init () = begin
 
   (* Print version if requested *)
   if Util.StringMap.mem versionPrefName argv then begin
-    Printf.printf "%s version %s\n" Uutil.myName Uutil.myVersion;
+    gui_safe_printf "%s version %s\n" Uutil.myName Uutil.myVersion;
     exit 0
   end;
 
@@ -195,7 +202,9 @@ let init () = begin
 
   (* Display documentation if requested *)
   begin try
-    begin match Util.StringMap.find docsPrefName argv with
+    let docv = Util.StringMap.find docsPrefName argv in
+    verify_stdout ();
+    begin match docv with
       [] ->
         assert false
     | "topics"::_ ->
@@ -270,8 +279,8 @@ module Body = functor (Ui : Uicommon.UI) -> struct
   Ui.start
     (try
       (match Util.StringMap.find uiPrefName argv with
-        "text"::_    -> Uicommon.Text
+      | "text"::_    -> verify_stdout (); Uicommon.Text
       | "graphic"::_ -> Uicommon.Graphic
-      | _            -> Prefs.printUsage Uicommon.usageMsg; exit 1)
+      | _ -> verify_stdout (); Prefs.printUsage Uicommon.usageMsg; exit 1)
     with Not_found -> Ui.defaultUi)
 end

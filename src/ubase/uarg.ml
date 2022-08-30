@@ -43,6 +43,13 @@ let usage speclist errmsg =
 
 let current = ref 0;;
 
+let eprintf fmt =
+  Printf.ksprintf (fun s ->
+    if System.has_stderr ~info:s then Printf.eprintf "%s" s else exit 2) fmt
+
+let verify_stdout () =
+  if not (System.has_stdout ~info:"") then exit 37
+
 let parse speclist anonfun errmsg =
   let argv = System.argv () in
   let initpos = !current in
@@ -50,7 +57,7 @@ let parse speclist anonfun errmsg =
     let progname =
       if initpos < Array.length argv then argv.(initpos) else "(?)" in
     begin match error with
-      | Unknown s when s = "-help" -> ()
+      | Unknown s when s = "-help" -> verify_stdout ()
       | Unknown s ->
           eprintf "%s: unknown option `%s'.\n" progname s
       | Missing s ->
