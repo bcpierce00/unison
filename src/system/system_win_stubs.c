@@ -440,6 +440,33 @@ CAMLprim value win_stat(value path, value lstat)
 
 /****/
 
+static value win_hasconsole_gui_msg(DWORD h, const char *s)
+{
+  const char *u = "This is a GUI-only executable. Text console output "
+                  "is not supported. To get text output, use the "
+                  "executable intended for it (usually called unison.exe "
+                  "or unison-text.exe) or redirect the output.";
+
+  if (!GetFileType((HANDLE) GetStdHandle(h))) {
+    MessageBoxA(NULL, strcmp(s, "") != 0 ? s : u, "Information", MB_OK);
+    return Val_false;
+  } else {
+    return Val_true;
+  }
+}
+
+CAMLprim value win_hasconsole_gui_stdout(value s)
+{
+  CAMLparam1(s);
+  CAMLreturn(win_hasconsole_gui_msg(STD_OUTPUT_HANDLE, String_val(s)));
+}
+
+CAMLprim value win_hasconsole_gui_stderr(value s)
+{
+  CAMLparam1(s);
+  CAMLreturn(win_hasconsole_gui_msg(STD_ERROR_HANDLE, String_val(s)));
+}
+
 CAMLprim value win_init_console(value unit)
 {
   CAMLparam0();

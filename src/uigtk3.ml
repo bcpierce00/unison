@@ -678,8 +678,13 @@ let statistics () =
 
 (* ------ *)
 
+let gui_safe_eprintf fmt =
+  Printf.ksprintf (fun s ->
+    if System.has_stderr ~info:s then Printf.eprintf "%s%!" s) fmt
+
 let fatalError ?(quit=false) message =
   let () =
+    Trace.sendLogMsgsToStderr := false; (* We don't know if stderr is available *)
     try Trace.log (message ^ "\n")
     with Util.Fatal _ -> () in (* Can't allow fatal errors in fatal error handler *)
   let title = "Fatal error" in
@@ -687,7 +692,7 @@ let fatalError ?(quit=false) message =
     try toplevelWindow ()
     with Util.Fatal err ->
       begin
-        Printf.eprintf "\n%s:\n%s\n\n%!" title err;
+        gui_safe_eprintf "\n%s:\n%s\n\n%s\n\n" title err message;
         exit 1
       end
   in

@@ -115,6 +115,9 @@ let terminalStateFunctions () =
     startReading = (fun () -> ());
     stopReading = (fun () -> ()) }
 
+let has_stdout ~info:_ = true
+let has_stderr ~info:_ = true
+
 (****)
 
 let fingerprint f =
