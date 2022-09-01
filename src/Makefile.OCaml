@@ -74,6 +74,13 @@ OCAMLLIBDIR=$(shell ocamlc -v | tail -1 | sed -e 's/.* //g' | tr '\\' '/' | tr -
 #
 # This should be set to an appropriate value automatically, depending
 # on whether the lablgtk library is available
+#
+# For Windows, an additional UI style modifier is available, `UI_WINOS`
+#   Legal values are
+#     UI_WINOS=         # *default*; builds unison purely as a Windows console ('text') or GUI ('gtk3') application
+#     UI_WINOS=hybrid   # (with UISTYLE=gtk3) builds unison as a hybrid application (GUI application attached to a text console)
+# * ref: <https://github.com/bcpierce00/unison/issues/778>
+#
 LABLGTK3LIB=$(OCAMLLIBDIR)/lablgtk3
 ifeq ($(OSARCH),osx)
   UISTYLE=mac
@@ -99,6 +106,7 @@ endif
 
 buildexecutable::
 	@echo UISTYLE = $(UISTYLE)
+	@echo UI_WINOS = $(UI_WINOS)
 
 ####################################################################
 ### Default parameters
@@ -284,8 +292,10 @@ endif
 # console when click-started
 ifeq ($(OSARCH), win32)
   ifneq ($(UISTYLE), text)
-#    COBJS+=winmain.c
-    CFLAGS+=-ccopt "-link -Wl,--subsystem,windows"
+    ifneq ($(UI_WINOS), hybrid)
+      # COBJS+=winmain.c
+      CFLAGS+=-ccopt "-link -Wl,--subsystem,windows"
+    endif
   endif
 endif
 

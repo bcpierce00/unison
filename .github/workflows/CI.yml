@@ -238,7 +238,7 @@ jobs:
       if: ${{ ! ( contains(matrix.job.ocaml-version, '+msvc') || contains(matrix.job.ocaml-version, '+musl') || contains(matrix.job.ocaml-version, '+32bit') ) }}
       run: opam depext --install --verbose --yes lablgtk3 && opam install ocamlfind
 
-    - if: steps.vars.outputs.STATIC != 'true' ## unable to build static gtk for linux or windows/Cygwin MinGW platforms
+    - if: steps.vars.outputs.STATIC != 'true' ## unable to build static gtk/gui
       shell: bash
       run: |
         opam exec -- make src OSTYPE=$OSTYPE UISTYLE=gtk3 STATIC=${{ steps.vars.outputs.STATIC }}
@@ -246,6 +246,19 @@ jobs:
         # * copy only main/first project binary
         project_exe_stem=${PROJECT_EXES%% *}
         cp "src/${project_exe_stem}${{ steps.vars.outputs.EXE_suffix }}" "${{ steps.vars.outputs.PKG_DIR }}/bin/${project_exe_stem}-gui${{ steps.vars.outputs.EXE_suffix }}"
+
+    - name: "Build WinOS text+gui hybrid"
+      if: runner.os == 'Windows' && steps.vars.outputs.STATIC != 'true' ## WinOS, non-static (unable to build static gtk/gui)
+      shell: bash
+      run: |
+        # create and stage text+gui hybrid for Windows
+        # * copy only main/first project binary
+        project_exe_stem=${PROJECT_EXES%% *}
+        # * clean/remove build artifact(s)
+        rm "src/${project_exe_stem}${{ steps.vars.outputs.EXE_suffix }}" ##.or.# opam exec -- make -C src clean #.or.# opam exec -- make clean
+        # * re-create (with hybrid text+gui UI)
+        opam exec -- make src OSTYPE=$OSTYPE UISTYLE=gtk3 UI_WINOS=hybrid STATIC=${{ steps.vars.outputs.STATIC }}
+        cp "src/${project_exe_stem}${{ steps.vars.outputs.EXE_suffix }}" "${{ steps.vars.outputs.PKG_DIR }}/bin/${project_exe_stem}-text+gui${{ steps.vars.outputs.EXE_suffix }}"
 
     - uses: actions/upload-artifact@v2
       with:
