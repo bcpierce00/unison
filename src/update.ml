@@ -2306,6 +2306,7 @@ let propsPredicates =
 let pred2Key : (string * string list) list Proplist.key =
   Proplist.register "props predicates" Umarshal.(list (prod2 string (list string) id id))
 let xattrsKey : bool Proplist.key = Proplist.register "xattrs pref" Umarshal.bool
+let aclKey : bool Proplist.key = Proplist.register "acl pref" Umarshal.bool
 
 let mustRescanProps thisRoot =
   let props = getArchiveProps thisRoot in
@@ -2317,9 +2318,17 @@ let mustRescanProps thisRoot =
     try Some (Proplist.find xattrsKey props) with Not_found -> None in
   let newXattrs =
     if Props.xattrEnabled () then Some (Prefs.read Props.syncXattrs) else None in
-  if oldPreds = newPreds && oldXattrs = newXattrs then
+  let oldACL =
+    try Some (Proplist.find aclKey props) with Not_found -> None in
+  let newACL =
+    if Props.aclEnabled () then Some (Prefs.read Props.syncACL) else None in
+  if oldPreds = newPreds && oldXattrs = newXattrs && oldACL = newACL then
     false
   else begin
+    let props =
+      match newACL with
+      | Some x -> Proplist.add aclKey x props
+      | None -> props in
     let props =
       match newXattrs with
       | Some x -> Proplist.add xattrsKey x props
@@ -2328,7 +2337,7 @@ let mustRescanProps thisRoot =
       if newPreds <> [] then Proplist.add pred2Key newPreds props
       else props in
     let () = setArchivePropsLocal thisRoot props in
-    newXattrs = Some true
+    newXattrs = Some true || newACL = Some true
   end
 
 (* This contains the list of synchronized paths and the directory stamps

@@ -161,6 +161,10 @@ else
         CLIBS+=-cclib -lutil
       endif
     endif
+    ifeq ($(OSARCH),solaris)
+      # ACL functions
+      CLIBS+=-cclib -lsec
+    endif
     buildexecutable::
 	@echo Building for Unix
   endif
@@ -247,7 +251,7 @@ OCAMLOBJS+=main.cmo
 OCAMLLIBS+=unix.cma str.cma
 INCLFLAGS+=-I +unix -I +str
 
-COBJS+=osxsupport$(OBJ_EXT) pty$(OBJ_EXT) bytearray_stubs$(OBJ_EXT) hash_compat$(OBJ_EXT) props_xattr$(OBJ_EXT)
+COBJS+=osxsupport$(OBJ_EXT) pty$(OBJ_EXT) bytearray_stubs$(OBJ_EXT) hash_compat$(OBJ_EXT) props_xattr$(OBJ_EXT) props_acl$(OBJ_EXT)
 
 ########################################################################
 ### User Interface setup

@@ -285,14 +285,6 @@ should strip symbols from binary files in 'make exportnative'
     offer to delete them *for* the user, rather than forcing the user to
     delete them manually.
 
-*** A switch to include NTFS ACE/ACL file permissions to be copied when
-    copying from one NTFS location to another NTFS location. As I
-    mentioned this is less generic, but of fundamental usefullness in
-    Windows usage, as NTFS permissions are absolutely essential in many
-    backup/replication situations in Windows systems. Robocopy has the
-    /SEC switch, but Unison is a far better tool, and I was hoping in that
-    light that Unison could implement the rights/permissions stuff also.
-
 *** There is no command-line argument to tell Unison where the .unison
     directory is; Unison finds it in the environment or not at all.  I was
     able to workaround this with a symbolic link to put .unison where it was

@@ -13,7 +13,7 @@ FSMOCAMLOBJS = \
 FSMCOBJS = \
    bytearray_stubs$(OBJ_EXT) \
    system/system_win_stubs$(OBJ_EXT) lwt/lwt_unix_stubs$(OBJ_EXT) \
-   props_xattr$(OBJ_EXT)
+   props_xattr$(OBJ_EXT) props_acl$(OBJ_EXT)
 FSMOCAMLLIBS=unix.cma
 
 ifeq ($(NATIVE), true)

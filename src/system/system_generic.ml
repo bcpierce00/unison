@@ -147,3 +147,8 @@ let xattr_set p n v =
 let xattr_remove p n =
   try xattr_remove_ p n with
   | Failure e -> failwith ("(attr: " ^ n ^ ") " ^ e)
+
+(****)
+
+external acl_get_text : string -> string = "unison_acl_to_text"
+external acl_set_text : string -> string -> unit = "unison_acl_from_text"

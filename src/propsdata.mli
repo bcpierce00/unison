@@ -15,3 +15,11 @@ module Xattr : sig
   val find_opt : string -> string option
   val length : unit -> int
 end
+
+module ACL : sig
+  include S
+
+  val add : string -> string -> unit
+  val find : string -> string
+  val keep : string -> unit
+end

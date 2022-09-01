@@ -1292,6 +1292,7 @@ let docs =
       Advanced options:\n\
       \n\
       \032 Fine-tune sync:\n\
+      \032  -acl                synchronize ACLs\n\
       \032  -atomic xxx         add a pattern to the atomic list\n\
       \032  -follow xxx         add a pattern to the follow list\n\
       \032  -force xxx          force changes from this replica to the other\n\
@@ -1416,6 +1417,12 @@ let docs =
       \032  not a click-launched gui that has no standard output). Furthermore, the\n\
       \032  actions associated with these command-line arguments are executed\n\
       \032  without loading a profile or doing the usual command-line parsing.\n\
+      \n\
+      \032  acl\n\
+      \032         When this flag is set to true, the ACLs of files and directories\n\
+      \032         are synchronized. The type of ACLs depends on the platform and\n\
+      \032         filesystem support. On Unix-like platforms it can be NFSv4 ACLs,\n\
+      \032         for example.\n\
       \n\
       \032  addprefsto xxx\n\
       \032         By default, new preferences added by Unison (e.g., new ignore\n\
@@ -2900,9 +2907,62 @@ let docs =
       \032      Unix system).\n\
       \032    * For security reasons, the Unix setuid and setgid bits are not\n\
       \032      propagated.\n\
-      \032    * The Unix owner and group ids are not propagated. (What would this\n\
-      \032      mean, in general?) All files are created with the owner and group\n\
-      \032      of the server process.\n\
+      \032    * The Unix owner and group ids can be propagated (see owner and group\n\
+      \032      preferences) by mapping names or by numberic ids (see numericids\n\
+      \032      preference).\n\
+      \n\
+      Access Control Lists - ACLs\n\
+      \n\
+      \032  Unison allows synchronizing access control lists (ACLs) on platforms\n\
+      \032  and filesystems that support them. In general, synchronization makes\n\
+      \032  sense only in case both replicas support the same type of ACLs and\n\
+      \032  recognize same users and groups. In some cases you may be able to go\n\
+      \032  beyond that and synchronize ACLs to a replica that couldn\226\128\153t fully use\n\
+      \032  them\226\128\148this may be be useful for the purpose of preserving ACLs.\n\
+      \n\
+      \032  If one of the replicas does not support any type of ACLs then Unison\n\
+      \032  will not attempt ACL synchronization. If the other replica does support\n\
+      \032  ACLs then those will remain intact.\n\
+      \n\
+      \032  If both replicas support ACLs of any supported type then you can\n\
+      \032  request Unison to try ACL synchronization (acl preference). Success of\n\
+      \032  synchronization depends on permissions of the owner and group of Unison\n\
+      \032  process (Unison must have permissions to set ACL) and the compatibility\n\
+      \032  of ACL types on both replicas.\n\
+      \n\
+      \032  An ACL is propagated as a single unit, with all ACEs. There is no\n\
+      \032  merging of ACEs from the replicas.\n\
+      \n\
+      \032  Caveat: ACE inheritance may in certain scenarios cause synchronization\n\
+      \032  inconsistencies. In Windows, only explicit ACEs are synchronized;\n\
+      \032  inherited ACEs are not actively synchronized, but Windows will\n\
+      \032  propagate ACEs from parent directories (unless inheritance is\n\
+      \032  explicitly prevented on a file or a directory\226\128\148this prevention is also\n\
+      \032  synchronized). Due to inheritance, the ultimately effective ACL may be\n\
+      \032  different, or provide different access, even after synchronization.\n\
+      \n\
+      \032  Unison currently supports the following platforms and ACL types:\n\
+      \032    * Windows (Windows XP SP2 and later)\n\
+      \032         + NTFS ACL (discrete ACL (DACL) only)\n\
+      \032    * Solaris, OpenSolaris and illumos-based OS (OpenIndiana, SmartOS,\n\
+      \032      OmniOS, etc.)\n\
+      \032         + NFSv4 ACL (ZFS ACL)\n\
+      \032         + POSIX-draft ACL\n\
+      \032         + Some NFSv4 ACL (ZFS ACL) cross-synchronization with\n\
+      \032           POSIX-draft ACL\n\
+      \032         + Full cross-synchronization with other platforms that support\n\
+      \032           NFSv4 ACLs; limited cross-synchronization with POSIX-draft\n\
+      \032           ACLs\n\
+      \032    * FreeBSD, NetBSD\n\
+      \032         + NFSv4 ACL (ZFS ACL)\n\
+      \032         + Limited POSIX-draft ACL (access ACL only; not default ACL)\n\
+      \032         + Full cross-synchronization with other platforms that support\n\
+      \032           NFSv4 ACLs\n\
+      \032    * Darwin (macOS)\n\
+      \032         + Extended ACL\n\
+      \n\
+      \032  Not all filesystems on the listed platforms support all ACL types (or\n\
+      \032  any ACLs at all).\n\
       \n\
       Extended Attributes - xattrs\n\
       \n\
