@@ -1685,7 +1685,7 @@ preference.  For example,
 \begin{verbatim}
     backup = Name *
 \end{verbatim}
-causes Unison to keep backups of {\em all} files and directories.  The
+causes Unison to create backups of {\em all} files and directories.  The
 \verb|backupnot| preference can be used to give a few exceptions: it
 specifies which files and directories should {\em not} be backed up, even if
 they match the \verb|backup| pathspec.
@@ -1702,7 +1702,10 @@ regardless of their names.
 Backup files can be stored either {\em centrally} or {\em locally}.  This
 behavior is controlled by the preference \verb|backuplocation|, whose value
 must be either \verb|central| or \verb|local|.  (The default is
-\verb|central|.)
+\verb|central|.)  Note that central storage of backups can lead to
+backup files being stored in a different filesystem than the original
+files, which could have different security properties and different
+amounts of available storage.
 
 When backups are stored locally, they are kept in the same
 directory as the original.
@@ -1713,8 +1716,10 @@ environment variable \verb|UNISONBACKUPDIR|.  (The environment variable is
 checked first.)  If neither of these are set, then the directory
 \verb|.unison/backup| in the user's home directory is used.
 
-The preference \verb|maxbackups| controls how many previous versions of
-each file are kept (including the current version).
+The preference \verb|maxbackups| (default 2) controls how many
+previous versions of each file are kept (including the current
+version), following the usual plan of deleting the oldest when
+creating a new one.
 
 By default, backup files are named \verb|.bak.VERSION.FILENAME|,
 where \verb|FILENAME| is the original filename and \verb|VERSION| is the
@@ -1733,6 +1738,9 @@ note that the string \verb|$VERSION| in either \verb|backupprefix| or
 \verb|backupsuffix| (it must appear in one or the other) is replaced by
 the version number.  This can be used, for example, to ensure that backup
 files retain the same extension as the originals.
+
+Other than \verb|maxbackups| (which will never delete the last
+backup), there are no other mechanisms for deleting backups.
 
 For backward compatibility, the \verb|backups| preference is also supported.
 %
@@ -1762,15 +1770,16 @@ need to be merged, but also a file containing the {\em last synchronized
   version}.  You can ask Unison to keep a copy of the last synchronized
 version for some files using the \verb|backupcurrent| preference. This
 preference is used in exactly the same way as \verb|backup| and its meaning
-is similar, except that it causes backups to be kept of the {\em current}
+is similar, except that it causes backups to be created of the {\em current}
 contents of each file after it has been synchronized by Unison, rather than
-the {\em previous} contents that Unison overwrote.  These backups are kept
-on {\em both} replicas in the same place as ordinary backup files---i.e.
+the {\em previous} contents that Unison overwrote.  These backups are stored
+in {\em both} replicas in the same place as ordinary backup files---i.e.
 according to the \verb|backuplocation| and \verb|backupdir| preferences.
 They are named like the original files if \verb|backupslocation| is set to
 'central' and otherwise, Unison uses the \verb|backupprefix| and
 \verb|backupsuffix| preferences and assumes a version number 000 for these
-backups.
+backups.  Note that there are no mechanisms (beyond the limit on the number of
+backups for each file) to remove backup files.
 
 The \verb|<MERGECMD>| part of the preference specifies what external command
 should be invoked to merge files at paths matching the \verb|<PATHSPEC>|.
