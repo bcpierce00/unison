@@ -2502,7 +2502,10 @@ let docs =
       \n\
       \032  Backup files can be stored either centrally or locally. This behavior\n\
       \032  is controlled by the preference backuplocation, whose value must be\n\
-      \032  either central or local. (The default is central.)\n\
+      \032  either central or local. (The default is central.) Note that central\n\
+      \032  storage of backups can lead to backup files being stored in a different\n\
+      \032  filesystem than the original files, which could have different security\n\
+      \032  properties and different amounts of available storage.\n\
       \n\
       \032  When backups are stored locally, they are kept in the same directory as\n\
       \032  the original.\n\
@@ -2513,8 +2516,10 @@ let docs =
       \032  neither of these are set, then the directory .unison/backup in the\n\
       \032  user\226\128\153s home directory is used.\n\
       \n\
-      \032  The preference maxbackups controls how many previous versions of each\n\
-      \032  file are kept (including the current version).\n\
+      \032  The preference maxbackups (default 2) controls how many previous\n\
+      \032  versions of each file are kept (including the current version). Note\n\
+      \032  that this implies, by omission, that there are no other mechanisms for\n\
+      \032  deleting backups.\n\
       \n\
       \032  By default, backup files are named .bak.VERSION.FILENAME, where\n\
       \032  FILENAME is the original filename and VERSION is the backup number (1\n\
