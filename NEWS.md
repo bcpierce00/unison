@@ -14,14 +14,34 @@ unison uses git history for that, and thus there is no changelog file.
 
 NOT YET RELEASED
 
-  * Change OCaml requirement to >= 4.08
-  * Clean up a variety of unmaintained and unused bits, mainly
-    build-related
+  * OCaml >= 4.08 is required to build unison.
+  * unison can be built with (unreleased) OCaml 5 (GUI build not
+    verified because lablgtk does not yet support OCaml 5).
   * Change GUI to use GTK3 (via lablgtk3) instead of GTK2 (via lablgtk2)
-  * Add workaround for bugs in the github CI Windows builds, one of
-    which resulted in the 2.52.1 GUI version failing, in the Windows
-    CI build artifacts.  (This does not affect platforms other than
-    Windows, and may not affect other Windows builds.)
+  * Add support for syncing extended attributes.
+  * Add support for syncing ACLs.
+  * On Windows, add the ability to build unison as a hybrid
+    application (GUI application attached to a text console) by
+    defining UI_WINOS=hybrid (see src/Makefile).  Add this to CI.
+    (Doing this for non-Windows is unnecessary as all applications,
+    both GUI and non-GUI, are always executed with a connection to
+    stdout/stderr. GUI-only applications (ie, no stdout/stderr) is a
+    Windows-only concept.)
+  * Notable bugfixes
+    - Merge results are stored in archive more accurately.
+    - Windows \\?\ paths now work correctly (including \\?\Volume{GUID}\ paths).  
+  * CI changes
+    - The macOS binaries are properly signed.
+    - Add workaround for bugs in the github CI Windows builds, one of
+      which resulted in the 2.52.1 GUI version failing, in the Windows
+      CI build artifacts.  (This does not affect platforms other than
+      Windows, and may not affect other Windows builds.)
+  * changes that should not affect behavior
+    - Clean up a variety of unmaintained and unused bits, mainly
+      build-related.
+    - OCaml's Unix library is now extensively used also on
+      Windows. This allowed removal of large amount of
+      Windows-specific OCaml and mainly C code.
 
 ## Changes in 2.52.1
 
