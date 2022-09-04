@@ -2486,7 +2486,7 @@ let docs =
       \032  example,\n\
       \032   backup = Name *\n\
       \n\
-      \032  causes Unison to keep backups of all files and directories. The\n\
+      \032  causes Unison to create backups of all files and directories. The\n\
       \032  backupnot preference can be used to give a few exceptions: it specifies\n\
       \032  which files and directories should not be backed up, even if they match\n\
       \032  the backup pathspec.\n\
@@ -2517,9 +2517,9 @@ let docs =
       \032  user\226\128\153s home directory is used.\n\
       \n\
       \032  The preference maxbackups (default 2) controls how many previous\n\
-      \032  versions of each file are kept (including the current version). Note\n\
-      \032  that this implies, by omission, that there are no other mechanisms for\n\
-      \032  deleting backups.\n\
+      \032  versions of each file are kept (including the current version),\n\
+      \032  following the usual plan of deleting the oldest when creating a new\n\
+      \032  one.\n\
       \n\
       \032  By default, backup files are named .bak.VERSION.FILENAME, where\n\
       \032  FILENAME is the original filename and VERSION is the backup number (1\n\
@@ -2537,6 +2537,9 @@ let docs =
       \032  must appear in one or the other) is replaced by the version number.\n\
       \032  This can be used, for example, to ensure that backup files retain the\n\
       \032  same extension as the originals.\n\
+      \n\
+      \032  Other than maxbackups (which will never delete the last backup), there\n\
+      \032  are no other mechanisms for deleting backups.\n\
       \n\
       \032  For backward compatibility, the backups preference is also supported.\n\
       \032  It simply means backup = Name * and backuplocation = local.\n\
@@ -2562,14 +2565,16 @@ let docs =
       \032  synchronized version. You can ask Unison to keep a copy of the last\n\
       \032  synchronized version for some files using the backupcurrent preference.\n\
       \032  This preference is used in exactly the same way as backup and its\n\
-      \032  meaning is similar, except that it causes backups to be kept of the\n\
+      \032  meaning is similar, except that it causes backups to be created of the\n\
       \032  current contents of each file after it has been synchronized by Unison,\n\
       \032  rather than the previous contents that Unison overwrote. These backups\n\
-      \032  are kept on both replicas in the same place as ordinary backup\n\
+      \032  are stored in both replicas in the same place as ordinary backup\n\
       \032  files\226\128\148i.e. according to the backuplocation and backupdir preferences.\n\
       \032  They are named like the original files if backupslocation is set to\n\
       \032  \226\128\153central\226\128\153 and otherwise, Unison uses the backupprefix and backupsuffix\n\
-      \032  preferences and assumes a version number 000 for these backups.\n\
+      \032  preferences and assumes a version number 000 for these backups. Note\n\
+      \032  that there are no mechanisms (beyond the limit on the number of backups\n\
+      \032  for each file) to remove backup files.\n\
       \n\
       \032  The <MERGECMD> part of the preference specifies what external command\n\
       \032  should be invoked to merge files at paths matching the <PATHSPEC>.\n\
