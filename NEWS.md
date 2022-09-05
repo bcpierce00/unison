@@ -29,7 +29,7 @@ NOT YET RELEASED
     Windows-only concept.)
   * Notable bugfixes
     - Merge results are stored in archive more accurately.
-    - Windows \\?\ paths now work correctly (including \\?\Volume{GUID}\ paths).  
+    - Windows `\\?\` paths now work correctly (including `\\?\Volume{GUID}\` paths).  
   * CI changes
     - The macOS binaries are properly signed.
     - Add workaround for bugs in the github CI Windows builds, one of
