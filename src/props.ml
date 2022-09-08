@@ -853,7 +853,12 @@ let ctimeDetect = System.xattrUpdatesCTime
 
 (* Since [hash] is supposed to be run after [purge] (resulting in the
    data that is stored in the archives) then we don't need to take
-   into account the difference between Hash and Loaded. *)
+   into account the difference between Hash and Loaded.
+
+   The attribute list must be sorted to get a stable hash. The list
+   is sorted once, when retrieving it from fs. If sorting conditions
+   are changed in future then this hash function may have to be
+   changed to retain backwards compatibility. *)
 let hash t h = if Prefs.read syncXattrs then Uutil.hash2 (Uutil.hash t) h else h
 
 let attrToString = function
@@ -991,6 +996,8 @@ let skipIgnoredXattr l =
 
 let getXattrs path =
   let sumSize total (_, len) = total + len in (* No fear of overflow *)
+  let xattrNameCompare (a, _) (b, _) = String.compare a b in
+  let sortXattrs = Safelist.sort xattrNameCompare in
   let readXattr (n, len) =
     if len > 16777211 then (* Max length of strings on 32-bit OCaml *)
       failwith ("The value of extended attribute '" ^ n ^
@@ -1006,7 +1013,7 @@ let getXattrs path =
     (n, value)
   in
   wrapFail None (fun () ->
-    let names = skipIgnoredXattr (Fs.xattr_list path) in
+    let names = Fs.xattr_list path |> skipIgnoredXattr |> sortXattrs in
     let size = Size.ofInt (Safelist.fold_left sumSize 0 names) in
     Some (Safelist.map readXattr names, size))
 
