@@ -814,10 +814,14 @@ let doTransport reconItemList =
     let t1 = Unix.gettimeofday () in
     let remTime =
       if v <= 0. then "--:--"
-      else if v >= 100. then "00:00"
+      else if v >= 100. then "00:00:00"
       else
         let t = truncate ((t1 -. t0) *. (100. -. v) /. v +. 0.5) in
-        Format.sprintf "%02d:%02d" (t / 60) (t mod 60)
+        let u = t mod 3600 in
+        let h = t / 3600 in
+        let m = u / 60 in
+        let sec = u mod 60 in
+        Format.sprintf "%02d:%02d:%02d" h m sec
     in
     t1, Format.sprintf "%s  %s ETA" (Util.percent2string v) remTime
   in
