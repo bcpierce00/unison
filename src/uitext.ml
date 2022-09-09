@@ -801,12 +801,16 @@ let doTransport reconItemList =
          (fun s item -> Uutil.Filesize.add item.bytesToTransfer s)
          Uutil.Filesize.zero items)
   in
+  let totalBytesToTransferStr = Util.bytes2string
+    (Uutil.Filesize.toInt64 !totalBytesToTransfer) in
   let t0 = Unix.gettimeofday () in
   let calcProgress i bytes dbg =
     let i = Uutil.File.toLine i in
     let item = items.(i) in
     item.bytesTransferred <- Uutil.Filesize.add item.bytesTransferred bytes;
     totalBytesTransferred := Uutil.Filesize.add !totalBytesTransferred bytes;
+    let totalBytesTransferredStr = Util.bytes2string
+      (Uutil.Filesize.toInt64 !totalBytesTransferred) in
     let v =
       (Uutil.Filesize.percentageOfTotalSize
          !totalBytesTransferred !totalBytesToTransfer)
@@ -823,7 +827,9 @@ let doTransport reconItemList =
         let sec = u mod 60 in
         Format.sprintf "%02d:%02d:%02d" h m sec
     in
-    t1, Format.sprintf "%s  %s ETA" (Util.percent2string v) remTime
+    let stat = Format.sprintf "%s  (%s of %s)  %s ETA" (Util.percent2string v)
+      totalBytesTransferredStr totalBytesToTransferStr remTime in
+    t1, stat
   in
   let tlog = ref t0 in
   let showProgress i bytes dbg =

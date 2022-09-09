@@ -83,6 +83,7 @@ val percentageOfTotal :
   int        (* percentage of total *)
 val monthname : int -> string
 val percent2string : float -> string
+val bytes2string : int64 -> string
 
 (* Just like the versions in the Unix module, but raising Transient
    instead of Unix_error *)
