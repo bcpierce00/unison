@@ -328,6 +328,23 @@ let percentageOfTotal current total =
 
 let percent2string p = Printf.sprintf "%3d%%" (truncate (max 0. (min 100. p)))
 
+let gib = 1073741824.
+let mib = 1048576.
+let kib = 1024.
+let bytes2string v =
+  if v > 1_048_051_711L then
+    Printf.sprintf "%.2f GiB" (Int64.to_float v /. gib)
+  else if v > 104_805_171L then
+    Printf.sprintf "%.0f MiB" (Int64.to_float v /. mib)
+  else if v > 1_023_487L then
+    Printf.sprintf "%.1f MiB" (Int64.to_float v /. mib)
+  else if v > 102_348L then
+    Printf.sprintf "%.0f KiB" (Int64.to_float v /. kib)
+  else if v > 999L then
+    Printf.sprintf "%.1f KiB" (Int64.to_float v /. kib)
+  else
+    Printf.sprintf "%Ld B" v
+
 let extractValueFromOption = function
     None -> raise (Fatal "extractValueFromOption failed")
   | Some(v) -> v
