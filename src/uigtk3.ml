@@ -3480,7 +3480,9 @@ let createToplevelWindow () =
   let clearMainWindow () =
     grDisactivateAll ();
     make_busy toplevelWindow;
+    mainWindow#set_model None;
     mainWindowModel#clear ();
+    mainWindow#set_model (Some mainWindowModel#coerce);
     theState := [||];
     detailsWindow#buffer#set_text ""
   in
