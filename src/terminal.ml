@@ -382,9 +382,14 @@ let handlePasswordRequests (fdIn, fdOut) callback isReady =
       if query = "\r\n" || query = "\n" || query = "\r" then
         Lwt_unix.yield () >>= prompt
       else
-        let response = callback (processEscapes query) in
-        Lwt_unix.write_substring fdOut
-          (response ^ "\n") 0 (String.length response + 1) >>= fun _ -> prompt ()
+        let querytext = processEscapes query in
+        if querytext = "" || String.trim querytext = "" then
+          Lwt_unix.yield () >>= prompt
+        else
+          let response = callback querytext in
+          Lwt_unix.write_substring fdOut
+            (response ^ "\n") 0 (String.length response + 1) >>= fun _ ->
+          prompt ()
   in
   let getErr () =
     (* Yield a couple of times to give one final chance of reading the error
