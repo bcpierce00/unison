@@ -613,6 +613,7 @@ main.cmo : \
     ubase/util.cmi \
     uitext.cmi \
     uicommon.cmi \
+    system.cmi \
     strings.cmi \
     ubase/safelist.cmi \
     remote.cmi \
@@ -623,6 +624,7 @@ main.cmx : \
     ubase/util.cmx \
     uitext.cmx \
     uicommon.cmx \
+    system.cmx \
     strings.cmx \
     ubase/safelist.cmx \
     remote.cmx \
