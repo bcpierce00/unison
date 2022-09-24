@@ -365,7 +365,8 @@ let setFileInfos dataFspath dataPath finfo =
       let p = Fspath.toString (Fspath.concat dataFspath dataPath) in
       let (fullFinfo, _) = getFileInfosInternal p false in
       setFileInfosInternal p (insertInfo (Bytes.of_string fullFinfo) finfo)
-    with Unix.Unix_error ((Unix.EOPNOTSUPP | Unix.ENOSYS), _, _) ->
+    with Unix.Unix_error ((EOPNOTSUPP | ENOSYS | EUNKNOWNERR 93), _, _) ->
+      (* ENOATTR (93) is returned on msdos/exfat fs since macOS 13 *)
       (* Not an HFS volume.  Look for an AppleDouble file *)
       let (workingDir, realPath) = Fspath.findWorkingDir dataFspath dataPath in
       begin try
