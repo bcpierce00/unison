@@ -373,8 +373,10 @@ let setFileInfos dataFspath dataPath finfo =
         let (doubleFspath, inch, entries) = openDouble workingDir realPath in
         begin try
           let (ofs, len) = Safelist.assoc `FINFO entries in
-          if len < finfoLength then
-            fail dataFspath dataPath doubleFspath "bad finder info";
+          if len < finfoLength then begin
+            close_in_noerr inch;
+            fail dataFspath dataPath doubleFspath "bad finder info"
+          end;
           let fullFinfo =
             protect
               (fun () ->
