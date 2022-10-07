@@ -218,7 +218,7 @@ let propagatePrefs () =
   let toRoot = function
     | (Local, _) -> return ()
     | (Remote _, _) as root ->
-        let rpcVer = Remote.(connectionVersion (connectionToRoot root)) in
+        let rpcVer = Remote.(connectionVersion (connectionOfRoot root)) in
         let prefs = Prefs.dump rpcVer in
         propagatePrefsTo root root prefs
   in
