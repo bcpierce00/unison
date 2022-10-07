@@ -794,11 +794,9 @@ props.cmo : \
     pred.cmi \
     path.cmi \
     osx.cmi \
-    lwt/lwt_unix.cmi \
     fspath.cmi \
     fs.cmi \
     features.cmi \
-    external.cmi \
     props.cmi
 props.cmx : \
     uutil.cmx \
@@ -811,11 +809,9 @@ props.cmx : \
     pred.cmx \
     path.cmx \
     osx.cmx \
-    lwt/lwt_unix.cmx \
     fspath.cmx \
     fs.cmx \
     features.cmx \
-    external.cmx \
     props.cmi
 props.cmi : \
     uutil.cmi \
