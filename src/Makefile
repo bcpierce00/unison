@@ -204,7 +204,7 @@ testmerge:
 .PHONY: tags
 
 tags:
-	-if [ -f "`which $(ETAGS)`" ]; then \
+	@-if command -v $(ETAGS) > /dev/null ; then \
 	    $(ETAGS) *.mli */*.mli *.ml */*.ml */*.m *.c */*.c *.txt \
 		     *Makefile* \
 	  ; fi
