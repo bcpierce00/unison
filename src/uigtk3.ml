@@ -1582,6 +1582,10 @@ let createProfile parent =
       let ch =
         System.open_out_gen [Open_wronly; Open_creat; Open_excl] 0o600 filename
       in
+      let close_on_error f =
+        try f () with e -> close_out_noerr ch; raise e
+      in
+      close_on_error (fun () ->
       Printf.fprintf ch "# Unison preferences\n";
       let label = React.state label in
       if label <> "" then Printf.fprintf ch "label = %s\n" label;
@@ -1601,7 +1605,7 @@ let createProfile parent =
         Printf.fprintf ch "unicode = true\n";
 *)
       if React.state fat then Printf.fprintf ch "fat = true\n";
-      close_out ch;
+      close_out ch);
       profileName := Some (React.state name)
     with Sys_error _ as e ->
       okBox ~parent:assistant ~typ:`ERROR ~title:"Could not save profile"
@@ -2333,6 +2337,10 @@ let editProfile parent name =
           System.open_out_gen [Open_wronly; Open_creat; Open_trunc] 0o600
             filename
         in
+        let close_on_error f =
+          try f () with e -> close_out_noerr ch; raise e
+        in
+        close_on_error (fun () ->
   (*XXX Should trim whitespaces and check for '\n' at some point  *)
         Printf.fprintf ch "# Unison preferences\n";
         lst_store#foreach
@@ -2340,7 +2348,7 @@ let editProfile parent name =
              let (nm, _, vl) = lst_store#get ~row ~column:c_ml in
              List.iter (fun v -> Printf.fprintf ch "%s = %s\n" nm v) vl;
              false);
-        close_out ch;
+        close_out ch);
         setModified false
       with Sys_error _ as e ->
         okBox ~parent:t ~typ:`ERROR ~title:"Could not save profile"

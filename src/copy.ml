@@ -375,7 +375,7 @@ let propsExtDataOnRoot root path desc =
   | (Common.Local, fspath) ->
       Lwt.return (propsWithExtDataLocal fspath path desc)
   | (Remote _, fspath) ->
-      propsWithExtDataConn (Remote.connectionToRoot root) fspath path desc
+      propsWithExtDataConn (Remote.connectionOfRoot root) fspath path desc
 
 let propsWithExtData connFrom fspath path desc =
   propsWithExtDataConn connFrom fspath (`Local path) desc >>= fun x ->

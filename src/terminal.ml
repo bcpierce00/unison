@@ -351,7 +351,10 @@ let handlePasswordRequests (fdIn, fdOut) callback isReady =
   let buf = Bytes.create 10000 in
   let time = ref (Unix.gettimeofday ()) in
   let rec loop () =
-    Lwt_unix.read fdIn buf 0 10000 >>= function
+    Lwt.catch
+      (fun () -> Lwt_unix.read fdIn buf 0 10000)
+      (fun ex -> if isReady () then Lwt.return 0 else Lwt.fail ex)
+    >>= function
     | 0 -> Lwt.return None (* The remote end is dead *)
     | len ->
         time := Unix.gettimeofday ();

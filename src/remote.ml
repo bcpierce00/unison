@@ -953,7 +953,7 @@ let hostOfRoot root =
   match root with
     (Common.Local, _)       -> ""
   | (Common.Remote host, _) -> host
-let connectionToRoot root = hostConnection (hostOfRoot root)
+let connectionOfRoot root = hostConnection (hostOfRoot root)
 
 (* RegisterRootCmd is like registerHostCmd but it indexes connections by
    root instead of host. *)

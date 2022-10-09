@@ -569,6 +569,10 @@ let storeArchiveLocal fspath thisRoot archive hash magic properties =
      System.open_out_gen
        [Open_wronly; Open_creat; Open_trunc; Open_binary] 0o600 fspath
    in
+   let close_on_error f =
+     try f () with e -> close_out_noerr c; raise e
+   in
+   close_on_error (fun () ->
    output_string c formatString;
    output_string c "\n";
    output_string c (verboseArchiveName thisRoot);
@@ -584,7 +588,7 @@ let storeArchiveLocal fspath thisRoot archive hash magic properties =
    output_string c (String.concat "\030" (Features.changingArchiveFormat ()));
    output_string c "\n";
    Umarshal.to_channel mpayload c (archive, hash, magic, properties);
-   close_out c)
+   close_out c))
 
 (* IMPORTANT! This val is here for smoother upgrades from versions <= 2.51.5
    It can be removed when this compatibility is no longer required. *)
@@ -670,11 +674,19 @@ let postCommitArchiveLocal (fspath,())
          let outFd =
            System.open_out_gen
              [Open_wronly; Open_creat; Open_trunc; Open_binary] 0o600 fto in
+         let close_on_error f =
+           try f () with e -> close_out_noerr outFd; raise e
+         in
+         close_on_error (fun () ->
          System.chmod fto 0o600; (* In case the file already existed *)
          let inFd = System.open_in_bin ffrom in
+         let close_on_error f =
+           try f () with e -> close_in_noerr inFd; raise e
+         in
+         close_on_error (fun () ->
          Uutil.readWrite inFd outFd (fun _ -> ());
          close_in inFd;
-         close_out outFd
+         close_out outFd))
        end;
        let arcFspath = Util.fileInUnisonDir toname in
        Hashtbl.replace archiveInfoCache thisRoot (getArchiveInfo arcFspath)))
@@ -810,6 +822,10 @@ let dumpArchiveLocal (fspath,()) =
   debug (fun () -> Printf.eprintf "Dumping archive into `%s'\n"
                      (System.fspathToDebugString f));
   let ch = System.open_out_gen [Open_wronly; Open_creat; Open_trunc] 0o600 f in
+  let close_on_error f =
+    try f () with e -> close_out_noerr ch; raise e
+  in
+  close_on_error (fun () ->
   let (outfn,flushfn) = Format.get_formatter_output_functions () in
   Format.set_formatter_out_channel ch;
   Format.printf "Contents of archive for %s\n" root;
@@ -818,7 +834,7 @@ let dumpArchiveLocal (fspath,()) =
   Format.print_flush();
   Format.set_formatter_output_functions outfn flushfn;
   flush ch;
-  close_out ch;
+  close_out ch);
   Lwt.return ()
 
 let dumpArchiveOnRoot : Common.root -> unit -> unit Lwt.t =

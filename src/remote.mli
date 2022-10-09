@@ -118,7 +118,7 @@ val newMsgId : unit -> msgId
 
 type connection
 val connectionVersion : connection -> int
-val connectionToRoot : Common.root -> connection
+val connectionOfRoot : Common.root -> connection
 
 val registerServerCmd :
   string

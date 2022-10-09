@@ -409,7 +409,8 @@ let rec readAFile ?(fail=true) ?(add_ext=true) filename =
       raise (Util.Fatal (Printf.sprintf
         "Preference file %s not found" path))
   | None, false -> []
-  | Some chan, _ -> loop chan 1 []
+  | Some chan, _ ->
+      try loop chan 1 [] with e -> close_in_noerr chan; raise e
 
 (* Takes a list of strings in reverse order and yields a list of "parsed lines"
    in correct order *)

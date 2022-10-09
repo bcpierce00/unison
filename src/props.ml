@@ -562,7 +562,7 @@ let set abspath t =
              let cmd = "/usr/local/bin/sudo -u root /usr/bin/touch -m -a -t "
                        ^ tstr ^ " " ^ Fspath.quotes abspath in
              Util.msg "Running external program to set utimes:\n  %s\n" cmd;
-             let (r,_) = Lwt_unix.run (External.runExternalProgram cmd) in
+             let r = System.close_process_in (System.open_process_in cmd) in
              if r<>(Unix.WEXITED 0) then raise (Util.Transient "External time-setting command failed")
            end else
              Fs.utimes abspath (if v = 0. then 1e-12 else v) v)
