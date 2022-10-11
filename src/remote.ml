@@ -94,8 +94,10 @@ let catchIoErrors th =
        | Unix.Unix_error(Unix.EINVAL, _, _)
        | Unix.Unix_error(Unix.EUNKNOWNERR (-64), _, _)
                          (* ERROR_NETNAME_DELETED *)
-       | Unix.Unix_error(Unix.EUNKNOWNERR (-233), _, _) ->
+       | Unix.Unix_error(Unix.EUNKNOWNERR (-233), _, _)
                          (* ERROR_PIPE_NOT_CONNECTED *)
+       | Unix.Unix_error(Unix.EUNKNOWNERR (-1236), _, _) ->
+                         (* ERROR_CONNECTION_ABORTED *)
          (* Client has closed its end of the connection *)
            lostConnection ()
        | _ ->
