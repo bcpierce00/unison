@@ -319,6 +319,38 @@ CAMLprim value w_create_process_pty(value *argv, int argn)
                                      argv[3], argv[4], argv[5]);
 }
 
+CAMLprim value win_alloc_console(value unit)
+{
+  CAMLparam0();
+  CAMLlocal1(some);
+  HANDLE stderr_orig;
+  FILE *ign;
+
+  stderr_orig = (HANDLE) GetStdHandle(STD_ERROR_HANDLE);
+
+  if (!AllocConsole()) {
+    caml_win32_maperr(GetLastError());
+    caml_uerror("alloc_console", Nothing);
+  }
+
+  /* If a new console was allocated then we need to make sure that both the
+   * Windows C runtime stderr and the STD_ERROR_HANDLE for the child process
+   * are associated with the new console, unless already redirected or
+   * associated elsewhere.
+   * We are not interested in stdin and stdout for this specific scenario
+   * (as a fallback for the real pty). */
+  if (_fileno(stderr) < 0) freopen_s(&ign, "CONOUT$", "w", stderr);
+
+  if (!GetFileType(stderr_orig)) {
+    some = caml_alloc(1, 0);
+    Store_field(some, 0,
+      caml_win32_alloc_handle((HANDLE) GetStdHandle(STD_ERROR_HANDLE)));
+    CAMLreturn(some);
+  }
+
+  CAMLreturn(Val_int(0));
+}
+
 #else // not _WIN32
 
 CAMLprim value w_create_process_pty_native
@@ -340,6 +372,11 @@ CAMLprim value win_openpty()
 CAMLprim value win_closepty(value pty)
 {
   caml_unix_error(ENOSYS, "closepty", Nothing);
+}
+
+CAMLprim value win_alloc_console()
+{
+  caml_unix_error(ENOSYS, "alloc_console", Nothing);
 }
 
 #endif
