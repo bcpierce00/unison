@@ -349,24 +349,27 @@ let handlePasswordRequests (fdIn, fdOut) callback isReady =
     s
   in
   let buf = Bytes.create 10000 in
+  let ended = ref false in
   let time = ref (Unix.gettimeofday ()) in
   let rec loop () =
     Lwt.catch
       (fun () -> Lwt_unix.read fdIn buf 0 10000)
-      (fun ex -> if isReady () then Lwt.return 0 else Lwt.fail ex)
+      (fun ex -> if isReady () || !ended then Lwt.return 0 else Lwt.fail ex)
     >>= function
     | 0 -> Lwt.return None (* The remote end is dead *)
     | len ->
         time := Unix.gettimeofday ();
         Buffer.add_string scrollback (Bytes.sub_string buf 0 len);
-        if isReady () then   (* The shell connection has been established *)
+        if !ended then (* The session ended before establishing a connection *)
+          Lwt.return None
+        else if isReady () then (* The shell connection has been established *)
           Lwt.return (Some (extract ()))
         else
           loop ()
   in
   let delay = 0.2 in
   let rec prompt () =
-    if isReady () then
+    if isReady () || !ended then
       Lwt.return ()
     else
       let d = (Unix.gettimeofday ()) -. !time in
@@ -395,6 +398,7 @@ let handlePasswordRequests (fdIn, fdOut) callback isReady =
           prompt ()
   in
   let getErr () =
+    ended := true;
     (* Yield a couple of times to give one final chance of reading the error
        output from the ssh process. *)
     Lwt_unix.yield () >>=
