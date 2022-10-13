@@ -7,8 +7,13 @@ val create_session :
   Unix.file_descr -> Unix.file_descr -> Unix.file_descr ->
   (Lwt_unix.file_descr * Lwt_unix.file_descr) option * int
 
-val close_session :
-  (Lwt_unix.file_descr * Lwt_unix.file_descr) option -> unit
+val close_session : int -> unit
+
+(* [safe_waitpid] is intended for waiting on child processes that are
+   expected to terminate by themselves. If the child process has not
+   terminated after a short while then a SIGTERM is sent and if the
+   child process still doesn't terminate then a SIGKILL is sent. *)
+val safe_waitpid : int -> Unix.process_status
 
 (* termInput fdTerm fdInput
    Wait until there is input on at least one file descriptor.

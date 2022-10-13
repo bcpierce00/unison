@@ -181,6 +181,27 @@ let perform_redirections new_stdin new_stdout new_stderr =
   Unix.dup2 newnewstdout Unix.stdout; Unix.close newnewstdout;
   Unix.dup2 newnewstderr Unix.stderr; Unix.close newnewstderr
 
+let rec safe_waitpid pid =
+  let kill_noerr si = try Unix.kill pid si with Unix.Unix_error _ -> () in
+  let t = Unix.gettimeofday () in
+  let rec aux st =
+    match Unix.waitpid [Unix.WNOHANG] pid with
+    | (0, _) ->
+        Unix.sleepf 0.002;
+        let dt = Unix.gettimeofday () -. t in
+        if dt >= 0.5 && st = 0 then begin
+          kill_noerr Sys.(if os_type = "Win32" then sigkill else sigterm);
+          aux 1
+        end else if dt >= 2.0 && st = 1 then begin
+          kill_noerr Sys.sigkill;
+          aux 2
+        end else
+          aux st
+    | (_, r) -> r
+    | exception Unix.Unix_error (EINTR, _, _) -> aux st
+  in
+  aux 0
+
 let term_sessions = Hashtbl.create 3
 
 external win_create_process_pty :
@@ -236,7 +257,10 @@ let fallback_session cmd args new_stdin new_stdout new_stderr =
       | Some fd -> try Unix.dup2 fd Unix.stderr with Unix.Unix_error _ -> ()
     with Unix.Unix_error _ -> ()
   end;
-  (None, System.create_process cmd args new_stdin new_stdout new_stderr)
+  let childPid =
+    System.create_process cmd args new_stdin new_stdout new_stderr in
+  Hashtbl.add term_sessions childPid (fun () -> ignore (safe_waitpid childPid));
+  (None, childPid)
 
 let win_create_session cmd args new_stdin new_stdout new_stderr =
   match win_openpty () with
@@ -254,7 +278,7 @@ let win_create_session cmd args new_stdin new_stdout new_stderr =
       let fdIn = Lwt_unix.of_unix_file_descr masterIn
       and fdOut = Lwt_unix.of_unix_file_descr masterOut in
       let ret = Some (fdIn, fdOut) in
-      Hashtbl.add term_sessions ret
+      Hashtbl.add term_sessions childPid
         (fun () -> finally (fun () -> win_closepty pty)
                            (fun () -> finally (fun () -> Lwt_unix.close fdOut)
                                               (fun () -> Lwt_unix.close fdIn)));
@@ -302,9 +326,10 @@ let unix_create_session cmd args new_stdin new_stdout new_stderr =
           (* Unix.close slaveFd; *)
           let fd = Lwt_unix.of_unix_file_descr masterFd in
           let ret = Some (fd, fd) in
-          Hashtbl.add term_sessions ret
+          Hashtbl.add term_sessions childPid
             (fun () -> safe_close slaveFd;
-                       Lwt_unix.close fd);
+                       finally (fun () -> Lwt_unix.close fd)
+                               (fun () -> ignore (safe_waitpid childPid)));
           (ret, childPid)
       end
 
@@ -313,15 +338,13 @@ let create_session =
   | "Win32" -> win_create_session
   | _       -> unix_create_session
 
-let close_session = function
-  | None -> ()
-  | Some _ as fdopt ->
-      try
-        let cleanup = Hashtbl.find term_sessions fdopt in
-        Hashtbl.remove term_sessions fdopt;
-        cleanup ()
-      with Not_found ->
-        raise (Unix.Unix_error (Unix.EBADF, "Terminal.close_session", ""))
+let close_session pid =
+  try
+    let cleanup = Hashtbl.find term_sessions pid in
+    Hashtbl.remove term_sessions pid;
+    cleanup ()
+  with Not_found ->
+    raise (Unix.Unix_error (Unix.ESRCH, "Terminal.close_session", ""))
 
 let (>>=) = Lwt.bind
 

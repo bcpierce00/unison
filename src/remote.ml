@@ -1665,14 +1665,13 @@ let buildShellConnection onClose shell host userOpt portOpt rootName termInterac
   System.putenv "CYGWIN" "binmode";
   debug (fun ()-> Util.msg "Shell connection: %s (%s)\n"
            shellCmd (String.concat ", " args));
-  let term =
+  let (term, termPid) =
     Util.convertUnixErrorsToFatal "starting shell connection" (fun () ->
     match termInteract with
       None ->
-        ignore (System.create_process shellCmd argsarray i1 o2 Unix.stderr);
-        None
+        (None, System.create_process shellCmd argsarray i1 o2 Unix.stderr)
     | Some callBack ->
-        fst (Terminal.create_session shellCmd argsarray i1 o2 Unix.stderr))
+        Terminal.create_session shellCmd argsarray i1 o2 Unix.stderr)
   in
   Unix.close i1; Unix.close o2;
   let forwardShellStderr fdIn fdOut = function
@@ -1712,7 +1711,10 @@ let buildShellConnection onClose shell host userOpt portOpt rootName termInterac
         fun () -> Lwt.return ""
   in
   let cleanup () =
-    try Terminal.close_session term with Unix.Unix_error _ -> ()
+    if term = None then
+      try ignore (Terminal.safe_waitpid termPid) with Unix.Unix_error _ -> ()
+    else
+      try Terminal.close_session termPid with Unix.Unix_error _ -> ()
   in
   (* With [connReady], we know that shell connection was established (even if
      RPC handshake failed). This hacky way of detecting the connection is used
@@ -1963,7 +1965,7 @@ let openConnectionReply = function
 let openConnectionEnd (i1,i2,o1,o2,s,fdopt,clroot,pid) =
       Unix.close i1; Unix.close o2;
       let cleanup () =
-        try Terminal.close_session fdopt with Unix.Unix_error _ -> ()
+        try Terminal.close_session pid with Unix.Unix_error _ -> ()
       in
       Lwt_unix.run
         (initConnection (onClose clroot cleanup) i2 o1 >>= fun ioServer ->
@@ -1980,9 +1982,7 @@ let openConnectionCancel (i1,i2,o1,o2,s,fdopt,clroot,pid) =
       try Lwt_unix.close i2 with Unix.Unix_error _ -> ();
       try Lwt_unix.close o1 with Unix.Unix_error _ -> ();
       try Unix.close o2 with Unix.Unix_error _ -> ();
-      match fdopt with
-        None   -> ()
-      | Some _ -> (try Terminal.close_session fdopt with Unix.Unix_error _ -> ())
+      try Terminal.close_session pid with Unix.Unix_error _ -> ()
 
 (****************************************************************************)
 (*                     SERVER-MODE COMMAND PROCESSING LOOP                  *)
