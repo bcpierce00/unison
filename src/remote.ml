@@ -2149,6 +2149,31 @@ let is248Exe =
   let exeName = Filename.basename (Sys.executable_name) in
   String.length exeName >= 11 && String.sub exeName 0 11 = "unison-2.48"
 
+let rec accept_retry l =
+  Lwt.catch
+    (fun () -> Lwt_unix.accept l)
+    (function
+     (* Temporary and connection-specific errors *)
+     | Unix.Unix_error (Unix.ECONNABORTED, _, _)
+     | Unix.Unix_error (Unix.EPERM, _, _)  (* Linux firewall *)
+     | Unix.Unix_error
+         (* Resource exhaustion: could be considered temporary *)
+         (Unix.(EMFILE | ENFILE | ENOBUFS | ENOMEM), _, _)
+       (* Linux curiosity: accept(2) may return errors on the new socket *)
+     | Unix.Unix_error (Unix.ENETUNREACH, _, _)
+     | Unix.Unix_error (Unix.EHOSTUNREACH, _, _)
+     | Unix.Unix_error (Unix.ENETDOWN, _, _)
+     | Unix.Unix_error (Unix.EHOSTDOWN, _, _)
+     | Unix.Unix_error (Unix.ETIMEDOUT, _, _) as e ->
+         let errmsg = match e with
+           | Unix.Unix_error (err, _, _) -> Unix.error_message err
+           | _ -> Printexc.to_string e in
+         Util.msg "server: continuing after receiving an error \
+           when accepting client connection: %s\n" errmsg;
+         accept_retry l
+     (* Permanent errors *)
+     | e -> Lwt.fail e)
+
 (* Used by the socket mechanism: Create a socket on portNum and wait
    for a request. Each request is processed by commandLoop. When a
    session finishes, the server waits for another request. *)
@@ -2161,7 +2186,7 @@ let waitOnPort hosts port =
        let rec accept i l =
          match accepting.(i) with
            | None ->
-               let st = Lwt_unix.accept l >>= fun s -> Lwt.return (i, s) in
+               let st = accept_retry l >>= fun s -> Lwt.return (i, s) in
                let () = accepting.(i) <- Some st in
                st
            | Some st -> st
