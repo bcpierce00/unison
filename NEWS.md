@@ -15,8 +15,7 @@ unison uses git history for that, and thus there is no changelog file.
 NOT YET RELEASED
 
   * OCaml >= 4.08 is required to build unison.
-  * unison can be built with (unreleased) OCaml 5 (GUI build not
-    verified because lablgtk does not yet support OCaml 5).
+  * unison can be built with (unreleased) OCaml 5.
   * Change GUI to use GTK3 (via lablgtk3) instead of GTK2 (via lablgtk2)
   * Add support for syncing extended attributes.
   * Add support for syncing ACLs.
@@ -36,7 +35,7 @@ NOT YET RELEASED
       which resulted in the 2.52.1 GUI version failing, in the Windows
       CI build artifacts.  (This does not affect platforms other than
       Windows, and may not affect other Windows builds.)
-  * changes that should not affect behavior
+  * Changes that should not affect behavior
     - Clean up a variety of unmaintained and unused bits, mainly
       build-related.
     - OCaml's Unix library is now extensively used also on
