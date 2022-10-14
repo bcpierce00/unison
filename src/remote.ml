@@ -90,12 +90,26 @@ let catchIoErrors th =
        match e with
          Unix.Unix_error(Unix.ECONNRESET, _, _)
        | Unix.Unix_error(Unix.EPIPE, _, _)
+       | Unix.Unix_error(Unix.ETIMEDOUT, _, _)
+       | Unix.Unix_error(Unix.EACCES, _, _)        (* Linux firewall *)
          (* Windows may also return the following errors... *)
-       | Unix.Unix_error(Unix.EINVAL, _, _)
+       | Unix.Unix_error(Unix.EINVAL, _, _) (* ... and Linux firewall *)
        | Unix.Unix_error(Unix.EUNKNOWNERR (-64), _, _)
                          (* ERROR_NETNAME_DELETED *)
-       | Unix.Unix_error(Unix.EUNKNOWNERR (-233), _, _) ->
+       | Unix.Unix_error(Unix.EUNKNOWNERR (-233), _, _)
                          (* ERROR_PIPE_NOT_CONNECTED *)
+       | Unix.Unix_error(Unix.EUNKNOWNERR (-1236), _, _)
+                         (* ERROR_CONNECTION_ABORTED *)
+         (* The following errors _may_ be temporary but we don't know if
+            they are or for how long they will persist. We also don't have
+            a way to retry and there is no guarantee that the socket remains
+            in a usable state, so treat all these as permanent failures
+            breaking the connection. *)
+       | Unix.Unix_error(Unix.ENETUNREACH, _, _)
+       | Unix.Unix_error(Unix.EHOSTUNREACH, _, _)
+       | Unix.Unix_error(Unix.ENETDOWN, _, _)
+       | Unix.Unix_error(Unix.EHOSTDOWN, _, _)
+       | Unix.Unix_error(Unix.ENETRESET, _, _) ->
          (* Client has closed its end of the connection *)
            lostConnection ()
        | _ ->
@@ -1663,14 +1677,13 @@ let buildShellConnection onClose shell host userOpt portOpt rootName termInterac
   System.putenv "CYGWIN" "binmode";
   debug (fun ()-> Util.msg "Shell connection: %s (%s)\n"
            shellCmd (String.concat ", " args));
-  let term =
+  let (term, termPid) =
     Util.convertUnixErrorsToFatal "starting shell connection" (fun () ->
     match termInteract with
       None ->
-        ignore (System.create_process shellCmd argsarray i1 o2 Unix.stderr);
-        None
+        (None, System.create_process shellCmd argsarray i1 o2 Unix.stderr)
     | Some callBack ->
-        fst (Terminal.create_session shellCmd argsarray i1 o2 Unix.stderr))
+        Terminal.create_session shellCmd argsarray i1 o2 Unix.stderr)
   in
   Unix.close i1; Unix.close o2;
   let forwardShellStderr fdIn fdOut = function
@@ -1710,7 +1723,10 @@ let buildShellConnection onClose shell host userOpt portOpt rootName termInterac
         fun () -> Lwt.return ""
   in
   let cleanup () =
-    try Terminal.close_session term with Unix.Unix_error _ -> ()
+    if term = None then
+      try ignore (Terminal.safe_waitpid termPid) with Unix.Unix_error _ -> ()
+    else
+      try Terminal.close_session termPid with Unix.Unix_error _ -> ()
   in
   (* With [connReady], we know that shell connection was established (even if
      RPC handshake failed). This hacky way of detecting the connection is used
@@ -1961,7 +1977,7 @@ let openConnectionReply = function
 let openConnectionEnd (i1,i2,o1,o2,s,fdopt,clroot,pid) =
       Unix.close i1; Unix.close o2;
       let cleanup () =
-        try Terminal.close_session fdopt with Unix.Unix_error _ -> ()
+        try Terminal.close_session pid with Unix.Unix_error _ -> ()
       in
       Lwt_unix.run
         (initConnection (onClose clroot cleanup) i2 o1 >>= fun ioServer ->
@@ -1978,9 +1994,7 @@ let openConnectionCancel (i1,i2,o1,o2,s,fdopt,clroot,pid) =
       try Lwt_unix.close i2 with Unix.Unix_error _ -> ();
       try Lwt_unix.close o1 with Unix.Unix_error _ -> ();
       try Unix.close o2 with Unix.Unix_error _ -> ();
-      match fdopt with
-        None   -> ()
-      | Some _ -> (try Terminal.close_session fdopt with Unix.Unix_error _ -> ())
+      try Terminal.close_session pid with Unix.Unix_error _ -> ()
 
 (****************************************************************************)
 (*                     SERVER-MODE COMMAND PROCESSING LOOP                  *)
@@ -2135,6 +2149,31 @@ let is248Exe =
   let exeName = Filename.basename (Sys.executable_name) in
   String.length exeName >= 11 && String.sub exeName 0 11 = "unison-2.48"
 
+let rec accept_retry l =
+  Lwt.catch
+    (fun () -> Lwt_unix.accept l)
+    (function
+     (* Temporary and connection-specific errors *)
+     | Unix.Unix_error (Unix.ECONNABORTED, _, _)
+     | Unix.Unix_error (Unix.EPERM, _, _)  (* Linux firewall *)
+     | Unix.Unix_error
+         (* Resource exhaustion: could be considered temporary *)
+         (Unix.(EMFILE | ENFILE | ENOBUFS | ENOMEM), _, _)
+       (* Linux curiosity: accept(2) may return errors on the new socket *)
+     | Unix.Unix_error (Unix.ENETUNREACH, _, _)
+     | Unix.Unix_error (Unix.EHOSTUNREACH, _, _)
+     | Unix.Unix_error (Unix.ENETDOWN, _, _)
+     | Unix.Unix_error (Unix.EHOSTDOWN, _, _)
+     | Unix.Unix_error (Unix.ETIMEDOUT, _, _) as e ->
+         let errmsg = match e with
+           | Unix.Unix_error (err, _, _) -> Unix.error_message err
+           | _ -> Printexc.to_string e in
+         Util.msg "server: continuing after receiving an error \
+           when accepting client connection: %s\n" errmsg;
+         accept_retry l
+     (* Permanent errors *)
+     | e -> Lwt.fail e)
+
 (* Used by the socket mechanism: Create a socket on portNum and wait
    for a request. Each request is processed by commandLoop. When a
    session finishes, the server waits for another request. *)
@@ -2147,7 +2186,7 @@ let waitOnPort hosts port =
        let rec accept i l =
          match accepting.(i) with
            | None ->
-               let st = Lwt_unix.accept l >>= fun s -> Lwt.return (i, s) in
+               let st = accept_retry l >>= fun s -> Lwt.return (i, s) in
                let () = accepting.(i) <- Some st in
                st
            | Some st -> st
