@@ -90,14 +90,26 @@ let catchIoErrors th =
        match e with
          Unix.Unix_error(Unix.ECONNRESET, _, _)
        | Unix.Unix_error(Unix.EPIPE, _, _)
+       | Unix.Unix_error(Unix.ETIMEDOUT, _, _)
+       | Unix.Unix_error(Unix.EACCES, _, _)        (* Linux firewall *)
          (* Windows may also return the following errors... *)
-       | Unix.Unix_error(Unix.EINVAL, _, _)
+       | Unix.Unix_error(Unix.EINVAL, _, _) (* ... and Linux firewall *)
        | Unix.Unix_error(Unix.EUNKNOWNERR (-64), _, _)
                          (* ERROR_NETNAME_DELETED *)
        | Unix.Unix_error(Unix.EUNKNOWNERR (-233), _, _)
                          (* ERROR_PIPE_NOT_CONNECTED *)
-       | Unix.Unix_error(Unix.EUNKNOWNERR (-1236), _, _) ->
+       | Unix.Unix_error(Unix.EUNKNOWNERR (-1236), _, _)
                          (* ERROR_CONNECTION_ABORTED *)
+         (* The following errors _may_ be temporary but we don't know if
+            they are or for how long they will persist. We also don't have
+            a way to retry and there is no guarantee that the socket remains
+            in a usable state, so treat all these as permanent failures
+            breaking the connection. *)
+       | Unix.Unix_error(Unix.ENETUNREACH, _, _)
+       | Unix.Unix_error(Unix.EHOSTUNREACH, _, _)
+       | Unix.Unix_error(Unix.ENETDOWN, _, _)
+       | Unix.Unix_error(Unix.EHOSTDOWN, _, _)
+       | Unix.Unix_error(Unix.ENETRESET, _, _) ->
          (* Client has closed its end of the connection *)
            lostConnection ()
        | _ ->
