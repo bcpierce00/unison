@@ -1266,7 +1266,6 @@ uicommon.cmo : \
     osx.cmi \
     os.cmi \
     name.cmi \
-    lwt/lwt_util.cmi \
     lwt/lwt_unix.cmi \
     lwt/lwt.cmi \
     globals.cmi \
@@ -1299,7 +1298,6 @@ uicommon.cmx : \
     osx.cmx \
     os.cmx \
     name.cmx \
-    lwt/lwt_util.cmx \
     lwt/lwt_unix.cmx \
     lwt/lwt.cmx \
     globals.cmx \

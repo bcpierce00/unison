@@ -439,27 +439,73 @@ let addIgnorePattern theRegExp =
                           Update propagation
  **********************************************************************)
 
+(* (For context: the threads in question are all cooperating Lwt threads.
+   These are not OS threads or parallel running domains. There is no
+   preemption and only a single thread is executing at any time.)
+
+   There is a limit regulating how many threads can be run concurrently in
+   the [Transport] module. An attempt is made to not start threads that will
+   not be able to run due to this limit. This delayed starting is done for
+   two reasons. First, to make the cleanup in case of an uncaught exception
+   easier: if the thread was never run then there is nothing to clean up.
+   Second, even though the threads themselves are extremely lightweight,
+   they still consume some resources and this will add up when the number
+   of threads grows to hundreds of thousands and millions.
+
+   Not starting up all threads at once and allowing finished threads to
+   be collected by GC as soon as possible can potentially reduce the memory
+   requirement by gigabytes. (This is a reference to the old implementation
+   that started all threads in one go and kept them all around until all
+   were completed. This approach could result in running out of memory when
+   syncing large number of updates.) *)
+
 let transportStart () = Transport.logStart ()
 
 let transportFinish () = Transport.logFinish ()
 
 let transportItems items pRiThisRound makeAction =
+  let waiter = Lwt.wait () in
+  let outstanding = ref 0 in
+  let starting () = incr outstanding in
+  let completed () =
+    decr outstanding;
+    if !outstanding = 0 then begin
+      try Lwt.wakeup waiter () with Invalid_argument _ -> ()
+    end
+  in
+  let failed e =
+    try Lwt.wakeup_exn waiter e with Invalid_argument _ -> ()
+  in
+  let waitAllCompleted () =
+    if !outstanding = 0 then Lwt.return () else waiter
+  in
+
   let im = Array.length items in
-  let rec loop i actions pRiThisRound =
+  let idx = ref 0 in
+  let stopDispense () = idx := im in
+  let makeAction' i item =
+    Lwt.try_bind
+      (fun () -> starting (); makeAction i item)
+      (fun () -> completed (); Lwt.return ())
+      (fun ex -> stopDispense (); failed ex; Lwt.return ())
+  in
+  let rec dispenseAction () =
+    let i = !idx in
     if i < im then begin
       let item = items.(i) in
-      let actions =
-        if pRiThisRound item then
-          makeAction i item :: actions
-        else
-          actions
-      in
-      loop (i + 1) actions pRiThisRound
+      incr idx;
+      if pRiThisRound item then
+        Some (fun () -> makeAction' i item)
+      else
+        dispenseAction ()
     end else
-      actions
+      None
   in
-  let actions = loop 0 [] pRiThisRound in
-  Lwt_unix.run (Lwt_util.join actions)
+
+  starting (); (* Count the dispense loop as one of the tasks to complete *)
+  Transport.run dispenseAction;
+  completed ();
+  Lwt_unix.run (waitAllCompleted ())
 
 (**********************************************************************
                    Profile and command-line parsing

@@ -48,7 +48,37 @@ let maxthreads =
       when file content streaming is desactivated and 1000 threads \
       when it is activated.")
 
-let actionReg = Lwt_util.make_region 50
+let run dispenseTask =
+  let runConcurrent limit dispenseTask =
+    let avail = ref limit in
+    let rec runTask thr =
+      Lwt.try_bind thr
+        (fun () -> nextTask (); Lwt.return ())
+        (fun _ -> nextTask (); assert false)
+        (* It is a programming error for an exception to reach this far. *)
+      |> ignore
+    and nextTask () =
+       match dispenseTask () with
+       | None -> incr avail
+       | Some thr -> runTask thr
+    in
+    let rec fillPool () =
+      match dispenseTask () with
+      | None -> ()
+      | Some thr -> decr avail; runTask thr; if !avail > 0 then fillPool ()
+    in
+    fillPool ()
+  in
+  (* When streaming, we can transfer many file simultaneously:
+     as the contents of only one file is transferred in one direction
+     at any time, little resource is consumed this way. *)
+  let limit =
+    let n = Prefs.read maxthreads in
+    if n > 0 then n else
+    if Prefs.read Remote.streamingActivated then 1000 else 20
+  in
+  Lwt_util.resize_region Files.copyReg limit;
+  runConcurrent limit dispenseTask
 
 (* Logging for a thread: write a message before and a message after the
    execution of the thread. *)
@@ -80,17 +110,6 @@ let logLwtNumbered (lwtDescription: string) (lwtShortDescription: string)
 
 let doAction
       fromRoot fromPath fromContents toRoot toPath toContents notDefault id =
-  (* When streaming, we can transfer many file simultaneously:
-     as the contents of only one file is transferred in one direction
-     at any time, little resource is consumed this way. *)
-  let limit =
-    let n = Prefs.read maxthreads in
-    if n > 0 then n else
-    if Prefs.read Remote.streamingActivated then 1000 else 20
-  in
-  Lwt_util.resize_region actionReg limit;
-  Lwt_util.resize_region Files.copyReg limit;
-  Lwt_util.run_in_region actionReg 1 (fun () ->
     if not !Trace.sendLogMsgsToStderr then
       Trace.statusDetail (Path.toString toPath);
     Remote.Thread.unwindProtect (fun () ->
@@ -139,7 +158,7 @@ let doAction
       (fun e -> Trace.log
           (Printf.sprintf
              "Failed: %s\n" (Util.printException e));
-        return ()))
+        return ())
 
 let propagate root1 root2 reconItem id showMergeFn =
   let path = reconItem.path1 in
