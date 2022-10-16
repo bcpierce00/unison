@@ -845,11 +845,13 @@ let doTransport reconItemList =
   in
   Uutil.setProgressPrinter showProgress;
 
-  Transport.logStart ();
+  Uicommon.transportStart ();
   let fFailedPaths = ref [] in
   let fPartialPaths = ref [] in
-  let uiWrapper i item f =
-    Lwt.try_bind f
+  let uiWrapper i item =
+    Lwt.try_bind
+      (fun () -> Transport.transportItem item.ri
+                   (Uutil.File.ofLine i) verifyMerge)
       (fun () ->
          if partiallyProblematic item.ri && not (problematic item.ri) then
            fPartialPaths := item.ri.path1 :: !fPartialPaths;
@@ -870,30 +872,9 @@ let doTransport reconItemList =
             return ()
         | _ ->
             fail e) in
-  let im = Array.length items in
-  let rec loop i actions pRiThisRound =
-    if i < im then begin
-      let item = items.(i) in
-      let actions =
-        if pRiThisRound item.ri then
-          uiWrapper i item
-            (fun () -> Transport.transportItem item.ri
-                         (Uutil.File.ofLine i) verifyMerge)
-          :: actions
-        else
-          actions
-      in
-      loop (i + 1) actions pRiThisRound
-    end else
-      actions
-  in
-  Lwt_unix.run
-    (let actions = loop 0 [] (fun ri -> not (Common.isDeletion ri)) in
-     Lwt_util.join actions);
-  Lwt_unix.run
-    (let actions = loop 0 [] Common.isDeletion in
-     Lwt_util.join actions);
-  Transport.logFinish ();
+  Uicommon.transportItems items (fun {ri; _} -> not (Common.isDeletion ri)) uiWrapper;
+  Uicommon.transportItems items (fun {ri; _} -> Common.isDeletion ri) uiWrapper;
+  Uicommon.transportFinish ();
 
   Uutil.setProgressPrinter (fun _ _ _ -> ());
   Util.set_infos "";

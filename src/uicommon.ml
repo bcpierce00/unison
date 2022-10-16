@@ -436,6 +436,32 @@ let addIgnorePattern theRegExp =
   Lwt_unix.run (Globals.propagatePrefs ())
 
 (**********************************************************************
+                          Update propagation
+ **********************************************************************)
+
+let transportStart () = Transport.logStart ()
+
+let transportFinish () = Transport.logFinish ()
+
+let transportItems items pRiThisRound makeAction =
+  let im = Array.length items in
+  let rec loop i actions pRiThisRound =
+    if i < im then begin
+      let item = items.(i) in
+      let actions =
+        if pRiThisRound item then
+          makeAction i item :: actions
+        else
+          actions
+      in
+      loop (i + 1) actions pRiThisRound
+    end else
+      actions
+  in
+  let actions = loop 0 [] pRiThisRound in
+  Lwt_unix.run (Lwt_util.join actions)
+
+(**********************************************************************
                    Profile and command-line parsing
  **********************************************************************)
 

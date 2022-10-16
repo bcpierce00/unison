@@ -3634,7 +3634,7 @@ let createToplevelWindow () =
       make_busy toplevelWindow;
 
       Trace.status "Propagating changes";
-      Transport.logStart ();
+      Uicommon.transportStart ();
       let totalLength =
         Array.fold_left
           (fun l si ->
@@ -3648,17 +3648,10 @@ let createToplevelWindow () =
           Uutil.Filesize.zero !theState in
       initGlobalProgress totalLength;
       let t = Trace.startTimer "Propagating changes" in
-      let im = Array.length !theState in
-      let rec loop i actions pRiThisRound =
-        if i < im then begin
-          let theSI = !theState.(i) in
-          let textDetailed = ref None in
-          let action =
+      let uiWrapper i theSI =
             match theSI.whatHappened with
               None ->
-                if not (pRiThisRound theSI.ri) then
-                  return ()
-                else
+                  let textDetailed = ref None in
                   catch (fun () ->
                            Transport.transportItem
                              theSI.ri (Uutil.File.ofLine i)
@@ -3693,33 +3686,15 @@ let createToplevelWindow () =
                         showProgress (Uutil.File.ofLine i) rem "done";
                       theSI.whatHappened <- Some (res, !textDetailed);
                   fastRedisplay i;
-(* JV (7/09): It does not seem that useful to me to scroll the display
-   to make the first unfinished item visible.  The scrolling is way
-   too fast, and it makes it impossible to browse the list. *)
-(*
-                  sync_action :=
-                    Some
-                      (fun () ->
-                         makeFirstUnfinishedVisible pRiThisRound;
-                         sync_action := None);
-*)
                   gtk_sync false;
                   return ())
             | Some _ ->
                 return () (* Already processed this one (e.g. merged it) *)
-          in
-          loop (i + 1) (action :: actions) pRiThisRound
-        end else
-          actions
       in
       startStats ();
-      Lwt_unix.run
-        (let actions = loop 0 [] (fun ri -> not (Common.isDeletion ri)) in
-         Lwt_util.join actions);
-      Lwt_unix.run
-        (let actions = loop 0 [] Common.isDeletion in
-         Lwt_util.join actions);
-      Transport.logFinish ();
+      Uicommon.transportItems !theState (fun {ri; _} -> not (Common.isDeletion ri)) uiWrapper;
+      Uicommon.transportItems !theState (fun {ri; _} -> Common.isDeletion ri) uiWrapper;
+      Uicommon.transportFinish ();
       Trace.showTimer t;
       commitUpdates ();
       stopStats ();
