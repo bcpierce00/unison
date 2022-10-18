@@ -604,6 +604,35 @@ let registerConnCleanup conn cleanup =
 
 (****)
 
+(* Implemented as a record to avoid polluting [Remote] namespace. If
+   the number and complexity of functions grows in future then it's
+   propably a good idea to extract this code into a separate module. *)
+type ('a, 'b, 'c) resourceC =
+  { register : 'a -> 'a; release : 'a -> 'b; release_noerr : 'a -> 'c }
+let resourceWithConnCleanup close close_noerr =
+  let h = Hashtbl.create 17 in
+  let closeAll () =
+    Hashtbl.iter (fun x _ -> ignore (close_noerr x)) h;
+    Hashtbl.clear h
+  in
+  at_conn_close closeAll;
+  let register x = Hashtbl.add h x true; x in
+  let release x = Hashtbl.remove h x; close x in
+  let release_noerr x = Hashtbl.remove h x; close_noerr x in
+  { register; release; release_noerr }
+
+let lwtRegionWithConnCleanup sz =
+  let reg = ref (Lwt_util.make_region sz) in
+  let resetReg () =
+    Lwt_util.purge_region !reg;
+    (* The remaining threads should be collected by GC *)
+    reg := Lwt_util.make_region sz
+  in
+  at_conn_close resetReg;
+  reg
+
+(****)
+
 (* XXX *)
 module Thread = struct
 
@@ -959,6 +988,9 @@ let newMsgId () = incr ids; if !ids = hugeint then ids := 2; !ids
 
 (* Threads waiting for a response from the other side *)
 let receivers = ref MsgIdMap.empty
+let resetReceivers () =
+  receivers := MsgIdMap.empty
+let () = at_conn_close resetReceivers
 
 let find_receiver id =
   let thr = MsgIdMap.find id !receivers in
@@ -1114,11 +1146,7 @@ let registerRootCmdWithConnection (cmdName : string)
     | _  -> let conn = ClientConn.ofRoot localRoot in
             client0 conn args
 
-let streamReg = ref (Lwt_util.make_region 1)
-let resetStreamReg () =
-  (* The remaining threads should be collected by GC *)
-  streamReg := Lwt_util.make_region 1
-let () = at_conn_close resetStreamReg
+let streamReg = lwtRegionWithConnCleanup 1
 
 let streamingActivated =
   Prefs.createBool "stream" true

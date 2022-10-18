@@ -603,7 +603,7 @@ let rec normalizeProps propsFrom propsTo =
 
 (* ------------------------------------------------------------ *)
 
-let copyReg = Lwt_util.make_region 50
+let copyReg = Remote.lwtRegionWithConnCleanup 50
 
 let copy
       update
@@ -661,7 +661,7 @@ let copy
       (fun () ->
          match f with
            Update.ArchiveFile (desc, fp, stamp, ress) ->
-             Lwt_util.run_in_region copyReg 1 (fun () ->
+             Lwt_util.run_in_region !copyReg 1 (fun () ->
                Abort.check id;
                let stmp =
                  if Update.useFastChecking () then Some stamp else None in
@@ -675,14 +675,14 @@ let copy
                                       fp, Fileinfo.stamp info, ress'),
                   []))
          | Update.ArchiveSymlink l ->
-             Lwt_util.run_in_region copyReg 1 (fun () ->
+             Lwt_util.run_in_region !copyReg 1 (fun () ->
                debug (fun() -> Util.msg "Making symlink %s/%s -> %s\n"
                                  (root2string rootTo) (Path.toString pTo) l);
                Abort.check id;
                makeSymlink rootTo (workingDir, pTo, l) >>= fun () ->
                Lwt.return (f, []))
          | Update.ArchiveDir (desc, children) ->
-             Lwt_util.run_in_region copyReg 1 (fun () ->
+             Lwt_util.run_in_region !copyReg 1 (fun () ->
                debug (fun() -> Util.msg "Creating directory %s/%s\n"
                  (root2string rootTo) (Path.toString pTo));
                mkdirOnRoot rootTo (workingDir, pTo))
@@ -721,7 +721,7 @@ let copy
                Lwt.return ()
              end >>= fun () ->
              Copy.readPropsExtData rootFrom pFrom desc >>= fun desc' ->
-             Lwt_util.run_in_region copyReg 1 (fun () ->
+             Lwt_util.run_in_region !copyReg 1 (fun () ->
                (* We use the actual file permissions so as to preserve
                   inherited bits *)
                setDirPropOnRoot rootTo

@@ -77,7 +77,7 @@ let run dispenseTask =
     if n > 0 then n else
     if Prefs.read Remote.streamingActivated then 1000 else 20
   in
-  Lwt_util.resize_region Files.copyReg limit;
+  Lwt_util.resize_region !Files.copyReg limit;
   runConcurrent limit dispenseTask
 
 (* Logging for a thread: write a message before and a message after the

@@ -102,6 +102,9 @@ val open_process_in : string -> in_channel
 val open_process_out : string -> out_channel
 val open_process_full :
   string -> in_channel * out_channel * in_channel
+val process_in_pid : in_channel -> int
+val process_out_pid : out_channel -> int
+val process_full_pid : in_channel * out_channel * in_channel -> int
 val close_process_in : in_channel -> Unix.process_status
 val close_process_out : out_channel -> Unix.process_status
 val close_process_full :

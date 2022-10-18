@@ -167,3 +167,30 @@ val registerStreamCmd :
    when a lost connection is detected, before any exception indicating lost
    connection is raised. *)
 val at_conn_close : ?only_server:bool -> (unit -> unit) -> unit
+
+(* Register resources to be cleaned up when the connection between client and
+   server closes (normally or exceptionally). This cleanup is additionally run
+   when "closing" a local sync when there is no actual connection.
+
+   Closing the resources is still the responsibility of the code opening the
+   resources but it is not always possible to run the resource cleanup code
+   (due to an Lwt thread being stopped, for example). In those cases the
+   registered resources are cleaned up when the connection is closed, as a
+   last resort.
+
+   The returned functions must be used to track the resources registered for
+   cleanup. *)
+type ('a, 'b, 'c) resourceC =
+  { register : 'a -> 'a;       (* Register an opened resource for cleanup *)
+    release : 'a -> 'b;        (* Unregister and close the resource normally *)
+    release_noerr : 'a -> 'c } (* Same as above; don't raise exceptions *)
+
+val resourceWithConnCleanup :
+     ('a -> 'b) (* Function to close the resource normally *)
+  -> ('a -> 'c) (* Function to close the resource, don't raise exceptions *)
+  -> ('a, 'b, 'c) resourceC (* Functions to track resources for cleanup *)
+
+(* Make an [Lwt_util.region] which is automatically purged and reset when
+   the connection between client and server closes. This cleanup is also
+   run when "closing" a local sync when there is no actual connection. *)
+val lwtRegionWithConnCleanup : int -> Lwt_util.region ref

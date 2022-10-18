@@ -16,7 +16,7 @@ val delete :
 
 (* Region used for the copying. Exported to be correctly set in transport.ml *)
 (* to the maximum number of threads                                          *)
-val copyReg : Lwt_util.region
+val copyReg : Lwt_util.region ref
 
 (* Copy a path in one replica to another path in a second replica.  The copy *)
 (* is performed atomically (or as close to atomically as the os will         *)
