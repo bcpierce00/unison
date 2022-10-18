@@ -396,6 +396,12 @@ let setConnectionVersion conn ver =
 
 let connectionVersion conn = conn.version
 
+let connEq conn conn' =
+  conn.inputBuffer.channel = conn'.inputBuffer.channel
+    && conn.outputBuffer.channel = conn'.outputBuffer.channel
+
+let connNeq conn conn' = not (connEq conn conn')
+
 (* Send message [l] *)
 let dump conn l =
   performOutput
@@ -436,9 +442,117 @@ let enableFlowControl conn isServer =
 
 (****)
 
-(* Initialize the connection *)
-let setupIO isServer inCh outCh =
-  makeConnection isServer inCh outCh
+let connectionCheck = ref None
+
+let checkConnection ioServer =
+  connectionCheck := Some ioServer;
+  (* Poke on the socket to trigger an error if connection has been lost. *)
+  Lwt_unix.run (
+    (if (Util.osType = `Win32) then Lwt.return 0 else
+    Lwt_unix.read ioServer.inputBuffer.channel ioServer.inputBuffer.buffer 0 0)
+    (* Try to make sure connection cleanup, if necessary, has finished
+       before returning.
+       Since there is no way to reliably detect when other threads have
+       finished, we just yield a bit (the same comments apply as in
+       commandLoop). *)
+    >>= fun _ ->
+    let rec wait n =
+      if n = 0 then Lwt.return () else begin
+        Lwt_unix.yield () >>= fun () ->
+        wait (n - 1)
+      end
+    in
+    wait 10);
+  connectionCheck := None
+
+let isConnectionCheck conn =
+  match !connectionCheck with
+  | None -> false
+  | Some conn' -> connEq conn conn'
+
+module ClientConn = struct
+  let connectionsByRoots = ref []
+  let connectionsByClroots = ref []
+
+  let listReplace v l = v :: Safelist.remove_assoc (fst v) l
+
+  let register clroot root conn =
+    connectionsByClroots :=
+      listReplace (clroot, (root, conn)) !connectionsByClroots;
+    connectionsByRoots := listReplace (root, conn) !connectionsByRoots
+
+  let unregister conn =
+    connectionsByRoots := Safelist.filter (fun (_, c) -> connNeq conn c) !connectionsByRoots;
+    connectionsByClroots := Safelist.filter (fun (_, (_, c)) -> connNeq conn c) !connectionsByClroots
+
+  let ofHost host =
+    try snd (Safelist.find (fun ((h, _), _) -> host = h) !connectionsByRoots)
+    with Not_found ->
+      raise (Util.Fatal "No connection")
+
+  let ofRoot root =
+    try Safelist.assoc root !connectionsByRoots
+    with Not_found ->
+      raise (Util.Fatal "No connection with the server")
+
+  let canonRootOfClroot clroot =
+    try
+      let (root, _) = Safelist.assoc clroot !connectionsByClroots in
+      Some root
+    with Not_found ->
+      None
+
+  let ofRootConncheck root =
+    try
+      let ioServer = Safelist.assoc root !connectionsByRoots in
+      checkConnection ioServer;
+      Some (Safelist.assoc root !connectionsByRoots)
+    with Not_found ->
+      None
+
+  let ofClrootConncheck clroot =
+    try
+      let (_, ioServer) = Safelist.assoc clroot !connectionsByClroots in
+      checkConnection ioServer;
+      let (_, ioServer) = Safelist.assoc clroot !connectionsByClroots in
+      Some ioServer
+    with Not_found ->
+      None
+
+end (* module ClientConn *)
+
+let connectionOfRoot root = ClientConn.ofRoot root
+
+(****)
+
+let atCloseHandlers = ref []
+
+let at_conn_close ?(only_server = false) f =
+  atCloseHandlers := (only_server, f) :: !atCloseHandlers
+
+let runConnCloseHandlers isServer =
+  Safelist.iter (fun (only_server, f) ->
+    if not only_server || isServer then f ()) !atCloseHandlers
+
+let atConnCloseHandlers = ref []
+
+let at_conn_close' conn f =
+  atConnCloseHandlers := (conn, f) :: !atConnCloseHandlers
+
+let runConnCloseHandlers' conn =
+  atConnCloseHandlers := Safelist.filter (fun (c, f) ->
+    if connEq c conn then (f (); false) else true) !atConnCloseHandlers
+
+let clientConnClose conn =
+  ClientConn.unregister conn;
+  runConnCloseHandlers' conn
+
+let registerConnCleanup conn cleanup =
+  match cleanup with
+  | None -> ()
+  | Some f -> at_conn_close' conn f
+
+(****)
 
 (* XXX *)
 module Thread = struct
@@ -619,39 +733,6 @@ let addversionno =
      ^ "multiple binaries for different versions of unison to coexist "
      ^ "conveniently on the same server: whichever version is run "
      ^ "on the client, the same version will be selected on the server.")
-
-(* List containing the connected hosts and the file descriptors of
-   the communication. *)
-let connectionsByHosts = ref []
-
-(* Gets the Read/Write file descriptors for a host;
-   the connection must have been set up by canonizeRoot before calling *)
-let hostConnection host =
-  try Safelist.assoc host !connectionsByHosts
-  with Not_found ->
-    raise(Util.Fatal "Remote.hostConnection")
-
-(* connectedHosts is a list of command-line roots and their corresponding
-   canonical host names.
-   Local command-line roots are not in the list.
-   Although there can only be one remote host per sync, it's possible
-   connectedHosts to hold more than one hosts if more than one sync is
-   performed.
-   It's also possible for there to be two connections open for the
-   same canonical root.
-*)
-let connectedHosts = ref []
-
-(****)
-
-let atCloseHandlers = ref []
-
-let at_conn_close ?(only_server = false) f =
-  atCloseHandlers := (only_server, f) :: !atCloseHandlers
-
-let runConnCloseHandlers isServer =
-  Safelist.iter (fun (only_server, f) ->
-    if not only_server || isServer then f ()) !atCloseHandlers
 
 (**********************************************************************
                        CLIENT/SERVER PROTOCOLS
@@ -954,7 +1035,7 @@ let registerHostCmd cmdName ?(convV0=convV0_id_pair) mArg mRet cmd =
   let client0 =
     registerServerCmd cmdName ~convV0 mArg mRet serverSide in
   let client host args =
-    let conn = hostConnection host in
+    let conn = ClientConn.ofHost (Common.Remote host) in
     client0 conn args in
   (* Return a function that runs either the proxy or the local version,
      depending on whether the call is to the local host or a remote one *)
@@ -967,7 +1048,6 @@ let hostOfRoot root =
   match root with
     (Common.Local, _)       -> ""
   | (Common.Remote host, _) -> host
-let connectionOfRoot root = hostConnection (hostOfRoot root)
 
 (* RegisterRootCmd is like registerHostCmd but it indexes connections by
    root instead of host. *)
@@ -983,10 +1063,10 @@ let registerRootCmdWithConnection (cmdName : string)
   (* Return a function that runs either the proxy or the local version,
      depending on whether the call is to the local host or a remote one *)
   fun localRoot remoteRoot args ->
-    match (hostOfRoot localRoot) with
-      "" -> let conn = hostConnection (hostOfRoot remoteRoot) in
+    match (fst localRoot) with
+    | Common.Local -> let conn = ClientConn.ofRoot remoteRoot in
             cmd conn args
-    | _  -> let conn = hostConnection (hostOfRoot localRoot) in
+    | _  -> let conn = ClientConn.ofRoot localRoot in
             client0 conn args
 
 let streamReg = ref (Lwt_util.make_region 1)
@@ -1435,8 +1515,8 @@ let negociateFlowControl conn =
 
 (****)
 
-let initConnection ?(connReady=fun () -> ()) onClose in_ch out_ch =
-  let conn = setupIO false in_ch out_ch in
+let initConnection ?(connReady=fun () -> ()) ?cleanup in_ch out_ch =
+  let conn = makeConnection false in_ch out_ch in
   let with_timeout t =
     Lwt.choose [t;
       Lwt_unix.sleep 120. >>= fun () ->
@@ -1448,13 +1528,16 @@ let initConnection ?(connReady=fun () -> ()) onClose in_ch out_ch =
     checkHeader conn >>=
     checkServerUpgrade conn >>=
     checkServerVersion conn) >>= fun () ->
+  registerConnCleanup conn cleanup;
   (* From this moment forward, the RPC version has been selected. All
      communication must now adhere to that version's specification. *)
   enableFlowControl conn false >>= (fun () ->
   Lwt.ignore_result (Lwt.catch
     (fun () -> receive conn)
     (function
-     | Util.Fatal "Lost connection with the server" as e -> onClose e
+     | Util.Fatal "Lost connection with the server" as e ->
+         clientConnClose conn;
+         if isConnectionCheck conn then Lwt.return () else Lwt.fail e
      | e -> Lwt.fail e
     ));
   negociateFlowControl conn;
@@ -1620,11 +1703,11 @@ let buildListenSocket hosts port =
   | s ->
       Lwt.return (Safelist.map (function None -> assert false | Some x -> x) s)
 
-let buildSocketConnection onClose host port =
+let buildSocketConnection host port =
   buildConnectSocket host port >>= fun socket ->
-  initConnection (onClose (fun () -> ())) socket socket
+  initConnection socket socket
 
-let buildShellConnection onClose shell host userOpt portOpt rootName termInteract =
+let buildShellConnection shell host userOpt portOpt rootName termInteract =
   let remoteCmd =
     (if Prefs.read serverCmd="" then Uutil.myName
      else Prefs.read serverCmd)
@@ -1736,7 +1819,7 @@ let buildShellConnection onClose shell host userOpt portOpt rootName termInterac
      output is produced, might still end up in GUI (but this is very unlikely;
      it is more likely that the same error caused connection to be dropped). *)
   Lwt.catch
-    (fun () -> initConnection ~connReady (onClose cleanup) i2 o1)
+    (fun () -> initConnection ~connReady ~cleanup i2 o1)
     (fun e ->
       Lwt.catch
         (fun () -> getTermErr () >>= fun s ->
@@ -1763,95 +1846,35 @@ let canonize clroot = (* connection for clroot must have been set up already *)
     Clroot.ConnectLocal s ->
       (Common.Local, canonizeLocally s)
   | _ ->
-      match
-        try
-          Some (Safelist.assoc clroot !connectedHosts)
-        with Not_found ->
-          None
-      with
+      match ClientConn.canonRootOfClroot clroot with
         None                -> raise (Util.Fatal "Remote.canonize")
-      | Some (h, fspath, _) -> (Common.Remote h, fspath)
-
-let listReplace v l = v :: Safelist.remove_assoc (fst v) l
-
-let connectionCheck = ref ""
-
-let checkConnection host ioServer =
-  connectionCheck := host;
-  (* Poke on the socket to trigger an error if connection has been lost. *)
-  Lwt_unix.run (
-    (if (Util.osType = `Win32) then Lwt.return 0 else
-    Lwt_unix.read ioServer.inputBuffer.channel ioServer.inputBuffer.buffer 0 0)
-    (* Try to make sure connection cleanup, if necessary, has finished
-       before returning.
-       Since there is no way to reliably detect when other threads have
-       finished, we just yield a bit (the same comments apply as in
-       commandLoop). *)
-    >>= fun _ ->
-    let rec wait n =
-      if n = 0 then Lwt.return () else begin
-        Lwt_unix.yield () >>= fun () ->
-        wait (n - 1)
-      end
-    in
-    wait 10);
-  connectionCheck := ""
-
-let rec hostFspath clroot =
-  try
-    let (host, _, ioServer) = Safelist.assoc clroot !connectedHosts in
-    checkConnection host ioServer;
-    let (_, _, ioServer) = Safelist.assoc clroot !connectedHosts in
-    Some (Lwt.return ioServer)
-  with Not_found ->
-    None
+      | Some root -> root
 
 let isRootConnected = function
   | (Common.Local, _) -> true
-  | (Common.Remote host, _) -> begin
-      try
-        let ioServer = Safelist.assoc host !connectionsByHosts in
-        checkConnection host ioServer;
-        let _ = Safelist.assoc host !connectionsByHosts in
-        true
-      with Not_found ->
-        false
-    end
-
-let onClose clroot cleanup e =
-  try
-    let (host, _, _) = Safelist.assoc clroot !connectedHosts in
-    connectedHosts := Safelist.remove_assoc clroot !connectedHosts;
-    connectionsByHosts := Safelist.remove_assoc host !connectionsByHosts;
-    cleanup ();
-    if !connectionCheck = host then Lwt.return ()
-    else Lwt.fail e
-  with Not_found ->
-    if !connectionCheck = "" then Lwt.fail e
-    else Lwt.return ()
+  | (Common.Remote _, _) as root -> ClientConn.ofRootConncheck root <> None
 
 let canonizeRoot rootName clroot termInteract =
   let finish ioServer s =
     (* We need to always compute the fspath as it may have changed
        due to profile configuration changes *)
     canonizeOnServer ioServer s >>= (fun (host, fspath) ->
-    connectedHosts :=
-      listReplace (clroot, (host, fspath, ioServer)) !connectedHosts;
-    connectionsByHosts := listReplace (host, ioServer) !connectionsByHosts;
-    Lwt.return (Common.Remote host,fspath)) in
+    let root = (Common.Remote host, fspath) in
+    ClientConn.register clroot root ioServer;
+    Lwt.return root) in
   match clroot with
     Clroot.ConnectLocal s ->
       Lwt.return (Common.Local, canonizeLocally s)
   | Clroot.ConnectBySocket(host,port,s) ->
-      begin match hostFspath clroot with
-        Some x -> x
-      | None   -> buildSocketConnection (onClose clroot) host port
+      begin match ClientConn.ofClrootConncheck clroot with
+      | Some x -> Lwt.return x
+      | None   -> buildSocketConnection host port
       end >>= fun ioServer ->
       finish ioServer s
   | Clroot.ConnectByShell(shell,host,userOpt,portOpt,s) ->
-      begin match hostFspath clroot with
-        Some x -> x
-      | None   -> buildShellConnection (onClose clroot)
+      begin match ClientConn.ofClrootConncheck clroot with
+      | Some x -> Lwt.return x
+      | None   -> buildShellConnection
                    shell host userOpt portOpt rootName termInteract
       end >>= fun ioServer ->
       finish ioServer s
@@ -1875,31 +1898,24 @@ let openConnectionStart clroot =
       None
   | Clroot.ConnectBySocket(host,port,s) ->
       Lwt_unix.run
-        (begin match hostFspath clroot with
-           Some x -> x
-         | None   -> buildSocketConnection (onClose clroot) host port
+        (begin match ClientConn.ofClrootConncheck clroot with
+         | Some x -> Lwt.return x
+         | None   -> buildSocketConnection host port
          end >>= fun ioServer ->
          (* We need to always compute the fspath as it may have changed
             due to profile configuration changes *)
          canonizeOnServer ioServer s >>= fun (host, fspath) ->
-         connectedHosts :=
-           listReplace (clroot, (host, fspath, ioServer)) !connectedHosts;
-         connectionsByHosts :=
-           listReplace (host, ioServer) !connectionsByHosts;
+         ClientConn.register clroot (Common.Remote host, fspath) ioServer;
          Lwt.return ());
       None
   | Clroot.ConnectByShell(shell,host,userOpt,portOpt,s) ->
-      match hostFspath clroot with
-         Some x ->
+      match ClientConn.ofClrootConncheck clroot with
+      | Some ioServer ->
            (* We recompute the fspath as it may have changed due to
               profile configuration changes *)
            Lwt_unix.run
-             (x >>= fun ioServer ->
-              canonizeOnServer ioServer s >>= fun (host, fspath) ->
-              connectedHosts :=
-                listReplace (clroot, (host, fspath, ioServer)) !connectedHosts;
-              connectionsByHosts :=
-                listReplace (host, ioServer) !connectionsByHosts;
+             (canonizeOnServer ioServer s >>= fun (host, fspath) ->
+              ClientConn.register clroot (Common.Remote host, fspath) ioServer;
               Lwt.return ());
            None
       | None ->
@@ -1980,12 +1996,9 @@ let openConnectionEnd (i1,i2,o1,o2,s,fdopt,clroot,pid) =
         try Terminal.close_session pid with Unix.Unix_error _ -> ()
       in
       Lwt_unix.run
-        (initConnection (onClose clroot cleanup) i2 o1 >>= fun ioServer ->
+        (initConnection ~cleanup i2 o1 >>= fun ioServer ->
          canonizeOnServer ioServer s >>= fun (host, fspath) ->
-         connectedHosts :=
-           listReplace (clroot, (host, fspath, ioServer)) !connectedHosts;
-         connectionsByHosts :=
-           listReplace (host, ioServer) !connectionsByHosts;
+         ClientConn.register clroot (Common.Remote host, fspath) ioServer;
          Lwt.return ())
 
 let openConnectionCancel (i1,i2,o1,o2,s,fdopt,clroot,pid) =
@@ -2076,7 +2089,7 @@ let commandLoop ~compatMode in_ch out_ch =
   Trace.runningasserver := true;
   (* Send header indicating to the client that it has successfully
      connected to the server *)
-  let conn = setupIO true in_ch out_ch in
+  let conn = makeConnection true in_ch out_ch in
   Lwt.catch
     (fun () ->
        (if compatMode <> None then
