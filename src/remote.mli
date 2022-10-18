@@ -34,13 +34,16 @@ val makeConvV0Funs :
    side effect of registering the command under the given name, so that when
    we are running as a server it can be looked up and executed when
    requested by a remote client.) *)
+(* It is not recommended to use this function in new code unless the cmd is
+   truly independent of any roots/replicas. Use [registerRootCmd] or one of
+   the other functions instead. *)
 val registerHostCmd :
     string              (* command name *)
  -> ?convV0: 'a convV0Fun * 'b convV0Fun
                         (* 2.51-compatibility functions for args and result *)
  -> 'a Umarshal.t -> 'b Umarshal.t
  -> ('a -> 'b Lwt.t)    (* local command *)
- -> (   string          (* -> host *)
+ -> (   Common.root     (* -> host (the root path is ignored) *)
      -> 'a              (*    arguments *)
      -> 'b Lwt.t)       (*    -> (suspended) result *)
 

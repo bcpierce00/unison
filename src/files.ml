@@ -83,7 +83,7 @@ let processCommitLogOnHost =
 
 let processCommitLogs() =
   Lwt_unix.run
-    (Globals.allHostsIter (fun h -> processCommitLogOnHost h ()))
+    (Globals.allRootsIter (fun r -> processCommitLogOnHost r ()))
 
 (* ------------------------------------------------------------ *)
 

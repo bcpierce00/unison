@@ -470,54 +470,56 @@ let isConnectionCheck conn =
   | None -> false
   | Some conn' -> connEq conn conn'
 
+(* Due to [Common.root] currently excluding important details present in
+   [Clroot.clroot], there is a 1:N mapping between a [root] and a [clroot].
+   For example, a [clroot] pointing to the same host but a different
+   protocol or user or port will be mapped to the same [root] as long as
+   the root fspaths are the same.
+   It is currently (Oct 2022) not seen as a critical issue to fix.
+   The code previously used to index connections just by the canonical host
+   name, ignoring all other details, including the root fspath. That code
+   was in place for over 20 years and did not seem to cause any issues.
+   The current code is safer than the previous code... *)
 module ClientConn = struct
-  let connectionsByRoots = ref []
-  let connectionsByClroots = ref []
+  type t =
+    { clroot : Clroot.clroot;
+      root : Common.root;
+      conn : connection }
+      (* Never do polymorphic comparisons with [connection]! *)
 
-  let listReplace v l = v :: Safelist.remove_assoc (fst v) l
+  let connections = ref []
+
+  let findByClroot clroot = Safelist.find (fun x -> x.clroot = clroot) !connections
+  let findByRoot root = Safelist.find (fun x -> x.root = root) !connections
 
   let register clroot root conn =
-    connectionsByClroots :=
-      listReplace (clroot, (root, conn)) !connectionsByClroots;
-    connectionsByRoots := listReplace (root, conn) !connectionsByRoots
+    connections := { clroot; root; conn } ::
+      Safelist.filter (fun x -> x.clroot <> clroot) !connections
 
   let unregister conn =
-    connectionsByRoots := Safelist.filter (fun (_, c) -> connNeq conn c) !connectionsByRoots;
-    connectionsByClroots := Safelist.filter (fun (_, (_, c)) -> connNeq conn c) !connectionsByClroots
-
-  let ofHost host =
-    try snd (Safelist.find (fun ((h, _), _) -> host = h) !connectionsByRoots)
-    with Not_found ->
-      raise (Util.Fatal "No connection")
+    connections := Safelist.filter (fun x -> connNeq x.conn conn) !connections
 
   let ofRoot root =
-    try Safelist.assoc root !connectionsByRoots
-    with Not_found ->
-      raise (Util.Fatal "No connection with the server")
+    try (findByRoot root).conn with
+    | Not_found -> raise (Util.Fatal "No connection with the server")
 
   let canonRootOfClroot clroot =
+    try Some (findByClroot clroot).root with
+    | Not_found -> None
+
+  let withConncheck find =
     try
-      let (root, _) = Safelist.assoc clroot !connectionsByClroots in
-      Some root
+      checkConnection (find ()).conn;
+      (* [find] _must_ be duplicated after [checkConnection]! *)
+      Some (find ()).conn
     with Not_found ->
       None
 
   let ofRootConncheck root =
-    try
-      let ioServer = Safelist.assoc root !connectionsByRoots in
-      checkConnection ioServer;
-      Some (Safelist.assoc root !connectionsByRoots)
-    with Not_found ->
-      None
+    withConncheck (fun () -> findByRoot root)
 
   let ofClrootConncheck clroot =
-    try
-      let (_, ioServer) = Safelist.assoc clroot !connectionsByClroots in
-      checkConnection ioServer;
-      let (_, ioServer) = Safelist.assoc clroot !connectionsByClroots in
-      Some ioServer
-    with Not_found ->
-      None
+    withConncheck (fun () -> findByClroot clroot)
 
 end (* module ClientConn *)
 
@@ -1034,20 +1036,15 @@ let registerHostCmd cmdName ?(convV0=convV0_id_pair) mArg mRet cmd =
   let serverSide = (fun _ args -> cmd args) in
   let client0 =
     registerServerCmd cmdName ~convV0 mArg mRet serverSide in
-  let client host args =
-    let conn = ClientConn.ofHost (Common.Remote host) in
+  let client root args =
+    let conn = ClientConn.ofRoot root in
     client0 conn args in
   (* Return a function that runs either the proxy or the local version,
      depending on whether the call is to the local host or a remote one *)
-  fun host args ->
-    match host with
-      "" -> cmd args
-    | _  -> client host args
-
-let hostOfRoot root =
-  match root with
-    (Common.Local, _)       -> ""
-  | (Common.Remote host, _) -> host
+  fun root args ->
+    match root with
+    | (Common.Local, _) -> cmd args
+    | (Common.Remote _, _) -> client root args
 
 (* RegisterRootCmd is like registerHostCmd but it indexes connections by
    root instead of host. *)
@@ -1055,7 +1052,7 @@ let registerRootCmd (cmdName : string)
   ?(convV0=convV0_id_pair) mArg mRet (cmd : (Fspath.t * 'a) -> 'b) =
   let mArg = Umarshal.(prod2 Fspath.m mArg id id) in
   let r = registerHostCmd cmdName ~convV0 mArg mRet cmd in
-  fun root args -> r (hostOfRoot root) ((snd root), args)
+  fun root args -> r root ((snd root), args)
 
 let registerRootCmdWithConnection (cmdName : string)
   ?(convV0=convV0_id_pair) mArg mRet (cmd : connection -> 'a -> 'b) =
