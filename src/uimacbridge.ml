@@ -566,34 +566,34 @@ let do_unisonSynchronize () =
     initGlobalProgress totalLength;
     let t = Trace.startTimer "Propagating changes" in
     let uiWrapper i theSI =
-          match theSI.whatHappened with
-            None ->
-                catch (fun () ->
-                  Transport.transportItem
-                    theSI.ri (Uutil.File.ofLine i)
-                    (fun title text ->
-                       debug (fun () -> Util.msg "MERGE '%s': '%s'"
-                            title text);
-                       displayDiff title text; true)
-                         >>= (fun () ->
-                         return Util.Succeeded))
-                      (fun e ->
-                         match e with
-                           Util.Transient s ->
-                             return (Util.Failed s)
-                         | _ ->
-                             fail e)
-                  >>= (fun res ->
-                let rem =
-                  Uutil.Filesize.sub
-                    theSI.bytesToTransfer theSI.bytesTransferred
-                in
-                if rem <> Uutil.Filesize.zero then
-                  showProgress (Uutil.File.ofLine i) rem "done";
-                theSI.whatHappened <- Some res;
-                return ())
-          | Some _ ->
-              return () (* Already processed this one (e.g. merged it) *)
+      match theSI.whatHappened with
+        None ->
+          catch (fun () ->
+            Transport.transportItem
+              theSI.ri (Uutil.File.ofLine i)
+              (fun title text ->
+                 debug (fun () -> Util.msg "MERGE '%s': '%s'"
+                      title text);
+                 displayDiff title text; true)
+                   >>= (fun () ->
+                   return Util.Succeeded))
+                (fun e ->
+                   match e with
+                     Util.Transient s ->
+                       return (Util.Failed s)
+                   | _ ->
+                       fail e)
+            >>= (fun res ->
+          let rem =
+            Uutil.Filesize.sub
+              theSI.bytesToTransfer theSI.bytesTransferred
+          in
+          if rem <> Uutil.Filesize.zero then
+            showProgress (Uutil.File.ofLine i) rem "done";
+          theSI.whatHappened <- Some res;
+          return ())
+      | Some _ ->
+          return () (* Already processed this one (e.g. merged it) *)
     in
     Uicommon.transportItems !theState (fun {ri; _} -> not (Common.isDeletion ri)) uiWrapper;
     Uicommon.transportItems !theState (fun {ri; _} -> Common.isDeletion ri) uiWrapper;

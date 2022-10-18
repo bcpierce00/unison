@@ -111,55 +111,55 @@ let logLwtNumbered (lwtDescription: string) (lwtShortDescription: string)
 
 let doAction
       fromRoot fromPath fromContents toRoot toPath toContents notDefault id =
-    if not !Trace.sendLogMsgsToStderr then
-      Trace.statusDetail (Path.toString toPath);
-    Remote.Thread.unwindProtect (fun () ->
-      match fromContents, toContents with
-          {typ = `ABSENT}, {ui = uiTo} ->
-             logLwtNumbered
-               ("Deleting " ^ Path.toString toPath ^
-                "\n  from "^ root2string toRoot)
-               ("Deleting " ^ Path.toString toPath)
-               (fun () ->
-                  Files.delete fromRoot fromPath toRoot toPath uiTo notDefault)
-        (* No need to transfer the whole directory/file if there were only
-           property modifications on one side.  (And actually, it would be
-           incorrect to transfer a directory in this case.) *)
-        | {status= `Unchanged | `PropsChanged; desc= fromProps; ui= uiFrom},
-          {status= `Unchanged | `PropsChanged; desc= toProps; ui = uiTo} ->
-            logLwtNumbered
-              ("Copying properties for " ^ Path.toString toPath
-               ^ "\n  from " ^ root2string fromRoot ^ "\n  to " ^
-               root2string toRoot)
-              ("Copying properties for " ^ Path.toString toPath)
-              (fun () ->
-                Files.setProp
-                  fromRoot fromPath toRoot toPath fromProps toProps uiFrom uiTo)
-        | {typ = `FILE; ui = uiFrom}, {typ = `FILE; ui = uiTo} ->
-            logLwtNumbered
-              ("Updating file " ^ Path.toString toPath ^ "\n  from " ^
-               root2string fromRoot ^ "\n  to " ^
-               root2string toRoot)
-              ("Updating file " ^ Path.toString toPath)
-              (fun () ->
-                Files.copy (`Update (fileSize uiFrom uiTo))
-                  fromRoot fromPath uiFrom [] toRoot toPath uiTo []
-                  notDefault id)
-        | {ui = uiFrom; props = propsFrom}, {ui = uiTo; props = propsTo} ->
-            logLwtNumbered
-              ("Copying " ^ Path.toString toPath ^ "\n  from " ^
-               root2string fromRoot ^ "\n  to " ^
-               root2string toRoot)
-              ("Copying " ^ Path.toString toPath)
-              (fun () ->
-                 Files.copy `Copy
-                   fromRoot fromPath uiFrom propsFrom
-                   toRoot toPath uiTo propsTo
-                   notDefault id))
-      (fun e -> Trace.log
-          (Printf.sprintf
-             "Failed: %s\n" (Util.printException e));
-        return ())
+  if not !Trace.sendLogMsgsToStderr then
+    Trace.statusDetail (Path.toString toPath);
+  Remote.Thread.unwindProtect (fun () ->
+    match fromContents, toContents with
+        {typ = `ABSENT}, {ui = uiTo} ->
+           logLwtNumbered
+             ("Deleting " ^ Path.toString toPath ^
+              "\n  from "^ root2string toRoot)
+             ("Deleting " ^ Path.toString toPath)
+             (fun () ->
+                Files.delete fromRoot fromPath toRoot toPath uiTo notDefault)
+      (* No need to transfer the whole directory/file if there were only
+         property modifications on one side.  (And actually, it would be
+         incorrect to transfer a directory in this case.) *)
+      | {status= `Unchanged | `PropsChanged; desc= fromProps; ui= uiFrom},
+        {status= `Unchanged | `PropsChanged; desc= toProps; ui = uiTo} ->
+          logLwtNumbered
+            ("Copying properties for " ^ Path.toString toPath
+             ^ "\n  from " ^ root2string fromRoot ^ "\n  to " ^
+             root2string toRoot)
+            ("Copying properties for " ^ Path.toString toPath)
+            (fun () ->
+              Files.setProp
+                fromRoot fromPath toRoot toPath fromProps toProps uiFrom uiTo)
+      | {typ = `FILE; ui = uiFrom}, {typ = `FILE; ui = uiTo} ->
+          logLwtNumbered
+            ("Updating file " ^ Path.toString toPath ^ "\n  from " ^
+             root2string fromRoot ^ "\n  to " ^
+             root2string toRoot)
+            ("Updating file " ^ Path.toString toPath)
+            (fun () ->
+              Files.copy (`Update (fileSize uiFrom uiTo))
+                fromRoot fromPath uiFrom [] toRoot toPath uiTo []
+                notDefault id)
+      | {ui = uiFrom; props = propsFrom}, {ui = uiTo; props = propsTo} ->
+          logLwtNumbered
+            ("Copying " ^ Path.toString toPath ^ "\n  from " ^
+             root2string fromRoot ^ "\n  to " ^
+             root2string toRoot)
+            ("Copying " ^ Path.toString toPath)
+            (fun () ->
+               Files.copy `Copy
+                 fromRoot fromPath uiFrom propsFrom
+                 toRoot toPath uiTo propsTo
+                 notDefault id))
+    (fun e -> Trace.log
+        (Printf.sprintf
+           "Failed: %s\n" (Util.printException e));
+      return ())
 
 let propagate root1 root2 reconItem id showMergeFn =
   let path = reconItem.path1 in
