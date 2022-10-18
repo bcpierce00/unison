@@ -1282,6 +1282,7 @@ uicommon.cmo : \
     common.cmi \
     clroot.cmi \
     case.cmi \
+    abort.cmi \
     uicommon.cmi
 uicommon.cmx : \
     xferhint.cmx \
@@ -1314,6 +1315,7 @@ uicommon.cmx : \
     common.cmx \
     clroot.cmx \
     case.cmx \
+    abort.cmx \
     uicommon.cmi
 uicommon.cmi : \
     uutil.cmi \

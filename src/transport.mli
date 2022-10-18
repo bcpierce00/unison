@@ -1,6 +1,9 @@
 (* Unison file synchronizer: src/transport.mli *)
 (* Copyright 1999-2020, Benjamin C. Pierce (see COPYING for details) *)
 
+(* Size of the pool of threads for executing transport actions. *)
+val maxThreads : unit -> int
+
 (* Run tasks concurrently in a pool of threads, aquiring tasks with
    the supplied task dispenser function. The tasks received from
    the task dispenser must not raise uncaught exceptions or return

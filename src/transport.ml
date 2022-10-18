@@ -48,6 +48,11 @@ let maxthreads =
       when file content streaming is desactivated and 1000 threads \
       when it is activated.")
 
+let maxThreads () =
+  let n = Prefs.read maxthreads in
+  if n > 0 then n else
+  if Prefs.read Remote.streamingActivated then 1000 else 20
+
 let run dispenseTask =
   let runConcurrent limit dispenseTask =
     let avail = ref limit in
@@ -72,11 +77,7 @@ let run dispenseTask =
   (* When streaming, we can transfer many file simultaneously:
      as the contents of only one file is transferred in one direction
      at any time, little resource is consumed this way. *)
-  let limit =
-    let n = Prefs.read maxthreads in
-    if n > 0 then n else
-    if Prefs.read Remote.streamingActivated then 1000 else 20
-  in
+  let limit = maxThreads () in
   Lwt_util.resize_region !Files.copyReg limit;
   runConcurrent limit dispenseTask
 
