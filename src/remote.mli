@@ -89,6 +89,12 @@ val canonizeRoot :
    to the root is established. Always returns true for local roots *)
 val isRootConnected : Common.root -> bool
 
+(* Close the connection to server and run all cleanup and [at_conn_close]
+   handlers. Can also be called for a local root; in this case only the
+   cleanup and [at_conn_close] handlers are run (as there is no connection
+   to close). *)
+val clientCloseRootConnection : Common.root -> unit
+
 (* Statistics *)
 val emittedBytes : float ref
 val receivedBytes : float ref
@@ -155,13 +161,17 @@ val registerStreamCmd :
   connection -> (('a -> unit Lwt.t) -> 'b Lwt.t) -> 'b Lwt.t
 
 (* Register a function to be run when the connection between client and server
-   is closed. The function should not raise exceptions. If it does then running
-   some of the other registered functions may be skipped (which is not an issue
-   as the exception is likely going to quit the process).
+   is closed (willingly or unexpectedly). The function should not raise
+   exceptions. If it does then running some of the other registered functions
+   may be skipped (which may not be an issue as the exception is likely going
+   to quit the process).
 
    Registered functions are only expected to be useful when the connection is
    closed but the process keeps running (a socket server, for example). Do not
    use it as a substitute for [at_exit].
+
+   These functions are additionally run when "closing" a local sync when there
+   is no actual connection.
 
    Keep in mind that a function registered like this can be called immediately
    when a lost connection is detected, before any exception indicating lost

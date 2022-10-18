@@ -527,6 +527,10 @@ module ClientConn = struct
     try (findByRoot root).conn with
     | Not_found -> raise (Util.Fatal "No connection with the server")
 
+  let ofRootOpt root =
+    try Some (findByRoot root).conn with
+    | Not_found -> None
+
   let canonRootOfClroot clroot =
     try Some (findByClroot clroot).root with
     | Not_found -> None
@@ -601,6 +605,14 @@ let registerConnCleanup conn cleanup =
   match cleanup with
   | None -> ()
   | Some f -> at_conn_close' conn f
+
+let clientCloseRootConnection = function
+  | (Common.Local, _) -> clientCloseCleanup ()
+  | (Common.Remote _, _) as root ->
+      begin match ClientConn.ofRootOpt root with
+      | Some conn -> clientConnClose conn
+      | None -> ()
+      end
 
 (****)
 
