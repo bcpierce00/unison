@@ -159,7 +159,11 @@ val registerStreamCmd :
    some of the other registered functions may be skipped (which is not an issue
    as the exception is likely going to quit the process).
 
-   Registered functions are only expected to be run when the connection is
+   Registered functions are only expected to be useful when the connection is
    closed but the process keeps running (a socket server, for example). Do not
-   use it as a substitute for [at_exit]. *)
+   use it as a substitute for [at_exit].
+
+   Keep in mind that a function registered like this can be called immediately
+   when a lost connection is detected, before any exception indicating lost
+   connection is raised. *)
 val at_conn_close : ?only_server:bool -> (unit -> unit) -> unit

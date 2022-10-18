@@ -81,10 +81,26 @@ let decodeInt int_buf i =
 (*                           LOW-LEVEL IO                                *)
 (*************************************************************************)
 
-let lostConnection () =
+let ioCleanups = ref []
+
+let registerIOClose io f =
+  ioCleanups := (io, f) :: !ioCleanups
+
+let lostConnectionHandler ch =
+  let aux ((i, o), f) =
+    if i = ch || o = ch then begin
+      f ();
+      false (* Each handler is run only once *)
+    end else
+      true
+  in
+  ioCleanups := Safelist.filter aux !ioCleanups
+
+let lostConnection ch =
+  begin try lostConnectionHandler ch with _ -> () end;
   Lwt.fail (Util.Fatal "Lost connection with the server")
 
-let catchIoErrors th =
+let catchIoErrors ch th =
   Lwt.catch th
     (fun e ->
        match e with
@@ -111,7 +127,7 @@ let catchIoErrors th =
        | Unix.Unix_error(Unix.EHOSTDOWN, _, _)
        | Unix.Unix_error(Unix.ENETRESET, _, _) ->
          (* Client has closed its end of the connection *)
-           lostConnection ()
+           lostConnection ch
        | _ ->
            Lwt.fail e)
 
@@ -144,7 +160,7 @@ let makeBuffer ch =
 
 let fillInputBuffer conn =
   assert (conn.length = 0);
-  catchIoErrors
+  catchIoErrors conn.channel
     (fun () ->
        Lwt_unix.read conn.channel conn.buffer 0 bufferSize >>= fun len ->
        debugV (fun() ->
@@ -154,7 +170,7 @@ let fillInputBuffer conn =
            Util.msg "grab: %s\n"
              (String.escaped (Bytes.sub_string conn.buffer 0 len)));
        if len = 0 then
-         lostConnection ()
+         lostConnection conn.channel
        else begin
          receivedBytes := !receivedBytes +. float len;
          conn.length <- len;
@@ -197,7 +213,7 @@ let peekWithBlocking conn =
 (* Low-level outputs *)
 
 let rec sendOutput conn =
-  catchIoErrors
+  catchIoErrors conn.channel
     (fun () ->
        begin if conn.opened then
          Lwt_unix.write conn.channel conn.buffer 0 conn.length
@@ -391,6 +407,14 @@ let makeConnection isServer inCh outCh =
       makeOutputQueue isServer
         (fun q -> maybeFlush pendingFlush q outputBuffer) }
 
+let closeConnection conn =
+  begin try Lwt_unix.close conn.inputBuffer.channel with Unix.Unix_error _ -> () end;
+  begin try Lwt_unix.close conn.outputBuffer.channel with Unix.Unix_error _ -> () end;
+  conn.outputBuffer.opened <- false
+
+let connectionIO conn =
+  (conn.inputBuffer.channel, conn.outputBuffer.channel)
+
 let setConnectionVersion conn ver =
   conn.version <- ver
 
@@ -509,7 +533,25 @@ module ClientConn = struct
 
   let withConncheck find =
     try
-      checkConnection (find ()).conn;
+      let conn = (find ()).conn in
+      begin try
+        checkConnection conn
+      with
+      | Unix.Unix_error (EBADF, _, _) -> (* Already closed *)
+          unregister conn
+        (* (All or most?) other exceptions should be caught by receiving and
+           sending threads. If this does not happen (it also depends on the
+           implementation of [Lwt_unix.run]) then trigger the cleanup here as
+           the last resort. *)
+      | Unix.Unix_error _ ->
+          try
+            lostConnection (fst (connectionIO conn)) |> ignore;
+            unregister conn
+          with e -> begin
+            unregister conn;
+            raise e
+          end
+      end;
       (* [find] _must_ be duplicated after [checkConnection]! *)
       Some (find ()).conn
     with Not_found ->
@@ -545,11 +587,17 @@ let runConnCloseHandlers' conn =
   atConnCloseHandlers := Safelist.filter (fun (c, f) ->
     if connEq c conn then (f (); false) else true) !atConnCloseHandlers
 
+let clientCloseCleanup () =
+  runConnCloseHandlers false
+
 let clientConnClose conn =
+  closeConnection conn;
   ClientConn.unregister conn;
-  runConnCloseHandlers' conn
+  runConnCloseHandlers' conn;
+  clientCloseCleanup ()
 
 let registerConnCleanup conn cleanup =
+  registerIOClose (connectionIO conn) (fun () -> clientConnClose conn);
   match cleanup with
   | None -> ()
   | Some f -> at_conn_close' conn f
@@ -1513,30 +1561,33 @@ let negociateFlowControl conn =
 (****)
 
 let initConnection ?(connReady=fun () -> ()) ?cleanup in_ch out_ch =
+  (* [makeConnection] is not expected to raise any recoverable exceptions.
+     If this assumption changes in the future then [in_ch] and [out_ch] must
+     be closed in the recovery code. *)
   let conn = makeConnection false in_ch out_ch in
+  let close_on_fail t =
+    Lwt.catch (fun () -> t) (fun e -> closeConnection conn; Lwt.fail e)
+  in
   let with_timeout t =
     Lwt.choose [t;
       Lwt_unix.sleep 120. >>= fun () ->
       Lwt.fail (Util.Fatal "Timed out negotiating connection with the server")]
   in
-  with_timeout (
+  close_on_fail (with_timeout (
     peekWithBlocking conn.inputBuffer >>= fun _ ->
     connReady (); Lwt.return () >>= fun () -> (* Connection working, notify *)
     checkHeader conn >>=
     checkServerUpgrade conn >>=
-    checkServerVersion conn) >>= fun () ->
+    checkServerVersion conn)) >>= fun () ->
   registerConnCleanup conn cleanup;
   (* From this moment forward, the RPC version has been selected. All
      communication must now adhere to that version's specification. *)
   enableFlowControl conn false >>= (fun () ->
   Lwt.ignore_result (Lwt.catch
     (fun () -> receive conn)
-    (function
-     | Util.Fatal "Lost connection with the server" as e ->
-         clientConnClose conn;
-         if isConnectionCheck conn then Lwt.return () else Lwt.fail e
-     | e -> Lwt.fail e
-    ));
+    (fun e ->
+      clientConnClose conn;
+      if isConnectionCheck conn then Lwt.return () else Lwt.fail e));
   negociateFlowControl conn;
   Lwt.return conn)
 
@@ -1803,6 +1854,10 @@ let buildShellConnection shell host userOpt portOpt rootName termInteract =
         fun () -> Lwt.return ""
   in
   let cleanup () =
+    (* Hack: Signal connection ready to make sure the [handlePasswordRequests]
+       threads will finish while silencing any exceptions (most likely EBADF)
+       caused by having closed the terminal fds. *)
+    connReady ();
     if term = None then
       try ignore (Terminal.safe_waitpid termPid) with Unix.Unix_error _ -> ()
     else
@@ -1822,7 +1877,7 @@ let buildShellConnection shell host userOpt portOpt rootName termInteract =
         (fun () -> getTermErr () >>= fun s ->
                    if s <> "" then Util.warn s;
                    Lwt.fail e)
-        (fun _ ->  Lwt.fail e))
+        (fun _ ->  cleanup (); Lwt.fail e))
 
 let canonizeLocally s =
   Fspath.canonize s
@@ -2210,17 +2265,17 @@ let waitOnPort hosts port =
          let (connected, _) =
            serve @@ Lwt_unix.run (Lwt.choose (List.mapi accept listening))
          in
+         registerIOClose (connected, connected) (fun () -> doCleanup connected);
          begin try
            (* Accept a connection *)
            let compatMode = Some (if is248Exe then "2.48" else "2.51") in
            Lwt_unix.run (commandLoop ~compatMode connected connected)
          with Util.Fatal "Lost connection with the server" -> () end;
          (* The client has closed its end of the connection *)
-         begin try Lwt_unix.close connected with Unix.Unix_error _ -> () end;
-         if not (Prefs.read killServer) then begin
-           runConnCloseHandlers true;
-           handleClients ()
-         end
+         if not (Prefs.read killServer) then handleClients ()
+       and doCleanup socket =
+         begin try Lwt_unix.close socket with Unix.Unix_error _ -> () end;
+         if not (Prefs.read killServer) then runConnCloseHandlers true
        in
        try
          Sys.catch_break true;
