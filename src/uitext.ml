@@ -804,7 +804,7 @@ let doTransport reconItemList =
   in
   let totalBytesToTransferStr = Util.bytes2string
     (Uutil.Filesize.toInt64 totalBytesToTransfer) in
-  let t0 = Unix.gettimeofday () in
+  let sta = Uicommon.Stats.init totalBytesToTransfer in
   let calcProgress i bytes dbg =
     let i = Uutil.File.toLine i in
     let item = items.(i) in
@@ -817,22 +817,23 @@ let doTransport reconItemList =
          !totalBytesTransferred totalBytesToTransfer)
     in
     let t1 = Unix.gettimeofday () in
+    let () = Uicommon.Stats.update sta t1 !totalBytesTransferred in
     let remTime =
       if v <= 0. then "--:--"
       else if v >= 100. then "00:00:00"
       else
-        let t = truncate ((t1 -. t0) *. (100. -. v) /. v +. 0.5) in
-        let u = t mod 3600 in
-        let h = t / 3600 in
-        let m = u / 60 in
-        let sec = u mod 60 in
-        Format.sprintf "%02d:%02d:%02d" h m sec
+        let rate = Uicommon.Stats.avgRate1 sta in
+        if Float.is_nan rate then "--:--"
+        else
+          Format.sprintf "%8s/s    %s"
+            (Util.bytes2string (Int64.of_float rate))
+            (Uicommon.Stats.eta sta "--:--")
     in
     let stat = Format.sprintf "%s  (%s of %s)  %s ETA" (Util.percent2string v)
       totalBytesTransferredStr totalBytesToTransferStr remTime in
     t1, stat
   in
-  let tlog = ref t0 in
+  let tlog = ref (Unix.gettimeofday ()) in
   let showProgress i bytes dbg =
     let t1, s = calcProgress i bytes dbg in
     if not (Prefs.read Trace.terse) && (Prefs.read Trace.debugmods = []) then

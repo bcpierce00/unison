@@ -467,6 +467,109 @@ let addIgnorePattern theRegExp =
   Lwt_unix.run (Globals.propagatePrefs ())
 
 (**********************************************************************
+                     Statistics for update progress
+ **********************************************************************)
+
+(* This seemingly very complex code for calculating the progress rate
+   and ETA has partly to do with Unison currently not tracking progress
+   very accurately. Several potentially very time-consuming operations
+   are not tracked at all: hashing files before and after the copy, for
+   example. The entire amount of work may not even be known in advance
+   when continuing partial transfers after the previous sync has been
+   interrupted. This makes it very difficult to provide meaningful rate
+   and ETA information. The code below is the current best approximation.
+   The way to simplify this code here is to first and foremost improve
+   progress tracking and reporting. *)
+
+module Stats = struct
+
+let calcETA rem rate =
+  if Float.is_nan rate || Float.is_nan rem || rem < 0. then "" else
+  let t = truncate (rem /. rate +. 0.5) in
+  (* Estimating the remaining time is not accurate. Reduce the display
+     precision (and reduce more when longer time remaining). *)
+  let h, (m, sec) =
+    if t >= 3420 then
+      let u = t + 180 in u / 3600, (((u mod 3600) / 300) * 5, 0)
+    else
+      0,
+      if t >= 2640 then ((t + 180) / 300) * 5, 0
+      else if t >= 1800 then ((t + 119) / 120) * 2, 0
+      else if t >= 120 then let u = t + 15 in u / 60, ((u mod 60) / 30) * 30
+      else t / 60, t mod 60
+  in
+  Printf.sprintf "%02d:%02d:%02d" h m sec
+
+let movAvg curr prev ?(c = 1.) deltaTime avgPeriod =
+  if Float.is_nan prev then curr else
+  let a = c *. Float.min (1. -. exp (-. deltaTime /. avgPeriod)) 1. in
+  (* Simplified from a *. curr +. (1. -. a) *. prev *)
+  prev +. a *. (curr -. prev)
+
+type t = (* abstract in mli *)
+  { mutable t0 : float;
+    mutable t : float;
+    totalToComplete : int64;
+    mutable completed : int64;
+    mutable curRate : float;
+    mutable avgRateS : float;
+    mutable avgRateDoubleSGauss : float;
+  }
+
+let gaussC = 2. *. (0.025 ** 2.)
+let avgPeriodS = 4.0
+let avgPeriodD = 3.5
+let calcPeriod = 0.25
+
+let init totalToTransfer =
+  let t0 = 0. in
+  { t0; t = t0; totalToComplete = Uutil.Filesize.toInt64 totalToTransfer;
+    completed = 0L;
+    curRate = Float.nan; avgRateS = Float.nan; avgRateDoubleSGauss = Float.nan;
+  }
+
+let calcAvgRate' sta totTime deltaCompleted deltaTime =
+  let curRate = (Int64.to_float deltaCompleted) /. deltaTime in
+  (* We want to ignore small fluctuations but react faster to large
+     changes (like switching from cache to disk or from disk to network
+     of from receiving to sending or with wildly variable network speed). *)
+  let avgRateS = movAvg curRate sta.avgRateS deltaTime
+    (Float.min_num totTime avgPeriodS) in
+  let cpr = (avgRateS -. sta.avgRateDoubleSGauss) /. sta.avgRateDoubleSGauss in
+  let c = 1. -. exp (-.(cpr ** 2.) /. gaussC) in
+  let avgRateDoubleSGauss = movAvg avgRateS sta.avgRateDoubleSGauss ~c deltaTime
+    (Float.min_num totTime avgPeriodD) in
+  sta.curRate <- curRate;
+  sta.avgRateS <- avgRateS;
+  sta.avgRateDoubleSGauss <- avgRateDoubleSGauss
+
+let update sta t1 totalCompleted =
+  let deltaTime = t1 -. sta.t in
+  let totalCompleted = Uutil.Filesize.toInt64 totalCompleted in
+  if sta.completed = 0L then begin
+    (* Skip the very first rate calculation because it will be skewed
+       due to (possibly significant) time losses during transport start. *)
+    sta.completed <- totalCompleted;
+    sta.t0 <- t1;
+    sta.t <- t1
+  end else if deltaTime >= calcPeriod then begin
+    let deltaCompleted = Int64.sub totalCompleted sta.completed in
+    sta.completed <- totalCompleted;
+    sta.t <- t1;
+    calcAvgRate' sta (t1 -. sta.t0) deltaCompleted deltaTime
+  end
+
+let curRate sta = sta.curRate
+let avgRate1 sta = sta.avgRateS
+let avgRate2 sta = sta.avgRateDoubleSGauss
+let eta sta ?(rate = sta.avgRateDoubleSGauss) default =
+  let rem = Int64.(to_float (sub sta.totalToComplete sta.completed)) in
+  let eta = calcETA rem rate in
+  if eta = "" then default else eta
+
+end
+
+(**********************************************************************
                           Update propagation
  **********************************************************************)
 
