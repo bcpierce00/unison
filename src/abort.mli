@@ -7,6 +7,10 @@ val reset : unit -> unit
 val file : Uutil.File.t -> unit
 val all : unit -> unit
 
+(* Check whether stop of all transfers has been requested. *)
+val isAll : unit -> bool
+val checkAll : unit -> unit (* Raises a transient exception *)
+
 (* Check whether an item is being aborted.  A transient exception is
    raised if this is the case. *)
 val check : Uutil.File.t -> unit

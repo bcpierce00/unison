@@ -60,12 +60,20 @@ let all () = abortAll := true
 
 (****)
 
+let isAll () = !abortAll
+
+let checkAll () =
+  if !abortAll then raise (Util.Transient "Aborted by user request")
+
 let check id =
   debug (fun() -> Util.msg "Checking line %s\n" (Uutil.File.toString id));
-  if !abortAll || errorCount id >= Prefs.read maxerrors then begin
+  checkAll ();
+  if errorCount id >= Prefs.read maxerrors then begin
     debug (fun() ->
       Util.msg "Abort failure for line %s\n" (Uutil.File.toString id));
     raise (Util.Transient "Aborted")
   end
 
-let testException e = (e = Util.Transient "Aborted")
+let testException e =
+  (e = Util.Transient "Aborted") ||
+  (e = Util.Transient "Aborted by user request")
