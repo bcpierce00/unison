@@ -1348,6 +1348,7 @@ uigtk3.cmo : \
     common.cmi \
     clroot.cmi \
     case.cmi \
+    abort.cmi \
     uigtk3.cmi
 uigtk3.cmx : \
     uutil.cmx \
@@ -1373,6 +1374,7 @@ uigtk3.cmx : \
     common.cmx \
     clroot.cmx \
     case.cmx \
+    abort.cmx \
     uigtk3.cmi
 uigtk3.cmi : \
     uicommon.cmi

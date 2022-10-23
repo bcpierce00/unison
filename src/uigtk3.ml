@@ -2758,6 +2758,7 @@ let createToplevelWindow () =
   let grDiff = ref [] in
   let grGo = ref [] in
   let grRescan = ref [] in
+  let grStop = ref [] in
   let grDetail = ref [] in
   let grAdd gr w = gr := w#misc::!gr in
   let grSet gr st = Safelist.iter (fun x -> x#set_sensitive st) !gr in
@@ -2766,6 +2767,7 @@ let createToplevelWindow () =
     grSet grDiff false;
     grSet grGo false;
     grSet grRescan false;
+    grSet grStop false;
     grSet grDetail false
   in
 
@@ -3141,7 +3143,7 @@ let createToplevelWindow () =
     let width =
       let metrics = mainWindowSW#misc#pango_context#get_metrics () in
       let w = GPango.to_pixels metrics#approx_digit_width in
-      max (w * 112) 840
+      max (w * 112) 860
     in
     let width = min width (Gdk.Screen.width ~screen:toplevelWindow#screen ()) in
     (height, width)
@@ -3635,6 +3637,7 @@ let createToplevelWindow () =
 
       Trace.status "Propagating changes";
       Uicommon.transportStart ();
+      grSet grStop true;
       let totalLength =
         Array.fold_left
           (fun l si ->
@@ -3695,6 +3698,7 @@ let createToplevelWindow () =
       Uicommon.transportItems !theState (fun {ri; _} -> not (Common.isDeletion ri)) uiWrapper;
       Uicommon.transportItems !theState (fun {ri; _} -> Common.isDeletion ri) uiWrapper;
       Uicommon.transportFinish ();
+      grSet grStop false;
       Trace.showTimer t;
       commitUpdates ();
       stopStats ();
@@ -3758,19 +3762,29 @@ let createToplevelWindow () =
         if skippedCount = 0 then [] else
         [Printf.sprintf "%d skipped" skippedCount]
       in
+      let nostartCount =
+        if not (Abort.isAll ()) then 0 else
+          Array.fold_left
+            (fun c si -> if si.whatHappened = None then c + 1 else c)
+            0 !theState
+      in
+      let nostart =
+        if nostartCount = 0 then [] else
+        [Printf.sprintf "%d not started" nostartCount]
+      in
       unsynchronizedPaths :=
         Some (Safelist.map (fun (si, _, _) -> si.ri.path1)
                 (failureList @ partialList @ skippedList),
               []);
       Trace.status
         (Printf.sprintf "Synchronization complete         %s"
-           (String.concat ", " (failures @ partials @ skipped)));
+           (String.concat ", " (failures @ partials @ skipped @ nostart)));
       displayGlobalProgress 0.;
 
       grSet grRescan true;
       make_interactive toplevelWindow;
 
-      let totalCount = failureCount + partialCount + skippedCount in
+      let totalCount = failureCount + partialCount + skippedCount + nostartCount in
       if totalCount > 0 then begin
         let format n item sing plur =
           match n with
@@ -3781,10 +3795,12 @@ let createToplevelWindow () =
         let infos =
           format failureCount "failure" "" "s" @
           format partialCount "partially transferred director" "y" "ies" @
-          format skippedCount "skipped item" "" "s"
+          format skippedCount "skipped item" "" "s" @
+          format nostartCount "not started item" "" "s"
         in
         let message =
-          (if failureCount = 0 then "The synchronization was successful.\n\n"
+          (if failureCount = 0 && nostartCount = 0 then
+             "The synchronization was successful.\n\n"
            else "") ^
           "The replicas are not fully synchronized.\n" ^
           (if totalCount < 2 then "There was" else "There were") ^
@@ -3968,14 +3984,11 @@ let createToplevelWindow () =
        ~callback:(fun () ->
                     getLock synchronize) ());
 
-  (* Does not quite work: too slow, and Files.copy must be modifed to
-     support an interruption without error. *)
-  (*
-  ignore (actionBar#insert_button ~text:"Stop"
-            ~icon:((GMisc.image ~stock:`STOP ())#coerce)
-            ~tooltip:"Exit Unison"
-            ~callback:Abort.all ());
-  *)
+  grAdd grStop
+    (insert_button actionBar ~text:"Stop"
+       ~stock:`STOP
+       ~tooltip:"Stop update propagation"
+       ~callback:Abort.all ());
 
   (*********************************************************************
     Rescan button
