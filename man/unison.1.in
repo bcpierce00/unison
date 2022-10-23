@@ -282,6 +282,24 @@ beginning with #; both are ignored.
 .Pp
 When Unison starts, it first reads the profile and then the command line, so
 command-line options will override settings from the profile.
+.Sh TERMINATION
+When not synchronizing continuously, the text interface terminates when
+synchronization is finished normally or due to a fatal error occuring.
+.Pp
+In the text interface, to interrupt synchronization before it is finished,
+press
+.Sy Ctrl-C
+(or send signal
+.Sy SIGINT
+or
+.Sy SIGTERM ) .
+This will interrupt update propagation as quickly as possible but still
+complete proper cleanup. If the process does not stop even after pressing
+.Sy Ctrl-C
+then keep doing it repeatedly. This will bypass cleanup procedures and
+terminates the process forcibly (similar to
+.Sy SIGKILL ) .
+Doing so may leave the archives or replicas in an inconsistent state or locked.
 .Sh ENVIRONMENT
 .Bl -tag
 .It Ev UNISON

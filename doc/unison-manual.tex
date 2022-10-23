@@ -1979,6 +1979,19 @@ without doing proper cleanup; it is therefore not recommended unless the
 ``Stop'' button does not react quickly enough.
 \end{tkui}
 
+\begin{textui}
+When not synchronizing continuously, the text interface terminates when
+synchronization is finished normally or due to a fatal error occuring.
+
+In the text interface, to interrupt synchronization before it is finished,
+press ``Ctrl-C'' (or send signal \verb|SIGINT| or \verb|SIGTERM|). This will
+interrupt update propagation as quickly as possible but still complete proper
+cleanup. If the process does not stop even after pressing ``Ctrl-C'' then keep
+doing it repeatedly.  This will bypass cleanup procedures and terminates the
+process forcibly (similar to \verb|SIGKILL|).  Doing so may leave the archives
+or replicas in an inconsistent state or locked.
+\end{textui}
+
 \SUBSECTION{Exit Code}{exit}
 
 When running in the textual mode, Unison returns an exit status, which

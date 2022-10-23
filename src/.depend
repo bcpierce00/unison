@@ -1451,6 +1451,7 @@ uitext.cmo : \
     globals.cmi \
     fswatchold.cmi \
     common.cmi \
+    abort.cmi \
     uitext.cmi
 uitext.cmx : \
     uutil.cmx \
@@ -1473,6 +1474,7 @@ uitext.cmx : \
     globals.cmx \
     fswatchold.cmx \
     common.cmx \
+    abort.cmx \
     uitext.cmi
 uitext.cmi : \
     uicommon.cmi
