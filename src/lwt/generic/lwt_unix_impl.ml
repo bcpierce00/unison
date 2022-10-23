@@ -14,9 +14,6 @@ therefore have the following limitations:
 - [connect] is blocking
 *)
 let windows_hack = Sys.os_type <> "Unix"
-let recent_ocaml =
-  Scanf.sscanf Sys.ocaml_version "%d.%d"
-    (fun maj min -> (maj = 3 && min >= 11) || maj > 3)
 
 module SleepQueue =
   Pqueue.Make (struct
@@ -119,12 +116,7 @@ let rec run thread =
       let infds = List.map fst !inputs in
       let outfds = List.map fst !outputs in
       let (readers, writers, _) =
-        if windows_hack && not recent_ocaml then
-          let writers = outfds in
-          let readers =
-            if delay = 0. || writers <> [] then [] else infds in
-          (readers, writers, [])
-        else if infds = [] && outfds = [] && delay = 0. then
+        if infds = [] && outfds = [] && delay = 0. then
           ([], [], [])
         else
           try
@@ -138,11 +130,6 @@ let rec run thread =
               ([], [], [])
           | Unix.Unix_error (Unix.EBADF, _, _) ->
               (List.filter bad_fd infds, List.filter bad_fd outfds, [])
-          | Unix.Unix_error (Unix.EPIPE, _, _)
-            when windows_hack && recent_ocaml ->
-            (* Workaround for a bug in Ocaml 3.11: select fails with an
-               EPIPE error when the file descriptor is remotely closed *)
-              (infds, [], [])
       in
       restart_threads !event_counter now;
       List.iter
@@ -223,8 +210,7 @@ let read ch buf pos len =
 
 let write ch buf pos len =
   try
-    if windows_hack && recent_ocaml then
-      raise (Unix.Unix_error (Unix.EAGAIN, "", ""));
+    if windows_hack then raise (Unix.Unix_error (Unix.EAGAIN, "", ""));
     Lwt.return (Unix.write ch buf pos len)
   with
     Unix.Unix_error ((Unix.EAGAIN | Unix.EWOULDBLOCK), _, _) ->
@@ -236,8 +222,7 @@ let write ch buf pos len =
 
 let write_substring ch buf pos len =
   try
-    if windows_hack && recent_ocaml then
-      raise (Unix.Unix_error (Unix.EAGAIN, "", ""));
+    if windows_hack then raise (Unix.Unix_error (Unix.EAGAIN, "", ""));
     Lwt.return (Unix.write_substring ch buf pos len)
   with
     Unix.Unix_error ((Unix.EAGAIN | Unix.EWOULDBLOCK), _, _) ->
