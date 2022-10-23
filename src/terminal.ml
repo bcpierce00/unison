@@ -62,89 +62,6 @@ let authenticity s = Rx.match_string authenticityRx s
    SSH password interaction.
 *)
 
-(*
-let a1 = [|'p';'q';'r';'s';'t';'u';'v';'w';'x';'y';'z';'P';'Q';'R';'S';'T'|]
-let a2 = [|'0';'1';'2';'3';'4';'5';'6';'7';'8';'9';'a';'b';'c';'d';'e';'f'|]
-exception Break of (Unix.file_descr * string) option
-let ptyMasterOpen () =
-  if not(Osx.isMacOSX or Osx.isLinux) then None else
-  try
-    (* Adapted from Stevens' Advanced Programming in Unix *)
-    let x = "/dev/pty--" in
-    for i = 0 to Array.length a1 do
-      x.[8] <- a1.(i);
-      for j = 0 to Array.length a2 do
-        x.[9] <- a2.(j);
-        let fdOpt =
-          try Some(Unix.openfile x [Unix.O_RDWR] 0)
-          with Unix.Unix_error _ -> None in
-        match fdOpt with None -> ()
-        | Some fdMaster ->
-          x.[5] <- 't';
-          raise (Break(Some(fdMaster,x)))
-      done
-    done;
-    None
-  with Break z -> z
-
-let ptySlaveOpen = function
-    None -> None
-  | Some(fdMaster,ttySlave) ->
-      let slave =
-        try Some (Unix.openfile ttySlave [Unix.O_RDWR] 0o600)
-        with Unix.Unix_error _ -> None in
-      (try Unix.close fdMaster with Unix.Unix_error(_,_,_) -> ());
-      slave
-
-let printTermAttrs fd = (* for debugging *)
-  let tio = Unix.tcgetattr fd in
-  let boolPrint name x d =
-    if x then Printf.printf "%s is ON (%s)\n" name d
-    else Printf.printf "%s is OFF (%s)\n" name d in
-  let intPrint name x d =
-    Printf.printf "%s = %d (%s)\n" name x d in
-  let charPrint name x d =
-    Printf.printf "%s = '%c' (%s)\n" name x d in
-  boolPrint "c_ignbrk" tio.Unix.c_ignbrk   "Ignore the break condition.";
-  boolPrint "c_brkint" tio.Unix.c_brkint   "Signal interrupt on break condition.";
-  boolPrint "c_ignpar" tio.Unix.c_ignpar   "Ignore characters with parity errors.";
-  boolPrint "c_parmrk" tio.Unix.c_parmrk   "Mark parity errors.";
-  boolPrint "c_inpck" tio.Unix.c_inpck     "Enable parity check on input.";
-  boolPrint "c_istrip" tio.Unix.c_istrip   "Strip 8th bit on input characters.";
-  boolPrint "c_inlcr" tio.Unix.c_inlcr     "Map NL to CR on input.";
-  boolPrint "c_igncr" tio.Unix.c_igncr     "Ignore CR on input.";
-  boolPrint "c_icrnl" tio.Unix.c_icrnl     "Map CR to NL on input.";
-  boolPrint "c_ixon" tio.Unix.c_ixon       "Recognize XON/XOFF characters on input.";
-  boolPrint "c_ixoff" tio.Unix.c_ixoff     "Emit XON/XOFF chars to control input flow.";
-  boolPrint "c_opost" tio.Unix.c_opost     "Enable output processing.";
-  intPrint "c_obaud" tio.Unix.c_obaud      "Output baud rate (0 means close connection).";
-  intPrint "c_ibaud" tio.Unix.c_ibaud      "Input baud rate.";
-  intPrint "c_csize" tio.Unix.c_csize      "Number of bits per character (5-8).";
-  intPrint "c_cstopb" tio.Unix.c_cstopb    "Number of stop bits (1-2).";
-  boolPrint "c_cread" tio.Unix.c_cread     "Reception is enabled.";
-  boolPrint "c_parenb" tio.Unix.c_parenb   "Enable parity generation and detection.";
-  boolPrint "c_parodd" tio.Unix.c_parodd   "Specify odd parity instead of even.";
-  boolPrint "c_hupcl" tio.Unix.c_hupcl     "Hang up on last close.";
-  boolPrint "c_clocal" tio.Unix.c_clocal   "Ignore modem status lines.";
-  boolPrint "c_isig" tio.Unix.c_isig       "Generate signal on INTR, QUIT, SUSP.";
-  boolPrint "c_icanon" tio.Unix.c_icanon   "Enable canonical processing (line buffering and editing)";
-  boolPrint "c_noflsh" tio.Unix.c_noflsh   "Disable flush after INTR, QUIT, SUSP.";
-  boolPrint "c_echo" tio.Unix.c_echo       "Echo input characters.";
-  boolPrint "c_echoe" tio.Unix.c_echoe     "Echo ERASE (to erase previous character).";
-  boolPrint "c_echok" tio.Unix.c_echok     "Echo KILL (to erase the current line).";
-  boolPrint "c_echonl" tio.Unix.c_echonl   "Echo NL even if c_echo is not set.";
-  charPrint "c_vintr" tio.Unix.c_vintr     "Interrupt character (usually ctrl-C).";
-  charPrint "c_vquit" tio.Unix.c_vquit     "Quit character (usually ctrl-\\).";
-  charPrint "c_verase" tio.Unix.c_verase   "Erase character (usually DEL or ctrl-H).";
-  charPrint "c_vkill" tio.Unix.c_vkill     "Kill line character (usually ctrl-U).";
-  charPrint "c_veof" tio.Unix.c_veof       "End-of-file character (usually ctrl-D).";
-  charPrint "c_veol" tio.Unix.c_veol       "Alternate end-of-line char. (usually none).";
-  intPrint "c_vmin" tio.Unix.c_vmin        "Minimum number of characters to read before the read request is satisfied.";
-  intPrint "c_vtime" tio.Unix.c_vtime      "Maximum read wait (in 0.1s units).";
-  charPrint "c_vstart" tio.Unix.c_vstart   "Start character (usually ctrl-Q).";
-  charPrint "c_vstop" tio.Unix.c_vstop      "Stop character (usually ctrl-S)."
-*)
-
 (* Implemented in file pty.c *)
 type pty
 external win_openpty : unit -> (Unix.file_descr * Unix.file_descr)
@@ -304,11 +221,6 @@ let unix_create_session cmd args new_stdin new_stdout new_stderr =
   | Some (masterFd, slaveFd) ->
       Unix.set_close_on_exec masterFd;
       Unix.set_close_on_exec slaveFd;
-(*
-      Printf.printf "openpty returns %d--%d\n" (dumpFd fdM) (dumpFd fdS); flush stdout;
-      Printf.printf "new_stdin=%d, new_stdout=%d, new_stderr=%d\n"
-        (dumpFd new_stdin) (dumpFd new_stdout) (dumpFd new_stderr) ; flush stdout;
-*)
       flush_all (); (* Clear buffers to avoid risk of double flushing by child.
         Even this is not sufficient, strictly speaking, as there is a window
         of opportunity to fill the buffer between flushing and calling fork. *)
