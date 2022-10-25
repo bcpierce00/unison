@@ -2785,6 +2785,26 @@ let docs =
       \032      cleanup procedures and terminates the process forcibly (similar to\n\
       \032      SIGKILL). Doing so may leave the archives or replicas in an\n\
       \032      inconsistent state or locked.\n\
+      \032      When synchronizing continuously (time interval repeat or with\n\
+      \032      filesystem monitoring), interrupting with \226\128\156Ctrl-C\226\128\157 or with signal\n\
+      \032      SIGINT or SIGTERM works the same way as described above and will\n\
+      \032      additionally stop the continuous process. To stop only the\n\
+      \032      continuous process and let the last synchronization complete\n\
+      \032      normally, press \226\128\156Ctrl-D\226\128\157 or send signal SIGUSR2 instead. Closing\n\
+      \032      the input, receiving an EOF, or receiving a ^D (0x04) from the\n\
+      \032      input terminal or a redirected standard input all have the same\n\
+      \032      effect. EOF is not interpreted as a stop request when standard\n\
+      \032      input is redirected from a regular file. If the standard input is\n\
+      \032      not open or is not open for reading already at Unison startup then\n\
+      \032      it is ignored and only signals can be used to send the stop\n\
+      \032      request.\n\
+      \n\
+      \032    Tips: For continuous synchronization the input should not be\n\
+      \032    redirected from any source providing a lot of input (such as an\n\
+      \032    existing regular file larger than a few tens of bytes or a device or\n\
+      \032    a pipe that produces large quantities of data). In such cases,\n\
+      \032    Unison would keep reading all the input looking for the stop\n\
+      \032    condition.\n\
       \n\
       Exit Code\n\
       \n\
