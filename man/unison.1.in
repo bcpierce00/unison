@@ -300,6 +300,19 @@ then keep doing it repeatedly. This will bypass cleanup procedures and
 terminates the process forcibly (similar to
 .Sy SIGKILL ) .
 Doing so may leave the archives or replicas in an inconsistent state or locked.
+.Pp
+When synchronizing continuously (time interval repeat or with filesystem
+monitoring), interrupting with
+.Sy Ctrl-C
+or with signal
+.Sy SIGINT
+or
+.Sy SIGTERM
+works the same way as described above and will additionally stop the continuous
+process. To stop only the continuous process and let the last synchronization
+complete normally, send signal
+.Sy SIGUSR2
+instead.
 .Sh ENVIRONMENT
 .Bl -tag
 .It Ev UNISON

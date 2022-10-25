@@ -1211,6 +1211,79 @@ let synchronizeOnce ?wantWatcher pathsOpt =
     (exitStatus, failedPaths)
   end
 
+(* ------------ Safe termination between synchronizations ------------ *)
+
+let safeStopReqd, requestSafeStop =
+  let safeStopReqd = ref false in
+  (* [safeStopReqd] can only go from false to true;
+     it must never be changed from true to false. *)
+  let isRequested () = !safeStopReqd
+  and request () = safeStopReqd := true in
+  isRequested, request
+
+(*** Requesting safe termination by signals ***)
+
+let set_signal_noerr signa nm behv =
+  try Sys.set_signal signa behv; true
+  with Invalid_argument _ | Sys_error _ as e ->
+    Trace.logonly
+      ("Warning: " ^ nm ^ " handler not set: " ^ (Printexc.to_string e) ^ "\n");
+    false
+
+let stopPipe = ref None
+
+let setupSafeStop () =
+  if supportSignals then begin
+    let safeStop _ =
+      if not (safeStopReqd ()) then begin
+        requestSafeStop ();
+        (* Interrupt the interruptible sleep *)
+        match !stopPipe with
+        | Some (i, o) -> Unix.close o; Lwt_unix.close i
+        | None -> ()
+      end
+    in
+    Util.blockSignals [Sys.sigusr2] (fun () ->
+    let ok = set_signal_noerr Sys.sigusr2 "SIGUSR2" (Signal_handle safeStop) in
+    if ok then stopPipe := Some (Lwt_unix.pipe_in ~cloexec:true ()))
+  end
+
+let safeStopRequested () =
+  safeStopReqd ()
+
+(*** Sleep interruptible by a termination request ***)
+
+let safeStopWait =
+  let safeStopWait_aux () =
+    let readStop =
+      match !stopPipe with
+      | None -> Lwt.wait ()
+      | Some (i, _) -> Lwt_unix.wait_read i
+    in
+    let readFail = function
+      | Unix.Unix_error (EBADF, _, _) -> Lwt.return (requestSafeStop ())
+      | e -> Lwt.fail e
+    in
+    let rec loop () =
+      Lwt.catch
+        (fun () -> readStop) readFail >>= fun () ->
+      if not (safeStopRequested ()) then
+        Lwt_unix.sleep 0.15 >>= loop
+      else
+        Lwt.return ()
+    in
+    loop ()
+  in
+  let wt = ref None in
+  fun () ->
+    match !wt with
+    | Some t -> t
+    | None -> let t = safeStopWait_aux () in wt := Some t; t
+
+let interruptibleSleepf dt =
+  Lwt_unix.run (Lwt.choose [Lwt_unix.sleep dt; safeStopWait ()])
+let interruptibleSleep dt = interruptibleSleepf (float dt)
+
 (* ----------------- Filesystem watching mode ---------------- *)
 
 let watchinterval = 1.    (* Minimal interval between two synchronizations *)
@@ -1231,7 +1304,7 @@ let waitForChanges t =
     Lwt_unix.run
       (Globals.allRootsMap (fun r -> Lwt.return (waitForChangesRoot r ()))
          >>= fun l ->
-       Lwt.choose (timeout @ l))
+       Lwt.choose (timeout @ l @ [safeStopWait ()]))
   end
 
 let synchronizePathsFromFilesystemWatcher () =
@@ -1263,11 +1336,11 @@ let synchronizePathsFromFilesystemWatcher () =
         PathMap.empty
         (Safelist.append delayedPaths failedPaths)
     in
-    Lwt_unix.run (Lwt_unix.sleep watchinterval);
+    interruptibleSleepf watchinterval;
     let nextTime =
       PathMap.fold (fun _ (t, d) t' -> min t t') delayInfo 1e20 in
-    waitForChanges nextTime;
-    loop false delayInfo
+    if not (safeStopRequested ()) then waitForChanges nextTime;
+    if safeStopRequested () then exitStatus else loop false delayInfo
   in
   loop true PathMap.empty
 
@@ -1278,7 +1351,8 @@ let synchronizeUntilNoFailures repeatMode =
   let rec loop triesLeft pathsOpt =
     let (exitStatus, failedPaths) =
       synchronizeOnce ~wantWatcher pathsOpt in
-    if failedPaths <> [] && triesLeft <> 0 then begin
+    if failedPaths <> [] && triesLeft <> 0
+         && not (repeatMode && safeStopRequested ()) then begin
       loop (triesLeft - 1) (Some (failedPaths, []))
     end else begin
       exitStatus
@@ -1287,14 +1361,14 @@ let synchronizeUntilNoFailures repeatMode =
 
 let rec synchronizeUntilDone repeatinterval =
   let exitStatus = synchronizeUntilNoFailures(repeatinterval >= 0) in
-  if repeatinterval < 0 then
+  if repeatinterval < 0 || safeStopRequested () then
     exitStatus
   else begin
     (* Do it again *)
     Trace.status (Printf.sprintf
        "\nSleeping for %d seconds...\n" repeatinterval);
-    Unix.sleep repeatinterval;
-    synchronizeUntilDone repeatinterval
+    interruptibleSleep repeatinterval;
+    if safeStopRequested () then exitStatus else synchronizeUntilDone repeatinterval
   end
 
 let synchronizeUntilDone () =
@@ -1443,6 +1517,7 @@ let rec start interface =
     Sys.catch_break true;
     (* Just to make sure something is there... *)
     setWarnPrinterForInitialization();
+    setupSafeStop ();
     let errorOut s =
       Util.msg "%s%s%s\n" Uicommon.shortUsageMsg profmgrUsageMsg s;
       exit 1
@@ -1527,8 +1602,8 @@ let rec start interface =
         exit Uicommon.fatalExit;
 
       Util.msg "\nRestarting in 10 seconds...\n\n";
-      begin try Unix.sleep 10 with Sys.Break -> exit Uicommon.fatalExit end;
-      start interface
+      begin try interruptibleSleep 10 with Sys.Break -> exit Uicommon.fatalExit end;
+      if safeStopRequested () then exit Uicommon.fatalExit else start interface
     end
   end
 
