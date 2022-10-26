@@ -252,13 +252,14 @@ let docs =
       \032  and keep the existing archive.\n\
       \n\
       \032  If version interoperability requirements are followed then Unison 2.52\n\
-      \032  can upgrade the archive created by earlier Unison versions. To avoid\n\
-      \032  rebuilding archive files, you must install version 2.52 built with the\n\
-      \032  same OCaml version as your previous version of Unison, and then run it\n\
-      \032  at least once on each root. Doing so will upgrade the archive file.\n\
+      \032  and newer can upgrade the archive created by earlier Unison versions.\n\
+      \032  To avoid rebuilding archive files when upgrading from a version older\n\
+      \032  than 2.52, you must install version 2.52 or newer built with the same\n\
+      \032  OCaml version as your previous version of Unison, and then run it at\n\
+      \032  least once on each root. Doing so will upgrade the archive file.\n\
       \n\
-      \032  After upgrading the archive, you are free to swap the Unison 2.52\n\
-      \032  executable to one compiled with a different version of OCaml. The\n\
+      \032  After upgrading the archive, you are free to swap the Unison 2.52 or\n\
+      \032  newer executable to one compiled with a different version of OCaml. The\n\
       \032  archive file is no longer dependent on the compiler version.\n\
       \n\
       Version interoperability\n\
@@ -270,7 +271,7 @@ let docs =
       \032  require fully scanning both roots, which can be time-consuming with big\n\
       \032  replicas.\n\
       \n\
-      \032  Unison 2.52 is compatible with:\n\
+      \032  Unison 2.52 and newer are compatible with:\n\
       \032    * Unison 2.52 or newer (for as long as backwards compatibility is\n\
       \032      maintained in the newer versions). You do not have to pay any\n\
       \032      attention to OCaml compiler versions.\n\
