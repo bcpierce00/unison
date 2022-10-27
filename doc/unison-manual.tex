@@ -265,13 +265,14 @@ problematic historically).  Lastly, it is possible to upgrade Unison on
 the local machine (compiled with any OCaml version) and keep the existing
 archive.
 
-If version interoperability requirements are followed then Unison 2.52 can
-upgrade the archive created by earlier Unison versions.  To avoid rebuilding
-archive files, you must install version 2.52 built with the same OCaml
-version as your previous version of Unison, and then run it at least once
-on each root.  Doing so will upgrade the archive file.
+If version interoperability requirements are followed then Unison 2.52 and
+newer can upgrade the archive created by earlier Unison versions.  To avoid
+rebuilding archive files when upgrading from a version older than 2.52, you
+must install version 2.52 or newer built with the same OCaml version as your
+previous version of Unison, and then run it at least once on each root.  Doing
+so will upgrade the archive file.
 
-After upgrading the archive, you are free to swap the Unison 2.52
+After upgrading the archive, you are free to swap the Unison 2.52 or newer
 executable to one compiled with a different version of OCaml.
 The archive file is no longer dependent on the compiler version.
 
@@ -284,7 +285,7 @@ Upgrading from an incompatible version, while possible and normal, will
 require fully scanning both roots, which can be time-consuming with big
 replicas.
 
-{\bf Unison 2.52} is compatible with:
+{\bf Unison 2.52 and newer} are compatible with:
 \begin{itemize}
 \item {\em Unison 2.52 or newer} (for as long as backwards compatibility
 is maintained in the newer versions). You do not have to pay any attention
