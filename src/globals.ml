@@ -45,10 +45,17 @@ let setRawRoots l = Prefs.set rawroots (Safelist.rev l)
 
 let rawRoots () = Safelist.rev (Prefs.read rawroots)
 
+let wrongNumRootsExn roots =
+  Util.Fatal (Printf.sprintf "Wrong number of roots: \
+    2 expected, but %d provided (%s)\n(Maybe you specified \
+    roots both on the command line and in the profile?)"
+    (Safelist.length roots)
+    (String.concat ", " roots))
+
 let rawRootPair () =
   match rawRoots () with
     [r1; r2] -> (r1, r2)
-  | _        -> assert false
+  | roots    -> raise (wrongNumRootsExn roots)
 
 let theroots = ref []
 
@@ -58,11 +65,7 @@ open Lwt
 let installRoots termInteract =
   let () = uninstallRoots () in (* Clear out potential old roots *)
   let roots = rawRoots () in
-  if Safelist.length roots <> 2 then
-    raise (Util.Fatal (Printf.sprintf
-      "Wrong number of roots: 2 expected, but %d provided (%s)\n(Maybe you specified roots both on the command line and in the profile?)"
-      (Safelist.length roots)
-      (String.concat ", " roots) ));
+  if Safelist.length roots <> 2 then raise (wrongNumRootsExn roots);
   Safelist.fold_right
     (fun r cont ->
        Remote.canonizeRoot r (Clroot.parseRoot r) termInteract
