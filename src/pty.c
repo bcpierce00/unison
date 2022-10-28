@@ -85,6 +85,30 @@ CAMLprim value c_openpty(value unit) {
 
 #endif
 
+#ifndef _WIN32
+
+#include <fcntl.h>
+
+CAMLprim value unsn_fd_readable(value fd)
+{
+  CAMLparam1(fd);
+  int fl = fcntl(Int_val(fd), F_GETFL);
+  if (fl == -1) {
+    caml_uerror("fcntl", Nothing);
+  }
+  CAMLreturn(Val_bool(!(fl & O_WRONLY)));
+}
+
+#else  // _WIN32
+
+CAMLprim value unsn_fd_readable(value fd)
+{
+  CAMLparam0();
+  CAMLreturn(Val_bool(1));
+}
+
+#endif
+
 #ifdef _WIN32
 
 #include <windows.h>

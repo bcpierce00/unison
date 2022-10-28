@@ -1248,7 +1248,89 @@ let setupSafeStop () =
     if ok then stopPipe := Some (Lwt_unix.pipe_in ~cloexec:true ()))
   end
 
+(*** Requesting safe termination via stdin ***)
+
+let nonEofStopCond s =
+  String.contains s '\004' (* ^D *)
+
+let selectStdin () =
+  match Unix.select [Unix.stdin] [] [] 0. with
+  | ([r1], _, _) when r1 ==(*phys*) Unix.stdin -> true
+  | _ -> false
+
+let rec readStdinNoIntr b l =
+  try Unix.read Unix.stdin b 0 l
+  with Unix.Unix_error (EINTR, _, _) -> readStdinNoIntr b l
+
+external fdIsReadable : Unix.file_descr -> bool = "unsn_fd_readable"
+
+let stdinIsatty = Unix.isatty Unix.stdin
+
+let stdinOkForStopReq =
+  let rec notEOF st =
+    if stdinIsatty then true else
+    match selectStdin () with
+    | true ->
+        let l = 32 in
+        let b = Bytes.create l in
+        begin match readStdinNoIntr b l with
+        | 0 -> false
+        | n ->
+            if nonEofStopCond (Bytes.sub_string b 0 n) then requestSafeStop ();
+            true
+        | exception Unix.Unix_error _ -> true
+        end
+    | false -> true
+    | exception Unix.Unix_error (EINTR, _, _) -> notEOF st
+    | exception Unix.Unix_error (EBADF, _, _) -> true
+  in
+  match Unix.LargeFile.fstat Unix.stdin with
+  | { st_kind = S_REG; _ } -> false
+  | st -> begin try fdIsReadable Unix.stdin with Unix.Unix_error _ -> true end && notEOF st
+  | exception Unix.Unix_error _ -> false
+
+let ignoreSignal signa f =
+  let prev =
+    try Some (Sys.signal signa Signal_ignore)
+    with Invalid_argument _ | Sys_error _ -> None in
+  let restoreSig () =
+    match prev with
+    | None -> ()
+    | Some prev -> try Sys.set_signal signa prev with Sys_error _ -> ()
+  in
+  try let r = f () in restoreSig (); r
+  with e ->
+    let origbt = Printexc.get_raw_backtrace () in
+    restoreSig ();
+    Printexc.raise_with_backtrace e origbt
+
+let isStdinStopCond n s =
+  n = 0 (* Assuming terminal_io.c_vmin > 0, this is true EOF *)
+    || nonEofStopCond s
+
+let readStopFromStdin () =
+  let l = 32 in
+  let b = Bytes.create l in
+  let ignoreTtin f = if stdinIsatty then ignoreSignal Sys.sigttin f else f () in
+  try
+    let n = ignoreTtin (fun () -> readStdinNoIntr b l) in
+    isStdinStopCond n (Bytes.sub_string b 0 n)
+  with
+  | Unix.Unix_error ((EAGAIN | EWOULDBLOCK), _, _) -> false
+  | Unix.Unix_error (EIO, _, _) -> false
+  | Unix.Unix_error (EBADF, _, _) -> true
+
+let rec checkStdinStopReq () =
+  if not stdinOkForStopReq then () else
+  match selectStdin () with
+  | true ->
+      if readStopFromStdin () then requestSafeStop () else checkStdinStopReq ()
+  | false -> ()
+  | exception Unix.Unix_error (EINTR, _, _) -> checkStdinStopReq ()
+  | exception Unix.Unix_error (EBADF, _, _) -> ()
+
 let safeStopRequested () =
+  if not (safeStopReqd ()) then checkStdinStopReq ();
   safeStopReqd ()
 
 (*** Sleep interruptible by a termination request ***)
@@ -1265,8 +1347,13 @@ let safeStopWait =
       | e -> Lwt.fail e
     in
     let rec loop () =
+      let waitStdin () =
+        if not stdinOkForStopReq then Lwt.wait ()
+        else if Lwt_unix.impl_platform = `Win32 then Lwt.wait ()
+        else Lwt_unix.wait_read' Unix.stdin
+      in
       Lwt.catch
-        (fun () -> readStop) readFail >>= fun () ->
+        (fun () -> Lwt.choose [waitStdin (); readStop]) readFail >>= fun () ->
       if not (safeStopRequested ()) then
         Lwt_unix.sleep 0.15 >>= loop
       else

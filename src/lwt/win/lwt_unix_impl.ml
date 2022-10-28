@@ -336,6 +336,7 @@ if !d then prerr_endline "ACCEPT";
 (****)
 
 let wait_read ch = assert false
+let wait_read' = wait_read
 
 let wait_write ch = assert false
 

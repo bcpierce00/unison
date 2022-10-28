@@ -1995,7 +1995,20 @@ When synchronizing continuously (time interval repeat or with filesystem
 monitoring), interrupting with ``Ctrl-C'' or with signal \verb|SIGINT| or
 \verb|SIGTERM| works the same way as described above and will additionally stop
 the continuous process. To stop only the continuous process and let the last
-synchronization complete normally, send signal \verb|SIGUSR2| instead.
+synchronization complete normally, press ``Ctrl-D'' or send signal
+\verb|SIGUSR2| instead.
+Closing the input, receiving an EOF, or receiving a \verb|^D| (0x04) from the
+input terminal or a redirected standard input all have the same effect. If the
+standard input is redirected from a regular file, is not open or is not open
+for reading already at Unison startup then it is ignored and only signals can
+be used to send the stop request.
+
+\begin{quote}
+  {\em Tips:} For continuous synchronization the input should not be redirected
+  from any source providing a lot of input (such as a device or a pipe that
+  produces large quantities of data). In such cases, Unison would keep reading
+  all the input looking for the stop condition.
+\end{quote}
 \end{textui}
 
 \SUBSECTION{Exit Code}{exit}

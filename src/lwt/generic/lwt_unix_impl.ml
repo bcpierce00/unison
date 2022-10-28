@@ -206,6 +206,8 @@ let wait_read ch =
   inputs := (ch, `Wait res) :: !inputs;
   res
 
+let wait_read' = wait_read
+
 let wait_write ch =
   let res = Lwt.wait () in
   outputs := (ch, `Wait res) :: !outputs;
