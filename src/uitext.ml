@@ -1293,6 +1293,14 @@ let stdinOkForStopReq =
   | st -> begin try fdIsReadable Unix.stdin with Unix.Unix_error _ -> true end && notEOF st
   | exception Unix.Unix_error _ -> false
 
+external getpgrp : unit -> int = "unsn_getpgrp"
+external tcgetpgrp : Unix.file_descr -> int = "unsn_tcgetpgrp"
+
+let isBackgroundProcess () =
+  try
+    stdinIsatty && (getpgrp () <> tcgetpgrp Unix.stdin)
+  with Unix.Unix_error ((EBADF | ENOTTY), _, _) -> false
+
 let ignoreSignal signa f =
   let prev =
     try Some (Sys.signal signa Signal_ignore)
@@ -1325,7 +1333,7 @@ let readStopFromStdin () =
   | Unix.Unix_error (EBADF, _, _) -> true
 
 let rec checkStdinStopReq () =
-  if not stdinOkForStopReq then () else
+  if not stdinOkForStopReq || isBackgroundProcess () then () else
   match selectStdin () with
   | true ->
       if readStopFromStdin () then requestSafeStop () else checkStdinStopReq ()
@@ -1369,7 +1377,7 @@ let safeStopWait =
       Lwt.catch
         (fun () -> Lwt.choose [waitStdin (); readStop]) readFail >>= fun () ->
       if not (safeStopRequested ()) then
-        Lwt_unix.sleep 0.15 >>= loop
+        Lwt_unix.sleep (if isBackgroundProcess () then 1. else 0.15) >>= loop
       else
         Lwt.return ()
     in

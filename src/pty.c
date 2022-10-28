@@ -87,7 +87,24 @@ CAMLprim value c_openpty(value unit) {
 
 #ifndef _WIN32
 
+#include <unistd.h>    // pgrp
 #include <fcntl.h>
+
+CAMLprim value unsn_getpgrp(value unit)
+{
+  CAMLparam0();
+  CAMLreturn(Val_int(getpgrp()));
+}
+
+CAMLprim value unsn_tcgetpgrp(value fd)
+{
+  CAMLparam1(fd);
+  pid_t pgrp = tcgetpgrp(Int_val(fd));
+  if (pgrp == -1) {
+    caml_uerror("tcgetpgrp", Nothing);
+  }
+  CAMLreturn(Val_int(pgrp));
+}
 
 CAMLprim value unsn_fd_readable(value fd)
 {
@@ -100,6 +117,18 @@ CAMLprim value unsn_fd_readable(value fd)
 }
 
 #else  // _WIN32
+
+CAMLprim value unsn_getpgrp(value unit)
+{
+  CAMLparam0();
+  CAMLreturn(Val_int(-1));
+}
+
+CAMLprim value unsn_tcgetpgrp(value fd)
+{
+  CAMLparam0();
+  CAMLreturn(Val_int(-1));
+}
 
 CAMLprim value unsn_fd_readable(value fd)
 {
