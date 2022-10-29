@@ -272,6 +272,19 @@ let process_status_to_string = function
   | Unix.WSIGNALED i -> Printf.sprintf "Killed by signal %d" i
   | Unix.WSTOPPED i  -> Printf.sprintf "Stopped by signal %d" i
 
+
+let blockSignals sigs f =
+  let (prevMask, ok) =
+    try (Unix.sigprocmask SIG_BLOCK sigs, true)
+    with Invalid_argument _ -> ([], false) in
+  let restoreMask () =
+    if ok then Unix.sigprocmask SIG_SETMASK prevMask |> ignore in
+  try let r = f () in restoreMask (); r
+  with e ->
+    let origbt = Printexc.get_raw_backtrace () in
+    restoreMask ();
+    Printexc.raise_with_backtrace e origbt
+
 (*****************************************************************************)
 (*                         OS TYPE                                           *)
 (*****************************************************************************)

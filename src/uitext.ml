@@ -1443,6 +1443,7 @@ let rec start interface =
   if interface <> Uicommon.Text then
     Util.msg "This Unison binary only provides the text GUI...\n";
   begin try
+    Sys.catch_break true;
     (* Just to make sure something is there... *)
     setWarnPrinterForInitialization();
     let errorOut s =
