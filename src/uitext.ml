@@ -1253,8 +1253,12 @@ let setupSafeStop () =
 let nonEofStopCond s =
   String.contains s '\004' (* ^D *)
 
+(* [Unix.select] emulation in Windows does not manage to capture all
+   events (for fds other than sockets/files) if timeout is zero. *)
+let selectTimeout = if Sys.win32 then 0.01 else 0.
+
 let selectStdin () =
-  match Unix.select [Unix.stdin] [] [] 0. with
+  match Unix.select [Unix.stdin] [] [] selectTimeout with
   | ([r1], _, _) when r1 ==(*phys*) Unix.stdin -> true
   | _ -> false
 
@@ -1342,6 +1346,16 @@ let safeStopWait =
       | None -> Lwt.wait ()
       | Some (i, _) -> Lwt_unix.wait_read i
     in
+    let winFd = ref None in
+    let winReadStdin () =
+      let (b, fd) = match !winFd with Some x -> x | None ->
+        let x = (Bytes.create 32, Lwt_unix.of_unix_file_descr Unix.stdin) in
+        winFd := Some x; x in
+      Lwt_unix.read fd b 0 (Bytes.length b) >>= fun n ->
+      if (isStdinStopCond n (Bytes.sub_string b 0 n)) then
+        requestSafeStop ();
+      Lwt.return ()
+    in
     let readFail = function
       | Unix.Unix_error (EBADF, _, _) -> Lwt.return (requestSafeStop ())
       | e -> Lwt.fail e
@@ -1349,7 +1363,7 @@ let safeStopWait =
     let rec loop () =
       let waitStdin () =
         if not stdinOkForStopReq then Lwt.wait ()
-        else if Lwt_unix.impl_platform = `Win32 then Lwt.wait ()
+        else if Lwt_unix.impl_platform = `Win32 then winReadStdin ()
         else Lwt_unix.wait_read' Unix.stdin
       in
       Lwt.catch
