@@ -103,7 +103,23 @@ let contactingServerMsg () =
   Printf.sprintf "Unison %s: Contacting server..." Uutil.myVersion 
 
 let repeat =
-  Prefs.createString "repeat" ""
+  let parseRepeat s =
+    let parseTime ts =
+      try int_of_string ts with Failure _ ->
+        raise (Prefs.IllegalValue ("Value of 'repeat' preference ("
+          ^ s ^ ") should be either a number or 'watch'"))
+    in
+    match s with
+    | "" -> `NoRepeat
+    | "watch" -> `Watch
+    | _ -> `Interval (parseTime s)
+  in
+  let externRepeat = function
+    | `NoRepeat -> ""
+    | `Watch -> "watch"
+    | `Interval i -> string_of_int i
+  in
+  Prefs.create "repeat" `NoRepeat
     ~category:(`Advanced `Syncprocess_CLI)
     "synchronize repeatedly (text interface only)"
     ("Setting this preference causes the text-mode interface to synchronize "
@@ -112,7 +128,10 @@ let repeat =
      ^ "beginning again. When the argument is \\verb|watch|, Unison relies on "
      ^ "an external file monitoring process to synchronize whenever a change "
      ^ "happens.")
-let repeatWatcher () = Prefs.read repeat = "watch"
+    (fun _ -> parseRepeat)
+    (fun r -> [externRepeat r])
+    Umarshal.(sum1 string externRepeat parseRepeat)
+let repeatWatcher () = Prefs.read repeat = `Watch
 
 let retry =
   Prefs.createInt "retry" 0

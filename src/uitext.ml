@@ -1051,7 +1051,7 @@ let rec interactAndPropagateChanges prevItemList reconItemList
     (* JV (5/09): Don't save the archive in repeat mode as it has some
        costs and its unlikely there is much change to the archives in
        this mode. *)
-    if !Update.foundArchives && Prefs.read Uicommon.repeat = "" then
+    if !Update.foundArchives && Prefs.read Uicommon.repeat = `NoRepeat then
       Update.commitUpdates ();
     display "No updates to propagate\n";
     if skipped > 0 then begin
@@ -1195,7 +1195,7 @@ let synchronizeOnce ?wantWatcher pathsOpt =
 
   if not !Update.foundArchives then Update.commitUpdates ();
   if reconItemList = [] then begin
-    if !Update.foundArchives && Prefs.read Uicommon.repeat = "" then
+    if !Update.foundArchives && Prefs.read Uicommon.repeat = `NoRepeat then
       Update.commitUpdates ();
     (if anyEqualUpdates then
       Trace.status ("Nothing to do: replicas have been changed only "
@@ -1285,19 +1285,7 @@ let synchronizeUntilNoFailures repeatMode =
     end in
   loop (Prefs.read Uicommon.retry) None
 
-let rec synchronizeUntilDone () =
-  let repeatinterval =
-    if Prefs.read Uicommon.repeat = "" then -1 else
-    try int_of_string (Prefs.read Uicommon.repeat)
-    with Failure _ ->
-      (* If the 'repeat' pref is not a valid number, switch modes... *)
-      if Prefs.read Uicommon.repeat = "watch" then
-        synchronizePathsFromFilesystemWatcher()
-      else
-        raise (Util.Fatal ("Value of 'repeat' preference ("
-                           ^Prefs.read Uicommon.repeat
-                           ^") should be either a number or 'watch'\n")) in
-
+let rec synchronizeUntilDone repeatinterval =
   let exitStatus = synchronizeUntilNoFailures(repeatinterval >= 0) in
   if repeatinterval < 0 then
     exitStatus
@@ -1306,8 +1294,14 @@ let rec synchronizeUntilDone () =
     Trace.status (Printf.sprintf
        "\nSleeping for %d seconds...\n" repeatinterval);
     Unix.sleep repeatinterval;
-    synchronizeUntilDone ()
+    synchronizeUntilDone repeatinterval
   end
+
+let synchronizeUntilDone () =
+  match Prefs.read Uicommon.repeat with
+  | `Watch -> synchronizePathsFromFilesystemWatcher ()
+  | `Interval i -> synchronizeUntilDone i
+  | `NoRepeat -> synchronizeUntilDone (-1)
 
 (* ----------------- Startup ---------------- *)
 
@@ -1495,7 +1489,7 @@ let rec start interface =
       Prefs.set dumbtty true;
       Trace.sendLogMsgsToStderr := false;
     end;
-    if Prefs.read Uicommon.repeat <> "" then begin
+    if Prefs.read Uicommon.repeat <> `NoRepeat then begin
       Prefs.set Globals.batch true;
     end;
     setColorPreference ();
@@ -1528,7 +1522,7 @@ let rec start interface =
       (* If any other bad thing happened and the -repeat preference is
          set, then restart *)
       handleException e;
-      if Prefs.read Uicommon.repeat = ""
+      if Prefs.read Uicommon.repeat = `NoRepeat
           || Prefs.read Uicommon.runtests then
         exit Uicommon.fatalExit;
 
