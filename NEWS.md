@@ -12,7 +12,7 @@ unison uses git history for that, and thus there is no changelog file.
 
 ## Changes in 2.53.0
 
-NOT YET RELEASED
+Released 2022-11-07
 
   * OCaml >= 4.08 is required to build unison.
   * unison can be built with (unreleased) OCaml 5.
