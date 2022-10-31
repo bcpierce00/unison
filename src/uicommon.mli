@@ -35,7 +35,7 @@ val profileLabel : string Prefs.t
 
 (* User preference: Synchronize repeatedly *)
 val repeat : [ `NoRepeat | `Interval of int | `Watch
-  | `Invalid of string * exn ] Prefs.t
+  | `WatchAndInterval of int | `Invalid of string * exn ] Prefs.t
 
 (* User preference: Try failing paths N times *)
 val retry : int Prefs.t

@@ -107,12 +107,16 @@ let repeat =
     let parseTime ts =
       try int_of_string ts with Failure _ ->
         raise (Prefs.IllegalValue ("Value of 'repeat' preference ("
-          ^ s ^ ") should be either a number or 'watch'"))
+          ^ s ^ ") should be either a number, 'watch' or 'watch+<number>'"))
+    in
+    let nonBlankLower x =
+      match String.trim x with "" -> None | s -> Some (String.lowercase_ascii s)
     in
     try
-      match s with
-      | "" -> `NoRepeat
-      | "watch" -> `Watch
+      match Safelist.filterMap nonBlankLower (String.split_on_char '+' s) with
+      | [] -> `NoRepeat
+      | ["watch"] -> `Watch
+      | ["watch"; i] | [i; "watch"] -> `WatchAndInterval (parseTime i)
       | _ -> `Interval (parseTime s)
     with
     | Prefs.IllegalValue _ as e -> `Invalid (s, e)
@@ -120,6 +124,7 @@ let repeat =
   let externRepeat = function
     | `NoRepeat | `Invalid _ -> ""
     | `Watch -> "watch"
+    | `WatchAndInterval i -> "watch+" ^ (string_of_int i)
     | `Interval i -> string_of_int i
   in
   Prefs.create "repeat" `NoRepeat
@@ -130,11 +135,15 @@ let repeat =
      ^ "argument is a number, Unison will pause for that many seconds before "
      ^ "beginning again. When the argument is \\verb|watch|, Unison relies on "
      ^ "an external file monitoring process to synchronize whenever a change "
-     ^ "happens.")
+     ^ "happens.  You can combine the two with a \\verb|+| character to use "
+     ^ "file monitoring and also do a full scan every specificed number of "
+     ^ "seconds.  For example, \\verb|watch+3600| will react to changes "
+     ^ "immediately and additionally do a full scan every hour.")
     (fun _ -> parseRepeat)
     (fun r -> [externRepeat r])
     Umarshal.(sum1 string externRepeat parseRepeat)
-let repeatWatcher () = Prefs.read repeat = `Watch
+let repeatWatcher () =
+  match Prefs.read repeat with `Watch | `WatchAndInterval _ -> true | _ -> false
 
 let retry =
   Prefs.createInt "retry" 0
