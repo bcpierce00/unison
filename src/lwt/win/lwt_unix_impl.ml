@@ -3,6 +3,7 @@
   conditions...
   (we have the first, scan the subsequent ones)
 *)
+let impl_platform = `Win32
 
 let no_overlapped_io = false
 let d = ref false

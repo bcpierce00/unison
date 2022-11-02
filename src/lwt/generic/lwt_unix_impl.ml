@@ -13,6 +13,8 @@ therefore have the following limitations:
   time, this could result in a dead-lock.
 - [connect] is blocking
 *)
+let impl_platform = `Generic
+
 let windows_hack = Sys.os_type <> "Unix"
 let recent_ocaml =
   Scanf.sscanf Sys.ocaml_version "%d.%d"

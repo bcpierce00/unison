@@ -55,3 +55,9 @@ type lwt_in_channel
 
 val intern_in_channel : in_channel -> lwt_in_channel
 val input_line : lwt_in_channel -> string Lwt.t
+
+(* Not all functions are implemented on Win32. [impl_platform] indicates
+   which implementation has been built. This value must not be used to
+   detect the OS platform; it's intendend to be used for guarding code
+   which uses functions that are not implemented on Win32. *)
+val impl_platform : [ `Generic | `Win32 ]
