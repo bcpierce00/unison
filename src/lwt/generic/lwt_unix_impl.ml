@@ -60,12 +60,6 @@ let of_unix_file_descr fd = if not windows_hack then Unix.set_nonblock fd; fd
 
 let inputs = ref []
 let outputs = ref []
-let wait_children = ref []
-
-let child_exited = ref false
-let _ =
-  if not windows_hack then
-    ignore(Sys.signal Sys.sigchld (Sys.Signal_handle (fun _ -> child_exited := true)))
 
 let bad_fd fd =
   try ignore (Unix.LargeFile.fstat fd); false with
@@ -79,9 +73,6 @@ let wrap_syscall queue fd cont syscall =
     with
       Exit
     | Unix.Unix_error ((Unix.EAGAIN | Unix.EWOULDBLOCK | Unix.EINTR), _, _) ->
-        (* EINTR because we are catching SIG_CHLD hence the system call
-           might be interrupted to handle the signal; this lets us restart
-           the system call eventually. *)
         None
     | e ->
         queue := List.remove_assoc fd !queue;
@@ -171,17 +162,6 @@ let rec run thread =
            with Not_found ->
              ())
         writers;
-      if !child_exited then begin
-        child_exited := false;
-        List.iter
-          (fun (id, (res, flags, pid)) ->
-             wrap_syscall wait_children id res
-               (fun () ->
-                  let (pid', _) as v = Unix.waitpid flags pid in
-                  if pid' = 0 then raise Exit;
-                  v))
-          !wait_children
-      end;
       run thread
 
 (****)
@@ -231,16 +211,6 @@ let write_substring ch buf pos len =
       res
   | e ->
       Lwt.fail e
-
-(*
-let pipe () =
-  let (in_fd, out_fd) as fd_pair = Unix.pipe() in
-  if not windows_hack then begin
-    Unix.set_nonblock in_fd;
-    Unix.set_nonblock out_fd
-  end;
-  fd_pair
-*)
 
 let pipe_in ?cloexec () =
   let (in_fd, out_fd) as fd_pair = Unix.pipe ?cloexec () in
@@ -293,35 +263,6 @@ let connect s addr =
   | e ->
       Lwt.fail e
 
-let ids = ref 0
-let new_id () = incr ids; !ids
-
-let _waitpid flags pid =
-  try
-    Lwt.return (Unix.waitpid flags pid)
-  with e ->
-    Lwt.fail e
-
-let waitpid flags pid =
-  if List.mem Unix.WNOHANG flags || windows_hack then
-    _waitpid flags pid
-  else
-    let flags = Unix.WNOHANG :: flags in
-    Lwt.bind (_waitpid flags pid) (fun ((pid', _) as res) ->
-    if pid' <> 0 then
-      Lwt.return res
-    else
-      let res = Lwt.wait () in
-      wait_children := (new_id (), (res, flags, pid)) :: !wait_children;
-      res)
-
-let wait () = waitpid [] (-1)
-
-let system cmd =
-  match Unix.fork () with
-     0 -> Unix.execv "/bin/sh" [| "/bin/sh"; "-c"; cmd |]
-  | id -> Lwt.bind (waitpid [] id) (fun (pid, status) -> Lwt.return status)
-
 (****)
 
 type lwt_in_channel = in_channel
@@ -345,31 +286,6 @@ let rec input_char ic =
       Lwt.bind (wait_inchan ic) (fun () -> input_char ic)
   | e ->
       Lwt.fail e
-
-let stdlib_input = input
-let rec input ic s ofs len =
-  try
-    Lwt.return (stdlib_input ic s ofs len)
-  with
-    Sys_blocked_io ->
-      Lwt.bind (wait_inchan ic) (fun () -> input ic s ofs len)
-  | e ->
-      Lwt.fail e
-
-let rec unsafe_really_input ic s ofs len =
-  if len <= 0 then
-    Lwt.return ()
-  else begin
-    Lwt.bind (input ic s ofs len) (fun r ->
-    if r = 0
-    then Lwt.fail End_of_file
-    else unsafe_really_input ic s (ofs+r) (len-r))
-  end
-
-let really_input ic s ofs len =
-  if ofs < 0 || len < 0 || ofs > Bytes.length s - len
-  then Lwt.fail (Invalid_argument "really_input")
-  else unsafe_really_input ic s ofs len
 
 let input_line ic =
   let buf = ref (Bytes.create 128) in
