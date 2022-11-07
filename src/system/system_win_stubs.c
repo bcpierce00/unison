@@ -591,3 +591,19 @@ CAMLprim value win_set_console_output_cp (value cp) {
   }
   CAMLreturn(Val_unit);
 }
+
+CAMLprim value win_vt_capable(value fd)
+{
+  CAMLparam1(fd);
+  DWORD mode;
+
+  if (Handle_val(fd) == INVALID_HANDLE_VALUE) {
+    CAMLreturn(Val_int(0));
+  }
+
+  if (!GetConsoleMode(Handle_val(fd), &mode)) {
+    CAMLreturn(Val_int(0));
+  }
+
+  CAMLreturn(Val_int(mode & ENABLE_VIRTUAL_TERMINAL_PROCESSING));
+}
