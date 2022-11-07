@@ -122,9 +122,13 @@ let has_stderr ~info:_ = true
 
 let fingerprint f =
   let ic = open_in_bin f in
-  let d = Digest.channel ic (-1) in
-  close_in ic;
-  d
+  try
+    let d = Digest.channel ic (-1) in
+    close_in ic;
+    d
+  with e ->
+    close_in_noerr ic;
+    raise e
 
 (****)
 
