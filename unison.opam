@@ -11,10 +11,9 @@ bug-reports: "https://github.com/bcpierce00/unison/issues"
 dev-repo: "git://github.com/bcpierce00/unison.git"
 build: ["dune" "build" "-p" name "-j" jobs]
 depends: [
-  "ocaml" {build & >= "4.08"}
-  "ocamlfind" {build}
-  "dune" {build & >= "2.3"}
-  "lablgtk3" {build & >= "3.1.0"}
+  "ocaml" {>= "4.08"}
+  "dune" {>= "2.3"}
+  "lablgtk3" {>= "3.1.0"}
 ]
 synopsis: "File-synchronization tool for Unix and Windows"
 description: """
