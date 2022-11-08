@@ -146,25 +146,6 @@ let allRootsMapWithWaitingAction f wa =
     (rootsInCanonicalOrder ()) >>= (fun l ->
       return (Safelist.map snd (reorderCanonicalListToUsersOrder l)))
 
-let replicaHostnames () =
-  Safelist.map
-    (function (Local, _) -> ""
-            | (Remote h,_) -> h)
-    (rootsList())
-
-let allHostsIter f =
-  let rec iter l =
-    match l with
-      [] ->
-        return ()
-    | root :: rem ->
-        f root >>= (fun () ->
-        iter rem)
-  in
-  iter (replicaHostnames ())
-
-let allHostsMap f = Safelist.map f (replicaHostnames())
-
 let paths =
   Prefs.create "path" []
     ~category:(`Basic `Sync)

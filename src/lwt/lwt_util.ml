@@ -61,6 +61,8 @@ let make_region count = { size = count; count = 0; waiters = Queue.create () }
 
 let resize_region reg sz = reg.size <- sz
 
+let purge_region reg = Queue.clear reg.waiters
+
 let leave_region reg sz =
    try
      if reg.count - sz >= reg.size then raise Queue.Empty;

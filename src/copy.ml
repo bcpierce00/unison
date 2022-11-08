@@ -294,7 +294,18 @@ let removeOldTempFile fspathTo pathTo =
     Os.delete fspathTo pathTo
   end
 
-let openFileIn fspath path kind =
+(* There is an issue that not all threads are immediately cancelled when there
+   is a connection error. A waiting thread (in this case probably a thread in
+   one of the Lwt regions) may have been started and could open an fd but may
+   never be able to complete. [protect], [lwt_protect] and any other cleanup
+   code may never be triggered in this scenario because the thread just stops
+   (as eventually the connection cleanup kicks in and all threads are stopped).
+   As a hacky(?) solution, keep track of all open fds and close them when the
+   connection breaks. *)
+let inFdResource = Remote.resourceWithConnCleanup close_in close_in_noerr
+let outFdResource = Remote.resourceWithConnCleanup close_out close_out_noerr
+
+let openFileIn' fspath path kind =
   match kind with
     `DATA ->
       Fs.open_in_bin (Fspath.concat fspath path)
@@ -305,7 +316,14 @@ let openFileIn fspath path kind =
   | `RESS ->
       Osx.openRessIn fspath path
 
-let openFileOut fspath path kind len =
+let openFileIn fspath path kind =
+  inFdResource.register (openFileIn' fspath path kind)
+
+let closeFileIn = inFdResource.release
+
+let closeFileInNoErr = inFdResource.release_noerr
+
+let openFileOut' fspath path kind len =
   match kind with
     `DATA ->
       let fullpath = Fspath.concat fspath path in
@@ -337,6 +355,13 @@ let openFileOut fspath path kind len =
       ch
   | `RESS ->
       Osx.openRessOut fspath path len
+
+let openFileOut fspath path kind len =
+  outFdResource.register (openFileOut' fspath path kind len)
+
+let closeFileOut = outFdResource.release
+
+let closeFileOutNoErr = outFdResource.release_noerr
 
 let setFileinfo fspathTo pathTo realPathTo update desc =
   match update with
@@ -390,6 +415,12 @@ let readPropsExtDataG root path desc =
 
 (****)
 
+(* The fds opened in this function normally shouldn't be tracked for extra
+   cleanup at connection close because this is sequential non-Lwt code. Yet,
+   there is a risk that code called by [Uutil.showProgress] may include Lwt
+   code. For this reason only, it is better to include the fds in this
+   function in the fd cleanup scheme (done automatically by [openFile*] and
+   [closeFile*] functions). *)
 let copyContents fspathFrom pathFrom fspathTo pathTo fileKind fileLength ido =
   let use_id f = match ido with Some id -> f id | None -> () in
   let inFd = openFileIn fspathFrom pathFrom fileKind in
@@ -403,12 +434,12 @@ let copyContents fspathFrom pathFrom fspathTo pathTo fileKind fileLength ido =
                  use_id (fun id ->
 (* (Util.msg "Copied file %s (%d bytes)\n" (Path.toString pathFrom) l); *)
                    Uutil.showProgress id (Uutil.Filesize.ofInt l) "l"));
-            close_in inFd;
-            close_out outFd;
+            closeFileIn inFd;
+            closeFileOut outFd;
 (* ignore (Sys.command ("ls -l " ^ (Fspath.toString (Fspath.concat fspathTo pathTo)))) *)
          )
-         (fun () -> close_out_noerr outFd))
-    (fun () -> close_in_noerr inFd)
+         (fun () -> closeFileOutNoErr outFd))
+    (fun () -> closeFileInNoErr inFd)
 
 let localFileContents fspathFrom pathFrom fspathTo pathTo desc ressLength ido =
   Util.convertUnixErrorsToTransient
@@ -519,6 +550,10 @@ let rsyncActivated =
 
 let decompressor = ref Remote.MsgIdMap.empty
 
+let resetDecompressorState () =
+  decompressor := Remote.MsgIdMap.empty
+let () = Remote.at_conn_close resetDecompressorState
+
 let processTransferInstruction conn (file_id, ti) =
   Util.convertUnixErrorsToTransient
     "processing a transfer instruction"
@@ -543,20 +578,6 @@ let showPrefixProgress id kind =
     `DATA_APPEND len -> Uutil.showProgress id len "r"
   | _                -> ()
 
-(* There is an issue that not all threads are immediately cancelled when there
-   is a connection error. A waiting thread (in this case probably a thread
-   in the Lwt region for RPC streaming) may get started and open the infd but
-   never complete. lwt_protect is never triggered in this scenario. Not sure
-   why exactly but probably because the thread just stops (as eventually the
-   connection cleanup kicks in and all threads are stopped). As a hacky
-   solution, keep track of all open fds and close them when the connection
-   breaks. *)
-let compressorFds = Hashtbl.create 17
-let closeCompressors () =
-  Hashtbl.iter (fun fd _ -> close_in_noerr fd) compressorFds;
-  Hashtbl.clear compressorFds
-let () = Remote.at_conn_close closeCompressors
-
 let compress conn
      ((biOpt, fspathFrom, pathFrom, fileKind), (sizeFrom, id, file_id)) =
   Lwt.catch
@@ -567,7 +588,6 @@ let compress conn
                already started *)
             if fileKind <> `RESS then Abort.check id;
             let infd = openFileIn fspathFrom pathFrom fileKind in
-            Hashtbl.add compressorFds infd true;
             lwt_protect
               (fun () ->
                  showPrefixProgress id fileKind;
@@ -584,11 +604,10 @@ let compress conn
                  compr
                    (fun ti -> processTransferInstructionRemotely (file_id, ti))
                        >>= fun () ->
-                 Hashtbl.remove compressorFds infd;
-                 close_in infd;
+                 closeFileIn infd;
                  Lwt.return ())
               (fun () ->
-                 Hashtbl.remove compressorFds infd; close_in_noerr infd)))
+                 closeFileInNoErr infd)))
     (fun e ->
        (* We cannot wrap the code above with the handler below,
           as the code is executed asynchronously. *)
@@ -624,21 +643,21 @@ let close_all infd outfd =
     "closing files"
     (fun () ->
        begin match !infd with
-         Some fd -> close_in fd; infd := None
+         Some fd -> closeFileIn fd; infd := None
        | None    -> ()
        end;
        begin match !outfd with
-         Some fd -> close_out fd; outfd := None
+         Some fd -> closeFileOut fd; outfd := None
        | None    -> ()
        end)
 
 let close_all_no_error infd outfd =
   begin match !infd with
-    Some fd -> close_in_noerr fd
+    Some fd -> closeFileInNoErr fd
   | None    -> ()
   end;
   begin match !outfd with
-    Some fd -> close_out_noerr fd
+    Some fd -> closeFileOutNoErr fd
   | None    -> ()
   end
 
@@ -666,11 +685,12 @@ let referenceFd fspath path kind infd =
   | Some fd ->
       fd
 
-let rsyncReg = Lwt_util.make_region (40 * 1024)
+let rsyncReg = Remote.lwtRegionWithConnCleanup (40 * 1024)
+
 let rsyncThrottle useRsync srcFileSize destFileSize f =
   if not useRsync then f () else
   let l = Transfer.Rsync.memoryFootprint srcFileSize destFileSize in
-  Lwt_util.run_in_region rsyncReg l f
+  Lwt_util.run_in_region !rsyncReg l f
 
 let transferFileContents
       connFrom fspathFrom pathFrom fspathTo pathTo realPathTo update
@@ -710,7 +730,7 @@ let transferFileContents
                protect
                  (fun () -> Transfer.Rsync.rsyncPreprocess
                               ifd srcFileSize destFileSize)
-                 (fun () -> close_in_noerr ifd)
+                 (fun () -> closeFileInNoErr ifd)
              in
              close_all infd outfd;
              (Some bi,
@@ -751,13 +771,6 @@ let transferFileContents
            Remote.MsgIdMap.remove file_id !decompressor; (* For GC *)
          close_all_no_error infd outfd;
          Lwt.fail e))
-
-let closeDecompressors () =
-  let tmp = !decompressor in
-  decompressor := Remote.MsgIdMap.empty;
-  tmp |> Remote.MsgIdMap.iter (fun _ (_, (infd, outfd)) ->
-    close_all_no_error infd outfd)
-let () = Remote.at_conn_close closeDecompressors
 
 (****)
 
@@ -1009,7 +1022,7 @@ let finishExternalTransferOnRoot =
     "finishExternalTransfer" ~convV0
     mfinishExternalTransfer mtransferStatus finishExternalTransferLocal
 
-let copyprogReg = Lwt_util.make_region 1
+let copyprogReg = Remote.lwtRegionWithConnCleanup 1
 
 let transferFileUsingExternalCopyprog
              rootFrom pathFrom rootTo fspathTo pathTo realPathTo
@@ -1040,8 +1053,8 @@ let transferFileUsingExternalCopyprog
              ^ (Uutil.quotes fromSpec) ^ " "
              ^ (Uutil.quotes toSpec) in
   Trace.log (Printf.sprintf "%s\n" cmd);
-  Lwt_util.resize_region copyprogReg (Prefs.read copymax);
-  Lwt_util.run_in_region copyprogReg 1
+  Lwt_util.resize_region !copyprogReg (Prefs.read copymax);
+  Lwt_util.run_in_region !copyprogReg 1
     (fun () -> External.runExternalProgram cmd) >>= fun (_, log) ->
   debug (fun() ->
            let l = Util.trimWhitespace log in
@@ -1124,7 +1137,7 @@ let transferFileOnRoot =
 
 (* We limit the size of the output buffers to about 512 KB
    (we cannot go above the limit below plus 64) *)
-let transferFileReg = Lwt_util.make_region 440
+let transferFileReg = Remote.lwtRegionWithConnCleanup 440
 
 let bufferSize sz =
     (* Token queue *)
@@ -1170,7 +1183,7 @@ let transferFile
     f ()
   else
     let bufSz = bufferSize (max (Props.length desc) (Osx.ressLength ress)) in
-    Lwt_util.run_in_region transferFileReg bufSz f
+    Lwt_util.run_in_region !transferFileReg bufSz f
 
 (****)
 

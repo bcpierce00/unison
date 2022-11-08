@@ -34,13 +34,16 @@ val makeConvV0Funs :
    side effect of registering the command under the given name, so that when
    we are running as a server it can be looked up and executed when
    requested by a remote client.) *)
+(* It is not recommended to use this function in new code unless the cmd is
+   truly independent of any roots/replicas. Use [registerRootCmd] or one of
+   the other functions instead. *)
 val registerHostCmd :
     string              (* command name *)
  -> ?convV0: 'a convV0Fun * 'b convV0Fun
                         (* 2.51-compatibility functions for args and result *)
  -> 'a Umarshal.t -> 'b Umarshal.t
  -> ('a -> 'b Lwt.t)    (* local command *)
- -> (   string          (* -> host *)
+ -> (   Common.root     (* -> host (the root path is ignored) *)
      -> 'a              (*    arguments *)
      -> 'b Lwt.t)       (*    -> (suspended) result *)
 
@@ -85,6 +88,12 @@ val canonizeRoot :
 (* Test if connection to the remote server (if any) corresponding
    to the root is established. Always returns true for local roots *)
 val isRootConnected : Common.root -> bool
+
+(* Close the connection to server and run all cleanup and [at_conn_close]
+   handlers. Can also be called for a local root; in this case only the
+   cleanup and [at_conn_close] handlers are run (as there is no connection
+   to close). *)
+val clientCloseRootConnection : Common.root -> unit
 
 (* Statistics *)
 val emittedBytes : float ref
@@ -152,11 +161,46 @@ val registerStreamCmd :
   connection -> (('a -> unit Lwt.t) -> 'b Lwt.t) -> 'b Lwt.t
 
 (* Register a function to be run when the connection between client and server
-   is closed. The function should not raise exceptions. If it does then running
-   some of the other registered functions may be skipped (which is not an issue
-   as the exception is likely going to quit the process).
+   is closed (willingly or unexpectedly). The function should not raise
+   exceptions. If it does then running some of the other registered functions
+   may be skipped (which may not be an issue as the exception is likely going
+   to quit the process).
 
-   Registered functions are only expected to be run when the connection is
+   Registered functions are only expected to be useful when the connection is
    closed but the process keeps running (a socket server, for example). Do not
-   use it as a substitute for [at_exit]. *)
+   use it as a substitute for [at_exit].
+
+   These functions are additionally run when "closing" a local sync when there
+   is no actual connection.
+
+   Keep in mind that a function registered like this can be called immediately
+   when a lost connection is detected, before any exception indicating lost
+   connection is raised. *)
 val at_conn_close : ?only_server:bool -> (unit -> unit) -> unit
+
+(* Register resources to be cleaned up when the connection between client and
+   server closes (normally or exceptionally). This cleanup is additionally run
+   when "closing" a local sync when there is no actual connection.
+
+   Closing the resources is still the responsibility of the code opening the
+   resources but it is not always possible to run the resource cleanup code
+   (due to an Lwt thread being stopped, for example). In those cases the
+   registered resources are cleaned up when the connection is closed, as a
+   last resort.
+
+   The returned functions must be used to track the resources registered for
+   cleanup. *)
+type ('a, 'b, 'c) resourceC =
+  { register : 'a -> 'a;       (* Register an opened resource for cleanup *)
+    release : 'a -> 'b;        (* Unregister and close the resource normally *)
+    release_noerr : 'a -> 'c } (* Same as above; don't raise exceptions *)
+
+val resourceWithConnCleanup :
+     ('a -> 'b) (* Function to close the resource normally *)
+  -> ('a -> 'c) (* Function to close the resource, don't raise exceptions *)
+  -> ('a, 'b, 'c) resourceC (* Functions to track resources for cleanup *)
+
+(* Make an [Lwt_util.region] which is automatically purged and reset when
+   the connection between client and server closes. This cleanup is also
+   run when "closing" a local sync when there is no actual connection. *)
+val lwtRegionWithConnCleanup : int -> Lwt_util.region ref

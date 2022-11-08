@@ -58,12 +58,6 @@ val paths : Path.t list Prefs.t
 (* Expand any paths ending with *                                            *)
 val expandWildcardPaths : unit -> unit
 
-(* Run a command on all hosts in roots                                       *)
-val allHostsIter : (string -> unit Lwt.t) -> unit Lwt.t
-
-(* Run a command on all hosts in roots and collect results                   *)
-val allHostsMap : (string -> 'a) -> 'a list
-
 (* Make sure that the server has the same settings for its preferences as we
    do locally.  Should be called whenever the local preferences have
    changed.  (This isn't conceptually a part of this module, but it can't

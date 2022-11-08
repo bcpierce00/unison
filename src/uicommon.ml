@@ -436,6 +436,174 @@ let addIgnorePattern theRegExp =
   Lwt_unix.run (Globals.propagatePrefs ())
 
 (**********************************************************************
+                          Update propagation
+ **********************************************************************)
+
+(* (For context: the threads in question are all cooperating Lwt threads.
+   These are not OS threads or parallel running domains. There is no
+   preemption and only a single thread is executing at any time.)
+
+   Many (thousands) transport threads can run concurrently and
+   independently of each other. All threads run to completion as long as
+   there are no errors or only [Util.Transient] exceptions are raised.
+
+   The threads are _not_ guaranteed to run to completion when an exception
+   other than [Util.Transient] is raised in any of the threads. This means
+   that the threads may not even be able to complete their own cleanup
+   code and may leak resources. There must be separate resource cleanup code
+   that can be run after the threads have been stopped either forcefully or
+   by running to completion.
+
+   When an uncaught exception other than [Util.Transient] is raised in any
+   of the threads, the following happens:
+
+     - the thread raising the exception is aborted (all exception handlers
+       are run normally, so this thread is expected to run all its cleanup
+       code);
+
+     - any threads still waiting to be started are immediately cancelled
+       (they will not have run any meaningful code and don't require any
+       cleanup);
+
+     - any threads that have already run to completion are not impacted
+       in any way;
+
+     - any (sleeping) threads running concurrently with the raising thread
+       are stopped, which may have a different meaning depending on where
+       in the execution each thread was when it was stopped:
+
+         - some threads will not be able to continue at all (they are
+           never woken up);
+         - some threads may be woken up and may be able to continue
+           running for a short while but may get an error the next time
+           when accessing some resource (and may be able to run the error
+           handler);
+         - some threads may receive an exception and be able to continue
+           running for a short while.
+
+     - any exceptions raised in/by threads that are stopped, are ignored;
+
+     - the original exception from the first raising thread is reraised.
+
+   The code run in these thread must _not_ assume that:
+     - it will be run to completion;
+     - it can run some or all of its cleanup handlers;
+     - it will have had a chance to run a certain amount of its code;
+     - it will even know that it was stopped.
+   Depending on where and how a thread was stopped, it may be collected by
+   GC without any additional code ever being run in that thread.
+
+
+   There is a limit regulating how many threads can be run concurrently in
+   the [Transport] module. An attempt is made to not start threads that will
+   not be able to run due to this limit. This delayed starting is done for
+   two reasons. First, to make the cleanup in case of an uncaught exception
+   easier: if the thread was never run then there is nothing to clean up.
+   Second, even though the threads themselves are extremely lightweight,
+   they still consume some resources and this will add up when the number
+   of threads grows to hundreds of thousands and millions.
+
+   Not starting up all threads at once and allowing finished threads to
+   be collected by GC as soon as possible can potentially reduce the memory
+   requirement by gigabytes. (This is a reference to the old implementation
+   that started all threads in one go and kept them all around until all
+   were completed. This approach could result in running out of memory when
+   syncing large number of updates.) *)
+
+let transportStart () = Transport.logStart ()
+
+let transportFinish () = Transport.logFinish ()
+
+let transportItems items pRiThisRound makeAction =
+  let waiter = Lwt.wait () in
+  let outstanding = ref 0 in
+  let starting () = incr outstanding in
+  let completed () =
+    decr outstanding;
+    if !outstanding = 0 then begin
+      try Lwt.wakeup waiter () with Invalid_argument _ -> ()
+    end
+  in
+  let failed e =
+    try Lwt.wakeup_exn waiter e with Invalid_argument _ -> ()
+  in
+  let waitAllCompleted () =
+    if !outstanding = 0 then Lwt.return () else waiter
+  in
+
+  let im = Array.length items in
+  let idx = ref 0 in
+  let stopDispense () = idx := im in
+  let makeAction' i item =
+    Lwt.try_bind
+      (fun () -> starting (); makeAction i item)
+      (fun () -> completed (); Lwt.return ())
+      (fun ex -> stopDispense (); failed ex; Lwt.return ())
+  in
+  let rec dispenseAction () =
+    let i = !idx in
+    if i < im then begin
+      let item = items.(i) in
+      incr idx;
+      if pRiThisRound item then
+        Some (fun () -> makeAction' i item)
+      else
+        dispenseAction ()
+    end else
+      None
+  in
+
+  let doTransportFailCleanup () =
+    (* Don't start any new threads. *)
+    begin try stopDispense () with _ -> () end;
+    (* Stop all transfers. *)
+    begin try Abort.all () with _ -> () end;
+    (* Since we don't know what state the RPC protocol is in, we need
+       to close the remote connection to prevent hangs on select(2)
+       the next time [Lwt_unix.run] is called.
+
+       This will immediately trigger [on_close] handlers (which will
+       do some resource cleanup). *)
+    begin try
+      match Globals.rootsInCanonicalOrder () with
+      | [_; otherRoot] -> Remote.clientCloseRootConnection otherRoot
+      | _ -> assert false
+    with _ -> () end;
+    (* Threads that were still in the middle of execution are just
+       discarded and eventually collected by GC. Resources are cleaned
+       up and reclaimed by [Remote.at_conn_close] handlers.
+
+       Not all threads are stuck or purged and will continue the next
+       time [Lwt_unix.run] is called. Try to finish these threads now.
+       This must be done in a loop since each failing thread may raise
+       an uncaught exception which will end [Lwt_unix.run]. We don't
+       know how many threads can finish this way, so we don't know when
+       to stop looping. The limit of concurrent threads is used as an
+       approximation (which is probably much more than needed). *)
+    let rec loop_yield n () =
+      if n = 0 then Lwt.return () else Lwt_unix.yield () >>= loop_yield (n - 1)
+    in
+    for _ = 1 to Transport.maxThreads () do
+      try
+        Lwt_unix.run (loop_yield 10 ())
+      with _ -> ()
+    done
+  in
+
+  starting (); (* Count the dispense loop as one of the tasks to complete *)
+  Transport.run dispenseAction;
+  completed ();
+  try
+    Lwt_unix.run (waitAllCompleted ())
+  with e -> begin
+    (* Cleanup procedure must never raise exceptions. Just in case,
+       don't shadow the original exception. *)
+    let origbt = Printexc.get_raw_backtrace () in
+    let () = doTransportFailCleanup () in
+    Printexc.raise_with_backtrace e origbt
+  end
+
+(**********************************************************************
                    Profile and command-line parsing
  **********************************************************************)
 

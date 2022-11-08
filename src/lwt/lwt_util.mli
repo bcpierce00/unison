@@ -43,3 +43,8 @@ val run_in_region : region -> int -> (unit -> 'a Lwt.t) -> 'a Lwt.t
       (* [run_in_region reg size f] execute the thread produced by the
          function [f] in the region [reg]. The thread is not started
          before some room is available in the region. *)
+val purge_region : region -> unit
+      (* [purge_region reg] clear the queue of threads waiting to be
+         executed in the region [reg]. The waiting threads are not
+         woken (neither to execute nor to fail). Threads already being
+         executed in the region are not affected. *)

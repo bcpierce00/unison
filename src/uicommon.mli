@@ -139,3 +139,9 @@ val profileKeymap : (string * profileInfo) option array
 val profilesAndRoots : (string * profileInfo) list ref
 
 val scanProfiles : unit -> unit
+
+(* Update propagation *)
+val transportStart : unit -> unit
+val transportFinish : unit -> unit
+
+val transportItems : 'a array -> ('a -> bool) -> (int -> 'a -> unit Lwt.t) -> unit

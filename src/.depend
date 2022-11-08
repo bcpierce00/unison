@@ -156,16 +156,20 @@ copy.cmi : \
     common.cmi
 external.cmo : \
     ubase/util.cmi \
+    terminal.cmi \
     system.cmi \
     ubase/safelist.cmi \
+    remote.cmi \
     lwt/lwt_util.cmi \
     lwt/lwt_unix.cmi \
     lwt/lwt.cmi \
     external.cmi
 external.cmx : \
     ubase/util.cmx \
+    terminal.cmx \
     system.cmx \
     ubase/safelist.cmx \
+    remote.cmx \
     lwt/lwt_util.cmx \
     lwt/lwt_unix.cmx \
     lwt/lwt.cmx \
@@ -907,6 +911,7 @@ remote.cmx : \
 remote.cmi : \
     ubase/umarshal.cmi \
     ubase/prefs.cmi \
+    lwt/lwt_util.cmi \
     lwt/lwt.cmi \
     fspath.cmi \
     common.cmi \
@@ -1252,6 +1257,7 @@ uicommon.cmo : \
     ubase/util.cmi \
     update.cmi \
     ubase/umarshal.cmi \
+    transport.cmi \
     ubase/trace.cmi \
     system.cmi \
     stasher.cmi \
@@ -1276,6 +1282,7 @@ uicommon.cmo : \
     common.cmi \
     clroot.cmi \
     case.cmi \
+    abort.cmi \
     uicommon.cmi
 uicommon.cmx : \
     xferhint.cmx \
@@ -1283,6 +1290,7 @@ uicommon.cmx : \
     ubase/util.cmx \
     update.cmx \
     ubase/umarshal.cmx \
+    transport.cmx \
     ubase/trace.cmx \
     system.cmx \
     stasher.cmx \
@@ -1307,6 +1315,7 @@ uicommon.cmx : \
     common.cmx \
     clroot.cmx \
     case.cmx \
+    abort.cmx \
     uicommon.cmi
 uicommon.cmi : \
     uutil.cmi \
@@ -1333,7 +1342,6 @@ uigtk3.cmo : \
     ubase/prefs.cmi \
     pixmaps.cmo \
     path.cmi \
-    lwt/lwt_util.cmi \
     lwt/lwt_unix.cmi \
     lwt/lwt.cmi \
     globals.cmi \
@@ -1359,7 +1367,6 @@ uigtk3.cmx : \
     ubase/prefs.cmx \
     pixmaps.cmx \
     path.cmx \
-    lwt/lwt_util.cmx \
     lwt/lwt_unix.cmx \
     lwt/lwt.cmx \
     globals.cmx \
@@ -1388,7 +1395,6 @@ uimacbridge.cmo : \
     path.cmi \
     os.cmi \
     main.cmo \
-    lwt/lwt_util.cmi \
     lwt/lwt_unix.cmi \
     lwt/lwt.cmi \
     globals.cmi \
@@ -1415,7 +1421,6 @@ uimacbridge.cmx : \
     path.cmx \
     os.cmx \
     main.cmx \
-    lwt/lwt_util.cmx \
     lwt/lwt_unix.cmx \
     lwt/lwt.cmx \
     globals.cmx \
@@ -1439,7 +1444,6 @@ uitext.cmo : \
     recon.cmi \
     ubase/prefs.cmi \
     path.cmi \
-    lwt/lwt_util.cmi \
     lwt/lwt_unix.cmi \
     lwt/lwt.cmi \
     globals.cmi \
@@ -1462,7 +1466,6 @@ uitext.cmx : \
     recon.cmx \
     ubase/prefs.cmx \
     path.cmx \
-    lwt/lwt_util.cmx \
     lwt/lwt_unix.cmx \
     lwt/lwt.cmx \
     globals.cmx \

@@ -25,6 +25,30 @@ let debug = Util.debug "external"
 let (>>=) = Lwt.bind
 open Lwt
 
+(* Make sure external process resources are collected and zombie processes
+   reaped when the Lwt thread calling the external program is stopped
+   suddenly due to remote connection being closed. *)
+let close_process_noerr close pid x =
+  let pid = pid x in
+  begin try
+    Unix.kill pid (if Sys.os_type = "Win32" then Sys.sigkill else Sys.sigterm)
+    with Unix.Unix_error _ -> () end;
+  begin try ignore (Terminal.safe_waitpid pid) with Unix.Unix_error _ -> () end;
+  try ignore (close x) with Sys_error _ | Unix.Unix_error _ -> ()
+
+let inProcRes =
+  Remote.resourceWithConnCleanup System.close_process_in
+    (close_process_noerr System.close_process_in System.process_in_pid)
+let fullProcRes =
+  Remote.resourceWithConnCleanup System.close_process_full
+    (close_process_noerr System.close_process_full System.process_full_pid)
+
+let openProcessIn cmd = inProcRes.register (System.open_process_in cmd)
+let closeProcessIn = inProcRes.release
+
+let openProcessFull cmd = fullProcRes.register (System.open_process_full cmd)
+let closeProcessFull = fullProcRes.release
+
 let readChannelTillEof c =
   let lst = ref [] in
   let rec loop () =
@@ -59,9 +83,9 @@ let readChannelsTillEof l =
 let runExternalProgram cmd =
   if Util.osType = `Win32 && not Util.isCygwin then begin
     debug (fun()-> Util.msg "Executing external program windows-style\n");
-    let c = System.open_process_in ("\"" ^ cmd ^ "\"") in
+    let c = openProcessIn ("\"" ^ cmd ^ "\"") in
     let log = Util.trimWhitespace (readChannelTillEof c) in
-    let returnValue = System.close_process_in c in
+    let returnValue = closeProcessIn c in
     let resultLog =
       (*cmd ^
       (if log <> "" then "\n\n" ^*) log (*else "")*) ^
@@ -71,12 +95,12 @@ let runExternalProgram cmd =
          "") in
     Lwt.return (returnValue, resultLog)
   end else
-    let (out, ipt, err) as desc = System.open_process_full cmd in
+    let (out, ipt, err) as desc = openProcessFull cmd in
     let out = Lwt_unix.intern_in_channel out in
     let err = Lwt_unix.intern_in_channel err in
     readChannelsTillEof [out;err]
     >>= (function [logOut;logErr] ->
-    let returnValue = System.close_process_full desc in
+    let returnValue = closeProcessFull desc in
     let logOut = Util.trimWhitespace logOut in
     let logErr = Util.trimWhitespace logErr in
     return (returnValue, (
