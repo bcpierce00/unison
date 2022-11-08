@@ -1963,6 +1963,35 @@ Setting the \verb|dumbtty| preference will force Unison to leave the
 terminal alone and process input a line at a time.
 \end{itemize}
 
+\SUBSECTION{Interrupting a Synchronization}{intr}
+
+It is possible to interrupt an ongoing synchronization process before it
+completes. Different user interfaces offer different ways of doing it.
+
+\begin{tkui}
+In the graphical user interface the synchronization process can be interrupted
+before it is finished by pressing the ``Stop'' button or by closing the window.
+The ``Stop'' button causes the onging propagation to be stopped as quickly as
+possible while still doing proper cleanup. The application keeps running and a
+rescan can be performed or a different profile selected. Closing the window in
+the middle of update propagation process will exit the application immediately
+without doing proper cleanup; it is therefore not recommended unless the
+``Stop'' button does not react quickly enough.
+\end{tkui}
+
+\begin{textui}
+When not synchronizing continuously, the text interface terminates when
+synchronization is finished normally or due to a fatal error occuring.
+
+In the text interface, to interrupt synchronization before it is finished,
+press ``Ctrl-C'' (or send signal \verb|SIGINT| or \verb|SIGTERM|). This will
+interrupt update propagation as quickly as possible but still complete proper
+cleanup. If the process does not stop even after pressing ``Ctrl-C'' then keep
+doing it repeatedly.  This will bypass cleanup procedures and terminates the
+process forcibly (similar to \verb|SIGKILL|).  Doing so may leave the archives
+or replicas in an inconsistent state or locked.
+\end{textui}
+
 \SUBSECTION{Exit Code}{exit}
 
 When running in the textual mode, Unison returns an exit status, which

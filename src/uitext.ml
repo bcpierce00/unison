@@ -845,12 +845,57 @@ let doTransport reconItemList =
   in
   Uutil.setProgressPrinter showProgress;
 
+  let intrcount = ref 0 in
+  let sigtermHandler _ =
+    if !intrcount >= 3 then raise Sys.Break;
+    Abort.all ();
+    incr intrcount
+  in
+  let ctrlCHandler n =
+    sigtermHandler n;
+    if !intrcount = 1 then
+      let s = "\n\nUpdate propagation interrupted. It may take a while \
+        to stop.\nIf the process doesn't stop soon then wait or press \
+        Ctrl-C\n3 more times to force immediate termination.\n\n\n" in
+      (* Don't use [Printf.*printf] or [Format.*printf] (or other functions
+         which use [Stdlib.out_channel]) because this can cause a deadlock
+         with other outputting functions (in this case most likely at
+         [Util.set_infos] called in [showProgress]) before OCaml 4.12. *)
+      try Unix.write_substring Unix.stdout s 0 (String.length s) |> ignore
+      with Unix.Unix_error _ -> ()
+  in
+  let stopAtIntr f =
+    let signal_noerr signa behv =
+      try Some (Sys.signal signa behv)
+      with Sys_error _ | Invalid_argument _ -> None
+    in
+    let restore_noerr signa = function
+    | Some prevSig -> ignore (signal_noerr signa prevSig)
+    | None -> ()
+    in
+    let prevSigInt = signal_noerr Sys.sigint (Signal_handle ctrlCHandler) in
+    let prevSigTerm = signal_noerr Sys.sigterm (Signal_handle sigtermHandler) in
+    let restoreSig () =
+      (* Set handlers will still raise [Sys.Break]; can ignore errors here. *)
+      restore_noerr Sys.sigint prevSigInt;
+      restore_noerr Sys.sigterm prevSigTerm
+    in
+
+    try f (); restoreSig ()
+    with e ->
+      let origbt = Printexc.get_raw_backtrace () in
+      restoreSig ();
+      Printexc.raise_with_backtrace e origbt
+  in
+
   Uicommon.transportStart ();
   let fFailedPaths = ref [] in
   let fPartialPaths = ref [] in
+  let notstarted = ref (Array.length items) in
   let uiWrapper i item =
     Lwt.try_bind
-      (fun () -> Transport.transportItem item.ri
+      (fun () -> decr notstarted;
+                 Transport.transportItem item.ri
                    (Uutil.File.ofLine i) verifyMerge)
       (fun () ->
          if partiallyProblematic item.ri && not (problematic item.ri) then
@@ -872,14 +917,16 @@ let doTransport reconItemList =
             return ()
         | _ ->
             fail e) in
-  Uicommon.transportItems items (fun {ri; _} -> not (Common.isDeletion ri)) uiWrapper;
-  Uicommon.transportItems items (fun {ri; _} -> Common.isDeletion ri) uiWrapper;
+  stopAtIntr begin fun () ->
+    Uicommon.transportItems items (fun {ri; _} -> not (Common.isDeletion ri)) uiWrapper;
+    Uicommon.transportItems items (fun {ri; _} -> Common.isDeletion ri) uiWrapper
+  end;
   Uicommon.transportFinish ();
 
   Uutil.setProgressPrinter (fun _ _ _ -> ());
   Util.set_infos "";
 
-  (Safelist.rev !fFailedPaths, Safelist.rev !fPartialPaths)
+  (Safelist.rev !fFailedPaths, Safelist.rev !fPartialPaths, !notstarted, !intrcount > 0)
 
 let setWarnPrinterForInitialization()=
   Util.warnPrinter :=
@@ -917,8 +964,8 @@ let formatStatus major minor =
     s
 
 let rec interactAndPropagateChanges prevItemList reconItemList
-            : bool * bool * bool * (Path.t list)
-              (* anySkipped?, anyPartial?, anyFailures?, failingPaths *) =
+      : bool * bool * bool * bool * (Path.t list)
+        (* anySkipped?, anyPartial?, anyFailures?, anyCancels?, failingPaths *) =
   let (proceed,newReconItemList) = interact prevItemList reconItemList in
   let (updatesToDo, skipped) =
     Safelist.fold_left
@@ -926,21 +973,41 @@ let rec interactAndPropagateChanges prevItemList reconItemList
         if problematic ri then (howmany, skipped + 1)
         else (howmany + 1, skipped))
       (0, 0) newReconItemList in
+  let doTransp newReconItemList =
+    try
+      doTransport newReconItemList
+    with e ->
+      let origbt = Printexc.get_raw_backtrace () in
+      let summary =
+        "\nSynchronization "
+          ^ (color `Failure)
+          ^ (match e with Sys.Break -> "interrupted" | _ -> "failed")
+          ^ (color `Reset)
+          ^ (try let tm = Util.localtime (Util.time ()) in
+             Printf.sprintf " at %02d:%02d:%02d"
+               tm.Unix.tm_hour tm.Unix.tm_min tm.Unix.tm_sec with _ -> "")
+          ^ (match e with Sys.Break -> " by user request" | _ -> " due to a fatal error")
+          ^ "\n\n"
+      in
+      Trace.log_color summary;
+      Printexc.raise_with_backtrace e origbt
+  in
   let doit() =
     if not (Prefs.read Globals.batch || Prefs.read Trace.terse) then newLine();
     if not (Prefs.read Trace.terse) then Trace.status "Propagating updates";
     let timer = Trace.startTimer "Transmitting all files" in
-    let (failedPaths, partialPaths) = doTransport newReconItemList in
+    let (failedPaths, partialPaths, notstarted, intr) = doTransp newReconItemList in
     let failures = Safelist.length failedPaths in
     let partials = Safelist.length partialPaths in
     Trace.showTimer timer;
     if not (Prefs.read Trace.terse) then Trace.status "Saving synchronizer state";
     Update.commitUpdates ();
-    let trans = updatesToDo - failures in
+    let trans = updatesToDo - notstarted - failures in
     let summary =
       Printf.sprintf
-       "Synchronization %s at %s  (%d item%s transferred, %s%s, %s)"
-       (if failures = 0 then (color `Success) ^ "complete" ^ (color `Reset) else (color `Failure) ^ "incomplete" ^ (color `Reset))
+       "Synchronization %s at %s  (%d item%s transferred, %s%s, %s%s)"
+       (if failures = 0 && notstarted = 0 then (color `Success) ^ "complete" ^ (color `Reset)
+        else (color `Failure) ^ "incomplete" ^ (color `Reset))
        (let tm = Util.localtime (Util.time()) in
         Printf.sprintf "%02d:%02d:%02d"
           tm.Unix.tm_hour tm.Unix.tm_min tm.Unix.tm_sec)
@@ -950,7 +1017,8 @@ let rec interactAndPropagateChanges prevItemList reconItemList
         else
           "")
        (if skipped = 0 then "0 skipped" else (color `Information) ^ (Printf.sprintf "%d skipped" skipped) ^ (color `Reset))
-       (if failures = 0 then "0 failed" else (color `Failure) ^ (Printf.sprintf "%d failed" failures) ^ (color `Reset)) in
+       (if failures = 0 then "0 failed" else (color `Failure) ^ (Printf.sprintf "%d failed" failures) ^ (color `Reset))
+       (if notstarted = 0 then "" else ", " ^ (color `Information) ^ (Printf.sprintf "%d not started" notstarted) ^ (color `Reset)) in
     Trace.log_color (summary ^ "\n");
     if skipped>0 then
       Safelist.iter
@@ -971,7 +1039,8 @@ let rec interactAndPropagateChanges prevItemList reconItemList
       Safelist.iter
         (fun p -> alwaysDisplayAndLog ("  failed: " ^ (Path.toString p)))
         failedPaths;
-    (skipped > 0, partials > 0, failures > 0, failedPaths) in
+    if intr then raise Sys.Break; (* Make sure repeat mode is stopped *)
+    (skipped > 0, partials > 0, failures > 0, notstarted > 0, failedPaths) in
   if updatesToDo = 0 then begin
     (* BCP (3/09): We need to commit the archives even if there are
        no updates to propagate because some files (in fact, if we've
@@ -1006,7 +1075,7 @@ let rec interactAndPropagateChanges prevItemList reconItemList
          | _ -> ())
         newReconItemList
       end;
-    (skipped > 0, false, false, [])
+    (skipped > 0, false, false, false, [])
   end else if proceed=ProceedImmediately then begin
     doit()
   end else
@@ -1133,9 +1202,9 @@ let synchronizeOnce ?wantWatcher pathsOpt =
     (Uicommon.perfectExit, [])
   end else begin
     checkForDangerousPath dangerousPaths;
-    let (anySkipped, anyPartial, anyFailures, failedPaths) =
+    let (anySkipped, anyPartial, anyFailures, anyCancel, failedPaths) =
       interactAndPropagateChanges [] reconItemList in
-    let exitStatus = Uicommon.exitCode(anySkipped || anyPartial,anyFailures) in
+    let exitStatus = Uicommon.exitCode (anySkipped || anyPartial || anyCancel, anyFailures) in
     (exitStatus, failedPaths)
   end
 
@@ -1374,6 +1443,7 @@ let rec start interface =
   if interface <> Uicommon.Text then
     Util.msg "This Unison binary only provides the text GUI...\n";
   begin try
+    Sys.catch_break true;
     (* Just to make sure something is there... *)
     setWarnPrinterForInitialization();
     let errorOut s =

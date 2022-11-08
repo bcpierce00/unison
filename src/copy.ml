@@ -433,6 +433,7 @@ let copyContents fspathFrom pathFrom fspathTo pathTo fileKind fileLength ido =
               (fun l ->
                  use_id (fun id ->
 (* (Util.msg "Copied file %s (%d bytes)\n" (Path.toString pathFrom) l); *)
+                   if fileKind <> `RESS then Abort.checkAll ();
                    Uutil.showProgress id (Uutil.Filesize.ofInt l) "l"));
             closeFileIn inFd;
             closeFileOut outFd;
@@ -592,6 +593,7 @@ let compress conn
               (fun () ->
                  showPrefixProgress id fileKind;
                  let showProgress count =
+                   if fileKind <> `RESS then Abort.checkAll ();
                    Uutil.showProgress id (Uutil.Filesize.ofInt count) "r" in
                  let compr =
                    match biOpt with
@@ -701,6 +703,7 @@ let transferFileContents
   let outfd = ref None in
   let infd = ref None in
   let showProgress count =
+    if fileKind <> `RESS then Abort.checkAll ();
     Uutil.showProgress id (Uutil.Filesize.ofInt count) "r" in
 
   let destFileSize =

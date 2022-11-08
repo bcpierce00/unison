@@ -33,6 +33,11 @@ val printException : exn -> string
 
 val process_status_to_string : Unix.process_status -> string
 
+(* [blockSignals sigs f] blocks signals [sigs] (if supported by OS),
+   executes [f ()] and restores the original signal mask before returning
+   the result of executing [f ()] (value or exception). *)
+val blockSignals : int list -> (unit -> 'a) -> 'a
+
 (* ---------------------------------------------------------------------- *)
 (* Strings *)
 

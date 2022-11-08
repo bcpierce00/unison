@@ -733,10 +733,8 @@ let copy
       (fun e ->
          match e with
            Util.Transient _ ->
-             if not (Abort.testException e) then begin
-               Abort.file id;
-               errors := e :: !errors
-             end;
+             if not (Abort.testException e) then Abort.file id;
+             errors := e :: !errors;
              Lwt.return (Update.NoArchive, [pFrom])
          | _ ->
              Lwt.fail e)

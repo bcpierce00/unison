@@ -1348,6 +1348,7 @@ uigtk3.cmo : \
     common.cmi \
     clroot.cmi \
     case.cmi \
+    abort.cmi \
     uigtk3.cmi
 uigtk3.cmx : \
     uutil.cmx \
@@ -1373,6 +1374,7 @@ uigtk3.cmx : \
     common.cmx \
     clroot.cmx \
     case.cmx \
+    abort.cmx \
     uigtk3.cmi
 uigtk3.cmi : \
     uicommon.cmi
@@ -1449,6 +1451,7 @@ uitext.cmo : \
     globals.cmi \
     fswatchold.cmi \
     common.cmi \
+    abort.cmi \
     uitext.cmi
 uitext.cmx : \
     uutil.cmx \
@@ -1471,6 +1474,7 @@ uitext.cmx : \
     globals.cmx \
     fswatchold.cmx \
     common.cmx \
+    abort.cmx \
     uitext.cmi
 uitext.cmi : \
     uicommon.cmi

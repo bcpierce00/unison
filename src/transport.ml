@@ -55,6 +55,7 @@ let maxThreads () =
 
 let run dispenseTask =
   let runConcurrent limit dispenseTask =
+    let dispenseTask () = if Abort.isAll () then None else dispenseTask () in
     let avail = ref limit in
     let rec runTask thr =
       Lwt.try_bind thr
@@ -156,9 +157,9 @@ let doAction
                  fromRoot fromPath uiFrom propsFrom
                  toRoot toPath uiTo propsTo
                  notDefault id))
-    (fun e -> Trace.log
+    (fun e -> Trace.logonly
         (Printf.sprintf
-           "Failed: %s\n" (Util.printException e));
+           "Failed [%s]: %s\n" (Path.toString toPath) (Util.printException e));
       return ())
 
 let propagate root1 root2 reconItem id showMergeFn =

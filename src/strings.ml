@@ -2728,6 +2728,36 @@ let docs =
       \032      Setting the dumbtty preference will force Unison to leave the\n\
       \032      terminal alone and process input a line at a time.\n\
       \n\
+      Interrupting a Synchronization\n\
+      \n\
+      \032  It is possible to interrupt an ongoing synchronization process before\n\
+      \032  it completes. Different user interfaces offer different ways of doing\n\
+      \032  it.\n\
+      \n\
+      \032  Graphical Interface:\n\
+      \032    * In the graphical user interface the synchronization process can be\n\
+      \032      interrupted before it is finished by pressing the \226\128\156Stop\226\128\157 button or\n\
+      \032      by closing the window. The \226\128\156Stop\226\128\157 button causes the onging\n\
+      \032      propagation to be stopped as quickly as possible while still doing\n\
+      \032      proper cleanup. The application keeps running and a rescan can be\n\
+      \032      performed or a different profile selected. Closing the window in\n\
+      \032      the middle of update propagation process will exit the application\n\
+      \032      immediately without doing proper cleanup; it is therefore not\n\
+      \032      recommended unless the \226\128\156Stop\226\128\157 button does not react quickly enough.\n\
+      \n\
+      \032  Textual Interface:\n\
+      \032    * When not synchronizing continuously, the text interface terminates\n\
+      \032      when synchronization is finished normally or due to a fatal error\n\
+      \032      occuring.\n\
+      \032      In the text interface, to interrupt synchronization before it is\n\
+      \032      finished, press \226\128\156Ctrl-C\226\128\157 (or send signal SIGINT or SIGTERM). This\n\
+      \032      will interrupt update propagation as quickly as possible but still\n\
+      \032      complete proper cleanup. If the process does not stop even after\n\
+      \032      pressing \226\128\156Ctrl-C\226\128\157 then keep doing it repeatedly. This will bypass\n\
+      \032      cleanup procedures and terminates the process forcibly (similar to\n\
+      \032      SIGKILL). Doing so may leave the archives or replicas in an\n\
+      \032      inconsistent state or locked.\n\
+      \n\
       Exit Code\n\
       \n\
       \032  When running in the textual mode, Unison returns an exit status, which\n\
