@@ -61,6 +61,7 @@ module StringSet= Set.Make (String)
 module RootMap = Map.Make (String)
 type watcherinfo = {file: string;
                     mutable ch:in_channel option;
+                    proc: out_channel;
                     chars: Buffer.t;
                     mutable lines: string list}
 let watchers : watcherinfo RootMap.t ref = ref RootMap.empty
@@ -112,6 +113,23 @@ let readChanges wi =
     (* Watcher running and channel built: go ahead and read *)
     readAvailableLinesFromWatcher wi
 
+let watcherRunning archHash =
+  RootMap.mem archHash !watchers &&
+    let wi = RootMap.find archHash !watchers in
+    match Unix.waitpid [Unix.WNOHANG] (System.process_out_pid wi.proc) with
+    | (0, _) -> true
+    | _ | exception Unix.Unix_error (ECHILD, _, _) ->
+        watchers := RootMap.remove archHash !watchers;
+        begin
+          try ignore (System.close_process_out wi.proc)
+          with Unix.Unix_error _ -> ()
+        end;
+        begin match wi.ch with
+        | Some ch -> close_in_noerr ch
+        | None -> ()
+        end;
+        false
+
 let getChanges archHash =
   if StringSet.mem archHash !newWatchers then
     Fswatch.getChanges archHash
@@ -120,6 +138,7 @@ let getChanges archHash =
     readChanges wi;
     let res = wi.lines in
     wi.lines <- [];
+    ignore (watcherRunning archHash); (* Clean up if necessary *)
     List.map Path.fromString (trim_duplicates res)
   end
 
@@ -129,15 +148,15 @@ let start archHash fspath =
   else if Fswatch.start archHash then begin
     newWatchers := StringSet.add archHash !newWatchers;
     true
-  end else if not (RootMap.mem archHash !watchers) then begin
+  end else if not (watcherRunning archHash) then begin
     (* Watcher process not running *)
     match watchercmd archHash (Fspath.toString fspath) with
       Some (changefile,cmd) ->
         debug (fun() -> Util.msg
                  "Starting watcher on fspath %s\n"
                  (Fspath.toDebugString fspath));
-        let _ = System.open_process_out cmd in
-        let wi = {file = changefile; ch = None;
+        let proc = System.open_process_out cmd in
+        let wi = {file = changefile; ch = None; proc;
                   lines = []; chars = Buffer.create 80} in
         watchers := RootMap.add archHash wi !watchers;
         true
@@ -154,6 +173,8 @@ let wait archHash =
     Fswatch.wait archHash
   else if not (RootMap.mem archHash !watchers) then
     raise (Util.Fatal "No file monitoring helper program found")
+  else if not (watcherRunning archHash) then
+    raise (Util.Fatal "File monitoring helper program not running")
   else begin
     let wi = RootMap.find archHash !watchers in
     let rec loop () =

@@ -440,6 +440,7 @@ fswatch.cmo : \
     uutil.cmi \
     ubase/util.cmi \
     ubase/trace.cmi \
+    terminal.cmi \
     system.cmi \
     ubase/prefs.cmi \
     path.cmi \
@@ -451,6 +452,7 @@ fswatch.cmx : \
     uutil.cmx \
     ubase/util.cmx \
     ubase/trace.cmx \
+    terminal.cmx \
     system.cmx \
     ubase/prefs.cmx \
     path.cmx \

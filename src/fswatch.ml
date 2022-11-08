@@ -274,6 +274,7 @@ type 'a exn_option = Value of 'a | Exn of exn | Nothing
 
 type conn =
   { output : Lwt_unix.file_descr;
+    pid : int;
     has_changes : Cond.t;
     has_line : Cond.t;
     line_read : Cond.t;
@@ -293,6 +294,9 @@ let rec reader conn read_line =
     reader conn read_line
    end
 
+let safeTerm pid =
+  try ignore (Terminal.safe_waitpid pid) with Unix.Unix_error _ -> ()
+
 let safeClose fd = try Lwt_unix.close fd with Unix.Unix_error _ -> ()
 
 let currentConnection () =
@@ -302,7 +306,7 @@ let currentConnection () =
 
 let closeConnection () =
   match !conn with
-    Some c -> conn := None; safeClose c.output
+  | Some c -> conn := None; safeClose c.output; safeTerm c.pid
   | None   -> ()
 
 let connected () = !conn <> None
@@ -314,11 +318,12 @@ let startProcess () =
     let (i2,o2) = Lwt_unix.pipe_in () in
     Lwt_unix.set_close_on_exec i2;
     Lwt_unix.set_close_on_exec o1;
-    Util.convertUnixErrorsToFatal "starting filesystem watcher" (fun () ->
-      ignore (System.create_process w [|w|] i1 o2 Unix.stderr));
+    let pid = Util.convertUnixErrorsToFatal "starting filesystem watcher"
+      (fun () -> System.create_process w [|w|] i1 o2 Unix.stderr) in
     Unix.close i1; Unix.close o2;
     let c =
       { output = o1;
+        pid;
         has_changes = Cond.make ();
         has_line = Cond.make ();
         line_read = Cond.make ();

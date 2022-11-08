@@ -242,11 +242,11 @@ OCAMLOBJS += \
           lwt/pqueue.cmo lwt/lwt.cmo lwt/lwt_util.cmo \
           lwt/$(SYSTEM)/lwt_unix_impl.cmo lwt/lwt_unix.cmo \
           \
-          features.cmo uutil.cmo case.cmo pred.cmo \
+          features.cmo uutil.cmo case.cmo pred.cmo terminal.cmo \
           fileutil.cmo name.cmo path.cmo fspath.cmo fs.cmo fingerprint.cmo \
           abort.cmo osx.cmo fswatch.cmo propsdata.cmo \
           props.cmo fileinfo.cmo os.cmo lock.cmo clroot.cmo common.cmo \
-          tree.cmo checksum.cmo terminal.cmo transfer.cmo xferhint.cmo \
+          tree.cmo checksum.cmo transfer.cmo xferhint.cmo \
           remote.cmo external.cmo negotiate.cmo globals.cmo fswatchold.cmo \
           fpcache.cmo update.cmo copy.cmo stasher.cmo \
 	  files.cmo sortri.cmo recon.cmo transport.cmo \
