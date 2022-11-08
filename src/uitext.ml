@@ -104,13 +104,15 @@ let setColorPreference () =
   let envOk = try let _ = System.getenv "NO_COLOR" in false
     with Not_found -> true
   and termOk = try System.getenv "TERM" <> "dumb" with Not_found -> true
-  and ttyOk = (Unix.isatty Unix.stdin) && (Unix.isatty Unix.stderr) in
+  and ttyOk = (Unix.isatty Unix.stdout) && (Unix.isatty Unix.stderr) in
   let colorOk = envOk && termOk && ttyOk && not (Prefs.read dumbtty) in
   colorEnabled :=
     match Prefs.read colorMode with
     | `True    -> true
     | `False   -> false
-    | `Default -> colorOk && Sys.os_type <> "Win32"
+    | `Default -> colorOk && (not Sys.win32
+                    || (System.termVtCapable Unix.stdout
+                        && System.termVtCapable Unix.stderr))
 
 let color t =
   if not !colorEnabled then "" else

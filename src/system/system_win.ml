@@ -199,5 +199,7 @@ let terminalStateFunctions () =
     startReading = (fun () -> setConsoleMode 0x18);
     stopReading = (fun () -> setConsoleMode 0x19) }
 
+external termVtCapable : Unix.file_descr -> bool = "win_vt_capable"
+
 external has_stdout : info:string -> bool = "win_hasconsole_gui_stdout"
 external has_stderr : info:string -> bool = "win_hasconsole_gui_stderr"

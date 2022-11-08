@@ -118,6 +118,8 @@ let terminalStateFunctions () =
     startReading = (fun () -> ());
     stopReading = (fun () -> ()) }
 
+let termVtCapable fd = Unix.isatty fd
+
 let has_stdout ~info:_ = true
 let has_stderr ~info:_ = true
 
