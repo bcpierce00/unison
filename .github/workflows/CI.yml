@@ -46,7 +46,7 @@ jobs:
       fail-fast: false
       matrix:
         job:
-        - { os: macos-11      , ocaml-version: 4.14.0 }
+        - { os: macos-12      , ocaml-version: 4.14.0 }
         - { os: macos-10.15   , ocaml-version: 4.14.0           , publish: true }
         - { os: ubuntu-22.04  , ocaml-version: 4.14.0 }
         - { os: ubuntu-20.04  , ocaml-version: 4.14.0 }
@@ -361,15 +361,18 @@ jobs:
         # This list is intended to balance good enough coverage and
         # limited resource usage.
         job:
+        - { os: ubuntu-22.04  , ocaml-version: 4.14.x  , ref: v2.53.0 }
         - { os: ubuntu-22.04  , ocaml-version: 4.14.x  , ref: v2.52.1 }
         - { os: ubuntu-22.04  , ocaml-version: 4.14.x  , ref: v2.51.5 }
         - { os: ubuntu-22.04  , ocaml-version: 4.08.x  , ref: v2.51.5 }
         - { os: ubuntu-22.04  , ocaml-version: 4.08.x  , ref: v2.51.2 }
         - { os: ubuntu-22.04  , ocaml-version: 4.08.x  , ref: 2.48.4 }
+        - { os: windows-2019  , ocaml-version: ocaml-variants.4.14.0+mingw64c  , ref: v2.53.0 }
         - { os: windows-2019  , ocaml-version: ocaml-variants.4.14.0+mingw64c  , ref: v2.52.1 }
         - { os: windows-2019  , ocaml-version: ocaml-variants.4.08.1+mingw32c  , ref: v2.51.5 }
         - { os: windows-2019  , ocaml-version: ocaml-variants.4.08.1+mingw64c  , ref: v2.51.2 }
         - { os: windows-2019  , ocaml-version: ocaml-variants.4.08.1+mingw64c  , ref: 2.48.4 }
+        - { os: macos-12      , ocaml-version: 4.14.x  , ref: v2.53.0 }
         - { os: macos-12      , ocaml-version: 4.14.x  , ref: v2.52.1 }
         - { os: macos-12      , ocaml-version: 4.08.x  , ref: v2.51.5 }
         - { os: macos-12      , ocaml-version: 4.08.x  , ref: v2.51.2 }
