@@ -17,7 +17,7 @@ jobs:
     - run: sudo apt-get update
 
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Use OCaml
       uses: ocaml/setup-ocaml@v2
@@ -30,7 +30,7 @@ jobs:
     - run: opam exec -- make docs
 
     - name: Store user manual for the build jobs
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: unison-docs
         path: |
@@ -46,16 +46,16 @@ jobs:
       fail-fast: false
       matrix:
         job:
-        - { os: macos-11      , ocaml-version: 4.14.0 }
+        - { os: macos-12      , ocaml-version: 4.14.0 }
         - { os: macos-10.15   , ocaml-version: 4.14.0           , publish: true }
         - { os: ubuntu-22.04  , ocaml-version: 4.14.0 }
         - { os: ubuntu-20.04  , ocaml-version: 4.14.0 }
         - { os: ubuntu-18.04  , ocaml-version: 4.14.0           , publish: true }
+        - { os: ubuntu-18.04  , ocaml-version: "4.14.0+options,ocaml-option-musl,ocaml-option-static,ocaml-option-flambda"  , publish: true }
         - { os: ubuntu-18.04  , ocaml-version: 4.13.1 }
         - { os: ubuntu-18.04  , ocaml-version: 4.12.1 }
         - { os: ubuntu-18.04  , ocaml-version: 4.11.2 }
         - { os: ubuntu-18.04  , ocaml-version: 4.10.2 }
-        - { os: ubuntu-18.04  , ocaml-version: 4.10.2+musl+static+flambda  , publish: true }
         - { os: ubuntu-18.04  , ocaml-version: 4.09.1 }
         - { os: ubuntu-18.04  , ocaml-version: 4.08.1           , publish: true }
         - { os: windows-2022  , ocaml-version: 4.14.0+mingw64c  , publish: true }
@@ -76,25 +76,26 @@ jobs:
       run: rename C:\msys64 dmsys64
 
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Initialize workflow variables
       id: vars
       shell: bash
       run: |
-        outputs() { for var in "$@" ; do echo steps.vars.outputs.${var}="${!var}"; echo ::set-output name=${var}::${!var}; done; }
+        outputs() { for var in "$@" ; do echo steps.vars.outputs.${var}="${!var}"; echo "${var}=${!var}" >> $GITHUB_OUTPUT ; done; }
         # normalize to pre-compiled ocaml compiler variants for windows/Cygwin (decreases OCaml install time by 50%)
         case '${{ matrix.job.ocaml-version }}' in
           *+*) OCAML_COMPILER='ocaml-variants.${{ matrix.job.ocaml-version }}' ;;
             *) OCAML_COMPILER='ocaml-base-compiler.${{ matrix.job.ocaml-version }}' ;;
         esac
         OCAML_VARIANT='${{ matrix.job.ocaml-version }}'
+        OCAML_VARIANT="${OCAML_VARIANT/+options/}"
         outputs OCAML_VARIANT OCAML_COMPILER
         # architecture/platform vars
         EXE_suffix='' ; case '${{ matrix.job.os }}' in windows-*) EXE_suffix=".exe" ;; esac
         MinGW_ARCH='x86_64' ; case '${{ matrix.job.ocaml-version }}' in *+mingw32*) MinGW_ARCH='i686' ;; *+mingw64*) MinGW_ARCH='x86_64' ;; esac
         MSVC_ARCH='' ; case '${{ matrix.job.ocaml-version }}' in *+msvc32*) MSVC_ARCH='x86' ;; *+msvc64*) MSVC_ARCH='x64' ;; esac
-        STATIC='false' ; case '${{ matrix.job.ocaml-version }}' in *+musl*) STATIC='true' ;; esac
+        STATIC='false' ; case '${{ matrix.job.ocaml-version }}' in *-musl*) STATIC='true' ;; esac
         outputs EXE_suffix MinGW_ARCH MSVC_ARCH STATIC
         case '${{ matrix.job.os }}' in macos-*) echo "MACOSX_DEPLOYMENT_TARGET=10.6" >> $GITHUB_ENV ;; esac
         # staging environment
@@ -114,10 +115,10 @@ jobs:
         # package name
         PKG_suffix='.tar.gz' ; case '${{ matrix.job.os }}' in windows-*) PKG_suffix='.zip' ;; esac;
         PKG_OS='linux' ; case '${{ matrix.job.os }}' in macos-*) PKG_OS='${{ matrix.job.os }}' ;; windows-*) PKG_OS='windows' ;; esac;
-        PKG_STATIC='' ; case '${{ matrix.job.ocaml-version }}' in *+static*) PKG_STATIC='.static' ;; esac;
+        PKG_STATIC='' ; case '${{ matrix.job.ocaml-version }}' in *-static*) PKG_STATIC='.static' ;; esac;
         PKG_ARCH='x86_64' ; case '${{ matrix.job.ocaml-version }}' in *+32bit* | *+mingw32*) PKG_ARCH='i386' ;; esac;
         PKG_VER="${REF_TAG:-$REF_SHAS}"
-        PKG_BASENAME="${PROJECT_NAME}-${PKG_VER}+ocaml-${OCAML_VARIANT/%+*/}+${PKG_ARCH}.${PKG_OS}${PKG_STATIC}"
+        PKG_BASENAME="${PROJECT_NAME}-${PKG_VER}+ocaml-${OCAML_VARIANT//,ocaml-option-*/}+${PKG_ARCH}.${PKG_OS}${PKG_STATIC}"
         PKG_NAME="${PKG_BASENAME}${PKG_suffix}"
         PKG_DIR="${STAGING_DIR}/${PKG_BASENAME}"
         outputs PKG_VER PKG_BASENAME PKG_DIR PKG_NAME PKG_OS PKG_suffix
@@ -224,8 +225,7 @@ jobs:
 
     - name: lablgtk install
       ## [2020-09] non-working/unavailable for MSVC or musl OCaml variants ; also, non-working for 32bit OCaml variant (see [GH:garrigue/lablgtk#64](https://github.com/garrigue/lablgtk/issues/64))
-      ## [2022-01] lablgtk 2.18.12 builds seem to hang on Windows with OCaml < 4.10.0
-      if: ${{ ! ( contains(matrix.job.ocaml-version, '+msvc') || contains(matrix.job.ocaml-version, '+musl') || contains(matrix.job.ocaml-version, '+32bit') ) }}
+      if: ${{ ! ( contains(matrix.job.ocaml-version, '+msvc') || contains(matrix.job.ocaml-version, '-musl') || contains(matrix.job.ocaml-version, '-32bit') ) }}
       run: opam depext --install --verbose --yes lablgtk3 && opam install ocamlfind
 
     - if: steps.vars.outputs.STATIC != 'true' ## unable to build static gtk/gui
@@ -250,14 +250,14 @@ jobs:
         opam exec -- make src OSTYPE=$OSTYPE UISTYLE=gtk3 UI_WINOS=hybrid STATIC=${{ steps.vars.outputs.STATIC }}
         cp "src/${project_exe_stem}${{ steps.vars.outputs.EXE_suffix }}" "${{ steps.vars.outputs.PKG_DIR }}/bin/${project_exe_stem}-text+gui${{ steps.vars.outputs.EXE_suffix }}"
 
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: unison-${{ steps.vars.outputs.REF_SHAS }}.ocaml-${{ matrix.job.ocaml-version }}.${{ matrix.job.os }}
         path: ${{ steps.vars.outputs.PKG_DIR }}/bin/*
 
     - name: Copy user manual
       continue-on-error: ${{ !(steps.vars.outputs.DEPLOY && matrix.job.publish) }}
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: unison-docs
         path: '${{ steps.vars.outputs.PKG_DIR }}'
@@ -310,7 +310,7 @@ jobs:
       shell: bash
       run: cd '${{ steps.vars.outputs.PKG_DIR }}/' && ${{ steps.vars.outputs.COMPRESS_CMD }} '../${{ steps.vars.outputs.PKG_NAME }}' *
 
-    - uses: actions/upload-artifact@v2
+    - uses: actions/upload-artifact@v3
       with:
         name: unison-${{ steps.vars.outputs.REF_SHAS }}.ocaml-${{ matrix.job.ocaml-version }}.${{ matrix.job.os }}-publish
         path: ${{ steps.vars.outputs.STAGING_DIR }}/${{ steps.vars.outputs.PKG_NAME }}
@@ -332,13 +332,13 @@ jobs:
 
         # package
         APP_NAME=Unison-${{ steps.vars.outputs.PKG_VER }}.ocaml-${{ matrix.job.ocaml-version }}.${{ matrix.job.os }}.app.tar.gz
-        echo ::set-output name=APP_NAME::${APP_NAME}
+        echo APP_NAME=${APP_NAME} >> $GITHUB_OUTPUT
 
         tar czf ${APP_NAME} -C src/uimac/build/Default Unison.app
 
     - if: runner.os == 'macOS'
       name: "macOS: Upload Unison.app artifact"
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: Unison-${{ steps.vars.outputs.REF_SHAS }}.ocaml-${{ matrix.job.ocaml-version }}.${{ matrix.job.os }}.app
         path: ${{ steps.macapp.outputs.APP_NAME }}
@@ -361,19 +361,22 @@ jobs:
         # This list is intended to balance good enough coverage and
         # limited resource usage.
         job:
-        - { os: ubuntu-18.04  , ocaml-version: 4.14.x  , ref: v2.52.1 }
-        - { os: ubuntu-18.04  , ocaml-version: 4.14.x  , ref: v2.51.5 }
-        - { os: ubuntu-18.04  , ocaml-version: 4.08.x  , ref: v2.51.5 }
-        - { os: ubuntu-18.04  , ocaml-version: 4.08.x  , ref: v2.51.2 }
-        - { os: ubuntu-18.04  , ocaml-version: 4.08.x  , ref: 2.48.4 }
+        - { os: ubuntu-22.04  , ocaml-version: 4.14.x  , ref: v2.53.0 }
+        - { os: ubuntu-22.04  , ocaml-version: 4.14.x  , ref: v2.52.1 }
+        - { os: ubuntu-22.04  , ocaml-version: 4.14.x  , ref: v2.51.5 }
+        - { os: ubuntu-22.04  , ocaml-version: 4.08.x  , ref: v2.51.5 }
+        - { os: ubuntu-22.04  , ocaml-version: 4.08.x  , ref: v2.51.2 }
+        - { os: ubuntu-22.04  , ocaml-version: 4.08.x  , ref: 2.48.4 }
+        - { os: windows-2019  , ocaml-version: ocaml-variants.4.14.0+mingw64c  , ref: v2.53.0 }
         - { os: windows-2019  , ocaml-version: ocaml-variants.4.14.0+mingw64c  , ref: v2.52.1 }
         - { os: windows-2019  , ocaml-version: ocaml-variants.4.08.1+mingw32c  , ref: v2.51.5 }
         - { os: windows-2019  , ocaml-version: ocaml-variants.4.08.1+mingw64c  , ref: v2.51.2 }
         - { os: windows-2019  , ocaml-version: ocaml-variants.4.08.1+mingw64c  , ref: 2.48.4 }
-        - { os: macos-11      , ocaml-version: 4.14.x  , ref: v2.52.1 }
-        - { os: macos-10.15   , ocaml-version: 4.08.x  , ref: v2.51.5 }
-        - { os: macos-10.15   , ocaml-version: 4.08.x  , ref: v2.51.2 }
-        - { os: macos-10.15   , ocaml-version: 4.08.x  , ref: 2.48.4 }
+        - { os: macos-12      , ocaml-version: 4.14.x  , ref: v2.53.0 }
+        - { os: macos-12      , ocaml-version: 4.14.x  , ref: v2.52.1 }
+        - { os: macos-12      , ocaml-version: 4.08.x  , ref: v2.51.5 }
+        - { os: macos-12      , ocaml-version: 4.08.x  , ref: v2.51.2 }
+        - { os: macos-12      , ocaml-version: 4.08.x  , ref: 2.48.4 }
 
     runs-on: ${{ matrix.job.os }}
 
@@ -1047,7 +1050,7 @@ jobs:
       run: sudo apt-get update
 
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Use OCaml ${{ matrix.job.ocaml-compiler }}
       uses: ocaml/setup-ocaml@v2
@@ -1074,7 +1077,7 @@ jobs:
       run: sudo apt-get update
 
     - name: Checkout code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Use OCaml ${{ matrix.job.ocaml-compiler }}
       uses: ocaml/setup-ocaml@v2
