@@ -300,9 +300,17 @@ let unix_create_session cmd args new_stdin new_stdout new_stderr =
       Printf.printf "new_stdin=%d, new_stdout=%d, new_stderr=%d\n"
         (dumpFd new_stdin) (dumpFd new_stdout) (dumpFd new_stderr) ; flush stdout;
 *)
+      flush_all (); (* Clear buffers to avoid risk of double flushing by child.
+        Even this is not sufficient, strictly speaking, as there is a window
+        of opportunity to fill the buffer between flushing and calling fork. *)
       begin match Unix.fork () with
         0 ->
           begin try
+            (* Child process stderr must redirected as early as possible to
+               make sure all error output is captured and visible in GUI. *)
+            Unix.dup2 ~cloexec:false slaveFd Unix.stderr;
+            (* new_stderr will be used by parent process only. *)
+            if new_stderr <> Unix.stderr then safe_close new_stderr;
             Unix.close masterFd;
             ignore (Unix.setsid ());
             setControllingTerminal slaveFd;
@@ -312,14 +320,21 @@ let unix_create_session cmd args new_stdin new_stdout new_stderr =
             Unix.tcsetattr slaveFd Unix.TCSANOW tio;
             (* Redirect ssh authentication errors to controlling terminal,
                instead of new_stderr, so that they can be captured by GUI.
-               This will also redirect the remote stderr to GUI. *)
-            safe_close new_stderr;
+               This will inevitably also redirect the remote stderr to GUI
+               as ssh's own error output is mixed with remote stderr output. *)
             perform_redirections new_stdin new_stdout slaveFd;
             Unix.execvp cmd args (* never returns *)
           with Unix.Unix_error (e, s1, s2) ->
             Printf.eprintf "Error in create_session child: [%s] (%s) %s\n"
               s1 s2 (Unix.error_message e);
             flush stderr;
+            (* FIXME: this should be Unix._exit (available from OCaml 4.12)
+               which doesn't flush buffers (or run other exit handlers).
+               When [_exit] is eventually used then to _completely_ avoid risk
+               of double flushing, [Unix.write Unix.stderr] should be used
+               above instead of [eprintf]. Using [_exit] and not using any
+               [Stdlib.out_channel] will avoid all buffering and exit handler
+               issues. *)
             exit 127
           end
       | childPid ->
