@@ -323,7 +323,7 @@ if sys.platform == 'darwin':
             #make a list of all files in question (all files in path w/o dirs)
             try:
                     names = os.listdir(path)
-            except os.error, msg:
+            except os.error:
             #path does not exist (anymore?). Add it to the results
                     mydebug("adding nonexisting path %s for sync",path)
                     result.append(path)
@@ -541,7 +541,7 @@ if sys.platform == 'win32':
                         while 1:
                                 sleep(3600)
                 except KeyboardInterrupt:
-                        print "Cleaning up."
+                        print("Cleaning up.")
 
 #################################################
 # END Windows specific code

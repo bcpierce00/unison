@@ -182,6 +182,9 @@ let perform_redirections new_stdin new_stdout new_stderr =
   Unix.dup2 newnewstderr Unix.stderr; Unix.close newnewstderr
 
 let rec safe_waitpid pid =
+  (* This function is intentionally synchronous so that it can be run during
+     cleanup code when Lwt threads might be stopped or otherwise be in an
+     unreliable state. *)
   let kill_noerr si = try Unix.kill pid si with Unix.Unix_error _ -> () in
   let t = Unix.gettimeofday () in
   let rec aux st =
