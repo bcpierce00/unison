@@ -39,10 +39,10 @@ val write : file_descr -> bytes -> int -> int -> int Lwt.t
 val write_substring : file_descr -> string -> int -> int -> int Lwt.t
 val wait_read : file_descr -> unit Lwt.t
 val wait_write : file_descr -> unit Lwt.t
-val pipe_in : unit -> file_descr * Unix.file_descr
-val pipe_out : unit -> Unix.file_descr * file_descr
+val pipe_in : ?cloexec:bool -> unit -> file_descr * Unix.file_descr
+val pipe_out : ?cloexec:bool -> unit -> Unix.file_descr * file_descr
 val socket :
-  Unix.socket_domain -> Unix.socket_type -> int -> file_descr
+  ?cloexec:bool -> Unix.socket_domain -> Unix.socket_type -> int -> file_descr
 val bind : file_descr -> Unix.sockaddr -> unit
 val setsockopt : file_descr -> Unix.socket_bool_option -> bool -> unit
 val accept : file_descr -> (file_descr * Unix.sockaddr) Lwt.t

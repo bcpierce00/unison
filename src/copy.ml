@@ -327,7 +327,7 @@ let openFileOut' fspath path kind len =
   match kind with
     `DATA ->
       let fullpath = Fspath.concat fspath path in
-      let flags = [Unix.O_WRONLY;Unix.O_CREAT] in
+      let flags = [Unix.O_WRONLY; Unix.O_CREAT; Unix.O_CLOEXEC] in
       let perm = 0o600 in
       begin match Util.osType with
         `Win32 ->
