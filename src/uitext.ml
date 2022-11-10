@@ -1465,8 +1465,17 @@ let rec start interface =
           end
       | Ok (Some s) -> s
     in
-    Uicommon.initPrefs ~profileName ~promptForRoots:(fun () -> errorOut "") ();
+    Uicommon.initPrefs ~profileName ~promptForRoots:(fun () -> errorOut "") ()
+  with e ->
+    handleException e;
+    exit Uicommon.fatalExit
+  end;
 
+  (* Uncaught exceptions up to this point are non-recoverable, treated
+     as permanent and will inevitably exit the process. Uncaught exceptions
+     from here onwards are treated as potentially temporary or recoverable.
+     The process does not have to exit if in repeat mode and can try again. *)
+  begin try
     if Prefs.read silent then Prefs.set Trace.terse true;
 
     Uicommon.connectRoots ~displayWaitMessage ();
@@ -1511,22 +1520,37 @@ let rec start interface =
       handleException Sys.Break;
       exit Uicommon.fatalExit
     end
+  | e when breakRepeat e -> begin
+      handleException e;
+      exit Uicommon.fatalExit
+    end
   | e -> begin
       (* If any other bad thing happened and the -repeat preference is
          set, then restart *)
-      (* JV: it seems safer to just abort here, as we don't know in which
-         state Unison is; for instance, if the connection is lost, there
-         is no point in restarting as Unison will currently not attempt to
-         establish a new connection. *)
       handleException e;
-      if false (*Prefs.read Uicommon.repeat <> ""*) then begin
-        Util.msg "Restarting in 10 seconds...\n";
-        Unix.sleep 10;
-        start interface
-      end else
-        exit Uicommon.fatalExit
+      if Prefs.read Uicommon.repeat = ""
+          || Prefs.read Uicommon.runtests then
+        exit Uicommon.fatalExit;
+
+      Util.msg "\nRestarting in 10 seconds...\n\n";
+      begin try Unix.sleep 10 with Sys.Break -> exit Uicommon.fatalExit end;
+      start interface
     end
   end
+
+(* Though in some cases we could, there's no point in recovering
+   and continuing at any of these exceptions. *)
+and breakRepeat = function
+  (* Programming errors *)
+  | Assert_failure _
+  | Match_failure _
+  | Invalid_argument _
+  | Fun.Finally_raised _
+  (* Async exceptions *)
+  | Out_of_memory
+  | Stack_overflow
+  | Sys.Break -> true
+  | _ -> false
 
 let defaultUi = Uicommon.Text
 
