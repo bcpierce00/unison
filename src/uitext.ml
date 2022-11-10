@@ -1159,6 +1159,10 @@ let checkForDangerousPath dangerousPaths =
     end
   end
 
+let displayWaitMessage () =
+  if not (Prefs.read silent) then
+    Util.msg "%s\n" (Uicommon.contactingServerMsg ())
+
 let synchronizeOnce ?wantWatcher pathsOpt =
   let showStatus path =
     if path = "" then Util.set_infos "" else
@@ -1173,10 +1177,7 @@ let synchronizeOnce ?wantWatcher pathsOpt =
     let c = "-\\|/".[truncate (mod_float (4. *. Unix.gettimeofday ()) 4.)] in
     Util.set_infos (Format.sprintf "%c %s" c path)
   in
-  Uicommon.refreshConnection
-    ~displayWaitMessage:(fun () -> if not (Prefs.read silent)
-                         then Util.msg "%s\n" (Uicommon.contactingServerMsg()))
-    ~termInteract:None;
+  Uicommon.connectRoots ~displayWaitMessage ();
   Trace.status "Looking for changes";
   if not (Prefs.read Trace.terse) && (Prefs.read Trace.debugmods = []) then
     Uutil.setUpdateStatusPrinter (Some showStatus);
@@ -1464,18 +1465,11 @@ let rec start interface =
           end
       | Ok (Some s) -> s
     in
-    Uicommon.initPrefs
-      ~profileName
-      ~displayWaitMessage:
-      (fun () -> setWarnPrinter();
-                 if Prefs.read silent then Prefs.set Trace.terse true;
-                 if not (Prefs.read silent)
-                 then Util.msg "%s\n" (Uicommon.contactingServerMsg()))
-      ~promptForRoots:
-      (fun () -> errorOut "")
-      ~termInteract:
-      None
-      ();
+    Uicommon.initPrefs ~profileName ~promptForRoots:(fun () -> errorOut "") ();
+
+    if Prefs.read silent then Prefs.set Trace.terse true;
+
+    Uicommon.connectRoots ~displayWaitMessage ();
 
     if Prefs.read Uicommon.testServer then exit 0;
 

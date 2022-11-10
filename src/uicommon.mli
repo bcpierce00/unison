@@ -100,22 +100,20 @@ val uiInitClRootsAndProfile :
 
 val initPrefs :
   profileName:string ->
-  displayWaitMessage:(unit->unit) ->
   promptForRoots:(unit -> (string * string) option) ->
   ?prepDebug:(unit -> unit) ->
-  termInteract:(string -> string -> string) option ->
   unit ->
   unit
 
 val clearClRoots : unit -> unit
 
 (* Make sure remote connections (if any) corresponding to active roots
-   are still established and re-establish them if necessary.
-   [refreshConnection] is like [initPrefs] but without reloading the profile
-   and re-initializing the prefs. *)
-val refreshConnection :
+   are established and (re-)establish them if necessary.
+   [initPrefs] must be called before [connectRoots]. *)
+val connectRoots :
+  ?termInteract:(string -> string -> string) ->
   displayWaitMessage:(unit -> unit) ->
-  termInteract:(string -> string -> string) option ->
+  unit ->
   unit
 
 val validateAndFixupPrefs : unit -> unit Lwt.t
