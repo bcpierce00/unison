@@ -3,7 +3,7 @@ opam-version: "2.0"
 version: "dev"
 synopsis: "File-synchronization tool for Unix and Windows"
 description: """
-Text based user interface for Unison.
+Graphical user interface for Unison.
 
 Unison is a file-synchronization tool for Unix and Windows.
 It allows two replicas of a collection of files and directories
@@ -20,6 +20,7 @@ bug-reports: "https://github.com/bcpierce00/unison/issues"
 depends: [
   "dune" {>= "2.7"}
   "ocaml" {>= "4.08"}
+  "lablgtk3" {>= "3.1.0"}
   "odoc" {with-doc}
 ]
 build: [

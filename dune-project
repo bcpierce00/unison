@@ -1,10 +1,10 @@
-(lang dune 2.3)
+(lang dune 2.7)
 
 (name unison)
 
 (version dev)
 
-(generate_opam_files false)
+(generate_opam_files true)
 
 (license GPL-3.0-or-later)
 
@@ -33,9 +33,7 @@ the changes in each replica to the other.
 ")
  (depends
   (ocaml
-   (>= 4.08))
-  (dune
-   (>= 2.3))))
+   (>= 4.08))))
 
 (package
  (name unison-gui)
@@ -52,9 +50,8 @@ the changes in each replica to the other.
  (depends
   (ocaml
    (>= 4.08))
-  (dune
-   (>= 2.3))
-  lablgtk))
+  (lablgtk3
+   (>= 3.1.0))))
 
 (package
  (name unison-fsmonitor)
@@ -71,6 +68,4 @@ the changes in each replica to the other.
 ")
  (depends
   (ocaml
-   (>= 4.08))
-  (dune
-   (>= 2.3))))
+   (>= 4.08))))

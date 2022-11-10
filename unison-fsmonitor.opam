@@ -3,7 +3,8 @@ opam-version: "2.0"
 version: "dev"
 synopsis: "File-synchronization tool for Unix and Windows"
 description: """
-Text based user interface for Unison.
+This optional add-on for unison monitors file system changes
+on all given (relative to root) paths.
 
 Unison is a file-synchronization tool for Unix and Windows.
 It allows two replicas of a collection of files and directories
