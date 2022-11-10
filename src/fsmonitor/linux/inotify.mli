@@ -13,8 +13,6 @@
  *
  * Inotify OCaml binding
  *)
-exception Error of string * int
-
 type select_event =
 | S_Access
 | S_Attrib

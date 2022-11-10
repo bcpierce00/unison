@@ -185,7 +185,7 @@ let release_watch file =
         begin try
           Lwt_inotify.rm_watch st id
           (* Will fail with EINVAL if the file has been deleted... *)
-        with Inotify.Error (_, no) ->
+        with Unix.Unix_error _ ->
           ()
         end;
         Hashtbl.remove watcher_by_id id
@@ -214,22 +214,23 @@ let add_watch path file follow =
         Hashtbl.replace watcher_by_id id (IntSet.add (get_id file) s);
         set_watch file (Some id)
     end
-  with Inotify.Error (_, no) ->
+  with Unix.Unix_error (errno, _, _) ->
     release_watch file;
-    match no with
-      2 (* ENOENT *) ->
+    match errno with
+    | ENOENT ->
         raise Watchercommon.Already_lost
-    | 28 (* ENOSPC *) ->
+    | ENOSPC ->
         Watchercommon.error ("cannot add a watcher: system limit reached"
             ^ " (you can do a web search for \"inotify max_user_watches\""
             ^ " to understand the reasons and mitigations for this error)")
-    | 13 (* EACCES *) | 20 (* ENOTDIR *) | 40 (* ELOOP *) ->
+    | EACCES | ENOTDIR | ELOOP ->
         (* These errors should be well handled by Unison (they will
            result in errors during update detection *)
         ()
     | _ ->
         Watchercommon.error
-          (Format.sprintf "unexpected error %d while adding a watcher" no)
+          (Format.sprintf "unexpected error while adding a watcher: %s"
+          (Unix.error_message errno))
 
 end
 
