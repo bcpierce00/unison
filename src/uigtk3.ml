@@ -943,7 +943,7 @@ let getPassword rootName msg =
   | `OK                   -> pwd
   end
 
-let termInteract = Some getPassword
+let termInteract = getPassword
 
 (* ------ *)
 
@@ -4001,9 +4001,10 @@ let createToplevelWindow () =
     Trace.status "Loading profile";
     unsynchronizedPaths := None;
     profileInitSuccess := false;
-    Uicommon.initPrefs ~profileName:p
+    Uicommon.initPrefs ~profileName:p ~promptForRoots ~prepDebug ();
+    Uicommon.connectRoots
       ~displayWaitMessage:(fun () -> if not reload then displayWaitMessage ())
-      ~promptForRoots ~prepDebug ~termInteract ();
+      ~termInteract ();
     profileInitSuccess := true;
     !updateFromProfile ()
   in
@@ -4017,7 +4018,7 @@ let createToplevelWindow () =
     clearMainWindow ();
     if not (Prefs.profileUnchanged ()) || not (!profileInitSuccess) then
       loadProfile n true
-    else Uicommon.refreshConnection ~displayWaitMessage ~termInteract
+    else Uicommon.connectRoots ~displayWaitMessage ~termInteract ()
   in
 
   let detectCmd () =

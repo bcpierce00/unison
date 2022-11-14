@@ -809,8 +809,7 @@ let cmdLineRawRoots = ref []
 let clearClRoots () = cmdLineRawRoots := []
 
 (* BCP: WARNING: Some of the code from here is duplicated in uimacbridge...! *)
-let initPrefs ~profileName ~displayWaitMessage ~promptForRoots
-              ?(prepDebug = fun () -> ()) ~termInteract () =
+let initPrefs ~profileName ~promptForRoots ?(prepDebug = fun () -> ()) () =
   initComplete := false;
   (* Restore prefs to their default values *)
   Prefs.resetToDefaults ();
@@ -920,16 +919,15 @@ let initPrefs ~profileName ~displayWaitMessage ~promptForRoots
   (* If no paths were specified, then synchronize the whole replicas *)
   if Prefs.read Globals.paths = [] then Prefs.set Globals.paths [Path.empty];
 
-  initRoots displayWaitMessage termInteract;
-
   initComplete := true
 
-let refreshConnection ~displayWaitMessage ~termInteract =
-  if !initComplete &&  (Safelist.length (Globals.rawRoots ()) > 1) then
+let connectRoots ?termInteract ~displayWaitMessage () =
+  let numRoots = Safelist.length (Globals.rawRoots ()) in
+  if !initComplete && numRoots > 1 then
   let numConn = ref 0 in
   Lwt_unix.run (Globals.allRootsIter
     (fun r -> if Remote.isRootConnected r then incr numConn; Lwt.return ()));
-  if !numConn < 2 then initRoots displayWaitMessage termInteract
+  if !numConn < numRoots then initRoots displayWaitMessage termInteract
 
 (**********************************************************************
                        Common startup sequence
