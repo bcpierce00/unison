@@ -302,6 +302,8 @@ let unix_create_session cmd args new_stdin new_stdout new_stderr =
   match openpty () with
     None -> fallback_session cmd args new_stdin new_stdout new_stderr
   | Some (masterFd, slaveFd) ->
+      Unix.set_close_on_exec masterFd;
+      Unix.set_close_on_exec slaveFd;
 (*
       Printf.printf "openpty returns %d--%d\n" (dumpFd fdM) (dumpFd fdS); flush stdout;
       Printf.printf "new_stdin=%d, new_stdout=%d, new_stderr=%d\n"

@@ -1651,7 +1651,7 @@ let buildSocket host port kind ?(err="") ai =
     Lwt.catch
       (fun () ->
          let socket =
-           Lwt_unix.socket
+           Lwt_unix.socket ~cloexec:true
              ai.Unix.ai_family ai.Unix.ai_socktype ai.Unix.ai_protocol
          in
          Lwt.catch
@@ -1830,13 +1830,11 @@ let buildShellConnection shell host userOpt portOpt rootName termInteract =
     Safelist.concat
       (Safelist.map (fun s -> Util.splitIntoWords s ' ') preargs) in
   let argsarray = Array.of_list args in
-  let (i1,o1) = Lwt_unix.pipe_out () in
-  let (i2,o2) = Lwt_unix.pipe_in () in
+  let (i1,o1) = Lwt_unix.pipe_out ~cloexec:true () in
+  let (i2,o2) = Lwt_unix.pipe_in ~cloexec:true () in
   (* We need to make sure that there is only one reader and one
      writer by pipe, so that, when one side of the connection
      dies, the other side receives an EOF or a SIGPIPE. *)
-  Lwt_unix.set_close_on_exec i2;
-  Lwt_unix.set_close_on_exec o1;
   (* We add CYGWIN=binmode to the environment before calling
      ssh because the cygwin implementation on Windows sometimes
      puts the pipe in text mode (which does end of line
@@ -2089,13 +2087,11 @@ let openConnectionStart clroot =
             Safelist.concat
               (Safelist.map (fun s -> Util.splitIntoWords s ' ') preargs) in
           let argsarray = Array.of_list args in
-          let (i1,o1) = Lwt_unix.pipe_out() in
-          let (i2,o2) = Lwt_unix.pipe_in() in
+          let (i1,o1) = Lwt_unix.pipe_out ~cloexec:true () in
+          let (i2,o2) = Lwt_unix.pipe_in ~cloexec:true () in
           (* We need to make sure that there is only one reader and one
              writer by pipe, so that, when one side of the connection
              dies, the other side receives an EOF or a SIGPIPE. *)
-          Lwt_unix.set_close_on_exec i2;
-          Lwt_unix.set_close_on_exec o1;
           (* We add CYGWIN=binmode to the environment before calling
              ssh because the cygwin implementation on Windows sometimes
              puts the pipe in text mode (which does end of line

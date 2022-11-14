@@ -314,10 +314,8 @@ let connected () = !conn <> None
 let startProcess () =
   try
     let w = Lazy.force watcher in
-    let (i1,o1) = Lwt_unix.pipe_out () in
-    let (i2,o2) = Lwt_unix.pipe_in () in
-    Lwt_unix.set_close_on_exec i2;
-    Lwt_unix.set_close_on_exec o1;
+    let (i1,o1) = Lwt_unix.pipe_out ~cloexec:true () in
+    let (i2,o2) = Lwt_unix.pipe_in ~cloexec:true () in
     let pid = Util.convertUnixErrorsToFatal "starting filesystem watcher"
       (fun () -> System.create_process w [|w|] i1 o2 Unix.stderr) in
     Unix.close i1; Unix.close o2;

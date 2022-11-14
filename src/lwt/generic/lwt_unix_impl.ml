@@ -155,7 +155,7 @@ let rec run thread =
              | `Accept res ->
                   wrap_syscall inputs fd res
                     (fun () ->
-                       let (s, _) as v = Unix.accept fd in
+                       let (s, _) as v = Unix.accept ~cloexec:true fd in
                        if not windows_hack then Unix.set_nonblock s;
                        v)
              | `Wait res ->
@@ -257,20 +257,20 @@ let pipe () =
   fd_pair
 *)
 
-let pipe_in () =
-  let (in_fd, out_fd) as fd_pair = Unix.pipe() in
+let pipe_in ?cloexec () =
+  let (in_fd, out_fd) as fd_pair = Unix.pipe ?cloexec () in
   if not windows_hack then
     Unix.set_nonblock in_fd;
   fd_pair
 
-let pipe_out () =
-  let (in_fd, out_fd) as fd_pair = Unix.pipe() in
+let pipe_out ?cloexec () =
+  let (in_fd, out_fd) as fd_pair = Unix.pipe ?cloexec () in
   if not windows_hack then
     Unix.set_nonblock out_fd;
   fd_pair
 
-let socket dom typ proto =
-  let s = Unix.socket dom typ proto in
+let socket ?cloexec dom typ proto =
+  let s = Unix.socket ?cloexec dom typ proto in
   if not windows_hack then Unix.set_nonblock s;
   s
 

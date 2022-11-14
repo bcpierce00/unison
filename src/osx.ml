@@ -509,7 +509,7 @@ let openRessIn fspath path =
       Unix.in_channel_of_descr
         (Fs.openfile
            (Fspath.concat fspath (ressPath path))
-           [Unix.O_RDONLY] 0o444)
+           [Unix.O_RDONLY; O_CLOEXEC] 0o444)
     with Unix.Unix_error ((Unix.ENOENT | Unix.ENOTDIR), _, _) ->
       let (doublePath, inch, entries) = openDouble fspath path in
       try
@@ -527,7 +527,7 @@ let openRessOut fspath path length =
       let p = Fspath.concat fspath (ressPath path) in
       debug (fun () -> Util.msg "openRessOut %s\n" (Fspath.toString p));
       Unix.out_channel_of_descr
-        (Fs.openfile p [Unix.O_WRONLY;Unix.O_CREAT] 0o600)
+        (Fs.openfile p [Unix.O_WRONLY; O_CREAT; O_CLOEXEC] 0o600)
     with Unix.Unix_error ((Unix.ENOENT | Unix.ENOTDIR), _, _) ->
       debug (fun () -> Util.msg "Opening AppleDouble file for resource fork\n");
       let path = Fspath.appleDouble (Fspath.concat fspath path) in

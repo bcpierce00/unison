@@ -254,7 +254,7 @@ if !d then prerr_endline "ACCEPT";
             handle_wait_event h ch ACCEPT res
               (fun () ->
                  win_check_connection ch.fd ACCEPT h;
-                 let (v, info) = Unix.accept ch.fd in
+                 let (v, info) = Unix.accept ~cloexec:true ch.fd in
                  (wrap_async v, info))
       end;
 (*
@@ -379,23 +379,24 @@ if !d then Format.eprintf "Writing started@.";
   res
 
 external win_pipe_in :
-  unit -> Unix.file_descr * Unix.file_descr = "win_pipe_in"
+  ?cloexec:bool -> unit -> Unix.file_descr * Unix.file_descr = "win_pipe_in"
 external win_pipe_out :
-  unit -> Unix.file_descr * Unix.file_descr = "win_pipe_out"
+  ?cloexec:bool -> unit -> Unix.file_descr * Unix.file_descr = "win_pipe_out"
 
-let pipe_in () =
-  let (i, o) = if no_overlapped_io then Unix.pipe () else win_pipe_in () in
+let pipe_in ?cloexec () =
+  let (i, o) = if no_overlapped_io then Unix.pipe () else win_pipe_in ?cloexec () in
   (wrap_async i, o)
-let pipe_out () =
-  let (i, o) = if no_overlapped_io then Unix.pipe () else win_pipe_out () in
+let pipe_out ?cloexec () =
+  let (i, o) = if no_overlapped_io then Unix.pipe () else win_pipe_out ?cloexec () in
   (i, wrap_async o)
 
-external win_socket :
+external win_socket : ?cloexec:bool ->
   Unix.socket_domain -> Unix.socket_type -> int -> Unix.file_descr =
   "win_socket"
 
-let socket d t p =
-  let s = if no_overlapped_io then Unix.socket d t p else win_socket d t p in
+let socket ?cloexec d t p =
+  let s = if no_overlapped_io then Unix.socket ?cloexec d t p
+          else win_socket ?cloexec d t p in
   Unix.set_nonblock s;
   wrap_async s
 

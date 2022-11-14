@@ -18,6 +18,7 @@
 #include <caml/osdeps.h>
 
 #if OCAML_VERSION_MAJOR < 5
+#define caml_unix_cloexec_p unix_cloexec_p
 #define caml_unix_error_of_code unix_error_of_code
 #define caml_uerror uerror
 #define caml_win32_maperr win32_maperr
@@ -479,7 +480,7 @@ CAMLprim value win_wait (value timeout, value event_list) {
 
 static long pipeSerial;
 
-value win_pipe(long readMode, long writeMode) {
+value win_pipe(int cloexec, long readMode, long writeMode) {
   CAMLparam0();
   SECURITY_ATTRIBUTES attr;
   HANDLE readh, writeh;
@@ -488,7 +489,7 @@ value win_pipe(long readMode, long writeMode) {
 
   attr.nLength = sizeof(attr);
   attr.lpSecurityDescriptor = NULL;
-  attr.bInheritHandle = TRUE;
+  attr.bInheritHandle = cloexec ? FALSE : TRUE;
 
   sprintf(name, "\\\\.\\Pipe\\UnisonAnonPipe.%08lx.%08lx",
              GetCurrentProcessId(), pipeSerial++);
@@ -524,14 +525,14 @@ value win_pipe(long readMode, long writeMode) {
   CAMLreturn (res);
 }
 
-CAMLprim value win_pipe_in (value unit) {
+CAMLprim value win_pipe_in (value cloexec, value unit) {
   CAMLparam0();
-  CAMLreturn (win_pipe (FILE_FLAG_OVERLAPPED, 0));
+  CAMLreturn (win_pipe (caml_unix_cloexec_p(cloexec), FILE_FLAG_OVERLAPPED, 0));
 }
 
-CAMLprim value win_pipe_out (value unit) {
+CAMLprim value win_pipe_out (value cloexec, value unit) {
   CAMLparam0();
-  CAMLreturn (win_pipe (0, FILE_FLAG_OVERLAPPED));
+  CAMLreturn (win_pipe (caml_unix_cloexec_p(cloexec), 0, FILE_FLAG_OVERLAPPED));
 }
 
 static int socket_domain_table[] = {
@@ -542,7 +543,7 @@ static int socket_type_table[] = {
   SOCK_STREAM, SOCK_DGRAM, SOCK_RAW, SOCK_SEQPACKET
 };
 
-CAMLprim value win_socket (value domain, value type, value proto) {
+CAMLprim value win_socket (value cloexec, value domain, value type, value proto) {
   CAMLparam3(domain, type, proto);
   SOCKET s;
 
@@ -555,6 +556,9 @@ CAMLprim value win_socket (value domain, value type, value proto) {
     caml_win32_maperr(WSAGetLastError());
     caml_uerror("WSASocket", Nothing);
   }
+  /* Ignore errors */
+  SetHandleInformation((HANDLE) s, HANDLE_FLAG_INHERIT,
+                       unix_cloexec_p(cloexec) ? 0 : HANDLE_FLAG_INHERIT);
   CAMLreturn(caml_win32_alloc_socket(s));
 }
 
