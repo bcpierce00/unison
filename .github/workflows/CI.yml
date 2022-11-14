@@ -222,6 +222,26 @@ jobs:
       run: |
         opam install opam-depext depext-cygwinports
         setup-x86_64.exe --quiet-mode --root "${CYGWIN_ROOT}" --site http://cygwin.mirror.constant.com --symlink-type=sys --packages hicolor-icon-theme,adwaita-icon-theme
+        # [2022-11] This terrible (terrible) hack is here to forcibly skip
+        # building the fontconfig cache because it can take 30-45 minutes
+        # on GHA runners and is never needed anyway.
+        setup-x86_64.exe --quiet-mode --root "${CYGWIN_ROOT}" --site http://cygwin.mirror.constant.com --symlink-type=sys --local-package-dir D:/a --download --packages mingw64-${{ steps.vars.outputs.MinGW_ARCH }}-fontconfig
+        cd 'D:/a/https%3a%2f%2fcygwin.mirror.constant.com%2f/noarch/release/'mingw64-${{ steps.vars.outputs.MinGW_ARCH }}-fontconfig
+        CNAMEXZ=$(ls mingw64-${{ steps.vars.outputs.MinGW_ARCH }}-fontconfig*.tar.xz)
+        CNAME=${CNAMEXZ%.xz}
+        unxz ${CNAMEXZ}
+        tar --delete --file ${CNAME} etc/postinstall/zp_mingw64-${{ steps.vars.outputs.MinGW_ARCH }}-fontconfig_cache.sh
+        xz ${CNAME}
+        sha512sum > sha512.sum
+        CSZ=$(stat -c %s ${CNAMEXZ})
+        SHASUM=$(sha512sum ${CNAMEXZ})
+        cd 'D:/a/https%3a%2f%2fcygwin.mirror.constant.com%2f/x86_64'
+        mv setup.ini tsetup.ini
+        rm -f setup*
+        sed -E -e "\|install: noarch/release/mingw64-${{ steps.vars.outputs.MinGW_ARCH }}-fontconfig/${CNAMEXZ}|s/xz .+/xz ${CSZ} ${SHASUM%% *}/" tsetup.ini > setup.ini
+        rm tsetup.ini
+        sha512sum > sha512.sum
+        setup-x86_64.exe --quiet-mode --root "${CYGWIN_ROOT}" --symlink-type=sys --local-install --local-package-dir 'D:/a/https%3a%2f%2fcygwin.mirror.constant.com%2f' --mirror-mode --no-verify --packages mingw64-${{ steps.vars.outputs.MinGW_ARCH }}-fontconfig
 
     - name: lablgtk install
       ## [2020-09] non-working/unavailable for MSVC or musl OCaml variants ; also, non-working for 32bit OCaml variant (see [GH:garrigue/lablgtk#64](https://github.com/garrigue/lablgtk/issues/64))
