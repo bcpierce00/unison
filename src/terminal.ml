@@ -160,26 +160,33 @@ external c_openpty : unit -> Unix.file_descr * Unix.file_descr =
 let openpty() = try Some (c_openpty ()) with Unix.Unix_error _ -> None
 
 (* Utility functions copied from ocaml's unix.ml because they are not exported :-| *)
-let rec safe_dup fd =
-  let new_fd = Unix.dup fd in
-  if dumpFd new_fd >= 3 then
-    new_fd
-  else begin
-    let res = safe_dup fd in
-    Unix.close new_fd;
-    res
-  end
+(* Duplicate [fd] if needed to make sure it isn't one of the
+   standard descriptors (stdin, stdout, stderr).
+   Note that this function always leaves the standard descriptors open,
+   the caller must take care of closing them if needed.
+   The "cloexec" mode doesn't matter, because
+   the descriptor returned by [dup] will be closed before the [exec],
+   and because no other thread is running concurrently
+   (we are in the child process of a fork).
+ *)
+let rec file_descr_not_standard fd =
+  if dumpFd fd >= 3 then fd else file_descr_not_standard (Unix.dup fd)
+
 let safe_close fd = try Unix.close fd with Unix.Unix_error _ -> ()
+
 let perform_redirections new_stdin new_stdout new_stderr =
-  let newnewstdin = safe_dup new_stdin in
-  let newnewstdout = safe_dup new_stdout in
-  let newnewstderr = safe_dup new_stderr in
+  let new_stdin = file_descr_not_standard new_stdin in
+  let new_stdout = file_descr_not_standard new_stdout in
+  let new_stderr = file_descr_not_standard new_stderr in
+  (*  The three dup2 close the original stdin, stdout, stderr,
+      which are the descriptors possibly left open
+      by file_descr_not_standard *)
+  Unix.dup2 ~cloexec:false new_stdin Unix.stdin;
+  Unix.dup2 ~cloexec:false new_stdout Unix.stdout;
+  Unix.dup2 ~cloexec:false new_stderr Unix.stderr;
   safe_close new_stdin;
   safe_close new_stdout;
-  safe_close new_stderr;
-  Unix.dup2 newnewstdin Unix.stdin; Unix.close newnewstdin;
-  Unix.dup2 newnewstdout Unix.stdout; Unix.close newnewstdout;
-  Unix.dup2 newnewstderr Unix.stderr; Unix.close newnewstderr
+  safe_close new_stderr
 
 let rec safe_waitpid pid =
   (* This function is intentionally synchronous so that it can be run during
@@ -300,9 +307,17 @@ let unix_create_session cmd args new_stdin new_stdout new_stderr =
       Printf.printf "new_stdin=%d, new_stdout=%d, new_stderr=%d\n"
         (dumpFd new_stdin) (dumpFd new_stdout) (dumpFd new_stderr) ; flush stdout;
 *)
+      flush_all (); (* Clear buffers to avoid risk of double flushing by child.
+        Even this is not sufficient, strictly speaking, as there is a window
+        of opportunity to fill the buffer between flushing and calling fork. *)
       begin match Unix.fork () with
         0 ->
           begin try
+            (* Child process stderr must redirected as early as possible to
+               make sure all error output is captured and visible in GUI. *)
+            Unix.dup2 ~cloexec:false slaveFd Unix.stderr;
+            (* new_stderr will be used by parent process only. *)
+            if new_stderr <> Unix.stderr then safe_close new_stderr;
             Unix.close masterFd;
             ignore (Unix.setsid ());
             setControllingTerminal slaveFd;
@@ -312,14 +327,21 @@ let unix_create_session cmd args new_stdin new_stdout new_stderr =
             Unix.tcsetattr slaveFd Unix.TCSANOW tio;
             (* Redirect ssh authentication errors to controlling terminal,
                instead of new_stderr, so that they can be captured by GUI.
-               This will also redirect the remote stderr to GUI. *)
-            safe_close new_stderr;
+               This will inevitably also redirect the remote stderr to GUI
+               as ssh's own error output is mixed with remote stderr output. *)
             perform_redirections new_stdin new_stdout slaveFd;
             Unix.execvp cmd args (* never returns *)
           with Unix.Unix_error (e, s1, s2) ->
             Printf.eprintf "Error in create_session child: [%s] (%s) %s\n"
               s1 s2 (Unix.error_message e);
             flush stderr;
+            (* FIXME: this should be Unix._exit (available from OCaml 4.12)
+               which doesn't flush buffers (or run other exit handlers).
+               When [_exit] is eventually used then to _completely_ avoid risk
+               of double flushing, [Unix.write Unix.stderr] should be used
+               above instead of [eprintf]. Using [_exit] and not using any
+               [Stdlib.out_channel] will avoid all buffering and exit handler
+               issues. *)
             exit 127
           end
       | childPid ->
