@@ -318,14 +318,16 @@ instead.
 Closing the input, receiving an EOF, or receiving a
 .Sy ^D
 (0x04) from the input terminal or a redirected standard input all have the same
-effect. If the standard input is redirected from a regular file, is not open or
-is not open for reading already at Unison startup then it is ignored and only
-signals can be used to send the stop request.
+effect. EOF is not interpreted as a stop request when standard input is
+redirected from a regular file. If the standard input is not open or is not
+open for reading already at Unison startup then it is ignored and only signals
+can be used to send the stop request.
 .Bd -ragged -offset indent
 Tips: For continuous synchronization the input should not be redirected from
-any source providing a lot of input (such as a device or a pipe that produces
-large quantities of data). In such cases, Unison would keep reading all the
-input looking for the stop condition.
+any source providing a lot of input (such as an existing regular file larger
+than a few tens of bytes or a device or a pipe that produces large quantities
+of data). In such cases, Unison would keep reading all the input looking for
+the stop condition.
 .Ed
 .Sh ENVIRONMENT
 .Bl -tag

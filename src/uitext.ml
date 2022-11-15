@@ -1270,7 +1270,11 @@ external fdIsReadable : Unix.file_descr -> bool = "unsn_fd_readable"
 
 let stdinIsatty = Unix.isatty Unix.stdin
 
-let stdinOkForStopReq =
+let stdinIsRegfile, stdinOkForStopReq =
+  let readingOk = function
+    | { Unix.LargeFile.st_kind = S_REG; st_size; _ } when st_size > 32L -> false
+    | _ -> begin try fdIsReadable Unix.stdin with Unix.Unix_error _ -> true end
+  in
   let rec notEOF st =
     if stdinIsatty then true else
     match selectStdin () with
@@ -1289,9 +1293,9 @@ let stdinOkForStopReq =
     | exception Unix.Unix_error (EBADF, _, _) -> true
   in
   match Unix.LargeFile.fstat Unix.stdin with
-  | { st_kind = S_REG; _ } -> false
-  | st -> begin try fdIsReadable Unix.stdin with Unix.Unix_error _ -> true end && notEOF st
-  | exception Unix.Unix_error _ -> false
+  | { st_kind = S_REG; _ } as st -> true, readingOk st
+  | st -> false, readingOk st && notEOF st
+  | exception Unix.Unix_error _ -> false, false
 
 external getpgrp : unit -> int = "unsn_getpgrp"
 external tcgetpgrp : Unix.file_descr -> int = "unsn_tcgetpgrp"
@@ -1317,7 +1321,7 @@ let ignoreSignal signa f =
     Printexc.raise_with_backtrace e origbt
 
 let isStdinStopCond n s =
-  n = 0 (* Assuming terminal_io.c_vmin > 0, this is true EOF *)
+  (n = 0 && not stdinIsRegfile) (* Assuming terminal_io.c_vmin > 0, this is true EOF *)
     || nonEofStopCond s
 
 let readStopFromStdin () =
@@ -1336,7 +1340,8 @@ let rec checkStdinStopReq () =
   if not stdinOkForStopReq || isBackgroundProcess () then () else
   match selectStdin () with
   | true ->
-      if readStopFromStdin () then requestSafeStop () else checkStdinStopReq ()
+      if readStopFromStdin () then requestSafeStop ()
+      else if not stdinIsRegfile then checkStdinStopReq ()
   | false -> ()
   | exception Unix.Unix_error (EINTR, _, _) -> checkStdinStopReq ()
   | exception Unix.Unix_error (EBADF, _, _) -> ()
@@ -1377,7 +1382,8 @@ let safeStopWait =
       Lwt.catch
         (fun () -> Lwt.choose [waitStdin (); readStop]) readFail >>= fun () ->
       if not (safeStopRequested ()) then
-        Lwt_unix.sleep (if isBackgroundProcess () then 1. else 0.15) >>= loop
+        (if stdinIsRegfile || isBackgroundProcess () then 1. else 0.15)
+        |> Lwt_unix.sleep >>= loop
       else
         Lwt.return ()
     in
