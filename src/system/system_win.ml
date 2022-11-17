@@ -162,6 +162,9 @@ external setConsoleMode : int -> unit = "win_set_console_mode"
 external getConsoleOutputCP : unit -> int = "win_get_console_output_cp"
 external setConsoleOutputCP : int -> unit = "win_set_console_output_cp"
 
+external termVtCapable : Unix.file_descr -> bool = "win_vt_capable"
+(* [termVtCapable] is for _output_ file descriptors. *)
+
 let terminalStateFunctions () =
   (* First, allocate a console in case we don't already have one.
      Unix.stdin/out/err have bogus handles if they weren't redirected by
@@ -187,6 +190,8 @@ let terminalStateFunctions () =
   let () = redirect (initConsole ()) in
   let oldstate = getConsoleMode () in
   let oldcp = getConsoleOutputCP () in
+  (* 0x200 = ENABLE_VIRTUAL_TERMINAL_INPUT *)
+  let vtin = if termVtCapable Unix.stdout then 0x200 else 0x0 in
   (* Ctrl-C does not interrupt a call to ReadFile when
      ENABLE_LINE_INPUT is not set, so we handle Ctr-C
      as a character when reading from the console.
@@ -196,10 +201,8 @@ let terminalStateFunctions () =
   { defaultTerminal = (fun () -> setConsoleMode oldstate;
                                  setConsoleOutputCP oldcp);
     rawTerminal = (fun () -> setConsoleMode 0x19; setConsoleOutputCP 65001);
-    startReading = (fun () -> setConsoleMode 0x18);
+    startReading = (fun () -> setConsoleMode (0x18 lor vtin));
     stopReading = (fun () -> setConsoleMode 0x19) }
-
-external termVtCapable : Unix.file_descr -> bool = "win_vt_capable"
 
 external has_stdout : info:string -> bool = "win_hasconsole_gui_stdout"
 external has_stderr : info:string -> bool = "win_hasconsole_gui_stderr"
