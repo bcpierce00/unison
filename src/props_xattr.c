@@ -160,6 +160,16 @@
  *
  */
 
+/* To get the correct definition of strerror_r(3) with glibc. */
+#if !defined(_POSIX_C_SOURCE) || defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE < 200112L
+#undef _POSIX_C_SOURCE
+#define _POSIX_C_SOURCE 200809L
+#endif
+#ifdef _GNU_SOURCE
+#undef _GNU_SOURCE
+#endif
+
+
 #include <caml/memory.h>
 #include <caml/alloc.h>
 #include <caml/fail.h>
