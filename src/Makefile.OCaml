@@ -114,6 +114,19 @@ buildexecutable::
 # Generate backtrace information for exceptions
 CAMLFLAGS+=-g
 
+ifneq ($(strip $(CFLAGS)),)
+  CAMLCFLAGS+=-ccopt '$(CFLAGS)'
+endif
+ifneq ($(strip $(CPPFLAGS)),)
+  CAMLCFLAGS+=-ccopt '$(CPPFLAGS)'
+endif
+ifneq ($(strip $(LDFLAGS)),)
+  CAMLLDFLAGS+=-cclib '$(LDFLAGS)'
+endif
+ifneq ($(strip $(LDLIBS)),)
+  CLIBS+=-cclib '$(LDLIBS)'
+endif
+
 INCLFLAGS=-I lwt -I ubase -I system
 DEP_INCLFLAGS=-I lwt -I ubase -I system
 CAMLFLAGS+=$(INCLFLAGS)
@@ -401,7 +414,6 @@ ifeq ($(NATIVE), true)
     CAMLFLAGS+=-p
     CLIBS+=-cclib -ldl
   endif
-  CAMLLDFLAGS=
 
   CAMLOBJS=$(subst .cmo,.cmx, $(subst .cma,.cmxa, $(OCAMLOBJS)))
   CAMLLIBS=$(subst .cma,.cmxa, $(OCAMLLIBS))
@@ -413,7 +425,7 @@ else
   ifeq ($(DEBUGGING), true)
     CAMLFLAGS+=-g
   endif
-  CAMLLDFLAGS=-custom
+  CAMLLDFLAGS+=-custom
 
   CAMLOBJS=$(OCAMLOBJS)
   CAMLLIBS=$(OCAMLLIBS)
@@ -458,7 +470,7 @@ $(NAME)$(EXEC_EXT): $(CAMLOBJS) $(COBJS)
 # files, so we have to use $(LD) to take care of COBJS.
 $(NAME)-blob.o: $(CAMLOBJS) $(COBJS)
 	@echo Linking $@
-	$(CAMLC) -dstartup -output-obj -verbose -cclib -keep_private_externs $(CAMLFLAGS) -o u-b.o $(CAMLCFLAGS) $(CAMLLIBS) $(CLIBS) $(CAMLOBJS)
+	$(CAMLC) -dstartup -output-obj -verbose -cclib -keep_private_externs $(CAMLFLAGS) -o u-b.o $(CAMLCFLAGS) $(CAMLLDFLAGS) $(CAMLLIBS) $(CLIBS) $(CAMLOBJS)
 	$(LD) -r -keep_private_externs -o $@ u-b.o $(COBJS)
 	$(RM) u-b.o
 
