@@ -2134,12 +2134,12 @@ let openConnectionEnd (i1,i2,o1,o2,s,fdopt,clroot,pid) =
          Lwt.return ())
 
 let openConnectionCancel (i1,i2,o1,o2,s,fdopt,clroot,pid) =
-      try Unix.kill pid Sys.sigkill with Unix.Unix_error _ -> ();
-      try Unix.close i1 with Unix.Unix_error _ -> ();
-      try Lwt_unix.close i2 with Unix.Unix_error _ -> ();
-      try Lwt_unix.close o1 with Unix.Unix_error _ -> ();
-      try Unix.close o2 with Unix.Unix_error _ -> ();
-      try Terminal.close_session pid with Unix.Unix_error _ -> ()
+  (try Unix.kill pid Sys.sigkill with Unix.Unix_error _ -> ());
+  (try Unix.close i1 with Unix.Unix_error _ -> ());
+  (try Lwt_unix.close i2 with Unix.Unix_error _ -> ());
+  (try Lwt_unix.close o1 with Unix.Unix_error _ -> ());
+  (try Unix.close o2 with Unix.Unix_error _ -> ());
+  (try Terminal.close_session pid with Unix.Unix_error _ -> ())
 
 (****************************************************************************)
 (*                     SERVER-MODE COMMAND PROCESSING LOOP                  *)
