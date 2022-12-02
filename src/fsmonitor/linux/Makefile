@@ -22,7 +22,7 @@ buildexecutable:: $(FSMONITOR)$(EXEC_EXT)
 
 $(FSMONITOR)$(EXEC_EXT): $(FSMCAMLOBJS) $(FSMCOBJS)
 	@echo Linking $@
-	$(CAMLC) -verbose $(CAMLFLAGS) $(CAMLLDFLAGS) -o $@ $(CFLAGS) $(FSMCAMLLIBS) $^ $(CLIBS)
+	$(CAMLC) -verbose $(CAMLFLAGS) $(CAMLLDFLAGS) -o $@ $(CAMLCFLAGS) $(FSMCAMLLIBS) $^ $(CLIBS)
 
 clean::
 	rm -f $(DIR)/*.cm[iox] $(DIR)/*.o $(DIR)/*~

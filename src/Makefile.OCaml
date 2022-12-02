@@ -114,6 +114,19 @@ buildexecutable::
 # Generate backtrace information for exceptions
 CAMLFLAGS+=-g
 
+ifneq ($(strip $(CFLAGS)),)
+  CAMLCFLAGS+=-ccopt '$(CFLAGS)'
+endif
+ifneq ($(strip $(CPPFLAGS)),)
+  CAMLCFLAGS+=-ccopt '$(CPPFLAGS)'
+endif
+ifneq ($(strip $(LDFLAGS)),)
+  CAMLLDFLAGS+=-cclib '$(LDFLAGS)'
+endif
+ifneq ($(strip $(LDLIBS)),)
+  CLIBS+=-cclib '$(LDLIBS)'
+endif
+
 INCLFLAGS=-I lwt -I ubase -I system
 DEP_INCLFLAGS=-I lwt -I ubase -I system
 CAMLFLAGS+=$(INCLFLAGS)
@@ -205,7 +218,7 @@ endif
 
 MINOSXVERSION=10.6
 ifeq ($(OSARCH),osx)
-  CAMLFLAGS+=-ccopt -mmacosx-version-min=$(MINOSXVERSION)
+  CAMLCFLAGS+=-ccopt -mmacosx-version-min=$(MINOSXVERSION)
   XCODEFLAGS=-arch $(shell uname -m)
 endif
 
@@ -294,7 +307,7 @@ ifeq ($(OSARCH), win32)
   ifneq ($(UISTYLE), text)
     ifneq ($(UI_WINOS), hybrid)
       # COBJS+=winmain.c
-      CFLAGS+=-ccopt "-link -Wl,--subsystem,windows"
+      CAMLLDFLAGS+=-cclib "-link -Wl,--subsystem,windows"
     endif
   endif
 endif
@@ -342,7 +355,7 @@ DEP_INCLFLAGS+=-I fsmonitor -I fsmonitor/linux -I fsmonitor/solaris -I fsmonitor
 ### Static build setup
 
 ifeq ($(STATIC), true)
-  CFLAGS+=-cclib -static
+  CAMLLDFLAGS+=-cclib -static
 endif
 
 ####################################################################
@@ -381,7 +394,7 @@ ifeq ($(DEBUGGING), false)
     ifneq ($(OSARCH), osx)
       # Strip the binary (does not work with MS compiler; might not work
       # under OSX)
-      CFLAGS+=-cclib -Wl,-s
+      CAMLLDFLAGS+=-cclib -Wl,-s
     endif
   endif
 endif
@@ -401,7 +414,6 @@ ifeq ($(NATIVE), true)
     CAMLFLAGS+=-p
     CLIBS+=-cclib -ldl
   endif
-  CAMLLDFLAGS=
 
   CAMLOBJS=$(subst .cmo,.cmx, $(subst .cma,.cmxa, $(OCAMLOBJS)))
   CAMLLIBS=$(subst .cma,.cmxa, $(OCAMLLIBS))
@@ -413,7 +425,7 @@ else
   ifeq ($(DEBUGGING), true)
     CAMLFLAGS+=-g
   endif
-  CAMLLDFLAGS=-custom
+  CAMLLDFLAGS+=-custom
 
   CAMLOBJS=$(OCAMLOBJS)
   CAMLLIBS=$(OCAMLLIBS)
@@ -448,17 +460,17 @@ win32rc/unison.res.lib: win32rc/unison.rc win32rc/U.ico
 
 %.o %.obj: %.c
 	@echo "$(CAMLC): $< ---> $@"
-	$(CAMLC) $(CAMLFLAGS) -ccopt $(OUTPUT_SEL)$(CWD)/$@ -c $(CWD)/$<
+	$(CAMLC) $(CAMLFLAGS) $(CAMLCFLAGS) -ccopt $(OUTPUT_SEL)$(CWD)/$@ -c $(CWD)/$<
 
 $(NAME)$(EXEC_EXT): $(CAMLOBJS) $(COBJS)
 	@echo Linking $@
-	$(CAMLC) -verbose $(CAMLFLAGS) $(CAMLLDFLAGS) -o $@ $(CFLAGS) $(CAMLLIBS) $^ $(CLIBS)
+	$(CAMLC) -verbose $(CAMLFLAGS) $(CAMLLDFLAGS) -o $@ $(CAMLCFLAGS) $(CAMLLIBS) $^ $(CLIBS)
 
 # Unfortunately -output-obj does not put .o files into the output, only .cmx
 # files, so we have to use $(LD) to take care of COBJS.
 $(NAME)-blob.o: $(CAMLOBJS) $(COBJS)
 	@echo Linking $@
-	$(CAMLC) -dstartup -output-obj -verbose -cclib -keep_private_externs $(CAMLFLAGS) -o u-b.o $(CFLAGS) $(CAMLLIBS) $(CLIBS) $(CAMLOBJS)
+	$(CAMLC) -dstartup -output-obj -verbose -cclib -keep_private_externs $(CAMLFLAGS) -o u-b.o $(CAMLCFLAGS) $(CAMLLDFLAGS) $(CAMLLIBS) $(CLIBS) $(CAMLOBJS)
 	$(LD) -r -keep_private_externs -o $@ u-b.o $(COBJS)
 	$(RM) u-b.o
 
