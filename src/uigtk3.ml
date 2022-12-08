@@ -4477,10 +4477,9 @@ let start = function
       let displayAvailable =
         Util.osType = `Win32
           ||
-            (let x11_display = try Sys.getenv "DISPLAY" with Not_found -> ""
-            and wayland_display = try Sys.getenv "WAYLAND_DISPLAY" with Not_found -> ""
-            in
-              x11_display != "" || wayland_display != "")
+        (try System.getenv "DISPLAY" <> "" with Not_found -> false)
+          ||
+        (try System.getenv "WAYLAND_DISPLAY" <> "" with Not_found -> false)
       in
       if displayAvailable then Private.start Uicommon.Graphic
       else begin
