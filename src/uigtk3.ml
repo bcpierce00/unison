@@ -4477,11 +4477,13 @@ let start = function
       let displayAvailable =
         Util.osType = `Win32
           ||
-        try System.getenv "DISPLAY" <> "" with Not_found -> false
+        (try System.getenv "DISPLAY" <> "" with Not_found -> false)
+          ||
+        (try System.getenv "WAYLAND_DISPLAY" <> "" with Not_found -> false)
       in
       if displayAvailable then Private.start Uicommon.Graphic
       else begin
-        Util.warn "DISPLAY not set or empty; starting the Text UI\n";
+        Util.warn "DISPLAY and WAYLAND_DISPLAY not set or empty; starting the Text UI\n";
         Uitext.Body.start Uicommon.Text
       end
 
