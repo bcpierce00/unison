@@ -18,14 +18,14 @@
 (executable
  (name linktext)
  (public_name unison)
- (package unison)
+ (package unison) ; Dummy: we don't use packages
  (modules linktext)
  (libraries unison_lib))
 
 (executable
  (name linkgtk3)
  (public_name unison-gui)
- (package unison-gui)
+ (package unison-gui) ; Dummy: we don't use packages
  (flags :standard -w -3-6-9-27-32-52)
  (modules linkgtk3 uigtk3)
  (libraries threads unison_lib lablgtk3))
