@@ -445,7 +445,7 @@ CAMLprim value unison_acl_to_text(value path)
       LocalFree(sd);
 
 #ifdef ACL_DEBUG
-      printf_s(" ---> Empty ACL (no explict ACE, may have inherited ACE)\n");
+      printf_s(" ---> Empty ACL (no explicit ACE, may have inherited ACE)\n");
 #endif
       CAMLreturn(UNSN_ACL_EMPTY); /* Empty ACL (or only inherited) */
     }

@@ -158,7 +158,7 @@ let backupcurrent =
      ^ "matching \\ARG{pathspec}.  "
      ^" This file will be saved as a backup with version number 000. Such"
      ^" backups can be used as inputs to external merging programs, for instance.  See "
-     ^ "the documentatation for the \\verb|merge| preference."
+     ^ "the documentation for the \\verb|merge| preference."
      ^" For more details, see \\sectionref{merge}{Merging Conflicting Versions}."
      ^"\n\n The syntax of \\ARG{pathspec} is described in "
      ^ "\\sectionref{pathspec}{Path Specification}.")

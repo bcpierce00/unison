@@ -103,7 +103,7 @@ at runtime for each remote connection.
 
 For example:
 
-- Existing code implementes feature hash-1.
+- Existing code implements feature hash-1.
 - New code implements a new hashing algorithm and adds feature hash-2.
 - Even though two different hashing algorithms must not be used at the
   same time, both implementations can co-exist as in the following

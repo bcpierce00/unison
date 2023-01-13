@@ -36,7 +36,7 @@ val from_utf_16 : string -> string
 val to_utf_16_filename : string -> string
 val from_utf_16_filename : string -> string
 
-(* Check wether the string contains only well-formed UTF-8 characters *)
+(* Check whether the string contains only well-formed UTF-8 characters *)
 val check_utf_8 : string -> bool
 
 (* Convert a string to UTF-8 by keeping all UTF-8 characters unchanged
