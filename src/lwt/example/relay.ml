@@ -24,7 +24,7 @@ let relay in_ch out_ch =
     (* If we read nothing, this means that the connection has been
        closed.  In this case, we stop relaying. *)
     if len = 0 then return () else begin
-      (* Otherwise, we write the data to the ouput socket *)
+      (* Otherwise, we write the data to the output socket *)
       let write =
         (* First wait for the previous write to terminate *)
         previous_write >>= (fun () ->

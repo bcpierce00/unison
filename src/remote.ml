@@ -618,7 +618,7 @@ let clientCloseRootConnection = function
 
 (* Implemented as a record to avoid polluting [Remote] namespace. If
    the number and complexity of functions grows in future then it's
-   propably a good idea to extract this code into a separate module. *)
+   probably a good idea to extract this code into a separate module. *)
 type ('a, 'b, 'c) resourceC =
   { register : 'a -> 'a; release : 'a -> 'b; release_noerr : 'a -> 'c }
 let resourceWithConnCleanup close close_noerr =
@@ -1334,11 +1334,11 @@ let sendHandshakeData conn keyw data =
       * If NOK then closes connection.
 
    3. Client receives and verifies RPC versions.
-      * If not correct verion tag or can't parse then closes connection.
+      * If not correct version tag or can't parse then closes connection.
 
    4. Client selects a version (typically the most recent one) from the
       intersection of its supported RPC versions and server's RPC versions.
-      * If interesection is empty then closes connection.
+      * If intersection is empty then closes connection.
 
    5. Client sends selected RPC version to the server.
 
@@ -1589,7 +1589,7 @@ let negociateFlowControlRemote =
   registerServerCmd "negociateFlowControl" Umarshal.unit Umarshal.bool negociateFlowControlLocal
 
 let negociateFlowControl conn =
-  (* Flow control negociation can be done asynchronously. *)
+  (* Flow control negotiation can be done asynchronously. *)
   if not (Prefs.read halfduplex) then
     Lwt.ignore_result
       (negociateFlowControlRemote conn () >>= fun needed ->

@@ -1474,7 +1474,7 @@ let docs =
       \032         keep a backup of the current version of every file matching\n\
       \032         pathspec. This file will be saved as a backup with version\n\
       \032         number 000. Such backups can be used as inputs to external\n\
-      \032         merging programs, for instance. See the documentatation for the\n\
+      \032         merging programs, for instance. See the documentation for the\n\
       \032         merge preference. For more details, see the section \226\128\156Merging\n\
       \032         Conflicting Versions\226\128\157 .\n\
       \n\
@@ -1955,7 +1955,7 @@ let docs =
       \032         low-bandwidth link it may be helpful to set it lower (e.g. to 1)\n\
       \032         so that Unison doesn\226\128\153t soak up all the available bandwidth. The\n\
       \032         default is the special value 0, which mean 20 threads when file\n\
-      \032         content streaming is desactivated and 1000 threads when it is\n\
+      \032         content streaming is deactivated and 1000 threads when it is\n\
       \032         activated.\n\
       \n\
       \032  merge xxx\n\
@@ -2040,7 +2040,7 @@ let docs =
       \032         The integer value of this preference is a mask indicating which\n\
       \032         permission bits should be synchronized. It is set by default to\n\
       \032         0o1777: all bits but the set-uid and set-gid bits are\n\
-      \032         synchronised (synchronizing theses latter bits can be a security\n\
+      \032         synchronised (synchronizing these latter bits can be a security\n\
       \032         hazard). If you want to synchronize all bits, you can set the\n\
       \032         value of this preference to \226\136\1461. If one of the replica is on a\n\
       \032         FAT [Windows] filesystem, you should consider using the fat\n\
@@ -2336,7 +2336,7 @@ let docs =
       \032  similar line of the form source name does the same except that it does\n\
       \032  not attempt to add a suffix to name. Similar lines of the form include?\n\
       \032  name or source? name do the same as their respective lines without the\n\
-      \032  question mark except that it does not constitue an error to specify a\n\
+      \032  question mark except that it does not constitute an error to specify a\n\
       \032  non-existing file name. In name the backslash is an escape character.\n\
       \n\
       \032  A profile may include a preference \226\128\152label = desc\226\128\153 to provide a\n\
@@ -2748,7 +2748,7 @@ let docs =
       \032  Textual Interface:\n\
       \032    * When not synchronizing continuously, the text interface terminates\n\
       \032      when synchronization is finished normally or due to a fatal error\n\
-      \032      occuring.\n\
+      \032      occurring.\n\
       \032      In the text interface, to interrupt synchronization before it is\n\
       \032      finished, press \226\128\156Ctrl-C\226\128\157 (or send signal SIGINT or SIGTERM). This\n\
       \032      will interrupt update propagation as quickly as possible but still\n\
@@ -2951,7 +2951,7 @@ let docs =
       \032    * For security reasons, the Unix setuid and setgid bits are not\n\
       \032      propagated.\n\
       \032    * The Unix owner and group ids can be propagated (see owner and group\n\
-      \032      preferences) by mapping names or by numberic ids (see numericids\n\
+      \032      preferences) by mapping names or by numeric ids (see numericids\n\
       \032      preference).\n\
       \n\
       Access Control Lists - ACLs\n\

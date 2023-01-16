@@ -25,7 +25,7 @@ promise that anybody is going to implement it!)
          - sort the list
          - if there are any adjacent pairs where the first is a prefix of the
            second, drop the second and mark the first as deep
-         - go through the list and drop any item for whioch any PREFIX of
+         - go through the list and drop any item for which any PREFIX of
            its path matches 'ignore' and doesn't match 'ignorenot'
      - bulletproof, handling fatal errors and restarting completely from
        scratch if necessary
@@ -94,7 +94,7 @@ It would be nice if Unison could have the "power" to copy write-protected
 * If a directory does not exist in one of the host, unison (for
   security reasons, which I like) pops up a window and Quit is the only
   option. I would expect a message stating mere clearly on which host and
-  direcory and an option to create that directory. I had recently to make
+  directory and an option to create that directory. I had recently to make
   a lot of reinstalls and new pendrives and it took a long time to create
   all those dirs. Someone in the list even made a script to do the job!!!
 
@@ -265,7 +265,7 @@ should strip symbols from binary files in 'make exportnative'
 *** If a root resides on a `host' with an ever and unpredictably changing
     host name (like a public login cluster with dozens of machines and a
     shared file system), listing each possible host name for this root is
-    not feasible.  The ability of specifing patterns in rootaliases would
+    not feasible.  The ability of specifying patterns in rootaliases would
     help a lot in this case.  I'm thinking of something like this:
     rootalias = //.*//afs/cern.ch/user/n/nagya ->
     //cern.ch//afs/cern.ch/user/n/nagya [NAGY Andras <nagya@inf.elte.hu>,
@@ -376,7 +376,7 @@ should strip symbols from binary files in 'make exportnative'
   specify a user (and similarly a group) to unison.  It would be
   interpreted in a special way: if a file is owned by this user, unison
   will rather consider that the owner of the file is undefined.  So, when
-  a file owned by an unkown user is synchronized, the file owner is set
+  a file owned by an unknown user is synchronized, the file owner is set
   to the default user.  Then, on the next synchronizations, unison will
   consider that the owner has not been propagated and try again.  [Should
   be easy once the reconciler is made more modular]

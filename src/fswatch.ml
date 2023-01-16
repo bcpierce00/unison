@@ -64,7 +64,7 @@ Protocol description
   only further changes.
 
   Unison can wait for changes in a replica by emitting a 'WAIT hash'
-  command. It can watch several replicas by sending a serie of these
+  command. It can watch several replicas by sending a series of these
   commands. The child process is expected to respond once, by a
   'CHANGE hash1 ... hash2' response that lists the changed replicas
   among those included in a 'WAIT' command, when changes are

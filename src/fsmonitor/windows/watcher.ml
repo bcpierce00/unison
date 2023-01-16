@@ -80,7 +80,7 @@ let rec follow_win_path_parent root dir path pos =
 
 let get_win_path root dir ((ev_path, act) as ev) =
   (* Blindly expand the event path to long names form. If event path
-     is not found among the watched patchs then try to find the nearest
+     is not found among the watched paths then try to find the nearest
      parent directory and report a modification on it. MSDN states the
      following: "If there is both a short and long name for the file,
      [Lwt_win.readdirectorychanges] will return one of these names,

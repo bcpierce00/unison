@@ -284,7 +284,7 @@ When Unison starts, it first reads the profile and then the command line, so
 command-line options will override settings from the profile.
 .Sh TERMINATION
 When not synchronizing continuously, the text interface terminates when
-synchronization is finished normally or due to a fatal error occuring.
+synchronization is finished normally or due to a fatal error occurring.
 .Pp
 In the text interface, to interrupt synchronization before it is finished,
 press
@@ -379,7 +379,7 @@ option.
 .Pp
 .It Pa ~/.unison/fp*
 Fingerprint cache files. These files may be safely deleted. Keep in mind that
-deleting a fingerprint cache file means that any unsychronized changes must be
+deleting a fingerprint cache file means that any unsynchronized changes must be
 scanned again. Depending on your replicas, this may mean scanning gigabytes of
 file contents.
 .Pp

@@ -1,7 +1,7 @@
 /* cltool.c
 
    This is a command-line tool for Mac OS X that looks up the unison
-   application, whereever it has been installed, and runs it.  This
+   application, wherever it has been installed, and runs it.  This
    is intended to be installed in a standard place (e.g.,
    /usr/bin/unison) to make it easy to invoke unison as a server, or
    to use unison from the command line when it has been installed with

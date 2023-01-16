@@ -33,7 +33,7 @@ val getRootsName : unit -> string
    paths known not to be synchronized and a list of paths not to
    check. Returns structures describing dirty files/dirs (1 per path
    given in the -path preference). An option controls whether we
-   would like to use the external filesytem monitoring process. *)
+   would like to use the external filesystem monitoring process. *)
 val findUpdates :
   ?wantWatcher:bool ->
   (Path.t list * Path.t list) option ->

@@ -200,7 +200,7 @@ Released 2020-10-21
 
 ## Changes in very old versions
 
-(Note that these are written 'Chagnes since' and thus the content
+(Note that these are written 'Changes since' and thus the content
 applies to the release after that.)
 
    Changes since 2.40.63:
@@ -789,7 +789,7 @@ applies to the release after that.)
           + Ignore trailing dots in filenames in case insensitive mode
           + Proper quoting of paths, files and extensions ignored using
             the UI
-          + The strings CURRENT1 and CURRENT2 are now correctly substitued
+          + The strings CURRENT1 and CURRENT2 are now correctly substituted
             when they occur in the diff preference
           + Improvements to syncing resource forks between Macs via a
             non-Mac system.
@@ -1427,7 +1427,7 @@ applies to the release after that.)
             preference is a mask indicating which permission bits should
             be synchronized. It is set by default to 0o1777: all bits but
             the set-uid and set-gid bits are synchronised (synchronizing
-            theses latter bits can be a security hazard). If you want to
+            these latter bits can be a security hazard). If you want to
             synchronize all bits, you can set the value of this preference
             to -1.
           + Added a log preference (default false), which makes Unison
@@ -1529,7 +1529,7 @@ applies to the release after that.)
             paths matching this pattern to be displayed last.
        The sorting preferences are described in more detail in the user
        manual. The sortnewfirst and sortbysize flags can also be accessed
-       from the 'Sort' menu in the grpahical user interface.
+       from the 'Sort' menu in the graphical user interface.
      * Added two new preferences that can be used to change unison's
        fundamental behavior to make it more like a mirroring tool instead
        of a synchronizer.

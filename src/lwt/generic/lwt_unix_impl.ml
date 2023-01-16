@@ -1,6 +1,6 @@
 (*
 Non-blocking I/O and select does not (fully) work under Windows.
-The libray therefore does not use them under Windows, and will
+The library therefore does not use them under Windows, and will
 therefore have the following limitations:
 - No read will be performed while there are some threads ready to run
   or waiting to write;

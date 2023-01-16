@@ -452,13 +452,13 @@ let handlePasswordRequests (fdIn, fdOut) callback isReady =
       let d = (Unix.gettimeofday ()) -. !time in
       if d < delay
         || Buffer.length scrollback = 0 then
-      (* HACK: Delay briefly (0.2 s, noticable to a human but not terrible
+      (* HACK: Delay briefly (0.2 s, noticeable to a human but not terrible
          either since some delay from the network is expected anyway) to allow
          time for output to be generated and read in as a whole. Otherwise, it
          may happen that 'Invalid password' and 'Please re-enter password'
          prompts are received separately, and this is not what we want.
          Loop by 0.01 s to let other threads run while not introducing
-         noticable latency to the user. *)
+         noticeable latency to the user. *)
       Lwt_unix.sleep (max (delay -. (max 0. d)) 0.01) >>= prompt
     else
       let query = extract () in

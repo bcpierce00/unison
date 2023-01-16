@@ -335,7 +335,7 @@ let findWorkingDir fspath path =
       try
         (* Relevant on Windows: We can (and should) use [extendedPath] only
            on the very first input, which is known to satisfy [Fspath.t]
-           invariants. Inputs used for all following loops come from the ouput
+           invariants. Inputs used for all following loops come from the output
            of [readlink] either without any processing done on it (if the link
            is an absolute path) - such paths are potentially unsuitable as
            input to [extendedPath] - or already extended (when concatenating

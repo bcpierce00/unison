@@ -89,7 +89,7 @@ let permMask =
     "The integer value of this preference is a mask indicating which \
      permission bits should be synchronized.  It is set by default to \
      $0o1777$: all bits but the set-uid and set-gid bits are \
-     synchronised (synchronizing theses latter bits can be a security \
+     synchronised (synchronizing these latter bits can be a security \
      hazard).  If you want to synchronize all bits, you can set the \
      value of this preference to $-1$.  If one of the replica is on \
      a FAT [Windows] filesystem, you should consider using the \

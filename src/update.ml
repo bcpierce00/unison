@@ -594,7 +594,7 @@ let storeArchiveLocal fspath thisRoot archive hash magic properties =
    It can be removed when this compatibility is no longer required. *)
 let loadedCompatArchive = ref []
 
-(* Remove the archieve under the root path [fspath] with archiveVersion [v] *)
+(* Remove the archive under the root path [fspath] with archiveVersion [v] *)
 let removeArchiveLocal ((fspath: Fspath.t), (v: archiveVersion)): unit Lwt.t =
   let f' name = Lwt.return (
      let fspath = Util.fileInUnisonDir name in
@@ -1627,7 +1627,7 @@ let directoryCheckContentUnchanged
        are updated anyway then the changes that failed to propagate may be
        missed at the next scan. If there is something to propagate then all
        archive changes must go through propagation. With the exception of
-       dirChangeFlag, which is safe to update without upating mtime. *)
+       dirChangeFlag, which is safe to update without updating mtime. *)
     if propsChanged then
       (archDesc, updated)
     else

@@ -218,7 +218,7 @@ above the 'lablgtk' directory.
 
   The way from public Gtk/LablGtk sources to the provided Gtk/LablGtk
 dynamic/static extension has been somehow perilous. We strongly
-recommand using the provided sources and patches as a base for your
+recommend using the provided sources and patches as a base for your
 further enhancements.
 
   To be exhaustive, here are the steps followed to create the provided
