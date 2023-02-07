@@ -371,7 +371,7 @@ lwt/lwt_unix.cmx: lwt/$(SYSTEM)/lwt_unix_impl.cmx
 
 .PHONY: depend dependgraph
 depend::
-	ocamldep $(DEP_INCLFLAGS) *.mli *.ml */*.ml */*.mli */*/*.ml */*/*.mli > .depend
+	ocamlc -depend $(DEP_INCLFLAGS) *.mli *.ml */*.ml */*.mli */*/*.ml */*/*.mli > .depend
 
 dependgraph: depend
 	echo 'digraph G {' > .depend.dot.tmp
