@@ -4395,8 +4395,8 @@ let createToplevelWindow () =
 
 let start _ =
   try
-    (* Stop GTK 3 from forcing client-side decorations in Windows *)
-    if Util.osType = `Win32 then begin
+    (* Stop GTK 3 from forcing client-side decorations *)
+    begin
       try ignore (Unix.getenv "GTK_CSD") with
       | Unix.Unix_error _ | Not_found ->
           try Unix.putenv "GTK_CSD" "0" with
