@@ -66,6 +66,20 @@ let revertToDefaultDirection ri =
 (*                   'Replica2ToReplica1                                     *)
 (* --                                                                        *)
 let root2direction root =
+  let partialMatch s = function
+    | Clroot.ConnectLocal (None | Some "") -> false
+    | Clroot.ConnectLocal (Some root) ->
+        Util.startswith root s || Util.endswith root s
+    | ConnectByShell (_, host, _, _, Some root)
+    | ConnectBySocket (host, _, Some root) ->
+        Util.startswith root s || Util.endswith root s || Util.startswith host s
+    | ConnectByShell (_, host, _, _, None)
+    | ConnectBySocket (host, _, None) ->
+        Util.startswith host s
+  in
+  let partialRootMatches prefVal =
+    Safelist.map (partialMatch prefVal) (Globals.parsedClRawRoots ())
+  in
   if      root="older" then `Older
   else if root="newer" then `Newer
   else if root = "" then `None
@@ -76,9 +90,12 @@ let root2direction root =
          root r1 r2);
     if r1 = root then `Replica1ToReplica2 else
     if r2 = root then `Replica2ToReplica1 else
-    raise (Util.Fatal (Printf.sprintf
-     "%s (given as argument to 'prefer' or 'force' preference)\nis not one of \
-      the current roots:\n  %s\n  %s" root r1 r2))
+    match partialRootMatches root with
+    | [true; false] -> `Replica1ToReplica2
+    | [false; true] -> `Replica2ToReplica1
+    | _ ->
+        raise (Util.Fatal (Printf.sprintf "%s\nis not uniquely identifying one \
+          of the current roots:\n  %s\n  %s" root r1 r2))
 
 let rootDirCache = ref []
 
@@ -103,6 +120,8 @@ let forceRoot: string Prefs.t =
      ^ "\\ARG{root}.  "
      ^ "This effectively changes Unison from a synchronizer into a mirroring "
      ^ "utility.  \n\n"
+     ^ "You can also specify a unique prefix or suffix of the path of one of "
+     ^ "the roots or a unique prefix of the hostname of a remote root.\n\n"
      ^ "You can also specify \\verb|-force newer| (or \\verb|-force older|) "
      ^ "to force Unison to choose the file with the later (earlier) "
      ^ "modtime.  In this case, the \\verb|-times| preference must also "
@@ -120,8 +139,10 @@ let forceRootPartial: Pred.t =
      ^ "for more information).  "
      ^ "This effectively changes Unison from a synchronizer into a mirroring "
      ^ "utility.  \n\n"
+     ^ "You can also specify a unique prefix or suffix of the path of one of "
+     ^ "the roots or a unique prefix of the hostname of a remote root.\n\n"
      ^ "You can also specify \\verb|forcepartial PATHSPEC -> newer| "
-     ^ "(or \\verb|forcepartial PATHSPEC older|) "
+     ^ "(or \\verb|forcepartial PATHSPEC -> older|) "
      ^ "to force Unison to choose the file with the later (earlier) "
      ^ "modtime.  In this case, the \\verb|-times| preference must also "
      ^ "be enabled.\n\n"
@@ -138,6 +159,8 @@ let preferRoot: string Prefs.t =
      ^ "\\texttt{merge}.  (The syntax of \\ARG{root} is the same as "
      ^ "for the \\verb|root| preference, plus the special values "
      ^ "\\verb|newer| and \\verb|older|.)  \n\n"
+     ^ "You can also specify a unique prefix or suffix of the path of one of "
+     ^ "the roots or a unique prefix of the hostname of a remote root.\n\n"
      ^ "This preference is overridden by the \\verb|preferpartial| preference.\n\n"
      ^ "This preference should be used only if you are {\\em sure} you "
      ^ "know what you are doing!")
@@ -153,6 +176,8 @@ let preferRootPartial: Pred.t =
      ^ "for more information).  (The syntax of \\ARG{root} is the same as "
      ^ "for the \\verb|root| preference, plus the special values "
      ^ "\\verb|newer| and \\verb|older|.)  \n\n"
+     ^ "You can also specify a unique prefix or suffix of the path of one of "
+     ^ "the roots or a unique prefix of the hostname of a remote root.\n\n"
      ^ "This preference should be used only if you are {\\em sure} you "
      ^ "know what you are doing!")
 
@@ -183,6 +208,8 @@ let noDeletion =
     "prevent file deletions on one replica"
     ("Including the preference \\texttt{-nodeletion \\ARG{root}} prevents \
       Unison from performing any file deletion on root \\ARG{root}.\n\n\
+      You can also specify a unique prefix or suffix of the path of one of \
+      the roots or a unique prefix of the hostname of a remote root.\n\n\
       This preference can be included twice, once for each root, if you \
       want to prevent any deletion.")
 
@@ -193,6 +220,8 @@ let noUpdate =
     ("Including the preference \\texttt{-noupdate \\ARG{root}} prevents \
       Unison from performing any file update or deletion on root \
       \\ARG{root}.\n\n\
+      You can also specify a unique prefix or suffix of the path of one of \
+      the roots or a unique prefix of the hostname of a remote root.\n\n\
       This preference can be included twice, once for each root, if you \
       want to prevent any update.")
 
@@ -202,6 +231,8 @@ let noCreation =
     "prevent file creations on one replica"
     ("Including the preference \\texttt{-nocreation \\ARG{root}} prevents \
       Unison from performing any file creation on root \\ARG{root}.\n\n\
+      You can also specify a unique prefix or suffix of the path of one of \
+      the roots or a unique prefix of the hostname of a remote root.\n\n\
       This preference can be included twice, once for each root, if you \
       want to prevent any creation.")
 
