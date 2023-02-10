@@ -538,7 +538,8 @@ globals.cmi : \
     pred.cmi \
     path.cmi \
     lwt/lwt.cmi \
-    common.cmi
+    common.cmi \
+    clroot.cmi
 linkgtk3.cmo : \
     uigtk3.cmi \
     main.cmo

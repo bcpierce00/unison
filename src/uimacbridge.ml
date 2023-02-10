@@ -264,7 +264,7 @@ let do_unisonInit1 profileName =
   let localRoots,remoteRoots =
     Safelist.partition
       (function Clroot.ConnectLocal _ -> true | _ -> false)
-      (Safelist.map Clroot.parseRoot (Globals.rawRoots())) in
+      (Globals.parsedClRawRoots ()) in
 
   match remoteRoots with
     [r] ->

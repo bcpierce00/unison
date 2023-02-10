@@ -896,7 +896,7 @@ let initPrefs ~profileName ~promptForRoots ?(prepDebug = fun () -> ()) () =
 
   (* Parse the roots to validate them *)
   let parsedRoots =
-    try Safelist.map Clroot.parseRoot (Globals.rawRoots ()) with
+    try Globals.parsedClRawRoots () with
     | Invalid_argument s | Util.Fatal s | Prefs.IllegalValue s ->
         raise (Util.Fatal ("There's a problem with one of the roots:\n" ^ s))
   in

@@ -937,7 +937,7 @@ let formatConnectionInfo root =
       (* Find the (unique) nonlocal root *)
       match
          Safelist.find (function Clroot.ConnectLocal _ -> false | _ -> true)
-           (Safelist.map Clroot.parseRoot (Globals.rawRoots()))
+           (Globals.parsedClRawRoots ())
       with
         Clroot.ConnectByShell (_,rawhost,uo,_,_) ->
             (match uo with None -> "" | Some u -> u ^ "@")
