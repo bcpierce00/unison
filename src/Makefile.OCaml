@@ -60,7 +60,9 @@ endif
 # Better(?) version, June 2005:
 # OCAMLLIBDIR=$(shell ocamlc -v | tail -1 | sed -e 's/.* //g' | sed -e 's/\\/\//g' | tr -d '\r')
 # Another try, Feb 2011, suggested by Ron Isaacson
-OCAMLLIBDIR=$(shell ocamlc -v | tail -1 | sed -e 's/.* //g' | tr '\\' '/' | tr -d '\r')
+# OCAMLLIBDIR=$(shell ocamlc -v | tail -1 | sed -e 's/.* //g' | tr '\\' '/' | tr -d '\r')
+# 2023: "-where" has existed since OCaml 3.01 (2000)
+OCAMLLIBDIR=$(shell ocamlc -where)
 
 ## BCP (6/05) an alternative, but not quite working, version
 ## suggested by Nick Montfort:
