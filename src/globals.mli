@@ -10,6 +10,9 @@ val rawRoots : unit -> string list
 val setRawRoots : string list -> unit
 val rawRootPair : unit -> string * string
 
+(* Same as [rawRoots], parsed as clroots                                     *)
+val parsedClRawRoots : unit -> Clroot.clroot list
+
 (* Parse and canonize roots from their raw names                             *)
 val installRoots : (string -> string -> string) option -> unit Lwt.t
 

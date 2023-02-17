@@ -1751,6 +1751,10 @@ let docs =
       \032         This effectively changes Unison from a synchronizer into a\n\
       \032         mirroring utility.\n\
       \n\
+      \032         You can also specify a unique prefix or suffix of the path of\n\
+      \032         one of the roots or a unique prefix of the hostname of a remote\n\
+      \032         root.\n\
+      \n\
       \032         You can also specify -force newer (or -force older) to force\n\
       \032         Unison to choose the file with the later (earlier) modtime. In\n\
       \032         this case, the -times preference must also be enabled.\n\
@@ -1767,9 +1771,13 @@ let docs =
       \032         \226\128\156Path Specification\226\128\157 for more information). This effectively\n\
       \032         changes Unison from a synchronizer into a mirroring utility.\n\
       \n\
+      \032         You can also specify a unique prefix or suffix of the path of\n\
+      \032         one of the roots or a unique prefix of the hostname of a remote\n\
+      \032         root.\n\
+      \n\
       \032         You can also specify forcepartial PATHSPEC -> newer (or\n\
-      \032         forcepartial PATHSPEC older) to force Unison to choose the file\n\
-      \032         with the later (earlier) modtime. In this case, the -times\n\
+      \032         forcepartial PATHSPEC -> older) to force Unison to choose the\n\
+      \032         file with the later (earlier) modtime. In this case, the -times\n\
       \032         preference must also be enabled.\n\
       \n\
       \032         This preference should be used only if you are sure you know\n\
@@ -1977,6 +1985,10 @@ let docs =
       \032         Including the preference -nocreation root prevents Unison from\n\
       \032         performing any file creation on root root.\n\
       \n\
+      \032         You can also specify a unique prefix or suffix of the path of\n\
+      \032         one of the roots or a unique prefix of the hostname of a remote\n\
+      \032         root.\n\
+      \n\
       \032         This preference can be included twice, once for each root, if\n\
       \032         you want to prevent any creation.\n\
       \n\
@@ -1991,6 +2003,10 @@ let docs =
       \032         Including the preference -nodeletion root prevents Unison from\n\
       \032         performing any file deletion on root root.\n\
       \n\
+      \032         You can also specify a unique prefix or suffix of the path of\n\
+      \032         one of the roots or a unique prefix of the hostname of a remote\n\
+      \032         root.\n\
+      \n\
       \032         This preference can be included twice, once for each root, if\n\
       \032         you want to prevent any deletion.\n\
       \n\
@@ -2004,6 +2020,10 @@ let docs =
       \032  noupdate xxx\n\
       \032         Including the preference -noupdate root prevents Unison from\n\
       \032         performing any file update or deletion on root root.\n\
+      \n\
+      \032         You can also specify a unique prefix or suffix of the path of\n\
+      \032         one of the roots or a unique prefix of the hostname of a remote\n\
+      \032         root.\n\
       \n\
       \032         This preference can be included twice, once for each root, if\n\
       \032         you want to prevent any update.\n\
@@ -2055,6 +2075,10 @@ let docs =
       \032         preference merge. (The syntax of root is the same as for the\n\
       \032         root preference, plus the special values newer and older.)\n\
       \n\
+      \032         You can also specify a unique prefix or suffix of the path of\n\
+      \032         one of the roots or a unique prefix of the hostname of a remote\n\
+      \032         root.\n\
+      \n\
       \032         This preference is overridden by the preferpartial preference.\n\
       \n\
       \032         This preference should be used only if you are sure you know\n\
@@ -2067,6 +2091,10 @@ let docs =
       \032         (see the section \226\128\156Path Specification\226\128\157 for more information).\n\
       \032         (The syntax of root is the same as for the root preference, plus\n\
       \032         the special values newer and older.)\n\
+      \n\
+      \032         You can also specify a unique prefix or suffix of the path of\n\
+      \032         one of the roots or a unique prefix of the hostname of a remote\n\
+      \032         root.\n\
       \n\
       \032         This preference should be used only if you are sure you know\n\
       \032         what you are doing!\n\

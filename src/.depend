@@ -538,7 +538,8 @@ globals.cmi : \
     pred.cmi \
     path.cmi \
     lwt/lwt.cmi \
-    common.cmi
+    common.cmi \
+    clroot.cmi
 linkgtk3.cmo : \
     uigtk3.cmi \
     main.cmo
@@ -852,6 +853,7 @@ recon.cmo : \
     globals.cmi \
     fileinfo.cmi \
     common.cmi \
+    clroot.cmi \
     recon.cmi
 recon.cmx : \
     uutil.cmx \
@@ -869,6 +871,7 @@ recon.cmx : \
     globals.cmx \
     fileinfo.cmx \
     common.cmx \
+    clroot.cmx \
     recon.cmi
 recon.cmi : \
     props.cmi \

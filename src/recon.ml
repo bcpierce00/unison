@@ -66,8 +66,23 @@ let revertToDefaultDirection ri =
 (*                   'Replica2ToReplica1                                     *)
 (* --                                                                        *)
 let root2direction root =
+  let partialMatch s = function
+    | Clroot.ConnectLocal (None | Some "") -> false
+    | Clroot.ConnectLocal (Some root) ->
+        Util.startswith root s || Util.endswith root s
+    | ConnectByShell (_, host, _, _, Some root)
+    | ConnectBySocket (host, _, Some root) ->
+        Util.startswith root s || Util.endswith root s || Util.startswith host s
+    | ConnectByShell (_, host, _, _, None)
+    | ConnectBySocket (host, _, None) ->
+        Util.startswith host s
+  in
+  let partialRootMatches prefVal =
+    Safelist.map (partialMatch prefVal) (Globals.parsedClRawRoots ())
+  in
   if      root="older" then `Older
   else if root="newer" then `Newer
+  else if root = "" then `None
   else
     let (r1, r2) = Globals.rawRootPair () in
     debug (fun() ->
@@ -75,9 +90,26 @@ let root2direction root =
          root r1 r2);
     if r1 = root then `Replica1ToReplica2 else
     if r2 = root then `Replica2ToReplica1 else
-    raise (Util.Fatal (Printf.sprintf
-     "%s (given as argument to 'prefer' or 'force' preference)\nis not one of \
-      the current roots:\n  %s\n  %s" root r1 r2))
+    match partialRootMatches root with
+    | [true; false] -> `Replica1ToReplica2
+    | [false; true] -> `Replica2ToReplica1
+    | _ ->
+        raise (Util.Fatal (Printf.sprintf "%s\nis not uniquely identifying one \
+          of the current roots:\n  %s\n  %s" root r1 r2))
+
+let rootDirCache = ref []
+
+let clearRootDirCache () = rootDirCache := []
+
+let prefRoot prefV =
+  (* Use physical equality with cache keys. The goal is not to avoid as many
+     cache misses as possible but to make cache checking much cheaper than
+     calculating the value (in this case, hashing and string comparison are
+     not quite cheap enough). *)
+  match List.assq_opt prefV !rootDirCache with
+  | Some x -> x
+  | None -> let x = root2direction prefV in
+            rootDirCache := (prefV, x) :: !rootDirCache; x
 
 let forceRoot: string Prefs.t =
   Prefs.createString "force" ""
@@ -88,6 +120,8 @@ let forceRoot: string Prefs.t =
      ^ "\\ARG{root}.  "
      ^ "This effectively changes Unison from a synchronizer into a mirroring "
      ^ "utility.  \n\n"
+     ^ "You can also specify a unique prefix or suffix of the path of one of "
+     ^ "the roots or a unique prefix of the hostname of a remote root.\n\n"
      ^ "You can also specify \\verb|-force newer| (or \\verb|-force older|) "
      ^ "to force Unison to choose the file with the later (earlier) "
      ^ "modtime.  In this case, the \\verb|-times| preference must also "
@@ -105,8 +139,10 @@ let forceRootPartial: Pred.t =
      ^ "for more information).  "
      ^ "This effectively changes Unison from a synchronizer into a mirroring "
      ^ "utility.  \n\n"
+     ^ "You can also specify a unique prefix or suffix of the path of one of "
+     ^ "the roots or a unique prefix of the hostname of a remote root.\n\n"
      ^ "You can also specify \\verb|forcepartial PATHSPEC -> newer| "
-     ^ "(or \\verb|forcepartial PATHSPEC older|) "
+     ^ "(or \\verb|forcepartial PATHSPEC -> older|) "
      ^ "to force Unison to choose the file with the later (earlier) "
      ^ "modtime.  In this case, the \\verb|-times| preference must also "
      ^ "be enabled.\n\n"
@@ -123,6 +159,8 @@ let preferRoot: string Prefs.t =
      ^ "\\texttt{merge}.  (The syntax of \\ARG{root} is the same as "
      ^ "for the \\verb|root| preference, plus the special values "
      ^ "\\verb|newer| and \\verb|older|.)  \n\n"
+     ^ "You can also specify a unique prefix or suffix of the path of one of "
+     ^ "the roots or a unique prefix of the hostname of a remote root.\n\n"
      ^ "This preference is overridden by the \\verb|preferpartial| preference.\n\n"
      ^ "This preference should be used only if you are {\\em sure} you "
      ^ "know what you are doing!")
@@ -138,6 +176,8 @@ let preferRootPartial: Pred.t =
      ^ "for more information).  (The syntax of \\ARG{root} is the same as "
      ^ "for the \\verb|root| preference, plus the special values "
      ^ "\\verb|newer| and \\verb|older|.)  \n\n"
+     ^ "You can also specify a unique prefix or suffix of the path of one of "
+     ^ "the roots or a unique prefix of the hostname of a remote root.\n\n"
      ^ "This preference should be used only if you are {\\em sure} you "
      ^ "know what you are doing!")
 
@@ -145,22 +185,22 @@ let preferRootPartial: Pred.t =
 (* preferences "force"/"preference", returns a pair (root, force)            *)
 let lookupPreferredRoot () =
   if Prefs.read forceRoot <> "" then
-    (Prefs.read forceRoot, `Force)
+    (prefRoot (Prefs.read forceRoot), `Force)
   else if Prefs.read preferRoot <> "" then
-    (Prefs.read preferRoot, `Prefer)
+    (prefRoot (Prefs.read preferRoot), `Prefer)
   else
-    ("",`Prefer)
+    (`None, `Prefer)
 
 (* [lookupPreferredRootPartial: Path.t -> string * [`Force | `Prefer]] checks validity of  *)
 (* preferences "forcepartial", returns a pair (root, force)                                *)
 let lookupPreferredRootPartial p =
   let s = Path.toString p in
   if Pred.test forceRootPartial s then
-    (Pred.assoc forceRootPartial s, `Force)
+    (prefRoot (Pred.assoc forceRootPartial s), `Force)
   else if Pred.test preferRootPartial s then
-    (Pred.assoc preferRootPartial s, `Prefer)
+    (prefRoot (Pred.assoc preferRootPartial s), `Prefer)
   else
-    ("",`Prefer)
+    (`None, `Prefer)
 
 let noDeletion =
   Prefs.createStringList "nodeletion"
@@ -168,6 +208,8 @@ let noDeletion =
     "prevent file deletions on one replica"
     ("Including the preference \\texttt{-nodeletion \\ARG{root}} prevents \
       Unison from performing any file deletion on root \\ARG{root}.\n\n\
+      You can also specify a unique prefix or suffix of the path of one of \
+      the roots or a unique prefix of the hostname of a remote root.\n\n\
       This preference can be included twice, once for each root, if you \
       want to prevent any deletion.")
 
@@ -178,6 +220,8 @@ let noUpdate =
     ("Including the preference \\texttt{-noupdate \\ARG{root}} prevents \
       Unison from performing any file update or deletion on root \
       \\ARG{root}.\n\n\
+      You can also specify a unique prefix or suffix of the path of one of \
+      the roots or a unique prefix of the hostname of a remote root.\n\n\
       This preference can be included twice, once for each root, if you \
       want to prevent any update.")
 
@@ -187,6 +231,8 @@ let noCreation =
     "prevent file creations on one replica"
     ("Including the preference \\texttt{-nocreation \\ARG{root}} prevents \
       Unison from performing any file creation on root \\ARG{root}.\n\n\
+      You can also specify a unique prefix or suffix of the path of one of \
+      the roots or a unique prefix of the hostname of a remote root.\n\n\
       This preference can be included twice, once for each root, if you \
       want to prevent any creation.")
 
@@ -232,17 +278,25 @@ let maxSizeThreshold =
      ^ "A negative number will allow every transfer independently of the size.  "
      ^ "The default is -1. ")
 
-let partialCancelPref actionKind =
-  match actionKind with
-    `DELETION -> noDeletionPartial
-  | `UPDATE   -> noUpdatePartial
-  | `CREATION -> noCreationPartial
+let testPartialCancelPref root path actionKind =
+  let partialCancelPref actionKind =
+    match actionKind with
+      `DELETION -> noDeletionPartial
+    | `UPDATE   -> noUpdatePartial
+    | `CREATION -> noCreationPartial
+  in
+  Pred.assoc_all (partialCancelPref actionKind) path
+  |> List.exists (fun x -> root = prefRoot x)
 
-let cancelPref actionKind =
-  match actionKind with
-    `DELETION -> noDeletion
-  | `UPDATE   -> noUpdate
-  | `CREATION -> noCreation
+let testCancelPref root actionKind =
+  let cancelPref actionKind =
+    match actionKind with
+      `DELETION -> noDeletion
+    | `UPDATE   -> noUpdate
+    | `CREATION -> noCreation
+  in
+  Prefs.read (cancelPref actionKind)
+  |> List.exists (fun x -> root = prefRoot x)
 
 let actionKind fromRc toRc =
   let fromTyp = fromRc.typ in
@@ -251,11 +305,11 @@ let actionKind fromRc toRc =
   if toTyp = `ABSENT then `CREATION else
   `DELETION
 
-let shouldCancel path rc1 rc2 root2 =
+let shouldCancel path rc1 rc2 root =
   let test kind =
-    List.mem root2 (Prefs.read (cancelPref kind))
+    testCancelPref root kind
       ||
-    List.mem root2 (Pred.assoc_all (partialCancelPref kind) path)
+    testPartialCancelPref root path kind
   in
   let testSize rc =
        Prefs.read maxSizeThreshold >= 0
@@ -275,7 +329,7 @@ let shouldCancel path rc1 rc2 root2 =
      if test `CREATION then true, "would create a file with nocreation or nocreationpartial set"
      else testSize rc1, "would transfer a file of size greater than maxsizethreshold"
 
-let filterRi root1 root2 ri =
+let filterRi ri =
   match ri.replicas with
     Problem _ ->
       ()
@@ -283,9 +337,9 @@ let filterRi root1 root2 ri =
      let cancel,reason =
        match diff.direction with
          Replica1ToReplica2 ->
-          shouldCancel (Path.toString ri.path1) diff.rc1 diff.rc2 root2
+          shouldCancel (Path.toString ri.path1) diff.rc1 diff.rc2 `Replica2ToReplica1
        | Replica2ToReplica1 ->
-          shouldCancel (Path.toString ri.path1) diff.rc2 diff.rc1 root1
+          shouldCancel (Path.toString ri.path1) diff.rc2 diff.rc1 `Replica1ToReplica2
        | Conflict _ | Merge ->
           false,""
      in
@@ -294,57 +348,51 @@ let filterRi root1 root2 ri =
        diff.direction <- Conflict reason
 
 let filterRis ris =
-  let (root1, root2) = Globals.rawRootPair () in
-  Safelist.iter (fun ri -> filterRi root1 root2 ri) ris
+  Safelist.iter filterRi ris
 
 (* Use the current values of the '-prefer <ROOT>' and '-force <ROOT>'        *)
 (* preferences to override the reconciler's choices                          *)
 let overrideReconcilerChoices ris =
-  let (root,force) = lookupPreferredRoot() in
-  if root<>"" then begin
-    let dir = root2direction root in
-    Safelist.iter (fun ri -> setDirection ri dir force) ris
-  end;
+  clearRootDirCache ();
+  let (dir, force) = lookupPreferredRoot () in
+  if dir <> `None then Safelist.iter (fun ri -> setDirection ri dir force) ris;
   Safelist.iter (fun ri ->
-                   let (rootp,forcep) = lookupPreferredRootPartial ri.path1 in
-                   if rootp<>"" then begin
-                     let dir = root2direction rootp in
-                       setDirection ri dir forcep
-                   end) ris;
+                   let (dir, forcep) = lookupPreferredRootPartial ri.path1 in
+                   if dir <> `None then setDirection ri dir forcep) ris;
   filterRis ris
 
 (* Look up the preferred root and verify that it is OK (this is called at    *)
 (* the beginning of the run, so that we don't have to wait to hear about     *)
 (* errors                                                                    *)
 let checkThatPreferredRootIsValid () =
-  let test_root predname = function
-    | "" | "newer" -> ()
-    | "older" as r ->
+  let test_root explicitRoot predname predvalue =
+    match prefRoot predvalue with
+    | `None | `Replica1ToReplica2 | `Replica2ToReplica1 -> ()
+    | (`Newer | `Older) when explicitRoot ->
+        raise (Util.Fatal ("Argument to preference '" ^ predname ^ "': "
+          ^ predvalue ^ " must not be keyword 'older' or 'newer'."))
+    | `Newer -> ()
+    | `Older ->
         if not (Prefs.read Props.syncModtimes) then
           raise (Util.Transient (Printf.sprintf
-                                   "The '%s=%s' preference can only be used with 'times=true'"
-                                   predname r))
-    | r -> ignore (root2direction r) in
-  let (root,pred) = lookupPreferredRoot() in
-  if root<>"" then test_root (match pred with `Force -> "force" | `Prefer -> "prefer") root;
-  Safelist.iter (test_root "forcepartial") (Pred.extern_associated_strings forceRootPartial);
-  Safelist.iter (test_root "preferpartial") (Pred.extern_associated_strings preferRootPartial);
-  let checkPref extract (pref, prefName) =
-    try
-      let root =
-        List.find (fun r -> not (List.mem r (Globals.rawRoots ())))
-          (extract pref)
-      in
-      let (r1, r2) = Globals.rawRootPair () in
-      raise (Util.Fatal (Printf.sprintf
-        "%s (given as argument to '%s' preference)\n\
-         is not one of the current roots:\n  %s\n  %s" root prefName r1 r2))
-    with Not_found ->
-      ()
+            "The '%s=older' preference can only be used with 'times=true'"
+            predname))
+    | `Merge -> assert false
+    | exception (Util.Fatal err) ->
+        raise (Util.Fatal ("Argument to preference '" ^ predname ^ "': " ^ err))
   in
-  List.iter (checkPref Prefs.read)
+  let checkPrefs ~explicitRoot extract prefs =
+    Safelist.iter (fun (pref, prefName) ->
+      Safelist.iter (test_root explicitRoot prefName) (extract pref)) prefs
+  in
+  checkPrefs ~explicitRoot:false (fun x -> [Prefs.read x])
+    [forceRoot, "force"; preferRoot, "prefer"];
+  checkPrefs ~explicitRoot:false Pred.extern_associated_strings
+    [forceRootPartial, "forcepartial";
+     preferRootPartial, "preferpartial"];
+  checkPrefs ~explicitRoot:true Prefs.read
     [noDeletion, "nodeletion"; noUpdate, "noupdate"; noCreation, "nocreation"];
-  List.iter (checkPref Pred.extern_associated_strings)
+  checkPrefs ~explicitRoot:true Pred.extern_associated_strings
     [noDeletionPartial, "nodeletionpartial";
      noUpdatePartial, "noupdatepartial";
      noCreationPartial, "nocreationpartial"]
