@@ -1051,7 +1051,7 @@ let rec interactAndPropagateChanges prevItemList reconItemList
     (* JV (5/09): Don't save the archive in repeat mode as it has some
        costs and its unlikely there is much change to the archives in
        this mode. *)
-    if !Update.foundArchives && Prefs.read Uicommon.repeat = "" then
+    if !Update.foundArchives && Prefs.read Uicommon.repeat = `NoRepeat then
       Update.commitUpdates ();
     display "No updates to propagate\n";
     if skipped > 0 then begin
@@ -1195,7 +1195,7 @@ let synchronizeOnce ?wantWatcher pathsOpt =
 
   if not !Update.foundArchives then Update.commitUpdates ();
   if reconItemList = [] then begin
-    if !Update.foundArchives && Prefs.read Uicommon.repeat = "" then
+    if !Update.foundArchives && Prefs.read Uicommon.repeat = `NoRepeat then
       Update.commitUpdates ();
     (if anyEqualUpdates then
       Trace.status ("Nothing to do: replicas have been changed only "
@@ -1210,6 +1210,79 @@ let synchronizeOnce ?wantWatcher pathsOpt =
     let exitStatus = Uicommon.exitCode (anySkipped || anyPartial || anyCancel, anyFailures) in
     (exitStatus, failedPaths)
   end
+
+(* ------------ Safe termination between synchronizations ------------ *)
+
+let safeStopReqd, requestSafeStop =
+  let safeStopReqd = ref false in
+  (* [safeStopReqd] can only go from false to true;
+     it must never be changed from true to false. *)
+  let isRequested () = !safeStopReqd
+  and request () = safeStopReqd := true in
+  isRequested, request
+
+(*** Requesting safe termination by signals ***)
+
+let set_signal_noerr signa nm behv =
+  try Sys.set_signal signa behv; true
+  with Invalid_argument _ | Sys_error _ as e ->
+    Trace.logonly
+      ("Warning: " ^ nm ^ " handler not set: " ^ (Printexc.to_string e) ^ "\n");
+    false
+
+let stopPipe = ref None
+
+let setupSafeStop () =
+  if supportSignals then begin
+    let safeStop _ =
+      if not (safeStopReqd ()) then begin
+        requestSafeStop ();
+        (* Interrupt the interruptible sleep *)
+        match !stopPipe with
+        | Some (i, o) -> Unix.close o; Lwt_unix.close i
+        | None -> ()
+      end
+    in
+    Util.blockSignals [Sys.sigusr2] (fun () ->
+    let ok = set_signal_noerr Sys.sigusr2 "SIGUSR2" (Signal_handle safeStop) in
+    if ok then stopPipe := Some (Lwt_unix.pipe_in ~cloexec:true ()))
+  end
+
+let safeStopRequested () =
+  safeStopReqd ()
+
+(*** Sleep interruptible by a termination request ***)
+
+let safeStopWait =
+  let safeStopWait_aux () =
+    let readStop =
+      match !stopPipe with
+      | None -> Lwt.wait ()
+      | Some (i, _) -> Lwt_unix.wait_read i
+    in
+    let readFail = function
+      | Unix.Unix_error (EBADF, _, _) -> Lwt.return (requestSafeStop ())
+      | e -> Lwt.fail e
+    in
+    let rec loop () =
+      Lwt.catch
+        (fun () -> readStop) readFail >>= fun () ->
+      if not (safeStopRequested ()) then
+        Lwt_unix.sleep 0.15 >>= loop
+      else
+        Lwt.return ()
+    in
+    loop ()
+  in
+  let wt = ref None in
+  fun () ->
+    match !wt with
+    | Some t -> t
+    | None -> let t = safeStopWait_aux () in wt := Some t; t
+
+let interruptibleSleepf dt =
+  Lwt_unix.run (Lwt.choose [Lwt_unix.sleep dt; safeStopWait ()])
+let interruptibleSleep dt = interruptibleSleepf (float dt)
 
 (* ----------------- Filesystem watching mode ---------------- *)
 
@@ -1231,7 +1304,7 @@ let waitForChanges t =
     Lwt_unix.run
       (Globals.allRootsMap (fun r -> Lwt.return (waitForChangesRoot r ()))
          >>= fun l ->
-       Lwt.choose (timeout @ l))
+       Lwt.choose (timeout @ l @ [safeStopWait ()]))
   end
 
 let synchronizePathsFromFilesystemWatcher () =
@@ -1263,11 +1336,11 @@ let synchronizePathsFromFilesystemWatcher () =
         PathMap.empty
         (Safelist.append delayedPaths failedPaths)
     in
-    Lwt_unix.run (Lwt_unix.sleep watchinterval);
+    interruptibleSleepf watchinterval;
     let nextTime =
       PathMap.fold (fun _ (t, d) t' -> min t t') delayInfo 1e20 in
-    waitForChanges nextTime;
-    loop false delayInfo
+    if not (safeStopRequested ()) then waitForChanges nextTime;
+    if safeStopRequested () then exitStatus else loop false delayInfo
   in
   loop true PathMap.empty
 
@@ -1278,36 +1351,31 @@ let synchronizeUntilNoFailures repeatMode =
   let rec loop triesLeft pathsOpt =
     let (exitStatus, failedPaths) =
       synchronizeOnce ~wantWatcher pathsOpt in
-    if failedPaths <> [] && triesLeft <> 0 then begin
+    if failedPaths <> [] && triesLeft <> 0
+         && not (repeatMode && safeStopRequested ()) then begin
       loop (triesLeft - 1) (Some (failedPaths, []))
     end else begin
       exitStatus
     end in
   loop (Prefs.read Uicommon.retry) None
 
-let rec synchronizeUntilDone () =
-  let repeatinterval =
-    if Prefs.read Uicommon.repeat = "" then -1 else
-    try int_of_string (Prefs.read Uicommon.repeat)
-    with Failure _ ->
-      (* If the 'repeat' pref is not a valid number, switch modes... *)
-      if Prefs.read Uicommon.repeat = "watch" then
-        synchronizePathsFromFilesystemWatcher()
-      else
-        raise (Util.Fatal ("Value of 'repeat' preference ("
-                           ^Prefs.read Uicommon.repeat
-                           ^") should be either a number or 'watch'\n")) in
-
+let rec synchronizeUntilDone repeatinterval =
   let exitStatus = synchronizeUntilNoFailures(repeatinterval >= 0) in
-  if repeatinterval < 0 then
+  if repeatinterval < 0 || safeStopRequested () then
     exitStatus
   else begin
     (* Do it again *)
     Trace.status (Printf.sprintf
        "\nSleeping for %d seconds...\n" repeatinterval);
-    Unix.sleep repeatinterval;
-    synchronizeUntilDone ()
+    interruptibleSleep repeatinterval;
+    if safeStopRequested () then exitStatus else synchronizeUntilDone repeatinterval
   end
+
+let synchronizeUntilDone () =
+  match Prefs.read Uicommon.repeat with
+  | `Watch -> synchronizePathsFromFilesystemWatcher ()
+  | `Interval i -> synchronizeUntilDone i
+  | `NoRepeat -> synchronizeUntilDone (-1)
 
 (* ----------------- Startup ---------------- *)
 
@@ -1449,6 +1517,7 @@ let rec start interface =
     Sys.catch_break true;
     (* Just to make sure something is there... *)
     setWarnPrinterForInitialization();
+    setupSafeStop ();
     let errorOut s =
       Util.msg "%s%s%s\n" Uicommon.shortUsageMsg profmgrUsageMsg s;
       exit 1
@@ -1495,7 +1564,7 @@ let rec start interface =
       Prefs.set dumbtty true;
       Trace.sendLogMsgsToStderr := false;
     end;
-    if Prefs.read Uicommon.repeat <> "" then begin
+    if Prefs.read Uicommon.repeat <> `NoRepeat then begin
       Prefs.set Globals.batch true;
     end;
     setColorPreference ();
@@ -1528,13 +1597,13 @@ let rec start interface =
       (* If any other bad thing happened and the -repeat preference is
          set, then restart *)
       handleException e;
-      if Prefs.read Uicommon.repeat = ""
+      if Prefs.read Uicommon.repeat = `NoRepeat
           || Prefs.read Uicommon.runtests then
         exit Uicommon.fatalExit;
 
       Util.msg "\nRestarting in 10 seconds...\n\n";
-      begin try Unix.sleep 10 with Sys.Break -> exit Uicommon.fatalExit end;
-      start interface
+      begin try interruptibleSleep 10 with Sys.Break -> exit Uicommon.fatalExit end;
+      if safeStopRequested () then exit Uicommon.fatalExit else start interface
     end
   end
 

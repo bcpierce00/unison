@@ -1990,6 +1990,12 @@ cleanup. If the process does not stop even after pressing ``Ctrl-C'' then keep
 doing it repeatedly.  This will bypass cleanup procedures and terminates the
 process forcibly (similar to \verb|SIGKILL|).  Doing so may leave the archives
 or replicas in an inconsistent state or locked.
+
+When synchronizing continuously (time interval repeat or with filesystem
+monitoring), interrupting with ``Ctrl-C'' or with signal \verb|SIGINT| or
+\verb|SIGTERM| works the same way as described above and will additionally stop
+the continuous process. To stop only the continuous process and let the last
+synchronization complete normally, send signal \verb|SIGUSR2| instead.
 \end{textui}
 
 \SUBSECTION{Exit Code}{exit}
