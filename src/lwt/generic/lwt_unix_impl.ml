@@ -13,6 +13,8 @@ therefore have the following limitations:
   time, this could result in a dead-lock.
 - [connect] is blocking
 *)
+let impl_platform = `Generic
+
 let windows_hack = Sys.os_type <> "Unix"
 let recent_ocaml =
   Scanf.sscanf Sys.ocaml_version "%d.%d"
@@ -203,6 +205,8 @@ let wait_read ch =
   let res = Lwt.wait () in
   inputs := (ch, `Wait res) :: !inputs;
   res
+
+let wait_read' = wait_read
 
 let wait_write ch =
   let res = Lwt.wait () in

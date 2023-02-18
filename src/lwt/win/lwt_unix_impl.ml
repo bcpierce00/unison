@@ -3,6 +3,7 @@
   conditions...
   (we have the first, scan the subsequent ones)
 *)
+let impl_platform = `Win32
 
 let no_overlapped_io = false
 let d = ref false
@@ -335,6 +336,7 @@ if !d then prerr_endline "ACCEPT";
 (****)
 
 let wait_read ch = assert false
+let wait_read' = wait_read
 
 let wait_write ch = assert false
 

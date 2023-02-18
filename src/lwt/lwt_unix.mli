@@ -38,6 +38,7 @@ val read : file_descr -> bytes -> int -> int -> int Lwt.t
 val write : file_descr -> bytes -> int -> int -> int Lwt.t
 val write_substring : file_descr -> string -> int -> int -> int Lwt.t
 val wait_read : file_descr -> unit Lwt.t
+val wait_read' : Unix.file_descr -> unit Lwt.t
 val wait_write : file_descr -> unit Lwt.t
 val pipe_in : ?cloexec:bool -> unit -> file_descr * Unix.file_descr
 val pipe_out : ?cloexec:bool -> unit -> Unix.file_descr * file_descr
@@ -55,3 +56,9 @@ type lwt_in_channel
 
 val intern_in_channel : in_channel -> lwt_in_channel
 val input_line : lwt_in_channel -> string Lwt.t
+
+(* Not all functions are implemented on Win32. [impl_platform] indicates
+   which implementation has been built. This value must not be used to
+   detect the OS platform; it's intendend to be used for guarding code
+   which uses functions that are not implemented on Win32. *)
+val impl_platform : [ `Generic | `Win32 ]

@@ -1248,7 +1248,106 @@ let setupSafeStop () =
     if ok then stopPipe := Some (Lwt_unix.pipe_in ~cloexec:true ()))
   end
 
+(*** Requesting safe termination via stdin ***)
+
+let nonEofStopCond s =
+  String.contains s '\004' (* ^D *)
+
+(* [Unix.select] emulation in Windows does not manage to capture all
+   events (for fds other than sockets/files) if timeout is zero. *)
+let selectTimeout = if Sys.win32 then 0.01 else 0.
+
+let selectStdin () =
+  match Unix.select [Unix.stdin] [] [] selectTimeout with
+  | ([r1], _, _) when r1 ==(*phys*) Unix.stdin -> true
+  | _ -> false
+
+let rec readStdinNoIntr b l =
+  try Unix.read Unix.stdin b 0 l
+  with Unix.Unix_error (EINTR, _, _) -> readStdinNoIntr b l
+
+external fdIsReadable : Unix.file_descr -> bool = "unsn_fd_readable"
+
+let stdinIsatty = Unix.isatty Unix.stdin
+
+let stdinIsRegfile, stdinOkForStopReq =
+  let readingOk = function
+    | { Unix.LargeFile.st_kind = S_REG; st_size; _ } when st_size > 32L -> false
+    | _ -> begin try fdIsReadable Unix.stdin with Unix.Unix_error _ -> true end
+  in
+  let rec notEOF st =
+    if stdinIsatty then true else
+    match selectStdin () with
+    | true ->
+        let l = 32 in
+        let b = Bytes.create l in
+        begin match readStdinNoIntr b l with
+        | 0 -> false
+        | n ->
+            if nonEofStopCond (Bytes.sub_string b 0 n) then requestSafeStop ();
+            true
+        | exception Unix.Unix_error _ -> true
+        end
+    | false -> true
+    | exception Unix.Unix_error (EINTR, _, _) -> notEOF st
+    | exception Unix.Unix_error (EBADF, _, _) -> true
+  in
+  match Unix.LargeFile.fstat Unix.stdin with
+  | { st_kind = S_REG; _ } as st -> true, readingOk st
+  | st -> false, readingOk st && notEOF st
+  | exception Unix.Unix_error _ -> false, false
+
+external getpgrp : unit -> int = "unsn_getpgrp"
+external tcgetpgrp : Unix.file_descr -> int = "unsn_tcgetpgrp"
+
+let isBackgroundProcess () =
+  try
+    stdinIsatty && (getpgrp () <> tcgetpgrp Unix.stdin)
+  with Unix.Unix_error ((EBADF | ENOTTY), _, _) -> false
+
+let ignoreSignal signa f =
+  let prev =
+    try Some (Sys.signal signa Signal_ignore)
+    with Invalid_argument _ | Sys_error _ -> None in
+  let restoreSig () =
+    match prev with
+    | None -> ()
+    | Some prev -> try Sys.set_signal signa prev with Sys_error _ -> ()
+  in
+  try let r = f () in restoreSig (); r
+  with e ->
+    let origbt = Printexc.get_raw_backtrace () in
+    restoreSig ();
+    Printexc.raise_with_backtrace e origbt
+
+let isStdinStopCond n s =
+  (n = 0 && not stdinIsRegfile) (* Assuming terminal_io.c_vmin > 0, this is true EOF *)
+    || nonEofStopCond s
+
+let readStopFromStdin () =
+  let l = 32 in
+  let b = Bytes.create l in
+  let ignoreTtin f = if stdinIsatty then ignoreSignal Sys.sigttin f else f () in
+  try
+    let n = ignoreTtin (fun () -> readStdinNoIntr b l) in
+    isStdinStopCond n (Bytes.sub_string b 0 n)
+  with
+  | Unix.Unix_error ((EAGAIN | EWOULDBLOCK), _, _) -> false
+  | Unix.Unix_error (EIO, _, _) -> false
+  | Unix.Unix_error (EBADF, _, _) -> true
+
+let rec checkStdinStopReq () =
+  if not stdinOkForStopReq || isBackgroundProcess () then () else
+  match selectStdin () with
+  | true ->
+      if readStopFromStdin () then requestSafeStop ()
+      else if not stdinIsRegfile then checkStdinStopReq ()
+  | false -> ()
+  | exception Unix.Unix_error (EINTR, _, _) -> checkStdinStopReq ()
+  | exception Unix.Unix_error (EBADF, _, _) -> ()
+
 let safeStopRequested () =
+  if not (safeStopReqd ()) then checkStdinStopReq ();
   safeStopReqd ()
 
 (*** Sleep interruptible by a termination request ***)
@@ -1260,15 +1359,31 @@ let safeStopWait =
       | None -> Lwt.wait ()
       | Some (i, _) -> Lwt_unix.wait_read i
     in
+    let winFd = ref None in
+    let winReadStdin () =
+      let (b, fd) = match !winFd with Some x -> x | None ->
+        let x = (Bytes.create 32, Lwt_unix.of_unix_file_descr Unix.stdin) in
+        winFd := Some x; x in
+      Lwt_unix.read fd b 0 (Bytes.length b) >>= fun n ->
+      if (isStdinStopCond n (Bytes.sub_string b 0 n)) then
+        requestSafeStop ();
+      Lwt.return ()
+    in
     let readFail = function
       | Unix.Unix_error (EBADF, _, _) -> Lwt.return (requestSafeStop ())
       | e -> Lwt.fail e
     in
     let rec loop () =
+      let waitStdin () =
+        if not stdinOkForStopReq then Lwt.wait ()
+        else if Lwt_unix.impl_platform = `Win32 then winReadStdin ()
+        else Lwt_unix.wait_read' Unix.stdin
+      in
       Lwt.catch
-        (fun () -> readStop) readFail >>= fun () ->
+        (fun () -> Lwt.choose [waitStdin (); readStop]) readFail >>= fun () ->
       if not (safeStopRequested ()) then
-        Lwt_unix.sleep 0.15 >>= loop
+        (if stdinIsRegfile || isBackgroundProcess () then 1. else 0.15)
+        |> Lwt_unix.sleep >>= loop
       else
         Lwt.return ()
     in

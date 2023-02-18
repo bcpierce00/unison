@@ -81,7 +81,7 @@ let readChannelsTillEof l =
     l
 
 let runExternalProgram cmd =
-  if Util.osType = `Win32 && not Util.isCygwin then begin
+  if Lwt_unix.impl_platform = `Win32 then begin
     debug (fun()-> Util.msg "Executing external program windows-style\n");
     let c = openProcessIn ("\"" ^ cmd ^ "\"") in
     let log = Util.trimWhitespace (readChannelTillEof c) in
