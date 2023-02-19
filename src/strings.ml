@@ -2785,6 +2785,12 @@ let docs =
       \032      cleanup procedures and terminates the process forcibly (similar to\n\
       \032      SIGKILL). Doing so may leave the archives or replicas in an\n\
       \032      inconsistent state or locked.\n\
+      \032      When synchronizing continuously (time interval repeat or with\n\
+      \032      filesystem monitoring), interrupting with \226\128\156Ctrl-C\226\128\157 or with signal\n\
+      \032      SIGINT or SIGTERM works the same way as described above and will\n\
+      \032      additionally stop the continuous process. To stop only the\n\
+      \032      continuous process and let the last synchronization complete\n\
+      \032      normally, send signal SIGUSR2 instead.\n\
       \n\
       Exit Code\n\
       \n\
