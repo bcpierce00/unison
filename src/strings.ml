@@ -2350,8 +2350,14 @@ let docs =
       \n\
       \032  for a preference of any other type.\n\
       \n\
-      \032  Whitespaces around p and xxx are ignored. A profile may also include\n\
-      \032  blank lines and lines beginning with #; both are ignored.\n\
+      \032  A profile may include blank lines and lines beginning with #; both are\n\
+      \032  ignored.\n\
+      \n\
+      \032  Spaces and tabs before and after p and xxx are ignored. Spaces, tabs,\n\
+      \032  and non-printable characters within values are not treated specially,\n\
+      \032  so that e.g. root = /foo bar refers to a directory containing a space.\n\
+      \032  (On systems using newline for line ending, carriage returns are\n\
+      \032  currently ignored, but this is not part of the specification.)\n\
       \n\
       \032  When Unison starts, it first reads the profile and then the command\n\
       \032  line, so command-line options will override settings from the profile.\n\

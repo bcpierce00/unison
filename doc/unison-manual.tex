@@ -1498,9 +1498,15 @@ for a boolean flag or
 \end{verbatim}
 for a preference of any other type.
 
-Whitespaces around {\tt p} and {\tt xxx} are ignored.
-A profile may also include blank lines and lines beginning
+A profile may include blank lines and lines beginning
 with {\tt \#}; both are ignored.
+
+Spaces and tabs before and after {\tt p} and {\tt xxx} are ignored.
+Spaces, tabs, and non-printable characters within values are not
+treated specially, so that e.g. \verb|root = /foo bar| refers to a
+directory containing a space.
+(On systems using newline for line ending, carriage returns are
+currently ignored, but this is not part of the specification.)
 
 When Unison starts, it first reads the profile and then the command
 line, so command-line options will override settings from the
