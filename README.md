@@ -1,3 +1,5 @@
+![Unison](icons/unison.png)
+
 # Unison File Synchronizer
 
 ## Meta
