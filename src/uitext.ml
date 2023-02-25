@@ -1376,6 +1376,7 @@ let synchronizeUntilDone () =
   | `Watch -> synchronizePathsFromFilesystemWatcher ()
   | `Interval i -> synchronizeUntilDone i
   | `NoRepeat -> synchronizeUntilDone (-1)
+  | `Invalid (_, e) -> raise e
 
 (* ----------------- Startup ---------------- *)
 

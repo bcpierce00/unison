@@ -109,13 +109,16 @@ let repeat =
         raise (Prefs.IllegalValue ("Value of 'repeat' preference ("
           ^ s ^ ") should be either a number or 'watch'"))
     in
-    match s with
-    | "" -> `NoRepeat
-    | "watch" -> `Watch
-    | _ -> `Interval (parseTime s)
+    try
+      match s with
+      | "" -> `NoRepeat
+      | "watch" -> `Watch
+      | _ -> `Interval (parseTime s)
+    with
+    | Prefs.IllegalValue _ as e -> `Invalid (s, e)
   in
   let externRepeat = function
-    | `NoRepeat -> ""
+    | `NoRepeat | `Invalid _ -> ""
     | `Watch -> "watch"
     | `Interval i -> string_of_int i
   in
