@@ -1297,9 +1297,6 @@ let doArchiveCrashRecovery () =
      ^ "between synchronizations.  See the documentation for the UNISONLOCALHOSTNAME\n"
      ^ "environment variable for advice on how to correct this.\n"
      ^ "\n"
-     ^ "Donations to the Unison project are gratefully accepted: \n"
-     ^ "http://www.cis.upenn.edu/~bcpierce/unison\n"
-     ^ "\n"
      (* ^ "\nThe expected archive names were:\n" ^ expectedNames *) );
     Lwt.return ()
   end))
