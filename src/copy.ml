@@ -328,7 +328,7 @@ let openFileOut' fspath path kind len =
     `DATA ->
       let fullpath = Fspath.concat fspath path in
       let flags = [Unix.O_WRONLY; Unix.O_CREAT; Unix.O_CLOEXEC] in
-      let perm = 0o600 in
+      let perm = if Prefs.read Props.dontChmod then Props.perms Props.fileDefault else 0o600 in
       begin match Util.osType with
         `Win32 ->
           Fs.open_out_gen
@@ -348,7 +348,7 @@ let openFileOut' fspath path kind len =
       end
   | `DATA_APPEND len ->
       let fullpath = Fspath.concat fspath path in
-      let perm = 0o600 in
+      let perm = if Prefs.read Props.dontChmod then Props.perms Props.fileDefault else 0o600 in
       let ch = Fs.open_out_gen [Open_wronly; Open_binary] perm fullpath in
       if not (Prefs.read Props.dontChmod) then Fs.chmod fullpath perm;
       LargeFile.seek_out ch (Uutil.Filesize.toInt64 len);
