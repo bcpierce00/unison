@@ -489,6 +489,10 @@ clean::
 	-$(RM) system/win/*.cm[iox] system/win/*.{o,obj} system/win/*~
 	-$(RM) fsmonitor/*.cm[iox] fsmonitor/*.{o,obj}
 	-$(RM) .depend.dot.tmp DEPENDENCIES.ps
+	-$(RM) ubase/*.cm[ioxa] ubase/*.cmxa ubase/*.a ubase/*.o ubase/*~ ubase/*.bak
+	-$(RM) lwt/*.cm[ioxa] lwt/*.cmxa lwt/*.a lwt/*.{o,obj} lwt/*~ lwt/*.bak
+	-$(RM) lwt/generic/*.cm[ioxa] lwt/generic/*.cmxa lwt/generic/*.a lwt/generic/*.{o,obj} lwt/generic/*~ lwt/generic/*.bak
+	-$(RM) lwt/win/*.cm[ioxa] lwt/win/*.cmxa lwt/win/*.a lwt/win/*.{o,obj} lwt/win/*~ lwt/win/*.bak
 
 .PHONY: paths
 paths:

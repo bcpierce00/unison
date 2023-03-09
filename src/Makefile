@@ -222,8 +222,6 @@ clean::
 	-$(RM) -r obsolete
 	-$(RM) $(NAME) $(NAME).exe
 	-$(RM) $(NAME)-blob.o
-	$(MAKE) -C ubase clean
-	$(MAKE) -C lwt clean
 	$(MAKE) -C fsmonitor/windows clean
 
 ifneq ($(strip $(UIMACDIR)),)

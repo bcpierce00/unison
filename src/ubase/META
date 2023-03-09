@@ -1,4 +1,0 @@
-requires = "unix"
-version = "0.1"
-archive(byte) = "ubase.cma"
-archive(native) = "ubase.cmxa"
