@@ -1307,9 +1307,14 @@ let waitForChanges t =
        Lwt.choose (timeout @ l @ [safeStopWait ()]))
   end
 
-let synchronizePathsFromFilesystemWatcher () =
-  let rec loop isStart delayInfo =
+let synchronizePathsFromFilesystemWatcher fullintv =
+  let fullinterval = match fullintv with None -> 1e20 | Some i -> float i in
+  let rec loop lastFull delayInfo =
     let t = Unix.gettimeofday () in
+    let sinceFull = t -. lastFull in
+    let isFull = sinceFull > fullinterval in
+    let lastFull = if isFull then t else lastFull in
+    let nextFull = lastFull +. fullinterval in
     let (delayedPaths, readyPaths) =
       PathMap.fold
         (fun p (t', _) (delayed, ready) ->
@@ -1318,7 +1323,7 @@ let synchronizePathsFromFilesystemWatcher () =
     in
     let (exitStatus, failedPaths) =
       synchronizeOnce ~wantWatcher:true
-        (if isStart then None else Some (readyPaths, delayedPaths))
+        (if isFull then None else Some (readyPaths, delayedPaths))
     in
     (* After a failure, we retry at once, then use an exponential backoff *)
     let delayInfo =
@@ -1338,11 +1343,11 @@ let synchronizePathsFromFilesystemWatcher () =
     in
     interruptibleSleepf watchinterval;
     let nextTime =
-      PathMap.fold (fun _ (t, d) t' -> min t t') delayInfo 1e20 in
+      PathMap.fold (fun _ (t, d) t' -> min t t') delayInfo nextFull in
     if not (safeStopRequested ()) then waitForChanges nextTime;
-    if safeStopRequested () then exitStatus else loop false delayInfo
+    if safeStopRequested () then exitStatus else loop lastFull delayInfo
   in
-  loop true PathMap.empty
+  loop 0. PathMap.empty
 
 (* ----------------- Repetition ---------------- *)
 
@@ -1373,9 +1378,11 @@ let rec synchronizeUntilDone repeatinterval =
 
 let synchronizeUntilDone () =
   match Prefs.read Uicommon.repeat with
-  | `Watch -> synchronizePathsFromFilesystemWatcher ()
+  | `Watch -> synchronizePathsFromFilesystemWatcher None
+  | `WatchAndInterval i -> synchronizePathsFromFilesystemWatcher (Some i)
   | `Interval i -> synchronizeUntilDone i
   | `NoRepeat -> synchronizeUntilDone (-1)
+  | `Invalid (_, e) -> raise e
 
 (* ----------------- Startup ---------------- *)
 
