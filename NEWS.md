@@ -2,13 +2,30 @@
 
 This file contains a summary of user-visible or important changes, in
 the style of the GNU coding standards.  By user-visible, we include
-changes relevant for those building unison from source.  We omit
-most bugfixes and minor improvements.
+changes relevant for those building unison from source.  We omit most
+bugfixes and minor improvements, but of course every release contains
+some.  Refer to the documentation for details; this file is a terse
+notice of changes rather than a tutorial about new features.
 
 As of 2022, this file (NEWS.md at top level) is used for news.
 
 Some software has a "changelog" file that records all changes, but
 unison uses git history for that, and thus there is no changelog file.
+
+## Changes in 2.53.1
+
+Released 2023-03-17
+
+  * Repeat mode is more fault tolerant, recovering after temporary
+    errors.
+  * Preferences "force", "prefer" and related no longer require
+    specifying the full root.
+  * Improve stopping of update propagation.
+  * Enable VT input escape codes in Windows.
+  * Respect user-provided CFLAGS, CPPFLAGS, LDFLAGS, LDLIBS.
+  * Add build instructions in INSTALL.md (and drop from manual).
+  * Add graceful stop in repeat mode - SIGUSR2.
+  * Add watch+seconds to 'repeat' preference.
 
 ## Changes in 2.53.0
 
