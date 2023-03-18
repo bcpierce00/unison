@@ -890,6 +890,8 @@ let doTransport reconItemList =
       Printexc.raise_with_backtrace e origbt
   in
 
+  if not (Prefs.read Trace.terse) && (Prefs.read Trace.debugmods = []) then
+    Util.set_infos "Starting...";
   Uicommon.transportStart ();
   let fFailedPaths = ref [] in
   let fPartialPaths = ref [] in
