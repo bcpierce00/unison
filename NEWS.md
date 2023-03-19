@@ -14,7 +14,7 @@ unison uses git history for that, and thus there is no changelog file.
 
 ## Changes in 2.53.1
 
-Released 2023-03-17
+Released 2023-03-19
 
   * Repeat mode is more fault tolerant, recovering after temporary
     errors.
