@@ -925,6 +925,11 @@ let initPrefs ~profileName ~promptForRoots ?(prepDebug = fun () -> ()) () =
         end
   end;
 
+  Trace.logonly "Roots:\n";
+  Globals.rawRoots () |> Safelist.iter
+    (fun s -> Trace.logonly "  "; Trace.logonly s; Trace.logonly "\n");
+  Trace.logonly "\n";
+
   (* Parse the roots to validate them *)
   let parsedRoots =
     try Globals.parsedClRawRoots () with
