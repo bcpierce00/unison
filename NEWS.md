@@ -12,6 +12,12 @@ As of 2022, this file (NEWS.md at top level) is used for news.
 Some software has a "changelog" file that records all changes, but
 unison uses git history for that, and thus there is no changelog file.
 
+## Changes in 2.53.2
+
+Released 2023-03-20
+
+  * Change version string to 2.53.2 (2.53.1 identified as 2.53.0).
+
 ## Changes in 2.53.1
 
 Released 2023-03-19
