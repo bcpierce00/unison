@@ -468,7 +468,7 @@ struct
 
   (* For each transfer instruction, either output a string or copy one or
      several blocks from the old file. *)
-  let rsyncDecompress blockSize infd outfd showProgress (data, pos, len) =
+  let rsyncDecompress blockSize infd outfd ?copyFn showProgress (data, pos, len) =
     let decomprBuf = Bytes.create decomprBufSize in
     let progress = ref 0 in
     let rec copy length =
@@ -480,10 +480,23 @@ struct
         let _ = reallyRead infd decomprBuf 0 length in
         reallyWrite outfd decomprBuf 0 length
     in
+    let copyBlocks' offs length =
+      LargeFile.seek_in infd offs;
+      copy length
+    in
     let copyBlocks n k =
-      LargeFile.seek_in infd (Int64.mul n (Int64.of_int blockSize));
+      let offs = Int64.mul n (Int64.of_int blockSize) in
       let length = k * blockSize in
-      copy length;
+      begin match copyFn with
+      | None -> copyBlocks' offs length
+      | Some f ->
+          let fallback copied =
+            let offs = Int64.add offs (Uutil.Filesize.toInt64 copied)
+            and length = length - (Uutil.Filesize.toInt copied) in
+            copyBlocks' offs length
+          in
+          f (Uutil.Filesize.ofInt64 offs) (Uutil.Filesize.ofInt length) ~fallback;
+      end;
       progress := !progress + length
     in
     let maxPos = pos + len in
