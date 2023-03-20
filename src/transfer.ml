@@ -356,7 +356,10 @@ struct
       only 31 bits.)
   *)
   (* Block size *)
-  let computeBlockSize l = truncate (max 700. (min (sqrt l) 131072.))
+  (* Make sure block size is a power of 2 to allow block-level links on
+     filesystems that support it. *)
+  let computeBlockSize l =
+    1 lsl (truncate (max 10. (min (Float.round (log (sqrt l) /. log 2.)) 17.)))
   (* Size of each strong checksum *)
   let checksumSize bs sl dl =
     let bits =
