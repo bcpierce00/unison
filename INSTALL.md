@@ -32,6 +32,16 @@ Please refer to instructions provided by the repository.
 
 - lablgtk3 and its prerequisites (ocamlfind, GTK 3 and its dependencies)
 
+##### Optional, for building the user manual
+
+- LaTeX
+- dvips
+- ps2pdf (included with Ghostscript, for example)
+- HEVEA (https://hevea.inria.fr/) (optional, for HTML and text formats)
+- Lynx (optional, for text format)
+- (for developers only) HEVEA and Lynx are required to re-build the manual
+  included in the Unison binary
+
 #### Building
 
 Building from source is as simple as executing:
