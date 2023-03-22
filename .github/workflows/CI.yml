@@ -148,18 +148,6 @@ jobs:
         arch: "${{ steps.vars.outputs.MSVC_ARCH }}"
       if: contains(matrix.job.ocaml-version, '+msvc')
 
-    - name: "Windows: Cygwin setup"
-      if: runner.os == 'Windows'
-      run: Invoke-WebRequest 'https://cygwin.com/setup-x86_64.exe' -OutFile 'setup-x86_64.exe'
-
-    # [2022-05] Cygwin mingw64 binutils 2.38 produces invalid GUI binaries.
-    # Pin binutils to version 2.37 as a workaround.
-    - name: "Windows: mingw64 binutils workaround hack"
-      if: runner.os == 'Windows'
-      # The setup does not complete properly in powershell for some reason
-      shell: cmd
-      run: .\setup-x86_64.exe --quiet-mode --root D:\cygwin --site http://cygwin.mirror.constant.com --symlink-type=sys --packages mingw64-i686-binutils=2.37-2,mingw64-x86_64-binutils=2.37-2
-
     - name: Use OCaml ${{ matrix.job.ocaml-version }}
       uses: ocaml/setup-ocaml@v2
       with:
@@ -307,6 +295,12 @@ jobs:
       name: "Windows: Package gtk"
       shell: bash
       run: |
+        # [2023-03] Setting this PATH here (and it has to be right here) is
+        # a workaround for an unknown issue (most likely something with GHA)
+        # causing MinGW binutils not to be found (while other binutils
+        # pre-installed in the GHA images may be found instead), which in turn
+        # causes the DLL extracting functions to silently fail.
+        export PATH="/usr/${{ steps.vars.outputs.MinGW_ARCH }}-w64-mingw32/bin":${PATH}
         ## package artifact(s)
         PKG_DIR='${{ steps.vars.outputs.PKG_DIR }}'
         # collect any needed dlls/libraries
