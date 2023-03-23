@@ -89,7 +89,7 @@ Unison.  Results from Continuous Integration builds, while performed
 for the purposes of testing, are available for use on a limited set of
 platforms.
 
-See the manual in doc/ for building instructions, or read the CI
+See the [building instructions](INSTALL.md), or read the CI
 recipes.  (Currently, this is probably less well explained than it
 should be.)
 
