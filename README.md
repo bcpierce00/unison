@@ -73,9 +73,13 @@ is very welcome.  Help in answering mailinglist questions is also
 welcome.  Please do not answer questions asked in the bug tracker,
 which is contrary to bug tracker usage guidance.
 
-While much of Unison activity is now at
-https://github.com/bcpierce00/unison/ additional information can be
-found at: http://www.cis.upenn.edu/~bcpierce/unison
+Unison activity is now centered on the two [Unison
+mailinglists](https://github.com/bcpierce00/unison/wiki/Mailing-Lists)
+for discussion and [Unison's github
+page](https://github.com/bcpierce00/unison/) for code, issues and a
+wiki.
+A no-longer-maintained FAQ can be found at: the [old UPenn
+site](http://www.cis.upenn.edu/~bcpierce/unison).
 
 ## Getting Unison
 
@@ -97,7 +101,7 @@ You should use the most recent formal release, or a newer version from
 git.  Earlier versions are no longer maintained, and bug reports are
 not accepted about these versions.  This is true even though many
 packaging systems (including GNU/Linux distributions) continue to have
-2.51 or even 2.48.  The master branch in git has historically has been
+2.51 or even 2.48.  The master branch in git historically has been
 quite stable.
 
 ### Version compatibility
