@@ -93,13 +93,12 @@ You may be able to find a pre-built binary for your operating system,
 version, and CPU type.  For a list of sources, See
 https://github.com/bcpierce00/unison/wiki/Downloading-Unison
 
-Generally, you should use the most recent formal release, currently
-2.52.  Earlier branches (e.g. 2.51 and 2.48) are no
-longer maintained, and bug reports are not accepted about these
-versions.  This is true even though many packaging systems (including
-GNU/Linux distributions) continue to have 2.48.  There are sometimes
-release candidates.  There is always the master branch in git, which
-historically has been quite stable.
+You should use the most recent formal release, or a newer version from
+git.  Earlier versions are no longer maintained, and bug reports are
+not accepted about these versions.  This is true even though many
+packaging systems (including GNU/Linux distributions) continue to have
+2.51 or even 2.48.  The master branch in git has historically has been
+quite stable.
 
 ### Version compatibility
 
