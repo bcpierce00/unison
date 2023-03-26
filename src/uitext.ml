@@ -1163,19 +1163,40 @@ let displayWaitMessage () =
   if not (Prefs.read silent) then
     Util.msg "%s\n" (Uicommon.contactingServerMsg ())
 
+(* Most modern VT100 terminal emulators (and some ANSI) are able to switch
+   automatic line-wrapping off and on by control sequences ESC[?7l and ESC[?7h.
+   This here is a very blunt heuristic to filter out some that can't do it or
+   use a different control sequence. It does not need to be exact, as long as
+   it covers the vast majority of supported systems. *)
+let termNowrapOk =
+  System.termVtCapable Unix.stdout &&
+  let s = try System.getenv "TERM" with Not_found -> "" in
+  not (
+    s = "dumb"
+    || s = "emacs"
+    || Util.startswith s "sun"
+    || Util.startswith s "cons"
+    || Util.startswith s "eterm"
+    || Util.startswith s "cygwin"
+    || Util.startswith s "dvtm"
+  )
+
 let synchronizeOnce ?wantWatcher pathsOpt =
   let showStatus path =
     if path = "" then Util.set_infos "" else
-    let max_len = 70 in
-    let mid = (max_len - 3) / 2 in
-    let path =
+    let shorten path =
+      let max_len = 70 in
+      let mid = (max_len - 3) / 2 in
       let l = String.length path in
       if l <= max_len then path else
       String.sub path 0 (max_len - mid - 3) ^ "..." ^
       String.sub path (l - mid) mid
     in
     let c = "-\\|/".[truncate (mod_float (4. *. Unix.gettimeofday ()) 4.)] in
-    Util.set_infos (Format.sprintf "%c %s" c path)
+    if termNowrapOk && not (Prefs.read dumbtty) then
+      Util.set_infos (Format.sprintf "%c \027[?7l%s\027[?7h" c path) ~clr:"\r\027[K\r"
+    else
+      Util.set_infos (Format.sprintf "%c %s" c (shorten path))
   in
   Uicommon.connectRoots ~displayWaitMessage ();
   Trace.status "Looking for changes";

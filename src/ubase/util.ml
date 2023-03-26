@@ -57,19 +57,23 @@ let stringSetFromList l =
 (*                    Debugging / error messages                             *)
 (*****************************************************************************)
 
-let infos = ref ""
+type infos = { s : string; clr : string }
+let infos = ref { s = ""; clr = "" }
 
 let clear_infos () =
-  if !infos <> "" then begin
+  if !infos.clr <> "" then begin
+    print_string !infos.clr;
+    flush stdout
+  end else if !infos.s <> "" then begin
     print_string "\r";
-    print_string (String.make (String.length !infos) ' ');
+    print_string (String.make (String.length !infos.s) ' ');
     print_string "\r";
     flush stdout
   end
 let show_infos () =
-  if !infos <> "" then begin print_string !infos; flush stdout end
-let set_infos s =
-  if s <> !infos then begin clear_infos (); infos := s; show_infos () end
+  if !infos.s <> "" then begin print_string !infos.s; flush stdout end
+let set_infos ?(clr = "") s =
+  if s <> !infos.s then begin clear_infos (); infos := {s; clr}; show_infos () end
 
 let msg f =
   clear_infos ();
