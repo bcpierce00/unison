@@ -15,9 +15,6 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 *)
 
-(* FIX: we should check that the child process has not died and
-   restart it if so... *)
-
 (* FIX: the names of the paths being watched should get included
    in the name of the watcher's state file *)
 
@@ -193,7 +190,15 @@ let wait archHash =
       if wi.lines = [] then begin
         debug (fun() -> Util.msg "Sleeping for %d seconds...\n" watchinterval);
         Lwt.bind (Lwt_unix.sleep (float watchinterval)) (fun () ->
-        loop ())
+        if watcherRunning archHash then
+          loop ()
+        else
+          (* Instead of immediately restarting the watcher, the only sensible
+             thing to do is to do a full scan (which will happen automatically
+             if the update scanner notices that watcher is not running). We
+             don't know if any updates have been missed and can no longer rely
+             on the watcher only. *)
+          Lwt.return ())
       end else
         Lwt.return ()
     in
