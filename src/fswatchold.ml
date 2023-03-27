@@ -168,6 +168,17 @@ let start archHash fspath =
     true
   end
 
+let running archHash =
+  if StringSet.mem archHash !newWatchers then begin
+    if Fswatch.running archHash then true
+    else begin
+      newWatchers := StringSet.remove archHash !newWatchers;
+      false
+    end
+  end else false
+    ||
+  watcherRunning archHash
+
 let wait archHash =
   if StringSet.mem archHash !newWatchers then
     Fswatch.wait archHash

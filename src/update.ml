@@ -2402,7 +2402,8 @@ let t1 = Unix.gettimeofday () in
   in
   let paths =
     match subpaths with
-      Some (unsynchronizedPaths, blacklistedPaths) when unchangedOptions ->
+      Some (unsynchronizedPaths, blacklistedPaths) when unchangedOptions
+          && Fswatchold.running scanInfo.archHash ->
         let (>>) x f = f x in
         let paths =
           Fswatchold.getChanges scanInfo.archHash
