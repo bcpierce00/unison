@@ -287,24 +287,114 @@ let close_session pid =
 
 let (>>=) = Lwt.bind
 
-let escRemove = Str.regexp
-   ("\\(\\(.\\|[\n\r]\\)+\027\\[[12]J\\)" (* Clear screen *)
-  ^ "\\|\\(\027\\[[0-2]?J\\)" (* Clear screen *)
-  ^ "\\|\\(\027\\[!p\\)" (* Soft reset *)
-  ^ "\\|\\(\027\\][02];[^\007]*\007\\)" (* Set console window title *)
-  ^ "\\|\\(\027\\[\\?25[hl]\\)" (* Show/hide cursor *)
-  ^ "\\|\\(\027\\[[0-9;]*m\\)" (* Formatting *)
-  ^ "\\|\\(\027\\[H\\)") (* Home *)
+(* OpenSSH on Windows is known to produce at least the following escape
+   sequences. Examples of raw output with OCaml string escapes, starting from
+   beginning of line and ending at end of line, newline excluded:
 
-let escSpace = Str.regexp "\027\\[\\([0-9]*\\)C"
+\027[2J\027[m\027[H\027]0;C:\\WINDOWS\\System32\\OpenSSH\\ssh.exe\007\027[?25h
+
+The authenticity of host 'example.com (127.0.0.1)' can't be established.\r\nECDSA key fingerprint is SHA256:CxGGHIVL7YDoSAtAzkIJNNaheGW7dDa7m7H+antMzDv.  \r\nAre you sure you want to continue connecting (yes/no/[fingerprint])?\027[10X\027[1C
+
+   Most of these sequences are clearly useless for Unison and can be safely
+   ignored. The final sequence CSI 10 X CSI 1 C is a bit weird. In this
+   context, CSI 1 C can be interpreted as 1 space, although this is not
+   universal.
+
+   Some versions may have also emitted CSI ! p (VT220 soft reset) but this
+   no longer seems to be the case. *)
+
+type controlSt = No | Escape | EscapeSeq | CSI | OSC | StringSeq | OSCEsc | StringEsc
+
+(* A very primitive and minimal parser of ANSI X3.64/ECMA-48 control sequences.
+   It parses 7-bit control characters (C0) only. 8-bit control characters (C1)
+   are intentionally not parsed.
+   The vast majority of sequences are just ignored. *)
+let parseCtrlSeq s =
+  let s' = Buffer.create (String.length s) in
+  let add_char = Buffer.add_char s' in
+  let params = Buffer.create 32 in
+  let params_add_char = Buffer.add_char params in
+  let st = ref No in
+  let state x = st := x in
+  let parseEsc ch =
+    Buffer.clear params;
+    match ch with
+    | '\032'..'\047' -> state EscapeSeq
+    | '[' -> state CSI
+    | ']' -> state OSC
+    | 'X' | '^' | '_' -> state StringSeq
+    | _ -> state No
+  in
+  let parseCh ch =
+    match !st with
+    | No when ch = '\027' -> state Escape
+    | No -> add_char ch
+    | Escape -> parseEsc ch
+    | EscapeSeq ->
+        begin
+          match ch with
+          | '\024' | '\026' -> state No (* CAN, SUB *)
+          | '\000'..'\025' -> add_char ch (* Control charaters (roughly) *)
+          | '\027' -> state Escape
+          | '\048'..'\126' -> state No (* Final *)
+          | '\127'..'\255' -> state No (* Invalid *)
+          | _ -> ()
+        end
+    | CSI ->
+        begin
+          match ch with
+          | '\024' | '\026' -> state No (* CAN, SUB *)
+          | '\000'..'\025' -> add_char ch (* Control charaters (roughly) *)
+          | '\027' -> state Escape
+          | '\064'..'\126' -> (* Final *)
+              begin
+                state No;
+                match ch with
+                | 'C' -> (* cursor forward *)
+                    let n =
+                      try int_of_string (Buffer.contents params)
+                      with Failure _ -> 1 in
+                    for _ = 1 to n do add_char ' ' done
+                | _ -> ()
+              end
+          | '\127'..'\255' -> state No (* Invalid *)
+          | _ -> params_add_char ch
+        end
+    | OSC ->
+        begin
+          match ch with
+          | '\024' | '\026' -> state No (* CAN, SUB *)
+          | '\007' -> state No (* BEL *)
+          | '\000'..'\025' -> add_char ch (* Control charaters (roughly) *)
+          | '\027' -> state OSCEsc
+          | _ -> ()
+        end
+    | OSCEsc ->
+        begin
+          match ch with
+          | '\\' -> state No (* String terminator *)
+          | _ -> parseEsc ch
+        end
+    | StringSeq ->
+        begin
+          match ch with
+          | '\024' | '\026' -> state No (* CAN, SUB *)
+          | '\000'..'\025' -> add_char ch (* Control charaters (roughly) *)
+          | '\027' -> state StringEsc
+          | _ -> ()
+        end
+    | StringEsc ->
+        begin
+          match ch with
+          | '\\' -> state No (* String terminator *)
+          | _ -> parseEsc ch
+        end
+  in
+  String.iter parseCh s;
+  Buffer.contents s'
 
 let processEscapes s =
-  let whitesp s =
-    try String.make (min 1 (int_of_string (Str.replace_matched "\\1" s))) ' '
-    with Failure _ -> " "
-  in
-  Str.global_replace escRemove "" s
-  |> Str.global_substitute escSpace whitesp
+  parseCtrlSeq s
 
 (* Wait until there is input. If there is terminal input s,
    return Some s. Otherwise, return None. *)
