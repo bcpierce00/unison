@@ -419,74 +419,80 @@ let rec termInput (fdTerm, _) fdInput =
     (Lwt.choose
        [readPrompt (); connectionEstablished ()])
 
+type termInteract = {
+  userInput : string -> (string -> unit) -> unit;
+  endInput : unit -> unit }
+
 (* Read messages from the terminal and use the callback to get an answer *)
-let handlePasswordRequests (fdIn, fdOut) callback isReady =
+let handlePasswordRequests (fdIn, fdOut) {userInput; endInput} isReady =
   let scrollback = Buffer.create 32 in
   let extract () =
     let s = Buffer.contents scrollback in
     let () = Buffer.clear scrollback in
     s
   in
-  let buf = Bytes.create 10000 in
+  let blen = 10000 in
+  let buf = Bytes.create blen in
   let ended = ref false in
-  let time = ref (Unix.gettimeofday ()) in
-  let rec loop () =
+  let closeInput () =
+    ended := true;
+    endInput ()
+  in
+  let terminalError loc e =
+    closeInput ();
+    Util.encodeException loc `Fatal e
+  in
+  let sendResponse s =
     Lwt.catch
-      (fun () -> Lwt_unix.read fdIn buf 0 10000)
+      (fun () ->
+        if isReady () || !ended then Lwt.return 0
+        else Lwt_unix.write_substring fdOut (s ^ "\n") 0 (String.length s + 1))
+      (terminalError "writing to shell terminal")
+  in
+  let promptUser () =
+    let query = extract () in
+    if query = "\r\n" || query = "\n" || query = "\r" then ()
+    else
+      (* There is a tiny, almost non-existent risk of a broken escape sequence
+         at the very beginning or the very end of the buffer (this can happen
+         if bytes read from the pty end in the middle of a sequence and before
+         reading any further we charge ahead with processing what we've read).
+         Given that it's almost certainly ssh we're dealing with, this risk can
+         safely be ignored. *)
+      let querytext = processEscapes query in
+      if querytext = "" || String.trim querytext = "" then ()
+      else
+        userInput querytext (fun s -> Lwt.ignore_result (sendResponse s))
+  in
+  let rec loop () =
+    (* When reading from a pty, the reading loop will not stop even when the
+       remote shell process dies. The reading will end (return 0 or an error)
+       when the pty is closed.
+       The only way to stop the reading loop without closing the pty is to
+       signal [isReady]. *)
+    Lwt.catch
+      (fun () -> Lwt_unix.read fdIn buf 0 blen)
       (fun ex -> if isReady () || !ended then Lwt.return 0 else Lwt.fail ex)
     >>= function
-    | 0 -> Lwt.return None (* The remote end is dead *)
+    | 0 -> Lwt.return ()
     | len ->
-        time := Unix.gettimeofday ();
         Buffer.add_string scrollback (Bytes.sub_string buf 0 len);
-        if !ended then (* The session ended before establishing a connection *)
-          Lwt.return None
-        else if isReady () then (* The shell connection has been established *)
-          Lwt.return (Some (extract ()))
-        else
+        if isReady () then begin (* The shell connection has been established *)
+          closeInput ();
+          Lwt.return ()
+        end else begin
+          Lwt.ignore_result (Lwt_unix.sleep 0.05 >>= fun () -> (* Give time for connection checks *)
+            Lwt.return (if not !ended && not (isReady ()) then promptUser ()));
           loop ()
+        end
   in
-  let delay = 0.2 in
-  let rec prompt () =
-    if isReady () || !ended then
-      Lwt.return ()
-    else
-      let d = (Unix.gettimeofday ()) -. !time in
-      if d < delay
-        || Buffer.length scrollback = 0 then
-      (* HACK: Delay briefly (0.2 s, noticeable to a human but not terrible
-         either since some delay from the network is expected anyway) to allow
-         time for output to be generated and read in as a whole. Otherwise, it
-         may happen that 'Invalid password' and 'Please re-enter password'
-         prompts are received separately, and this is not what we want.
-         Loop by 0.01 s to let other threads run while not introducing
-         noticeable latency to the user. *)
-      Lwt_unix.sleep (max (delay -. (max 0. d)) 0.01) >>= prompt
-    else
-      let query = extract () in
-      if query = "\r\n" || query = "\n" || query = "\r" then
-        Lwt_unix.yield () >>= prompt
-      else
-        let querytext = processEscapes query in
-        if querytext = "" || String.trim querytext = "" then
-          Lwt_unix.yield () >>= prompt
-        else
-          let response = callback querytext in
-          Lwt_unix.write_substring fdOut
-            (response ^ "\n") 0 (String.length response + 1) >>= fun _ ->
-          prompt ()
+  let readTerm = Lwt.catch loop (terminalError "reading from shell terminal") in
+  let extractRemainingOutput clean =
+    closeInput ();
+    (* Give a final chance of reading the error output from the ssh process. *)
+    let timeout = Lwt_unix.sleep 0.3 in
+    Lwt.choose [readTerm; timeout] >>= fun () ->
+    if not clean then Lwt.return (extract ())
+    else Lwt.return (Util.trimWhitespace (processEscapes (extract ())))
   in
-  let getErr () =
-    ended := true;
-    (* Yield a couple of times to give one final chance of reading the error
-       output from the ssh process. *)
-    Lwt_unix.yield () >>=
-    Lwt_unix.yield >>= fun () ->
-    Lwt.return (Util.trimWhitespace (processEscapes (extract ())))
-  in
-  let () = Lwt.ignore_result (Lwt.catch prompt
-    (Util.encodeException "writing to shell terminal" `Fatal))
-  and readTerm = Lwt.catch loop
-    (Util.encodeException "reading from shell terminal" `Fatal)
-  in
-  (readTerm, getErr)
+  (readTerm, extractRemainingOutput)

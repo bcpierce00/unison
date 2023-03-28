@@ -906,7 +906,14 @@ let promptForRoots () =
 
 (* ------ *)
 
-let getPassword rootName msg =
+type 'a pwdDialog = {
+  labelAppend : string -> unit;
+  presentAndRun : unit -> unit;
+  closeInput : unit -> unit;
+}
+let passwordDialogs = ref []
+
+let createPasswordDialog passwordDialog rootName msg response =
   let t =
     GWindow.dialog ~parent:(toplevelWindow ())
       ~title:"Unison: SSH connection" ~position:`CENTER
@@ -923,9 +930,9 @@ let getPassword rootName msg =
   ignore (GMisc.image ~stock:`DIALOG_AUTHENTICATION ~icon_size:`DIALOG
             ~yalign:0. ~packing:h1#pack ());
   let v1 = GPack.vbox ~spacing:12 ~packing:h1#pack () in
-  ignore(GMisc.label ~markup:(header ^ "\n\n" ^
+  let msgLbl = (GMisc.label ~markup:(header ^ "\n\n" ^
                               escapeMarkup (Unicode.protect msg))
-           ~selectable:true ~yalign:0. ~packing:v1#pack ());
+           ~selectable:true ~yalign:0. ~packing:v1#pack ()) in
 
   let passwordE = GEdit.entry ~packing:v1#pack ~visibility:false () in
   passwordE#misc#grab_focus ();
@@ -936,16 +943,50 @@ let getPassword rootName msg =
   ignore (passwordE#connect#activate ~callback:(fun _ -> t#response `OK));
 
   t#show();
-  let res = t#run () in
-  let pwd = passwordE#text in
-  t#destroy ();
-  gtk_sync true;
-  begin match res with
-    `DELETE_EVENT | `QUIT -> safeExit (); ""
-  | `OK                   -> pwd
-  end
 
-let termInteract = getPassword
+  let labelAppend msg =
+    msgLbl#set_label (msgLbl#label ^ escapeMarkup (Unicode.protect msg)) in
+  let presentAndRun () =
+    try t#present (); ignore (t#run ()) with Failure _ -> () in
+  let closeInput () =
+    passwordE#set_editable false; passwordE#set_visible false; passwordE#set_text "" in
+  passwordDialog := Some { labelAppend; presentAndRun; closeInput };
+
+  let callback res =
+    passwordDialog := None;
+    let pwd = passwordE#text in
+    let editable = passwordE#editable in
+    t#destroy ();
+    gtk_sync true;
+    match res with
+    | `DELETE_EVENT | `QUIT -> safeExit ()
+    | `OK -> if editable then response pwd
+  in
+  ignore (t#connect#response ~callback)
+
+let getPassword passwordDialog rootName msg response =
+  match !passwordDialog with
+  | Some { labelAppend; _ } -> labelAppend msg
+  | None -> createPasswordDialog passwordDialog rootName msg response
+
+let disablePassword passwordDialog () =
+  match !passwordDialog with
+  | Some { closeInput; _ } -> closeInput ()
+  | None -> ()
+
+let waitForPasswordWindowClosing () =
+  let present x =
+    match !x with
+    | Some { presentAndRun; _ } -> presentAndRun ()
+    | None -> ()
+  in
+  passwordDialogs :=
+    Safelist.filter (fun x -> present x; !x <> None) !passwordDialogs
+
+let termInteract rootName =
+  let d = ref None in
+  passwordDialogs := d :: !passwordDialogs;
+  { Terminal.userInput = getPassword d rootName; endInput = disablePassword d }
 
 (* ------ *)
 
@@ -2400,6 +2441,9 @@ let documentationFn = ref (fun ~parent _ -> ())
 let getProfile quit =
   let ok = ref false in
   let parent = toplevelWindow () in
+  (* Make sure that a potentially open password window from a (failed) previous
+     session is not hidden underneath this window. *)
+  waitForPasswordWindowClosing ();
 
   (* Build the dialog *)
   let t =
