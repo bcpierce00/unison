@@ -25,6 +25,26 @@ let debug = Util.debug "external"
 let (>>=) = Lwt.bind
 open Lwt
 
+(* For backwards compatibility with OCaml < 4.12 *)
+let path =
+  try
+    Str.split (Str.regexp (if Util.osType = `Win32 then ";" else ":"))
+      (Sys.getenv "PATH")
+  with Not_found ->
+    []
+
+let search_in_path ?(path = path) name =
+  if String.contains name '/' then name else
+  Filename.concat
+    (List.find (fun dir ->
+       let p = Filename.concat dir name in
+       let found = System.file_exists p in
+       debug (fun () -> Util.msg "'%s' ...%s\n" p
+         (match found with true -> "found" | false -> "not found"));
+       found)
+    path)
+    name
+
 (* Make sure external process resources are collected and zombie processes
    reaped when the Lwt thread calling the external program is stopped
    suddenly due to remote connection being closed. *)
@@ -46,8 +66,16 @@ let fullProcRes =
 let openProcessIn cmd = inProcRes.register (System.open_process_in cmd)
 let closeProcessIn = inProcRes.release
 
+(* Remove call to search_in_path once we require OCaml >= 4.12. *)
+let openProcessArgsIn cmd args = inProcRes.register (System.open_process_args_in (search_in_path cmd) args)
+let closeProcessArgsIn = inProcRes.release
+
 let openProcessFull cmd = fullProcRes.register (System.open_process_full cmd)
 let closeProcessFull = fullProcRes.release
+
+(* Remove call to search_in_path once we require OCaml >= 4.12. *)
+let openProcessArgsFull cmd args = fullProcRes.register (System.open_process_args_full (search_in_path cmd) args)
+let closeProcessArgsFull = fullProcRes.release
 
 let readChannelTillEof c =
   let lst = ref [] in
@@ -80,10 +108,11 @@ let readChannelsTillEof l =
        >>= (fun res -> return (String.concat "\n" (Safelist.rev res))))
     l
 
-let runExternalProgram cmd =
+
+let runExternalProgramAux ~winProc ~posixProc =
   if Util.osType = `Win32 && not Util.isCygwin then begin
     debug (fun()-> Util.msg "Executing external program windows-style\n");
-    let c = openProcessIn ("\"" ^ cmd ^ "\"") in
+    let c = winProc () in
     let log = Util.trimWhitespace (readChannelTillEof c) in
     let returnValue = closeProcessIn c in
     let resultLog =
@@ -95,7 +124,7 @@ let runExternalProgram cmd =
          "") in
     Lwt.return (returnValue, resultLog)
   end else
-    let (out, ipt, err) as desc = openProcessFull cmd in
+    let (out, ipt, err) as desc = posixProc () in
     let out = Lwt_unix.intern_in_channel out in
     let err = Lwt_unix.intern_in_channel err in
     readChannelsTillEof [out;err]
@@ -114,3 +143,13 @@ let runExternalProgram cmd =
          else "\n\n" ^ Util.process_status_to_string returnValue)))
       (* Stop typechechecker from complaining about non-exhaustive pattern above *)
       | _ -> assert false)
+
+let runExternalProgram cmd =
+  runExternalProgramAux
+    ~winProc:(fun () -> openProcessIn ("\"" ^ cmd ^ "\""))
+    ~posixProc:(fun () -> openProcessFull cmd)
+
+let runExternalProgramArgs cmd args =
+  runExternalProgramAux
+    ~winProc:(fun () -> openProcessArgsIn cmd args)
+    ~posixProc:(fun () -> openProcessArgsFull cmd args)

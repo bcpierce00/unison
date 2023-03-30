@@ -2341,14 +2341,6 @@ are:
    copyprog      =   rsync --inplace --compress
    copyprogrest  =   rsync --partial --inplace --compress
 \end{verbatim}
-You may also need to set the {\tt copyquoterem} preference.  When it is set
-to {\tt true}, this causes Unison to add an extra layer of quotes to
-the remote path passed to the external copy program. This is is needed by
-rsync, for example, which internally uses an ssh connection, requiring an
-extra level of quoting for paths containing spaces. When this flag is set to
-{\tt default}, extra quotes are added if the value of {\tt copyprog}
-contains the string {\tt rsync}.  The default value is {\tt default},
-naturally.
 
 If a {\em directory} transfer is interrupted, the next run of Unison will
 automatically skip any files that were completely transferred before the

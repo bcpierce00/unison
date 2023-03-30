@@ -1286,8 +1286,6 @@ let docs =
       \032  -copymax n          maximum number of simultaneous copyprog transfers\n\
       \032  -copyprog xxx       external program for copying large files\n\
       \032  -copyprogrest xxx   variant of copyprog for resuming partial transfers\n\
-      \032  -copyquoterem xxx   add quotes to remote file name for copyprog\n\
-      \032                      (true/false/default)\n\
       \032  -copythreshold n    use copyprog on files bigger than this (if >=0, in Kb)\n\
       \032  -diff xxx           set command for showing differences between files\n\
       \032  -ignorelocks        ignore locks left over from previous run (dangerous!)\n\
@@ -1503,15 +1501,6 @@ let docs =
       \032         just be copyprog with one extra option (e.g., --partial, for\n\
       \032         rsync). The default setting invokes rsync with appropriate\n\
       \032         options\226\128\148most users should not need to change it.\n\
-      \n\
-      \032  copyquoterem xxx\n\
-      \032         When set to true, this flag causes Unison to add an extra layer\n\
-      \032         of quotes to the remote path passed to the external copy\n\
-      \032         program. This is needed by rsync, for example, which internally\n\
-      \032         uses an ssh connection requiring an extra level of quoting for\n\
-      \032         paths containing spaces. When this flag is set to default, extra\n\
-      \032         quotes are added if the value of copyprog contains the string\n\
-      \032         rsync.\n\
       \n\
       \032  copythreshold n\n\
       \032         A number indicating above what filesize (in kilobytes) Unison\n\
@@ -3102,14 +3091,6 @@ let docs =
       \032  The default values are:\n\
       \032  copyprog      =   rsync --inplace --compress\n\
       \032  copyprogrest  =   rsync --partial --inplace --compress\n\
-      \n\
-      \032  You may also need to set the copyquoterem preference. When it is set to\n\
-      \032  true, this causes Unison to add an extra layer of quotes to the remote\n\
-      \032  path passed to the external copy program. This is is needed by rsync,\n\
-      \032  for example, which internally uses an ssh connection, requiring an\n\
-      \032  extra level of quoting for paths containing spaces. When this flag is\n\
-      \032  set to default, extra quotes are added if the value of copyprog\n\
-      \032  contains the string rsync. The default value is default, naturally.\n\
       \n\
       \032  If a directory transfer is interrupted, the next run of Unison will\n\
       \032  automatically skip any files that were completely transferred before\n\

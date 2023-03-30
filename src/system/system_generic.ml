@@ -68,8 +68,10 @@ let open_in_bin = open_in_bin
 
 let create_process = Unix.create_process
 let open_process_in = Unix.open_process_in
+let open_process_args_in = Unix.open_process_args_in
 let open_process_out = Unix.open_process_out
 let open_process_full cmd = Unix.open_process_full cmd (Unix.environment ())
+let open_process_args_full cmd args = Unix.open_process_args_full cmd args (Unix.environment ())
 let process_in_pid = Unix.process_in_pid
 let process_out_pid = Unix.process_out_pid
 let process_full_pid = Unix.process_full_pid

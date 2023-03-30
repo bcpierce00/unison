@@ -911,17 +911,8 @@ let copythreshold =
      ^ "See \\sectionref{speeding}{Making Unison Faster on Large Files} "
      ^ "for more information.")
 
-let copyquoterem =
-  Prefs.createBoolWithDefault "copyquoterem"
-    ~category:(`Advanced `General)
-    "add quotes to remote file name for copyprog (true/false/default)"
-    ("When set to {\\tt true}, this flag causes Unison to add an extra layer "
-     ^ "of quotes to the remote path passed to the external copy program. "
-     ^ "This is needed by rsync, for example, which internally uses an ssh "
-     ^ "connection requiring an extra level of quoting for paths containing "
-     ^ "spaces. When this flag is set to {\\tt default}, extra quotes are "
-     ^ "added if the value of {\\tt copyprog} contains the string "
-     ^ "{\\tt rsync}.")
+(* Pref copyquoterem removed since X.YY *)
+let () = Prefs.markRemoved "copyquoterem"
 
 let copymax =
   Prefs.createInt "copymax" 1
@@ -1031,34 +1022,25 @@ let transferFileUsingExternalCopyprog
              rootFrom pathFrom rootTo fspathTo pathTo realPathTo
              update desc fp ress id useExistingTarget =
   Uutil.showProgress id Uutil.Filesize.zero "ext";
-  let prog =
+  let progWithArgs =
     if useExistingTarget then
       Prefs.read copyprogrest
     else
       Prefs.read copyprog
   in
-  let extraquotes = Prefs.read copyquoterem = `True
-                 || (  Prefs.read copyquoterem = `Default
-                    && Util.findsubstring "rsync" prog <> None) in
-  let addquotes root s =
-    match root with
-    | Common.Local, _ -> s
-    | Common.Remote _, _ -> if extraquotes then Uutil.quotes s else s in
   let fromSpec =
       (formatConnectionInfo rootFrom)
-    ^ (addquotes rootFrom
-         (Fspath.toString (Fspath.concat (snd rootFrom) pathFrom))) in
+    ^ (Fspath.toString (Fspath.concat (snd rootFrom) pathFrom)) in
   let toSpec =
       (formatConnectionInfo rootTo)
-    ^ (addquotes rootTo
-         (Fspath.toString (Fspath.concat fspathTo pathTo))) in
-  let cmd = prog ^ " "
-             ^ (Uutil.quotes fromSpec) ^ " "
-             ^ (Uutil.quotes toSpec) in
-  Trace.log (Printf.sprintf "%s\n" cmd);
+    ^ (Fspath.toString (Fspath.concat fspathTo pathTo)) in
+  Trace.log (progWithArgs ^ " " ^ fromSpec ^ " " ^ toSpec ^ "\n");
   Lwt_util.resize_region !copyprogReg (Prefs.read copymax);
+  let args = Str.split (Str.regexp "[ \t]+") progWithArgs in
+  let prog = match args with [] -> assert false | h :: _ -> h in
   Lwt_util.run_in_region !copyprogReg 1
-    (fun () -> External.runExternalProgram cmd) >>= fun (_, log) ->
+    (fun () -> External.runExternalProgramArgs prog
+                 (Array.of_list (args @ [fromSpec; toSpec]))) >>= fun (_, log) ->
   debug (fun() ->
            let l = Util.trimWhitespace log in
            Util.msg "transferFileUsingExternalCopyprog %s: returned...\n%s%s"
