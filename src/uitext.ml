@@ -969,12 +969,36 @@ let rec interactAndPropagateChanges prevItemList reconItemList
       : bool * bool * bool * bool * (Path.t list)
         (* anySkipped?, anyPartial?, anyFailures?, anyCancels?, failingPaths *) =
   let (proceed,newReconItemList) = interact prevItemList reconItemList in
-  let (updatesToDo, skipped) =
+  let (updatesToDo, skipped, (totalBytesToRoot1, totalBytesToRoot2)) =
     Safelist.fold_left
-      (fun (howmany, skipped) ri ->
-        if problematic ri then (howmany, skipped + 1)
-        else (howmany + 1, skipped))
-      (0, 0) newReconItemList in
+      (fun (howmany, skipped, (bytes1, bytes2)) ri ->
+        if problematic ri then (howmany, skipped + 1, (bytes1, bytes2))
+        else (howmany + 1, skipped,
+          match ri.replicas with
+          | Problem _ -> (bytes1, bytes2)
+          | Different {direction; _} ->
+              match direction with
+              | Conflict _ | Merge -> (bytes1, bytes2)
+              | Replica1ToReplica2 -> (bytes1, Uutil.Filesize.add (Common.riLength ri) bytes2)
+              | Replica2ToReplica1 -> (Uutil.Filesize.add (Common.riLength ri) bytes1, bytes2)))
+      (0, 0, (Uutil.Filesize.zero, Uutil.Filesize.zero)) newReconItemList in
+  if not (Prefs.read Trace.terse) && (updatesToDo > 0 || skipped > 0) then begin
+    let root1, root2 =
+      match Globals.roots () with
+      | (Local, path1), (Local, path2) -> Fspath.differentSuffix path1 path2
+      | (Local, _), (Remote host, _) -> "local", host
+      | (Remote host, _), (Local, _) -> host, "local"
+      | (Remote host1, _), (Remote host2, _) -> host1, host2
+    in
+    Trace.log_color (Printf.sprintf
+      "\n%s%d%s items will be synced, %s%d%s skipped\n\
+       %s to be synced from %s to %s\n\
+       %s to be synced from %s to %s\n"
+       (color `Focus) updatesToDo (color `Reset)
+       (color `Information) skipped (color `Reset)
+       (Util.bytes2string (Uutil.Filesize.toInt64 totalBytesToRoot2)) root1 root2
+       (Util.bytes2string (Uutil.Filesize.toInt64 totalBytesToRoot1)) root2 root1)
+  end;
   let doTransp newReconItemList =
     try
       doTransport newReconItemList
