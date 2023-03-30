@@ -86,11 +86,13 @@ let icon =
     (Gpointer.region_of_bytes Pixmaps.icon_data)
 *)
 let icon =
-  let p = GdkPixbuf.create ~width:48 ~height:48 ~has_alpha:true () in
-  Gpointer.blit
-    ~src:(Gpointer.region_of_bytes (Bytes.of_string Pixmaps.icon_data))
-    ~dst:(GdkPixbuf.get_pixels p);
-  p
+  lazy begin
+    let p = GdkPixbuf.create ~width:48 ~height:48 ~has_alpha:true () in
+    Gpointer.blit
+      ~src:(Gpointer.region_of_bytes (Bytes.of_string Pixmaps.icon_data))
+      ~dst:(GdkPixbuf.get_pixels p);
+    p
+  end
 
 let leftPtrWatch =
   lazy (Gdk.Cursor.create `WATCH)
@@ -2742,7 +2744,7 @@ let createToplevelWindow () =
   setToplevelWindow toplevelWindow;
   (* There is already a default icon under Windows, and transparent
      icons are not supported by all version of Windows *)
-  if Util.osType <> `Win32 then toplevelWindow#set_icon (Some icon);
+  if Util.osType <> `Win32 then toplevelWindow#set_icon (Some (Lazy.force icon));
   let toplevelVBox = GPack.vbox ~packing:toplevelWindow#add () in
 
   (*******************************************************************
