@@ -444,6 +444,8 @@ let start hash =
     true
   end
 
+let running _ = connected ()
+
 let wait hash =
   let c = currentConnection () in
   let res = Cond.wait c.has_changes in
