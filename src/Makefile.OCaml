@@ -391,7 +391,13 @@ else
   ## Set up for bytecode compilation
 
   CAMLC=$(OCAMLC)
-  CAMLLDFLAGS+=-custom
+  _COMPLETE_EXE=$(shell ocamlc -output-complete-exe 2>&1)
+  # -output-complete-exe is available since OCaml 4.10
+  ifneq ($(strip $(_COMPLETE_EXE)),)
+    CAMLLDFLAGS+=-custom
+  else
+    CAMLLDFLAGS+=-output-complete-exe  # can safely strip the binary
+  endif
 
   CAMLOBJS=$(OCAMLOBJS)
   CAMLLIBS=$(OCAMLLIBS)
