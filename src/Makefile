@@ -31,7 +31,6 @@ all:: strings.ml buildexecutable
 
 ########################################################################
 ## Miscellaneous developer-only switches
-DEBUGGING=true
 PROFILING=false
 STATIC=false
 

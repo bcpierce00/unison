@@ -368,16 +368,6 @@ dependgraph: depend
 ####################################################################
 ### Compilation boilerplate
 
-ifeq ($(DEBUGGING), false)
-  ifneq ($(OSARCH), win32)
-    ifneq ($(OSARCH), osx)
-      # Strip the binary (does not work with MS compiler; might not work
-      # under OSX)
-      CAMLLDFLAGS+=-cclib -Wl,-s
-    endif
-  endif
-endif
-
 ifeq ($(PROFILING), true)
   OCAMLC=$(EXEC_PREFIX)ocamlcp
 else
@@ -401,9 +391,6 @@ else
   ## Set up for bytecode compilation
 
   CAMLC=$(OCAMLC)
-  ifeq ($(DEBUGGING), true)
-    CAMLFLAGS+=-g
-  endif
   CAMLLDFLAGS+=-custom
 
   CAMLOBJS=$(OCAMLOBJS)
