@@ -130,5 +130,6 @@ val format_to_string : (unit -> unit) -> string
    flush the stream after each one *)
 val msg : ('a, out_channel, unit) format -> 'a
 
-(* Set the info line *)
-val set_infos : string -> unit
+(* Set the info line.
+   [~clr] is an alternative clear sequence to clear this info only. *)
+val set_infos : ?clr:string -> string -> unit
