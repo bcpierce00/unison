@@ -1107,18 +1107,21 @@ jobs:
 
 
   build_compat:
+    if: ${{ !cancelled() }}    # Don't fail if 'docs' failed
+    needs: docs
+
     strategy:
       fail-fast: false
       matrix:
         job:
-        - { ocaml-version: 4.14.x, publish: true }
-        - { ocaml-version: "ocaml-variants.4.14.1+options,ocaml-option-musl,ocaml-option-static,ocaml-option-flambda", publish: true }
+        - { ocaml-version: 4.14.x, publish: true, fnsuffix: -ubuntu-x86_64 }
+        - { ocaml-version: "ocaml-variants.4.14.1+options,ocaml-option-musl,ocaml-option-static,ocaml-option-flambda", publish: true, fnsuffix: -ubuntu-x86_64-static }
         - { ocaml-version: 4.13.x }
         - { ocaml-version: 4.12.x }
         - { ocaml-version: 4.11.x }
         - { ocaml-version: 4.10.x }
         - { ocaml-version: 4.09.x }
-        - { ocaml-version: 4.08.x, publish: true }
+        - { ocaml-version: 4.08.x, publish: true, fnsuffix: +ocaml4.08-ubuntu-x86_64 }
 
     runs-on: ubuntu-latest
     container: ubuntu:16.04
@@ -1168,7 +1171,50 @@ jobs:
         opam exec -- make src UISTYLE=gtk3
         cp src/unison pkg/bin/unison-gui
 
+    - name: Initialize packaging variables
+      id: vars
+      run: |
+        REF_SHAS=$(echo '${{ github.sha }}' | awk '{ print substr($0, 1, 8) }')
+        unset REF_TAG ; case "${GITHUB_REF}" in refs/tags/*) REF_TAG="${GITHUB_REF#refs/tags/}" ;; esac;
+        PKG_VER="${REF_TAG:-git_$REF_SHAS}"
+        PKG_VER="${PKG_VER#v}"
+        echo PKG_NAME="${PROJECT_NAME}-${PKG_VER}${{ matrix.job.fnsuffix }}.tar.gz" >> $GITHUB_OUTPUT
+        echo REF_SHAS=${REF_SHAS} >> $GITHUB_OUTPUT
+
     - uses: actions/upload-artifact@v3
       with:
-        name: unison-${{github.sha}}.ocaml-${{ matrix.job.ocaml-version }}.ubuntu.x86_64
+        name: unison-${{ steps.vars.outputs.REF_SHAS }}.ocaml-${{ matrix.job.ocaml-version }}.ubuntu.x86_64
         path: pkg/bin/*
+
+    - name: Copy user manual
+      if: matrix.job.publish
+      continue-on-error: ${{ !(github.ref_type == 'tag' && startsWith(github.ref_name, 'v') && matrix.job.publish) }}
+      uses: actions/download-artifact@v3
+      with:
+        name: unison-docs
+        path: pkg
+
+    - name: Prepare package
+      if: matrix.job.publish
+      run: |
+        strip pkg/bin/*
+        cp README* pkg/
+        cp LICENSE* pkg/
+
+    - name: Package
+      if: matrix.job.publish
+      run: cd pkg && tar czf '${{ steps.vars.outputs.PKG_NAME }}' *
+
+    - uses: actions/upload-artifact@v3
+      if: matrix.job.publish
+      with:
+        name: ${{ steps.vars.outputs.PKG_NAME }}.ocaml-${{ matrix.job.ocaml-version }}.ubuntu_compat-publish
+        path: pkg/${{ steps.vars.outputs.PKG_NAME }}
+
+    - name: Publish
+      if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v') && matrix.job.publish
+      uses: softprops/action-gh-release@v1
+      with:
+        files: pkg/${{ steps.vars.outputs.PKG_NAME }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
