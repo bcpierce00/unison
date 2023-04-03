@@ -1104,3 +1104,71 @@ jobs:
     - run: opam exec -- make src UISTYLE=text NATIVE=false
 
     - run: opam exec -- make test
+
+
+  build_compat:
+    strategy:
+      fail-fast: false
+      matrix:
+        job:
+        - { ocaml-version: 4.14.x, publish: true }
+        - { ocaml-version: "ocaml-variants.4.14.1+options,ocaml-option-musl,ocaml-option-static,ocaml-option-flambda", publish: true }
+        - { ocaml-version: 4.13.x }
+        - { ocaml-version: 4.12.x }
+        - { ocaml-version: 4.11.x }
+        - { ocaml-version: 4.10.x }
+        - { ocaml-version: 4.09.x }
+        - { ocaml-version: 4.08.x, publish: true }
+
+    runs-on: ubuntu-latest
+    container: ubuntu:16.04
+
+    steps:
+    - name: Set up the OS
+      run: |
+        apt-get update
+        apt-get install --assume-yes git make gcc patch wget bzip2 unzip musl-tools
+
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Use OCaml ${{ matrix.job.ocaml-version }}
+      uses: ocaml/setup-ocaml@v2
+      with:
+        ocaml-compiler: ${{ matrix.job.ocaml-version }}
+        opam-disable-sandboxing: true
+        opam-pin: false
+        opam-depext: false
+
+    - name: Build text UI
+      run: |
+        opam exec -- make src UISTYLE=text STATIC=${{ contains(matrix.job.ocaml-version, '-musl') }}
+        mkdir -p pkg/bin
+        cp src/unison pkg/bin/
+        cp src/unison-fsmonitor pkg/bin/
+
+    - name: Run local tests
+      run: opam exec -- make test
+
+    - name: Run remote tests
+      run: |
+        mkdir localsocket
+        chmod 700 localsocket
+        # Separate backup dir must be set for server instance so that the central
+        # backup location of both instances doesn't overlap
+        UNISONBACKUPDIR=./src/testbak4 ./src/unison -socket ./localsocket/test.sock &
+        sleep 1 # Wait for the server to be fully started
+        test -S ./localsocket/test.sock
+        ./src/unison -ui text -selftest testr3 socket://{./localsocket/test.sock}/testr4 -killserver
+
+    - name: Build GUI
+      if: ${{ !contains(matrix.job.ocaml-version, '-musl') }}
+      run: |
+        opam depext --install --verbose --yes lablgtk3 && opam install ocamlfind
+        opam exec -- make src UISTYLE=gtk3
+        cp src/unison pkg/bin/unison-gui
+
+    - uses: actions/upload-artifact@v3
+      with:
+        name: unison-${{github.sha}}.ocaml-${{ matrix.job.ocaml-version }}.ubuntu.x86_64
+        path: pkg/bin/*
