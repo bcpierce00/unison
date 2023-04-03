@@ -1,10 +1,10 @@
 # Unison file synchronizer: Makefile
 # See LICENSE for terms.
 
-.PHONY: all src docs manpage test depend clean install
-
+.PHONY: all
 all: src manpage
 
+.PHONY: src
 src:
 	$(MAKE) -C src
 
@@ -12,6 +12,7 @@ src:
 # Having docs build src/unison points out that UISTYLE is a bug; either
 # docs might build the GUI (not wanted as too heavy for docs use), or
 # whatever is built might not be rebuilt later.
+.PHONY: docs
 docs:
 	$(MAKE) -C src UISTYLE=text
 	$(MAKE) -C doc
@@ -19,20 +20,25 @@ docs:
 
 # "src" is a prerequisite to prevent parallel build errors.
 # manpage builds currently require a pre-built "unison" binary.
+.PHONY: manpage
 manpage: src
 	$(MAKE) -C man
 
+.PHONY: test
 test:
 	./src/unison -ui text -selftest
 
+.PHONY: depend
 depend:
 	$(MAKE) -C src depend
 
+.PHONY: clean
 clean:
 	$(MAKE) -C doc clean
 	$(MAKE) -C man clean
 	$(MAKE) -C src clean
 
+.PHONY: install
 install:
 	@printf "\n\n=========================================\n\
 To install, copy the files src/unison, src/unison-gui (optional),\n\

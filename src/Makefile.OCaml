@@ -348,10 +348,11 @@ system.cmx fspath.cmx fs.cmx: system/$(SYSTEM)/system_impl.cmx
 lwt/lwt_unix.cmo: lwt/$(SYSTEM)/lwt_unix_impl.cmo
 lwt/lwt_unix.cmx: lwt/$(SYSTEM)/lwt_unix_impl.cmx
 
-.PHONY: depend dependgraph
+.PHONY: depend
 depend::
 	ocamlc -depend $(DEP_INCLFLAGS) *.mli *.ml */*.ml */*.mli */*/*.ml */*/*.mli > .depend
 
+.PHONY: dependgraph
 dependgraph: depend
 	echo 'digraph G {' > .depend.dot.tmp
 	echo '{ rank = same; "Fileinfo"; "Props"; "Fspath"; "Os"; "Path"; }'\
