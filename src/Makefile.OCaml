@@ -10,45 +10,22 @@
 
 ifeq (${OSCOMP},cygwingnuc) # Define this if compiling with Cygwin GNU C
   OSARCH=win32gnuc
-  ETAGS=/bin/etags
-else
-# Win32 system
-ifeq (${OSTYPE},cygwin32) # Cygwin Beta 19
-  OSARCH=win32
-  ETAGS=/bin/etags
-else
-ifeq (${OSTYPE},cygwin)	  # Cygwin Beta 20
-  OSARCH=win32
-  ETAGS=/bin/etags
-else
-
-# Unix system
-ifeq ($(shell uname),SunOS)
-  OSARCH=solaris
-else
-ifeq ($(shell uname),Darwin)
-  OSARCH=osx
-else
-ifeq ($(shell uname),OpenBSD)
-  OSARCH=OpenBSD
-else
-ifeq ($(shell uname),NetBSD)
-  OSARCH=NetBSD
-endif
-ifeq ($(shell uname),Linux)
-  OSARCH=Linux
-endif
-endif
-endif
-endif
-ETAGS=etags
-endif
-endif
-endif
-
-ifeq (${OSCOMP},cross) # Cross-compilation under Linux
+else ifeq (${OSCOMP},cross) # Cross-compilation under Linux
   OSARCH=win32gnuc
   EXEC_PREFIX=i686-w64-mingw32-
+else ifeq (${OSTYPE},cygwin)
+  OSARCH=win32
+else
+  # := is not POSIX but GNU make < 4.0 does not support ::= which is POSIX,
+  # and macOS ships with really outdated GNU make (4.0 released 2013).
+  # Not a problem because the entire makefile is not POSIX compatible.
+  OSARCH:=$(shell uname)
+
+  ifeq ($(OSARCH),SunOS)
+    OSARCH=solaris
+  else ifeq ($(OSARCH),Darwin)
+    OSARCH=osx
+  endif
 endif
 
 # The OCaml lib dir is used by all versions
@@ -391,16 +368,6 @@ dependgraph: depend
 ####################################################################
 ### Compilation boilerplate
 
-ifeq ($(DEBUGGING), false)
-  ifneq ($(OSARCH), win32)
-    ifneq ($(OSARCH), osx)
-      # Strip the binary (does not work with MS compiler; might not work
-      # under OSX)
-      CAMLLDFLAGS+=-cclib -Wl,-s
-    endif
-  endif
-endif
-
 ifeq ($(PROFILING), true)
   OCAMLC=$(EXEC_PREFIX)ocamlcp
 else
@@ -424,10 +391,13 @@ else
   ## Set up for bytecode compilation
 
   CAMLC=$(OCAMLC)
-  ifeq ($(DEBUGGING), true)
-    CAMLFLAGS+=-g
+  _COMPLETE_EXE=$(shell ocamlc -output-complete-exe 2>&1)
+  # -output-complete-exe is available since OCaml 4.10
+  ifneq ($(strip $(_COMPLETE_EXE)),)
+    CAMLLDFLAGS+=-custom
+  else
+    CAMLLDFLAGS+=-output-complete-exe  # can safely strip the binary
   endif
-  CAMLLDFLAGS+=-custom
 
   CAMLOBJS=$(OCAMLOBJS)
   CAMLLIBS=$(OCAMLLIBS)

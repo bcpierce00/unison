@@ -137,5 +137,3 @@ There are some additional options that control the build process:
 - STATIC: Adding `STATIC=true` as argument to `make` will produce a (mostly)
   statically linked executable. This may not work on all platforms or with all
   build methods.
-- DEBUGGING: Adding `DEBUGGING=false` as argument to `make` will strip
-  debugging symbols from the final executable.

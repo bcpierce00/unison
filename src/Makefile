@@ -31,7 +31,6 @@ all:: strings.ml buildexecutable
 
 ########################################################################
 ## Miscellaneous developer-only switches
-DEBUGGING=true
 PROFILING=false
 STATIC=false
 
@@ -197,6 +196,8 @@ testmerge:
 
 ######################################################################
 # Tags
+
+ETAGS=etags
 
 # In Windows, tags and TAGS are the same, so make tags stops working
 # after the first invocation.  The .PHONY declaration makes it work
