@@ -24,10 +24,9 @@ NATIVE=true
 
 all:: strings.ml buildexecutable
 
-.PHONY: all clean install doinstall installtext text \
-	runtest repeattest \
-	selftest selftestdebug selftestremote testmerge \
-	checkin installremote
+.PHONY: all clean \
+	repeattest \
+	selftest selftestdebug selftestremote testmerge
 
 ########################################################################
 ## Miscellaneous developer-only switches
@@ -43,34 +42,7 @@ STATIC=false
 include Makefile.OCaml
 
 ######################################################################
-# Installation
-
-INSTALLDIR = $(HOME)/bin/
-
-# This has two names because on OSX the file INSTALL shadows the target 'install'!
-install: doinstall
-
-installtext:
-	$(MAKE) -C .. installtext
-
-text:
-	$(MAKE) -C .. text
-
-# Note that this is not needed (and doesn't work) for the OSX GUI version.
-# Just copy $(UIMACDIR)/build/Default/Unison.app to where you want it.
-doinstall: buildexecutable
-	@if [ ! $(NAME) ]; then \
-	    echo "makefile variable NAME not bound"; \
-	    exit 1 \
-	  ; fi
-	-mv $(INSTALLDIR)/$(NAME)$(EXEC_EXT) /tmp/$(NAME)-$(shell echo $$$$)
-	cp $(NAME)$(EXEC_EXT) $(INSTALLDIR)
-	cp $(NAME)$(EXEC_EXT) $(INSTALLDIR)$(NAME)-$(MAJORVERSION)$(EXEC_EXT)
-
 # For developers
-runtest:
-	$(MAKE) NATIVE=false DEBUG=true text
-	./unison test
 
 repeattest:
 	$(MAKE) all NATIVE=false DEBUG=true UISTYLE=text

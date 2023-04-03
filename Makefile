@@ -34,7 +34,11 @@ clean:
 	$(MAKE) -C src clean
 
 install:
-	$(MAKE) -C src install
-
-installtext:
-	$(MAKE) -C src install UISTYLE=text
+	@printf "\n\n=========================================\n\
+To install, copy the files src/unison, src/unison-gui (optional),\n\
+src/unison-fsmonitor (optional) and src/fsmonitor.py (optional,\n\
+if unison-fsmonitor does not exist) to a freely chosen location.\n\n\
+Manual page is at man/unison.1 and user manual is at\n\
+doc/unison-manual.pdf, doc/unison-manual.html and doc/unison-manual.txt\n\
+=========================================\n\n\n"
+	@exit 1
