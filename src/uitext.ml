@@ -798,13 +798,12 @@ let doTransport reconItemList =
   in
   let totalBytesTransferred = ref Uutil.Filesize.zero in
   let totalBytesToTransfer =
-    ref
       (Array.fold_left
          (fun s item -> Uutil.Filesize.add item.bytesToTransfer s)
          Uutil.Filesize.zero items)
   in
   let totalBytesToTransferStr = Util.bytes2string
-    (Uutil.Filesize.toInt64 !totalBytesToTransfer) in
+    (Uutil.Filesize.toInt64 totalBytesToTransfer) in
   let t0 = Unix.gettimeofday () in
   let calcProgress i bytes dbg =
     let i = Uutil.File.toLine i in
@@ -815,7 +814,7 @@ let doTransport reconItemList =
       (Uutil.Filesize.toInt64 !totalBytesTransferred) in
     let v =
       (Uutil.Filesize.percentageOfTotalSize
-         !totalBytesTransferred !totalBytesToTransfer)
+         !totalBytesTransferred totalBytesToTransfer)
     in
     let t1 = Unix.gettimeofday () in
     let remTime =
