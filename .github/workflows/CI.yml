@@ -52,14 +52,6 @@ jobs:
         - { os: ubuntu-22.04  , ocaml-version: 5.0.0 }
         - { os: ubuntu-22.04  , ocaml-version: 4.14.1 }
         - { os: ubuntu-20.04  , ocaml-version: 4.14.1 }
-        - { os: ubuntu-18.04  , ocaml-version: 4.14.1           , publish: true }
-        - { os: ubuntu-18.04  , ocaml-version: "4.14.1+options,ocaml-option-musl,ocaml-option-static,ocaml-option-flambda"  , publish: true }
-        - { os: ubuntu-18.04  , ocaml-version: 4.13.1 }
-        - { os: ubuntu-18.04  , ocaml-version: 4.12.1 }
-        - { os: ubuntu-18.04  , ocaml-version: 4.11.2 }
-        - { os: ubuntu-18.04  , ocaml-version: 4.10.2 }
-        - { os: ubuntu-18.04  , ocaml-version: 4.09.1 }
-        - { os: ubuntu-18.04  , ocaml-version: 4.08.1           , publish: true }
         - { os: windows-2022  , ocaml-version: 4.14.0+mingw64c  , publish: true }
         - { os: windows-2019  , ocaml-version: 4.14.0+mingw32c  , publish: true }
 
