@@ -810,40 +810,45 @@ let doTransport reconItemList =
     let item = items.(i) in
     item.bytesTransferred <- Uutil.Filesize.add item.bytesTransferred bytes;
     totalBytesTransferred := Uutil.Filesize.add !totalBytesTransferred bytes;
-    let totalBytesTransferredStr = Util.bytes2string
-      (Uutil.Filesize.toInt64 !totalBytesTransferred) in
-    let v =
-      (Uutil.Filesize.percentageOfTotalSize
-         !totalBytesTransferred totalBytesToTransfer)
-    in
-    let t1 = Unix.gettimeofday () in
-    let () = Uicommon.Stats.update sta t1 !totalBytesTransferred in
-    let remTime =
-      if v <= 0. then "--:--"
-      else if v >= 100. then "00:00:00"
-      else
-        let rate = Uicommon.Stats.avgRate1 sta in
-        if Float.is_nan rate then "--:--"
-        else
-          Format.sprintf "%8s/s    %s"
-            (Util.bytes2string (Int64.of_float rate))
-            (Uicommon.Stats.eta sta "--:--")
-    in
-    let stat = Format.sprintf "%s  (%s of %s)  %s ETA" (Util.percent2string v)
-      totalBytesTransferredStr totalBytesToTransferStr remTime in
-    t1, stat
+    (Uutil.Filesize.percentageOfTotalSize
+       !totalBytesTransferred totalBytesToTransfer)
   in
   let tlog = ref (Unix.gettimeofday ()) in
+  let t = ref 0. in
+  let displayProgress v =
+    let t1 = Unix.gettimeofday () in
+    let () = Uicommon.Stats.update sta t1 !totalBytesTransferred in
+    if t1 -. !t >= 0.1 then begin
+      t := t1;
+      let remTime =
+        if v <= 0. then "--:--"
+        else if v >= 100. then "00:00:00"
+        else
+          let rate = Uicommon.Stats.avgRate1 sta in
+          if Float.is_nan rate then "--:--"
+          else
+            Format.sprintf "%8s/s    %s"
+              (Util.bytes2string (Int64.of_float rate))
+              (Uicommon.Stats.eta sta "--:--")
+      in
+      let totalBytesTransferredStr = Util.bytes2string
+        (Uutil.Filesize.toInt64 !totalBytesTransferred) in
+      let s = Format.sprintf "%s  (%s of %s)  %s ETA" (Util.percent2string v)
+        totalBytesTransferredStr totalBytesToTransferStr remTime in
+
+      if not (Prefs.read Trace.terse) && (Prefs.read Trace.debugmods = []) then
+        Util.set_infos s;
+      if (Prefs.read Trace.terse) || (Prefs.read Globals.batch) then
+        if (t1 -. !tlog) >= 60. then
+        begin
+          Trace.logonly (s ^ "\n");
+          tlog := t1
+        end
+    end
+  in
   let showProgress i bytes dbg =
-    let t1, s = calcProgress i bytes dbg in
-    if not (Prefs.read Trace.terse) && (Prefs.read Trace.debugmods = []) then
-      Util.set_infos s;
-    if (Prefs.read Trace.terse) || (Prefs.read Globals.batch) then
-      if (t1 -. !tlog) >= 60. then
-      begin
-        Trace.logonly (s ^ "\n");
-        tlog := t1
-      end
+    let v = calcProgress i bytes dbg in
+    displayProgress v
   in
   Uutil.setProgressPrinter showProgress;
 
