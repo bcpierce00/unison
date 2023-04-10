@@ -534,6 +534,7 @@ globals.cmx : \
     clroot.cmx \
     globals.cmi
 globals.cmi : \
+    terminal.cmi \
     ubase/prefs.cmi \
     pred.cmi \
     path.cmi \
@@ -915,6 +916,7 @@ remote.cmx : \
     remote.cmi
 remote.cmi : \
     ubase/umarshal.cmi \
+    terminal.cmi \
     ubase/prefs.cmi \
     lwt/lwt_util.cmi \
     lwt/lwt.cmi \
@@ -1325,6 +1327,7 @@ uicommon.cmx : \
 uicommon.cmi : \
     uutil.cmi \
     ubase/umarshal.cmi \
+    terminal.cmi \
     ubase/prefs.cmi \
     path.cmi \
     lwt/lwt.cmi \
@@ -1338,6 +1341,7 @@ uigtk3.cmo : \
     uicommon.cmi \
     transport.cmi \
     ubase/trace.cmi \
+    terminal.cmi \
     system.cmi \
     strings.cmi \
     sortri.cmi \
@@ -1364,6 +1368,7 @@ uigtk3.cmx : \
     uicommon.cmx \
     transport.cmx \
     ubase/trace.cmx \
+    terminal.cmx \
     system.cmx \
     strings.cmx \
     sortri.cmx \

@@ -112,7 +112,7 @@ val clearClRoots : unit -> unit
    are established and (re-)establish them if necessary.
    [initPrefs] must be called before [connectRoots]. *)
 val connectRoots :
-  ?termInteract:(string -> string -> string) ->
+  ?termInteract:(string -> Terminal.termInteract) ->
   displayWaitMessage:(unit -> unit) ->
   unit ->
   unit

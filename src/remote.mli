@@ -82,7 +82,7 @@ val killServer : bool Prefs.t
 (* Establish a connection to the remote server (if any) corresponding
    to the root and return the canonical name of the root *)
 val canonizeRoot :
-  string -> Clroot.clroot -> (string -> string -> string) option ->
+  string -> Clroot.clroot -> (string -> Terminal.termInteract) option ->
   Common.root Lwt.t
 
 (* Test if connection to the remote server (if any) corresponding

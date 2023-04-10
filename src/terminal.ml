@@ -287,24 +287,114 @@ let close_session pid =
 
 let (>>=) = Lwt.bind
 
-let escRemove = Str.regexp
-   ("\\(\\(.\\|[\n\r]\\)+\027\\[[12]J\\)" (* Clear screen *)
-  ^ "\\|\\(\027\\[[0-2]?J\\)" (* Clear screen *)
-  ^ "\\|\\(\027\\[!p\\)" (* Soft reset *)
-  ^ "\\|\\(\027\\][02];[^\007]*\007\\)" (* Set console window title *)
-  ^ "\\|\\(\027\\[\\?25[hl]\\)" (* Show/hide cursor *)
-  ^ "\\|\\(\027\\[[0-9;]*m\\)" (* Formatting *)
-  ^ "\\|\\(\027\\[H\\)") (* Home *)
+(* OpenSSH on Windows is known to produce at least the following escape
+   sequences. Examples of raw output with OCaml string escapes, starting from
+   beginning of line and ending at end of line, newline excluded:
 
-let escSpace = Str.regexp "\027\\[\\([0-9]*\\)C"
+\027[2J\027[m\027[H\027]0;C:\\WINDOWS\\System32\\OpenSSH\\ssh.exe\007\027[?25h
+
+The authenticity of host 'example.com (127.0.0.1)' can't be established.\r\nECDSA key fingerprint is SHA256:CxGGHIVL7YDoSAtAzkIJNNaheGW7dDa7m7H+antMzDv.  \r\nAre you sure you want to continue connecting (yes/no/[fingerprint])?\027[10X\027[1C
+
+   Most of these sequences are clearly useless for Unison and can be safely
+   ignored. The final sequence CSI 10 X CSI 1 C is a bit weird. In this
+   context, CSI 1 C can be interpreted as 1 space, although this is not
+   universal.
+
+   Some versions may have also emitted CSI ! p (VT220 soft reset) but this
+   no longer seems to be the case. *)
+
+type controlSt = No | Escape | EscapeSeq | CSI | OSC | StringSeq | OSCEsc | StringEsc
+
+(* A very primitive and minimal parser of ANSI X3.64/ECMA-48 control sequences.
+   It parses 7-bit control characters (C0) only. 8-bit control characters (C1)
+   are intentionally not parsed.
+   The vast majority of sequences are just ignored. *)
+let parseCtrlSeq s =
+  let s' = Buffer.create (String.length s) in
+  let add_char = Buffer.add_char s' in
+  let params = Buffer.create 32 in
+  let params_add_char = Buffer.add_char params in
+  let st = ref No in
+  let state x = st := x in
+  let parseEsc ch =
+    Buffer.clear params;
+    match ch with
+    | '\032'..'\047' -> state EscapeSeq
+    | '[' -> state CSI
+    | ']' -> state OSC
+    | 'X' | '^' | '_' -> state StringSeq
+    | _ -> state No
+  in
+  let parseCh ch =
+    match !st with
+    | No when ch = '\027' -> state Escape
+    | No -> add_char ch
+    | Escape -> parseEsc ch
+    | EscapeSeq ->
+        begin
+          match ch with
+          | '\024' | '\026' -> state No (* CAN, SUB *)
+          | '\000'..'\025' -> add_char ch (* Control charaters (roughly) *)
+          | '\027' -> state Escape
+          | '\048'..'\126' -> state No (* Final *)
+          | '\127'..'\255' -> state No (* Invalid *)
+          | _ -> ()
+        end
+    | CSI ->
+        begin
+          match ch with
+          | '\024' | '\026' -> state No (* CAN, SUB *)
+          | '\000'..'\025' -> add_char ch (* Control charaters (roughly) *)
+          | '\027' -> state Escape
+          | '\064'..'\126' -> (* Final *)
+              begin
+                state No;
+                match ch with
+                | 'C' -> (* cursor forward *)
+                    let n =
+                      try int_of_string (Buffer.contents params)
+                      with Failure _ -> 1 in
+                    for _ = 1 to n do add_char ' ' done
+                | _ -> ()
+              end
+          | '\127'..'\255' -> state No (* Invalid *)
+          | _ -> params_add_char ch
+        end
+    | OSC ->
+        begin
+          match ch with
+          | '\024' | '\026' -> state No (* CAN, SUB *)
+          | '\007' -> state No (* BEL *)
+          | '\000'..'\025' -> add_char ch (* Control charaters (roughly) *)
+          | '\027' -> state OSCEsc
+          | _ -> ()
+        end
+    | OSCEsc ->
+        begin
+          match ch with
+          | '\\' -> state No (* String terminator *)
+          | _ -> parseEsc ch
+        end
+    | StringSeq ->
+        begin
+          match ch with
+          | '\024' | '\026' -> state No (* CAN, SUB *)
+          | '\000'..'\025' -> add_char ch (* Control charaters (roughly) *)
+          | '\027' -> state StringEsc
+          | _ -> ()
+        end
+    | StringEsc ->
+        begin
+          match ch with
+          | '\\' -> state No (* String terminator *)
+          | _ -> parseEsc ch
+        end
+  in
+  String.iter parseCh s;
+  Buffer.contents s'
 
 let processEscapes s =
-  let whitesp s =
-    try String.make (min 1 (int_of_string (Str.replace_matched "\\1" s))) ' '
-    with Failure _ -> " "
-  in
-  Str.global_replace escRemove "" s
-  |> Str.global_substitute escSpace whitesp
+  parseCtrlSeq s
 
 (* Wait until there is input. If there is terminal input s,
    return Some s. Otherwise, return None. *)
@@ -329,74 +419,80 @@ let rec termInput (fdTerm, _) fdInput =
     (Lwt.choose
        [readPrompt (); connectionEstablished ()])
 
+type termInteract = {
+  userInput : string -> (string -> unit) -> unit;
+  endInput : unit -> unit }
+
 (* Read messages from the terminal and use the callback to get an answer *)
-let handlePasswordRequests (fdIn, fdOut) callback isReady =
+let handlePasswordRequests (fdIn, fdOut) {userInput; endInput} isReady =
   let scrollback = Buffer.create 32 in
   let extract () =
     let s = Buffer.contents scrollback in
     let () = Buffer.clear scrollback in
     s
   in
-  let buf = Bytes.create 10000 in
+  let blen = 10000 in
+  let buf = Bytes.create blen in
   let ended = ref false in
-  let time = ref (Unix.gettimeofday ()) in
-  let rec loop () =
+  let closeInput () =
+    ended := true;
+    endInput ()
+  in
+  let terminalError loc e =
+    closeInput ();
+    Util.encodeException loc `Fatal e
+  in
+  let sendResponse s =
     Lwt.catch
-      (fun () -> Lwt_unix.read fdIn buf 0 10000)
+      (fun () ->
+        if isReady () || !ended then Lwt.return 0
+        else Lwt_unix.write_substring fdOut (s ^ "\n") 0 (String.length s + 1))
+      (terminalError "writing to shell terminal")
+  in
+  let promptUser () =
+    let query = extract () in
+    if query = "\r\n" || query = "\n" || query = "\r" then ()
+    else
+      (* There is a tiny, almost non-existent risk of a broken escape sequence
+         at the very beginning or the very end of the buffer (this can happen
+         if bytes read from the pty end in the middle of a sequence and before
+         reading any further we charge ahead with processing what we've read).
+         Given that it's almost certainly ssh we're dealing with, this risk can
+         safely be ignored. *)
+      let querytext = processEscapes query in
+      if querytext = "" || String.trim querytext = "" then ()
+      else
+        userInput querytext (fun s -> Lwt.ignore_result (sendResponse s))
+  in
+  let rec loop () =
+    (* When reading from a pty, the reading loop will not stop even when the
+       remote shell process dies. The reading will end (return 0 or an error)
+       when the pty is closed.
+       The only way to stop the reading loop without closing the pty is to
+       signal [isReady]. *)
+    Lwt.catch
+      (fun () -> Lwt_unix.read fdIn buf 0 blen)
       (fun ex -> if isReady () || !ended then Lwt.return 0 else Lwt.fail ex)
     >>= function
-    | 0 -> Lwt.return None (* The remote end is dead *)
+    | 0 -> Lwt.return ()
     | len ->
-        time := Unix.gettimeofday ();
         Buffer.add_string scrollback (Bytes.sub_string buf 0 len);
-        if !ended then (* The session ended before establishing a connection *)
-          Lwt.return None
-        else if isReady () then (* The shell connection has been established *)
-          Lwt.return (Some (extract ()))
-        else
+        if isReady () then begin (* The shell connection has been established *)
+          closeInput ();
+          Lwt.return ()
+        end else begin
+          Lwt.ignore_result (Lwt_unix.sleep 0.05 >>= fun () -> (* Give time for connection checks *)
+            Lwt.return (if not !ended && not (isReady ()) then promptUser ()));
           loop ()
+        end
   in
-  let delay = 0.2 in
-  let rec prompt () =
-    if isReady () || !ended then
-      Lwt.return ()
-    else
-      let d = (Unix.gettimeofday ()) -. !time in
-      if d < delay
-        || Buffer.length scrollback = 0 then
-      (* HACK: Delay briefly (0.2 s, noticeable to a human but not terrible
-         either since some delay from the network is expected anyway) to allow
-         time for output to be generated and read in as a whole. Otherwise, it
-         may happen that 'Invalid password' and 'Please re-enter password'
-         prompts are received separately, and this is not what we want.
-         Loop by 0.01 s to let other threads run while not introducing
-         noticeable latency to the user. *)
-      Lwt_unix.sleep (max (delay -. (max 0. d)) 0.01) >>= prompt
-    else
-      let query = extract () in
-      if query = "\r\n" || query = "\n" || query = "\r" then
-        Lwt_unix.yield () >>= prompt
-      else
-        let querytext = processEscapes query in
-        if querytext = "" || String.trim querytext = "" then
-          Lwt_unix.yield () >>= prompt
-        else
-          let response = callback querytext in
-          Lwt_unix.write_substring fdOut
-            (response ^ "\n") 0 (String.length response + 1) >>= fun _ ->
-          prompt ()
+  let readTerm = Lwt.catch loop (terminalError "reading from shell terminal") in
+  let extractRemainingOutput clean =
+    closeInput ();
+    (* Give a final chance of reading the error output from the ssh process. *)
+    let timeout = Lwt_unix.sleep 0.3 in
+    Lwt.choose [readTerm; timeout] >>= fun () ->
+    if not clean then Lwt.return (extract ())
+    else Lwt.return (Util.trimWhitespace (processEscapes (extract ())))
   in
-  let getErr () =
-    ended := true;
-    (* Yield a couple of times to give one final chance of reading the error
-       output from the ssh process. *)
-    Lwt_unix.yield () >>=
-    Lwt_unix.yield >>= fun () ->
-    Lwt.return (Util.trimWhitespace (processEscapes (extract ())))
-  in
-  let () = Lwt.ignore_result (Lwt.catch prompt
-    (Util.encodeException "writing to shell terminal" `Fatal))
-  and readTerm = Lwt.catch loop
-    (Util.encodeException "reading from shell terminal" `Fatal)
-  in
-  (readTerm, getErr)
+  (readTerm, extractRemainingOutput)

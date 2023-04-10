@@ -14,7 +14,7 @@ val rawRootPair : unit -> string * string
 val parsedClRawRoots : unit -> Clroot.clroot list
 
 (* Parse and canonize roots from their raw names                             *)
-val installRoots : (string -> string -> string) option -> unit Lwt.t
+val installRoots : (string -> Terminal.termInteract) option -> unit Lwt.t
 
 (* An alternate method (under development?) *)
 val installRoots2 : unit -> unit
