@@ -911,7 +911,7 @@ let copythreshold =
      ^ "See \\sectionref{speeding}{Making Unison Faster on Large Files} "
      ^ "for more information.")
 
-(* Pref copyquoterem removed since X.YY *)
+(* Pref copyquoterem removed since 2.53.3 *)
 let () = Prefs.markRemoved "copyquoterem"
 
 let copymax =
