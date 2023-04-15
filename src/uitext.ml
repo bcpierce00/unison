@@ -787,7 +787,7 @@ type stateItem =
     mutable bytesTransferred : Uutil.Filesize.t;
     mutable bytesToTransfer : Uutil.Filesize.t }
 
-let doTransport reconItemList =
+let doTransport reconItemList numskip isSkip =
   let items =
     Array.map
       (fun ri ->
@@ -796,54 +796,69 @@ let doTransport reconItemList =
           bytesToTransfer = Common.riLength ri})
       (Array.of_list reconItemList)
   in
+  let totalItemsTransferred = ref 0 in
+  let totalItemsToTransfer = Array.length items - numskip in
+  let totalItemsToTransferStr = string_of_int totalItemsToTransfer in
   let totalBytesTransferred = ref Uutil.Filesize.zero in
   let totalBytesToTransfer =
-    ref
       (Array.fold_left
          (fun s item -> Uutil.Filesize.add item.bytesToTransfer s)
          Uutil.Filesize.zero items)
   in
   let totalBytesToTransferStr = Util.bytes2string
-    (Uutil.Filesize.toInt64 !totalBytesToTransfer) in
-  let t0 = Unix.gettimeofday () in
+    (Uutil.Filesize.toInt64 totalBytesToTransfer) in
+  let totalToTransfer =
+    Uutil.Filesize.(add totalBytesToTransfer (ofInt totalItemsToTransfer)) in
+  let sta = Uicommon.Stats.init totalBytesToTransfer in
   let calcProgress i bytes dbg =
     let i = Uutil.File.toLine i in
     let item = items.(i) in
     item.bytesTransferred <- Uutil.Filesize.add item.bytesTransferred bytes;
     totalBytesTransferred := Uutil.Filesize.add !totalBytesTransferred bytes;
-    let totalBytesTransferredStr = Util.bytes2string
-      (Uutil.Filesize.toInt64 !totalBytesTransferred) in
-    let v =
-      (Uutil.Filesize.percentageOfTotalSize
-         !totalBytesTransferred !totalBytesToTransfer)
-    in
-    let t1 = Unix.gettimeofday () in
-    let remTime =
-      if v <= 0. then "--:--"
-      else if v >= 100. then "00:00:00"
-      else
-        let t = truncate ((t1 -. t0) *. (100. -. v) /. v +. 0.5) in
-        let u = t mod 3600 in
-        let h = t / 3600 in
-        let m = u / 60 in
-        let sec = u mod 60 in
-        Format.sprintf "%02d:%02d:%02d" h m sec
-    in
-    let stat = Format.sprintf "%s  (%s of %s)  %s ETA" (Util.percent2string v)
-      totalBytesTransferredStr totalBytesToTransferStr remTime in
-    t1, stat
+    let totalTransferred =
+      Uutil.Filesize.(add !totalBytesTransferred (ofInt !totalItemsTransferred)) in
+    Uutil.Filesize.percentageOfTotalSize totalTransferred totalToTransfer
   in
-  let tlog = ref t0 in
+  let tlog = ref (Unix.gettimeofday ()) in
+  let t = ref 0. in
+  let prevItems = ref 0 in
+  let displayProgress v =
+    let t1 = Unix.gettimeofday () in
+    let () = Uicommon.Stats.update sta t1 !totalBytesTransferred in
+    if t1 -. !t >= 0.1 || !prevItems <> !totalItemsTransferred then begin
+      t := t1;
+      prevItems := !totalItemsTransferred;
+      let remTime =
+        if v <= 0. then "--:--"
+        else if v >= 100. then "00:00:00"
+        else
+          let rate = Uicommon.Stats.avgRate1 sta in
+          if Float.is_nan rate then "--:--"
+          else
+            Format.sprintf "%8s/s    %s"
+              (Util.bytes2string (Int64.of_float rate))
+              (Uicommon.Stats.eta sta "--:--")
+      in
+      let totalBytesTransferredStr = Util.bytes2string
+        (Uutil.Filesize.toInt64 !totalBytesTransferred) in
+      let s = Format.sprintf "%s  %d/%s  (%s of %s)  %s ETA"
+        (Util.percent2string v)
+        !totalItemsTransferred totalItemsToTransferStr
+        totalBytesTransferredStr totalBytesToTransferStr remTime in
+
+      if not (Prefs.read Trace.terse) && (Prefs.read Trace.debugmods = []) then
+        Util.set_infos s;
+      if (Prefs.read Trace.terse) || (Prefs.read Globals.batch) then
+        if (t1 -. !tlog) >= 60. then
+        begin
+          Trace.logonly (s ^ "\n");
+          tlog := t1
+        end
+    end
+  in
   let showProgress i bytes dbg =
-    let t1, s = calcProgress i bytes dbg in
-    if not (Prefs.read Trace.terse) && (Prefs.read Trace.debugmods = []) then
-      Util.set_infos s;
-    if (Prefs.read Trace.terse) || (Prefs.read Globals.batch) then
-      if (t1 -. !tlog) >= 60. then
-      begin
-        Trace.logonly (s ^ "\n");
-        tlog := t1
-      end
+    let v = calcProgress i bytes dbg in
+    displayProgress v
   in
   Uutil.setProgressPrinter showProgress;
 
@@ -890,20 +905,29 @@ let doTransport reconItemList =
       Printexc.raise_with_backtrace e origbt
   in
 
+  if not (Prefs.read Trace.terse) && (Prefs.read Trace.debugmods = []) then
+    Util.set_infos "Starting...";
   Uicommon.transportStart ();
   let fFailedPaths = ref [] in
   let fPartialPaths = ref [] in
   let notstarted = ref (Array.length items) in
+  let progressItem i =
+    incr totalItemsTransferred;
+    showProgress (Uutil.File.ofLine i) Uutil.Filesize.zero "itm"
+  in
   let uiWrapper i item =
     Lwt.try_bind
       (fun () -> decr notstarted;
                  Transport.transportItem item.ri
                    (Uutil.File.ofLine i) verifyMerge)
       (fun () ->
-         if partiallyProblematic item.ri && not (problematic item.ri) then
+         let notSkip = not (isSkip item.ri) in
+         if partiallyProblematic item.ri && notSkip then
            fPartialPaths := item.ri.path1 :: !fPartialPaths;
+         if notSkip then progressItem i;
          Lwt.return ())
       (fun e ->
+        if not (isSkip item.ri) then progressItem i;
         match e with
           Util.Transient s ->
             let rem =
@@ -969,10 +993,11 @@ let rec interactAndPropagateChanges prevItemList reconItemList
       : bool * bool * bool * bool * (Path.t list)
         (* anySkipped?, anyPartial?, anyFailures?, anyCancels?, failingPaths *) =
   let (proceed,newReconItemList) = interact prevItemList reconItemList in
+  let isSkip = problematic in
   let (updatesToDo, skipped, (totalBytesToRoot1, totalBytesToRoot2)) =
     Safelist.fold_left
       (fun (howmany, skipped, (bytes1, bytes2)) ri ->
-        if problematic ri then (howmany, skipped + 1, (bytes1, bytes2))
+        if isSkip ri then (howmany, skipped + 1, (bytes1, bytes2))
         else (howmany + 1, skipped,
           match ri.replicas with
           | Problem _ -> (bytes1, bytes2)
@@ -999,9 +1024,9 @@ let rec interactAndPropagateChanges prevItemList reconItemList
        (Util.bytes2string (Uutil.Filesize.toInt64 totalBytesToRoot2)) root1 root2
        (Util.bytes2string (Uutil.Filesize.toInt64 totalBytesToRoot1)) root2 root1)
   end;
-  let doTransp newReconItemList =
+  let doTransp () =
     try
-      doTransport newReconItemList
+      doTransport newReconItemList skipped isSkip
     with e ->
       let origbt = Printexc.get_raw_backtrace () in
       let summary =
@@ -1022,7 +1047,7 @@ let rec interactAndPropagateChanges prevItemList reconItemList
     if not (Prefs.read Globals.batch || Prefs.read Trace.terse) then newLine();
     if not (Prefs.read Trace.terse) then Trace.status "Propagating updates";
     let timer = Trace.startTimer "Transmitting all files" in
-    let (failedPaths, partialPaths, notstarted, intr) = doTransp newReconItemList in
+    let (failedPaths, partialPaths, notstarted, intr) = doTransp () in
     let failures = Safelist.length failedPaths in
     let partials = Safelist.length partialPaths in
     Trace.showTimer timer;

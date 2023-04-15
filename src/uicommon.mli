@@ -144,3 +144,20 @@ val transportStart : unit -> unit
 val transportFinish : unit -> unit
 
 val transportItems : 'a array -> ('a -> bool) -> (int -> 'a -> unit Lwt.t) -> unit
+
+(* Statistics of update propagation *)
+module Stats : sig
+  type t
+  val init :
+       Uutil.Filesize.t (* Total size to complete 100% *)
+    -> t
+  val update :
+       t
+    -> float            (* Current absolute time *)
+    -> Uutil.Filesize.t (* Current completed size (not delta) *)
+    -> unit
+  val curRate : t -> float (* Current progress rate, very volatile *)
+  val avgRate1 : t -> float (* Moving average of the rate above, more stable *)
+  val avgRate2 : t -> float (* Double moving average, very stable *)
+  val eta : t -> ?rate:float -> string -> string (* Defaults to rate2 *)
+end

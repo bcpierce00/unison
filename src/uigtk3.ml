@@ -3399,11 +3399,9 @@ let createToplevelWindow () =
   let totalBytesToTransfer = ref Uutil.Filesize.zero in
   let totalBytesTransferred = ref Uutil.Filesize.zero in
 
-  let t0 = ref 0. in
   let t1 = ref 0. in
   let lastFrac = ref 0. in
-  let oldWritten = ref 0. in
-  let writeRate = ref 0. in
+  let sta = ref (Uicommon.Stats.init (Uutil.Filesize.zero)) in
   let displayGlobalProgress v =
     if v = 0. || abs_float (v -. !lastFrac) > 1. then begin
       lastFrac := v;
@@ -3413,21 +3411,15 @@ let createToplevelWindow () =
       progressBar#set_text " "
     else begin
       let t = Unix.gettimeofday () in
+      Uicommon.Stats.update !sta t !totalBytesTransferred;
       let delta = t -. !t1 in
       if delta >= 0.5 then begin
         t1 := t;
         let remTime =
           if v >= 100. then "00:00 remaining" else
-          let t = truncate ((!t1 -. !t0) *. (100. -. v) /. v +. 0.5) in
-          Format.sprintf "%02d:%02d remaining" (t / 60) (t mod 60)
+          (Uicommon.Stats.eta !sta "--:--") ^ " remaining"
         in
-        let written = !clientWritten +. !serverWritten in
-        let b = 0.64 ** delta in
-        writeRate :=
-          b *. !writeRate +.
-          (1. -. b) *. (written -. !oldWritten) /. delta;
-        oldWritten := written;
-        let rate = !writeRate (*!emitRate2 +. !receiveRate2*) in
+        let rate = Uicommon.Stats.avgRate1 !sta in
         let txt =
           if rate > 99. then
             Format.sprintf "%s  (%s)" remTime (rate2str rate)
@@ -3458,8 +3450,8 @@ let createToplevelWindow () =
     root2IsLocal := fst root2 = Local;
     totalBytesToTransfer := b;
     totalBytesTransferred := Uutil.Filesize.zero;
-    t0 := Unix.gettimeofday (); t1 := !t0;
-    writeRate := 0.; oldWritten := !clientWritten +. !serverWritten;
+    t1 := Unix.gettimeofday ();
+    sta := Uicommon.Stats.init !totalBytesToTransfer;
     displayGlobalProgress 0.
   in
 
