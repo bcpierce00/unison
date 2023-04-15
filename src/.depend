@@ -562,16 +562,6 @@ lock.cmx : \
     system.cmx \
     lock.cmi
 lock.cmi :
-lwt/example/editor.cmo : \
-    lwt/lwt_unix.cmi
-lwt/example/editor.cmx : \
-    lwt/lwt_unix.cmx
-lwt/example/relay.cmo : \
-    lwt/lwt_unix.cmi \
-    lwt/lwt.cmi
-lwt/example/relay.cmx : \
-    lwt/lwt_unix.cmx \
-    lwt/lwt.cmx
 lwt/generic/lwt_unix_impl.cmo : \
     lwt/pqueue.cmi \
     lwt/lwt.cmi
@@ -1460,6 +1450,7 @@ uitext.cmo : \
     lwt/lwt.cmi \
     globals.cmi \
     fswatchold.cmi \
+    fspath.cmi \
     common.cmi \
     abort.cmi \
     uitext.cmi
@@ -1483,6 +1474,7 @@ uitext.cmx : \
     lwt/lwt.cmx \
     globals.cmx \
     fswatchold.cmx \
+    fspath.cmx \
     common.cmx \
     abort.cmx \
     uitext.cmi
