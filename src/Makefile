@@ -22,11 +22,8 @@ NATIVE=true
 ######################################################################
 # Building installation instructions
 
+.PHONY: all
 all:: strings.ml buildexecutable
-
-.PHONY: all clean \
-	repeattest \
-	selftest selftestdebug selftestremote testmerge
 
 ########################################################################
 ## Miscellaneous developer-only switches
@@ -44,22 +41,27 @@ include Makefile.OCaml
 ######################################################################
 # For developers
 
+.PHONY: repeattest
 repeattest:
 	$(MAKE) all NATIVE=false DEBUG=true UISTYLE=text
 	./unison noprofile a.tmp b.tmp -repeat foo.tmp -debug ui
 
+.PHONY: selftest
 selftest:
 	$(MAKE) all NATIVE=false DEBUG=true UISTYLE=text
 	./unison -selftest -ui text -batch
 
+.PHONY: selftestdebug
 selftestdebug:
 	$(MAKE) all NATIVE=false DEBUG=true UISTYLE=text
 	./unison -selftest -ui text -batch -debug all
 
+.PHONY: selftestremote
 selftestremote:
 	$(MAKE) all NATIVE=false DEBUG=true UISTYLE=text
 	./unison -selftest -ui text -batch test.tmp ssh://eniac.seas.upenn.edu/test.tmp
 
+.PHONY: testmerge
 testmerge:
 	$(MAKE) all NATIVE=false UISTYLE=text
 	-rm -rf a.tmp b.tmp
@@ -175,7 +177,6 @@ ETAGS=etags
 # after the first invocation.  The .PHONY declaration makes it work
 # again.
 .PHONY: tags
-
 tags:
 	@-if command -v $(ETAGS) > /dev/null ; then \
 	    $(ETAGS) *.mli */*.mli *.ml */*.ml */*.m *.c */*.c *.txt \
@@ -190,6 +191,7 @@ TAGS:
 ######################################################################
 # Misc
 
+.PHONY: clean
 clean::
 	-$(RM) *.log *.aux *.log *.dvi *.out *.bak
 	-$(RM) -r obsolete
