@@ -184,6 +184,36 @@ clean::
 	$(RM) ubase/projectInfo.ml
 
 ####################################################################
+### Compilation boilerplate
+
+ifeq ($(NATIVE), true)
+  ## Set up for native code compilation
+
+  CAMLC=$(OCAMLOPT)
+
+  CAMLOBJS=$(subst .cmo,.cmx, $(subst .cma,.cmxa, $(OCAMLOBJS)))
+  CAMLLIBS=$(subst .cma,.cmxa, $(OCAMLLIBS))
+
+else
+  ## Set up for bytecode compilation
+
+  CAMLC=$(OCAMLC)
+  # -output-complete-exe is available since OCaml 4.10
+  ifneq ($(strip $(shell $(OCAMLC) -output-complete-exe 2>&1)),)
+    CAMLLDFLAGS+=-custom
+  else
+    CAMLLDFLAGS+=-output-complete-exe  # can safely strip the binary
+  endif
+
+  CAMLOBJS=$(OCAMLOBJS)
+  CAMLLIBS=$(OCAMLLIBS)
+
+endif
+
+WINDRES := $(or ${TOOL_PREFIX},$(filter i686-w64-mingw32- x86_64-w64-mingw32-,$(CC:gcc${EXEC_EXT}=)))windres
+##$(info windres='${WINDRES}')
+
+####################################################################
 ### Unison objects and libraries
 
 ifeq ($(UISTYLE),mac)
@@ -336,34 +366,7 @@ dependgraph: depend
 	-dot -Tps -o DEPENDENCIES.ps .depend.dot.tmp
 
 ####################################################################
-### Compilation boilerplate
-
-ifeq ($(NATIVE), true)
-  ## Set up for native code compilation
-
-  CAMLC=$(OCAMLOPT)
-
-  CAMLOBJS=$(subst .cmo,.cmx, $(subst .cma,.cmxa, $(OCAMLOBJS)))
-  CAMLLIBS=$(subst .cma,.cmxa, $(OCAMLLIBS))
-
-else
-  ## Set up for bytecode compilation
-
-  CAMLC=$(OCAMLC)
-  # -output-complete-exe is available since OCaml 4.10
-  ifneq ($(strip $(shell $(OCAMLC) -output-complete-exe 2>&1)),)
-    CAMLLDFLAGS+=-custom
-  else
-    CAMLLDFLAGS+=-output-complete-exe  # can safely strip the binary
-  endif
-
-  CAMLOBJS=$(OCAMLOBJS)
-  CAMLLIBS=$(OCAMLLIBS)
-
-endif
-
-WINDRES := $(or ${TOOL_PREFIX},$(filter i686-w64-mingw32- x86_64-w64-mingw32-,$(CC:gcc${EXEC_EXT}=)))windres
-##$(info windres='${WINDRES}')
+### Compilation
 
 win32rc/unison.res: win32rc/unison.rc win32rc/U.ico
 	rc win32rc/unison.rc
