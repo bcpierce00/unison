@@ -1104,3 +1104,117 @@ jobs:
     - run: opam exec -- make src UISTYLE=text NATIVE=false
 
     - run: opam exec -- make test
+
+
+  build_compat:
+    if: ${{ !cancelled() }}    # Don't fail if 'docs' failed
+    needs: docs
+
+    strategy:
+      fail-fast: false
+      matrix:
+        job:
+        - { ocaml-version: 4.14.x, publish: true, fnsuffix: -ubuntu-x86_64 }
+        - { ocaml-version: "ocaml-variants.4.14.1+options,ocaml-option-musl,ocaml-option-static,ocaml-option-flambda", publish: true, fnsuffix: -ubuntu-x86_64-static }
+        - { ocaml-version: 4.13.x }
+        - { ocaml-version: 4.12.x }
+        - { ocaml-version: 4.11.x }
+        - { ocaml-version: 4.10.x }
+        - { ocaml-version: 4.09.x }
+        - { ocaml-version: 4.08.x, publish: true, fnsuffix: +ocaml4.08-ubuntu-x86_64 }
+
+    runs-on: ubuntu-latest
+    container: ubuntu:16.04
+
+    steps:
+    - name: Set up the OS
+      run: |
+        apt-get update
+        apt-get install --assume-yes git make gcc patch wget bzip2 unzip musl-tools
+
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Use OCaml ${{ matrix.job.ocaml-version }}
+      uses: ocaml/setup-ocaml@v2
+      with:
+        ocaml-compiler: ${{ matrix.job.ocaml-version }}
+        opam-disable-sandboxing: true
+        opam-pin: false
+        opam-depext: false
+
+    - name: Build text UI
+      run: |
+        opam exec -- make src UISTYLE=text STATIC=${{ contains(matrix.job.ocaml-version, '-musl') }}
+        mkdir -p pkg/bin
+        cp src/unison pkg/bin/
+        cp src/unison-fsmonitor pkg/bin/
+
+    - name: Run local tests
+      run: opam exec -- make test
+
+    - name: Run remote tests
+      run: |
+        mkdir localsocket
+        chmod 700 localsocket
+        # Separate backup dir must be set for server instance so that the central
+        # backup location of both instances doesn't overlap
+        UNISONBACKUPDIR=./src/testbak4 ./src/unison -socket ./localsocket/test.sock &
+        sleep 1 # Wait for the server to be fully started
+        test -S ./localsocket/test.sock
+        ./src/unison -ui text -selftest testr3 socket://{./localsocket/test.sock}/testr4 -killserver
+
+    - name: Build GUI
+      if: ${{ !contains(matrix.job.ocaml-version, '-musl') }}
+      run: |
+        opam depext --install --verbose --yes lablgtk3 && opam install ocamlfind
+        opam exec -- make src UISTYLE=gtk3
+        cp src/unison pkg/bin/unison-gui
+
+    - name: Initialize packaging variables
+      id: vars
+      run: |
+        REF_SHAS=$(echo '${{ github.sha }}' | awk '{ print substr($0, 1, 8) }')
+        unset REF_TAG ; case "${GITHUB_REF}" in refs/tags/*) REF_TAG="${GITHUB_REF#refs/tags/}" ;; esac;
+        PKG_VER="${REF_TAG:-git_$REF_SHAS}"
+        PKG_VER="${PKG_VER#v}"
+        echo PKG_NAME="${PROJECT_NAME}-${PKG_VER}${{ matrix.job.fnsuffix }}.tar.gz" >> $GITHUB_OUTPUT
+        echo REF_SHAS=${REF_SHAS} >> $GITHUB_OUTPUT
+
+    - uses: actions/upload-artifact@v3
+      with:
+        name: unison-${{ steps.vars.outputs.REF_SHAS }}.ocaml-${{ matrix.job.ocaml-version }}.ubuntu.x86_64
+        path: pkg/bin/*
+
+    - name: Copy user manual
+      if: matrix.job.publish
+      continue-on-error: ${{ !(github.ref_type == 'tag' && startsWith(github.ref_name, 'v') && matrix.job.publish) }}
+      uses: actions/download-artifact@v3
+      with:
+        name: unison-docs
+        path: pkg
+
+    - name: Prepare package
+      if: matrix.job.publish
+      run: |
+        strip pkg/bin/*
+        cp README* pkg/
+        cp LICENSE* pkg/
+
+    - name: Package
+      if: matrix.job.publish
+      run: cd pkg && tar czf '${{ steps.vars.outputs.PKG_NAME }}' *
+
+    - uses: actions/upload-artifact@v3
+      if: matrix.job.publish
+      with:
+        name: ${{ steps.vars.outputs.PKG_NAME }}.ocaml-${{ matrix.job.ocaml-version }}.ubuntu_compat-publish
+        path: pkg/${{ steps.vars.outputs.PKG_NAME }}
+
+    - name: Publish
+      if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v') && matrix.job.publish
+      uses: softprops/action-gh-release@v1
+      with:
+        files: pkg/${{ steps.vars.outputs.PKG_NAME }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
