@@ -731,8 +731,8 @@ let transportItems items pRiThisRound makeAction =
   in
 
   starting (); (* Count the dispense loop as one of the tasks to complete *)
-  Transport.run dispenseAction;
   try
+    Transport.run dispenseAction;
     Lwt_unix.run (waitAllCompleted ())
   with e -> begin
     (* Cleanup procedure must never raise exceptions. Just in case,
