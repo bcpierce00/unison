@@ -745,7 +745,7 @@ let xattrIgnorePred =
     ~category:(`Advanced `Sync)
     ~send:xattrEnabled
     (* By default ignore the Linux xattr security and trusted namespaces *)
-    ~initial:["Regex !(security|trusted)[.].*"]
+    ~initial:["Regex !(security|trusted)[.].*"; "Path !system.posix_acl_*"]
     ("Preference \\texttt{-xattrignore \\ARG{namespec}} causes Unison to \
      ignore extended attributes with names that match \\ARG{namespec}. \
      This can be used to exclude extended attributes that would fail \
@@ -757,7 +757,9 @@ let xattrIgnorePred =
      applied to the {\\em name} of extended attribute, not to path. \
      {\\em On Linux}, attributes in the security and trusted namespaces \
      are ignored by default (this is achieved by pattern \\texttt{Regex \
-     !(security|trusted)[.].*}). To sync attributes in one or both of \
+     !(security|trusted)[.].*}); also attributes used to store POSIX ACL \
+     are ignored by default (this is achieved by pattern \\texttt{Path \
+     !system.posix\\_acl\\_*}). To sync attributes in one or both of \
      these namespaces, see the \\verb|xattrignorenot| preference. \
      Note that the namespace name must be prefixed with a \"!\" (applies \
      on Linux only). All names not prefixed with a \"!\" are taken \
@@ -782,7 +784,9 @@ let xattrIgnorenotPred =
      namespaces, you may add an \\verb|xattrignorenot| pattern like \
      \\texttt{Path !security.*} to sync all attributes in the \
      security namespace, or \\texttt{Path !security.selinux} to sync \
-     a specific attribute in an otherwise ignored namespace. \
+     a specific attribute in an otherwise ignored namespace. A pattern \
+     like \\texttt{Path !system.posix\\_acl\\_*} can be used to sync \
+     POSIX ACLs on Linux. \
      Note that the namespace name must be prefixed with a \"!\" (applies \
      on Linux only). All names not prefixed with a \"!\" are taken \
      as strictly belonging to the user namespace and therefore the \

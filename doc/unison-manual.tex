@@ -2193,6 +2193,19 @@ Unison currently supports the following platforms and ACL types:
 Not all filesystems on the listed platforms support all ACL types
 (or any ACLs at all).
 
+Synchronizing POSIX ACLs on Linux is not supported directly. However, it is
+possible to synchronize these ACLs with another Linux system by synchronizing
+extended attributes (xattrs) instead, because POSIX ACLs are stored as xattrs
+by Linux. This is disabled by default (see \sectionref{xattrs}{Extended
+Attributes - xattrs}).  A simple way to enable syncing POSIX ACLs on Linux is
+to enable the preference \verb|xattrs| and add a preference
+\verb|xattrignorenot| with a value \texttt{Path !system.posix\_acl\_*}.  The
+\verb|*| will be expanded to include both \verb|posix_acl_access| and
+\verb|posix_acl_default| attributes -- if you only want to sync either one,
+just remove the \verb|*| and type out the attribute name in full.  If you want
+to prevent other xattrs from being synced then add an \verb|xattrignore| with a
+value \texttt{Path *} (value \texttt{Regex .*} will also work).
+
 
 \SUBSECTION{Extended Attributes - xattrs}{xattrs}
 
@@ -2219,6 +2232,9 @@ and is disabled by default. To sync one or more attributes in the security
 namespace, for example, you can set the preference
 \verb|xattrignorenot| to \verb|Path !security.*| (for all) or to
 \verb|Path !security.selinux| (for one specific attribute).
+Attributes in system namespace are not synchronized, with the exception of
+\verb|system.posix_acl_default| and \verb|system.posix_acl_access| (also
+disabled by default).
 \item {\em Solaris, OpenSolaris and illumos-based OS (OpenIndiana, SmartOS,
   OmniOS, etc.)}
 \item {\em FreeBSD, NetBSD}
@@ -2256,6 +2272,9 @@ be constructed with the \verb|Path| form (where shell wildcards \verb|*| and
 Disabling the security and trusted namespaces on Linux is achieved by setting
 a default \verb|xattrignore| pattern of
 \texttt{Regex !(security|trusted)[.].*}.
+Disabling the syncing of attributes used to store POSIX ACL on Linux is
+achieved by setting a default \verb|xattrignore| pattern of
+\texttt{Path !system.posix\_acl\_*}.
 
 
 \SUBSECTION{Cross-Platform Synchronization}{crossplatform}

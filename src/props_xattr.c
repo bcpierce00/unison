@@ -340,7 +340,8 @@ static void unsn_xattr_fail(const char *fmtmsg)
 static int unsn_is_system_attr_os(const char *attrname)
 {
 #if defined(__linux)
-  return (strncmp(attrname, "system.", 7) == 0);
+  return (strncmp(attrname, "system.", 7) == 0 &&
+          strncmp(attrname, "system.posix_acl_", 17) != 0);
 #elif defined(__APPLE__)
   return (strcmp(attrname, XATTR_FINDERINFO_NAME) == 0 ||
           strcmp(attrname, XATTR_RESOURCEFORK_NAME) == 0);

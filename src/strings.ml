@@ -2191,12 +2191,14 @@ let docs =
       \032         form. The pattern is applied to the name of extended attribute,\n\
       \032         not to path. On Linux, attributes in the security and trusted\n\
       \032         namespaces are ignored by default (this is achieved by pattern\n\
-      \032         Regex !(security|trusted)[.].*). To sync attributes in one or\n\
-      \032         both of these namespaces, see the xattrignorenot preference.\n\
-      \032         Note that the namespace name must be prefixed with a \"!\"\n\
-      \032         (applies on Linux only). All names not prefixed with a \"!\" are\n\
-      \032         taken as strictly belonging to the user namespace and therefore\n\
-      \032         the \"!user.\" prefix is never used.\n\
+      \032         Regex !(security|trusted)[.].*); also attributes used to store\n\
+      \032         POSIX ACL are ignored by default (this is achieved by pattern\n\
+      \032         Path !system.posix_acl_*). To sync attributes in one or both of\n\
+      \032         these namespaces, see the xattrignorenot preference. Note that\n\
+      \032         the namespace name must be prefixed with a \"!\" (applies on Linux\n\
+      \032         only). All names not prefixed with a \"!\" are taken as strictly\n\
+      \032         belonging to the user namespace and therefore the \"!user.\"\n\
+      \032         prefix is never used.\n\
       \n\
       \032  xattrignorenot xxx\n\
       \032         This preference overrides the preference xattrignore. It gives a\n\
@@ -2211,11 +2213,12 @@ let docs =
       \032         one or both of these namespaces, you may add an xattrignorenot\n\
       \032         pattern like Path !security.* to sync all attributes in the\n\
       \032         security namespace, or Path !security.selinux to sync a specific\n\
-      \032         attribute in an otherwise ignored namespace. Note that the\n\
-      \032         namespace name must be prefixed with a \"!\" (applies on Linux\n\
-      \032         only). All names not prefixed with a \"!\" are taken as strictly\n\
-      \032         belonging to the user namespace and therefore the \"!user.\"\n\
-      \032         prefix is never used.\n\
+      \032         attribute in an otherwise ignored namespace. A pattern like Path\n\
+      \032         !system.posix_acl_* can be used to sync POSIX ACLs on Linux.\n\
+      \032         Note that the namespace name must be prefixed with a \"!\"\n\
+      \032         (applies on Linux only). All names not prefixed with a \"!\" are\n\
+      \032         taken as strictly belonging to the user namespace and therefore\n\
+      \032         the \"!user.\" prefix is never used.\n\
       \n\
       \032  xattrs\n\
       \032         When this flag is set to true, the extended attributes of files\n\
@@ -2949,6 +2952,19 @@ let docs =
       \032  Not all filesystems on the listed platforms support all ACL types (or\n\
       \032  any ACLs at all).\n\
       \n\
+      \032  Synchronizing POSIX ACLs on Linux is not supported directly. However,\n\
+      \032  it is possible to synchronize these ACLs with another Linux system by\n\
+      \032  synchronizing extended attributes (xattrs) instead, because POSIX ACLs\n\
+      \032  are stored as xattrs by Linux. This is disabled by default (see the\n\
+      \032  section \226\128\156Extended Attributes - xattrs\226\128\157 ). A simple way to enable\n\
+      \032  syncing POSIX ACLs on Linux is to enable the preference xattrs and add\n\
+      \032  a preference xattrignorenot with a value Path !system.posix_acl_*. The\n\
+      \032  * will be expanded to include both posix_acl_access and\n\
+      \032  posix_acl_default attributes \226\128\147 if you only want to sync either one,\n\
+      \032  just remove the * and type out the attribute name in full. If you want\n\
+      \032  to prevent other xattrs from being synced then add an xattrignore with\n\
+      \032  a value Path * (value Regex .* will also work).\n\
+      \n\
       Extended Attributes - xattrs\n\
       \n\
       \032  Unison allows synchronizing extended attributes on platforms and\n\
@@ -2972,7 +2988,10 @@ let docs =
       \032      process privileges and is disabled by default. To sync one or more\n\
       \032      attributes in the security namespace, for example, you can set the\n\
       \032      preference xattrignorenot to Path !security.* (for all) or to Path\n\
-      \032      !security.selinux (for one specific attribute).\n\
+      \032      !security.selinux (for one specific attribute). Attributes in\n\
+      \032      system namespace are not synchronized, with the exception of\n\
+      \032      system.posix_acl_default and system.posix_acl_access (also disabled\n\
+      \032      by default).\n\
       \032    * Solaris, OpenSolaris and illumos-based OS (OpenIndiana, SmartOS,\n\
       \032      OmniOS, etc.)\n\
       \032    * FreeBSD, NetBSD Attributes in user namespace.\n\
@@ -3010,7 +3029,9 @@ let docs =
       \n\
       \032  Disabling the security and trusted namespaces on Linux is achieved by\n\
       \032  setting a default xattrignore pattern of Regex\n\
-      \032  !(security|trusted)[.].*.\n\
+      \032  !(security|trusted)[.].*. Disabling the syncing of attributes used to\n\
+      \032  store POSIX ACL on Linux is achieved by setting a default xattrignore\n\
+      \032  pattern of Path !system.posix_acl_*.\n\
       \n\
       Cross-Platform Synchronization\n\
       \n\
