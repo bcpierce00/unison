@@ -1040,6 +1040,7 @@ let rec interactAndPropagateChanges prevItemList reconItemList
           ^ (match e with Sys.Break -> " by user request" | _ -> " due to a fatal error")
           ^ "\n\n"
       in
+      Util.set_infos "";
       Trace.log_color summary;
       Printexc.raise_with_backtrace e origbt
   in

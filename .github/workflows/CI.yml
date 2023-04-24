@@ -432,9 +432,9 @@ jobs:
         index 60ccd05..45395e5 100644
         --- a/src/test.ml
         +++ b/src/test.ml
-        @@ -338,43 +338,6 @@ let test() =
-              running fast enough that the whole thing happens within a second, then the
-              update will be missed! *)
+        @@ -351,43 +351,6 @@ let test() =
+             )
+           done;
          
         -  (* Test that .git is treated atomically. *)
         -  runtest "Atomicity of certain directories 1" ["atomic = Name .git";

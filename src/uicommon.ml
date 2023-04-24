@@ -674,6 +674,12 @@ let transportItems items pRiThisRound makeAction =
       (fun () -> completed (); Lwt.return ())
       (fun ex -> stopDispense (); failed ex; Lwt.return ())
   in
+  let dispenseDone =
+    let c = ref 0 in (* Make sure [completed] is never called more than once *)
+    fun () ->
+      if (incr c; !c = 1) then completed ();
+      None
+  in
   let rec dispenseAction () =
     let i = !idx in
     if i < im then begin
@@ -684,7 +690,7 @@ let transportItems items pRiThisRound makeAction =
       else
         dispenseAction ()
     end else
-      None
+      dispenseDone ()
   in
 
   let doTransportFailCleanup () =
@@ -725,9 +731,8 @@ let transportItems items pRiThisRound makeAction =
   in
 
   starting (); (* Count the dispense loop as one of the tasks to complete *)
-  Transport.run dispenseAction;
-  completed ();
   try
+    Transport.run dispenseAction;
     Lwt_unix.run (waitAllCompleted ())
   with e -> begin
     (* Cleanup procedure must never raise exceptions. Just in case,
