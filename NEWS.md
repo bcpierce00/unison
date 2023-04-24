@@ -12,6 +12,20 @@ As of 2022, this file (NEWS.md at top level) is used for news.
 Some software has a "changelog" file that records all changes, but
 unison uses git history for that, and thus there is no changelog file.
 
+## Changes in 2.53.3
+
+Released 2023-04-28
+
+  * On Linux, allow syncing the xattrs where POSIX draft ACLS are
+    stored, which enables syncing the ACL info.  (Note that this does
+    not enable syncing ACLs with the `-acl` switch, and does not
+    enable syncing ACLs between other systems and Linux.  See the
+    manual.)
+  * Improved ETA calculation and sync speed display in text UI.
+  * Fix CI Windows builds (again).
+  * Drop unmaintained "make install" target.
+  * Bugfixes, minor improvements, cleanups.
+
 ## Changes in 2.53.2
 
 Released 2023-03-20
