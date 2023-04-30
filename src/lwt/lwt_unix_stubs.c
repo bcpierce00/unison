@@ -406,8 +406,8 @@ CAMLprim value win_check_connection (value socket, value kind, value h) {
 
 static HANDLE dummyEvent;
 
-CAMLprim value init_lwt (value callback) {
-  CAMLparam1 (callback);
+CAMLprim value init_lwt (value callb) {
+  CAMLparam1 (callb);
   //  GUID GuidConnectEx = WSAID_CONNECTEX;
   //  SOCKET s;
   //  DWORD l;
@@ -415,7 +415,7 @@ CAMLprim value init_lwt (value callback) {
 
   D(printf("Init...\n"));
   caml_register_global_root(&completionCallback);
-  completionCallback = callback;
+  completionCallback = callb;
 
   dummyEvent = CreateEvent(NULL, TRUE, FALSE, NULL);  // Dummy event
 
