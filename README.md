@@ -123,33 +123,3 @@ Unison minor version built with the same ocaml version on all systems.
 There are two mailinglists: unison-users and unison-hackers.
 Descriptions and instructions are at
 https://github.com/bcpierce00/unison/wiki/Mailing-Lists
-
-## Development and Submitting Proposed Changes
-
-If you want to play with the internals, have a look at the file
-src/ROADMAP.txt for some basic orientation.  Discussion of the source
-code, proposed changes, etc. is most appropriate on the unison-hackers
-mailinglist.
-
-Proposed code changes are also welcome (as pull requests).  For
-significant changes, an enhancement request or bug report is likely in
-order to provide the proposed semantics ahead of time.  For changes
-that are likely to be widely viewed as clearly desired, that might be
-enough.  Others should be discussed on unison-hackers.
-
-Proposed changes should change documentation in concert with code, and
-should pass CI.
-
-Unison operates under the widely-used "inbound=outbound" contribution
-license process.  Therefore, all contributions to Unison must be
-licensed under the project's license, currently GPLv3 (unless a file
-under a different license is being modified).  New files of
-significance must have a copyright statement and grant permission to
-copy under the project's license.  Significant changes should include
-copyright statements and/or add authors.  Submitting a pull request or
-posting a contribution on a mailinglist is an assertion that the
-submitter has the authority to license their changes under the
-project's license.  (This paragraph is intended to summarize the
-normal conventions, and is not intended to create any new norms.  See
-https://sfconservancy.org/blog/2014/jun/09/do-not-need-cla/ for a
-longer discussion.)

@@ -13,41 +13,67 @@ Help is welcome, and the details are below.
 
 ## unison-hackers
 
-github is for proposed changes and bugs, but discussion about what to
-do should be on `unison-hackers@` (see
+Discussion of the source code, proposed changes, etc. is most
+appropriate on the `unison-hackers@` mailinglist.  (See
 https://github.com/bcpierce00/unison/wiki/Mailing-Lists).
 
-# Proposed changes
+## Development and Submitting Proposed Changes
 
-Currently, proposed changes are via pull requests on github.  Fork the
-repo and submit a PR, much like any other project.
+The file `src/ROADMAP.txt` has a very basic orientation.
+
+Proposed code changes are also welcome (as pull requests).  For
+significant changes, an enhancement request or bug report is likely in
+order to provide the proposed semantics ahead of time.  For changes
+that are likely to be nearly-universally viewed as clearly desired,
+that might be enough.  Others should be discussed on unison-hackers.
+
+Proposed changes should change documentation in concert with code, and
+should pass CI.
 
 Expect comments and requests for adjustments.  Unison typically
 expects contributors to use fixup commits for tweaks and rebase so
 that there is a clean set of commits from a recent point on master.
 
-Unison's licensing model is inbound=outbound.  By submitting a PR you
-are representing that you have the authority to license your changes
-and you grant permission under Unison's license (GPL2).
+## Licensing
+
+Unison operates under the widely-used "inbound=outbound" contribution
+license process.  Therefore, all contributions to Unison must be
+licensed under the project's license, currently GPLv3 (unless a file
+under a different license is being modified).  New files of
+significance must have a copyright statement and grant permission to
+copy under the project's license.  Significant changes should include
+copyright statements and/or add authors.  Submitting a pull request or
+posting a contribution on a mailinglist is an assertion that the
+submitter has the authority to license their changes under the
+project's license.  (This paragraph is intended to summarize the
+normal conventions, and is not intended to create any new norms.  See
+https://sfconservancy.org/blog/2014/jun/09/do-not-need-cla/ for a
+longer discussion.)
 
 ## CI
 
-CI should run on your PR after a delay of perhaps up to a week, often
-less; github requires maintainer approval for new contributors to be
-able to run workflows.
+Github requires maintainer approval for new contributors to be able to
+run workflows, and this is routinely granted.  Thus, CI should run on
+your PR after a maintainer has had a chance to take an initial look.
+
+## Strings
+
+Running `make docs` will regenerate `src/strings.ml`.  This change
+should be in a commit by itself with commit message "Regen
+strings.ml".
 
 ## Build systems
 
 Unison has both make and dune.  Changes should adjust both, and CI
 will check that.
 
-# Format breaks
+## Format breaks
 
 Since 2.52, we attempt to have back compat for archive format and wire
 format.  There is feature negotiation for extensions; see
 src/FEATURES.md and `src/features.mli` for more information.
 
-# Portability
+## Portability
 
 Unison runs on *BSD, GNU/Linux, macOS, Solaris/illumos and Windows.
 Generally Unison aims to use interfaces specified by POSIX, and views
@@ -69,7 +95,7 @@ There are two GUIs, one with GTK3 and one for mac.  Generally we try
 to be evenhanded with features, but leaving the mac proprietary GUI
 behind is not prohibited.
 
-# Accommodation of old systems
+## Accommodation of old systems
 
 Keeping Unison running on old systems can cause accumulation of crufty
 workarounds.  Unison is very old, and it likely has accommodations for
