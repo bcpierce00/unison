@@ -10,13 +10,14 @@ before creating or commenting on a github issue.***
 
 ***TL;DR: Do not ask questions or ask for help in issues.  Upgrade to the latest release.***
 
-For compatibility information with version 2.52, see
-https://github.com/bcpierce00/unison/wiki/2.52-Migration-Guide
+If you are trying to interoperate with or upgrade from Unison before
+2.52, see the compatibility section below.  However, pre-2.52 is now
+very old; see the previous paragraph.
 
 ## About
 
 Unison is a file-synchronization tool for POSIX-compliant systems
-(e.g. *BSD and GNU/Linux), macOS and Windows, with the caveat that the
+(e.g. *BSD, GNU/Linux, macOS) and Windows, with the caveat that the
 platform must be supported by OCaml.  It allows two replicas of a
 collection of files and directories to be stored on different hosts
 (or different disks on the same host), modified separately, and then
@@ -64,20 +65,32 @@ several points where it differs:
  * Unison is Free; full source code is available under the GNU Public
    License, Version 3.
 
+## Contributing
+
 Note that only a very small number of people are actively working on
 maintaining unison.  An estimate is 2.5 people and 0.1 Full-Time
 Equivalents.  This has a substantial impact on the handling of bug
-reports and enhancement reports; see the wiki page linked at the top.
-Help in terms of high-quality bug reports, fixes, and proposed changes
-is very welcome.  Help in answering mailinglist questions is also
-welcome.  Please do not answer questions asked in the bug tracker,
-which is contrary to bug tracker usage guidance.
+reports and enhancement reports.  Help in terms of high-quality bug
+reports, fixes, and proposed changes is very welcome.  Help in
+answering mailinglist questions is also welcome.  Please do not answer
+questions asked in the bug tracker, which is contrary to bug tracker
+usage guidance.
+
+See `CONTRIBUTING.md` for a longer discussion.
+
+## Community
 
 Unison activity is now centered on the two [Unison
 mailinglists](https://github.com/bcpierce00/unison/wiki/Mailing-Lists)
 for discussion and [Unison's github
 page](https://github.com/bcpierce00/unison/) for code, issues and a
 wiki.
+
+The `unison-users@` list is appropriate for asking for help.  The
+`unison-hackers@` list is appropriate for discussions where
+participants might be reading source code in order to inform the
+discussion.
+
 A no-longer-maintained FAQ can be found at: the [old UPenn
 site](http://www.cis.upenn.edu/~bcpierce/unison).
 
@@ -104,7 +117,7 @@ packaging systems (including GNU/Linux distributions) continue to have
 2.51 or even 2.48.  The master branch in git historically has been
 quite stable.
 
-### Version compatibility
+### Compatibility with old and unmaintained versions
 
 For Unison versions 2.52 and newer, see
 https://github.com/bcpierce00/unison/wiki/2.52-Migration-Guide
@@ -117,39 +130,3 @@ implementation of the OCaml language).  Additionally, Unison has
 incompatible changes across minor releases (e.g. 2.48 vs 2.51, but
 2.51.2 and 2.51.3 are compatible).  Therefore, you must use the same
 Unison minor version built with the same ocaml version on all systems.
-
-## Mailinglists
-
-There are two mailinglists: unison-users and unison-hackers.
-Descriptions and instructions are at
-https://github.com/bcpierce00/unison/wiki/Mailing-Lists
-
-## Development and Submitting Proposed Changes
-
-If you want to play with the internals, have a look at the file
-src/ROADMAP.txt for some basic orientation.  Discussion of the source
-code, proposed changes, etc. is most appropriate on the unison-hackers
-mailinglist.
-
-Proposed code changes are also welcome (as pull requests).  For
-significant changes, an enhancement request or bug report is likely in
-order to provide the proposed semantics ahead of time.  For changes
-that are likely to be widely viewed as clearly desired, that might be
-enough.  Others should be discussed on unison-hackers.
-
-Proposed changes should change documentation in concert with code, and
-should pass CI.
-
-Unison operates under the widely-used "inbound=outbound" contribution
-license process.  Therefore, all contributions to Unison must be
-licensed under the project's license, currently GPLv3 (unless a file
-under a different license is being modified).  New files of
-significance must have a copyright statement and grant permission to
-copy under the project's license.  Significant changes should include
-copyright statements and/or add authors.  Submitting a pull request or
-posting a contribution on a mailinglist is an assertion that the
-submitter has the authority to license their changes under the
-project's license.  (This paragraph is intended to summarize the
-normal conventions, and is not intended to create any new norms.  See
-https://sfconservancy.org/blog/2014/jun/09/do-not-need-cla/ for a
-longer discussion.)
