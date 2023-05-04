@@ -8,13 +8,19 @@
 ####################################################################
 ### Try to automatically guess OS
 
-ifeq (${OSCOMP},cygwingnuc) # Define this if compiling with Cygwin GNU C
-  OSARCH=win32gnuc
-else ifeq (${OSCOMP},cross) # Cross-compilation under Linux
+# Cygwin is for doing POSIX builds in Windows.
+# MinGW is for doing native Windows builds in a minimal POSIX environment.
+# MSVC is for native Windows builds without POSIX env (yet this Makefile
+# requires a minimal POSIX environment anyway).
+OCAML_OSTYPE:=$(shell ocamlc -config-var os_type)
+
+ifeq (${OSCOMP},cross) # Cross-compilation under Linux
   OSARCH=win32gnuc
   EXEC_PREFIX=i686-w64-mingw32-
-else ifeq (${OSTYPE},cygwin)
+else ifeq (${OCAML_OSTYPE},Win32)   # Native Windows build
   OSARCH=win32
+else ifeq (${OCAML_OSTYPE},Cygwin)  # POSIX build for Windows
+  OSARCH=Cygwin
 else
   OSARCH:=$(shell uname)
 
@@ -93,8 +99,10 @@ DEP_INCLFLAGS=-I lwt -I ubase -I system
 CAMLFLAGS+=$(INCLFLAGS)
 CAMLFLAGS+=-I system/$(SYSTEM) -I lwt/$(SYSTEM)
 
+# The messy situation requiring the use of OUTPUT_SEL was fixed in OCaml 4.13.
+# All usages of OUTPUT_SEL should be removed when 4.13 becomes a requirement.
 ifeq ($(OSARCH),win32)
-  # Win32 system
+  # Native Win32 build
   EXEC_EXT=.exe
   ifeq ($(shell ocamlc -config-var ext_obj),.obj)
     OBJ_EXT=.obj
@@ -117,24 +125,23 @@ ifeq ($(OSARCH),win32)
   buildexecutable::
 	@echo Building for Windows
 else
-  # Unix system, or Cygwin with GNU C compiler
+  # Unix build, or Cygwin POSIX (GNU C) build
   OBJ_EXT=.o
   OUTPUT_SEL="-o "
-  ifeq ($(OSARCH),win32gnuc)
+  WINOBJS=
+  SYSTEM=generic
+  # This is not strictly necessary as Cygwin can do a generic Unix build
+  # (and is actually meant to).
+  ifeq ($(OSARCH),Cygwin)
     CWD=.
     EXEC_EXT=.exe
-    COBJS+=system/system_win_stubs$(OBJ_EXT) lwt/lwt_unix_stubs$(OBJ_EXT)
-    WINOBJS=system/system_win.cmo
-    SYSTEM=win
     CLIBS+=-cclib win32rc/unison.res.lib
     STATIC=false                      # Cygwin is not MinGW :-(
     buildexecutable:: win32rc/unison.res.lib
-	@echo Building for Windows with Cygwin GNU C
+	@echo Building for Cygwin
   else
     CWD=$(shell pwd)
     EXEC_EXT=
-    WINOBJS=
-    SYSTEM=generic
     # openpty is in the libutil library
     ifneq ($(OSARCH),solaris)
       ifneq ($(OSARCH),osx)
@@ -154,7 +161,6 @@ endif
 buildexecutable::
 	@echo NATIVE = $(NATIVE)
 	@echo STATIC = $(STATIC)
-	@echo OSTYPE = $(OSTYPE)
 	@echo OSARCH = $(OSARCH)
 
 ubase/projectInfo.ml: Makefile.ProjectInfo
@@ -286,11 +292,6 @@ endif
 ifeq ($(OSARCH),solaris)
 -include fsmonitor/solaris/Makefile src/fsmonitor/solaris/Makefile
 INCLFLAGS+=-I fsmonitor -I fsmonitor/solaris
-endif
-
-ifeq ($(OSARCH),win32gnuc)
--include fsmonitor/windows/Makefile src/fsmonitor/windows/Makefile
-INCLFLAGS+=-I fsmonitor -I fsmonitor/windows
 endif
 
 ifeq ($(OSARCH),win32)
