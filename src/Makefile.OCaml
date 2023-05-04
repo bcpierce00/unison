@@ -16,9 +16,6 @@ else ifeq (${OSCOMP},cross) # Cross-compilation under Linux
 else ifeq (${OSTYPE},cygwin)
   OSARCH=win32
 else
-  # := is not POSIX but GNU make < 4.0 does not support ::= which is POSIX,
-  # and macOS ships with really outdated GNU make (4.0 released 2013).
-  # Not a problem because the entire makefile is not POSIX compatible.
   OSARCH:=$(shell uname)
 
   ifeq ($(OSARCH),SunOS)
@@ -28,24 +25,7 @@ else
   endif
 endif
 
-# The OCaml lib dir is used by all versions
-# It is extracted from 'ocamlc -v' and Windows '\' separators are turned
-# to Unix '/' separators, and extraneous control-M's are deleted.
-# Unfortunately there is a literal control-M buried in this, I'd rather
-# get rid of it...
-# OCAMLLIBDIR=$(shell ocamlc -v | tail -1 | sed -e 's/.* //g' | sed -e 's/\\/\//g' | sed -e 's///g')
-# Better(?) version, June 2005:
-# OCAMLLIBDIR=$(shell ocamlc -v | tail -1 | sed -e 's/.* //g' | sed -e 's/\\/\//g' | tr -d '\r')
-# Another try, Feb 2011, suggested by Ron Isaacson
-# OCAMLLIBDIR=$(shell ocamlc -v | tail -1 | sed -e 's/.* //g' | tr '\\' '/' | tr -d '\r')
-# 2023: "-where" has existed since OCaml 3.01 (2000)
-# OCAMLLIBDIR=$(shell ocamlc -where)
-# Since OCaml 4.08 (2019) we have an even better option
 OCAMLLIBDIR:=$(shell ocamlc -config-var standard_library)
-
-## BCP (6/05) an alternative, but not quite working, version
-## suggested by Nick Montfort:
-# OCAMLLIBDIR=$(shell ocamlc -v | sed -n '$p' | sed -e 's/^Standard library directory: //' | sed -e 's/\\/\//g' | sed -e 's/\r//g')
 
 # User interface style:
 #   Legal values are
@@ -124,12 +104,10 @@ ifeq ($(OSARCH),win32)
   ifeq ($(shell ocamlc -config-var ccomp_type),msvc)
     OUTPUT_SEL=-Fo
     CLIBS+=-cclib shell32.lib -cclib user32.lib -cclib "-link win32rc/unison.res"
-    STATICLIBS+=-cclib "-link win32rc/unison.res"
     buildexecutable:: win32rc/unison.res
   else
     OUTPUT_SEL=-o
     CLIBS+=-cclib "-link win32rc/unison.res.lib"
-    STATICLIBS+=-cclib "-link win32rc/unison.res.lib"
     buildexecutable:: win32rc/unison.res.lib
   endif
   CWD=.
@@ -272,16 +250,6 @@ endif
 
 ## Graphic UI
 
-# Setup the lib directories
-
-# Win32 system : this very Makefile must be used with GNU Make, so that we
-#                expect CygWin Bash to be used.
-# The directory must be provided following one of the model below :
-# - unix, relative      ../../ocaml/lib/labltk
-# - unix, absolute      d:/home/foobar/ocaml/lib/labltk
-# -  dos, relative      ..\\..\\ocaml\\lib\\labltk
-# -  dos, absolute      d:\\home\\foobar\\ocaml\\lib\\labltk
-
 # Patch to make a Windows GUI version come up with no
 # console when click-started
 ifeq ($(OSARCH), win32)
@@ -394,9 +362,8 @@ else
   ## Set up for bytecode compilation
 
   CAMLC=$(OCAMLC)
-  _COMPLETE_EXE=$(shell ocamlc -output-complete-exe 2>&1)
   # -output-complete-exe is available since OCaml 4.10
-  ifneq ($(strip $(_COMPLETE_EXE)),)
+  ifneq ($(strip $(shell ocamlc -output-complete-exe 2>&1)),)
     CAMLLDFLAGS+=-custom
   else
     CAMLLDFLAGS+=-output-complete-exe  # can safely strip the binary
@@ -460,6 +427,7 @@ clean::
 	-$(RM) system/*.cm[iox] system/*.o system/*.obj system/win/*~
 	-$(RM) system/generic/*.cm[iox] system/generic/*.o system/generic/*.obj system/generic/*~
 	-$(RM) system/win/*.cm[iox] system/win/*.o system/win/*.obj system/win/*~
+	-$(RM) win32rc/unison.res win32rc/unison.res.lib
 	-$(RM) fsmonitor/*.cm[iox] fsmonitor/*.o fsmonitor/*.obj
 	-$(RM) .depend.dot.tmp DEPENDENCIES.ps
 	-$(RM) ubase/*.cm[ioxa] ubase/*.cmxa ubase/*.a ubase/*.o ubase/*~ ubase/*.bak
@@ -469,5 +437,5 @@ clean::
 
 .PHONY: paths
 paths:
-	@echo PATH = $(PATH)
-	@echo OCAMLLIBDIR = $(OCAMLLIBDIR)
+	@echo PATH = '$(PATH)'
+	@echo OCAMLLIBDIR = '$(OCAMLLIBDIR)'

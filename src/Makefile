@@ -194,7 +194,6 @@ clean::
 	-$(RM) -r obsolete
 	-$(RM) $(NAME) $(NAME).exe
 	-$(RM) $(NAME)-blob.o
-	$(MAKE) -C fsmonitor/windows clean
 
 ifneq ($(strip $(UIMACDIR)),)
 clean::
