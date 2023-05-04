@@ -332,6 +332,8 @@ system.cmo fspath.cmo fs.cmo: system/$(SYSTEM)/system_impl.cmo
 system.cmx fspath.cmx fs.cmx: system/$(SYSTEM)/system_impl.cmx
 lwt/lwt_unix.cmo: lwt/$(SYSTEM)/lwt_unix_impl.cmo
 lwt/lwt_unix.cmx: lwt/$(SYSTEM)/lwt_unix_impl.cmx
+lwt/win/lwt_win.cmo: lwt/win/lwt_unix_impl.cmo system/system_win.cmo
+lwt/win/lwt_win.cmx: lwt/win/lwt_unix_impl.cmx system/system_win.cmx
 
 .PHONY: depend
 depend::

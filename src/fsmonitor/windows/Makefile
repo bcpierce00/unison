@@ -16,6 +16,10 @@ FSMCOBJS = \
    props_xattr$(OBJ_EXT) props_acl$(OBJ_EXT)
 FSMOCAMLLIBS=unix.cma
 
+# Additional dependencies
+$(DIR)/watcher.cmo: lwt/win/lwt_win.cmo
+$(DIR)/watcher.cmx: lwt/win/lwt_win.cmx
+
 ifeq ($(NATIVE), true)
   FSMCAMLOBJS=$(subst .cmo,.cmx, $(FSMOCAMLOBJS))
   FSMCAMLLIBS=$(subst .cma,.cmxa, $(FSMOCAMLLIBS))
