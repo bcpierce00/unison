@@ -6,18 +6,29 @@
 ####################################################################
 
 ####################################################################
+### Compilers
+
+ifeq ($(PROFILING), true)
+  OCAMLC=$(TOOL_PREFIX)ocamlcp
+else
+  OCAMLC=$(TOOL_PREFIX)ocamlc
+endif
+OCAMLOPT=$(TOOL_PREFIX)ocamlopt
+
+####################################################################
 ### Try to automatically guess OS
+
+ifeq (${OSCOMP},cross) # Cross-compilation under Linux
+  TOOL_PREFIX=x86_64-w64-mingw32-
+endif
 
 # Cygwin is for doing POSIX builds in Windows.
 # MinGW is for doing native Windows builds in a minimal POSIX environment.
 # MSVC is for native Windows builds without POSIX env (yet this Makefile
 # requires a minimal POSIX environment anyway).
-OCAML_OSTYPE:=$(shell ocamlc -config-var os_type)
+OCAML_OSTYPE:=$(shell $(OCAMLC) -config-var os_type)
 
-ifeq (${OSCOMP},cross) # Cross-compilation under Linux
-  OSARCH=win32gnuc
-  EXEC_PREFIX=i686-w64-mingw32-
-else ifeq (${OCAML_OSTYPE},Win32)   # Native Windows build
+ifeq (${OCAML_OSTYPE},Win32)        # Native Windows build
   OSARCH=win32
 else ifeq (${OCAML_OSTYPE},Cygwin)  # POSIX build for Windows
   OSARCH=Cygwin
@@ -31,7 +42,7 @@ else
   endif
 endif
 
-OCAMLLIBDIR:=$(shell ocamlc -config-var standard_library)
+OCAMLLIBDIR:=$(shell $(OCAMLC) -config-var standard_library)
 
 # User interface style:
 #   Legal values are
@@ -104,12 +115,12 @@ CAMLFLAGS+=-I system/$(SYSTEM) -I lwt/$(SYSTEM)
 ifeq ($(OSARCH),win32)
   # Native Win32 build
   EXEC_EXT=.exe
-  ifeq ($(shell ocamlc -config-var ext_obj),.obj)
+  ifeq ($(shell $(OCAMLC) -config-var ext_obj),.obj)
     OBJ_EXT=.obj
   else
     OBJ_EXT=.o
   endif
-  ifeq ($(shell ocamlc -config-var ccomp_type),msvc)
+  ifeq ($(shell $(OCAMLC) -config-var ccomp_type),msvc)
     OUTPUT_SEL=-Fo
     CLIBS+=-cclib shell32.lib -cclib user32.lib -cclib "-link win32rc/unison.res"
     buildexecutable:: win32rc/unison.res
@@ -340,13 +351,6 @@ dependgraph: depend
 ####################################################################
 ### Compilation boilerplate
 
-ifeq ($(PROFILING), true)
-  OCAMLC=$(EXEC_PREFIX)ocamlcp
-else
-  OCAMLC=$(EXEC_PREFIX)ocamlc
-endif
-OCAMLOPT=$(EXEC_PREFIX)ocamlopt
-
 ifeq ($(NATIVE), true)
   ## Set up for native code compilation
 
@@ -364,7 +368,7 @@ else
 
   CAMLC=$(OCAMLC)
   # -output-complete-exe is available since OCaml 4.10
-  ifneq ($(strip $(shell ocamlc -output-complete-exe 2>&1)),)
+  ifneq ($(strip $(shell $(OCAMLC) -output-complete-exe 2>&1)),)
     CAMLLDFLAGS+=-custom
   else
     CAMLLDFLAGS+=-output-complete-exe  # can safely strip the binary
@@ -375,7 +379,7 @@ else
 
 endif
 
-WINDRES := $(or ${EXEC_PREFIX},$(filter i686-w64-mingw32- x86_64-w64-mingw32-,$(CC:gcc${EXEC_EXT}=)))windres
+WINDRES := $(or ${TOOL_PREFIX},$(filter i686-w64-mingw32- x86_64-w64-mingw32-,$(CC:gcc${EXEC_EXT}=)))windres
 ##$(info windres='${WINDRES}')
 
 win32rc/unison.res: win32rc/unison.rc win32rc/U.ico

@@ -88,6 +88,24 @@ make
 Building the GTK GUI this way is difficult as both GTK 3 and lablgtk3 must be
 built and installed.
 
+### Cross-compiling for a different target architecture or OS
+
+To cross-compile for a different target, you need to have a cross-compilation
+toolchain including both a cross-compiling C compiler and a cross-compiling
+OCaml compiler. When you have cross-compilation toolchain in place, building
+Unison from source works according to instructions above. You just have to add
+an `TOOL_PREFIX` argument to `make` to indicate which toolchain to use (also
+ensure the tools are in PATH).
+
+For example, to build a native Windows 64-bit executable using the MinGW
+cross-compilation toolchain:
+```
+make TOOL_PREFIX=x86_64-w64-mingw32-
+```
+
+Building the manual page and documentation does not work when cross-compiling.
+To build the documentation, first build Unison without cross-compilation.
+
 
 ### macOS
 
