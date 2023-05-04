@@ -130,6 +130,13 @@ ifeq ($(OSARCH),win32)
     LDFLAGS_STATIC+=-link -static
     buildexecutable:: win32rc/unison.res.lib
   endif
+  # Make Windows GUI come up with no console window
+  ifneq ($(UI_WINOS), hybrid)
+    LDFLAGS_GUI+=-subsystem windows
+    # -subsystem is a flexlink arg;
+    # respective gcc args: -mwindows or -Wl,--subsystem,windows
+    # respective MSVC linker arg: /SUBSYSTEM:WINDOWS
+  endif
   CWD=.
   COBJS+=system/system_win_stubs$(OBJ_EXT) lwt/lwt_unix_stubs$(OBJ_EXT)
   WINOBJS=system/system_win.cmo
@@ -269,22 +276,9 @@ ifeq ($(UISTYLE),mac)
 endif
 
 ## Graphic UI
-
-# Patch to make a Windows GUI version come up with no
-# console when click-started
-ifeq ($(OSARCH), win32)
-  ifneq ($(UISTYLE), text)
-    ifneq ($(UI_WINOS), hybrid)
-      # COBJS+=winmain.c
-      CAMLLDFLAGS+=-cclib "-link -Wl,--subsystem,windows"
-    endif
-  endif
-endif
-
-# Gtk3 GUI
-OCAMLFIND := $(shell command -v ocamlfind 2> /dev/null)
-
 ifeq ($(UISTYLE), gtk3)
+  OCAMLFIND := $(shell command -v ocamlfind 2> /dev/null)
+
   ifndef OCAMLFIND
     CAMLFLAGS+=-I +lablgtk3 -I +cairo2
   else
@@ -293,6 +287,10 @@ ifeq ($(UISTYLE), gtk3)
   endif
   OCAMLOBJS+=pixmaps.cmo uigtk3.cmo linkgtk3.cmo
   OCAMLLIBS+=lablgtk3.cma cairo.cma
+
+  ifneq ($(strip $(LDFLAGS_GUI)),)
+    CAMLLDFLAGS_GUI+=-cclib "$(LDFLAGS_GUI)"
+  endif
 endif
 
 ########################################################################
@@ -416,7 +414,7 @@ win32rc/unison.res.lib: win32rc/unison.rc win32rc/U.ico
 
 $(NAME)$(EXEC_EXT): $(CAMLOBJS) $(COBJS)
 	@echo Linking $@
-	$(CAMLC) -verbose $(CAMLFLAGS) $(CAMLLDFLAGS) -o $@ $(CAMLCFLAGS) $(CAMLLIBS) $^ $(CLIBS)
+	$(CAMLC) -verbose $(CAMLFLAGS) $(CAMLLDFLAGS) $(CAMLLDFLAGS_GUI) -o $@ $(CAMLCFLAGS) $(CAMLLIBS) $^ $(CLIBS)
 
 # Unfortunately -output-obj does not put .o files into the output, only .cmx
 # files, so we have to use $(LD) to take care of COBJS.
