@@ -28,7 +28,11 @@ all:: strings.ml buildexecutable
 ########################################################################
 ## Miscellaneous developer-only switches
 PROFILING=false
-STATIC=false
+# [2023-05] This check is here only temporarily for a smooth transition
+ifeq ($(STATIC), true)
+  $(error Variable STATIC is no longer in use. Please set appropriate LDFLAGS,\
+    like -static, instead)
+endif
 
 # NAME, VERSION, and MAJORVERSION, automatically generated
 -include Makefile.ProjectInfo

@@ -127,7 +127,6 @@ ifeq ($(OSARCH),win32)
   else
     OUTPUT_SEL=-o
     CLIBS+=-cclib "-link win32rc/unison.res.lib"
-    LDFLAGS_STATIC+=-link -static
     buildexecutable:: win32rc/unison.res.lib
   endif
   # Make Windows GUI come up with no console window
@@ -155,14 +154,11 @@ else
     CWD=.
     EXEC_EXT=.exe
     CLIBS+=-cclib win32rc/unison.res.lib
-    # with flexlink
-    LDFLAGS_STATIC+=-link -static
     buildexecutable:: win32rc/unison.res.lib
 	@echo Building for Cygwin
   else
     CWD=$(shell pwd)
     EXEC_EXT=
-    LDFLAGS_STATIC+=-static
     # openpty is in the libutil library
     ifneq ($(OSARCH),solaris)
       ifneq ($(OSARCH),osx)
@@ -181,7 +177,6 @@ endif
 .PHONY: buildexecutable
 buildexecutable::
 	@echo NATIVE = $(NATIVE)
-	@echo STATIC = $(STATIC)
 	@echo OSARCH = $(OSARCH)
 
 ubase/projectInfo.ml: Makefile.ProjectInfo
@@ -312,15 +307,6 @@ INCLFLAGS+=-I fsmonitor -I fsmonitor/windows
 endif
 
 DEP_INCLFLAGS+=-I fsmonitor -I fsmonitor/linux -I fsmonitor/solaris -I fsmonitor/windows
-
-####################################################################
-### Static build setup
-
-ifeq ($(STATIC), true)
-  ifneq ($(strip $(LDFLAGS_STATIC)),)
-    CAMLLDFLAGS+=-cclib '$(LDFLAGS_STATIC)'
-  endif
-endif
 
 ####################################################################
 ### Dependencies

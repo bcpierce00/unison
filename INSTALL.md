@@ -197,6 +197,14 @@ There are some additional options that control the build process:
 - NATIVE: If you can't compile a native binary for your platform then add
   `NATIVE=false` as argument to `make`. This will produce a single native
   executable with OCaml runtime and Unison bytecode embedded.
-- STATIC: Adding `STATIC=true` as argument to `make` will produce a (mostly)
-  statically linked executable. This may not work on all platforms or with all
-  build methods.
+- CFLAGS, CPPFLAGS, LDFLAGS, LDLIBS control the build process as usual.
+  OCaml compiler will pass these arguments on to the C compiler and linker.
+- To produce a statically linked executable, add arguments suitable for your
+  platform and toolchain in your LDFLAGS. Static linking mostly makes no
+  difference because some widely-used C libraries, like glibc, do not allow
+  static linking, GTK does not allow static linking and there is nothing to
+  link statically for the textual user interface in Windows and Cygwin.
+  Examples of LDFLAGS values to enable static linking:
+    `-static` or `-Wl,-static` for gcc (should also work for clang);
+    `-link -static` for gcc in Windows (MinGW, Cygwin, MSYS2) ("-link" is
+    required due to flexlink being used in the toolchain).
