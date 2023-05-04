@@ -163,7 +163,7 @@ jobs:
 
     - shell: bash
       run: |
-        opam exec -- make src OSTYPE=$OSTYPE UISTYLE=text STATIC=${{ steps.vars.outputs.STATIC }}
+        opam exec -- make src UISTYLE=text STATIC=${{ steps.vars.outputs.STATIC }}
         # stage
         # * notes: darwin/macos doesn't build `unison-fsmonitor`
         for file in ${PROJECT_EXES} ; do
@@ -238,7 +238,7 @@ jobs:
     - if: steps.vars.outputs.STATIC != 'true' ## unable to build static gtk/gui
       shell: bash
       run: |
-        opam exec -- make src OSTYPE=$OSTYPE UISTYLE=gtk3 STATIC=${{ steps.vars.outputs.STATIC }}
+        opam exec -- make src UISTYLE=gtk3 STATIC=${{ steps.vars.outputs.STATIC }}
         # stage
         # * copy only main/first project binary
         project_exe_stem=${PROJECT_EXES%% *}
@@ -254,7 +254,7 @@ jobs:
         # * clean/remove build artifact(s)
         rm "src/${project_exe_stem}${{ steps.vars.outputs.EXE_suffix }}" ##.or.# opam exec -- make -C src clean #.or.# opam exec -- make clean
         # * re-create (with hybrid text+gui UI)
-        opam exec -- make src OSTYPE=$OSTYPE UISTYLE=gtk3 UI_WINOS=hybrid STATIC=${{ steps.vars.outputs.STATIC }}
+        opam exec -- make src UISTYLE=gtk3 UI_WINOS=hybrid STATIC=${{ steps.vars.outputs.STATIC }}
         cp "src/${project_exe_stem}${{ steps.vars.outputs.EXE_suffix }}" "${{ steps.vars.outputs.PKG_DIR }}/bin/${project_exe_stem}-text+gui${{ steps.vars.outputs.EXE_suffix }}"
 
     - uses: actions/upload-artifact@v3
@@ -478,7 +478,7 @@ jobs:
              runtest "backups 1 (remote)" ["backup = Name *"] (fun() ->
         EOF
 
-    - run: cd _new && opam exec -- make src UISTYLE=text OSTYPE=$OSTYPE
+    - run: cd _new && opam exec -- make src UISTYLE=text
       shell: bash
 
     - name: Checkout ${{ matrix.job.ref }} to _prev
