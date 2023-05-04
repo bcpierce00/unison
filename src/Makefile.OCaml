@@ -39,7 +39,9 @@ endif
 # Another try, Feb 2011, suggested by Ron Isaacson
 # OCAMLLIBDIR=$(shell ocamlc -v | tail -1 | sed -e 's/.* //g' | tr '\\' '/' | tr -d '\r')
 # 2023: "-where" has existed since OCaml 3.01 (2000)
-OCAMLLIBDIR=$(shell ocamlc -where)
+# OCAMLLIBDIR=$(shell ocamlc -where)
+# Since OCaml 4.08 (2019) we have an even better option
+OCAMLLIBDIR:=$(shell ocamlc -config-var standard_library)
 
 ## BCP (6/05) an alternative, but not quite working, version
 ## suggested by Nick Montfort:
@@ -114,12 +116,12 @@ CAMLFLAGS+=-I system/$(SYSTEM) -I lwt/$(SYSTEM)
 ifeq ($(OSARCH),win32)
   # Win32 system
   EXEC_EXT=.exe
-  ifeq ($(shell ocamlc -config 2> /dev/null | grep ext_obj),ext_obj: .obj)
+  ifeq ($(shell ocamlc -config-var ext_obj),.obj)
     OBJ_EXT=.obj
   else
     OBJ_EXT=.o
   endif
-  ifeq ($(shell ocamlc -config 2> /dev/null | grep ccomp_type),ccomp_type: msvc)
+  ifeq ($(shell ocamlc -config-var ccomp_type),msvc)
     OUTPUT_SEL=-Fo
     CLIBS+=-cclib shell32.lib -cclib user32.lib -cclib "-link win32rc/unison.res"
     STATICLIBS+=-cclib "-link win32rc/unison.res"
