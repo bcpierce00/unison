@@ -127,6 +127,7 @@ ifeq ($(OSARCH),win32)
   else
     OUTPUT_SEL=-o
     CLIBS+=-cclib "-link win32rc/unison.res.lib"
+    LDFLAGS_STATIC+=-link -static
     buildexecutable:: win32rc/unison.res.lib
   endif
   CWD=.
@@ -147,12 +148,14 @@ else
     CWD=.
     EXEC_EXT=.exe
     CLIBS+=-cclib win32rc/unison.res.lib
-    STATIC=false                      # Cygwin is not MinGW :-(
+    # with flexlink
+    LDFLAGS_STATIC+=-link -static
     buildexecutable:: win32rc/unison.res.lib
 	@echo Building for Cygwin
   else
     CWD=$(shell pwd)
     EXEC_EXT=
+    LDFLAGS_STATIC+=-static
     # openpty is in the libutil library
     ifneq ($(OSARCH),solaris)
       ifneq ($(OSARCH),osx)
@@ -316,7 +319,9 @@ DEP_INCLFLAGS+=-I fsmonitor -I fsmonitor/linux -I fsmonitor/solaris -I fsmonitor
 ### Static build setup
 
 ifeq ($(STATIC), true)
-  CAMLLDFLAGS+=-cclib -static
+  ifneq ($(strip $(LDFLAGS_STATIC)),)
+    CAMLLDFLAGS+=-cclib '$(LDFLAGS_STATIC)'
+  endif
 endif
 
 ####################################################################
