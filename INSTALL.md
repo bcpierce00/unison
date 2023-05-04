@@ -8,6 +8,8 @@ often include a very old version of Unison.
 
 Alternatively, some pre-built binaries are made available at
 https://github.com/bcpierce00/unison/releases for macOS, Linux and Windows.
+No specific installation is needed, just unpack the files at a location of your
+choosing.
 
 
 ## Building from source
@@ -19,7 +21,7 @@ make it easy to build from source by handling all the dependencies for you.
 Please refer to instructions provided by the repository.
 
 
-### Unix-like OS (GNU/Linux, BSDs, macOS, illumos-based OS, Solaris, ...)
+### Unix-like OS (GNU/Linux, BSDs, macOS, illumos-based OS, Solaris) and Cygwin
 
 #### Build prerequisites
 
@@ -130,19 +132,62 @@ The built application will be located at `src/uimac/build/Default/Unison.app`.
 Building on Windows is currently somewhat complicated. All methods require
 Cygwin as a POSIX-like layer for Windows. Cygwin is required for the build
 process only; the build can produce fully native Windows binaries that don't
-require Cygwin to run.
+require Cygwin to run. To build Unison for usage within Cygwin environment,
+follow build instructions for Unix-like OS above.
 
 Builds are possible with MS Visual C++ (MSVC) (currently untested and likely
-not working), MinGW-w64 (currently the best option) and Cygwin GNU C (untested;
-produced binaries require Cygwin to run).
+not working) and MinGW-w64 (currently the best option) compilers.
 
-Tradeoff?
+The build system automatically detects if the build is of MSVC, MinGW or Cygwin
+GNU C (not native Windows) type based on the first OCaml compiler (ocamlc and
+ocamlopt) found on PATH. Thus, if you have multiple compilers, you can easily
+select between these methods by adjusting the PATH accordingly when running
+`make`.
 
-- MSVC and MinGW can produce statically linked Unison executable.
-- The Cygwin GNU C option requires only free software.
+#### MinGW
 
-You have to add `OSTYPE=$OSTYPE` as argument to `make`: `make OSTYPE=$OSTYPE`
-(OSTYPE is preset to 'cygwin' by Cygwin).
+Building with MinGW, you still need a Cygwin installation as the build
+environment. It is not required to run the produced executables. You need to
+have the following prerequisites:
+
+- MinGW gcc and MinGW binutils (Cygwin package example mingw64-x86_64-gcc-core)
+- A recent version of OCaml compiler (version 4.08 at minimum) which itself is
+  built with MinGW gcc (it is possible to find pre-compiled binaries); do not
+  use the Cygwin OCaml package as that is not compiled with MinGW
+- GNU make
+- A POSIX shell (available in Cygwin by default)
+
+To build, change to directory where Unison source code is and execute:
+```
+make
+```
+
+If all goes well, the following files will be produced:
+```
+src/unison.exe              (the main executable)
+src/unison-fsmonitor.exe    (filesystem monitor, optional)
+```
+
+You can check which DLLs are needed by the built binary by executing
+`cygcheck src/unison.exe` or `ldd src/unison.exe`.
+
+For building the GUI (optional), you also need the following:
+
+- MinGW GTK 3 and its dependencies (Cygwin package example mingw64-x86_64-gtk3)
+- Some MinGW GTK icon theme (optional, but recommended; Cygwin package example
+  mingw64-x86_64-adwaita-icon-theme)
+- lablgtk3 and its prerequisites (ocamlfind, dune build system)
+
+Building lablgtk3 from source is complicated. It is recommended to use OPAM for
+that (Cygwin package name opam). Make sure that OPAM uses the MinGW version of
+gcc and binutils.
+
+#### MSVC
+
+Building with MSVC is in principle similar to building with MinGW, except that
+the C compiler is now MSVC and the OCaml compiler must itself be built with
+MSVC (it is possible to find pre-compiler binaries). Environment for MSVC must
+be set up properly so that it can be used from Cygwin environment.
 
 
 ### Build options
