@@ -48,7 +48,7 @@ jobs:
         job:
         - { os: macos-12      , ocaml-version: 5.0.0 }
         - { os: macos-12      , ocaml-version: 4.14.1 }
-        - { os: macos-10.15   , ocaml-version: 4.14.1           , publish: true  , fnsuffix: -macos-x86_64 }
+        - { os: macos-11      , ocaml-version: 4.14.1           , publish: true  , fnsuffix: -macos-x86_64 }
         - { os: ubuntu-22.04  , ocaml-version: 5.0.0 }
         - { os: ubuntu-22.04  , ocaml-version: 4.14.1 }
         - { os: ubuntu-20.04  , ocaml-version: 4.14.1 }
