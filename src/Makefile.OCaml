@@ -74,19 +74,20 @@ else
   endif
 endif
 ifeq ($(UISTYLE), gtk2)
-buildexecutable::
-	@echo
-	@echo "gtk2 GUI is no longer available.    Use  UISTYLE=gtk3  or don't specify any UISTYLE."
-	@echo
-	@exit 1
+  $(error gtk2 GUI is no longer available.    Use  UISTYLE=gtk3  or don't specify any UISTYLE)
 endif
-
-buildexecutable::
-	@echo UISTYLE = $(UISTYLE)
-	@echo UI_WINOS = $(UI_WINOS)
 
 ####################################################################
 ### Default parameters
+
+.PHONY: buildinfodebug
+buildinfodebug:
+	$(info $(building_for))
+	$(info UISTYLE = $(UISTYLE))
+	$(info NATIVE = $(NATIVE))
+	$(info OSARCH = $(OSARCH))
+
+buildexecutable: buildinfodebug
 
 # Generate backtrace information for exceptions
 CAMLFLAGS+=-g
@@ -122,11 +123,11 @@ ifeq ($(OSARCH),win32)
   ifeq ($(shell $(OCAMLC) -config-var ccomp_type),msvc)
     OUTPUT_SEL=-Fo
     CLIBS+=-cclib shell32.lib -cclib user32.lib -cclib "-link win32rc/unison.res"
-    buildexecutable:: win32rc/unison.res
+    buildexecutable: win32rc/unison.res
   else
     OUTPUT_SEL=-o
     CLIBS+=-cclib "-link win32rc/unison.res.lib"
-    buildexecutable:: win32rc/unison.res.lib
+    buildexecutable: win32rc/unison.res.lib
   endif
   # Make Windows GUI come up with no console window
   ifneq ($(UI_WINOS), hybrid)
@@ -139,8 +140,7 @@ ifeq ($(OSARCH),win32)
   COBJS+=system/system_win_stubs$(OBJ_EXT) lwt/lwt_unix_stubs$(OBJ_EXT)
   WINOBJS=system/system_win.cmo
   SYSTEM=win
-  buildexecutable::
-	@echo Building for Windows
+  building_for = Building for Windows
 else
   # Unix build, or Cygwin POSIX (GNU C) build
   OBJ_EXT=.o
@@ -153,8 +153,8 @@ else
     CWD=.
     EXEC_EXT=.exe
     CLIBS+=-cclib win32rc/unison.res.lib
-    buildexecutable:: win32rc/unison.res.lib
-	@echo Building for Cygwin
+    buildexecutable: win32rc/unison.res.lib
+    building_for = Building for Cygwin
   else
     CWD=$(shell pwd)
     EXEC_EXT=
@@ -168,15 +168,9 @@ else
       # ACL functions
       CLIBS+=-cclib -lsec
     endif
-    buildexecutable::
-	@echo Building for Unix
+    building_for = Building for Unix
   endif
 endif
-
-.PHONY: buildexecutable
-buildexecutable::
-	@echo NATIVE = $(NATIVE)
-	@echo OSARCH = $(OSARCH)
 
 ubase/projectInfo.ml: Makefile.ProjectInfo
 	echo 'let myName = "'$(NAME)'";;' > $@
@@ -296,10 +290,10 @@ endif
 ### Unison executables
 
 ifeq ($(UISTYLE),mac)
-  buildexecutable:: macexecutable
+  buildexecutable: macexecutable
   UIMACDIR=uimac
 else
-  buildexecutable:: $(NAME)$(EXEC_EXT)
+  buildexecutable: $(NAME)$(EXEC_EXT)
 endif
 
 ifeq ($(OSARCH),osx)

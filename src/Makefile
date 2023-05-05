@@ -23,7 +23,10 @@ NATIVE=true
 # Building installation instructions
 
 .PHONY: all
-all:: strings.ml buildexecutable
+all: buildexecutable
+
+.PHONY: buildexecutable
+buildexecutable: ;
 
 ########################################################################
 ## Miscellaneous developer-only switches

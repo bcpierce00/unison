@@ -1,6 +1,6 @@
  # Manual
 
-all:: unison-manual.html
+all: unison-manual.html
 
 -include ../src/Makefile.ProjectInfo
 include ../src/Makefile.OCaml
