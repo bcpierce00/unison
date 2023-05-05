@@ -1,21 +1,15 @@
  # Manual
 
+.PHONY: all
 all: unison-manual.html
 
 -include ../src/Makefile.ProjectInfo
-include ../src/Makefile.OCaml
 
 STRINGS = ../icons/Unison.gif
 SOURCES = unison-manual.tex \
-          local.tex short.tex postproc$(EXEC_EXT) Makefile
+          local.tex short.tex
 
-# ifeq ($(shell ls /usr/local/bin/hevea), /usr/local/bin/hevea)
-#   HEVEAPATH = /usr/local/bin/hevea
-# endif
-ifeq ($(shell echo type -t hevea | bash), file)
-  HEVEAPATH = $(shell echo type -p hevea | bash)
-endif
-ifneq ($(HEVEAPATH),)
+ifneq ($(strip $(shell hevea -version)),)
   HEVEA=true
 endif
 
@@ -25,24 +19,23 @@ unison-manual.html: $(SOURCES)
 # If the .aux file is missing, do 'make once' an extra time to make
 # sure it's present (with section numbers, etc.) before we build the
 # manual for real.
+.PHONY: real
 real:
 	@(if [ ! -f unison-manual.aux ]; then $(MAKE) once; fi)
 	$(MAKE) once
 
-once: postproc$(EXEC_EXT) $(STRINGS) docs$(EXEC_EXT)
+.PHONY: once
+once: $(STRINGS) docs.ml postproc.ml prefs.tmp prefsdocs.tmp
 	echo '\def\unisonversion{$(VERSION)}' > unisonversion.tex
-	@echo HEVEAPATH = $(HEVEAPATH)
-	@(if [ ! -f prefs.tmp ]; then $(MAKE) prefs.tmp; fi)
-	@(if [ ! -f prefsdocs.tmp ]; then $(MAKE) prefsdocs.tmp; fi)
 ifeq ($(HEVEA),true)
 	printf '$(TEXDIRECTIVES)\\textversiontrue\\draftfalse' \
            > texdirectives.tex
 	latex unison-manual.tex
 	hevea unison-manual.tex
-	./postproc < unison-manual.html > temp.html
+	ocaml postproc.ml < unison-manual.html > temp.html
 	(TERM=vt100; export TERM; lynx -display_charset=utf8 -dump temp.html > unison-manual.dtxt)
 	sed -e "/^----SNIP----/,+2 d" -e "/^Junk/,$$ d" unison-manual.dtxt > unison-manual.txt
-	./docs$(EXEC_EXT)
+	ocaml docs.ml
 endif
 	printf '$(TEXDIRECTIVES)\\textversionfalse\\draftfalse' > texdirectives.tex
 	latex unison-manual.tex
@@ -56,31 +49,25 @@ ifeq ($(HEVEA),true)
 endif
 
 # Listing of preferences
-prefs.tmp:
-	-(if [ -f ../src/$(NAME)$(EXEC_EXT) ]; then \
-           ../src/unison -help > prefs.tmp; \
-           fi)
-prefsdocs.tmp:
-	-(if [ -f ../src/$(NAME)$(EXEC_EXT) ]; then \
-           ../src/unison -prefsdocs 2> prefsdocs.tmp; \
-           fi)
+prefs.tmp: ../src/$(NAME)$(EXEC_EXT)
+	-../src/unison -help > prefs.tmp
+prefsdocs.tmp: ../src/$(NAME)$(EXEC_EXT)
+	-../src/unison -prefsdocs 2> prefsdocs.tmp
+
+../src/$(NAME)$(EXEC_EXT):
+	$(MAKE) -C ../src UISTYLE=text $(NAME)$(EXEC_EXT)
 
 # Tools
-docs$(EXEC_EXT): docs.ml
-	$(OCAMLC) -o $@ $^
-
-postproc$(EXEC_EXT) : postproc.ml
-	ocamlopt -o $@ $^
-
 %.ml : %.mll
-	-$(RM) $@
 	ocamllex $<
 
-clean::
+.PHONY: clean
+clean:
 	$(RM) -r \
 	   *.dtxt *.aux *.haux *.log *.out \
 	   texdirectives.tex \
 	   junk.* *.htoc *.toc *.bak \
+	   prefs.tmp prefsdocs.tmp \
 	   docs docs.exe temp.dvi temp.html unison-manual.html \
 	   postproc postproc.exe postproc.ml \
 	   unison-manual.dvi unison-manual.ps unison-manual.pdf \
