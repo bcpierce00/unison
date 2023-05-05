@@ -27,7 +27,6 @@ all:: strings.ml buildexecutable
 
 ########################################################################
 ## Miscellaneous developer-only switches
-PROFILING=false
 # [2023-05] This check is here only temporarily for a smooth transition
 ifeq ($(STATIC), true)
   $(error Variable STATIC is no longer in use. Please set appropriate LDFLAGS,\

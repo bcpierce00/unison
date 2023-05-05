@@ -8,11 +8,7 @@
 ####################################################################
 ### Compilers
 
-ifeq ($(PROFILING), true)
-  OCAMLC=$(TOOL_PREFIX)ocamlcp
-else
-  OCAMLC=$(TOOL_PREFIX)ocamlc
-endif
+OCAMLC=$(TOOL_PREFIX)ocamlc
 OCAMLOPT=$(TOOL_PREFIX)ocamlopt
 
 ####################################################################
@@ -346,10 +342,6 @@ ifeq ($(NATIVE), true)
   ## Set up for native code compilation
 
   CAMLC=$(OCAMLOPT)
-  ifeq ($(PROFILING), true)
-    CAMLFLAGS+=-p
-    CLIBS+=-cclib -ldl
-  endif
 
   CAMLOBJS=$(subst .cmo,.cmx, $(subst .cma,.cmxa, $(OCAMLOBJS)))
   CAMLLIBS=$(subst .cma,.cmxa, $(OCAMLLIBS))
