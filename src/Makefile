@@ -192,17 +192,6 @@ TAGS: tags
 # Misc
 
 .PHONY: clean
-clean::
-	-$(RM) *.log *.aux *.log *.dvi *.out *.bak
-	-$(RM) -r obsolete
-	-$(RM) $(NAME) $(NAME).exe
-	-$(RM) $(NAME)-blob.o
-
-ifneq ($(strip $(UIMACDIR)),)
-clean::
-	-(cd $(UIMACDIR); xcodebuild clean)
-	-(cd $(UIMACDIR); $(RM) -r build ExternalSettings.xcconfig)
-endif
 
 ####################################################################
 # Documentation strings
