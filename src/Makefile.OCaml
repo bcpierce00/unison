@@ -25,17 +25,13 @@ endif
 OCAML_OSTYPE:=$(shell $(OCAMLC) -config-var os_type)
 
 ifeq (${OCAML_OSTYPE},Win32)        # Native Windows build
-  OSARCH=win32
+  OSARCH=Win32
 else ifeq (${OCAML_OSTYPE},Cygwin)  # POSIX build for Windows
   OSARCH=Cygwin
 else
   OSARCH:=$(shell uname)
-
-  ifeq ($(OSARCH),SunOS)
-    OSARCH=solaris
-  else ifeq ($(OSARCH),Darwin)
-    OSARCH=osx
-  endif
+  # Darwin is reported for macOS
+  # SunOS is reported for Solaris, OpenSolaris and derivatives (illumos)
 endif
 
 ####################################################################
@@ -59,7 +55,7 @@ OCAMLLIBDIR:=$(shell $(OCAMLC) -config-var standard_library)
 # * ref: <https://github.com/bcpierce00/unison/issues/778>
 #
 LABLGTK3LIB=$(OCAMLLIBDIR)/lablgtk3
-ifeq ($(OSARCH),osx)
+ifeq ($(OSARCH),Darwin)
   UISTYLE=mac
 else
   ifeq ($(wildcard $(LABLGTK3LIB)),$(LABLGTK3LIB))
@@ -85,7 +81,6 @@ buildinfodebug:
 	$(info $(building_for))
 	$(info UISTYLE = $(UISTYLE))
 	$(info NATIVE = $(NATIVE))
-	$(info OSARCH = $(OSARCH))
 
 buildexecutable: buildinfodebug
 
@@ -112,7 +107,7 @@ CAMLFLAGS+=-I system/$(SYSTEM) -I lwt/$(SYSTEM)
 
 # The messy situation requiring the use of OUTPUT_SEL was fixed in OCaml 4.13.
 # All usages of OUTPUT_SEL should be removed when 4.13 becomes a requirement.
-ifeq ($(OSARCH),win32)
+ifeq ($(OSARCH),Win32)
   # Native Win32 build
   EXEC_EXT=.exe
   ifeq ($(shell $(OCAMLC) -config-var ext_obj),.obj)
@@ -159,12 +154,12 @@ else
     CWD=$(shell pwd)
     EXEC_EXT=
     # openpty is in the libutil library
-    ifneq ($(OSARCH),solaris)
-      ifneq ($(OSARCH),osx)
+    ifneq ($(OSARCH),SunOS)
+      ifneq ($(OSARCH),Darwin)
         CLIBS+=-cclib -lutil
       endif
     endif
-    ifeq ($(OSARCH),solaris)
+    ifeq ($(OSARCH),SunOS)
       # ACL functions
       CLIBS+=-cclib -lsec
     endif
@@ -296,7 +291,7 @@ else
   buildexecutable: $(NAME)$(EXEC_EXT)
 endif
 
-ifeq ($(OSARCH),osx)
+ifeq ($(OSARCH),Darwin)
 ifeq ($(strip $(XCODEFLAGS)),)
   XCODEFLAGS=-arch $(shell uname -m)  ## Prevent Xcode from trying to build universal binaries by default
 endif
@@ -327,12 +322,12 @@ ifeq ($(OSARCH),Linux)
 INCLFLAGS+=-I fsmonitor -I fsmonitor/linux
 endif
 
-ifeq ($(OSARCH),solaris)
+ifeq ($(OSARCH),SunOS)
 -include fsmonitor/solaris/Makefile src/fsmonitor/solaris/Makefile
 INCLFLAGS+=-I fsmonitor -I fsmonitor/solaris
 endif
 
-ifeq ($(OSARCH),win32)
+ifeq ($(OSARCH),Win32)
 -include fsmonitor/windows/Makefile src/fsmonitor/windows/Makefile
 INCLFLAGS+=-I fsmonitor -I fsmonitor/windows
 endif
