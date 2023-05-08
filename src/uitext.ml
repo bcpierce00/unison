@@ -51,7 +51,7 @@ let silent =
 
 let cbreakMode = ref None
 
-let supportSignals = Util.osType = `Unix || Util.isCygwin
+let supportSignals = Sys.unix || Sys.cygwin
 
 let rawTerminal () =
   match !cbreakMode with

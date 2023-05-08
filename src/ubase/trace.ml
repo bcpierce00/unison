@@ -135,7 +135,7 @@ let closelog _ =
       logch := None
 
 let _ =
-  if Util.osType <> `Win32 || Util.isCygwin then
+  if Sys.unix || Sys.cygwin then
     try
       ignore (Sys.signal Sys.sigusr1 (Signal_handle closelog))
     with e ->

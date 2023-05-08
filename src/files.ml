@@ -61,7 +61,7 @@ let clearCommitLog tmpName =
     | Sys_error _ | Unix.Unix_error _ -> commitLogName
   in
   let commitLogUnlinkPath =
-    if Util.osType = `Win32 then commitLogNameWin () else commitLogName in
+    if Sys.unix then commitLogName else commitLogNameWin () in
 
   Util.convertUnixErrorsToFatal
     "clearing commit log"
@@ -337,7 +337,7 @@ let performRename fspathTo localPathTo workingDir pathFrom pathTo prevArch =
         match (filetypeFrom, filetypeTo) with
         | (_, `ABSENT)            -> false
         | ((`FILE | `SYMLINK),
-           (`FILE | `SYMLINK))    -> Util.osType <> `Unix
+           (`FILE | `SYMLINK))    -> Sys.win32
         | _                       -> true (* Safe default *) in
       if moveFirst then begin
         debug (fun() -> Util.msg "rename: moveFirst=true\n");

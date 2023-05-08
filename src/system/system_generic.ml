@@ -81,7 +81,7 @@ let close_process_full = Unix.close_process_full
 
 (****)
 
-let isNotWindows = Sys.os_type <> "Win32"
+let isNotWindows = not Sys.win32
 
 (* Note that Cygwin provides some kind of inode numbers, but we only
    have access to the lower 32 bits on 32bit systems... *)

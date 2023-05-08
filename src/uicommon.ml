@@ -773,7 +773,7 @@ let architecture =
     "architecture"
     Umarshal.unit
     Umarshal.(prod3 bool bool bool id id)
-    (fun (_,()) -> return (Util.osType = `Win32, Osx.isMacOSX, Util.isCygwin))
+    (fun (_,()) -> return (Sys.win32, Osx.isMacOSX, Sys.cygwin))
 
 (* During startup the client determines the case sensitivity of each root.
    If any root is case insensitive, all roots must know this -- it's
@@ -786,12 +786,12 @@ let validateAndFixupPrefs () =
     Safelist.exists (fun (isWin, _, _) -> isWin) archs in
   let allHostsAreRunningWindows =
     Safelist.for_all (fun (isWin, _, _) -> isWin) archs in
-  let someHostIsRunningBareWindows =
-    Safelist.exists (fun (isWin, _, isCyg) -> isWin && not isCyg) archs in
+  let someHostIsRunningCygwin =
+    Safelist.exists (fun (_, _, isCyg) -> isCyg) archs in
   let someHostRunningOsX =
     Safelist.exists (fun (_, isOSX, _) -> isOSX) archs in
   let someHostIsCaseInsensitive =
-    someHostIsRunningWindows || someHostRunningOsX in
+    someHostIsRunningWindows || someHostRunningOsX || someHostIsRunningCygwin in
   if Prefs.read Globals.fatFilesystem then begin
     Prefs.overrideDefault Props.permMask 0;
     Prefs.overrideDefault Props.dontChmod true;
@@ -800,9 +800,9 @@ let validateAndFixupPrefs () =
     Prefs.overrideDefault Fileinfo.ignoreInodeNumbers true
   end;
   Case.init someHostIsCaseInsensitive someHostRunningOsX;
-  Props.init someHostIsRunningWindows;
+  Props.init (someHostIsRunningWindows || someHostIsRunningCygwin);
   Osx.init someHostRunningOsX;
-  Fileinfo.init someHostIsRunningBareWindows;
+  Fileinfo.init someHostIsRunningWindows;
   Prefs.set Globals.someHostIsRunningWindows someHostIsRunningWindows;
   Prefs.set Globals.allHostsAreRunningWindows allHostsAreRunningWindows;
   if repeatWatcher () then Prefs.set Fswatch.useWatcher true;

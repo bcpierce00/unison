@@ -28,7 +28,7 @@ open Lwt
 (* For backwards compatibility with OCaml < 4.12 *)
 let path =
   try
-    Str.split (Str.regexp (if Util.osType = `Win32 then ";" else ":"))
+    Str.split (Str.regexp (if Sys.win32 then ";" else ":"))
       (Sys.getenv "PATH")
   with Not_found ->
     []
@@ -51,7 +51,7 @@ let search_in_path ?(path = path) name =
 let close_process_noerr close pid x =
   let pid = pid x in
   begin try
-    Unix.kill pid (if Sys.os_type = "Win32" then Sys.sigkill else Sys.sigterm)
+    Unix.kill pid (if Sys.win32 then Sys.sigkill else Sys.sigterm)
     with Unix.Unix_error _ -> () end;
   begin try ignore (Terminal.safe_waitpid pid) with Unix.Unix_error _ -> () end;
   try ignore (close x) with Sys_error _ | Unix.Unix_error _ -> ()
@@ -110,7 +110,7 @@ let readChannelsTillEof l =
 
 
 let runExternalProgramAux ~winProc ~posixProc =
-  if Util.osType = `Win32 && not Util.isCygwin then begin
+  if Sys.win32 then begin
     debug (fun()-> Util.msg "Executing external program windows-style\n");
     let c = winProc () in
     let log = Util.trimWhitespace (readChannelTillEof c) in

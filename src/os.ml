@@ -68,7 +68,7 @@ let readLink fspath path =
     (fun () ->
        let abspath = Fspath.concat fspath path in
        let l = Fs.readlink abspath in
-       if Util.osType = `Win32 then
+       if Sys.win32 || Sys.cygwin then
          Fileutil.backslashes2forwardslashes l
        else
          l
@@ -174,7 +174,7 @@ and delete fspath path =
             (allChildrenOf fspath path);
           Fs.rmdir absolutePath
       | `FILE ->
-          if Util.osType <> `Unix then begin
+          if not Sys.unix then begin
             try
               Fs.chmod absolutePath 0o600;
             with Unix.Unix_error _ -> ()
@@ -226,7 +226,7 @@ let symlink =
                   "Cannot create symlink \"%s\": \
                    symlinks are not supported on this system%s"
                   (Fspath.toPrintString (Fspath.concat fspath path))
-                  (if Util.osType = `Win32 then
+                  (if Sys.win32 || Sys.cygwin then
                      " or elevated privileges may be required"
                   else "")
                ))

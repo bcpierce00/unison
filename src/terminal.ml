@@ -117,7 +117,7 @@ let rec safe_waitpid pid =
         Unix.sleepf 0.002;
         let dt = Unix.gettimeofday () -. t in
         if dt >= 0.5 && st = 0 then begin
-          kill_noerr Sys.(if os_type = "Win32" then sigkill else sigterm);
+          kill_noerr Sys.(if win32 then sigkill else sigterm);
           aux 1
         end else if dt >= 2.0 && st = 1 then begin
           kill_noerr Sys.sigkill;
@@ -158,7 +158,7 @@ let finally f g =
 external win_alloc_console : unit -> Unix.file_descr option = "win_alloc_console"
 
 let fallback_session cmd args new_stdin new_stdout new_stderr =
-  if Sys.os_type = "Win32" then begin
+  if Sys.win32 then begin
     (* OCaml's [Unix.create_process] hides the Windows console window of
        the child process unless the parent process already has a console.
        This is unsuitable for running interactive child processes like

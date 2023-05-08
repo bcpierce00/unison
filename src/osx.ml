@@ -322,20 +322,14 @@ let getFileInfos dataFspath dataPath typ =
             { ressInfo =
                 if rsrcLength = 0L then NoRess else
                 AppleDoubleRess
-                  (begin match Util.osType with
-                     `Win32 -> 0
-                   | `Unix  -> (* The inode number is truncated so that
-                                  it fits in a 31 bit ocaml integer *)
-                               stats.Unix.LargeFile.st_ino land 0x3FFFFFFF
+                  (begin
+                   if Sys.win32 || Sys.cygwin then 0
+                   else (* The inode number is truncated so that
+                           it fits in a 31 bit ocaml integer *)
+                     stats.Unix.LargeFile.st_ino land 0x3FFFFFFF
                    end,
                    stats.Unix.LargeFile.st_mtime,
-                   begin match Util.osType with
-                     `Win32 -> (* Was "stats.Unix.LargeFile.st_ctime", but
-                                  this was bogus: Windows ctimes are
-                                  not reliable.  [BCP, Apr 07] *)
-                       0.
-                   | `Unix  -> 0.
-                   end,
+                   0.,
                    Uutil.Filesize.ofInt64 rsrcLength,
                    (doubleFspath, rsrcOffset));
               finfo = extractInfo typ finfo }

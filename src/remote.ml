@@ -29,7 +29,7 @@ let debugT = Trace.debug "remote+"
 *)
 
 let _ =
-  if Sys.os_type = "Unix" then
+  if Sys.unix || Sys.cygwin then
     ignore(Sys.set_signal Sys.sigpipe Sys.Signal_ignore)
 
 (*
@@ -472,7 +472,7 @@ let checkConnection ioServer =
   connectionCheck := Some ioServer;
   (* Poke on the socket to trigger an error if connection has been lost. *)
   Lwt_unix.run (
-    (if (Util.osType = `Win32) then Lwt.return 0 else
+    (if Sys.win32 then Lwt.return 0 else
     Lwt_unix.read ioServer.inputBuffer.channel ioServer.inputBuffer.buffer 0 0)
     (* Try to make sure connection cleanup, if necessary, has finished
        before returning.

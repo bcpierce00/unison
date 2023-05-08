@@ -167,7 +167,7 @@ let readWriteBounded source target len notify =
    sufficient with Windows as filenames are not allowed to contain
    double quotes. *)
 let quotes s =
-  if Util.osType = `Win32 && not Util.isCygwin then
+  if Sys.win32 then
     "\"" ^ s ^ "\""
   else
     "'" ^ Util.replacesubstring s "'" "'\\''" ^ "'"

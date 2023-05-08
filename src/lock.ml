@@ -42,8 +42,8 @@ let acquire name =
   Util.convertUnixErrorsToTransient
     "Lock.acquire"
     (fun () ->
-       match Util.osType with
-         `Unix -> (* O_EXCL is broken under NFS... *)
+       match Sys.unix with
+       | true -> (* O_EXCL is broken under NFS... *)
            rename (unique name (Unix.getpid ()) 0o600) name
        | _ ->
            create name 0o600)
