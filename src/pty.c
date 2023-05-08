@@ -31,7 +31,7 @@
 #endif
 
 // openpty
-#if defined(__linux)
+#if defined(__linux) || defined(__CYGWIN__)
 #include <pty.h>
 #define HAS_OPENPTY 1
 #endif
@@ -54,6 +54,10 @@
 
 CAMLprim value setControllingTerminal(value fdVal) {
   CAMLparam1(fdVal);
+#if defined(__CYGWIN__)
+  /* [Unix.setsid] is not implemented on Cygwin; call it here instead */
+  if (setsid() < 0) caml_uerror("setsid", Nothing);
+#endif
   int fd = Int_val(fdVal);
   if (ioctl(fd, TIOCSCTTY, (char *) 0) < 0)
     caml_uerror("ioctl", (value) 0);

@@ -233,7 +233,9 @@ let unix_create_session cmd args new_stdin new_stdout new_stderr =
             (* new_stderr will be used by parent process only. *)
             if new_stderr <> Unix.stderr then safe_close new_stderr;
             Unix.close masterFd;
-            ignore (Unix.setsid ());
+            (* [Unix.setsid] is not implemented on Cygwin, reason unknown.
+               It will be called by [setControllingTerminal] instead. *)
+            if not Sys.cygwin then ignore (Unix.setsid ());
             setControllingTerminal slaveFd;
             (* WARNING: SETTING ECHO TO FALSE! *)
             let tio = Unix.tcgetattr slaveFd in
