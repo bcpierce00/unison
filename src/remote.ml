@@ -1835,15 +1835,6 @@ let buildShellConnection shell host userOpt portOpt rootName termInteract =
   (* We need to make sure that there is only one reader and one
      writer by pipe, so that, when one side of the connection
      dies, the other side receives an EOF or a SIGPIPE. *)
-  (* We add CYGWIN=binmode to the environment before calling
-     ssh because the cygwin implementation on Windows sometimes
-     puts the pipe in text mode (which does end of line
-     translation).  Specifically, if unison is invoked from
-     a DOS command prompt or other non-cygwin context, the pipe
-     goes into text mode; this does not happen if unison is
-     invoked from cygwin's bash.  By setting CYGWIN=binmode
-     we force the pipe to remain in binary mode. *)
-  System.putenv "CYGWIN" "binmode";
   debug (fun ()-> Util.msg "Shell connection: %s (%s)\n"
            shellCmd (String.concat ", " args));
   let (term, termPid) =
@@ -2096,15 +2087,6 @@ let openConnectionStart clroot =
           (* We need to make sure that there is only one reader and one
              writer by pipe, so that, when one side of the connection
              dies, the other side receives an EOF or a SIGPIPE. *)
-          (* We add CYGWIN=binmode to the environment before calling
-             ssh because the cygwin implementation on Windows sometimes
-             puts the pipe in text mode (which does end of line
-             translation).  Specifically, if unison is invoked from
-             a DOS command prompt or other non-cygwin context, the pipe
-             goes into text mode; this does not happen if unison is
-             invoked from cygwin's bash.  By setting CYGWIN=binmode
-             we force the pipe to remain in binary mode. *)
-          System.putenv "CYGWIN" "binmode";
           debug (fun ()-> Util.msg "Shell connection: %s (%s)\n"
                    shellCmd (String.concat ", " args));
           let (term,pid) =
