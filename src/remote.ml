@@ -1820,13 +1820,13 @@ let buildShellConnection shell host userOpt portOpt rootName termInteract =
     else
       "") in
   let preargs =
-      ([shellCmd]@userArgs@portArgs@
+    (userArgs @ portArgs @
        [host]@
        (if shell="ssh" then ["-e none"] else [])@
        [shellCmdArgs;remoteCmd]) in
   (* Split compound arguments at space chars, to make
      create_process happy *)
-  let args =
+  let args = [shellCmd] @
     Safelist.concat
       (Safelist.map (fun s -> Util.splitIntoWords s ' ') preargs) in
   let argsarray = Array.of_list args in
