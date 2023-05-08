@@ -225,11 +225,10 @@ static void prepareSiWithPty(value prog, STARTUPINFOEX *si, HPCON pty)
 #endif
 }
 
-CAMLprim value w_create_process_pty_native
-  (value prog, value args, value pty, value fd1, value fd2, value fd3)
+CAMLprim value w_create_process_pty
+  (value prog, value args, value pty, value fd1, value fd2)
 {
   CAMLparam5(prog, args, pty, fd1, fd2);
-  CAMLxparam1(fd3);
   int res, flags;
   BOOL err = FALSE;
   PROCESS_INFORMATION pi;
@@ -237,7 +236,7 @@ CAMLprim value w_create_process_pty_native
   wchar_t fullname[MAX_PATH];
   wchar_t *wprog, *wargs;
   HANDLE hp;
-  HANDLE inherit[3];
+  HANDLE inherit[2];
   HPCON hpc = *((HPCON *) Data_abstract_val(pty));
 
 #ifndef PROC_THREAD_ATTRIBUTE_HANDLE_LIST
@@ -267,19 +266,21 @@ CAMLprim value w_create_process_pty_native
     err = TRUE;
     goto clean2;
   }
-  if (!DuplicateHandle(hp, Handle_val(fd3), hp, &(si.StartupInfo.hStdError),
-      0, TRUE, DUPLICATE_SAME_ACCESS)) {
-    caml_win32_maperr(GetLastError());
-    err = TRUE;
-    goto clean3;
-  }
+  /* hStdError is set to NULL because of Cygwin-linked child processes
+     otherwise not detecting the controlling terminal. This would not be
+     relevant for a native Windows binary but it may happen that Windows users
+     have Cygwin or MSYS2 (or Git for Windows) in path before Windows system
+     dirs, so the ssh client ends up being a Cygwin/MSYS2 binary. If hStdError
+     is not set to NULL then a Cygwin/MSYS2 ssh executed with a Windows pty
+     will not have functions that require a controlling terminal (such as
+     interactive auth). */
+  si.StartupInfo.hStdError = NULL;
   si.StartupInfo.dwFlags = STARTF_USESTDHANDLES;
 
   inherit[0] = si.StartupInfo.hStdInput;
   inherit[1] = si.StartupInfo.hStdOutput;
-  inherit[2] = si.StartupInfo.hStdError;
   if (!UpdateProcThreadAttribute(si.lpAttributeList, 0,
-      PROC_THREAD_ATTRIBUTE_HANDLE_LIST, inherit, sizeof(HANDLE) * 3,
+      PROC_THREAD_ATTRIBUTE_HANDLE_LIST, inherit, sizeof(HANDLE) * 2,
       NULL, NULL)) {
     caml_win32_maperr(GetLastError());
     err = TRUE;
@@ -299,7 +300,6 @@ CAMLprim value w_create_process_pty_native
   }
 
 clean4:
-  CloseHandle(si.StartupInfo.hStdError);
 clean3:
   CloseHandle(si.StartupInfo.hStdOutput);
 clean2:
@@ -315,12 +315,6 @@ clean1:
   CloseHandle(pi.hThread);
   CAMLreturn(Val_long(pi.hProcess));
 #endif
-}
-
-CAMLprim value w_create_process_pty(value *argv, int argn)
-{
-  return w_create_process_pty_native(argv[0], argv[1], argv[2],
-                                     argv[3], argv[4], argv[5]);
 }
 
 CAMLprim value win_alloc_console(value unit)

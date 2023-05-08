@@ -132,9 +132,8 @@ let rec safe_waitpid pid =
 let term_sessions = Hashtbl.create 3
 
 external win_create_process_pty :
-  string -> string -> pty ->
-  Unix.file_descr -> Unix.file_descr -> Unix.file_descr -> int
-  = "w_create_process_pty" "w_create_process_pty_native"
+  string -> string -> pty -> Unix.file_descr -> Unix.file_descr -> int =
+  "w_create_process_pty"
 
 let make_cmdline args =
   let maybe_quote f =
@@ -143,8 +142,8 @@ let make_cmdline args =
     else f in
   String.concat " " (List.map maybe_quote (Array.to_list args))
 
-let create_process_pty prog args pty fd1 fd2 fd3 =
-  win_create_process_pty prog (make_cmdline args) pty fd1 fd2 fd3
+let create_process_pty prog args pty fd1 fd2 =
+  win_create_process_pty prog (make_cmdline args) pty fd1 fd2
 
 let protect f g =
   try f () with Sys_error _ | Unix.Unix_error _ as e ->
@@ -195,7 +194,8 @@ let win_create_session cmd args new_stdin new_stdout new_stderr =
   | Some ((masterIn, masterOut), pty, (conIn, conOut)) ->
       safe_close conIn;
       let create_proc () =
-        create_process_pty cmd args pty new_stdin new_stdout conOut in
+        (* Child's stderr is always connected to pty (conOut, effectively). *)
+        create_process_pty cmd args pty new_stdin new_stdout in
       let childPid =
         protect (fun () -> finally create_proc
                                    (fun () -> safe_close conOut))
