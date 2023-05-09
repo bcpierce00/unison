@@ -391,7 +391,7 @@ win32rc/unison.res.lib: win32rc/unison.rc win32rc/U.ico
 	@echo "$(OCAMLOPT): $< ---> $@"
 	$(OCAMLOPT) $(CAMLFLAGS) -c $(CWD)/$<
 
-%.o %.obj: %.c
+%$(OBJ_EXT): %.c
 	@echo "$(CAMLC): $< ---> $@"
 	$(CAMLC) $(CAMLFLAGS) $(CAMLCFLAGS) -ccopt $(OUTPUT_SEL)$(CWD)/$@ -c $(CWD)/$<
 
