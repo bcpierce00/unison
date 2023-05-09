@@ -1927,10 +1927,9 @@ let buildShellConnection shell host userOpt portOpt rootName termInteract =
         let (handleRequests, extractRemainingOutput) =
           Terminal.handlePasswordRequests fdTerm (interact rootName) isReady in
         Lwt.ignore_result (
-          handleRequests >>= fun () ->
-          extractRemainingOutput false >>=
+          handleRequests >>=
           forwardShellStderr (fst fdTerm) Unix.stderr);
-        fun () -> extractRemainingOutput true
+        extractRemainingOutput
     | _ ->
         fun () -> Lwt.return ""
   in

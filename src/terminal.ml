@@ -487,12 +487,12 @@ let handlePasswordRequests (fdIn, fdOut) {userInput; endInput} isReady =
         end
   in
   let readTerm = Lwt.catch loop (terminalError "reading from shell terminal") in
-  let extractRemainingOutput clean =
+  let handleReqs = readTerm >>= fun () -> Lwt.return (extract ()) in
+  let extractRemainingOutput () =
     closeInput ();
     (* Give a final chance of reading the error output from the ssh process. *)
     let timeout = Lwt_unix.sleep 0.3 in
     Lwt.choose [readTerm; timeout] >>= fun () ->
-    if not clean then Lwt.return (extract ())
-    else Lwt.return (Util.trimWhitespace (processEscapes (extract ())))
+    Lwt.return (Util.trimWhitespace (processEscapes (extract ())))
   in
-  (readTerm, extractRemainingOutput)
+  (handleReqs, extractRemainingOutput)
