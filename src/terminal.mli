@@ -28,7 +28,7 @@ type termInteract = {
 
 val handlePasswordRequests :
   (Lwt_unix.file_descr * Lwt_unix.file_descr) -> termInteract ->
-  (unit -> bool) -> string Lwt.t * (unit -> string Lwt.t)
+  (unit -> string) * string Lwt.t * (unit -> string Lwt.t)
 
 (* For recognizing messages from OpenSSH *)
 val password : string -> bool

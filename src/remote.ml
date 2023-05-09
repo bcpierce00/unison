@@ -1899,6 +1899,10 @@ let buildShellConnection shell host userOpt portOpt rootName termInteract =
         Terminal.create_session shellCmd argsarray i1 o2 Unix.stderr)
   in
   Unix.close i1; Unix.close o2;
+  let writeSilentNoexn fd s pos len =
+    ignore (try if len > 0 then Unix.write fd s pos len else 0
+            with Unix.Unix_error _ -> 0)
+  in
   let forwardShellStderr fdIn fdOut s =
     (* When the shell connection has been established then keep
        forwarding server's stderr to client's stderr; not to GUI. *)
@@ -1906,8 +1910,7 @@ let buildShellConnection shell host userOpt portOpt rootName termInteract =
     let rec loop s len =
       (* Can't use printf because if stderr is not open in Windows,
          it will throw an exception when at_exit tries to flush it. *)
-      ignore (try if len > 0 then Unix.write fdOut s 0 len else 0
-              with Unix.Unix_error _ -> 0);
+      writeSilentNoexn fdOut s 0 len;
       Lwt.catch (fun () -> Lwt_unix.read fdIn buf 0 16000)
         (fun _ -> debug (fun () ->
            Util.msg "Caught an exception when reading remote stderr\n");
@@ -1918,20 +1921,21 @@ let buildShellConnection shell host userOpt portOpt rootName termInteract =
     in
     loop (Bytes.of_string s) (String.length s)
   in
-  let est = ref false in
-  let connReady () = est := true
-  and isReady () = !est = true in
-  let getTermErr =
+  let (connReady, getTermErr) =
     match term, termInteract with
     | Some fdTerm, Some interact ->
-        let (handleRequests, extractRemainingOutput) =
-          Terminal.handlePasswordRequests fdTerm (interact rootName) isReady in
+        let (setReady, handleRequests, extractRemainingOutput) =
+          Terminal.handlePasswordRequests fdTerm (interact rootName) in
         Lwt.ignore_result (
           handleRequests >>=
           forwardShellStderr (fst fdTerm) Unix.stderr);
-        extractRemainingOutput
+        let connReady () =
+          let s = setReady () in
+          writeSilentNoexn Unix.stderr (Bytes.of_string s) 0 (String.length s)
+        in
+        (connReady, extractRemainingOutput)
     | _ ->
-        fun () -> Lwt.return ""
+        (Fun.id, fun () -> Lwt.return "")
   in
   let cleanup () =
     (* Make sure the [handlePasswordRequests] threads will finish while
