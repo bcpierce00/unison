@@ -7,13 +7,6 @@
 # This is not advised, though: Unison runs much slower when byte-compiled.
 NATIVE=true
 
-# User interface style.  For legal values, see Makefile.OCaml.
-# You probably don't need to set this yourself -- it will be set to
-# an appropriate value automatically, depending on whether the lablgtk
-# library is available.
-#
-# UISTYLE=text
-
 ########################################################################
 ########################################################################
 #     (There should be no need to change anything from here on)       ##
@@ -23,10 +16,7 @@ NATIVE=true
 # Building installation instructions
 
 .PHONY: all
-all: buildexecutable
-
-.PHONY: buildexecutable
-buildexecutable: ;
+all: tui guimaybe macuimaybe fsmonitor
 
 ########################################################################
 ## Miscellaneous developer-only switches
@@ -48,28 +38,23 @@ include Makefile.OCaml
 # For developers
 
 .PHONY: repeattest
-repeattest:
-	$(MAKE) all NATIVE=false DEBUG=true UISTYLE=text
+repeattest: tui
 	./unison noprofile a.tmp b.tmp -repeat foo.tmp -debug ui
 
 .PHONY: selftest
-selftest:
-	$(MAKE) all NATIVE=false DEBUG=true UISTYLE=text
+selftest: tui
 	./unison -selftest -ui text -batch
 
 .PHONY: selftestdebug
-selftestdebug:
-	$(MAKE) all NATIVE=false DEBUG=true UISTYLE=text
+selftestdebug: tui
 	./unison -selftest -ui text -batch -debug all
 
 .PHONY: selftestremote
-selftestremote:
-	$(MAKE) all NATIVE=false DEBUG=true UISTYLE=text
+selftestremote: tui
 	./unison -selftest -ui text -batch test.tmp ssh://eniac.seas.upenn.edu/test.tmp
 
 .PHONY: testmerge
-testmerge:
-	$(MAKE) all NATIVE=false UISTYLE=text
+testmerge: tui
 	-rm -rf a.tmp b.tmp
 	-rm -rf $(HOME)/.unison/backup/file.txt*
 	mkdir a.tmp b.tmp

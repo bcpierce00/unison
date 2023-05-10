@@ -1,6 +1,10 @@
 # Unison file synchronizer: Makefile
 # See LICENSE for terms.
 
+# Sub-makefiles are perfectly fine for parallel builds.
+# This makefile is not, due to recursive invocations of make.
+.NOTPARALLEL:
+
 .PHONY: all
 all: src manpage
 
@@ -9,14 +13,9 @@ src:
 	$(MAKE) -C src
 
 # It's a wart that docs need "unison" built (vs some docs utility).
-# Having docs build src/unison points out that UISTYLE is a bug; either
-# docs might build the GUI (not wanted as too heavy for docs use), or
-# whatever is built might not be rebuilt later.
 .PHONY: docs
-docs:
-	$(MAKE) -C src UISTYLE=text
+docs: src manpage
 	$(MAKE) -C doc
-	$(MAKE) -C man
 
 # "src" is a prerequisite to prevent parallel build errors.
 # manpage builds currently require a pre-built "unison" binary.
@@ -25,7 +24,7 @@ manpage: src
 	$(MAKE) -C man
 
 .PHONY: test
-test:
+test: ./src/unison
 	./src/unison -ui text -selftest
 
 .PHONY: depend
@@ -48,3 +47,14 @@ Manual page is at man/unison.1 and user manual is at\n\
 doc/unison-manual.pdf, doc/unison-manual.html and doc/unison-manual.txt\n\
 =========================================\n\n\n"
 	@exit 1
+
+# Delegate other targets to the sub-makefile
+.PHONY: Makefile
+
+./src/%:
+	$(MAKE) -C src $*
+
+%: FORCE
+	$(MAKE) -C src $@
+.PHONY: FORCE
+FORCE: ;

@@ -50,12 +50,12 @@ endif
 
 # Listing of preferences
 prefs.tmp: ../src/$(NAME)$(EXEC_EXT)
-	-../src/unison -help > prefs.tmp
+	-../src/$(NAME)$(EXEC_EXT) -help > prefs.tmp
 prefsdocs.tmp: ../src/$(NAME)$(EXEC_EXT)
-	-../src/unison -prefsdocs 2> prefsdocs.tmp
+	-../src/$(NAME)$(EXEC_EXT) -prefsdocs 2> prefsdocs.tmp
 
 ../src/$(NAME)$(EXEC_EXT):
-	$(MAKE) -C ../src UISTYLE=text $(NAME)$(EXEC_EXT)
+	$(MAKE) -C ../src tui
 
 # Tools
 %.ml : %.mll

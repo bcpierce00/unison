@@ -3,7 +3,7 @@
 all: $(NAME).1
 
 ../src/$(NAME)$(EXEC_EXT):
-	$(MAKE) -C ../src UISTYLE=text
+	$(MAKE) -C ../src tui
 
 $(NAME).1: $(NAME).1.in opt_short.tmp opt_full.tmp
 	sed -e '/@OPTIONS_SHORT@/r ./opt_short.tmp' \
