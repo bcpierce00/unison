@@ -318,19 +318,27 @@ clean::
 ####################################################################
 ### Filesystem monitoring
 
+NAME_FSM = $(NAME)-fsmonitor
+
 ifeq ($(OSARCH),Linux)
--include fsmonitor/linux/Makefile src/fsmonitor/linux/Makefile
-INCLFLAGS+=-I fsmonitor -I fsmonitor/linux
+  FSMDIR = fsmonitor/linux
 endif
 
 ifeq ($(OSARCH),SunOS)
--include fsmonitor/solaris/Makefile src/fsmonitor/solaris/Makefile
-INCLFLAGS+=-I fsmonitor -I fsmonitor/solaris
+  FSMDIR = fsmonitor/solaris
 endif
 
 ifeq ($(OSARCH),Win32)
--include fsmonitor/windows/Makefile src/fsmonitor/windows/Makefile
-INCLFLAGS+=-I fsmonitor -I fsmonitor/windows
+  FSMDIR = fsmonitor/windows
+endif
+
+.PHONY: fsmonitor
+ifdef FSMDIR
+  fsmonitor: buildexecutable $(NAME_FSM)$(EXEC_EXT)
+  -include $(FSMDIR)/Makefile
+else
+  fsmonitor:
+	$(info fsmonitor implementation is not available or not configured for this system. fsmonitor will not be built.)
 endif
 
 DEP_INCLFLAGS+=-I fsmonitor -I fsmonitor/linux -I fsmonitor/solaris -I fsmonitor/windows
@@ -406,7 +414,12 @@ $(NAME_GUI)$(EXEC_EXT): OCAMLLIBS += $(OCAMLLIBS_GUI)
 $(NAME_GUI)$(EXEC_EXT): CAMLFLAGS += $(CAMLFLAGS_GUI)
 $(NAME_GUI)$(EXEC_EXT): CAMLLDFLAGS += $(CAMLLDFLAGS_GUI)
 
-$(NAME)$(EXEC_EXT) $(NAME_GUI)$(EXEC_EXT): $$(CAMLOBJS) $$(COBJS)
+$(NAME_FSM)$(EXEC_EXT): OCAMLOBJS = $(FSMOCAMLOBJS)
+$(NAME_FSM)$(EXEC_EXT): OCAMLLIBS = $(FSMOCAMLLIBS)
+$(NAME_FSM)$(EXEC_EXT): CAMLFLAGS += -I fsmonitor -I $(FSMDIR)
+$(NAME_FSM)$(EXEC_EXT): COBJS = $(FSMCOBJS)
+
+$(NAME)$(EXEC_EXT) $(NAME_GUI)$(EXEC_EXT) $(NAME_FSM)$(EXEC_EXT): $$(CAMLOBJS) $$(COBJS)
 	@echo Linking $@
 	$(CAMLC) -verbose $(CAMLFLAGS) $(CAMLLDFLAGS) -o $@ $(CAMLCFLAGS) $(CAMLLIBS) $^ $(CLIBS)
 
@@ -427,6 +440,7 @@ $(NAME)-blob.o: $$(CAMLOBJS) $(COBJS)
 clean::
 	-$(RM) $(NAME) $(NAME).exe
 	-$(RM) $(NAME_GUI) $(NAME_GUI).exe
+	-$(RM) $(NAME_FSM) $(NAME_FSM).exe
 	-$(RM) $(NAME)-blob.o
 	-$(RM) -r *.cmi *.cmo *.cmx *.cma *.cmxa TAGS tags
 	-$(RM) -r *.o core gmon.out *~ .*~
@@ -436,7 +450,10 @@ clean::
 	-$(RM) system/generic/*.cm[iox] system/generic/*.o system/generic/*.obj system/generic/*~
 	-$(RM) system/win/*.cm[iox] system/win/*.o system/win/*.obj system/win/*~
 	-$(RM) win32rc/unison.res win32rc/unison.res.lib
-	-$(RM) fsmonitor/*.cm[iox] fsmonitor/*.o fsmonitor/*.obj
+	-$(RM) fsmonitor/*.cm[iox] fsmonitor/*.o fsmonitor/*.obj fsmonitor/*~
+ifdef FSMDIR
+	-$(RM) $(FSMDIR)/*.cm[iox] $(FSMDIR)/*.o $(FSMDIR)/*~
+endif
 	-$(RM) .depend.dot.tmp DEPENDENCIES.ps
 	-$(RM) ubase/*.cm[ioxa] ubase/*.cmxa ubase/*.a ubase/*.o ubase/*~ ubase/*.bak
 	-$(RM) lwt/*.cm[ioxa] lwt/*.cmxa lwt/*.a lwt/*.o lwt/*.obj lwt/*~ lwt/*.bak
