@@ -165,7 +165,8 @@ jobs:
 
     - shell: bash
       run: |
-        opam exec -- make src UISTYLE=text
+        opam exec -- make tui
+        opam exec -- make fsmonitor
         # stage
         # * notes: darwin/macos doesn't build `unison-fsmonitor`
         for file in ${PROJECT_EXES} ; do
@@ -240,11 +241,11 @@ jobs:
     - if: ${{ !matrix.job.static }} ## unable to build static gtk/gui
       shell: bash
       run: |
-        opam exec -- make src UISTYLE=gtk3
+        opam exec -- make gui
         # stage
         # * copy only main/first project binary
         project_exe_stem=${PROJECT_EXES%% *}
-        cp "src/${project_exe_stem}${{ steps.vars.outputs.EXE_suffix }}" "${{ steps.vars.outputs.PKG_DIR }}/bin/${project_exe_stem}-gui${{ steps.vars.outputs.EXE_suffix }}"
+        cp "src/${project_exe_stem}-gui${{ steps.vars.outputs.EXE_suffix }}" "${{ steps.vars.outputs.PKG_DIR }}/bin/"
 
     - name: "Build WinOS text+gui hybrid"
       if: ${{ runner.os == 'Windows' && !matrix.job.static }} ## WinOS, non-static (unable to build static gtk/gui)
@@ -254,10 +255,10 @@ jobs:
         # * copy only main/first project binary
         project_exe_stem=${PROJECT_EXES%% *}
         # * clean/remove build artifact(s)
-        rm "src/${project_exe_stem}${{ steps.vars.outputs.EXE_suffix }}" ##.or.# opam exec -- make -C src clean #.or.# opam exec -- make clean
+        rm "src/${project_exe_stem}-gui${{ steps.vars.outputs.EXE_suffix }}" ##.or.# opam exec -- make -C src clean #.or.# opam exec -- make clean
         # * re-create (with hybrid text+gui UI)
-        opam exec -- make src UISTYLE=gtk3 UI_WINOS=hybrid
-        cp "src/${project_exe_stem}${{ steps.vars.outputs.EXE_suffix }}" "${{ steps.vars.outputs.PKG_DIR }}/bin/${project_exe_stem}-text+gui${{ steps.vars.outputs.EXE_suffix }}"
+        opam exec -- make gui UI_WINOS=hybrid
+        cp "src/${project_exe_stem}-gui${{ steps.vars.outputs.EXE_suffix }}" "${{ steps.vars.outputs.PKG_DIR }}/bin/${project_exe_stem}-text+gui${{ steps.vars.outputs.EXE_suffix }}"
 
     - uses: actions/upload-artifact@v3
       with:
@@ -344,7 +345,7 @@ jobs:
       name: "macOS: Build and package Unison.app"
       id: macapp
       run: |
-        opam exec -- make src UISTYLE=mac
+        opam exec -- make macui
 
         # package
         APP_NAME=Unison-${{ steps.vars.outputs.PKG_VER }}-macos.app.tar.gz
@@ -480,7 +481,7 @@ jobs:
              runtest "backups 1 (remote)" ["backup = Name *"] (fun() ->
         EOF
 
-    - run: cd _new && opam exec -- make src UISTYLE=text
+    - run: cd _new && opam exec -- make tui
       shell: bash
 
     - name: Checkout ${{ matrix.job.ref }} to _prev
@@ -1103,7 +1104,7 @@ jobs:
         opam-pin: false
         opam-depext: false
 
-    - run: opam exec -- make src UISTYLE=text NATIVE=false
+    - run: opam exec -- make tui NATIVE=false
 
     - run: opam exec -- make test
 
@@ -1150,7 +1151,7 @@ jobs:
 
     - name: Build text UI
       run: |
-        opam exec -- make src UISTYLE=text
+        opam exec -- make
         mkdir -p pkg/bin
         cp src/unison pkg/bin/
         cp src/unison-fsmonitor pkg/bin/
@@ -1173,8 +1174,8 @@ jobs:
       if: ${{ !contains(matrix.job.ocaml-version, '-musl') }}
       run: |
         opam depext --install --verbose --yes lablgtk3 && opam install ocamlfind
-        opam exec -- make src UISTYLE=gtk3
-        cp src/unison pkg/bin/unison-gui
+        opam exec -- make gui
+        cp src/unison-gui pkg/bin/
 
     - name: Initialize packaging variables
       id: vars
