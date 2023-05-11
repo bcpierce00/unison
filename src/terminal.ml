@@ -424,7 +424,7 @@ type termInteract = {
   endInput : unit -> unit }
 
 (* Read messages from the terminal and use the callback to get an answer *)
-let handlePasswordRequests (fdIn, fdOut) {userInput; endInput} isReady =
+let handlePasswordRequests (fdIn, fdOut) {userInput; endInput} =
   let scrollback = Buffer.create 32 in
   let extract () =
     let s = Buffer.contents scrollback in
@@ -445,7 +445,7 @@ let handlePasswordRequests (fdIn, fdOut) {userInput; endInput} isReady =
   let sendResponse s =
     Lwt.catch
       (fun () ->
-        if isReady () || !ended then Lwt.return 0
+        if !ended then Lwt.return 0
         else Lwt_unix.write_substring fdOut (s ^ "\n") 0 (String.length s + 1))
       (terminalError "writing to shell terminal")
   in
@@ -469,30 +469,30 @@ let handlePasswordRequests (fdIn, fdOut) {userInput; endInput} isReady =
        remote shell process dies. The reading will end (return 0 or an error)
        when the pty is closed.
        The only way to stop the reading loop without closing the pty is to
-       signal [isReady]. *)
+       signal [connectionReady] or [closeInput]. *)
     Lwt.catch
       (fun () -> Lwt_unix.read fdIn buf 0 blen)
-      (fun ex -> if isReady () || !ended then Lwt.return 0 else Lwt.fail ex)
+      (fun ex -> if !ended then Lwt.return 0 else Lwt.fail ex)
     >>= function
     | 0 -> Lwt.return ()
     | len ->
         Buffer.add_string scrollback (Bytes.sub_string buf 0 len);
-        if isReady () then begin (* The shell connection has been established *)
-          closeInput ();
+        if !ended then begin (* The shell connection has been established *)
           Lwt.return ()
         end else begin
           Lwt.ignore_result (Lwt_unix.sleep 0.05 >>= fun () -> (* Give time for connection checks *)
-            Lwt.return (if not !ended && not (isReady ()) then promptUser ()));
+            Lwt.return (if not !ended then promptUser ()));
           loop ()
         end
   in
   let readTerm = Lwt.catch loop (terminalError "reading from shell terminal") in
-  let extractRemainingOutput clean =
+  let handleReqs = readTerm >>= fun () -> Lwt.return (extract ()) in
+  let connectionReady () = closeInput (); extract () in
+  let extractRemainingOutput () =
     closeInput ();
     (* Give a final chance of reading the error output from the ssh process. *)
     let timeout = Lwt_unix.sleep 0.3 in
     Lwt.choose [readTerm; timeout] >>= fun () ->
-    if not clean then Lwt.return (extract ())
-    else Lwt.return (Util.trimWhitespace (processEscapes (extract ())))
+    Lwt.return (Util.trimWhitespace (processEscapes (extract ())))
   in
-  (readTerm, extractRemainingOutput)
+  (connectionReady, handleReqs, extractRemainingOutput)
