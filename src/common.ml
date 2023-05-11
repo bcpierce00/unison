@@ -68,6 +68,32 @@ let sortRoots rootList = Safelist.sort compareRoots rootList
 
 (* ---------------------------------------------------------------------- *)
 
+module NameMap = MyMap.Make (Name)
+
+type archive =
+  | ArchiveDir of Props.t * archive NameMap.t
+  | ArchiveFile of Props.t * Os.fullfingerprint * Fileinfo.stamp * Osx.ressStamp
+  | ArchiveSymlink of string
+  | NoArchive
+
+let marchive_rec marchive =
+  Umarshal.(sum4
+              (prod2 Props.m (NameMap.m marchive) id id)
+              (prod4 Props.m Os.mfullfingerprint Fileinfo.mstamp Osx.mressStamp id id)
+              string unit
+              (function
+               | ArchiveDir (a, b) -> I41 (a, b)
+               | ArchiveFile (a, b, c, d) -> I42 (a, b, c, d)
+               | ArchiveSymlink a -> I43 a
+               | NoArchive -> I44 ())
+              (function
+               | I41 (a, b) -> ArchiveDir (a, b)
+               | I42 (a, b, c, d) -> ArchiveFile (a, b, c, d)
+               | I43 a -> ArchiveSymlink a
+               | I44 () -> NoArchive))
+
+let marchive = Umarshal.rec1 marchive_rec
+
 (* IMPORTANT!
    This is the 2.51-compatible version of type [Common.prevState]. It must
    always remain exactly the same as the type [Common.prevState] in version
@@ -77,11 +103,11 @@ type prevState251 =
     Previous of Fileinfo.typ * Props.t251 * Os.fullfingerprint * Osx.ressStamp
   | New
 
-type prevState =
+type prevState1 =
     Previous of Fileinfo.typ * Props.t * Os.fullfingerprint * Osx.ressStamp
   | New
 
-let mprevState = Umarshal.(sum2
+let mprevState1 = Umarshal.(sum2
                              (prod4 Fileinfo.mtyp Props.m Os.mfullfingerprint Osx.mressStamp id id)
                              unit
                              (function
@@ -90,6 +116,35 @@ let mprevState = Umarshal.(sum2
                              (function
                               | I21 (a, b, c, d) -> Previous (a, b, c, d)
                               | I22 () -> New))
+
+type prevState = archive
+
+let mprevState2 = Umarshal.rec1 marchive_rec
+
+let prev_to_old = function
+  | ArchiveDir (desc, _) ->
+      Previous (`DIRECTORY, desc, Os.fullfingerprint_dummy, Osx.ressDummy)
+  | ArchiveFile (desc, fp, _, ress) ->
+      Previous (`FILE, desc, fp, ress)
+  | ArchiveSymlink _ ->
+      Previous (`SYMLINK, Props.dummy, Os.fullfingerprint_dummy, Osx.ressDummy)
+  | NoArchive ->
+      New
+
+let prev_of_old = function
+  | Previous (`DIRECTORY, desc, _, _) -> ArchiveDir (desc, NameMap.empty)
+  | Previous (`FILE, desc, fp, ress) -> ArchiveFile (desc, fp, NoStamp, ress)
+  | Previous (`SYMLINK, _, _, _) -> ArchiveSymlink ""
+  | Previous (`ABSENT, _, _, _)
+  | New -> NoArchive
+
+let featPrevState2 = Features.register "prevState2" None
+
+let newPrevStateType () = Features.enabled featPrevState2
+
+let mprevState = Umarshal.(switch newPrevStateType
+  mprevState2 id id
+  mprevState1 prev_to_old prev_of_old)
 
 (* IMPORTANT!
    This is the 2.51-compatible version of type [Common.contentschange]. It
@@ -207,16 +262,16 @@ let mupdateContent, mupdateItem =
 (* Compatibility conversion functions *)
 
 let prev_to_compat251 (prev : prevState) : prevState251 =
-  match prev with
+  match prev_to_old prev with
   | Previous (typ, props, fp, ress) ->
       Previous (typ, Props.to_compat251 props, fp, ress)
   | New -> New
 
 let prev_of_compat251 (prev : prevState251) : prevState =
-  match prev with
+  prev_of_old (match prev with
   | Previous (typ, props, fp, ress) ->
       Previous (typ, Props.of_compat251 props, fp, ress)
-  | New -> New
+  | New -> New)
 
 let change_to_compat251 (c : contentschange) : contentschange251 =
   match c with
@@ -273,9 +328,11 @@ type status =
   | `Modified
   | `PropsChanged
   | `Created
+  | `MovedOut of Path.t * replicaContent * replicaContent
+  | `MovedIn of Path.t * replicaContent * replicaContent
   | `Unchanged ]
 
-type replicaContent =
+and replicaContent =
   { typ : Fileinfo.typ;
     status : status;
     desc : Props.t;                (* Properties (for the UI) *)
@@ -335,7 +392,12 @@ let rcLength rc rc' =
   if riAction rc rc' = `SetProps then
     Uutil.Filesize.zero
   else
-    snd rc.size
+    match rc'.status with
+    | `MovedIn _ ->
+        (* A move/rename will be reverted, count its size too *)
+        Uutil.Filesize.add (snd rc.size) (snd rc'.size)
+    | _ ->
+        snd rc.size
 
 let riLength ri =
   match ri.replicas with
@@ -355,17 +417,17 @@ let riLength ri =
 let fileInfos ui1 ui2 =
   match ui1, ui2 with
     (Updates (File (desc1, ContentsUpdated (fp1, _, ress1)),
-              Previous (`FILE, desc2, fp2, ress2)),
+              ArchiveFile (desc2, fp2, _, ress2)),
      NoUpdates)
   | (Updates (File (desc1, ContentsUpdated (fp1, _, ress1)),
-              Previous (`FILE, desc2, fp2, ress2)),
+              ArchiveFile (desc2, fp2, _, ress2)),
      Updates (File (_, ContentsSame), _))
   | (NoUpdates,
      Updates (File (desc2, ContentsUpdated (fp2, _, ress2)),
-              Previous (`FILE, desc1, fp1, ress1)))
+              ArchiveFile (desc1, fp1, _, ress1)))
   | (Updates (File (_, ContentsSame), _),
      Updates (File (desc2, ContentsUpdated (fp2, _, ress2)),
-              Previous (`FILE, desc1, fp1, ress1)))
+              ArchiveFile (desc1, fp1, _, ress1)))
   | (Updates (File (desc1, ContentsUpdated (fp1, _, ress1)), _),
      Updates (File (desc2, ContentsUpdated (fp2, _, ress2)), _)) ->
        (desc1, fp1, ress1, desc2, fp2, ress2)
