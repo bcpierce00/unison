@@ -13,7 +13,7 @@ therefore have the following limitations:
   time, this could result in a dead-lock.
 - [connect] is blocking
 *)
-let windows_hack = Sys.os_type <> "Unix"
+let windows_hack = Sys.win32
 
 module SleepQueue =
   Pqueue.Make (struct

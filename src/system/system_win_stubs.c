@@ -483,6 +483,53 @@ CAMLprim value win_init_console(value unit)
   out_orig = (HANDLE) GetStdHandle(STD_OUTPUT_HANDLE);
   err_orig = (HANDLE) GetStdHandle(STD_ERROR_HANDLE);
 
+  /* What is going on here... Due to what is arguably a bug in Windows, when
+   * stdout and stderr share the same fd/handle inherited by the process, only
+   * stdout is closed and cleared for GUI applications without console at
+   * process startup. This situation is not something that usually happens in
+   * Windows. It seems to happen only when an application is started by a
+   * Cygwin/MSYS2 shell (maybe further depending on in which context the shell
+   * itself is running). It may also happen when the parent process has marked
+   * the handle as not inheritable and then still instructs the child process
+   * to use this handle, which is clearly a bug in the parent.
+   *
+   * This is what happens when stdout and stderr share the same handle.
+   *
+   * For GUI applications without console (and without redirections) Windows
+   * closes and clears stdin, stdout and stderr handles at startup. Since
+   * stdout is closed first, stderr has become invalid and since it's invalid,
+   * Windows does not close and clear stderr. The handle still set as stderr
+   * value (remember, it is now actually closed and free for kernel to reuse)
+   * is then later given by kernel to whatever happens to require a new handle.
+   *
+   * The application has now started and has no idea that something's wrong.
+   * AllocConsole() sees that stderr already has a handle set and does not set
+   * a new handle for stderr (as it should for a newly allocated console).
+   *
+   * Now, when trying to use stderr in any way (writing to it, or doing
+   * dup/dup2), it may fail in unexpected ways or even cause corruption because
+   * the handle is invalid or it could have been reused for anything. In any
+   * case, it will likely lead to a crash.
+   *
+   * It's not possible to detect this situation completely reliably because by
+   * the time the application code runs, stdout has already been cleared and
+   * the stderr handle could have been reused for anything and our checks could
+   * be returning valid values (so it becomes indistinguishable from a
+   * redirected stderr). The only way we can detect if something like this is
+   * happening, is to check if stdout is cleared but stderr is not and stderr
+   * is invalid. Interestingly, at least newer versions of CRT (don't know
+   * about UCRT) get this right and correctly report both stdout and stderr as
+   * not set. We can leverage this to make the check that much more reliable.
+   *
+   * We only do this check for stderr because we don't otherwise expect to have
+   * invalid std handles which are not NULL. */
+  if (err_orig && !out_orig
+      && ((!GetFileType(err_orig) && (ERROR_INVALID_HANDLE == GetLastError()))
+          || (_fileno(stderr) == -2))) {
+    SetStdHandle(STD_ERROR_HANDLE, NULL);
+    err_orig = NULL;
+  }
+
   if (!GetFileType(out_orig) || !GetFileType(err_orig)) {
     AllocConsole();
     /* There's nothing we can do about an error, so we're not going to check.
@@ -509,17 +556,17 @@ CAMLprim value win_init_console(value unit)
     err = (HANDLE) GetStdHandle(STD_ERROR_HANDLE);
 
     /* Return only handles that are not already redirected by user. */
-    if (!GetFileType(in_orig)) {
+    if (!GetFileType(in_orig) && (in != in_orig)) {
       tmp = caml_alloc(1, 0);
       Store_field(tmp, 0, caml_win32_alloc_handle(in));
       Store_field(ret, 0, tmp);
     }
-    if (!GetFileType(out_orig)) {
+    if (!GetFileType(out_orig) && (out != out_orig)) {
       tmp = caml_alloc(1, 0);
       Store_field(tmp, 0, caml_win32_alloc_handle(out));
       Store_field(ret, 1, tmp);
     }
-    if (!GetFileType(err_orig)) {
+    if (!GetFileType(err_orig) && (err != err_orig)) {
       tmp = caml_alloc(1, 0);
       Store_field(tmp, 0, caml_win32_alloc_handle(err));
       Store_field(ret, 2, tmp);

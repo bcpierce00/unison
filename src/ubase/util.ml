@@ -290,18 +290,6 @@ let blockSignals sigs f =
     Printexc.raise_with_backtrace e origbt
 
 (*****************************************************************************)
-(*                         OS TYPE                                           *)
-(*****************************************************************************)
-
-let osType =
-  match Sys.os_type with
-    "Win32" | "Cygwin" -> `Win32
-  | "Unix"             -> `Unix
-  | other              -> raise (Fatal ("Unknown OS: " ^ other))
-
-let isCygwin = (Sys.os_type = "Cygwin")
-
-(*****************************************************************************)
 (*                      MISCELLANEOUS                                        *)
 (*****************************************************************************)
 
@@ -496,9 +484,9 @@ let padto n s = s ^ (String.make (max 0 (n - String.length s)) ' ')
 (*****************************************************************************)
 
 let homeDir () =
-    (if (osType = `Unix) || isCygwin then
+    (if Sys.unix || Sys.cygwin then
        safeGetenv "HOME"
-     else if osType = `Win32 then
+     else if Sys.win32 then
 (*We don't want the behavior of Unison to depends on whether it is run
   from a Cygwin shell (where HOME is set) or in any other way (where
   HOME is usually not set)

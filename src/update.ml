@@ -275,9 +275,9 @@ let archiveName251 fspath (v: archiveVersion): string * string =
        On windows systems, filenames longer than 8 bytes can cause problems, so
        we chop off all but the first 6 from the fingerprint. *)
     let significantDigits =
-      match Util.osType with
-        `Win32 -> 6
-      | `Unix -> 32
+      match Sys.unix with
+      | false -> 6
+      | true  -> 32
     in
     let thisRoot = thisRootsGlobalName fspath in
     let r = Prefs.read rootsName in
@@ -1496,7 +1496,7 @@ let fastcheck =
 
 let useFastChecking () =
       Prefs.read fastcheck = `True
-   || (Prefs.read fastcheck = `Default (*&& Util.osType = `Unix*))
+   || (Prefs.read fastcheck = `Default (*&& Sys.unix*))
 
 let immutable = Pred.create "immutable"
   ~category:(`Advanced `Sync)
@@ -2386,7 +2386,7 @@ let t1 = Unix.gettimeofday () in
       (* Directory optimization is disabled under Windows,
          as Windows does not update directory modification times
          on FAT filesystems. *)
-      dirFastCheck = useFastChecking () && Util.osType = `Unix;
+      dirFastCheck = useFastChecking () && Sys.unix;
       dirStamp; rescanProps; archHash = archiveHash fspath;
       showStatus = not !Trace.runningasserver }
   in

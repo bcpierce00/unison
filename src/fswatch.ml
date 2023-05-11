@@ -223,7 +223,7 @@ let read_line i =
 
 let path =
     try
-       Str.split (Str.regexp (if Util.osType = `Win32 then ";" else ":"))
+       Str.split (Str.regexp (if Sys.win32 then ";" else ":"))
          (Sys.getenv "PATH")
      with Not_found ->
        []
@@ -261,7 +261,7 @@ let exec_dir = List.map Filename.dirname exec_path
 
 let watcher =
   lazy
-    (let suffix = if Util.osType = `Win32 then ".exe" else "" in
+    (let suffix = if Sys.win32 || Sys.cygwin then ".exe" else "" in
      debug (fun () -> Util.msg "File monitoring helper program...\n");
        (try
           search_in_path ~path:(exec_dir @ path)

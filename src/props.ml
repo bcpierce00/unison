@@ -99,8 +99,8 @@ let permMask =
 
 (* Os-specific local conventions on file permissions                         *)
 let (fileDefault, dirDefault, fileSafe, dirSafe) =
-  match Util.osType with
-    `Win32 ->
+  match Sys.win32 with
+  | true ->
       debug
         (fun() ->
            Util.msg "Using windows defaults for file permissions");
@@ -108,7 +108,7 @@ let (fileDefault, dirDefault, fileSafe, dirSafe) =
        (0o700, -1), (* rwx------ *)
        (0o600, -1), (* rw------- *)
        (0o700, -1)) (* rwx------ *)
-  | `Unix ->
+  | false ->
       let umask =
         let u = Unix.umask 0 in
         ignore (Unix.umask u);

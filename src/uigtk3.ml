@@ -98,12 +98,10 @@ let leftPtrWatch =
   lazy (Gdk.Cursor.create `WATCH)
 
 let make_busy w =
-  if Util.osType <> `Win32 then
-    Gdk.Window.set_cursor w#misc#window (Lazy.force leftPtrWatch)
+  Gdk.Window.set_cursor w#misc#window (Lazy.force leftPtrWatch)
 let make_interactive w =
-  if Util.osType <> `Win32 then
-    (* HACK: setting the cursor to NULL restore the default cursor *)
-    Gdk.Window.set_cursor w#misc#window (Obj.magic Gpointer.boxed_null)
+  (* HACK: setting the cursor to NULL restore the default cursor *)
+  Gdk.Window.set_cursor w#misc#window (Obj.magic Gpointer.boxed_null)
 
 (*********************************************************************
   UI state variables
@@ -242,7 +240,7 @@ let escapeMarkup s = Glib.Markup.escape_text s
 let transcodeFilename s =
   if Prefs.read Case.unicodeEncoding then
     Unicode.protect s
-  else if Util.osType = `Win32 then transcodeDoc s else
+  else if Sys.win32 then transcodeDoc s else
   try
     Glib.Convert.filename_to_utf8 s
   with Glib.Convert.Error _ ->
@@ -1484,7 +1482,7 @@ let createProfile parent =
      remote non-Windows machine.  As this is unlikely, we do not
      handle this case. *)
   let fat =
-    if Util.osType = `Win32 then
+    if Sys.win32 then
       React.const false
     else begin
       let vb =
@@ -1514,7 +1512,7 @@ let createProfile parent =
      partitions.  In most cases, we should be in Unicode mode.
      Thus, it seems sensible to always enable fastcheck. *)
 (*
-  let fastcheck = isLocal >> not >> (fun b -> b || Util.osType = `Win32) in
+  let fastcheck = isLocal >> not >> (fun b -> b || Sys.win32) in
 *)
   (* Unicode mode can be problematic when the source machine is under
      Windows and the remote machine is not, as Unison may have already
@@ -1522,7 +1520,7 @@ let createProfile parent =
      handle Unicode before version 1.7. *)
   let vb = GPack.vbox ~spacing:6 ~packing:(options#pack ~expand:false) () in
   let askUnicode = React.const false in
-(* isLocal >> not >> fun b -> (b || Util.isCygwin) && Util.osType = `Win32 in*)
+(* isLocal >> not >> fun b -> (b && Sys.win32) || Sys.cygwin in*)
   GtkReact.show vb askUnicode;
   adjustSize
     (GMisc.label ~xalign:0. ~line_wrap:true ~justify:`LEFT
@@ -1567,7 +1565,7 @@ let createProfile parent =
   ignore
     (assistant#connect#prepare ~callback:(fun () ->
        if assistant#current_page = p &&
-          not (Util.osType <> `Win32 || React.state askUnicode)
+          not (not Sys.win32 || React.state askUnicode)
        then
          assistant#set_current_page (p + 1)));
 
@@ -2768,7 +2766,7 @@ let displayWaitMessage () =
   Trace.status (Uicommon.contactingServerMsg ())
 
 let prepDebug () =
-  if Sys.os_type = "Win32" then
+  if Sys.win32 then
     (* As a side-effect, this allocates a console if the process doesn't
        have one already. This call is here only for the side-effect,
        because debugging output is produced on stderr and the GUI will
@@ -2788,7 +2786,7 @@ let createToplevelWindow () =
   setToplevelWindow toplevelWindow;
   (* There is already a default icon under Windows, and transparent
      icons are not supported by all version of Windows *)
-  if Util.osType <> `Win32 then toplevelWindow#set_icon (Some (Lazy.force icon));
+  if not Sys.win32 then toplevelWindow#set_icon (Some (Lazy.force icon));
   let toplevelVBox = GPack.vbox ~packing:toplevelWindow#add () in
 
   (*******************************************************************
@@ -4513,7 +4511,7 @@ let start = function
     Uicommon.Text -> Uitext.Body.start Uicommon.Text
   | Uicommon.Graphic ->
       let displayAvailable =
-        Util.osType = `Win32
+        Sys.win32
           ||
         (try System.getenv "DISPLAY" <> "" with Not_found -> false)
           ||

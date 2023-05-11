@@ -117,7 +117,7 @@ let rec safe_waitpid pid =
         Unix.sleepf 0.002;
         let dt = Unix.gettimeofday () -. t in
         if dt >= 0.5 && st = 0 then begin
-          kill_noerr Sys.(if os_type = "Win32" then sigkill else sigterm);
+          kill_noerr Sys.(if win32 then sigkill else sigterm);
           aux 1
         end else if dt >= 2.0 && st = 1 then begin
           kill_noerr Sys.sigkill;
@@ -132,9 +132,8 @@ let rec safe_waitpid pid =
 let term_sessions = Hashtbl.create 3
 
 external win_create_process_pty :
-  string -> string -> pty ->
-  Unix.file_descr -> Unix.file_descr -> Unix.file_descr -> int
-  = "w_create_process_pty" "w_create_process_pty_native"
+  string -> string -> pty -> Unix.file_descr -> Unix.file_descr -> int =
+  "w_create_process_pty"
 
 let make_cmdline args =
   let maybe_quote f =
@@ -143,8 +142,8 @@ let make_cmdline args =
     else f in
   String.concat " " (List.map maybe_quote (Array.to_list args))
 
-let create_process_pty prog args pty fd1 fd2 fd3 =
-  win_create_process_pty prog (make_cmdline args) pty fd1 fd2 fd3
+let create_process_pty prog args pty fd1 fd2 =
+  win_create_process_pty prog (make_cmdline args) pty fd1 fd2
 
 let protect f g =
   try f () with Sys_error _ | Unix.Unix_error _ as e ->
@@ -159,7 +158,7 @@ let finally f g =
 external win_alloc_console : unit -> Unix.file_descr option = "win_alloc_console"
 
 let fallback_session cmd args new_stdin new_stdout new_stderr =
-  if Sys.os_type = "Win32" then begin
+  if Sys.win32 then begin
     (* OCaml's [Unix.create_process] hides the Windows console window of
        the child process unless the parent process already has a console.
        This is unsuitable for running interactive child processes like
@@ -195,7 +194,8 @@ let win_create_session cmd args new_stdin new_stdout new_stderr =
   | Some ((masterIn, masterOut), pty, (conIn, conOut)) ->
       safe_close conIn;
       let create_proc () =
-        create_process_pty cmd args pty new_stdin new_stdout conOut in
+        (* Child's stderr is always connected to pty (conOut, effectively). *)
+        create_process_pty cmd args pty new_stdin new_stdout in
       let childPid =
         protect (fun () -> finally create_proc
                                    (fun () -> safe_close conOut))
@@ -233,7 +233,9 @@ let unix_create_session cmd args new_stdin new_stdout new_stderr =
             (* new_stderr will be used by parent process only. *)
             if new_stderr <> Unix.stderr then safe_close new_stderr;
             Unix.close masterFd;
-            ignore (Unix.setsid ());
+            (* [Unix.setsid] is not implemented on Cygwin, reason unknown.
+               It will be called by [setControllingTerminal] instead. *)
+            if not Sys.cygwin then ignore (Unix.setsid ());
             setControllingTerminal slaveFd;
             (* WARNING: SETTING ECHO TO FALSE! *)
             let tio = Unix.tcgetattr slaveFd in

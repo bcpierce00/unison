@@ -39,17 +39,19 @@ let toString (Fspath f) = f
 let toPrintString (Fspath f) = f
 let toDebugString (Fspath f) = String.escaped f
 
+let winStylePaths = Sys.win32 || Sys.cygwin
+
 (* Needed to hack around some ocaml/Windows bugs, see comment at stat, below *)
 let winRootRx = Rx.rx "(([a-zA-Z]:)?/|//[^?/]+/[^/]+/|//[?]/[Uu][Nn][Cc]/[^/]+/[^/]+/)|//[?]/([^Uu][^/]*|[Uu]|[Uu][^Nn][^/]*|[Uu][Nn]|[Uu][Nn][^Cc][^/]*|[Uu][Nn][Cc][^/]+)/"
 (* FIX I think we could just check the last character of [d]. *)
 let isRootDir d =
 (* We assume all path separators are slashes in d                            *)
   d="/" ||
-  (Util.osType = `Win32 && Rx.match_string winRootRx d)
+  (winStylePaths && Rx.match_string winRootRx d)
 (* Here, backslashes are allowed as path separators in Windows               *)
 let isRootDirLocalString d =
   let d =
-    if Util.osType = `Win32 then Fileutil.backslashes2forwardslashes d else d
+    if winStylePaths then Fileutil.backslashes2forwardslashes d else d
   in
   isRootDir ((Fileutil.removeTrailingSlashes d) ^ "/")
 let winRootFix d =
@@ -58,7 +60,7 @@ let winFNsPrefixRx = Rx.rx "[\\/][\\/][?][\\/][^\\/]+"
 let isInvalidWinPath p =
   Rx.match_string winFNsPrefixRx p (* Is there a path after the prefix? *)
 let winSafeDirname p =
-  if Util.osType <> `Win32 then
+  if not winStylePaths then
     Filename.dirname p
   else
     (* [Filename.dirname] can't handle Windows paths prefixed with \\?\
@@ -238,7 +240,7 @@ let localString2fspath s =
   (* Force path separators to be slashes in Windows, handle weirdness in     *)
   (* Windows network names                                                   *)
   let s =
-    if Util.osType = `Win32
+    if winStylePaths
     then winRootFix (Fileutil.backslashes2forwardslashes s)
     else s in
   (* Note: s may still contain backslashes under Unix *)
@@ -367,7 +369,7 @@ let findWorkingDir fspath path =
                best compromise. *)
             Filename.concat (winSafeDirname p) link
             |> fun l ->
-              if Util.osType = `Win32 then
+              if Sys.win32 then
                 let Fspath l' = canonizeFspath (Some l) in
                 System.extendedPath l'
               else l

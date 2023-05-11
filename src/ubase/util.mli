@@ -72,10 +72,6 @@ val padto : int -> string -> string
 (* ---------------------------------------------------------------------- *)
 (* Miscellaneous *)
 
-(* Architecture *)
-val osType : [`Unix | `Win32]
-val isCygwin: bool    (* osType will be `Win32 in this case *)
-
 (* Options *)
 val extractValueFromOption : 'a option -> 'a
 val option2string: ('a -> string) -> ('a option -> string)

@@ -329,11 +329,11 @@ let openFileOut' fspath path kind len =
       let fullpath = Fspath.concat fspath path in
       let flags = [Unix.O_WRONLY; Unix.O_CREAT; Unix.O_CLOEXEC] in
       let perm = if Prefs.read Props.dontChmod then Props.perms Props.fileDefault else 0o600 in
-      begin match Util.osType with
-        `Win32 ->
+      begin match Sys.win32 with
+      | true ->
           Fs.open_out_gen
             [Open_wronly; Open_creat; Open_excl; Open_binary] perm fullpath
-      | `Unix ->
+      | false ->
           let fd =
             try
               Fs.openfile fullpath (Unix.O_EXCL :: flags) perm
