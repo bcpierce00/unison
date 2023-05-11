@@ -57,6 +57,9 @@ jobs:
 
     runs-on: ${{ matrix.job.os }}
 
+    env:
+      LDFLAGS: ${{ matrix.job.static }}
+
     steps:
     - if: contains(matrix.job.os, 'ubuntu')
       run: sudo apt-get update
@@ -89,8 +92,7 @@ jobs:
         EXE_suffix='' ; case '${{ matrix.job.os }}' in windows-*) EXE_suffix=".exe" ;; esac
         MinGW_ARCH='x86_64' ; case '${{ matrix.job.ocaml-version }}' in *+mingw32*) MinGW_ARCH='i686' ;; *+mingw64*) MinGW_ARCH='x86_64' ;; esac
         MSVC_ARCH='' ; case '${{ matrix.job.ocaml-version }}' in *+msvc32*) MSVC_ARCH='x86' ;; *+msvc64*) MSVC_ARCH='x64' ;; esac
-        STATIC='false' ; case '${{ matrix.job.ocaml-version }}' in *-musl*) STATIC='true' ;; esac
-        outputs EXE_suffix MinGW_ARCH MSVC_ARCH STATIC
+        outputs EXE_suffix MinGW_ARCH MSVC_ARCH
         case '${{ matrix.job.os }}','${{ matrix.job.ocaml-version }}' in
           macos-*,4*) MACOSX_DEPLOYMENT_TARGET=10.6 ;; macos-*,5*) MACOSX_DEPLOYMENT_TARGET=10.7 ;;
         esac
@@ -163,7 +165,7 @@ jobs:
 
     - shell: bash
       run: |
-        opam exec -- make src OSTYPE=$OSTYPE UISTYLE=text STATIC=${{ steps.vars.outputs.STATIC }}
+        opam exec -- make src UISTYLE=text
         # stage
         # * notes: darwin/macos doesn't build `unison-fsmonitor`
         for file in ${PROJECT_EXES} ; do
@@ -235,17 +237,17 @@ jobs:
       if: ${{ ! ( contains(matrix.job.ocaml-version, '+msvc') || contains(matrix.job.ocaml-version, '-musl') || contains(matrix.job.ocaml-version, '-32bit') ) }}
       run: opam depext --install --verbose --yes lablgtk3 && opam install ocamlfind
 
-    - if: steps.vars.outputs.STATIC != 'true' ## unable to build static gtk/gui
+    - if: ${{ !matrix.job.static }} ## unable to build static gtk/gui
       shell: bash
       run: |
-        opam exec -- make src OSTYPE=$OSTYPE UISTYLE=gtk3 STATIC=${{ steps.vars.outputs.STATIC }}
+        opam exec -- make src UISTYLE=gtk3
         # stage
         # * copy only main/first project binary
         project_exe_stem=${PROJECT_EXES%% *}
         cp "src/${project_exe_stem}${{ steps.vars.outputs.EXE_suffix }}" "${{ steps.vars.outputs.PKG_DIR }}/bin/${project_exe_stem}-gui${{ steps.vars.outputs.EXE_suffix }}"
 
     - name: "Build WinOS text+gui hybrid"
-      if: runner.os == 'Windows' && steps.vars.outputs.STATIC != 'true' ## WinOS, non-static (unable to build static gtk/gui)
+      if: ${{ runner.os == 'Windows' && !matrix.job.static }} ## WinOS, non-static (unable to build static gtk/gui)
       shell: bash
       run: |
         # create and stage text+gui hybrid for Windows
@@ -254,7 +256,7 @@ jobs:
         # * clean/remove build artifact(s)
         rm "src/${project_exe_stem}${{ steps.vars.outputs.EXE_suffix }}" ##.or.# opam exec -- make -C src clean #.or.# opam exec -- make clean
         # * re-create (with hybrid text+gui UI)
-        opam exec -- make src OSTYPE=$OSTYPE UISTYLE=gtk3 UI_WINOS=hybrid STATIC=${{ steps.vars.outputs.STATIC }}
+        opam exec -- make src UISTYLE=gtk3 UI_WINOS=hybrid
         cp "src/${project_exe_stem}${{ steps.vars.outputs.EXE_suffix }}" "${{ steps.vars.outputs.PKG_DIR }}/bin/${project_exe_stem}-text+gui${{ steps.vars.outputs.EXE_suffix }}"
 
     - uses: actions/upload-artifact@v3
@@ -478,7 +480,7 @@ jobs:
              runtest "backups 1 (remote)" ["backup = Name *"] (fun() ->
         EOF
 
-    - run: cd _new && opam exec -- make src UISTYLE=text OSTYPE=$OSTYPE
+    - run: cd _new && opam exec -- make src UISTYLE=text
       shell: bash
 
     - name: Checkout ${{ matrix.job.ref }} to _prev
@@ -1115,7 +1117,7 @@ jobs:
       matrix:
         job:
         - { ocaml-version: 4.14.x, publish: true, fnsuffix: -ubuntu-x86_64 }
-        - { ocaml-version: "ocaml-variants.4.14.1+options,ocaml-option-musl,ocaml-option-static,ocaml-option-flambda", publish: true, fnsuffix: -ubuntu-x86_64-static }
+        - { ocaml-version: "ocaml-variants.4.14.1+options,ocaml-option-musl,ocaml-option-static,ocaml-option-flambda", publish: true, fnsuffix: -ubuntu-x86_64-static, static: -static }
         - { ocaml-version: 4.13.x }
         - { ocaml-version: 4.12.x }
         - { ocaml-version: 4.11.x }
@@ -1125,6 +1127,9 @@ jobs:
 
     runs-on: ubuntu-latest
     container: ubuntu:16.04
+
+    env:
+      LDFLAGS: ${{ matrix.job.static }}
 
     steps:
     - name: Set up the OS
@@ -1145,7 +1150,7 @@ jobs:
 
     - name: Build text UI
       run: |
-        opam exec -- make src UISTYLE=text STATIC=${{ contains(matrix.job.ocaml-version, '-musl') }}
+        opam exec -- make src UISTYLE=text
         mkdir -p pkg/bin
         cp src/unison pkg/bin/
         cp src/unison-fsmonitor pkg/bin/

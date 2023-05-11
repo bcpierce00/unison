@@ -23,12 +23,18 @@ NATIVE=true
 # Building installation instructions
 
 .PHONY: all
-all:: strings.ml buildexecutable
+all: buildexecutable
+
+.PHONY: buildexecutable
+buildexecutable: ;
 
 ########################################################################
 ## Miscellaneous developer-only switches
-PROFILING=false
-STATIC=false
+# [2023-05] This check is here only temporarily for a smooth transition
+ifeq ($(STATIC), true)
+  $(error Variable STATIC is no longer in use. Please set appropriate LDFLAGS,\
+    like -static, instead)
+endif
 
 # NAME, VERSION, and MAJORVERSION, automatically generated
 -include Makefile.ProjectInfo
@@ -183,27 +189,12 @@ tags:
 		     *Makefile* \
 	  ; fi
 
-all:: TAGS
-
-TAGS:
-	$(MAKE) tags
+TAGS: tags
 
 ######################################################################
 # Misc
 
 .PHONY: clean
-clean::
-	-$(RM) *.log *.aux *.log *.dvi *.out *.bak
-	-$(RM) -r obsolete
-	-$(RM) $(NAME) $(NAME).exe
-	-$(RM) $(NAME)-blob.o
-	$(MAKE) -C fsmonitor/windows clean
-
-ifneq ($(strip $(UIMACDIR)),)
-clean::
-	-(cd $(UIMACDIR); xcodebuild clean)
-	-(cd $(UIMACDIR); $(RM) -r build ExternalSettings.xcconfig)
-endif
 
 ####################################################################
 # Documentation strings

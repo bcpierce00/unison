@@ -18,7 +18,7 @@ else
   FSMCAMLLIBS=$(FSMOCAMLLIBS)
 endif
 
-buildexecutable:: $(FSMONITOR)$(EXEC_EXT)
+buildexecutable: $(FSMONITOR)$(EXEC_EXT)
 
 $(FSMONITOR)$(EXEC_EXT): $(FSMCAMLOBJS) $(FSMCOBJS)
 	@echo Linking $@
