@@ -87,56 +87,47 @@ let docs =
       \n\
       "))
 ::
-    ("lists", ("Mailing Lists and Bug Reporting", 
-     "Mailing Lists and Bug Reporting\n\
+    ("obtaining", ("Obtaining Unison", 
+     "Obtaining Unison\n\
       \n\
-      Mailing Lists:\n\
+      Source code\n\
       \n\
-      \032  Moderated mailing lists are available for discussions among users and\n\
-      \032  discussions among developers. See\n\
+      \032  Unison is primarily distributed as source code, which contains\n\
+      \032  instructions in INSTALL.md:\n\
+      \n\
+      \032    https://github.com/bcpierce00/unison\n\
+      \n\
+      Binaries\n\
+      \n\
+      \032  The Unison wiki contains information about builds done as part of\n\
+      \032  Continuous Integration and other sources of binaries; read the entire\n\
+      \032  wiki at:\n\
+      \n\
+      \032    https://github.com/bcpierce00/unison/wiki\n\
+      \n\
+      "))
+::
+    ("development", ("Community, Maintenance, and Development", 
+     "Community, Maintenance, and Development\n\
+      \n\
+      \032  Many people use and contribute to Unison. This community has two main\n\
+      \032  homes.\n\
+      \n\
+      Mailinglists\n\
+      \n\
+      \032  Most discussion is appropriate on one of the mailinglists:\n\
       \n\
       \032    https://github.com/bcpierce00/unison/wiki/Mailing-Lists\n\
       \n\
-      \032  for descriptions of what content is appropriate on which list, and\n\
-      \032  subscripion instructions.\n\
+      Reporting Bugs\n\
       \n\
-      Reporting bugs:\n\
-      \n\
-      \032  Reports of bugs affecting correctness or safety are of interest to many\n\
-      \032  people. If Unison is not working the way you expect, see the\n\
-      \032  instructions for debugging, reporting bugs, and asking for help at\n\
+      \032  Bug reports and feature requests may be made after reading the\n\
+      \032  guidelines:\n\
       \n\
       \032    https://github.com/bcpierce00/unison/wiki/Reporting-Bugs-and-Feature\n\
       \032    -Requests\n\
       \n\
-      Feature Requests:\n\
-      \n\
-      \032  Requests for features likely to be of interest to others are welcome,\n\
-      \032  but will probably just be added to the ever-growing todo list. Please\n\
-      \032  see the URL in the previous section for guidance on feature requests.\n\
-      \n\
-      "))
-::
-    ("status", ("Development Status", 
-     "Development Status\n\
-      \n\
-      \032  Unison is no longer under active development as a research project.\n\
-      \032  (Our research efforts are now focused on a follow-on project called\n\
-      \032  Boomerang, described at http://www.cis.upenn.edu/~bcpierce/harmony.) At\n\
-      \032  this point, there is no one whose job it is to maintain Unison, fix\n\
-      \032  bugs, or answer questions.\n\
-      \n\
-      \032  However, the original developers are all still using Unison daily. It\n\
-      \032  will continue to be maintained and supported for the foreseeable\n\
-      \032  future, and we will occasionally release new versions with bug fixes,\n\
-      \032  small improvements, and contributed patches.\n\
-      \n\
-      \032  Proposed changes to unison are welcome. They should be submitted as\n\
-      \032  pull requests. (Since safety and robustness are Unison\226\128\153s most important\n\
-      \032  properties, patches will be held to high standards of clear design and\n\
-      \032  clean coding.) If you want to contribute to Unison, start by\n\
-      \032  downloading the developer tarball from the download page. For some\n\
-      \032  details on how the code is organized, etc., see the file CONTRIB.\n\
+      \032  Help improving Unison is welcome; see CONTRIBUTING.md in the sources.\n\
       \n\
       "))
 ::
@@ -171,66 +162,11 @@ let docs =
       \n\
       "))
 ::
-    ("install", ("Installation", 
-     "Installation\n\
+    ("(", ("Upgrading", 
+     "Upgrading\n\
       \n\
-      \032  Unison is designed to be easy to install. The following sequence of\n\
-      \032  steps should get you a fully working installation in a few minutes. If\n\
-      \032  you run into trouble, you may find the suggestions on the Frequently\n\
-      \032  Asked Questions page\n\
-      \032  (http://www.cis.upenn.edu/~bcpierce/unison/faq.html) helpful. Pre-built\n\
-      \032  binaries are available for a variety of platforms.\n\
-      \n\
-      \032  Unison can be used with either of two user interfaces:\n\
-      \032   1. a simple textual interface, suitable for dumb terminals (and\n\
-      \032      running from scripts), and\n\
-      \032   2. a more sophisticated graphical interface, based on Gtk2 (on\n\
-      \032      Linux/Windows) or the native UI framework (on OSX).\n\
-      \n\
-      \032  You will need to install a copy of Unison on every machine that you\n\
-      \032  want to synchronize. However, you only need the version with a\n\
-      \032  graphical user interface (if you want a GUI at all) on the machine\n\
-      \032  where you\226\128\153re actually going to display the interface (the CLIENT\n\
-      \032  machine). Other machines that you synchronize with can get along just\n\
-      \032  fine with the textual version.\n\
-      \n\
-      Downloading Unison\n\
-      \n\
-      \032  See https://github.com/bcpierce00/unison/wiki/Downloading-Unison.\n\
-      \n\
-      \032  If a pre-built binary of Unison is available for the client machine\226\128\153s\n\
-      \032  architecture, just download it and put it somewhere in your search path\n\
-      \032  (if you\226\128\153re going to invoke it from the command line) or on your desktop\n\
-      \032  (if you\226\128\153ll be click-starting it).\n\
-      \n\
-      \032  The executable file for the graphical version (with a name including\n\
-      \032  gtkui) actually provides both interfaces: the graphical one appears by\n\
-      \032  default, while the textual interface can be selected by including -ui\n\
-      \032  text on the command line. The textui executable provides just the\n\
-      \032  textual interface.\n\
-      \n\
-      \032  If you don\226\128\153t see a pre-built executable for your architecture, you\226\128\153ll\n\
-      \032  need to build it yourself. See the section \226\128\156Building Unison from\n\
-      \032  Scratch\226\128\157 .\n\
-      \n\
-      \032  Check to make sure that what you have downloaded is really executable.\n\
-      \032  Either click-start it, or type \"unison -version\" at the command line.\n\
-      \n\
-      \032  Unison can be used in three different modes: with different directories\n\
-      \032  on a single machine, with a local or a remote machine over a direct\n\
-      \032  socket connection, or with a remote machine using ssh for\n\
-      \032  authentication and secure transfer.\n\
-      \n\
-      Running Unison\n\
-      \n\
-      \032  Once you\226\128\153ve got Unison installed on at least one system, read the\n\
-      \032  section \226\128\156Tutorial\226\128\157 of the user manual (or type \"unison -doc tutorial\")\n\
-      \032  for instructions on how to get started.\n\
-      \n\
-      Upgrading\n\
-      \n\
-      \032  Upgrading to a new version of Unison is as simple as throwing away the\n\
-      \032  old binary and installing the new one.\n\
+      \032  This section is perhaps misplaced, but is early because it is far\n\
+      \032  better to have at least skimmed it than to not know it exists.)\n\
       \n\
       \032  Before upgrading, it is a good idea to run the old version one last\n\
       \032  time, to make sure all your replicas are completely synchronized. A new\n\
@@ -309,18 +245,6 @@ let docs =
       \032      \226\128\156Remote Usage\226\128\157 , or -servercmd; see the section \226\128\156Remote Shell\n\
       \032      Method\226\128\157 .\n\
       \n\
-      Building Unison from Scratch\n\
-      \n\
-      \032  If a pre-built image is not available, you will need to compile it from\n\
-      \032  scratch; the sources are available from the same place as the binaries.\n\
-      \n\
-      \032  In principle, Unison should work on any platform to which OCaml has\n\
-      \032  been ported and on which the Unix module is fully implemented. It has\n\
-      \032  been tested on many flavors of Windows (98, NT, 2000, XP) and Unix (OS\n\
-      \032  X, Solaris, Linux, FreeBSD), and on both 32- and 64-bit architectures.\n\
-      \n\
-      \032  Building instructions are included with the source code.\n\
-      \n\
       "))
 ::
     ("tutorial", ("Tutorial", 
@@ -329,8 +253,8 @@ let docs =
       Preliminaries\n\
       \n\
       \032  Unison can be used with either of two user interfaces:\n\
-      \032   1. a straightforward textual interface and\n\
-      \032   2. a more sophisticated graphical interface\n\
+      \032   1. a textual interface and\n\
+      \032   2. a graphical interface\n\
       \n\
       \032  The textual interface is more convenient for running from scripts and\n\
       \032  works on dumb terminals; the graphical interface is better for most\n\
@@ -342,10 +266,9 @@ let docs =
       \032  -ui text. The other command-line arguments to both versions are\n\
       \032  identical.\n\
       \n\
-      \032  The graphical version can also be run directly by clicking on its icon,\n\
-      \032  but this may require a little set-up (see the section \226\128\156Click-starting\n\
-      \032  Unison\226\128\157 ). For this tutorial, we assume that you\226\128\153re starting it from\n\
-      \032  the command line.\n\
+      \032  The graphical version can also be run directly by clicking on its icon.\n\
+      \032  For this tutorial, we assume that you\226\128\153re starting it from the command\n\
+      \032  line.\n\
       \n\
       \032  Unison can synchronize files and directories on a single machine, or\n\
       \032  between two machines on a network. (The same program runs on both\n\
@@ -359,13 +282,7 @@ let docs =
       \032  Let\226\128\153s get the client machine set up first and see how to synchronize\n\
       \032  two directories on a single machine.\n\
       \n\
-      \032  Follow the instructions in the section \226\128\156Installation\226\128\157 to either\n\
-      \032  download or build an executable version of Unison, and install it\n\
-      \032  somewhere on your search path. (If you just want to use the textual\n\
-      \032  user interface, download the appropriate textui binary. If you just\n\
-      \032  want to the graphical interface\226\128\148or if you will use both interfaces [the\n\
-      \032  gtkui binary actually has both compiled in]\226\128\148then download the gtkui\n\
-      \032  binary.)\n\
+      \032  Ensure that unison is installed on your system.\n\
       \n\
       \032  Create a small test directory a.tmp containing a couple of files and/or\n\
       \032  subdirectories, e.g.,\n\
@@ -719,7 +636,7 @@ let docs =
       \n\
       \032  If you use Unison regularly, you should subscribe to one of the mailing\n\
       \032  lists, to receive announcements of new versions. See the section\n\
-      \032  \226\128\156Mailing Lists and Bug Reporting\226\128\157 .\n\
+      \032  \226\128\156Obtaining Unison\226\128\157 .\n\
       \n\
       "))
 ::
@@ -3168,26 +3085,6 @@ let docs =
       \032  in your preference file will cause Unison to check, after it finishes\n\
       \032  detecting updates, that something actually exists at the path foo on\n\
       \032  both replicas; if it does not, the Unison run will abort.\n\
-      \n\
-      Click-starting Unison\n\
-      \n\
-      \032  On Windows NT/2k/XP systems, the graphical version of Unison can be\n\
-      \032  invoked directly by clicking on its icon. On Windows 95/98 systems,\n\
-      \032  click-starting also works, as long as you are not using ssh. Due to an\n\
-      \032  incompatibility with OCaml and Windows 95/98 that is not under our\n\
-      \032  control, you must start Unison from a DOS window in Windows 95/98 if\n\
-      \032  you want to use ssh.\n\
-      \n\
-      \032  When you click on the Unison icon, two windows will be created:\n\
-      \032  Unison\226\128\153s regular window, plus a console window, which is used only for\n\
-      \032  giving your password to ssh (if you do not use ssh to connect, you can\n\
-      \032  ignore this window). When your password is requested, you\226\128\153ll need to\n\
-      \032  activate the console window (e.g., by clicking in it) before typing. If\n\
-      \032  you start Unison from a DOS window, Unison\226\128\153s regular window will appear\n\
-      \032  and you will type your password in the DOS window you were using.\n\
-      \n\
-      \032  To use Unison in this mode, you must first create a profile (see the\n\
-      \032  section \226\128\156Profiles\226\128\157 ). Use your favorite editor for this.\n\
       \n\
       "))
 ::
