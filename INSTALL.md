@@ -55,13 +55,16 @@ Use `gmake` in environments where GNU make is not the default. If you are
 using OPAM then `opam exec -- make` may work for you, as opam needs to set up
 a specific environment.
 
-Presence of lablgtk3 is detected automatically. If you want to force building
-the GUI (or not), type `make UISTYLE=gtk3` or `make UISTYLE=text`.
+Presence of lablgtk3 is detected automatically to build the GUI. If you want
+to build only the GUI, type `make gui`. You can type `make tui` if you have
+lablgtk3 installed but don't want the GUI built. Type `make fsmonitor` to build
+only the filesystem monitor.
 
 There is currently no installation provided by the makefile. You can just copy
 the built binaries to where you need them. The following files are produced:
 ```
-src/unison              (the main executable)
+src/unison              (the main executable for TUI/CLI)
+src/unison-gui          (the main executable for GUI)
 src/unison-fsmonitor    (optional, on some build platforms)
 src/fsmonitor.py        (optional, if unison-fsmonitor is not built)
 man/unison.1            (optional, manual page)
@@ -117,11 +120,12 @@ To build the documentation, first build Unison without cross-compilation.
 
 #### Building
 
-For the text user interface and GTK GUI, follow the Unix instructions above.
+The Unix instructions above will build the text user interface, the GTK GUI
+and, if you're building on macOS, also the macOS native GUI.
 
-To build the macOS native GUI, execute:
+To build only the macOS native GUI, execute:
 ```
-make UISTYLE=mac
+make macui
 ```
 
 The built application will be located at `src/uimac/build/Default/Unison.app`.
@@ -164,7 +168,8 @@ make
 
 If all goes well, the following files will be produced:
 ```
-src/unison.exe              (the main executable)
+src/unison.exe              (the main executable for TUI/CLI)
+src/unison-gui.exe          (the main executable for GUI, optional, see below)
 src/unison-fsmonitor.exe    (filesystem monitor, optional)
 ```
 

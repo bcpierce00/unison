@@ -1,7 +1,3 @@
-
-FSMONITOR = unison-fsmonitor
-
-DIR=fsmonitor/windows
 FSMOCAMLOBJS = \
    ubase/umarshal.cmo \
    ubase/rx.cmo unicode_tables.cmo unicode.cmo \
@@ -9,7 +5,7 @@ FSMOCAMLOBJS = \
    system/win/system_impl.cmo \
    lwt/lwt.cmo lwt/pqueue.cmo lwt/win/lwt_unix_impl.cmo lwt/lwt_unix.cmo \
    lwt/win/lwt_win.cmo \
-   fsmonitor/watchercommon.cmo $(DIR)/watcher.cmo
+   fsmonitor/watchercommon.cmo $(FSMDIR)/watcher.cmo
 FSMCOBJS = \
    bytearray_stubs$(OBJ_EXT) \
    system/system_win_stubs$(OBJ_EXT) lwt/lwt_unix_stubs$(OBJ_EXT) \
@@ -17,23 +13,5 @@ FSMCOBJS = \
 FSMOCAMLLIBS=unix.cma
 
 # Additional dependencies
-$(DIR)/watcher.cmo: lwt/win/lwt_win.cmo
-$(DIR)/watcher.cmx: lwt/win/lwt_win.cmx
-
-ifeq ($(NATIVE), true)
-  FSMCAMLOBJS=$(subst .cmo,.cmx, $(FSMOCAMLOBJS))
-  FSMCAMLLIBS=$(subst .cma,.cmxa, $(FSMOCAMLLIBS))
-else
-  FSMCAMLOBJS=$(FSMOCAMLOBJS)
-  FSMCAMLLIBS=$(FSMOCAMLLIBS)
-endif
-
-buildexecutable: $(FSMONITOR)$(EXEC_EXT)
-
-$(FSMONITOR)$(EXEC_EXT): $(FSMCAMLOBJS) $(FSMCOBJS)
-	@echo Linking $@
-	$(CAMLC) -verbose $(CAMLFLAGS) $(CAMLLDFLAGS) -o $@ $(CAMLCFLAGS) $(FSMCAMLLIBS) $^ $(CLIBS)
-
-clean::
-	rm -f $(DIR)/*.cm[iox] $(DIR)/*.{o,obj} $(DIR)/*~
-	rm -f $(FSMONITOR)$(EXEC_EXT)
+$(FSMDIR)/watcher.cmo: lwt/win/lwt_win.cmo
+$(FSMDIR)/watcher.cmx: lwt/win/lwt_win.cmx

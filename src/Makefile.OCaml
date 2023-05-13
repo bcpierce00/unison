@@ -37,17 +37,12 @@ endif
 ####################################################################
 ### Try to automatically guess UI style
 
+ifneq ($(strip $(UISTYLE)),)
+  $(error UISTYLE is no longer used. See build instructions)
+endif
+
 OCAMLLIBDIR:=$(shell $(OCAMLC) -config-var standard_library)
 
-# User interface style:
-#   Legal values are
-#     UISTYLE=text
-#     UISTYLE=gtk3
-#     UISTYLE=mac
-#
-# This should be set to an appropriate value automatically, depending
-# on whether the lablgtk library is available
-#
 # For Windows, an additional UI style modifier is available, `UI_WINOS`
 #   Legal values are
 #     UI_WINOS=         # *default*; builds unison purely as a Windows console ('text') or GUI ('gtk3') application
@@ -55,22 +50,29 @@ OCAMLLIBDIR:=$(shell $(OCAMLC) -config-var standard_library)
 # * ref: <https://github.com/bcpierce00/unison/issues/778>
 #
 LABLGTK3LIB=$(OCAMLLIBDIR)/lablgtk3
-ifeq ($(OSARCH),Darwin)
-  UISTYLE=mac
+ifeq ($(wildcard $(LABLGTK3LIB)),$(LABLGTK3LIB))
+  HAS_LABLGTK3=true
 else
+  LABLGTK3LIB=$(abspath $(OCAMLLIBDIR)/../lablgtk3)
   ifeq ($(wildcard $(LABLGTK3LIB)),$(LABLGTK3LIB))
-    UISTYLE=gtk3
-  else
-    LABLGTK3LIB=$(abspath $(OCAMLLIBDIR)/../lablgtk3)
-    ifeq ($(wildcard $(LABLGTK3LIB)),$(LABLGTK3LIB))
-      UISTYLE=gtk3
-    else
-      UISTYLE=text
-    endif
+    HAS_LABLGTK3=true
   endif
 endif
-ifeq ($(UISTYLE), gtk2)
-  $(error gtk2 GUI is no longer available.    Use  UISTYLE=gtk3  or don't specify any UISTYLE)
+
+.PHONY: guimaybe
+ifeq ($(HAS_LABLGTK3), true)
+  guimaybe: gui
+else
+  guimaybe:
+	$(info GUI library lablgtk not found. GTK GUI will not be built.)
+endif
+
+.PHONY: macuimaybe
+ifeq ($(OSARCH), Darwin)
+  macuimaybe: macui
+else
+  macuimaybe:
+	$(info Not on macOS. macOS native GUI will not be built.)
 endif
 
 ####################################################################
@@ -79,7 +81,6 @@ endif
 .PHONY: buildinfodebug
 buildinfodebug:
 	$(info $(building_for))
-	$(info UISTYLE = $(UISTYLE))
 	$(info NATIVE = $(NATIVE))
 
 buildexecutable: buildinfodebug
@@ -252,44 +253,44 @@ COBJS += osxsupport$(OBJ_EXT) pty$(OBJ_EXT) bytearray_stubs$(OBJ_EXT) \
 ### User Interface setup
 
 ## Text UI
-ifeq ($(UISTYLE), text)
-  OCAMLOBJS+=linktext.cmo
-endif
+OCAMLOBJS_TUI+=linktext.cmo
 
 ## Mac UI
-ifeq ($(UISTYLE),mac)
-  OCAMLOBJS+=uimacbridge.cmo
-  OCAMLLIBS+=threads.cma
-  INCLFLAGS+=-I +threads
-endif
+OCAMLOBJS_MAC+=uimacbridge.cmo
+OCAMLLIBS_MAC+=threads.cma
+INCLFLAGS_MAC+=-I +threads
 
 ## Graphic UI
-ifeq ($(UISTYLE), gtk3)
-  OCAMLFIND := $(shell command -v ocamlfind 2> /dev/null)
+OCAMLFIND := $(shell command -v ocamlfind 2> /dev/null)
 
-  ifndef OCAMLFIND
-    CAMLFLAGS+=-I +lablgtk3 -I +cairo2
-  else
-    CAMLFLAGS+=$(shell $(OCAMLFIND) query -i-format lablgtk3 )
-    CAMLFLAGS+=$(shell $(OCAMLFIND) query -i-format cairo2 )
-  endif
-  OCAMLOBJS+=pixmaps.cmo uigtk3.cmo linkgtk3.cmo
-  OCAMLLIBS+=lablgtk3.cma cairo.cma
+ifndef OCAMLFIND
+  CAMLFLAGS_GUI+=-I +lablgtk3 -I +cairo2
+else
+  CAMLFLAGS_GUI+=$(shell $(OCAMLFIND) query -i-format lablgtk3 )
+  CAMLFLAGS_GUI+=$(shell $(OCAMLFIND) query -i-format cairo2 )
+endif
+OCAMLOBJS_GUI+=pixmaps.cmo uigtk3.cmo linkgtk3.cmo
+OCAMLLIBS_GUI+=lablgtk3.cma cairo.cma
 
-  ifneq ($(strip $(LDFLAGS_GUI)),)
-    CAMLLDFLAGS_GUI+=-cclib "$(LDFLAGS_GUI)"
-  endif
+ifneq ($(strip $(LDFLAGS_GUI)),)
+  CAMLLDFLAGS_GUI+=-cclib "$(LDFLAGS_GUI)"
 endif
 
 ####################################################################
 ### Unison executables
 
-ifeq ($(UISTYLE),mac)
-  buildexecutable: macexecutable
-  UIMACDIR=uimac
-else
-  buildexecutable: $(NAME)$(EXEC_EXT)
-endif
+NAME_GUI = $(NAME)-gui
+
+.PHONY: tui
+tui: buildexecutable $(NAME)$(EXEC_EXT)
+
+.PHONY: gui
+gui: buildexecutable $(NAME_GUI)$(EXEC_EXT)
+
+.PHONY: macui
+macui: buildexecutable macexecutable
+
+UIMACDIR=uimac
 
 ifeq ($(OSARCH),Darwin)
 ifeq ($(strip $(XCODEFLAGS)),)
@@ -317,19 +318,27 @@ clean::
 ####################################################################
 ### Filesystem monitoring
 
+NAME_FSM = $(NAME)-fsmonitor
+
 ifeq ($(OSARCH),Linux)
--include fsmonitor/linux/Makefile src/fsmonitor/linux/Makefile
-INCLFLAGS+=-I fsmonitor -I fsmonitor/linux
+  FSMDIR = fsmonitor/linux
 endif
 
 ifeq ($(OSARCH),SunOS)
--include fsmonitor/solaris/Makefile src/fsmonitor/solaris/Makefile
-INCLFLAGS+=-I fsmonitor -I fsmonitor/solaris
+  FSMDIR = fsmonitor/solaris
 endif
 
 ifeq ($(OSARCH),Win32)
--include fsmonitor/windows/Makefile src/fsmonitor/windows/Makefile
-INCLFLAGS+=-I fsmonitor -I fsmonitor/windows
+  FSMDIR = fsmonitor/windows
+endif
+
+.PHONY: fsmonitor
+ifdef FSMDIR
+  fsmonitor: buildexecutable $(NAME_FSM)$(EXEC_EXT)
+  -include $(FSMDIR)/Makefile
+else
+  fsmonitor:
+	$(info fsmonitor implementation is not available or not configured for this system. fsmonitor will not be built.)
 endif
 
 DEP_INCLFLAGS+=-I fsmonitor -I fsmonitor/linux -I fsmonitor/solaris -I fsmonitor/windows
@@ -348,7 +357,7 @@ lwt/win/lwt_win.cmo: lwt/win/lwt_unix_impl.cmo system/system_win.cmo
 lwt/win/lwt_win.cmx: lwt/win/lwt_unix_impl.cmx system/system_win.cmx
 
 .PHONY: depend
-depend::
+depend:
 	ocamlc -depend $(DEP_INCLFLAGS) *.mli *.ml */*.ml */*.mli */*/*.ml */*/*.mli > .depend
 
 .PHONY: dependgraph
@@ -395,13 +404,31 @@ win32rc/unison.res.lib: win32rc/unison.rc win32rc/U.ico
 	@echo "$(CAMLC): $< ---> $@"
 	$(CAMLC) $(CAMLFLAGS) $(CAMLCFLAGS) -ccopt $(OUTPUT_SEL)$(CWD)/$@ -c $(CWD)/$<
 
-$(NAME)$(EXEC_EXT): $(CAMLOBJS) $(COBJS)
-	@echo Linking $@
-	$(CAMLC) -verbose $(CAMLFLAGS) $(CAMLLDFLAGS) $(CAMLLDFLAGS_GUI) -o $@ $(CAMLCFLAGS) $(CAMLLIBS) $^ $(CLIBS)
+# Need secondary expansion to bypass the immediate evaluation of pre-requisites
+.SECONDEXPANSION:
 
+$(NAME)$(EXEC_EXT): OCAMLOBJS += $(OCAMLOBJS_TUI)
+
+$(NAME_GUI)$(EXEC_EXT): OCAMLOBJS += $(OCAMLOBJS_GUI)
+$(NAME_GUI)$(EXEC_EXT): OCAMLLIBS += $(OCAMLLIBS_GUI)
+$(NAME_GUI)$(EXEC_EXT): CAMLFLAGS += $(CAMLFLAGS_GUI)
+$(NAME_GUI)$(EXEC_EXT): CAMLLDFLAGS += $(CAMLLDFLAGS_GUI)
+
+$(NAME_FSM)$(EXEC_EXT): OCAMLOBJS = $(FSMOCAMLOBJS)
+$(NAME_FSM)$(EXEC_EXT): OCAMLLIBS = $(FSMOCAMLLIBS)
+$(NAME_FSM)$(EXEC_EXT): CAMLFLAGS += -I fsmonitor -I $(FSMDIR)
+$(NAME_FSM)$(EXEC_EXT): COBJS = $(FSMCOBJS)
+
+$(NAME)$(EXEC_EXT) $(NAME_GUI)$(EXEC_EXT) $(NAME_FSM)$(EXEC_EXT): $$(CAMLOBJS) $$(COBJS)
+	@echo Linking $@
+	$(CAMLC) -verbose $(CAMLFLAGS) $(CAMLLDFLAGS) -o $@ $(CAMLCFLAGS) $(CAMLLIBS) $^ $(CLIBS)
+
+$(NAME)-blob.o: OCAMLOBJS += $(OCAMLOBJS_MAC)
+$(NAME)-blob.o: OCAMLLIBS += $(OCAMLLIBS_MAC)
+$(NAME)-blob.o: INCLFLAGS += $(INCLFLAGS_MAC)
 # Unfortunately -output-obj does not put .o files into the output, only .cmx
 # files, so we have to use $(LD) to take care of COBJS.
-$(NAME)-blob.o: $(CAMLOBJS) $(COBJS)
+$(NAME)-blob.o: $$(CAMLOBJS) $(COBJS)
 	@echo Linking $@
 	$(CAMLC) -dstartup -output-obj -verbose -cclib -keep_private_externs $(CAMLFLAGS) -o u-b.o $(CAMLCFLAGS) $(CAMLLDFLAGS) $(CAMLLIBS) $(CLIBS) $(CAMLOBJS)
 	$(LD) -r -keep_private_externs -o $@ u-b.o $(COBJS)
@@ -412,6 +439,8 @@ $(NAME)-blob.o: $(CAMLOBJS) $(COBJS)
 
 clean::
 	-$(RM) $(NAME) $(NAME).exe
+	-$(RM) $(NAME_GUI) $(NAME_GUI).exe
+	-$(RM) $(NAME_FSM) $(NAME_FSM).exe
 	-$(RM) $(NAME)-blob.o
 	-$(RM) -r *.cmi *.cmo *.cmx *.cma *.cmxa TAGS tags
 	-$(RM) -r *.o core gmon.out *~ .*~
@@ -421,7 +450,10 @@ clean::
 	-$(RM) system/generic/*.cm[iox] system/generic/*.o system/generic/*.obj system/generic/*~
 	-$(RM) system/win/*.cm[iox] system/win/*.o system/win/*.obj system/win/*~
 	-$(RM) win32rc/unison.res win32rc/unison.res.lib
-	-$(RM) fsmonitor/*.cm[iox] fsmonitor/*.o fsmonitor/*.obj
+	-$(RM) fsmonitor/*.cm[iox] fsmonitor/*.o fsmonitor/*.obj fsmonitor/*~
+ifdef FSMDIR
+	-$(RM) $(FSMDIR)/*.cm[iox] $(FSMDIR)/*.o $(FSMDIR)/*~
+endif
 	-$(RM) .depend.dot.tmp DEPENDENCIES.ps
 	-$(RM) ubase/*.cm[ioxa] ubase/*.cmxa ubase/*.a ubase/*.o ubase/*~ ubase/*.bak
 	-$(RM) lwt/*.cm[ioxa] lwt/*.cmxa lwt/*.a lwt/*.o lwt/*.obj lwt/*~ lwt/*.bak
