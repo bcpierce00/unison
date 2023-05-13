@@ -321,7 +321,7 @@ clean::
 NAME_FSM = $(NAME)-fsmonitor
 
 ifeq ($(OSARCH),Linux)
-  FSMDIR = fsmonitor/linux
+  FSMDIR = fsmonitor/inotify
 endif
 
 ifeq ($(OSARCH),SunOS)
@@ -341,7 +341,7 @@ else
 	$(info fsmonitor implementation is not available or not configured for this system. fsmonitor will not be built.)
 endif
 
-DEP_INCLFLAGS+=-I fsmonitor -I fsmonitor/linux -I fsmonitor/solaris -I fsmonitor/windows
+DEP_INCLFLAGS+=-I fsmonitor -I fsmonitor/inotify -I fsmonitor/solaris -I fsmonitor/windows
 
 ####################################################################
 ### Dependencies

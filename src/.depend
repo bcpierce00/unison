@@ -357,36 +357,36 @@ fs.cmx : \
 fs.cmi : \
     system/system_intf.cmo \
     fspath.cmi
-fsmonitor/linux/inotify.cmo : \
-    fsmonitor/linux/inotify.cmi
-fsmonitor/linux/inotify.cmx : \
-    fsmonitor/linux/inotify.cmi
-fsmonitor/linux/inotify.cmi :
-fsmonitor/linux/lwt_inotify.cmo : \
+fsmonitor/inotify/inotify.cmo : \
+    fsmonitor/inotify/inotify.cmi
+fsmonitor/inotify/inotify.cmx : \
+    fsmonitor/inotify/inotify.cmi
+fsmonitor/inotify/inotify.cmi :
+fsmonitor/inotify/lwt_inotify.cmo : \
     lwt/lwt_unix.cmi \
     lwt/lwt.cmi \
-    fsmonitor/linux/inotify.cmi \
-    fsmonitor/linux/lwt_inotify.cmi
-fsmonitor/linux/lwt_inotify.cmx : \
+    fsmonitor/inotify/inotify.cmi \
+    fsmonitor/inotify/lwt_inotify.cmi
+fsmonitor/inotify/lwt_inotify.cmx : \
     lwt/lwt_unix.cmx \
     lwt/lwt.cmx \
-    fsmonitor/linux/inotify.cmx \
-    fsmonitor/linux/lwt_inotify.cmi
-fsmonitor/linux/lwt_inotify.cmi : \
+    fsmonitor/inotify/inotify.cmx \
+    fsmonitor/inotify/lwt_inotify.cmi
+fsmonitor/inotify/lwt_inotify.cmi : \
     lwt/lwt.cmi \
-    fsmonitor/linux/inotify.cmi
-fsmonitor/linux/watcher.cmo : \
+    fsmonitor/inotify/inotify.cmi
+fsmonitor/inotify/watcher.cmo : \
     fsmonitor/watchercommon.cmi \
     lwt/lwt_unix.cmi \
-    fsmonitor/linux/lwt_inotify.cmi \
+    fsmonitor/inotify/lwt_inotify.cmi \
     lwt/lwt.cmi \
-    fsmonitor/linux/inotify.cmi
-fsmonitor/linux/watcher.cmx : \
+    fsmonitor/inotify/inotify.cmi
+fsmonitor/inotify/watcher.cmx : \
     fsmonitor/watchercommon.cmx \
     lwt/lwt_unix.cmx \
-    fsmonitor/linux/lwt_inotify.cmx \
+    fsmonitor/inotify/lwt_inotify.cmx \
     lwt/lwt.cmx \
-    fsmonitor/linux/inotify.cmx
+    fsmonitor/inotify/inotify.cmx
 fsmonitor/solaris/watcher.cmo : \
     fsmonitor/watchercommon.cmi \
     ubase/safelist.cmi \
