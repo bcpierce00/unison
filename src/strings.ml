@@ -162,10 +162,10 @@ let docs =
       \n\
       "))
 ::
-    ("(", ("Upgrading", 
+    ("", ("Upgrading", 
      "Upgrading\n\
       \n\
-      \032  This section is perhaps misplaced, but is early because it is far\n\
+      \032  (This section is perhaps misplaced, but is early because it is far\n\
       \032  better to have at least skimmed it than to not know it exists.)\n\
       \n\
       \032  Before upgrading, it is a good idea to run the old version one last\n\
