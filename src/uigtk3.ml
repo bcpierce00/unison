@@ -2652,9 +2652,12 @@ let documentation ~parent sect =
   let lw = ref 1 in
   let addDocSection (shortname, (name, docstr)) =
     if shortname = "" || name = "" then () else
-    let () = lw := max !lw (String.length name) in
+    let namelen = String.length name in
+    if namelen <= 20 then lw := max !lw namelen;
     let label = GMisc.label ~markup:("<b>" ^ name ^ "</b>")
-                  ~xalign:1. ~justify:`LEFT ~ellipsize:`NONE () in
+                  ~xalign:1. ~justify:`RIGHT ~ellipsize:`NONE
+                  ~line_wrap:(namelen > 20) () in
+    label#set_width_chars 20;
     let box = GBin.frame ~border_width:8
                 ~packing:(add_nb_page label (shortname = sect)) () in
     let text = new scrolled_text ~editable:false ~wrap_mode:`NONE
