@@ -1581,6 +1581,9 @@ let getProfile default =
   !selection
 
 let handleException e =
+  (* Keep the current status line (if any) and don't repeat it any more *)
+  alwaysDisplay "\n";
+  Util.set_infos "";
   restoreTerminal();
   let msg = Uicommon.exn2string e in
   let () =
