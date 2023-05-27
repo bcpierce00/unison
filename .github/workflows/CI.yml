@@ -57,9 +57,6 @@ jobs:
 
     runs-on: ${{ matrix.job.os }}
 
-    env:
-      LDFLAGS: ${{ matrix.job.static }}
-
     steps:
     - if: contains(matrix.job.os, 'ubuntu')
       run: sudo apt-get update
@@ -164,6 +161,8 @@ jobs:
         echo SHELLOPTS=igncr>> %GITHUB_ENV%
 
     - shell: bash
+      env:
+        LDFLAGS: ${{ matrix.job.static }}
       run: |
         opam exec -- make tui
         opam exec -- make fsmonitor
@@ -1129,9 +1128,6 @@ jobs:
     runs-on: ubuntu-latest
     container: ubuntu:16.04
 
-    env:
-      LDFLAGS: ${{ matrix.job.static }}
-
     steps:
     - name: Set up the OS
       run: |
@@ -1150,6 +1146,8 @@ jobs:
         opam-depext: false
 
     - name: Build text UI
+      env:
+        LDFLAGS: ${{ matrix.job.static }}
       run: |
         opam exec -- make
         mkdir -p pkg/bin
