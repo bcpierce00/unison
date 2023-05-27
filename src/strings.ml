@@ -11,37 +11,29 @@ let docs =
     ("", ("Overview", 
      "Overview\n\
       \n\
-      \032  Unison is a file-synchronization tool for Unix and Windows. It allows\n\
-      \032  two replicas of a collection of files and directories to be stored on\n\
-      \032  different hosts (or different disks on the same host), modified\n\
-      \032  separately, and then brought up to date by propagating the changes in\n\
-      \032  each replica to the other.\n\
+      \032  Unison is a file-synchronization tool for POSIX-compliant systems (e.g.\n\
+      \032  BSDs, GNU/Linux, macOS) and Windows. It allows two replicas of a\n\
+      \032  collection of files and directories to be stored on different hosts (or\n\
+      \032  different disks on the same host), modified separately, and then\n\
+      \032  brought up to date by propagating the changes in each replica to the\n\
+      \032  other.\n\
       \n\
-      \032  Unison shares a number of features with tools such as configuration\n\
-      \032  management packages (CVS (http://www.cyclic.com/), PRCS\n\
-      \032  (http://www.XCF.Berkeley.EDU/~jmacd/prcs.html), etc.), distributed\n\
-      \032  filesystems (Coda (http://www.coda.cs.cmu.edu/), etc.), uni-directional\n\
-      \032  mirroring utilities (rsync (http://samba.anu.edu.au/rsync/), etc.), and\n\
-      \032  other synchronizers (Intellisync (http://www.pumatech.com), Reconcile\n\
-      \032  (http://www.merl.com/reports/TR99-14/), etc). However, there are\n\
-      \032  several points where it differs:\n\
-      \032    * Unison runs on both Windows (95, 98, NT, 2k, and XP) and Unix (OSX,\n\
-      \032      Solaris, Linux, etc.) systems. Moreover, Unison works across\n\
-      \032      platforms, allowing you to synchronize a Windows laptop with a Unix\n\
-      \032      server, for example.\n\
+      \032  Features:\n\
+      \032    * Unison works across platforms, allowing you to synchronize a\n\
+      \032      Windows laptop with a Unix server, for example.\n\
       \032    * Unlike a distributed filesystem, Unison is a user-level program:\n\
       \032      there is no need to modify the kernel or to have superuser\n\
       \032      privileges on either host.\n\
       \032    * Unlike simple mirroring or backup utilities, Unison can deal with\n\
       \032      updates to both replicas of a distributed directory structure.\n\
-      \032      Updates that do not conflict are propagated automatically.\n\
+      \032      Updates that do not conflict can be propagated automatically.\n\
       \032      Conflicting updates are detected and displayed.\n\
       \032    * Unison works between any pair of machines connected to the\n\
       \032      internet, communicating over either a direct socket link or\n\
       \032      tunneling over an encrypted ssh connection. It is careful with\n\
-      \032      network bandwidth, and runs well over slow links such as PPP\n\
-      \032      connections. Transfers of small updates to large files are\n\
-      \032      optimized using a compression protocol similar to rsync.\n\
+      \032      network bandwidth, and runs well over slow links. Transfers of\n\
+      \032      small updates to large files are optimized using a compression\n\
+      \032      protocol similar to rsync.\n\
       \032    * Unison has a clear and precise specification, described below.\n\
       \032    * Unison is resilient to failure. It is careful to leave the replicas\n\
       \032      and its own private structures in a sensible state at all times,\n\
@@ -162,7 +154,7 @@ let docs =
       \n\
       "))
 ::
-    ("", ("Upgrading", 
+    ("upgrading", ("Upgrading", 
      "Upgrading\n\
       \n\
       \032  (This section is perhaps misplaced, but is early because it is far\n\
@@ -398,7 +390,9 @@ let docs =
       \032  build an executable version of Unison on the server machine, and\n\
       \032  install it somewhere on your search path. (It doesn\226\128\153t matter whether\n\
       \032  you install the textual or graphical version, since the copy of Unison\n\
-      \032  on the server doesn\226\128\153t need to display any user interface at all.)\n\
+      \032  on the server doesn\226\128\153t need to display any user interface at all. The\n\
+      \032  major benefit of installing the textual version is that it doesn\226\128\153t have\n\
+      \032  any external dependencies required by the GUI executable.)\n\
       \n\
       \032  It is important that the version of Unison installed on the server\n\
       \032  machine is the same as the version of Unison on the client machine. But\n\
@@ -604,10 +598,6 @@ let docs =
       \032  typically needs to be initiated from the machine with the most recent\n\
       \032  changes. the section \226\128\156Profiles\226\128\157 covers the syntax of Unison profiles,\n\
       \032  together with some sample profiles.\n\
-      \n\
-      \032  Some tips on improving Unison\226\128\153s performance can be found on the\n\
-      \032  Frequently Asked Questions page\n\
-      \032  (http://www.cis.upenn.edu/~bcpierce/unison/faq.html).\n\
       \n\
       Using Unison to Synchronize More Than Two Machines\n\
       \n\
