@@ -17,8 +17,7 @@ very old; see the previous paragraph.
 ## About
 
 Unison is a file-synchronization tool for POSIX-compliant systems
-(e.g. *BSD, GNU/Linux, macOS) and Windows, with the caveat that the
-platform must be supported by OCaml.  It allows two replicas of a
+(e.g. *BSD, GNU/Linux, macOS) and Windows.  It allows two replicas of a
 collection of files and directories to be stored on different hosts
 (or different disks on the same host), modified separately, and then
 brought up to date by propagating the changes in each replica to the
@@ -27,19 +26,14 @@ other.
 Unison has been in use for over 20 years and many people use it to
 synchronize data they care about.
 
-Unison shares a number of features with tools such as configuration
-management packages (CVS, Subversion, git, Mercurial, etc.),
-distributed filesystems (Coda, etc.), uni-directional mirroring
-utilities (rsync, etc.), and other synchronizers.  However, there are
-several points where it differs:
+Features:
 
- * Unison runs on almost any system with an OCaml compiler. Moreover,
-   Unison works across platforms, allowing you to synchronize a
+ * Unison works across platforms, allowing you to synchronize a
    Windows laptop with a Unix server, for example.
 
  * Unlike simple mirroring or backup utilities, Unison can deal with
    updates to both replicas of a distributed directory
-   structure. Updates that do not conflict are propagated
+   structure. Updates that do not conflict can be propagated
    automatically. Conflicting updates are detected and displayed.
 
  * Unlike many network filesystems, Unison copies data so that
@@ -53,8 +47,8 @@ several points where it differs:
  * Unison works between any pair of machines connected to the
    internet, typically communicating over ssh, but also directly over
    TCP.  It is careful with network bandwidth, and runs well over slow
-   links such as PPP connections. Transfers of small updates to large
-   files are optimized using a compression protocol similar to rsync.
+   links. Transfers of small updates to large files are optimized using
+   a compression protocol similar to rsync.
 
  * Unison is resilient to failure. It is careful to leave the replicas
    and its own private structures in a sensible state at all times,
@@ -103,8 +97,7 @@ for the purposes of testing, are available for use on a limited set of
 platforms.
 
 See the [building instructions](INSTALL.md), or read the CI
-recipes.  (Currently, this is probably less well explained than it
-should be.)
+recipes.
 
 You may be able to find a pre-built binary for your operating system,
 version, and CPU type.  For a list of sources, See

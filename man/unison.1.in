@@ -32,7 +32,7 @@
 .Sh DESCRIPTION
 .Nm Unison
 is a file-synchronization tool for POSIX-compliant systems (e.g. *BSD and
-GNU/Linux), macOS and Windows. It allows two replicas of a collection of files
+GNU/Linux, macOS) and Windows. It allows two replicas of a collection of files
 and directories to be stored on different hosts (or different disks on the same
 host), modified separately, and then brought up to date by propagating the
 changes in each replica to the other.
