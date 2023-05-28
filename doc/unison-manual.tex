@@ -52,7 +52,7 @@
   \LARGE%
   Version \unisonversion \\[4ex] %
   % \today %
-  \large Copyright 1998-2020, Benjamin C. Pierce
+  \large Copyright 1998-2023, Benjamin C. Pierce
   \end{center}%
 \fi%
 %
@@ -198,7 +198,7 @@ under grants CCR-9701826 and ITR-0113226, {\em Principles and Practice of
 Research in Cognitive Science (IRCS).
 
 
-\SECTION{Upgrading}{upgrading}{}
+\SECTION{Upgrading}{upgrading}{upgrading}
 
 (This section is perhaps misplaced, but is early because it is far
 better to have at least skimmed it than to not know it exists.)
@@ -464,7 +464,9 @@ Follow the instructions in the Installation section to download or
 build an executable version of Unison on the server machine, and
 install it somewhere on your search path.  (It doesn't matter whether
 you install the textual or graphical version, since the copy of Unison on
-the server doesn't need to display any user interface at all.)
+the server doesn't need to display any user interface at all.  The major
+benefit of installing the textual version is that it doesn't have any external
+dependencies required by the GUI executable.)
 
 It is important that the version of Unison installed on the server
 machine is the same as the version of Unison on the client machine.
@@ -714,10 +716,6 @@ situation with asymmetric mirroring programs like \verb|rdist|, where
 the mirroring operation typically needs to be initiated from the
 machine with the most recent changes.  \sectionref{profile}{Profiles}
 covers the syntax of Unison profiles, together with some sample profiles.
-
-Some tips on improving Unison's performance can be found on the
-\SHOWURL{http://www.cis.upenn.edu/\home{bcpierce}/unison/faq.html}{Frequently
-  Asked Questions page}.
 
 \SUBSECTION{Using Unison to Synchronize More Than Two Machines}{usingmultiple}
 
