@@ -37,8 +37,7 @@ Please refer to instructions provided by the repository.
 ##### Optional, for building the user manual
 
 - LaTeX
-- dvips
-- ps2pdf (included with Ghostscript, for example)
+- pdf2ps (optional, for PS output; included with Ghostscript, for example)
 - HEVEA (https://hevea.inria.fr/) (optional, for HTML and text formats)
 - Lynx (optional, for text format)
 - (for developers only) HEVEA and Lynx are required to re-build the manual
