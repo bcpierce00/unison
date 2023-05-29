@@ -37,16 +37,49 @@ clean:
 	$(MAKE) -C man clean
 	$(MAKE) -C src clean
 
+INSTALL ?= install
+INSTALL_PROGRAM ?= $(INSTALL)
+INSTALL_DATA ?= $(INSTALL) -m 644
+
+prefix = /usr/local
+PREFIX ?= $(prefix)
+exec_prefix = $(PREFIX)
+EXEC_PREFIX ?= $(exec_prefix)
+bindir = $(EXEC_PREFIX)/bin
+BINDIR ?= $(bindir)
+datarootdir = $(PREFIX)/share
+DATAROOTDIR ?= $(datarootdir)
+mandir = $(DATAROOTDIR)/man
+MANDIR ?= $(mandir)
+man1dir = $(MANDIR)/man1
+MAN1DIR ?= $(man1dir)
+manext = .1
+MANEXT ?= $(manext)
+
 .PHONY: install
-install:
-	@printf "\n\n=========================================\n\
-To install, copy the files src/unison, src/unison-gui (optional),\n\
-src/unison-fsmonitor (optional) and src/fsmonitor.py (optional,\n\
-if unison-fsmonitor does not exist) to a freely chosen location.\n\n\
-Manual page is at man/unison.1 and user manual is at\n\
-doc/unison-manual.pdf, doc/unison-manual.html and doc/unison-manual.txt\n\
-=========================================\n\n\n"
-	@exit 1
+install: all
+	$(INSTALL) -d "$(DESTDIR)$(BINDIR)"
+ifneq ($(wildcard src/unison),)
+	$(INSTALL_PROGRAM) src/unison "$(DESTDIR)$(BINDIR)/unison"
+endif
+ifneq ($(wildcard src/unison-gui),)
+	$(INSTALL_PROGRAM) src/unison-gui "$(DESTDIR)$(BINDIR)/unison-gui"
+endif
+ifneq ($(wildcard src/unison-fsmonitor),)
+	$(INSTALL_PROGRAM) src/unison-fsmonitor "$(DESTDIR)$(BINDIR)/unison-fsmonitor"
+else
+  ifneq ($(wildcard src/fsmonitor.py),)
+	$(INSTALL_PROGRAM) src/fsmonitor.py "$(DESTDIR)$(BINDIR)/fsmonitor.py"
+  endif
+endif
+ifneq ($(wildcard man/unison.1),)
+	$(INSTALL) -d "$(DESTDIR)$(MAN1DIR)"
+	$(INSTALL_DATA) man/unison.1 "$(DESTDIR)$(MAN1DIR)/unison$(MANEXT)"
+endif
+ifneq ($(wildcard src/uimac/build/Default/Unison.app),)
+	$(info !!! The GUI for macOS has been built but will NOT be installed automatically. \
+    You can find the built GUI package at $(abspath src/uimac/build/Default/Unison.app))
+endif
 
 # Delegate other targets to the sub-makefile
 .PHONY: Makefile
