@@ -34,7 +34,7 @@ ifeq ($(HEVEA),true)
 	hevea unison-manual.tex
 	(TERM=vt100; export TERM; lynx -display_charset=utf8 -dump unison-manual.html > unison-manual.dtxt)
 	sed -e "/^----SNIP----/,+2 d" -e "/^Junk/,$$ d" unison-manual.dtxt > unison-manual.txt
-	ocaml docs.ml
+	ocaml docs.ml < unison-manual.dtxt > ../src/strings.ml
 endif
 	printf '$(TEXDIRECTIVES)\\textversionfalse\\draftfalse' > texdirectives.tex
 	pdflatex -draftmode unison-manual.tex
