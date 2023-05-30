@@ -29,15 +29,18 @@ real:
 .PHONY: once
 once: $(STRINGS) docs.ml prefs.tmp prefsdocs.tmp
 	echo '\def\unisonversion{$(VERSION)}' > unisonversion.tex
+# Text versions: when using different directives then _must_ use different
+# jobname (or, output name for hevea) so that files for non-text versions are
+# not overwritten. Here, suffix -text is used.
 ifeq ($(HEVEA),true)
 	printf '$(TEXDIRECTIVES)\\textversiontrue\\draft$(DRAFT)' \
-           > texdirectives.tex
-	hevea unison-manual.tex
-	(TERM=vt100; export TERM; lynx -display_charset=utf8 -dump unison-manual.html > unison-manual.dtxt)
+           > unison-manual-text-directives.tex
+	hevea -o unison-manual-text.html unison-manual.tex
+	(TERM=vt100; export TERM; lynx -display_charset=utf8 -dump unison-manual-text.html > unison-manual.dtxt)
 	sed -e "/^----SNIP----/,+2 d" -e "/^Junk/,$$ d" unison-manual.dtxt > unison-manual.txt
 	ocaml docs.ml < unison-manual.dtxt > ../src/strings.ml
 endif
-	printf '$(TEXDIRECTIVES)\\textversionfalse\\draft$(DRAFT)' > texdirectives.tex
+	printf '$(TEXDIRECTIVES)\\textversionfalse\\draft$(DRAFT)' > unison-manual-directives.tex
 	pdflatex -draftmode unison-manual.tex
 	pdflatex -draftmode unison-manual.tex
 	pdflatex unison-manual.tex
@@ -59,11 +62,12 @@ prefsdocs.tmp: ../src/$(NAME)$(EXEC_EXT)
 clean:
 	$(RM) -r \
 	   *.dtxt *.aux *.haux *.log *.out \
-	   texdirectives.tex \
+	   *-directives.tex \
 	   junk.* *.htoc *.toc *.bak \
 	   prefs.tmp prefsdocs.tmp \
 	   docs docs.exe temp.dvi temp.html unison-manual.html \
 	   unison-manual.dvi unison-manual.ps unison-manual.pdf \
 	   unison-manual.txt unison-manual.info* unisonversion.tex \
+	   unison-manual-text.html \
 	   contact.html faq.html faq.haux index.html
 
