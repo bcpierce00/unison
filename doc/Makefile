@@ -30,7 +30,6 @@ once: $(STRINGS) docs.ml prefs.tmp prefsdocs.tmp
 ifeq ($(HEVEA),true)
 	printf '$(TEXDIRECTIVES)\\textversiontrue\\draftfalse' \
            > texdirectives.tex
-	latex unison-manual.tex
 	hevea unison-manual.tex
 	(TERM=vt100; export TERM; lynx -display_charset=utf8 -dump unison-manual.html > unison-manual.dtxt)
 	sed -e "/^----SNIP----/,+2 d" -e "/^Junk/,$$ d" unison-manual.dtxt > unison-manual.txt
