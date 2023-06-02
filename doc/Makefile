@@ -3,6 +3,8 @@
 .PHONY: all
 all: unison-manual.html
 
+DRAFT = false
+
 -include ../src/Makefile.ProjectInfo
 
 STRINGS = ../icons/Unison.gif
@@ -28,14 +30,14 @@ real:
 once: $(STRINGS) docs.ml prefs.tmp prefsdocs.tmp
 	echo '\def\unisonversion{$(VERSION)}' > unisonversion.tex
 ifeq ($(HEVEA),true)
-	printf '$(TEXDIRECTIVES)\\textversiontrue\\draftfalse' \
+	printf '$(TEXDIRECTIVES)\\textversiontrue\\draft$(DRAFT)' \
            > texdirectives.tex
 	hevea unison-manual.tex
 	(TERM=vt100; export TERM; lynx -display_charset=utf8 -dump unison-manual.html > unison-manual.dtxt)
 	sed -e "/^----SNIP----/,+2 d" -e "/^Junk/,$$ d" unison-manual.dtxt > unison-manual.txt
 	ocaml docs.ml < unison-manual.dtxt > ../src/strings.ml
 endif
-	printf '$(TEXDIRECTIVES)\\textversionfalse\\draftfalse' > texdirectives.tex
+	printf '$(TEXDIRECTIVES)\\textversionfalse\\draft$(DRAFT)' > texdirectives.tex
 	pdflatex -draftmode unison-manual.tex
 	pdflatex -draftmode unison-manual.tex
 	pdflatex unison-manual.tex
