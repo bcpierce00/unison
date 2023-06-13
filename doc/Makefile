@@ -25,25 +25,22 @@ real:
 	$(MAKE) once
 
 .PHONY: once
-once: $(STRINGS) docs.ml postproc.ml prefs.tmp prefsdocs.tmp
+once: $(STRINGS) docs.ml prefs.tmp prefsdocs.tmp
 	echo '\def\unisonversion{$(VERSION)}' > unisonversion.tex
 ifeq ($(HEVEA),true)
 	printf '$(TEXDIRECTIVES)\\textversiontrue\\draftfalse' \
            > texdirectives.tex
 	latex unison-manual.tex
 	hevea unison-manual.tex
-	ocaml postproc.ml < unison-manual.html > temp.html
-	(TERM=vt100; export TERM; lynx -display_charset=utf8 -dump temp.html > unison-manual.dtxt)
+	(TERM=vt100; export TERM; lynx -display_charset=utf8 -dump unison-manual.html > unison-manual.dtxt)
 	sed -e "/^----SNIP----/,+2 d" -e "/^Junk/,$$ d" unison-manual.dtxt > unison-manual.txt
-	ocaml docs.ml
+	ocaml docs.ml < unison-manual.dtxt > ../src/strings.ml
 endif
 	printf '$(TEXDIRECTIVES)\\textversionfalse\\draftfalse' > texdirectives.tex
-	latex unison-manual.tex
-	latex unison-manual.tex
-	cp unison-manual.dvi temp.dvi
-	dvips -t letter -o unison-manual.ps unison-manual.dvi
-	dvips -t letter -z -Ppdf -G0 -D600 unison-manual.dvi -o junk.ps
-	ps2pdf junk.ps unison-manual.pdf
+	pdflatex -draftmode unison-manual.tex
+	pdflatex -draftmode unison-manual.tex
+	pdflatex unison-manual.tex
+	pdf2ps unison-manual.pdf
 ifeq ($(HEVEA),true)
 	hevea unison-manual.tex
 endif
@@ -57,10 +54,6 @@ prefsdocs.tmp: ../src/$(NAME)$(EXEC_EXT)
 ../src/$(NAME)$(EXEC_EXT):
 	$(MAKE) -C ../src tui
 
-# Tools
-%.ml : %.mll
-	ocamllex $<
-
 .PHONY: clean
 clean:
 	$(RM) -r \
@@ -69,7 +62,6 @@ clean:
 	   junk.* *.htoc *.toc *.bak \
 	   prefs.tmp prefsdocs.tmp \
 	   docs docs.exe temp.dvi temp.html unison-manual.html \
-	   postproc postproc.exe postproc.ml \
 	   unison-manual.dvi unison-manual.ps unison-manual.pdf \
 	   unison-manual.txt unison-manual.info* unisonversion.tex \
 	   contact.html faq.html faq.haux index.html

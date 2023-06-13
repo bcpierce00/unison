@@ -3,7 +3,8 @@ open Printf
 let main() = begin
 
 (* The structure *)
-let ml = open_out_bin "../src/strings.ml" in
+set_binary_mode_out stdout true;
+let ml = stdout in
 fprintf ml "(* DO NOT MODIFY.\n\
 \032  This file has been automatically generated, see docs.ml. *)\n\n";
 
@@ -47,19 +48,16 @@ let prsection ch =
 
 let prmanual() =
   fprintf ml "let docs =\n";
-  let ch = open_in "../doc/unison-manual.dtxt" in
+  set_binary_mode_in stdin true;
+  let ch = stdin in
   findFirstSNIP ch;
   try
     while true do prsection ch done
   with End_of_file -> ();
-  close_in ch;
   fprintf ml "    [];;\n\n" in
 
 (* Docs *)
 prmanual ();
-
-(* Clean up *)
-close_out ml;
 
 end (* of main *);;
 (*--------------------------------------------------------------------------*)
