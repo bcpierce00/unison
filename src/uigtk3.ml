@@ -4061,6 +4061,7 @@ let createToplevelWindow () =
   in
 
   let detectCmd () =
+    mainWindow#misc#grab_focus ();
     if !profileInitSuccess then begin
       getLock detectUpdatesAndReconcile;
       updateDetails ();
@@ -4072,6 +4073,12 @@ let createToplevelWindow () =
       make_interactive toplevelWindow
     end
   in
+  let loadAndRunProfile p =
+    clearMainWindow ();
+    loadProfile p false;
+    detectCmd ()
+  in
+
 (*  actionBar#insert_space ();*)
   grAdd grRescan
     (insert_button actionBar ~text:"Rescan"
@@ -4086,7 +4093,7 @@ let createToplevelWindow () =
   let profileChange _ =
     match getProfile false with
       None   -> ()
-    | Some p -> clearMainWindow (); loadProfile p false; detectCmd ()
+    | Some p -> loadAndRunProfile p
   in
   grAdd grRescan (insert_button actionBar ~text:"Change Profile"
                     ~stock:`OPEN
@@ -4302,10 +4309,7 @@ let createToplevelWindow () =
 
   grAdd grRescan
     (fileMenu#add_image_item ~key:GdkKeysyms._p
-       ~callback:(fun _ ->
-          match getProfile false with
-            None -> ()
-          | Some(p) -> clearMainWindow (); loadProfile p false; detectCmd ())
+       ~callback:profileChange
        ~image:(GMisc.image ~stock:`OPEN ~icon_size:`MENU () :> GObj.widget)
        "Change _Profile...");
 
@@ -4413,7 +4417,7 @@ let createToplevelWindow () =
                      very first profile are handled in the [start] function. *)
            begin match getProfile true with
            | None -> exit 1
-           | Some p -> clearMainWindow (); loadProfile p false; detectCmd ()
+           | Some p -> loadAndRunProfile p
            end
     );
 
@@ -4423,9 +4427,7 @@ let createToplevelWindow () =
   toplevelWindow#show ();
   fun p ->
     updateProfileKeyMenu ();
-    mainWindow#misc#grab_focus ();
-    loadProfile p false;
-    detectCmd ()
+    loadAndRunProfile p
 
 
 (*********************************************************************
