@@ -2292,8 +2292,7 @@ let predKey : (string * string list) list Proplist.key =
   Proplist.register "update predicates" Umarshal.(list (prod2 string (list string) id id))
 let rsrcKey : bool Proplist.key = Proplist.register "rsrc pref" Umarshal.bool
 
-let updatePredicateChanged thisRoot =
-  let props = getArchiveProps thisRoot in
+let updatePredicateChanged props setProps =
   let oldPreds = try Proplist.find predKey props with Not_found -> [] in
   let newPreds =
     Safelist.map (fun (nm, p) -> (nm, Pred.extern p)) updatePredicates in
@@ -2309,7 +2308,7 @@ Format.eprintf "==> %b@." (oldPreds = newPreds);
     try Some (Proplist.find rsrcKey props) with Not_found -> None in
   let newRsrc = Prefs.read Osx.rsrc in
   if oldPreds <> newPreds || oldRsrc <> Some newRsrc then begin
-    setArchivePropsLocal thisRoot
+    setProps
       (Proplist.add predKey newPreds
          (Proplist.add rsrcKey newRsrc props));
     true
@@ -2328,8 +2327,7 @@ let pred2Key : (string * string list) list Proplist.key =
 let xattrsKey : bool Proplist.key = Proplist.register "xattrs pref" Umarshal.bool
 let aclKey : bool Proplist.key = Proplist.register "acl pref" Umarshal.bool
 
-let mustRescanProps thisRoot =
-  let props = getArchiveProps thisRoot in
+let mustRescanProps props setProps =
   let oldPreds = try Proplist.find pred2Key props with Not_found -> [] in
   let newPreds =
     Safelist.filterMap (fun (nm, p, c) ->
@@ -2356,13 +2354,118 @@ let mustRescanProps thisRoot =
     let props =
       if newPreds <> [] then Proplist.add pred2Key newPreds props
       else props in
-    let () = setArchivePropsLocal thisRoot props in
+    let () = setProps props in
     newXattrs = Some true || newACL = Some true
   end
 
-let checkNoUpdatePredicateChange thisRoot =
-  let rescanProps = mustRescanProps thisRoot in
-  let predsChanged = updatePredicateChanged thisRoot in
+module PathMap = MyMap.Make (Path)
+
+let propPathKey : Proplist.t PathMap.t Proplist.key =
+  Proplist.register "paths" (PathMap.m Proplist.m)
+
+let getArchivePropsForPath thisRoot path =
+  let props = getArchiveProps thisRoot in
+  try
+    PathMap.find path (Proplist.find propPathKey props)
+  with Not_found -> Proplist.empty
+
+let mapPropPaths f props =
+  let propPaths = try Proplist.find propPathKey props with Not_found -> PathMap.empty in
+  Proplist.add propPathKey (f propPaths) props
+
+let setArchivePropsForPath thisRoot path pathProps =
+  mapPropPaths (PathMap.add path pathProps) (getArchiveProps thisRoot)
+  |> setArchivePropsLocal thisRoot
+
+let purgeArchivePropsOverriddenChildren thisRoot paths =
+  let f propPaths =
+    let clearChildren propPaths path =
+      let rec isParent p c =
+        match Path.deconstruct p, Path.deconstruct c with
+        | None, Some _ -> true
+        | Some (p, px), Some (c, cx) -> Name.compare p c = 0 && isParent px cx
+        | _ -> false
+      in
+      let overrideChildren k v acc =
+        (* If a child path is not ignored within a parent path then the properties
+           specific to this child must be removed to avoid any conflicts between
+           child and parent properties. Otherwise, the files under the child path
+           could be synced with overlapping properties (once within the parent,
+           once within the child path), which makes detecting predicate changes
+           difficult. *)
+        if not (isParent path k) then
+          PathMap.add k v acc
+        else if Globals.shouldIgnore k then
+          PathMap.add k v acc
+        else
+          acc
+      in
+      PathMap.fold overrideChildren propPaths PathMap.empty
+    in
+    Safelist.fold_left clearChildren propPaths paths
+  in
+  mapPropPaths f (getArchiveProps thisRoot)
+  |> setArchivePropsLocal thisRoot
+
+(* Purge archive properties for paths that are no longer present
+   in the archive. *)
+let purgePropsForPaths archive props =
+  let f propPaths =
+    let keepExisting k v acc =
+      match getPathInArchive archive Path.empty k with
+      | (_, NoArchive) -> acc
+      | _ -> PathMap.add k v acc
+    in
+    PathMap.fold keepExisting propPaths PathMap.empty
+  in
+  mapPropPaths f props
+
+(* Remove old-style props used by versions <= 2.53.3 as they will be recorded
+   in the per-path format. *)
+let clearOldStyleProps props =
+  props
+  |> Proplist.remove predKey
+  |> Proplist.remove rsrcKey
+  |> Proplist.remove pred2Key
+  |> Proplist.remove xattrsKey
+  |> Proplist.remove aclKey
+
+(* Extract props to be converted to the per-path format from old-style props
+   used by versions <= 2.53.3 *)
+let extractOldStyleProps props =
+  let maybeGet k m =
+    try Proplist.add k (Proplist.find k props) m with Not_found -> m
+  in
+  Proplist.empty
+  |> maybeGet predKey
+  |> maybeGet rsrcKey
+  |> maybeGet pred2Key
+  |> maybeGet xattrsKey
+  |> maybeGet aclKey
+
+let checkNoUpdatePredicateChange thisRoot paths =
+  (* Default to old style (<= 2.53.3) and then the new style, per path *)
+  let oldprops = getArchiveProps thisRoot in
+  setArchivePropsLocal thisRoot (clearOldStyleProps oldprops);
+  let getPropsForPath path =
+    let pprops = getArchivePropsForPath thisRoot path in
+    if pprops <> Proplist.empty then pprops
+    else
+      let newprops = extractOldStyleProps oldprops in
+      let () = setArchivePropsForPath thisRoot path newprops in
+      newprops
+  in
+  let rescanProps = Safelist.fold_left (fun acc path ->
+      mustRescanProps (getPropsForPath path)
+        (fun props -> setArchivePropsForPath thisRoot path props) || acc)
+    false paths
+  in
+  let predsChanged = Safelist.fold_left (fun acc path ->
+      updatePredicateChanged (getPropsForPath path)
+        (fun props -> setArchivePropsForPath thisRoot path props) || acc)
+    false paths
+  in
+  purgeArchivePropsOverriddenChildren thisRoot paths;
   debug (fun () ->
     Util.msg "Optim: rescan ext props = %b; rescan dir entries \
       (dir stamp changed) = %b\n" rescanProps predsChanged);
@@ -2376,6 +2479,9 @@ let checkNoUpdatePredicateChange thisRoot =
       Proplist.find dirStampKey (getArchiveProps thisRoot)
     with Not_found ->
       let stamp = Props.freshDirStamp () in
+      (* dirStampKey is intentionally kept as global property (while not
+         strictly correct) because managing it per path is too difficult
+         and fragile. *)
       setArchivePropsLocal thisRoot
         (Proplist.add dirStampKey stamp (getArchiveProps thisRoot));
       stamp
@@ -2405,7 +2511,7 @@ let findLocal wantWatcher fspath pathList subpaths :
      deleted.  --BCP 2006 *)
   let (arcName,thisRoot) = archiveName fspath MainArch in
   let archive = getArchive thisRoot in
-  let (rescanProps, dirStamp) = checkNoUpdatePredicateChange thisRoot in
+  let (rescanProps, dirStamp) = checkNoUpdatePredicateChange thisRoot pathList in
 (*
 let t1 = Unix.gettimeofday () in
 *)
@@ -2621,6 +2727,7 @@ let prepareCommitLocal compatMode (fspath, magic) =
     if not compatMode then checkArchive true [] archive 0
     else checkArchive251 true [] (to_compat251 archive) 0 in
   let props = getArchiveProps root in
+  let props = purgePropsForPaths archive props in
   let props = externArchivePropsdata archive props in
   storeArchiveLocal
     (Util.fileInUnisonDir newName) root archive archiveHash magic props;
