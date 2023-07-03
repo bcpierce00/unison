@@ -2292,7 +2292,7 @@ let predKey : (string * string list) list Proplist.key =
   Proplist.register "update predicates" Umarshal.(list (prod2 string (list string) id id))
 let rsrcKey : bool Proplist.key = Proplist.register "rsrc pref" Umarshal.bool
 
-let checkNoUpdatePredicateChange thisRoot rescanProps =
+let updatePredicateChanged thisRoot =
   let props = getArchiveProps thisRoot in
   let oldPreds = try Proplist.find predKey props with Not_found -> [] in
   let newPreds =
@@ -2308,17 +2308,13 @@ Format.eprintf "==> %b@." (oldPreds = newPreds);
   let oldRsrc =
     try Some (Proplist.find rsrcKey props) with Not_found -> None in
   let newRsrc = Prefs.read Osx.rsrc in
-  try
-    if oldPreds <> newPreds || oldRsrc <> Some newRsrc || rescanProps then
-      raise Not_found;
-    Proplist.find dirStampKey props
-  with Not_found ->
-    let stamp = Props.freshDirStamp () in
+  if oldPreds <> newPreds || oldRsrc <> Some newRsrc then begin
     setArchivePropsLocal thisRoot
-      (Proplist.add dirStampKey stamp
-         (Proplist.add predKey newPreds
-            (Proplist.add rsrcKey newRsrc props)));
-    stamp
+      (Proplist.add predKey newPreds
+         (Proplist.add rsrcKey newRsrc props));
+    true
+  end else
+    false
 
 (* All the predicates that may change the set of props scanned during
    update detection *)
@@ -2364,6 +2360,28 @@ let mustRescanProps thisRoot =
     newXattrs = Some true || newACL = Some true
   end
 
+let checkNoUpdatePredicateChange thisRoot =
+  let rescanProps = mustRescanProps thisRoot in
+  let predsChanged = updatePredicateChanged thisRoot in
+  debug (fun () ->
+    Util.msg "Optim: rescan ext props = %b; rescan dir entries \
+      (dir stamp changed) = %b\n" rescanProps predsChanged);
+  (* If the list of scanned files changes then must also force rescan of all
+     file properties because previously ignored files may already be in the
+     archive (for example, some were synced before being ignored). *)
+  let rescanProps = rescanProps || predsChanged in
+  let dirStamp =
+    try
+      if predsChanged || rescanProps then raise_notrace Not_found;
+      Proplist.find dirStampKey (getArchiveProps thisRoot)
+    with Not_found ->
+      let stamp = Props.freshDirStamp () in
+      setArchivePropsLocal thisRoot
+        (Proplist.add dirStampKey stamp (getArchiveProps thisRoot));
+      stamp
+  in
+  (rescanProps, dirStamp)
+
 (* This contains the list of synchronized paths and the directory stamps
    used by the previous update detection, when a watcher process is used.
    This make it possible to know when the state of the watcher process
@@ -2387,8 +2405,7 @@ let findLocal wantWatcher fspath pathList subpaths :
      deleted.  --BCP 2006 *)
   let (arcName,thisRoot) = archiveName fspath MainArch in
   let archive = getArchive thisRoot in
-  let rescanProps = mustRescanProps thisRoot in
-  let dirStamp = checkNoUpdatePredicateChange thisRoot rescanProps in
+  let (rescanProps, dirStamp) = checkNoUpdatePredicateChange thisRoot in
 (*
 let t1 = Unix.gettimeofday () in
 *)
