@@ -12,3 +12,4 @@ val empty : t
 val mem : 'a key -> t -> bool
 val find : 'a key -> t -> 'a
 val add : 'a key -> 'a -> t -> t
+val remove : 'a key -> t -> t
