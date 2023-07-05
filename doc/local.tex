@@ -2,10 +2,12 @@
 \newif\iffull \fullfalse
 \newif\ifdraft  \drafttrue
 
-\IfFileExists{texdirectives.tex}
-   {\input{texdirectives}}
+\ifhevea\else
+\IfFileExists{{\jobname}-directives.tex}
+   {\input{{\jobname}-directives}}
    {\typeout{== ERROR == The dynamically generated file `texdirectives.tex' couldn't be found. You should use `make` to build the manual for Unison (`unison-manual.pdf'). Don't call latex directly.}\stop}
-\input{texdirectives}
+\fi
+\input{{\jobname}-directives}
 \input{unisonversion}
 
 \newcommand{\finish}[1]{\ifdraft{\ifhevea\red\else \large\bf\fi [#1]\ifhevea\fi}\fi}
@@ -38,7 +40,7 @@
     \iftextversion\else
       \section*{Contents}
       \begin{quote}
-      \input{unison-manual.htoc}
+      \input{\jobname.htoc}
       \end{quote}
     \fi
   \else

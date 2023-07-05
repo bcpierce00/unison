@@ -1,48 +1,70 @@
  # Manual
 
 .PHONY: all
-all: unison-manual.html
+all: unison-manual.pdf unison-manual.html unison-manual.txt ../src/strings.ml
+
+DRAFT = false
 
 -include ../src/Makefile.ProjectInfo
 
-STRINGS = ../icons/Unison.gif
 SOURCES = unison-manual.tex \
-          local.tex short.tex
+          local.tex short.tex \
+          unisonversion.tex prefs.tmp prefsdocs.tmp
+FORMATS = html pdf txt dvi ps info
+FORMATS_AUX = dtxt aux htoc toc
+
+$(addprefix unison-manual., $(FORMATS) $(FORMATS_AUX)): $(SOURCES)
+
+unison-manual-directives.tex unison-manual-text-directives.tex:
 
 ifneq ($(strip $(shell hevea -version)),)
   HEVEA=true
 endif
 
-unison-manual.html: $(SOURCES)
-	$(MAKE) real
+unisonversion.tex: ../src/Makefile.ProjectInfo
+	echo '\def\unisonversion{$(VERSION)}' > $@
 
-# If the .aux file is missing, do 'make once' an extra time to make
-# sure it's present (with section numbers, etc.) before we build the
-# manual for real.
-.PHONY: real
-real:
-	@(if [ ! -f unison-manual.aux ]; then $(MAKE) once; fi)
-	$(MAKE) once
+# Text versions: when using different directives then _must_ use different
+# jobname (or, output name for hevea) so that files for non-text versions are
+# not overwritten. Here, suffix -text is used.
 
-.PHONY: once
-once: $(STRINGS) docs.ml prefs.tmp prefsdocs.tmp
-	echo '\def\unisonversion{$(VERSION)}' > unisonversion.tex
+%-text-directives.tex:
+	printf '$(TEXDIRECTIVES)\\textversiontrue\\draft$(DRAFT)' > $@
+
+%.dtxt: %.tex %-text-directives.tex
 ifeq ($(HEVEA),true)
-	printf '$(TEXDIRECTIVES)\\textversiontrue\\draftfalse' \
-           > texdirectives.tex
-	latex unison-manual.tex
-	hevea unison-manual.tex
-	(TERM=vt100; export TERM; lynx -display_charset=utf8 -dump unison-manual.html > unison-manual.dtxt)
-	sed -e "/^----SNIP----/,+2 d" -e "/^Junk/,$$ d" unison-manual.dtxt > unison-manual.txt
-	ocaml docs.ml < unison-manual.dtxt > ../src/strings.ml
+	hevea -o $*-text.html $<
+	(TERM=vt100; export TERM; lynx -display_charset=utf8 -dump $*-text.html > $@)
 endif
-	printf '$(TEXDIRECTIVES)\\textversionfalse\\draftfalse' > texdirectives.tex
-	pdflatex -draftmode unison-manual.tex
-	pdflatex -draftmode unison-manual.tex
-	pdflatex unison-manual.tex
-	pdf2ps unison-manual.pdf
+
+%.txt: %.dtxt
 ifeq ($(HEVEA),true)
-	hevea unison-manual.tex
+	sed -e "/^----SNIP----/,+2 d" -e "/^Junk/,$$ d" $< > $@
+endif
+
+../src/strings.ml: unison-manual.dtxt docs.ml
+ifeq ($(HEVEA),true)
+	ocaml docs.ml < $< > $@
+endif
+
+%-directives.tex:
+	printf '$(TEXDIRECTIVES)\\textversionfalse\\draft$(DRAFT)' > $@
+
+# (pdf)latex must be run multiple times to generate toc and correct references
+
+%.aux %.htoc: %.tex %-directives.tex
+	pdflatex -draftmode $<
+	pdflatex -draftmode $<
+
+%.pdf: %.tex %-directives.tex %.aux
+	pdflatex $<
+
+%.ps: %.pdf
+	pdf2ps $<
+
+%.html: %.tex %-directives.tex %.htoc
+ifeq ($(HEVEA),true)
+	hevea $<
 endif
 
 # Listing of preferences
@@ -58,11 +80,12 @@ prefsdocs.tmp: ../src/$(NAME)$(EXEC_EXT)
 clean:
 	$(RM) -r \
 	   *.dtxt *.aux *.haux *.log *.out \
-	   texdirectives.tex \
+	   *-directives.tex \
 	   junk.* *.htoc *.toc *.bak \
 	   prefs.tmp prefsdocs.tmp \
 	   docs docs.exe temp.dvi temp.html unison-manual.html \
 	   unison-manual.dvi unison-manual.ps unison-manual.pdf \
 	   unison-manual.txt unison-manual.info* unisonversion.tex \
+	   unison-manual-text.html \
 	   contact.html faq.html faq.haux index.html
 
