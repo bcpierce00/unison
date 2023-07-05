@@ -1699,6 +1699,13 @@ let checkContentsChange
              (Uutil.Filesize.toString (Props.length archDesc))
              (Uutil.Filesize.toString  (Props.length info.Fileinfo.desc));
            Util.msg "\n");
+  let resetCTimeAtRescan () =
+    if not scanInfo.rescanProps || Props.same_ctime archDesc Props.dummy then
+      None
+    else (* Props changed when props rescan was requested: reset ctime *)
+      let newprops = Props.resetCTime archDesc Props.dummy in
+      Some (ArchiveFile (newprops, archFp, archStamp, archRess))
+  in
   let fastCheck = scanInfo.fastCheck in
   let dataClearlyUnchanged =
     Fpcache.dataClearlyUnchanged fastCheck path info archDesc archStamp in
@@ -1709,13 +1716,16 @@ let checkContentsChange
     Xferhint.insertEntry currfspath path archFp;
     let propsUpdates = checkPropChange info.Fileinfo.desc archive archDesc in
     let propsChanged = propsUpdates <> NoUpdates in
-    (* Only update the archive if there is nothing to propagate. Otherwise,
-       if propagation fails and times in archive are updated anyway then the
+    (* ctime in the archive is updated under two conditions only: if there is
+       nothing to propagate, or props changed while a props rescan was
+       requested (in this case the ctime is reset to force a rescan every time
+       until the sync is completed). Otherwise, if propagation fails (or the
+       user skips this file) and times in archive are updated anyway then the
        changes that failed to propagate may be missed at the next scan. *)
     let optArch =
-      if propsChanged || Props.same_ctime info.Fileinfo.desc archDesc then
-        None
-      else
+      if propsChanged then resetCTimeAtRescan ()
+      else if Props.same_ctime info.Fileinfo.desc archDesc then None
+      else (* Nothing, other than ctime, changed: update ctime in archive *)
         let newprops = Props.setTime archDesc info.Fileinfo.desc in
         Some (ArchiveFile (newprops, archFp, archStamp, archRess))
     in
@@ -1733,11 +1743,12 @@ let checkContentsChange
     if archFp = newFp then begin
       let propsUpdates = checkPropChange newDesc archive archDesc in
       let propsChanged = propsUpdates <> NoUpdates in
-      (* Only update the archive if there is nothing to propagate. Otherwise,
+      (* Only update the archive if there is nothing to propagate (with one
+         exception, see the comment about resetting ctime above). Otherwise,
          if propagation fails and times in archive are updated anyway then the
          changes that failed to propagate may be missed at the next scan. *)
       begin if propsChanged then
-        None
+        resetCTimeAtRescan ()
       else
       let newprops = Props.setTime archDesc newDesc in
       let newarch = ArchiveFile (newprops, archFp, newStamp, newRess) in

@@ -1536,6 +1536,7 @@ let setLength p l = {p with length=l}
 
 let time p = Time.extract p.time
 let setTime p p' = {p with time = Time.replace p.time (time p'); ctime = p'.ctime}
+let resetCTime p p' = {p with ctime = p'.ctime}
 
 let perms p = Perm.extract p.perm
 
