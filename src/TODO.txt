@@ -91,20 +91,6 @@ It would be nice if Unison could have the "power" to copy write-protected
   something like (suggestion):
      Files = opt/root/.unison/*.prf
 
-* If a directory does not exist in one of the host, unison (for
-  security reasons, which I like) pops up a window and Quit is the only
-  option. I would expect a message stating mere clearly on which host and
-  directory and an option to create that directory. I had recently to make
-  a lot of reinstalls and new pendrives and it took a long time to create
-  all those dirs. Someone in the list even made a script to do the job!!!
-
-** giving a -path preference whose parent dir doesn't exist currently causes
-   Unison to abort with a fatal error.  Would be better if it just
-   signalled an error for that file.
-
-If we synchronize a path whose parent doesn't exist in one replica, we'll
-  fail.  Might be nicer to create the parent path if needed.
-
 * When synchronizing FAT32, there could be an explicit command for
   ignoring attributes. The problem happens when one side is FAT32 but the
   other is not, or when mounting parameters are different.
@@ -176,15 +162,6 @@ If we synchronize a path whose parent doesn't exist in one replica, we'll
 * BUILDING AND INSTALLING
 * =======================
 
-** 'make install' could be improved (and documented)
-   1. Typing "make install' after a "make" should simply install the
-   program that was made, not attempt to do a remake with different options.
-   ===> Doesn't it???
-   2. "make install' should try to install as /usr/local/bin/unison, not
-   ~/bin/, especially considering that ~/bin is the wrong place to do the
-   install under OSX (it should be ~/Apps or ~/Apps/bin)
-
-should strip symbols from binary files in 'make exportnative'
 
 
 * DOCUMENTATION
@@ -576,9 +553,6 @@ the local host and which side the remote host is.
   Recon.propagateUpdates would be a starting point for changes.
 
 * [Jamey Leifer]
-  Would be nice if both UIs had a "revert to Unison's proposal" button...
-
-* [Jamey Leifer]
   [graphic ui, wishlist] The documentation topics aren't searchable.  As
   a result "unison -doc running | less" is still indispensable if one
   wants to find anything.  I suggest adding a box
@@ -737,9 +711,6 @@ would be nice to be able to "Proceed" just the selected line
 might be nice if the GUI would beep when finished syncing (needs to be
   switch-selectable and off by default, naturally).  Is this easy with
   LablGTK?
-
-It would be nice to be able to STOP the GUI in the middle of propagating
-  changes.
 
 
 * TIDYING
