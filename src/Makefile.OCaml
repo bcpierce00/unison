@@ -428,6 +428,10 @@ $(NAME)-blob.o: OCAMLLIBS += $(OCAMLLIBS_MAC)
 $(NAME)-blob.o: INCLFLAGS += $(INCLFLAGS_MAC)
 # Unfortunately -output-obj does not put .o files into the output, only .cmx
 # files, so we have to use $(LD) to take care of COBJS.
+# [2023-07] The limitations of -output-obj have been overcome by a new option
+# -output-complete-obj, available since OCaml 4.02.2. Still, this option can't
+# be used here because there is a bug which breaks linking on macOS when using
+# threads (needed by uimacbridge): https://github.com/ocaml/ocaml/issues/7933
 $(NAME)-blob.o: $$(CAMLOBJS) $(COBJS)
 	@echo Linking $@
 	$(CAMLC) -dstartup -output-obj -verbose -cclib -keep_private_externs $(CAMLFLAGS) -o u-b.o $(CAMLCFLAGS) $(CAMLLDFLAGS) $(CAMLLIBS) $(CLIBS) $(CAMLOBJS)
