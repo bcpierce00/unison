@@ -298,7 +298,18 @@ let makeSymlink =
     (fun (fspath, (workingDir, path, l)) ->
        if Os.exists workingDir path then
          Os.delete workingDir path;
-       Os.symlink workingDir path l;
+       let execInDir dir f =
+         let cwd = System.getcwd () in
+         begin try System.chdir dir with Sys_error _ -> () end;
+         f ();
+         begin try System.chdir cwd with Sys_error _ -> () end
+       in
+       let f () = Os.symlink workingDir path l in
+       (* Changing the working directory in Windows is a workaround to improve
+          the chances of [Unix.symlink] being able to figure out if a relative
+          symlink is supposed to be a file symlink or a directory symlink (this
+          differentiation only exists in Windows). *)
+       if not Sys.win32 then f () else execInDir (Fspath.toString workingDir) f;
        Lwt.return ())
 
 (* ------------------------------------------------------------ *)
