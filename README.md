@@ -96,6 +96,10 @@ Unison.  Results from Continuous Integration builds, while performed
 for the purposes of testing, are available for use on a limited set of
 platforms.
 
+See the [top-level wiki
+page](https://github.com/bcpierce00/unison/wiki) for a variety of
+information, including how to access Unison documentation.
+
 See the [building instructions](INSTALL.md), or read the CI
 recipes.
 
