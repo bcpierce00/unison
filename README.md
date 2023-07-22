@@ -10,9 +10,8 @@ before creating or commenting on a github issue.***
 
 ***TL;DR: Do not ask questions or ask for help in issues.  Upgrade to the latest release.***
 
-If you are trying to interoperate with or upgrade from Unison before
-2.52, see the compatibility section below.  However, pre-2.52 is now
-very old; see the previous paragraph.
+Please also read https://github.com/bcpierce00/unison/wiki before
+interacting with the issue tracker or asking for help.
 
 ## About
 
@@ -102,10 +101,6 @@ information, including how to access Unison documentation.
 
 See the [building instructions](INSTALL.md), or read the CI
 recipes.
-
-You may be able to find a pre-built binary for your operating system,
-version, and CPU type.  For a list of sources, See
-https://github.com/bcpierce00/unison/wiki/Downloading-Unison
 
 You should use the most recent formal release, or a newer version from
 git.  Earlier versions are no longer maintained, and bug reports are
