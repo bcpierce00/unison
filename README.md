@@ -108,17 +108,3 @@ not accepted about these versions.  This is true even though many
 packaging systems (including GNU/Linux distributions) continue to have
 2.51 or even 2.48.  The master branch in git historically has been
 quite stable.
-
-### Compatibility with old and unmaintained versions
-
-For Unison versions 2.52 and newer, see
-https://github.com/bcpierce00/unison/wiki/2.52-Migration-Guide
-
-The information below is true for Unison versions older than 2.52.
-
-Beware that Unison uses OCaml's built-in data marshalling, and that
-this facility is unstable across versions of "ocaml" (the standard
-implementation of the OCaml language).  Additionally, Unison has
-incompatible changes across minor releases (e.g. 2.48 vs 2.51, but
-2.51.2 and 2.51.3 are compatible).  Therefore, you must use the same
-Unison minor version built with the same ocaml version on all systems.
