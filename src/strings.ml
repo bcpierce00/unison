@@ -2640,9 +2640,12 @@ let docs =
       \n\
       \032      adds pattern to the list of patterns to be ignored.\n\
       \032    * Each pattern can have one of three forms. The most general form is\n\
-      \032      a Posix extended regular expression introduced by the keyword\n\
-      \032      Regex. (The collating sequences and character classes of full Posix\n\
-      \032      regexps are not currently supported).\n\
+      \032      a POSIX Extended Regular Expression introduced by the keyword\n\
+      \032      Regex. (The collating symbol, equivalence class expression, and\n\
+      \032      character class expresssion described in Section 9.3.5 of the POSIX\n\
+      \032      specification\n\
+      \032      (https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap0\n\
+      \032      9.html#tag_09_03_05) are not currently supported).\n\
       \032                Regex regexp\n\
       \n\
       \032      For convenience, three other styles of pattern are also recognized:\n\
