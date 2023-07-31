@@ -622,7 +622,7 @@ let docs =
       \032  at the command line, or by selecting the Help menu in the graphical\n\
       \032  user interface. The same information is also available in a typeset\n\
       \032  User\226\128\153s Manual (HTML or PostScript format) through\n\
-      \032  http://www.cis.upenn.edu/~bcpierce/unison.\n\
+      \032  https://github.com/bcpierce00/unison/wiki.\n\
       \n\
       \032  If you use Unison regularly, you should subscribe to one of the mailing\n\
       \032  lists, to receive announcements of new versions. See the section\n\
