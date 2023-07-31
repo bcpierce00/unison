@@ -511,8 +511,6 @@ menu) or on the command line by
 (you probably want to pipe the output to a pager).
 .Pp
 .Lk https://github.com/bcpierce00/unison
-.Pp
-.Lk https://www.cis.upenn.edu/~bcpierce/unison/
 .\" .Sh STANDARDS
 .\" .Sh HISTORY
 .\" .Sh BUGS
