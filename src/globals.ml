@@ -101,7 +101,7 @@ let installRoots2 () =
   let roots = rawRoots () in
   theroots :=
     Safelist.map Remote.canonize ((Safelist.map Clroot.parseRoot) roots);
-  Lwt.ignore_result (Negotiate.features (Common.sortRoots !theroots) >>= return)
+  Lwt_unix.run (Negotiate.features (Common.sortRoots !theroots))
 
 let roots () =
   match !theroots with
