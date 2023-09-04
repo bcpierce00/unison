@@ -678,7 +678,9 @@ let postCommitArchiveLocal (fspath,())
            try f () with e -> close_out_noerr outFd; raise e
          in
          close_on_error (fun () ->
-         System.chmod fto 0o600; (* In case the file already existed *)
+         begin try
+           System.chmod fto 0o600 (* In case the file already existed *)
+         with Unix.Unix_error _ -> () end;
          let inFd = System.open_in_bin ffrom in
          let close_on_error f =
            try f () with e -> close_in_noerr inFd; raise e
