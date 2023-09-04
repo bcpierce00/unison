@@ -260,7 +260,7 @@ let mkdirOnRoot =
     (fun (fspath,(workingDir,path)) ->
        let info = Fileinfo.getBasic false workingDir path in
        if info.Fileinfo.typ = `DIRECTORY then begin
-         begin try
+         if not (Prefs.read Props.dontChmod) then begin try
            (* Make sure the directory is writable *)
            Fs.chmod (Fspath.concat workingDir path)
              (Props.perms info.Fileinfo.desc lor 0o700)
