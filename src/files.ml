@@ -505,7 +505,7 @@ let rec createDirectories fspath localPath props =
           createDirectories fspath parentPath rem;
           try
             let absolutePath = Fspath.concat fspath parentPath in
-             Fs.mkdir absolutePath (Props.perms desc);
+            Fs.mkdir absolutePath (Props.perms Props.dirDefault);
              Fileinfo.set fspath parentPath (`Copy parentPath) desc
             (* The directory may have already been created
                if there are several paths with the same prefix *)
