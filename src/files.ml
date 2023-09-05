@@ -260,7 +260,7 @@ let mkdirOnRoot =
     (fun (fspath,(workingDir,path)) ->
        let info = Fileinfo.getBasic false workingDir path in
        if info.Fileinfo.typ = `DIRECTORY then begin
-         begin try
+         if not (Prefs.read Props.dontChmod) then begin try
            (* Make sure the directory is writable *)
            Fs.chmod (Fspath.concat workingDir path)
              (Props.perms info.Fileinfo.desc lor 0o700)
@@ -505,7 +505,7 @@ let rec createDirectories fspath localPath props =
           createDirectories fspath parentPath rem;
           try
             let absolutePath = Fspath.concat fspath parentPath in
-             Fs.mkdir absolutePath (Props.perms desc);
+            Fs.mkdir absolutePath (Props.perms Props.dirDefault);
              Fileinfo.set fspath parentPath (`Copy parentPath) desc
             (* The directory may have already been created
                if there are several paths with the same prefix *)
