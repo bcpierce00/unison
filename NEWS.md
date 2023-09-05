@@ -12,6 +12,17 @@ As of 2022, this file (NEWS.md at top level) is used for news.
 Some software has a "changelog" file that records all changes, but
 unison uses git history for that, and thus there is no changelog file.
 
+## Changes in 2.53.4
+
+Released 2023-xx-yy
+
+  * Improved and simplified makefiles. Please review your build scripts
+    for changed build goals, input variables and build artifact names.
+    See INSTALL.md for details.
+  * Various fixes in Windows and Cygwin builds.
+  * Cleanups in documentation.
+  * Bugfixes, minor improvements, cleanups.
+
 ## Changes in 2.53.3
 
 Released 2023-04-28
