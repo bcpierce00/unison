@@ -362,11 +362,47 @@ let option2string (prt: 'a -> string) = function
 (*                    String utility functions                               *)
 (*****************************************************************************)
 
-let truncateString string length =
-  let actualLength = String.length string in
-  if actualLength <= length then string^(String.make (length - actualLength) ' ')
-  else if actualLength < 3 then string
-  else (String.sub string 0 (length - 3))^ "..."
+let truncateString s count =
+  (* Truncate a string by counting code points instead of bytes. *)
+  let rec subValidUTF8 ?(extra = 0) s pos len =
+    (* Like [String.sub] but tries to keep the substring a valid UTF-8
+       string (it may not be meaningful in any way but the encoding is not
+       broken). Requires the input string to be valid UTF-8 to work
+       properly.
+       If the initial substring (like a simple [String.sub]) is not valid
+       UTF-8 then it tries to blindly extend (never reduce) the substring
+       until it becomes valid UTF-8. This is a very simple implementation
+       that works without knowing anything about the UTF-8 encoding. *)
+    let totl = String.length s in
+    if pos >= totl then
+      None
+    else if pos + len > totl then
+      Some (String.sub s pos (totl - pos))
+    else
+      let s' = String.sub s pos len in
+      if Unicode.check_utf_8 s' || extra > 5 then
+        Some s'
+      else
+        subValidUTF8 s pos (len + 1) ~extra:(extra + 1)
+  in
+  let rec extractCodepoints pos count s' s =
+    (* Somewhat like [String.sub] but instead of number of bytes, extracts
+       [count] number of code points from the string while [pos] is still
+       counted in bytes. *)
+    match subValidUTF8 s pos 1 with
+    | None -> s'
+    | Some s'' ->
+        if count > 1 then
+          extractCodepoints (pos + String.length s'') (count - 1) (s' ^ s'') s
+        else s' ^ s''
+  in
+  let s = Unicode.compose (Unicode.protect s) in
+  let s' = extractCodepoints 0 (count - 3) "" s in
+  let s'' = extractCodepoints (String.length s') 3 "" s in
+  if String.length s' + String.length s'' < String.length s then
+    s' ^ "..."
+  else
+    s' ^ s''
 
 let findsubstring ?reverse:(rev=false) s1 s2 =
   let l1 = String.length s1 in

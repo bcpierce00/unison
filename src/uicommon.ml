@@ -288,7 +288,7 @@ let details2string theRi sep =
   | Different {rc1 = rc1; rc2 = rc2} ->
       let root1str, root2str =
         roots2niceStrings 12 (Globals.roots()) in
-      Printf.sprintf "%s : %s\n%s : %s"
+      Printf.sprintf "%-12s : %s\n%-12s : %s"
         root1str (replicaContent2string rc1 sep)
         root2str (replicaContent2string rc2 sep)
 
@@ -314,7 +314,7 @@ let displayPath previousPath path =
 
 let roots2string () =
   let replica1, replica2 = roots2niceStrings 12 (Globals.roots()) in
-  (Printf.sprintf "%s   %s       " replica1 replica2)
+  (Printf.sprintf "%-12s   %-12s       " replica1 replica2)
 
 type action = AError | ASkip of bool | ALtoR of bool | ARtoL of bool | AMerge
 

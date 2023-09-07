@@ -1237,11 +1237,13 @@ ubase/umarshal.cmx : \
     ubase/umarshal.cmi
 ubase/umarshal.cmi :
 ubase/util.cmo : \
+    unicode.cmi \
     system.cmi \
     ubase/safelist.cmi \
     ubase/projectInfo.cmo \
     ubase/util.cmi
 ubase/util.cmx : \
+    unicode.cmx \
     system.cmx \
     ubase/safelist.cmx \
     ubase/projectInfo.cmx \

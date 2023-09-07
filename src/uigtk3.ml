@@ -2935,12 +2935,14 @@ let createToplevelWindow () =
     (GTree.view_column ~title:"  Path  "
        ~renderer:(GTree.cell_renderer_text [], ["text", c_path]) ()));
 
-  let setMainWindowColumnHeaders s =
+  let setMainWindowColumnHeaders roots =
+    let escape s = String.split_on_char '_' s |> String.concat "__" in
+    let (r1, r2) = Uicommon.roots2niceStrings 15 roots in
     Array.iteri
       (fun i data ->
          (mainWindow#get_column i)#set_title data)
-      [| " " ^ Unicode.protect (String.sub s  0 12) ^ " "; "  Action  ";
-         " " ^ Unicode.protect (String.sub s 15 12) ^ " "; "  Status  ";
+      [| " " ^ Unicode.protect (escape r1) ^ " "; "  Action  ";
+         " " ^ Unicode.protect (escape r2) ^ " "; "  Status  ";
          " Path" |];
   in
 
@@ -4399,7 +4401,7 @@ let createToplevelWindow () =
   updateFromProfile :=
     (fun () ->
        displayNewProfileLabel ();
-       setMainWindowColumnHeaders (Uicommon.roots2string ());
+       setMainWindowColumnHeaders (Globals.roots ());
        sizeMainWindow ();
        buildActionMenu false);
 

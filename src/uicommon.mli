@@ -60,6 +60,7 @@ val displayPath : Path.t -> Path.t -> string
 (* Format the names of the roots for display at the head of the
    corresponding columns in the UI *)
 val roots2string : unit -> string
+val roots2niceStrings : int -> Common.root * Common.root -> string * string
 
 (* Format a reconItem (and its status string) for display, eliding
    initial components that are the same as the previous path *)
