@@ -116,6 +116,11 @@ let catchIoErrors ch th =
                          (* ERROR_PIPE_NOT_CONNECTED *)
        | Unix.Unix_error(Unix.EUNKNOWNERR (-1236), _, _)
                          (* ERROR_CONNECTION_ABORTED *)
+         (* The following may indicate a programming error, but even if that's
+            the case, let's be graceful about it rather than crash the server.
+            (Seen happening on the socket server when the connection is broken
+            before the client has read the updates sent by server.) *)
+       | Unix.Unix_error(Unix.EBADF, _, _)
          (* The following errors _may_ be temporary but we don't know if
             they are or for how long they will persist. We also don't have
             a way to retry and there is no guarantee that the socket remains
