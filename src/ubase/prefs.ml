@@ -624,7 +624,7 @@ let processCmdLine usage hook =
   try
     Uarg.parse argspecs anonfun (oneLineDocs usage)
   with IllegalValue str ->
-    raise(Util.Fatal(Printf.sprintf "%s \n%s\n" (oneLineDocs usage) str))
+    raise (Util.Fatal str)
 
 let parseCmdLine usage =
   processCmdLine usage (fun _ sp -> sp)
