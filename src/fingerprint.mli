@@ -9,8 +9,6 @@ val m : t Umarshal.t
 val file : Fspath.t -> Path.local -> t
 val subfile : Fspath.t -> Int64.t -> Uutil.Filesize.t -> t
 
-val string : string -> t
-
 val toString : t -> string
 
 (* This dummy fingerprint is guaranteed small and distinct from all

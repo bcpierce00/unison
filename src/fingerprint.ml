@@ -86,8 +86,6 @@ let toString md5 =
     Bytes.to_string string
   end
 
-let string = Digest.string
-
 let dummy = ""
 
 let hash d =
