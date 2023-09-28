@@ -52,7 +52,7 @@ module StringMap : Map.S with type key = string
 val stringSetFromList : string list -> StringSet.t
 
 (* String manipulation *)
-val truncateString : string -> int -> string
+val truncateString : string -> int (* number of Unicode code points *) -> string
 val startswith : string -> string -> bool  (* STR,PREFIX *)
 val endswith : string -> string -> bool
 val findsubstring : ?reverse:bool -> string -> string -> int option
