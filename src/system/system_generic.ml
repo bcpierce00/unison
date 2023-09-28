@@ -127,18 +127,6 @@ let has_stderr ~info:_ = true
 
 (****)
 
-let fingerprint f =
-  let ic = open_in_bin f in
-  try
-    let d = Digest.channel ic (-1) in
-    close_in ic;
-    d
-  with e ->
-    close_in_noerr ic;
-    raise e
-
-(****)
-
 exception XattrNotSupported
 let _ = Callback.register_exception "XattrNotSupported" XattrNotSupported
 

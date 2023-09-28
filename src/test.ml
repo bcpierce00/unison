@@ -156,8 +156,8 @@ let writefs p fs =
   verbose (fun() -> Util.msg "Writing new test filesystem\n");
   let rec loop p = function
     | File s ->
-        verbose (fun() -> Util.msg "Writing %s with contents %s (fingerprint %s)\n"
-                   (Fspath.toDebugString p) s (Fingerprint.toString (Fingerprint.string s)));
+        verbose (fun() -> Util.msg "Writing %s with contents %s\n"
+                   (Fspath.toDebugString p) s);
         write p s
     | Link s -> Fs.symlink s p
     | Dir files ->

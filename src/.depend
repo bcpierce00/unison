@@ -1057,7 +1057,6 @@ test.cmo : \
     globals.cmi \
     fspath.cmi \
     fs.cmi \
-    fingerprint.cmi \
     common.cmi \
     test.cmi
 test.cmx : \
@@ -1518,7 +1517,6 @@ update.cmo : \
     fswatch.cmi \
     fspath.cmi \
     fpcache.cmi \
-    fingerprint.cmi \
     fileinfo.cmi \
     features.cmi \
     common.cmi \
@@ -1551,7 +1549,6 @@ update.cmx : \
     fswatch.cmx \
     fspath.cmx \
     fpcache.cmx \
-    fingerprint.cmx \
     fileinfo.cmx \
     features.cmx \
     common.cmx \

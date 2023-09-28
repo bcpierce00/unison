@@ -41,7 +41,6 @@ val openfile :
 val open_out_gen : open_flag list -> int -> fspath -> out_channel
 val open_in_bin : fspath -> in_channel
 val file_exists : fspath -> bool
-val fingerprint : fspath -> Digest.t
 
 (****)
 
