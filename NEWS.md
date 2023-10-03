@@ -20,6 +20,12 @@ Released 2023-xx-yy
     for changed build goals, input variables and build artifact names.
     See INSTALL.md for details.
   * Various fixes in Windows and Cygwin builds.
+  * Preferences "force", "prefer" and related "partial" preferences now
+    work slightly differently with values "newer" and "older". Previously,
+    if mtimes in both replicas were equal then always the second root
+    propagated to the first root (possibly reverting user changes). It
+    is now made explicit that "newer" and "older" only work when mtimes
+    are different.
   * Cleanups in documentation.
   * Bugfixes, minor improvements, cleanups.
 
