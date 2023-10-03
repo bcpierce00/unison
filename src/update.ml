@@ -1605,7 +1605,7 @@ let rec noChildChange childUpdates =
 (* Check whether the directory contents is different from what is in
    the archive *)
 let directoryCheckContentUnchanged
-      currfspath path info propsChanged archDesc childUpdates scanInfo =
+      currfspath path info archDesc childUpdates scanInfo =
   if
     noChildChange childUpdates
       &&
@@ -1621,19 +1621,7 @@ let directoryCheckContentUnchanged
       debugverbose (fun()->
         Util.msg "Contents of directory %s marked unchanged\n"
           (Fspath.toDebugString (Fspath.concat currfspath path)));
-    (* Only update the times in archive if there is nothing to propagate for
-       the dir itself. Otherwise, if propagation fails and times in archive
-       are updated anyway then the changes that failed to propagate may be
-       missed at the next scan. If there is something to propagate then all
-       archive changes must go through propagation. With the exception of
-       dirChangeFlag, which is safe to update without updating mtime. *)
-    if propsChanged then
-      (archDesc, updated)
-    else
-      let updated =
-        updated || not (Props.same_time info.Fileinfo.desc archDesc)
-          || not (Props.same_ctime info.desc archDesc) in
-      (Props.setTime archDesc info.Fileinfo.desc, updated)
+    (archDesc, updated)
   end else begin
     let (archDesc, updated) =
       Props.setDirChangeFlag archDesc Props.changedDirStamp 0 in
@@ -2057,9 +2045,31 @@ and buildUpdateRec archive currfspath path scanInfo =
              (These are files or directories which used not to be
              ignored and are now ignored.) *)
           if hasIgnoredChildren then (archDesc, true) else
-          let propsChanged = permchange <> PropsSame in
           directoryCheckContentUnchanged
-            currfspath path info propsChanged archDesc childUpdates scanInfo in
+            currfspath path info archDesc childUpdates scanInfo in
+        let (archDesc, updated) =
+          (* Only update the times in archive if there is nothing to propagate
+             for the dir itself (with the exception of ctime). ctime in the
+             archive must be updated if props changed while a props rescan was
+             requested (in this case the ctime is reset to force a rescan every
+             time until the sync is completed). Otherwise, if propagation fails
+             and times in archive are updated anyway then the changes that
+             failed to propagate may be missed at the next scan. If there is
+             something to propagate then all archive changes must go through
+             propagation. With the exception of dirChangeFlag, which is safe to
+             update without updating mtime. *)
+          if permchange <> PropsSame then begin
+            if not scanInfo.rescanProps || Props.same_ctime archDesc Props.dummy then
+              (archDesc, updated)
+            else (* Props changed when props rescan was requested: reset ctime *)
+              (Props.resetCTime archDesc Props.dummy, true)
+          end else begin
+            let updated =
+              updated || not (Props.same_time info.Fileinfo.desc archDesc)
+                || not (Props.same_ctime info.desc archDesc) in
+            (Props.setTime archDesc info.Fileinfo.desc, updated)
+          end
+        in
         (begin match newChildren with
            Some ch ->
              Some (ArchiveDir (archDesc, ch))
