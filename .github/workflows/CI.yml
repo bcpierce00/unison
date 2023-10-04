@@ -260,6 +260,7 @@ jobs:
         cp "src/${project_exe_stem}-gui${{ steps.vars.outputs.EXE_suffix }}" "${{ steps.vars.outputs.PKG_DIR }}/bin/${project_exe_stem}-text+gui${{ steps.vars.outputs.EXE_suffix }}"
 
     - uses: actions/upload-artifact@v3
+      if: false ## disable by default; only useful for debugging GHA
       with:
         name: unison-${{ steps.vars.outputs.REF_SHAS }}.ocaml-${{ matrix.job.ocaml-version }}.${{ matrix.job.os }}
         path: ${{ steps.vars.outputs.PKG_DIR }}/bin/*
@@ -352,7 +353,7 @@ jobs:
 
         tar czf ${APP_NAME} -C src/uimac/build/Default Unison.app
 
-    - if: runner.os == 'macOS'
+    - if: runner.os == 'macOS' && matrix.job.publish
       name: "macOS: Upload Unison.app artifact"
       uses: actions/upload-artifact@v3
       with:
@@ -1183,6 +1184,7 @@ jobs:
         echo REF_SHAS=${REF_SHAS} >> $GITHUB_OUTPUT
 
     - uses: actions/upload-artifact@v3
+      if: false ## disable by default; only useful for debugging GHA
       with:
         name: unison-${{ steps.vars.outputs.REF_SHAS }}.ocaml-${{ matrix.job.ocaml-version }}.ubuntu.x86_64
         path: pkg/bin/*
