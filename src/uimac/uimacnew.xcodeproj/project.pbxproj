@@ -492,9 +492,9 @@
 				OTHER_CFLAGS = "";
 				OTHER_LDFLAGS = (
 					"-L$(OCAMLLIBDIR)",
-					"-lunix",
+					"$(OCAMLLIB_UNIX)",
 					"-lthreadsnat",
-					"-lcamlstr",
+					"$(OCAMLLIB_STR)",
 					"-lasmrun",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = edu.upenn.cis.Unison;
@@ -523,9 +523,9 @@
 				OTHER_CFLAGS = "";
 				OTHER_LDFLAGS = (
 					"-L$(OCAMLLIBDIR)",
-					"-lunix",
+					"$(OCAMLLIB_UNIX)",
 					"-lthreadsnat",
-					"-lcamlstr",
+					"$(OCAMLLIB_STR)",
 					"-lasmrun",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = edu.upenn.cis.Unison;
@@ -552,9 +552,9 @@
 				OTHER_CFLAGS = "";
 				OTHER_LDFLAGS = (
 					"-L$(OCAMLLIBDIR)",
-					"-lunix",
+					"$(OCAMLLIB_UNIX)",
 					"-lthreadsnat",
-					"-lcamlstr",
+					"$(OCAMLLIB_STR)",
 					"-lasmrun",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = edu.upenn.cis.Unison;
