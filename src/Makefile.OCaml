@@ -298,9 +298,12 @@ ifeq ($(strip $(XCODEFLAGS)),)
 endif
 endif
 
+# Note: The OCaml library names changed starting with OCaml 5.1.0
 .PHONY: macexecutable
 macexecutable:
-	(cd $(UIMACDIR); $(RM) -f ExternalSettings.xcconfig ; echo MARKETING_VERSION = $(VERSION) > ExternalSettings.xcconfig ; echo OCAMLLIBDIR = $(OCAMLLIBDIR) >> ExternalSettings.xcconfig)
+	(cd $(UIMACDIR); \
+	  LIB_SUFFIX=$$(ocaml -e 'if Sys.ocaml_release.major > 5 || Sys.ocaml_release.major = 5 && Sys.ocaml_release.minor >= 1 then print_string "nat"' 2> /dev/null); \
+	  printf "MARKETING_VERSION = $(VERSION)\nOCAMLLIBDIR = $(OCAMLLIBDIR)\nOCAMLLIB_UNIX = -lunix$${LIB_SUFFIX}\nOCAMLLIB_STR = -lcamlstr$${LIB_SUFFIX}" > ExternalSettings.xcconfig)
 	(cd $(UIMACDIR); xcodebuild $(XCODEFLAGS) SYMROOT=build)
 	$(CC) $(CFLAGS) $(UIMACDIR)/cltool.c -o $(UIMACDIR)/build/Default/Unison.app/Contents/MacOS/cltool -framework Carbon
 	codesign --remove-signature $(UIMACDIR)/build/Default/Unison.app
