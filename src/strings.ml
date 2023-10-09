@@ -1562,7 +1562,11 @@ let docs =
       \n\
       \032         You can also specify -force newer (or -force older) to force\n\
       \032         Unison to choose the file with the later (earlier) modtime. In\n\
-      \032         this case, the -times preference must also be enabled.\n\
+      \032         this case, the -times preference must also be enabled. If\n\
+      \032         modtimes are equal in both replicas when using newer or older\n\
+      \032         then this preference will have no effect (changes will be synced\n\
+      \032         as if without this preference or remain unsynced in case of a\n\
+      \032         conflict).\n\
       \n\
       \032         This preference is overridden by the forcepartial preference.\n\
       \n\
@@ -1583,7 +1587,10 @@ let docs =
       \032         You can also specify forcepartial PATHSPEC -> newer (or\n\
       \032         forcepartial PATHSPEC -> older) to force Unison to choose the\n\
       \032         file with the later (earlier) modtime. In this case, the -times\n\
-      \032         preference must also be enabled.\n\
+      \032         preference must also be enabled. If modtimes are equal in both\n\
+      \032         replicas when using newer or older then this preference will\n\
+      \032         have no effect (changes will be synced as if without this\n\
+      \032         preference or remain unsynced in case of a conflict).\n\
       \n\
       \032         This preference should be used only if you are sure you know\n\
       \032         what you are doing!\n\

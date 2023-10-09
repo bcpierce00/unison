@@ -44,6 +44,10 @@ let setDirection ri dir force =
               diff.direction <- Replica1ToReplica2
         | _ ->
             let comp = Props.time rc1.desc -. Props.time rc2.desc in
+            (* If mtimes are equal then `Older and `Newer are not defined
+               and will be ignored. This is safer than the previous way of
+               always propagating from replica 2 to replica 1. *)
+            if comp <> 0.0 then
             let comp = if dir=`Newer then -. comp else comp in
             if comp<0.0 then
               diff.direction <- Replica1ToReplica2
@@ -125,7 +129,10 @@ let forceRoot: string Prefs.t =
      ^ "You can also specify \\verb|-force newer| (or \\verb|-force older|) "
      ^ "to force Unison to choose the file with the later (earlier) "
      ^ "modtime.  In this case, the \\verb|-times| preference must also "
-     ^ "be enabled.\n\n"
+     ^ "be enabled.  If modtimes are equal in both replicas when using "
+     ^ "\\verb|newer| or \\verb|older| then this preference will have no "
+     ^ "effect (changes will be synced as if without this preference or "
+     ^ "remain unsynced in case of a conflict).\n\n"
      ^ "This preference is overridden by the \\verb|forcepartial| preference.\n\n"
      ^ "This preference should be used only if you are {\\em sure} you "
      ^ "know what you are doing!")
@@ -145,7 +152,10 @@ let forceRootPartial: Pred.t =
      ^ "(or \\verb|forcepartial PATHSPEC -> older|) "
      ^ "to force Unison to choose the file with the later (earlier) "
      ^ "modtime.  In this case, the \\verb|-times| preference must also "
-     ^ "be enabled.\n\n"
+     ^ "be enabled.  If modtimes are equal in both replicas when using "
+     ^ "\\verb|newer| or \\verb|older| then this preference will have no "
+     ^ "effect (changes will be synced as if without this preference or "
+     ^ "remain unsynced in case of a conflict).\n\n"
      ^ "This preference should be used only if you are {\\em sure} you "
      ^ "know what you are doing!")
 
