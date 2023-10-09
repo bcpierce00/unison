@@ -516,14 +516,36 @@ module ClientConn = struct
       conn : connection }
       (* Never do polymorphic comparisons with [connection]! *)
 
+  (* The replica path of a root is not a relevant detail for a connection;
+     on the contrary, it must not impact the connection. Instead of creating
+     a new type for connection tracking, for now, just exclude the path in
+     clroot comparisons. Eventually, this could/should be solved in a better
+     way: see the comment above about [Common.root] not being sufficiently
+     detailed. *)
+  let clrootEq clroot clroot' =
+    match clroot, clroot' with
+    | Clroot.ConnectByShell (shell, host, user, port, _),
+      Clroot.ConnectByShell (shell', host', user', port', _) ->
+        shell = shell' && host = host' && user = user' && port = port'
+    | ConnectBySocket (host, port, _),
+      ConnectBySocket (host', port', _) ->
+        host = host' && port = port'
+    | ConnectByShell _, _ | _, ConnectByShell _ -> false
+    | ConnectBySocket _, _ | _, ConnectBySocket _ -> false
+    | ConnectLocal _, ConnectLocal _ -> assert false
+
+  let clrootNeq clroot clroot' = not (clrootEq clroot clroot')
+
   let connections = ref []
 
-  let findByClroot clroot = Safelist.find (fun x -> x.clroot = clroot) !connections
+  let findByClroot clroot =
+    Safelist.find (fun x -> clrootEq x.clroot clroot) !connections
+
   let findByRoot root = Safelist.find (fun x -> x.root = root) !connections
 
   let register clroot root conn =
     connections := { clroot; root; conn } ::
-      Safelist.filter (fun x -> x.clroot <> clroot) !connections
+      Safelist.filter (fun x -> clrootNeq x.clroot clroot) !connections
 
   let unregister conn =
     connections := Safelist.filter (fun x -> connNeq x.conn conn) !connections
