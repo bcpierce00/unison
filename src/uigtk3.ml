@@ -2874,6 +2874,8 @@ let createToplevelWindow () =
   let (ignoreMenu, _) = add_submenu ~modi:[`SHIFT] "_Ignore" in
   let (sortMenu, _) = add_submenu "S_ort" in
   let (helpMenu, _) = add_submenu "_Help" in
+  let (expertMenu, expertItem) = add_submenu "Expert" in
+  let () = expertItem#set_visible false in (* Expert menu hidden by default *)
 
   (*********************************************************************
     Action bar
@@ -4370,9 +4372,7 @@ let createToplevelWindow () =
   (*********************************************************************
     Expert menu
    *********************************************************************)
-  if Prefs.read Uicommon.expert then begin
-    let (expertMenu, _) = add_submenu "Expert" in
-
+  let buildExpertMenu () =
     let addDebugToggle modname =
       ignore (expertMenu#add_check_item ~active:(Trace.enabled modname)
         ~callback:(fun b -> Trace.enable modname b)
@@ -4391,7 +4391,12 @@ let createToplevelWindow () =
                            Gc.full_major(); Gc.print_stat stderr;
                            flush stderr)
               "Show memory/GC stats")
-  end;
+  in
+  buildExpertMenu ();
+
+  let toggleExpertMenu enabled =
+    expertItem#set_visible enabled
+  in
 
   (*********************************************************************
     Finish up
@@ -4403,6 +4408,7 @@ let createToplevelWindow () =
        displayNewProfileLabel ();
        setMainWindowColumnHeaders (Globals.roots ());
        sizeMainWindow ();
+       toggleExpertMenu (Prefs.read Uicommon.expert);
        buildActionMenu false);
 
   fatalErrorHandler :=
