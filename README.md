@@ -53,6 +53,9 @@ Features:
    and its own private structures in a sensible state at all times,
    even in case of abnormal termination or communication failures.
 
+ * Unison can run in "repeat" mode with a filesystem monitor, so that
+   changes are synchronized soon after they happen.
+
  * Unison has a clear and precise specification.
 
  * Unison is Free; full source code is available under the GNU Public
