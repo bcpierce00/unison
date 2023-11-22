@@ -119,7 +119,7 @@ grammar is:
             |  socket
             |  ssh
 
-  user ::= [-_a-zA-Z0-9]+
+  user ::= [-_a-zA-Z0-9%@]+
 
   host ::= [-_a-zA-Z0-9.]+
         |  \e[ [a-f0-9:.]+ zone? \e]     IPv6 literals (no future format).

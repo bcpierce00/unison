@@ -815,7 +815,7 @@ The full grammar is:
             |  socket
             |  ssh
 
-  \NT{user} ::= [-\_a-zA-Z0-9]+
+  \NT{user} ::= [-\_a-zA-Z0-9\%@]+
 
   \NT{host} ::= [-\_a-zA-Z0-9.]+
         |  \textbackslash[ [a-f0-9:.]+ \NT{zone}? \textbackslash]    IPv6 literals (no future format).
