@@ -28,7 +28,7 @@
             |  socket
             |  ssh
 
-  user ::= [-_a-zA-Z0-9]+
+  user ::= [-_a-zA-Z0-9%@]+
 
   host ::= [-_a-zA-Z0-9.]+
         |  \[ [a-f0-9:.]+ zone? \]     IPv6 literals (no future format).
@@ -106,7 +106,7 @@ let getProtocolSlashSlash s =
     | _ -> None
   else None
 
-let userAtRegexp = Str.regexp "[-_a-zA-Z0-9.]+@"
+let userAtRegexp = Str.regexp "[-_a-zA-Z0-9.%@]+@"
 let getUser s =
   if Str.string_match userAtRegexp s 0
   then

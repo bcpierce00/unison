@@ -681,7 +681,7 @@ let docs =
       \032           |  socket\n\
       \032           |  ssh\n\
       \n\
-      \032 user ::= [-_a-zA-Z0-9]+\n\
+      \032 user ::= [-_a-zA-Z0-9%@]+\n\
       \n\
       \032 host ::= [-_a-zA-Z0-9.]+\n\
       \032       |  \\[ [a-f0-9:.]+ zone? \\]    IPv6 literals (no future format).\n\
