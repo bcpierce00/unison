@@ -34,7 +34,16 @@ let file fspath path =
   let f = Fspath.concat fspath path in
   Util.convertUnixErrorsToTransient
     ("digesting " ^ Fspath.toPrintString f)
-    (fun () -> Fs.fingerprint f)
+    (fun () ->
+       let ic = Fs.open_in_bin f in
+       try
+         let d = Digest.channel ic (-1) in
+         close_in ic;
+         d
+       with e ->
+         close_in_noerr ic;
+         raise e
+    )
 
 let maxLength = Uutil.Filesize.ofInt max_int
 let subfile path offset len =
@@ -85,8 +94,6 @@ let toString md5 =
     done;
     Bytes.to_string string
   end
-
-let string = Digest.string
 
 let dummy = ""
 

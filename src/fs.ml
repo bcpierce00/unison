@@ -84,8 +84,6 @@ let acl_set_text f acl = System.acl_set_text (path f) acl
 
 (****)
 
-let fingerprint f = System.fingerprint (path f)
-
 let hasInodeNumbers () = System.hasInodeNumbers ()
 let hasSymlink () = System.hasSymlink ()
 let hasCorrectCTime = System.hasCorrectCTime

@@ -15,5 +15,5 @@ val checkAll : unit -> unit (* Raises a transient exception *)
    raised if this is the case. *)
 val check : Uutil.File.t -> unit
 
-(* Test whether the exeption is an abort exception. *)
+(* Test whether the exception is an abort exception. *)
 val testException : exn -> bool

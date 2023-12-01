@@ -960,7 +960,7 @@ CAMLprim value displayStatus(value s)
     [statusText setStringValue:s];
 }
 
-// Called from ocaml to dislpay progress bar
+// Called from ocaml to display progress bar
 CAMLprim value displayGlobalProgress(value p)
 {
   id pool = [[NSAutoreleasePool alloc] init];

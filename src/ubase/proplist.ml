@@ -39,6 +39,8 @@ let find_m (k : 'a key) : 'a Umarshal.t =
   try Obj.obj (Util.StringMap.find k !names) with
   | Not_found -> raise (Util.Fatal (Format.sprintf "Property lists: %s not yet registered!" k))
 
+let remove = Util.StringMap.remove
+
 module S = struct
   type key = string
   type value = Obj.t

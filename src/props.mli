@@ -41,6 +41,7 @@ val length : _ props -> Uutil.Filesize.t
 val setLength : t -> Uutil.Filesize.t -> t
 val time : _ props -> float
 val setTime : t -> _ props -> t
+val resetCTime : t -> _ props -> t
 val perms : _ props -> int
 
 val fileDefault : basic

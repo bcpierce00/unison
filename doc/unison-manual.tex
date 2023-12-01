@@ -52,7 +52,7 @@
   \LARGE%
   Version \unisonversion \\[4ex] %
   % \today %
-  \large Copyright 1998-2020, Benjamin C. Pierce
+  \large Copyright 1998-2023, Benjamin C. Pierce
   \end{center}%
 \fi%
 %
@@ -132,31 +132,45 @@ ideas to this implementation.
 \URL{http://research.microsoft.com/\home{fournet}/}{Cedric Fournet}
 contributed to an even earlier prototype.
 
-\TOPSUBSECTION{Mailing Lists and Bug Reporting}{lists}
+\TOPSUBSECTION{Obtaining Unison}{obtaining}
 
-\input{contactsbody}
+\paragraph{Source code}
 
-\TOPSUBSECTION{Development Status}{status}
+Unison is primarily distributed as source code, which contains
+instructions in {\tt INSTALL.md}:
+\begin{quote}
+\ONEURL{https://github.com/bcpierce00/unison}
+\end{quote}
 
-Unison is no longer under active development as a research
-project.  (Our research efforts are now focused on a follow-on
-project called Boomerang, described at
-\ONEURL{http://www.cis.upenn.edu/\home{bcpierce}/harmony}.)
-At this point, there is no one whose job it is to maintain Unison,
-fix bugs, or answer questions.
+\paragraph{Binaries}
 
-However, the original developers are all still using Unison daily.  It
-will continue to be maintained and supported for the foreseeable future,
-and we will occasionally release new versions with bug fixes, small
-improvements, and contributed patches.
+The Unison wiki contains information about builds done as part of
+Continuous Integration and other sources of binaries; read the entire
+wiki at:
+\begin{quote}
+\ONEURL{https://github.com/bcpierce00/unison/wiki}
+\end{quote}
 
-Proposed changes to unison are welcome.
-They should be submitted as pull requests.
-(Since safety and robustness are Unison's most important properties,
-patches will be held to high standards of clear design and clean coding.)
-If you want to contribute to Unison, start by downloading the developer
-tarball from the download page.  For some details on how the code is
-organized, etc., see the file {\tt CONTRIB}.
+\TOPSUBSECTION{Community, Maintenance, and Development}{development}
+
+Many people use and contribute to Unison.
+This community has two main homes.
+
+\paragraph{Mailinglists}
+
+Most discussion is appropriate on one of the mailinglists:
+\begin{quote}
+\ONEURL{https://github.com/bcpierce00/unison/wiki/Mailing-Lists}
+\end{quote}
+
+\paragraph{Reporting Bugs}
+
+Bug reports and feature requests may be made after reading the guidelines:
+\begin{quote}
+\ONEURL{https://github.com/bcpierce00/unison/wiki/Reporting-Bugs-and-Feature-Requests}
+\end{quote}
+
+Help improving Unison is welcome; see {\tt CONTRIBUTING.md} in the sources.
 
 \TOPSUBSECTION{Copying}{copying}
 
@@ -183,69 +197,11 @@ under grants CCR-9701826 and ITR-0113226, {\em Principles and Practice of
   Synchronization}, and by University of Pennsylvania's Institute for
 Research in Cognitive Science (IRCS).
 
-\SECTION{Installation}{install}{install}
 
-Unison is designed to be easy to install.  The following sequence of
-steps should get you a fully working installation in a few minutes.  If
-you run into trouble, you may find the suggestions on the
-\SHOWURL{http://www.cis.upenn.edu/\home{bcpierce}/unison/faq.html}{Frequently Asked
-Questions page} helpful.  Pre-built binaries are available for a
-variety of platforms.
+\SECTION{Upgrading}{upgrading}{upgrading}
 
-Unison can be used with either of two user interfaces:
-\begin{enumerate}
-\item a simple textual interface, suitable for dumb terminals (and
-running from scripts), and
-\item a more sophisticated graphical interface, based on Gtk2 (on
-       Linux/Windows) or the native UI framework (on OSX).
-\end{enumerate}
-
-You will need to install a copy of Unison on every machine that you
-want to synchronize.  However, you only need the version with a
-graphical user interface (if you want a GUI at all) on the machine
-where you're actually going to display the interface (the \CLIENT{}
-machine).  Other machines that you synchronize with can get along just
-fine with the textual version.
-
-
-\SUBSECTION{Downloading Unison}{download}
-
-See \ONEURL{https://github.com/bcpierce00/unison/wiki/Downloading-Unison}.
-
-If a pre-built binary of Unison is available for the client machine's
-architecture, just download it and put it somewhere in your search
-path (if you're going to invoke it from the command line) or on your
-desktop (if you'll be click-starting it).
-
-The executable file for the graphical version (with a name including
-\verb|gtkui|) actually provides {\em both} interfaces: the graphical one
-appears by default, while the textual interface can be selected by including
-\verb|-ui text| on the command line.  The \verb|textui| executable
-provides just the textual interface.
-
-If you don't see a pre-built executable for your architecture, you'll
-need to build it yourself.  See \sectionref{building}{Building Unison from Scratch}.
-
-Check to make sure that what you have downloaded is really executable.
-Either click-start it, or type \showtt{unison -version} at the command
-line.
-
-Unison can be used in three different modes: with different directories on a
-single machine, with a local or a remote machine over a direct socket connection, or
-with a remote machine using {\tt ssh} for authentication and secure
-transfer.
-
-\SUBSECTION{Running Unison}{afterinstall}
-
-Once you've got Unison installed on at least one system, read
-\sectionref{tutorial}{Tutorial} of the user manual (or type \showtt{unison -doc
-  tutorial}) for instructions on how to get started.
-
-
-\SUBSECTION{Upgrading}{upgrading}
-
-Upgrading to a new version of Unison is as simple as throwing away the old
-binary and installing the new one.
+(This section is perhaps misplaced, but is early because it is far
+better to have at least skimmed it than to not know it exists.)
 
 Before upgrading, it is a good idea to run the {\em old} version one last
 time, to make sure all your replicas are completely synchronized.  A new
@@ -276,7 +232,7 @@ After upgrading the archive, you are free to swap the Unison 2.52 or newer
 executable to one compiled with a different version of OCaml.
 The archive file is no longer dependent on the compiler version.
 
-\SUBSUBSECTION{Version interoperability}{interoperability}
+\SUBSECTION{Version interoperability}{interoperability}
 
 To ensure interoperability with different Unison versions on local and
 remote machines, and to upgrade from an earlier version {\em without
@@ -335,118 +291,6 @@ on the client machine: \verb|-addversionno|; see
 \end{itemize}
 
 
-\SUBSECTION{Building Unison from Scratch}{building}
-
-If a pre-built image is not available, you will need to compile it from
-scratch; the sources are available from the same place as the binaries.
-
-In principle, Unison should work on any platform to which OCaml has been
-ported and on which the \verb|Unix| module is fully implemented.  It has
-been tested on many flavors of Windows (98, NT, 2000, XP) and Unix (OS X,
-Solaris, Linux, FreeBSD), and on both 32- and 64-bit architectures.
-
-
-\SUBSUBSECTION{Unix}{build-unix}
-
-Unison can be built with or without a graphical user interface (GUI). The
-build system will decide automatically depending on the libraries installed
-on your system, but you can also type {\tt make UISTYLE=text} to build
-Unison without GUI.
-
-You'll need the Objective Caml compiler,
-available from \ONEURL{http://caml.inria.fr}.  OCaml is available from most
-package managers
-Building and installing OCaml
-on Unix systems is very straightforward; just follow the instructions in the
-distribution.  You'll probably want to build the native-code compiler in
-addition to the bytecode compiler, as Unison runs much faster when compiled
-to native code, but this is not absolutely necessary.
-%
-(Quick start: on many systems, the following sequence of commands will
-get you a working and installed compiler: first do {\tt make world opt},
-then {\tt su} to root and do {\tt make install}.)
-
-You'll also need the GNU {\tt make} utility, which is standard on most Unix
-systems.  Unison's build system is not parallelizable, so don't use flags
-that cause it to start processes in parallel (e.g. -j).
-
-Once you've got OCaml installed, grab a copy of the Unison sources, unzip
-and untar them, change to the new \showtt{unison} directory, and type ``{\tt
-  make UISTYLE=text}''.  The result should be an executable file called
-\showtt{unison}.  Type \showtt{./unison} to make sure the program is
-executable.  You should get back a usage message.
-
-If you want to build the graphical user interface, you will need to install
-some additional things:
-\begin{itemize}
-\item The Gtk2 development libraries (package {\tt libgtk2.0-dev} on debian
-based systems).
-\item OCaml bindings for Gtk2. Install them from your software repositories
-(package {\tt liblablgtk2-ocaml} on debian based systems). Also available
-from \ONEURL{https://github.com/garrigue/lablgtk}.
-\item Pango, a text rendering library and a part of Gtk2. On some systems
-(e.g. Ubuntu) the bindings between Pango and OCaml need to be installed
-explicitly (package {\tt liblablgtk-extras-ocaml-dev} on Ubuntu).
-\end{itemize}
-Type {\tt make src} to build Unison. If Gtk2 is available on the system,
-Unison with a GUI will be built automatically.
-
-Put the \verb|unison| executable somewhere in your search path, either by
-adding the Unison directory to your PATH variable or by copying the
-executable to some standard directory where executables are stored.  Or just
-type {\tt make install} to install Unison to {\tt \$HOME/bin/unison}.
-
-\SUBSUBSECTION{Mac OS X}{build-osx}
-
-To build the text-only user interface, follow the instructions above for
-building on Unix systems.  You should do this first, even if you are also
-planning on building the GUI, just to make sure it works.
-
-To build the basic GUI version, you'll first need to download and install
-the XCode developer tools from Apple.  Once this is done, just type {\tt
-  make} in the {\tt src} directory, and if things go well you
-should get an application that you can move from {\tt
-  uimac/build/Default/Unison.app} to wherever you want it.
-
-\SUBSUBSECTION{Windows}{build-win}
-
-Although the binary distribution should work on any version of Windows,
-some people may want to build Unison from scratch on those systems too.
-
-\paragraph{Bytecode version:} The simpler but slower compilation option
-to build a Unison executable is to build a bytecode version.  You need
-first install Windows version of the OCaml compiler (version 3.07 or
-later, available from \ONEURL{http://caml.inria.fr}).  Then grab a copy
-of Unison sources and type
-\begin{verbatim}
-       make NATIVE=false
-\end{verbatim}
-to compile the bytecode.  The result should be an executable file called
-\verb|unison.exe|.
-
-\paragraph{Native version:} Building a more efficient, native version of
-Unison on Windows requires a little more work.  See the file {\tt
-  INSTALL.win32} in the source code distribution.
-
-
-\SUBSUBSECTION{Installation Options}{build-opts}
-
-The \verb|Makefile| in the distribution includes several switches that
-can be used to control how Unison is built.  Here are the most useful
-ones:
-\begin{itemize}
-\item Building with \verb|NATIVE=true| uses the native-code OCaml
-compiler, yielding an executable that will run quite a bit faster. We use
-this for building distribution versions.
-\item Building with \verb|make DEBUGGING=true| generates debugging
-symbols.
-\item Building with \verb|make STATIC=true| generates a (mostly)
-statically linked executable.  We use this for building distribution
-versions, for portability.
-\end{itemize}
-%\finish{Any other important ones?}
-
-
 \SECTION{Tutorial}{tutorial}{tutorial}
 
 %\finish{Put a pointer somewhere in here to the typical profile in the
@@ -456,8 +300,8 @@ versions, for portability.
 
 Unison can be used with either of two user interfaces:
 \begin{enumerate}
-\item a straightforward textual interface and
-\item a more sophisticated graphical interface
+\item a textual interface and
+\item a graphical interface
 \end{enumerate}
 The textual interface is more convenient for running from scripts and
 works on dumb terminals; the graphical interface is better for most
@@ -469,10 +313,10 @@ built.  You can force the text interface even if graphical is the default by
 adding {\tt -ui text}.
 The other command-line arguments to both versions are identical.
 
-The graphical version can also be run directly by clicking on its icon, but
-this may require a little set-up (see \sectionref{click}{Click-starting
-  Unison}).  For this tutorial, we assume that you're starting it from the
-command line.
+The graphical version can also be run directly by clicking on its
+icon.
+For this tutorial, we assume that you're starting it from the command
+line.
 
 Unison can synchronize files and directories on a single machine, or
 between two machines on a network.  (The same program runs on both
@@ -487,12 +331,7 @@ you're synchronizing two machines, let's call them \CLIENT{} and
 Let's get the client machine set up first and see how to synchronize
 two directories on a single machine.
 
-Follow the instructions in \sectionref{install}{Installation} to either
-download or build an executable version of Unison, and install it
-somewhere on your search path.  (If you just want to use the textual user
-interface, download the appropriate textui binary.  If you just want to
-the graphical interface---or if you will use both interfaces [the gtkui
-binary actually has both compiled in]---then download the gtkui binary.)
+Ensure that unison is installed on your system.
 
 Create a small test directory {\tt a.tmp} containing a couple of files
 and/or subdirectories, e.g.,
@@ -625,7 +464,9 @@ Follow the instructions in the Installation section to download or
 build an executable version of Unison on the server machine, and
 install it somewhere on your search path.  (It doesn't matter whether
 you install the textual or graphical version, since the copy of Unison on
-the server doesn't need to display any user interface at all.)
+the server doesn't need to display any user interface at all.  The major
+benefit of installing the textual version is that it doesn't have any external
+dependencies required by the GUI executable.)
 
 It is important that the version of Unison installed on the server
 machine is the same as the version of Unison on the client machine.
@@ -876,10 +717,6 @@ the mirroring operation typically needs to be initiated from the
 machine with the most recent changes.  \sectionref{profile}{Profiles}
 covers the syntax of Unison profiles, together with some sample profiles.
 
-Some tips on improving Unison's performance can be found on the
-\SHOWURL{http://www.cis.upenn.edu/\home{bcpierce}/unison/faq.html}{Frequently
-  Asked Questions page}.
-
 \SUBSECTION{Using Unison to Synchronize More Than Two Machines}{usingmultiple}
 
 Unison is designed for synchronizing pairs of replicas.  However, it is
@@ -908,14 +745,14 @@ user interface.
 \iftextversion
 The same information is also available in a typeset User's
 Manual (HTML or PostScript format) through
-\ONEURL{http://www.cis.upenn.edu/\home{bcpierce}/unison}.
+\ONEURL{https://github.com/bcpierce00/unison/wiki}.
 \else
 The on-line information and the printed manual are essentially identical.
 \fi
 
 If you use Unison regularly, you should subscribe to one of the mailing
 lists, to receive announcements of new versions.  See
-\sectionref{lists}{Mailing Lists and Bug Reporting}.
+\sectionref{obtaining}{Obtaining Unison}.
 
 \SECTION{Basic Concepts}{basics}{basics}
 
@@ -978,7 +815,7 @@ The full grammar is:
             |  socket
             |  ssh
 
-  \NT{user} ::= [-\_a-zA-Z0-9]+
+  \NT{user} ::= [-\_a-zA-Z0-9\%@]+
 
   \NT{host} ::= [-\_a-zA-Z0-9.]+
         |  \textbackslash[ [a-f0-9:.]+ \NT{zone}? \textbackslash]    IPv6 literals (no future format).
@@ -1498,9 +1335,15 @@ for a boolean flag or
 \end{verbatim}
 for a preference of any other type.
 
-Whitespaces around {\tt p} and {\tt xxx} are ignored.
-A profile may also include blank lines and lines beginning
+A profile may include blank lines and lines beginning
 with {\tt \#}; both are ignored.
+
+Spaces and tabs before and after {\tt p} and {\tt xxx} are ignored.
+Spaces, tabs, and non-printable characters within values are not
+treated specially, so that e.g. \verb|root = /foo bar| refers to a
+directory containing a space.
+(On systems using newline for line ending, carriage returns are
+currently ignored, but this is not part of the specification.)
 
 When Unison starts, it first reads the profile and then the command
 line, so command-line options will override settings from the
@@ -1516,7 +1359,7 @@ A similar line of the form \texttt{source \ARG{name}} does the same except
 that it does not attempt to add a suffix to \ARG{name}.
 Similar lines of the form \texttt{include\mbox{?} \ARG{name}} or
 \texttt{source\mbox{?} \ARG{name}} do the same as their respective lines
-without the question mark except that it does not constitue an error to
+without the question mark except that it does not constitute an error to
 specify a non-existing file \ARG{name}.
 In \ARG{name} the backslash is an escape character.
 
@@ -1981,7 +1824,7 @@ without doing proper cleanup; it is therefore not recommended unless the
 
 \begin{textui}
 When not synchronizing continuously, the text interface terminates when
-synchronization is finished normally or due to a fatal error occuring.
+synchronization is finished normally or due to a fatal error occurring.
 
 In the text interface, to interrupt synchronization before it is finished,
 press ``Ctrl-C'' (or send signal \verb|SIGINT| or \verb|SIGTERM|). This will
@@ -1990,6 +1833,12 @@ cleanup. If the process does not stop even after pressing ``Ctrl-C'' then keep
 doing it repeatedly.  This will bypass cleanup procedures and terminates the
 process forcibly (similar to \verb|SIGKILL|).  Doing so may leave the archives
 or replicas in an inconsistent state or locked.
+
+When synchronizing continuously (time interval repeat or with filesystem
+monitoring), interrupting with ``Ctrl-C'' or with signal \verb|SIGINT| or
+\verb|SIGTERM| works the same way as described above and will additionally stop
+the continuous process. To stop only the continuous process and let the last
+synchronization complete normally, send signal \verb|SIGUSR2| instead.
 \end{textui}
 
 \SUBSECTION{Exit Code}{exit}
@@ -2026,9 +1875,11 @@ that match any one of the path pattern.
 adds \ARG{pattern} to the list of patterns to be ignored.
 
 \item Each \ARG{pattern} can have one of three forms.  The most
-general form is a Posix extended regular expression introduced by the
-keyword \verb|Regex|.  (The collating sequences and character classes of
-full Posix regexps are not currently supported).
+general form is a POSIX Extended Regular Expression introduced by the
+keyword \verb|Regex|. (The collating symbol, equivalence class
+expression, and character class expression described in 
+\URL{https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1\_chap09.html\#tag\_09\_03\_05}{Section 9.3.5 of the POSIX specification}
+are not currently supported).
 \begin{alltt}
                  Regex \ARG{regexp}
 \end{alltt}
@@ -2214,7 +2065,7 @@ Unix system).
 \item For security reasons, the Unix \verb|setuid| and \verb|setgid|
 bits are not propagated.
 \item The Unix owner and group ids can be propagated (see \verb|owner|
-and \verb|group| preferences) by mapping names or by numberic ids (see
+and \verb|group| preferences) by mapping names or by numeric ids (see
 \verb|numericids| preference).
 \end{itemize}
 
@@ -2280,6 +2131,19 @@ Unison currently supports the following platforms and ACL types:
 Not all filesystems on the listed platforms support all ACL types
 (or any ACLs at all).
 
+Synchronizing POSIX ACLs on Linux is not supported directly. However, it is
+possible to synchronize these ACLs with another Linux system by synchronizing
+extended attributes (xattrs) instead, because POSIX ACLs are stored as xattrs
+by Linux. This is disabled by default (see \sectionref{xattrs}{Extended
+Attributes - xattrs}).  A simple way to enable syncing POSIX ACLs on Linux is
+to enable the preference \verb|xattrs| and add a preference
+\verb|xattrignorenot| with a value \texttt{Path !system.posix\_acl\_*}.  The
+\verb|*| will be expanded to include both \verb|posix_acl_access| and
+\verb|posix_acl_default| attributes -- if you only want to sync either one,
+just remove the \verb|*| and type out the attribute name in full.  If you want
+to prevent other xattrs from being synced then add an \verb|xattrignore| with a
+value \texttt{Path *} (value \texttt{Regex .*} will also work).
+
 
 \SUBSECTION{Extended Attributes - xattrs}{xattrs}
 
@@ -2306,6 +2170,9 @@ and is disabled by default. To sync one or more attributes in the security
 namespace, for example, you can set the preference
 \verb|xattrignorenot| to \verb|Path !security.*| (for all) or to
 \verb|Path !security.selinux| (for one specific attribute).
+Attributes in system namespace are not synchronized, with the exception of
+\verb|system.posix_acl_default| and \verb|system.posix_acl_access| (also
+disabled by default).
 \item {\em Solaris, OpenSolaris and illumos-based OS (OpenIndiana, SmartOS,
   OmniOS, etc.)}
 \item {\em FreeBSD, NetBSD}
@@ -2343,6 +2210,9 @@ be constructed with the \verb|Path| form (where shell wildcards \verb|*| and
 Disabling the security and trusted namespaces on Linux is achieved by setting
 a default \verb|xattrignore| pattern of
 \texttt{Regex !(security|trusted)[.].*}.
+Disabling the syncing of attributes used to store POSIX ACL on Linux is
+achieved by setting a default \verb|xattrignore| pattern of
+\texttt{Path !system.posix\_acl\_*}.
 
 
 \SUBSECTION{Cross-Platform Synchronization}{crossplatform}
@@ -2428,14 +2298,6 @@ are:
    copyprog      =   rsync --inplace --compress
    copyprogrest  =   rsync --partial --inplace --compress
 \end{verbatim}
-You may also need to set the {\tt copyquoterem} preference.  When it is set
-to {\tt true}, this causes Unison to add an extra layer of quotes to
-the remote path passed to the external copy program. This is is needed by
-rsync, for example, which internally uses an ssh connection, requiring an
-extra level of quoting for paths containing spaces. When this flag is set to
-{\tt default}, extra quotes are added if the value of {\tt copyprog}
-contains the string {\tt rsync}.  The default value is {\tt default},
-naturally.
 
 If a {\em directory} transfer is interrupted, the next run of Unison will
 automatically skip any files that were completely transferred before the
@@ -2497,47 +2359,18 @@ detecting updates, that something actually exists at the path
 \verb|foo| on both replicas; if it does not, the Unison run will
 abort.
 
-\SUBSECTION{Click-starting Unison}{click}
-
-On Windows NT/2k/XP systems, the graphical version of Unison can be
-invoked directly by clicking on its icon.  On Windows 95/98 systems,
-click-starting also works, {\em as long as you are not using ssh}.
-Due to an incompatibility with OCaml and Windows 95/98 that is not
-under our control, you must start Unison from a DOS window in Windows
-95/98 if you want to use ssh.
-
-When you click on the Unison icon, two windows will be created:
-Unison's regular window, plus a console window, which is used only for
-giving your password to ssh (if you do not use ssh to connect, you can
-ignore this window).  When your password is requested, you'll need to
-activate the console window (e.g., by clicking in it) before typing.
-If you start Unison from a DOS window, Unison's regular window will
-appear and you will type your password in the DOS window you were
-using.
-
-To use Unison in this mode, you must first create a profile (see
-\sectionref{profile}{Profiles}).  Use your favorite editor for this.
-
-
 \appendix
 
 \finishlater{
 \SECTION{Other Synchronizers}{other}{other}
 
-Unison is just one of several file synchronizers that are currently
-available.
+See also:
 
-Check out:
-  http://www.bell-labs.com/project/stage/
-  I notice a bunch of people are also doing "data vaulting", e.g.,
-    http://www.pc.ibm.com/us/thinkpad/datavault.html
-  midnight commander??
-
-Also:
   D. Duchamp
   A Toolkit Approach to Partially Disconnected Operation
   Proc. USENIX 1997 Ann. Technical Conf.
   USENIX, Anaheim CA, pp. 305-318, January 1997
+  \ONEURL{https://www.usenix.org/conference/usenix-1997-annual-technical-conference/toolkit-approach-partially-connected-computing}
 }
 
 \finishlater{

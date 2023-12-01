@@ -62,89 +62,6 @@ let authenticity s = Rx.match_string authenticityRx s
    SSH password interaction.
 *)
 
-(*
-let a1 = [|'p';'q';'r';'s';'t';'u';'v';'w';'x';'y';'z';'P';'Q';'R';'S';'T'|]
-let a2 = [|'0';'1';'2';'3';'4';'5';'6';'7';'8';'9';'a';'b';'c';'d';'e';'f'|]
-exception Break of (Unix.file_descr * string) option
-let ptyMasterOpen () =
-  if not(Osx.isMacOSX or Osx.isLinux) then None else
-  try
-    (* Adapted from Stevens' Advanced Programming in Unix *)
-    let x = "/dev/pty--" in
-    for i = 0 to Array.length a1 do
-      x.[8] <- a1.(i);
-      for j = 0 to Array.length a2 do
-        x.[9] <- a2.(j);
-        let fdOpt =
-          try Some(Unix.openfile x [Unix.O_RDWR] 0)
-          with Unix.Unix_error _ -> None in
-        match fdOpt with None -> ()
-        | Some fdMaster ->
-          x.[5] <- 't';
-          raise (Break(Some(fdMaster,x)))
-      done
-    done;
-    None
-  with Break z -> z
-
-let ptySlaveOpen = function
-    None -> None
-  | Some(fdMaster,ttySlave) ->
-      let slave =
-        try Some (Unix.openfile ttySlave [Unix.O_RDWR] 0o600)
-        with Unix.Unix_error _ -> None in
-      (try Unix.close fdMaster with Unix.Unix_error(_,_,_) -> ());
-      slave
-
-let printTermAttrs fd = (* for debugging *)
-  let tio = Unix.tcgetattr fd in
-  let boolPrint name x d =
-    if x then Printf.printf "%s is ON (%s)\n" name d
-    else Printf.printf "%s is OFF (%s)\n" name d in
-  let intPrint name x d =
-    Printf.printf "%s = %d (%s)\n" name x d in
-  let charPrint name x d =
-    Printf.printf "%s = '%c' (%s)\n" name x d in
-  boolPrint "c_ignbrk" tio.Unix.c_ignbrk   "Ignore the break condition.";
-  boolPrint "c_brkint" tio.Unix.c_brkint   "Signal interrupt on break condition.";
-  boolPrint "c_ignpar" tio.Unix.c_ignpar   "Ignore characters with parity errors.";
-  boolPrint "c_parmrk" tio.Unix.c_parmrk   "Mark parity errors.";
-  boolPrint "c_inpck" tio.Unix.c_inpck     "Enable parity check on input.";
-  boolPrint "c_istrip" tio.Unix.c_istrip   "Strip 8th bit on input characters.";
-  boolPrint "c_inlcr" tio.Unix.c_inlcr     "Map NL to CR on input.";
-  boolPrint "c_igncr" tio.Unix.c_igncr     "Ignore CR on input.";
-  boolPrint "c_icrnl" tio.Unix.c_icrnl     "Map CR to NL on input.";
-  boolPrint "c_ixon" tio.Unix.c_ixon       "Recognize XON/XOFF characters on input.";
-  boolPrint "c_ixoff" tio.Unix.c_ixoff     "Emit XON/XOFF chars to control input flow.";
-  boolPrint "c_opost" tio.Unix.c_opost     "Enable output processing.";
-  intPrint "c_obaud" tio.Unix.c_obaud      "Output baud rate (0 means close connection).";
-  intPrint "c_ibaud" tio.Unix.c_ibaud      "Input baud rate.";
-  intPrint "c_csize" tio.Unix.c_csize      "Number of bits per character (5-8).";
-  intPrint "c_cstopb" tio.Unix.c_cstopb    "Number of stop bits (1-2).";
-  boolPrint "c_cread" tio.Unix.c_cread     "Reception is enabled.";
-  boolPrint "c_parenb" tio.Unix.c_parenb   "Enable parity generation and detection.";
-  boolPrint "c_parodd" tio.Unix.c_parodd   "Specify odd parity instead of even.";
-  boolPrint "c_hupcl" tio.Unix.c_hupcl     "Hang up on last close.";
-  boolPrint "c_clocal" tio.Unix.c_clocal   "Ignore modem status lines.";
-  boolPrint "c_isig" tio.Unix.c_isig       "Generate signal on INTR, QUIT, SUSP.";
-  boolPrint "c_icanon" tio.Unix.c_icanon   "Enable canonical processing (line buffering and editing)";
-  boolPrint "c_noflsh" tio.Unix.c_noflsh   "Disable flush after INTR, QUIT, SUSP.";
-  boolPrint "c_echo" tio.Unix.c_echo       "Echo input characters.";
-  boolPrint "c_echoe" tio.Unix.c_echoe     "Echo ERASE (to erase previous character).";
-  boolPrint "c_echok" tio.Unix.c_echok     "Echo KILL (to erase the current line).";
-  boolPrint "c_echonl" tio.Unix.c_echonl   "Echo NL even if c_echo is not set.";
-  charPrint "c_vintr" tio.Unix.c_vintr     "Interrupt character (usually ctrl-C).";
-  charPrint "c_vquit" tio.Unix.c_vquit     "Quit character (usually ctrl-\\).";
-  charPrint "c_verase" tio.Unix.c_verase   "Erase character (usually DEL or ctrl-H).";
-  charPrint "c_vkill" tio.Unix.c_vkill     "Kill line character (usually ctrl-U).";
-  charPrint "c_veof" tio.Unix.c_veof       "End-of-file character (usually ctrl-D).";
-  charPrint "c_veol" tio.Unix.c_veol       "Alternate end-of-line char. (usually none).";
-  intPrint "c_vmin" tio.Unix.c_vmin        "Minimum number of characters to read before the read request is satisfied.";
-  intPrint "c_vtime" tio.Unix.c_vtime      "Maximum read wait (in 0.1s units).";
-  charPrint "c_vstart" tio.Unix.c_vstart   "Start character (usually ctrl-Q).";
-  charPrint "c_vstop" tio.Unix.c_vstop      "Stop character (usually ctrl-S)."
-*)
-
 (* Implemented in file pty.c *)
 type pty
 external win_openpty : unit -> (Unix.file_descr * Unix.file_descr)
@@ -160,26 +77,33 @@ external c_openpty : unit -> Unix.file_descr * Unix.file_descr =
 let openpty() = try Some (c_openpty ()) with Unix.Unix_error _ -> None
 
 (* Utility functions copied from ocaml's unix.ml because they are not exported :-| *)
-let rec safe_dup fd =
-  let new_fd = Unix.dup fd in
-  if dumpFd new_fd >= 3 then
-    new_fd
-  else begin
-    let res = safe_dup fd in
-    Unix.close new_fd;
-    res
-  end
+(* Duplicate [fd] if needed to make sure it isn't one of the
+   standard descriptors (stdin, stdout, stderr).
+   Note that this function always leaves the standard descriptors open,
+   the caller must take care of closing them if needed.
+   The "cloexec" mode doesn't matter, because
+   the descriptor returned by [dup] will be closed before the [exec],
+   and because no other thread is running concurrently
+   (we are in the child process of a fork).
+ *)
+let rec file_descr_not_standard fd =
+  if dumpFd fd >= 3 then fd else file_descr_not_standard (Unix.dup fd)
+
 let safe_close fd = try Unix.close fd with Unix.Unix_error _ -> ()
+
 let perform_redirections new_stdin new_stdout new_stderr =
-  let newnewstdin = safe_dup new_stdin in
-  let newnewstdout = safe_dup new_stdout in
-  let newnewstderr = safe_dup new_stderr in
+  let new_stdin = file_descr_not_standard new_stdin in
+  let new_stdout = file_descr_not_standard new_stdout in
+  let new_stderr = file_descr_not_standard new_stderr in
+  (*  The three dup2 close the original stdin, stdout, stderr,
+      which are the descriptors possibly left open
+      by file_descr_not_standard *)
+  Unix.dup2 ~cloexec:false new_stdin Unix.stdin;
+  Unix.dup2 ~cloexec:false new_stdout Unix.stdout;
+  Unix.dup2 ~cloexec:false new_stderr Unix.stderr;
   safe_close new_stdin;
   safe_close new_stdout;
-  safe_close new_stderr;
-  Unix.dup2 newnewstdin Unix.stdin; Unix.close newnewstdin;
-  Unix.dup2 newnewstdout Unix.stdout; Unix.close newnewstdout;
-  Unix.dup2 newnewstderr Unix.stderr; Unix.close newnewstderr
+  safe_close new_stderr
 
 let rec safe_waitpid pid =
   (* This function is intentionally synchronous so that it can be run during
@@ -193,7 +117,7 @@ let rec safe_waitpid pid =
         Unix.sleepf 0.002;
         let dt = Unix.gettimeofday () -. t in
         if dt >= 0.5 && st = 0 then begin
-          kill_noerr Sys.(if os_type = "Win32" then sigkill else sigterm);
+          kill_noerr Sys.(if win32 then sigkill else sigterm);
           aux 1
         end else if dt >= 2.0 && st = 1 then begin
           kill_noerr Sys.sigkill;
@@ -208,9 +132,8 @@ let rec safe_waitpid pid =
 let term_sessions = Hashtbl.create 3
 
 external win_create_process_pty :
-  string -> string -> pty ->
-  Unix.file_descr -> Unix.file_descr -> Unix.file_descr -> int
-  = "w_create_process_pty" "w_create_process_pty_native"
+  string -> string -> pty -> Unix.file_descr -> Unix.file_descr -> int =
+  "w_create_process_pty"
 
 let make_cmdline args =
   let maybe_quote f =
@@ -219,8 +142,8 @@ let make_cmdline args =
     else f in
   String.concat " " (List.map maybe_quote (Array.to_list args))
 
-let create_process_pty prog args pty fd1 fd2 fd3 =
-  win_create_process_pty prog (make_cmdline args) pty fd1 fd2 fd3
+let create_process_pty prog args pty fd1 fd2 =
+  win_create_process_pty prog (make_cmdline args) pty fd1 fd2
 
 let protect f g =
   try f () with Sys_error _ | Unix.Unix_error _ as e ->
@@ -235,7 +158,7 @@ let finally f g =
 external win_alloc_console : unit -> Unix.file_descr option = "win_alloc_console"
 
 let fallback_session cmd args new_stdin new_stdout new_stderr =
-  if Sys.os_type = "Win32" then begin
+  if Sys.win32 then begin
     (* OCaml's [Unix.create_process] hides the Windows console window of
        the child process unless the parent process already has a console.
        This is unsuitable for running interactive child processes like
@@ -271,7 +194,8 @@ let win_create_session cmd args new_stdin new_stdout new_stderr =
   | Some ((masterIn, masterOut), pty, (conIn, conOut)) ->
       safe_close conIn;
       let create_proc () =
-        create_process_pty cmd args pty new_stdin new_stdout conOut in
+        (* Child's stderr is always connected to pty (conOut, effectively). *)
+        create_process_pty cmd args pty new_stdin new_stdout in
       let childPid =
         protect (fun () -> finally create_proc
                                    (fun () -> safe_close conOut))
@@ -295,16 +219,23 @@ let unix_create_session cmd args new_stdin new_stdout new_stderr =
   match openpty () with
     None -> fallback_session cmd args new_stdin new_stdout new_stderr
   | Some (masterFd, slaveFd) ->
-(*
-      Printf.printf "openpty returns %d--%d\n" (dumpFd fdM) (dumpFd fdS); flush stdout;
-      Printf.printf "new_stdin=%d, new_stdout=%d, new_stderr=%d\n"
-        (dumpFd new_stdin) (dumpFd new_stdout) (dumpFd new_stderr) ; flush stdout;
-*)
+      Unix.set_close_on_exec masterFd;
+      Unix.set_close_on_exec slaveFd;
+      flush_all (); (* Clear buffers to avoid risk of double flushing by child.
+        Even this is not sufficient, strictly speaking, as there is a window
+        of opportunity to fill the buffer between flushing and calling fork. *)
       begin match Unix.fork () with
         0 ->
           begin try
+            (* Child process stderr must redirected as early as possible to
+               make sure all error output is captured and visible in GUI. *)
+            Unix.dup2 ~cloexec:false slaveFd Unix.stderr;
+            (* new_stderr will be used by parent process only. *)
+            if new_stderr <> Unix.stderr then safe_close new_stderr;
             Unix.close masterFd;
-            ignore (Unix.setsid ());
+            (* [Unix.setsid] is not implemented on Cygwin, reason unknown.
+               It will be called by [setControllingTerminal] instead. *)
+            if not Sys.cygwin then ignore (Unix.setsid ());
             setControllingTerminal slaveFd;
             (* WARNING: SETTING ECHO TO FALSE! *)
             let tio = Unix.tcgetattr slaveFd in
@@ -312,14 +243,21 @@ let unix_create_session cmd args new_stdin new_stdout new_stderr =
             Unix.tcsetattr slaveFd Unix.TCSANOW tio;
             (* Redirect ssh authentication errors to controlling terminal,
                instead of new_stderr, so that they can be captured by GUI.
-               This will also redirect the remote stderr to GUI. *)
-            safe_close new_stderr;
+               This will inevitably also redirect the remote stderr to GUI
+               as ssh's own error output is mixed with remote stderr output. *)
             perform_redirections new_stdin new_stdout slaveFd;
             Unix.execvp cmd args (* never returns *)
           with Unix.Unix_error (e, s1, s2) ->
             Printf.eprintf "Error in create_session child: [%s] (%s) %s\n"
               s1 s2 (Unix.error_message e);
             flush stderr;
+            (* FIXME: this should be Unix._exit (available from OCaml 4.12)
+               which doesn't flush buffers (or run other exit handlers).
+               When [_exit] is eventually used then to _completely_ avoid risk
+               of double flushing, [Unix.write Unix.stderr] should be used
+               above instead of [eprintf]. Using [_exit] and not using any
+               [Stdlib.out_channel] will avoid all buffering and exit handler
+               issues. *)
             exit 127
           end
       | childPid ->
@@ -351,24 +289,114 @@ let close_session pid =
 
 let (>>=) = Lwt.bind
 
-let escRemove = Str.regexp
-   ("\\(\\(.\\|[\n\r]\\)+\027\\[[12]J\\)" (* Clear screen *)
-  ^ "\\|\\(\027\\[[0-2]?J\\)" (* Clear screen *)
-  ^ "\\|\\(\027\\[!p\\)" (* Soft reset *)
-  ^ "\\|\\(\027\\][02];[^\007]*\007\\)" (* Set console window title *)
-  ^ "\\|\\(\027\\[\\?25[hl]\\)" (* Show/hide cursor *)
-  ^ "\\|\\(\027\\[[0-9;]*m\\)" (* Formatting *)
-  ^ "\\|\\(\027\\[H\\)") (* Home *)
+(* OpenSSH on Windows is known to produce at least the following escape
+   sequences. Examples of raw output with OCaml string escapes, starting from
+   beginning of line and ending at end of line, newline excluded:
 
-let escSpace = Str.regexp "\027\\[\\([0-9]*\\)C"
+\027[2J\027[m\027[H\027]0;C:\\WINDOWS\\System32\\OpenSSH\\ssh.exe\007\027[?25h
+
+The authenticity of host 'example.com (127.0.0.1)' can't be established.\r\nECDSA key fingerprint is SHA256:CxGGHIVL7YDoSAtAzkIJNNaheGW7dDa7m7H+antMzDv.  \r\nAre you sure you want to continue connecting (yes/no/[fingerprint])?\027[10X\027[1C
+
+   Most of these sequences are clearly useless for Unison and can be safely
+   ignored. The final sequence CSI 10 X CSI 1 C is a bit weird. In this
+   context, CSI 1 C can be interpreted as 1 space, although this is not
+   universal.
+
+   Some versions may have also emitted CSI ! p (VT220 soft reset) but this
+   no longer seems to be the case. *)
+
+type controlSt = No | Escape | EscapeSeq | CSI | OSC | StringSeq | OSCEsc | StringEsc
+
+(* A very primitive and minimal parser of ANSI X3.64/ECMA-48 control sequences.
+   It parses 7-bit control characters (C0) only. 8-bit control characters (C1)
+   are intentionally not parsed.
+   The vast majority of sequences are just ignored. *)
+let parseCtrlSeq s =
+  let s' = Buffer.create (String.length s) in
+  let add_char = Buffer.add_char s' in
+  let params = Buffer.create 32 in
+  let params_add_char = Buffer.add_char params in
+  let st = ref No in
+  let state x = st := x in
+  let parseEsc ch =
+    Buffer.clear params;
+    match ch with
+    | '\032'..'\047' -> state EscapeSeq
+    | '[' -> state CSI
+    | ']' -> state OSC
+    | 'X' | '^' | '_' -> state StringSeq
+    | _ -> state No
+  in
+  let parseCh ch =
+    match !st with
+    | No when ch = '\027' -> state Escape
+    | No -> add_char ch
+    | Escape -> parseEsc ch
+    | EscapeSeq ->
+        begin
+          match ch with
+          | '\024' | '\026' -> state No (* CAN, SUB *)
+          | '\000'..'\025' -> add_char ch (* Control charaters (roughly) *)
+          | '\027' -> state Escape
+          | '\048'..'\126' -> state No (* Final *)
+          | '\127'..'\255' -> state No (* Invalid *)
+          | _ -> ()
+        end
+    | CSI ->
+        begin
+          match ch with
+          | '\024' | '\026' -> state No (* CAN, SUB *)
+          | '\000'..'\025' -> add_char ch (* Control charaters (roughly) *)
+          | '\027' -> state Escape
+          | '\064'..'\126' -> (* Final *)
+              begin
+                state No;
+                match ch with
+                | 'C' -> (* cursor forward *)
+                    let n =
+                      try int_of_string (Buffer.contents params)
+                      with Failure _ -> 1 in
+                    for _ = 1 to n do add_char ' ' done
+                | _ -> ()
+              end
+          | '\127'..'\255' -> state No (* Invalid *)
+          | _ -> params_add_char ch
+        end
+    | OSC ->
+        begin
+          match ch with
+          | '\024' | '\026' -> state No (* CAN, SUB *)
+          | '\007' -> state No (* BEL *)
+          | '\000'..'\025' -> add_char ch (* Control charaters (roughly) *)
+          | '\027' -> state OSCEsc
+          | _ -> ()
+        end
+    | OSCEsc ->
+        begin
+          match ch with
+          | '\\' -> state No (* String terminator *)
+          | _ -> parseEsc ch
+        end
+    | StringSeq ->
+        begin
+          match ch with
+          | '\024' | '\026' -> state No (* CAN, SUB *)
+          | '\000'..'\025' -> add_char ch (* Control charaters (roughly) *)
+          | '\027' -> state StringEsc
+          | _ -> ()
+        end
+    | StringEsc ->
+        begin
+          match ch with
+          | '\\' -> state No (* String terminator *)
+          | _ -> parseEsc ch
+        end
+  in
+  String.iter parseCh s;
+  Buffer.contents s'
 
 let processEscapes s =
-  let whitesp s =
-    try String.make (min 1 (int_of_string (Str.replace_matched "\\1" s))) ' '
-    with Failure _ -> " "
-  in
-  Str.global_replace escRemove "" s
-  |> Str.global_substitute escSpace whitesp
+  parseCtrlSeq s
 
 (* Wait until there is input. If there is terminal input s,
    return Some s. Otherwise, return None. *)
@@ -393,74 +421,80 @@ let rec termInput (fdTerm, _) fdInput =
     (Lwt.choose
        [readPrompt (); connectionEstablished ()])
 
+type termInteract = {
+  userInput : string -> (string -> unit) -> unit;
+  endInput : unit -> unit }
+
 (* Read messages from the terminal and use the callback to get an answer *)
-let handlePasswordRequests (fdIn, fdOut) callback isReady =
+let handlePasswordRequests (fdIn, fdOut) {userInput; endInput} =
   let scrollback = Buffer.create 32 in
   let extract () =
     let s = Buffer.contents scrollback in
     let () = Buffer.clear scrollback in
     s
   in
-  let buf = Bytes.create 10000 in
+  let blen = 10000 in
+  let buf = Bytes.create blen in
   let ended = ref false in
-  let time = ref (Unix.gettimeofday ()) in
-  let rec loop () =
-    Lwt.catch
-      (fun () -> Lwt_unix.read fdIn buf 0 10000)
-      (fun ex -> if isReady () || !ended then Lwt.return 0 else Lwt.fail ex)
-    >>= function
-    | 0 -> Lwt.return None (* The remote end is dead *)
-    | len ->
-        time := Unix.gettimeofday ();
-        Buffer.add_string scrollback (Bytes.sub_string buf 0 len);
-        if !ended then (* The session ended before establishing a connection *)
-          Lwt.return None
-        else if isReady () then (* The shell connection has been established *)
-          Lwt.return (Some (extract ()))
-        else
-          loop ()
-  in
-  let delay = 0.2 in
-  let rec prompt () =
-    if isReady () || !ended then
-      Lwt.return ()
-    else
-      let d = (Unix.gettimeofday ()) -. !time in
-      if d < delay
-        || Buffer.length scrollback = 0 then
-      (* HACK: Delay briefly (0.2 s, noticable to a human but not terrible
-         either since some delay from the network is expected anyway) to allow
-         time for output to be generated and read in as a whole. Otherwise, it
-         may happen that 'Invalid password' and 'Please re-enter password'
-         prompts are received separately, and this is not what we want.
-         Loop by 0.01 s to let other threads run while not introducing
-         noticable latency to the user. *)
-      Lwt_unix.sleep (max (delay -. (max 0. d)) 0.01) >>= prompt
-    else
-      let query = extract () in
-      if query = "\r\n" || query = "\n" || query = "\r" then
-        Lwt_unix.yield () >>= prompt
-      else
-        let querytext = processEscapes query in
-        if querytext = "" || String.trim querytext = "" then
-          Lwt_unix.yield () >>= prompt
-        else
-          let response = callback querytext in
-          Lwt_unix.write_substring fdOut
-            (response ^ "\n") 0 (String.length response + 1) >>= fun _ ->
-          prompt ()
-  in
-  let getErr () =
+  let closeInput () =
     ended := true;
-    (* Yield a couple of times to give one final chance of reading the error
-       output from the ssh process. *)
-    Lwt_unix.yield () >>=
-    Lwt_unix.yield >>= fun () ->
+    endInput ()
+  in
+  let terminalError loc e =
+    closeInput ();
+    Util.encodeException loc `Fatal e
+  in
+  let sendResponse s =
+    Lwt.catch
+      (fun () ->
+        if !ended then Lwt.return 0
+        else Lwt_unix.write_substring fdOut (s ^ "\n") 0 (String.length s + 1))
+      (terminalError "writing to shell terminal")
+  in
+  let promptUser () =
+    let query = extract () in
+    if query = "\r\n" || query = "\n" || query = "\r" then ()
+    else
+      (* There is a tiny, almost non-existent risk of a broken escape sequence
+         at the very beginning or the very end of the buffer (this can happen
+         if bytes read from the pty end in the middle of a sequence and before
+         reading any further we charge ahead with processing what we've read).
+         Given that it's almost certainly ssh we're dealing with, this risk can
+         safely be ignored. *)
+      let querytext = processEscapes query in
+      if querytext = "" || String.trim querytext = "" then ()
+      else
+        userInput querytext (fun s -> Lwt.ignore_result (sendResponse s))
+  in
+  let rec loop () =
+    (* When reading from a pty, the reading loop will not stop even when the
+       remote shell process dies. The reading will end (return 0 or an error)
+       when the pty is closed.
+       The only way to stop the reading loop without closing the pty is to
+       signal [connectionReady] or [closeInput]. *)
+    Lwt.catch
+      (fun () -> Lwt_unix.read fdIn buf 0 blen)
+      (fun ex -> if !ended then Lwt.return 0 else Lwt.fail ex)
+    >>= function
+    | 0 -> Lwt.return ()
+    | len ->
+        Buffer.add_string scrollback (Bytes.sub_string buf 0 len);
+        if !ended then begin (* The shell connection has been established *)
+          Lwt.return ()
+        end else begin
+          Lwt.ignore_result (Lwt_unix.sleep 0.05 >>= fun () -> (* Give time for connection checks *)
+            Lwt.return (if not !ended then promptUser ()));
+          loop ()
+        end
+  in
+  let readTerm = Lwt.catch loop (terminalError "reading from shell terminal") in
+  let handleReqs = readTerm >>= fun () -> Lwt.return (extract ()) in
+  let connectionReady () = closeInput (); extract () in
+  let extractRemainingOutput () =
+    closeInput ();
+    (* Give a final chance of reading the error output from the ssh process. *)
+    let timeout = Lwt_unix.sleep 0.3 in
+    Lwt.choose [readTerm; timeout] >>= fun () ->
     Lwt.return (Util.trimWhitespace (processEscapes (extract ())))
   in
-  let () = Lwt.ignore_result (Lwt.catch prompt
-    (Util.encodeException "writing to shell terminal" `Fatal))
-  and readTerm = Lwt.catch loop
-    (Util.encodeException "reading from shell terminal" `Fatal)
-  in
-  (readTerm, getErr)
+  (connectionReady, handleReqs, extractRemainingOutput)

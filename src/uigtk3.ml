@@ -86,22 +86,22 @@ let icon =
     (Gpointer.region_of_bytes Pixmaps.icon_data)
 *)
 let icon =
-  let p = GdkPixbuf.create ~width:48 ~height:48 ~has_alpha:true () in
-  Gpointer.blit
-    ~src:(Gpointer.region_of_bytes (Bytes.of_string Pixmaps.icon_data))
-    ~dst:(GdkPixbuf.get_pixels p);
-  p
+  lazy begin
+    let p = GdkPixbuf.create ~width:48 ~height:48 ~has_alpha:true () in
+    Gpointer.blit
+      ~src:(Gpointer.region_of_bytes (Bytes.of_string Pixmaps.icon_data))
+      ~dst:(GdkPixbuf.get_pixels p);
+    p
+  end
 
 let leftPtrWatch =
   lazy (Gdk.Cursor.create `WATCH)
 
 let make_busy w =
-  if Util.osType <> `Win32 then
-    Gdk.Window.set_cursor w#misc#window (Lazy.force leftPtrWatch)
+  Gdk.Window.set_cursor w#misc#window (Lazy.force leftPtrWatch)
 let make_interactive w =
-  if Util.osType <> `Win32 then
-    (* HACK: setting the cursor to NULL restore the default cursor *)
-    Gdk.Window.set_cursor w#misc#window (Obj.magic Gpointer.boxed_null)
+  (* HACK: setting the cursor to NULL restore the default cursor *)
+  Gdk.Window.set_cursor w#misc#window (Obj.magic Gpointer.boxed_null)
 
 (*********************************************************************
   UI state variables
@@ -240,7 +240,7 @@ let escapeMarkup s = Glib.Markup.escape_text s
 let transcodeFilename s =
   if Prefs.read Case.unicodeEncoding then
     Unicode.protect s
-  else if Util.osType = `Win32 then transcodeDoc s else
+  else if Sys.win32 then transcodeDoc s else
   try
     Glib.Convert.filename_to_utf8 s
   with Glib.Convert.Error _ ->
@@ -904,7 +904,14 @@ let promptForRoots () =
 
 (* ------ *)
 
-let getPassword rootName msg =
+type 'a pwdDialog = {
+  labelAppend : string -> unit;
+  presentAndRun : unit -> unit;
+  closeInput : unit -> unit;
+}
+let passwordDialogs = ref []
+
+let createPasswordDialog passwordDialog rootName msg response =
   let t =
     GWindow.dialog ~parent:(toplevelWindow ())
       ~title:"Unison: SSH connection" ~position:`CENTER
@@ -921,9 +928,9 @@ let getPassword rootName msg =
   ignore (GMisc.image ~stock:`DIALOG_AUTHENTICATION ~icon_size:`DIALOG
             ~yalign:0. ~packing:h1#pack ());
   let v1 = GPack.vbox ~spacing:12 ~packing:h1#pack () in
-  ignore(GMisc.label ~markup:(header ^ "\n\n" ^
+  let msgLbl = (GMisc.label ~markup:(header ^ "\n\n" ^
                               escapeMarkup (Unicode.protect msg))
-           ~selectable:true ~yalign:0. ~packing:v1#pack ());
+           ~selectable:true ~yalign:0. ~packing:v1#pack ()) in
 
   let passwordE = GEdit.entry ~packing:v1#pack ~visibility:false () in
   passwordE#misc#grab_focus ();
@@ -934,16 +941,50 @@ let getPassword rootName msg =
   ignore (passwordE#connect#activate ~callback:(fun _ -> t#response `OK));
 
   t#show();
-  let res = t#run () in
-  let pwd = passwordE#text in
-  t#destroy ();
-  gtk_sync true;
-  begin match res with
-    `DELETE_EVENT | `QUIT -> safeExit (); ""
-  | `OK                   -> pwd
-  end
 
-let termInteract = Some getPassword
+  let labelAppend msg =
+    msgLbl#set_label (msgLbl#label ^ escapeMarkup (Unicode.protect msg)) in
+  let presentAndRun () =
+    try t#present (); ignore (t#run ()) with Failure _ -> () in
+  let closeInput () =
+    passwordE#set_editable false; passwordE#set_visible false; passwordE#set_text "" in
+  passwordDialog := Some { labelAppend; presentAndRun; closeInput };
+
+  let callback res =
+    passwordDialog := None;
+    let pwd = passwordE#text in
+    let editable = passwordE#editable in
+    t#destroy ();
+    gtk_sync true;
+    match res with
+    | `DELETE_EVENT | `QUIT -> safeExit ()
+    | `OK -> if editable then response pwd
+  in
+  ignore (t#connect#response ~callback)
+
+let getPassword passwordDialog rootName msg response =
+  match !passwordDialog with
+  | Some { labelAppend; _ } -> labelAppend msg
+  | None -> createPasswordDialog passwordDialog rootName msg response
+
+let disablePassword passwordDialog () =
+  match !passwordDialog with
+  | Some { closeInput; _ } -> closeInput ()
+  | None -> ()
+
+let waitForPasswordWindowClosing () =
+  let present x =
+    match !x with
+    | Some { presentAndRun; _ } -> presentAndRun ()
+    | None -> ()
+  in
+  passwordDialogs :=
+    Safelist.filter (fun x -> present x; !x <> None) !passwordDialogs
+
+let termInteract rootName =
+  let d = ref None in
+  passwordDialogs := d :: !passwordDialogs;
+  { Terminal.userInput = getPassword d rootName; endInput = disablePassword d }
 
 (* ------ *)
 
@@ -1441,7 +1482,7 @@ let createProfile parent =
      remote non-Windows machine.  As this is unlikely, we do not
      handle this case. *)
   let fat =
-    if Util.osType = `Win32 then
+    if Sys.win32 then
       React.const false
     else begin
       let vb =
@@ -1471,7 +1512,7 @@ let createProfile parent =
      partitions.  In most cases, we should be in Unicode mode.
      Thus, it seems sensible to always enable fastcheck. *)
 (*
-  let fastcheck = isLocal >> not >> (fun b -> b || Util.osType = `Win32) in
+  let fastcheck = isLocal >> not >> (fun b -> b || Sys.win32) in
 *)
   (* Unicode mode can be problematic when the source machine is under
      Windows and the remote machine is not, as Unison may have already
@@ -1479,7 +1520,7 @@ let createProfile parent =
      handle Unicode before version 1.7. *)
   let vb = GPack.vbox ~spacing:6 ~packing:(options#pack ~expand:false) () in
   let askUnicode = React.const false in
-(* isLocal >> not >> fun b -> (b || Util.isCygwin) && Util.osType = `Win32 in*)
+(* isLocal >> not >> fun b -> (b && Sys.win32) || Sys.cygwin in*)
   GtkReact.show vb askUnicode;
   adjustSize
     (GMisc.label ~xalign:0. ~line_wrap:true ~justify:`LEFT
@@ -1524,7 +1565,7 @@ let createProfile parent =
   ignore
     (assistant#connect#prepare ~callback:(fun () ->
        if assistant#current_page = p &&
-          not (Util.osType <> `Win32 || React.state askUnicode)
+          not (not Sys.win32 || React.state askUnicode)
        then
          assistant#set_current_page (p + 1)));
 
@@ -2398,6 +2439,9 @@ let documentationFn = ref (fun ~parent _ -> ())
 let getProfile quit =
   let ok = ref false in
   let parent = toplevelWindow () in
+  (* Make sure that a potentially open password window from a (failed) previous
+     session is not hidden underneath this window. *)
+  waitForPasswordWindowClosing ();
 
   (* Build the dialog *)
   let t =
@@ -2608,9 +2652,12 @@ let documentation ~parent sect =
   let lw = ref 1 in
   let addDocSection (shortname, (name, docstr)) =
     if shortname = "" || name = "" then () else
-    let () = lw := max !lw (String.length name) in
+    let namelen = String.length name in
+    if namelen <= 20 then lw := max !lw namelen;
     let label = GMisc.label ~markup:("<b>" ^ name ^ "</b>")
-                  ~xalign:1. ~justify:`LEFT ~ellipsize:`NONE () in
+                  ~xalign:1. ~justify:`RIGHT ~ellipsize:`NONE
+                  ~line_wrap:(namelen > 20) () in
+    label#set_width_chars 20;
     let box = GBin.frame ~border_width:8
                 ~packing:(add_nb_page label (shortname = sect)) () in
     let text = new scrolled_text ~editable:false ~wrap_mode:`NONE
@@ -2722,7 +2769,7 @@ let displayWaitMessage () =
   Trace.status (Uicommon.contactingServerMsg ())
 
 let prepDebug () =
-  if Sys.os_type = "Win32" then
+  if Sys.win32 then
     (* As a side-effect, this allocates a console if the process doesn't
        have one already. This call is here only for the side-effect,
        because debugging output is produced on stderr and the GUI will
@@ -2742,7 +2789,7 @@ let createToplevelWindow () =
   setToplevelWindow toplevelWindow;
   (* There is already a default icon under Windows, and transparent
      icons are not supported by all version of Windows *)
-  if Util.osType <> `Win32 then toplevelWindow#set_icon (Some icon);
+  if not Sys.win32 then toplevelWindow#set_icon (Some (Lazy.force icon));
   let toplevelVBox = GPack.vbox ~packing:toplevelWindow#add () in
 
   (*******************************************************************
@@ -2827,6 +2874,8 @@ let createToplevelWindow () =
   let (ignoreMenu, _) = add_submenu ~modi:[`SHIFT] "_Ignore" in
   let (sortMenu, _) = add_submenu "S_ort" in
   let (helpMenu, _) = add_submenu "_Help" in
+  let (expertMenu, expertItem) = add_submenu "Expert" in
+  let () = expertItem#set_visible false in (* Expert menu hidden by default *)
 
   (*********************************************************************
     Action bar
@@ -2888,12 +2937,14 @@ let createToplevelWindow () =
     (GTree.view_column ~title:"  Path  "
        ~renderer:(GTree.cell_renderer_text [], ["text", c_path]) ()));
 
-  let setMainWindowColumnHeaders s =
+  let setMainWindowColumnHeaders roots =
+    let escape s = String.split_on_char '_' s |> String.concat "__" in
+    let (r1, r2) = Uicommon.roots2niceStrings 15 roots in
     Array.iteri
       (fun i data ->
          (mainWindow#get_column i)#set_title data)
-      [| " " ^ Unicode.protect (String.sub s  0 12) ^ " "; "  Action  ";
-         " " ^ Unicode.protect (String.sub s 15 12) ^ " "; "  Status  ";
+      [| " " ^ Unicode.protect (escape r1) ^ " "; "  Action  ";
+         " " ^ Unicode.protect (escape r2) ^ " "; "  Status  ";
          " Path" |];
   in
 
@@ -3353,11 +3404,9 @@ let createToplevelWindow () =
   let totalBytesToTransfer = ref Uutil.Filesize.zero in
   let totalBytesTransferred = ref Uutil.Filesize.zero in
 
-  let t0 = ref 0. in
   let t1 = ref 0. in
   let lastFrac = ref 0. in
-  let oldWritten = ref 0. in
-  let writeRate = ref 0. in
+  let sta = ref (Uicommon.Stats.init (Uutil.Filesize.zero)) in
   let displayGlobalProgress v =
     if v = 0. || abs_float (v -. !lastFrac) > 1. then begin
       lastFrac := v;
@@ -3367,21 +3416,15 @@ let createToplevelWindow () =
       progressBar#set_text " "
     else begin
       let t = Unix.gettimeofday () in
+      Uicommon.Stats.update !sta t !totalBytesTransferred;
       let delta = t -. !t1 in
       if delta >= 0.5 then begin
         t1 := t;
         let remTime =
           if v >= 100. then "00:00 remaining" else
-          let t = truncate ((!t1 -. !t0) *. (100. -. v) /. v +. 0.5) in
-          Format.sprintf "%02d:%02d remaining" (t / 60) (t mod 60)
+          (Uicommon.Stats.eta !sta "--:--") ^ " remaining"
         in
-        let written = !clientWritten +. !serverWritten in
-        let b = 0.64 ** delta in
-        writeRate :=
-          b *. !writeRate +.
-          (1. -. b) *. (written -. !oldWritten) /. delta;
-        oldWritten := written;
-        let rate = !writeRate (*!emitRate2 +. !receiveRate2*) in
+        let rate = Uicommon.Stats.avgRate1 !sta in
         let txt =
           if rate > 99. then
             Format.sprintf "%s  (%s)" remTime (rate2str rate)
@@ -3412,8 +3455,8 @@ let createToplevelWindow () =
     root2IsLocal := fst root2 = Local;
     totalBytesToTransfer := b;
     totalBytesTransferred := Uutil.Filesize.zero;
-    t0 := Unix.gettimeofday (); t1 := !t0;
-    writeRate := 0.; oldWritten := !clientWritten +. !serverWritten;
+    t1 := Unix.gettimeofday ();
+    sta := Uicommon.Stats.init !totalBytesToTransfer;
     displayGlobalProgress 0.
   in
 
@@ -4001,9 +4044,10 @@ let createToplevelWindow () =
     Trace.status "Loading profile";
     unsynchronizedPaths := None;
     profileInitSuccess := false;
-    Uicommon.initPrefs ~profileName:p
+    Uicommon.initPrefs ~profileName:p ~promptForRoots ~prepDebug ();
+    Uicommon.connectRoots
       ~displayWaitMessage:(fun () -> if not reload then displayWaitMessage ())
-      ~promptForRoots ~prepDebug ~termInteract ();
+      ~termInteract ();
     profileInitSuccess := true;
     !updateFromProfile ()
   in
@@ -4017,10 +4061,11 @@ let createToplevelWindow () =
     clearMainWindow ();
     if not (Prefs.profileUnchanged ()) || not (!profileInitSuccess) then
       loadProfile n true
-    else Uicommon.refreshConnection ~displayWaitMessage ~termInteract
+    else Uicommon.connectRoots ~displayWaitMessage ~termInteract ()
   in
 
   let detectCmd () =
+    mainWindow#misc#grab_focus ();
     if !profileInitSuccess then begin
       getLock detectUpdatesAndReconcile;
       updateDetails ();
@@ -4032,6 +4077,12 @@ let createToplevelWindow () =
       make_interactive toplevelWindow
     end
   in
+  let loadAndRunProfile p =
+    clearMainWindow ();
+    loadProfile p false;
+    detectCmd ()
+  in
+
 (*  actionBar#insert_space ();*)
   grAdd grRescan
     (insert_button actionBar ~text:"Rescan"
@@ -4046,7 +4097,7 @@ let createToplevelWindow () =
   let profileChange _ =
     match getProfile false with
       None   -> ()
-    | Some p -> clearMainWindow (); loadProfile p false; detectCmd ()
+    | Some p -> loadAndRunProfile p
   in
   grAdd grRescan (insert_button actionBar ~text:"Change Profile"
                     ~stock:`OPEN
@@ -4262,10 +4313,7 @@ let createToplevelWindow () =
 
   grAdd grRescan
     (fileMenu#add_image_item ~key:GdkKeysyms._p
-       ~callback:(fun _ ->
-          match getProfile false with
-            None -> ()
-          | Some(p) -> clearMainWindow (); loadProfile p false; detectCmd ())
+       ~callback:profileChange
        ~image:(GMisc.image ~stock:`OPEN ~icon_size:`MENU () :> GObj.widget)
        "Change _Profile...");
 
@@ -4324,9 +4372,7 @@ let createToplevelWindow () =
   (*********************************************************************
     Expert menu
    *********************************************************************)
-  if Prefs.read Uicommon.expert then begin
-    let (expertMenu, _) = add_submenu "Expert" in
-
+  let buildExpertMenu () =
     let addDebugToggle modname =
       ignore (expertMenu#add_check_item ~active:(Trace.enabled modname)
         ~callback:(fun b -> Trace.enable modname b)
@@ -4345,7 +4391,12 @@ let createToplevelWindow () =
                            Gc.full_major(); Gc.print_stat stderr;
                            flush stderr)
               "Show memory/GC stats")
-  end;
+  in
+  buildExpertMenu ();
+
+  let toggleExpertMenu enabled =
+    expertItem#set_visible enabled
+  in
 
   (*********************************************************************
     Finish up
@@ -4355,8 +4406,9 @@ let createToplevelWindow () =
   updateFromProfile :=
     (fun () ->
        displayNewProfileLabel ();
-       setMainWindowColumnHeaders (Uicommon.roots2string ());
+       setMainWindowColumnHeaders (Globals.roots ());
        sizeMainWindow ();
+       toggleExpertMenu (Prefs.read Uicommon.expert);
        buildActionMenu false);
 
   fatalErrorHandler :=
@@ -4373,7 +4425,7 @@ let createToplevelWindow () =
                      very first profile are handled in the [start] function. *)
            begin match getProfile true with
            | None -> exit 1
-           | Some p -> clearMainWindow (); loadProfile p false; detectCmd ()
+           | Some p -> loadAndRunProfile p
            end
     );
 
@@ -4383,9 +4435,7 @@ let createToplevelWindow () =
   toplevelWindow#show ();
   fun p ->
     updateProfileKeyMenu ();
-    mainWindow#misc#grab_focus ();
-    loadProfile p false;
-    detectCmd ()
+    loadAndRunProfile p
 
 
 (*********************************************************************
@@ -4394,8 +4444,8 @@ let createToplevelWindow () =
 
 let start _ =
   try
-    (* Stop GTK 3 from forcing client-side decorations in Windows *)
-    if Util.osType = `Win32 then begin
+    (* Stop GTK 3 from forcing client-side decorations *)
+    begin
       try ignore (Unix.getenv "GTK_CSD") with
       | Unix.Unix_error _ | Not_found ->
           try Unix.putenv "GTK_CSD" "0" with
@@ -4474,13 +4524,15 @@ let start = function
     Uicommon.Text -> Uitext.Body.start Uicommon.Text
   | Uicommon.Graphic ->
       let displayAvailable =
-        Util.osType = `Win32
+        Sys.win32
           ||
-        try System.getenv "DISPLAY" <> "" with Not_found -> false
+        (try System.getenv "DISPLAY" <> "" with Not_found -> false)
+          ||
+        (try System.getenv "WAYLAND_DISPLAY" <> "" with Not_found -> false)
       in
       if displayAvailable then Private.start Uicommon.Graphic
       else begin
-        Util.warn "DISPLAY not set or empty; starting the Text UI\n";
+        Util.warn "DISPLAY and WAYLAND_DISPLAY not set or empty; starting the Text UI\n";
         Uitext.Body.start Uicommon.Text
       end
 

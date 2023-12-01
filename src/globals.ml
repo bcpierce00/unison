@@ -45,6 +45,15 @@ let setRawRoots l = Prefs.set rawroots (Safelist.rev l)
 
 let rawRoots () = Safelist.rev (Prefs.read rawroots)
 
+let parsedClrootCache = ref []
+
+let parsedClRawRoots () =
+  let key = Prefs.read rawroots in
+  match List.assq_opt key !parsedClrootCache with
+  | Some x -> x
+  | None -> let x = Safelist.map Clroot.parseRoot (rawRoots ()) in
+            parsedClrootCache := (key, x) :: !parsedClrootCache; x
+
 let wrongNumRootsExn roots =
   Util.Fatal (Printf.sprintf "Wrong number of roots: \
     2 expected, but %d provided (%s)\n(Maybe you specified \
@@ -59,7 +68,7 @@ let rawRootPair () =
 
 let theroots = ref []
 
-let uninstallRoots () = theroots := []
+let uninstallRoots () = theroots := []; parsedClrootCache := []
 
 open Lwt
 let installRoots termInteract =
@@ -92,7 +101,7 @@ let installRoots2 () =
   let roots = rawRoots () in
   theroots :=
     Safelist.map Remote.canonize ((Safelist.map Clroot.parseRoot) roots);
-  Lwt.ignore_result (Negotiate.features (Common.sortRoots !theroots) >>= return)
+  Lwt_unix.run (Negotiate.features (Common.sortRoots !theroots))
 
 let roots () =
   match !theroots with

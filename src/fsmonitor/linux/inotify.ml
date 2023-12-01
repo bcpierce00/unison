@@ -14,8 +14,6 @@
  * Inotify OCaml binding
  *)
 
-exception Error of string * int
-
 type select_event =
         | S_Access
         | S_Attrib
@@ -115,5 +113,3 @@ let read fd =
         done;
 
         List.rev !ret
-
-let _ = Callback.register_exception "inotify.error" (Error ("register_callback", 0))

@@ -176,6 +176,10 @@
 #define UNSN_HAS_XATTR
 #endif
 
+#ifndef O_CLOEXEC
+#define O_CLOEXEC 0
+#endif
+
 #define UNSN_XATTR_NOT_SUPPORTED_EX "XattrNotSupported"
 
 
@@ -336,7 +340,8 @@ static void unsn_xattr_fail(const char *fmtmsg)
 static int unsn_is_system_attr_os(const char *attrname)
 {
 #if defined(__linux)
-  return (strncmp(attrname, "system.", 7) == 0);
+  return (strncmp(attrname, "system.", 7) == 0 &&
+          strncmp(attrname, "system.posix_acl_", 17) != 0);
 #elif defined(__APPLE__)
   return (strcmp(attrname, XATTR_FINDERINFO_NAME) == 0 ||
           strcmp(attrname, XATTR_RESOURCEFORK_NAME) == 0);
@@ -380,7 +385,7 @@ static int unsn_set_xattr_os(const char *path, const char *attrname,
    * This implementation does not synchronize any of those params,
    * as xattrs are conceptually treated as name-value pairs.
    * It is unknown if this will cause problems with real use cases. */
-  int fd = attropen(path, attrname, O_CREAT|O_WRONLY|O_TRUNC);
+  int fd = attropen(path, attrname, O_CREAT|O_WRONLY|O_TRUNC|O_CLOEXEC);
   if (fd == -1) {
     unsn_xattr_fail("Error opening extended attribute for writing: %s");
   }
@@ -441,7 +446,7 @@ static int unsn_remove_xattr_os(const char *path, const char *attrname)
     unsn_xattr_not_supported();
   }
 
-  int fd = attropen(path, ".", O_RDONLY);
+  int fd = attropen(path, ".", O_RDONLY|O_CLOEXEC);
   if (fd == -1) {
     unsn_xattr_fail("Error opening extended attribute for removing: %s");
   }
@@ -484,7 +489,7 @@ static ssize_t unsn_length_xattr_os(const char *path, const char *attrname)
 #elif defined(__FreeBSD__) || defined(__NetBSD__)
   return extattr_get_file(path, EXTATTR_NAMESPACE_USER, attrname, NULL, 0);
 #elif defined(__Solaris__)
-  int fd = attropen(path, attrname, O_RDONLY);
+  int fd = attropen(path, attrname, O_RDONLY|O_CLOEXEC);
   if (fd == -1) {
     unsn_xattr_fail("Error opening extended attribute for querying length: %s");
   }
@@ -513,7 +518,7 @@ static ssize_t unsn_get_xattr_os(const char *path, const char *attrname,
 #elif defined(__FreeBSD__) || defined(__NetBSD__)
   return extattr_get_file(path, EXTATTR_NAMESPACE_USER, attrname, buf, size);
 #elif defined(__Solaris__)
-  int fd = attropen(path, attrname, O_RDONLY);
+  int fd = attropen(path, attrname, O_RDONLY|O_CLOEXEC);
   if (fd == -1) {
     unsn_xattr_fail("Error opening extended attribute for reading: %s");
   }
@@ -648,7 +653,7 @@ static ssize_t unsn_list_xattr_aux(const char *path, DIR **dirp)
     return 0;
   }
 
-  int fd = attropen(path, ".", O_RDONLY);
+  int fd = attropen(path, ".", O_RDONLY|O_CLOEXEC);
   if (fd == -1) {
     unsn_list_xattr_fail();
   }

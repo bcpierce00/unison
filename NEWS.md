@@ -2,13 +2,67 @@
 
 This file contains a summary of user-visible or important changes, in
 the style of the GNU coding standards.  By user-visible, we include
-changes relevant for those building unison from source.  We omit
-most bugfixes and minor improvements.
+changes relevant for those building unison from source.  We omit most
+bugfixes and minor improvements, but of course every release contains
+some.  Refer to the documentation for details; this file is a terse
+notice of changes rather than a tutorial about new features.
 
 As of 2022, this file (NEWS.md at top level) is used for news.
 
 Some software has a "changelog" file that records all changes, but
 unison uses git history for that, and thus there is no changelog file.
+
+## Changes in 2.53.4
+
+Released 2023-xx-yy
+
+  * Improved and simplified makefiles. Please review your build scripts
+    for changed build goals, input variables and build artifact names.
+    See INSTALL.md for details.
+  * Various fixes in Windows and Cygwin builds.
+  * Preferences "force", "prefer" and related "partial" preferences now
+    work slightly differently with values "newer" and "older". Previously,
+    if mtimes in both replicas were equal then always the second root
+    propagated to the first root (possibly reverting user changes). It
+    is now made explicit that "newer" and "older" only work when mtimes
+    are different.
+  * Cleanups in documentation.
+  * Bugfixes, minor improvements, cleanups.
+
+## Changes in 2.53.3
+
+Released 2023-04-28
+
+  * On Linux, allow syncing the xattrs where POSIX draft ACLS are
+    stored, which enables syncing the ACL info.  (Note that this does
+    not enable syncing ACLs with the `-acl` switch, and does not
+    enable syncing ACLs between other systems and Linux.  See the
+    manual.)
+  * Improved ETA calculation and sync speed display in text UI.
+  * Fix CI Windows builds (again).
+  * Drop unmaintained "make install" target.
+  * Bugfixes, minor improvements, cleanups.
+
+## Changes in 2.53.2
+
+Released 2023-03-20
+
+  * Change version string to 2.53.2 (2.53.1 identified as 2.53.0).
+
+## Changes in 2.53.1
+
+Released 2023-03-19
+
+  * Repeat mode is more fault tolerant, recovering after temporary
+    errors.
+  * Preferences "force", "prefer" and related no longer require
+    specifying the full root.
+  * Improve stopping of update propagation.
+  * Enable VT input escape codes in Windows.
+  * Respect user-provided CFLAGS, CPPFLAGS, LDFLAGS, LDLIBS.
+  * Add build instructions in INSTALL.md (and drop from manual).
+  * Add graceful stop in repeat mode - SIGUSR2.
+  * Add watch+seconds to 'repeat' preference.
 
 ## Changes in 2.53.0
 
@@ -200,7 +254,7 @@ Released 2020-10-21
 
 ## Changes in very old versions
 
-(Note that these are written 'Chagnes since' and thus the content
+(Note that these are written 'Changes since' and thus the content
 applies to the release after that.)
 
    Changes since 2.40.63:
@@ -789,7 +843,7 @@ applies to the release after that.)
           + Ignore trailing dots in filenames in case insensitive mode
           + Proper quoting of paths, files and extensions ignored using
             the UI
-          + The strings CURRENT1 and CURRENT2 are now correctly substitued
+          + The strings CURRENT1 and CURRENT2 are now correctly substituted
             when they occur in the diff preference
           + Improvements to syncing resource forks between Macs via a
             non-Mac system.
@@ -1427,7 +1481,7 @@ applies to the release after that.)
             preference is a mask indicating which permission bits should
             be synchronized. It is set by default to 0o1777: all bits but
             the set-uid and set-gid bits are synchronised (synchronizing
-            theses latter bits can be a security hazard). If you want to
+            these latter bits can be a security hazard). If you want to
             synchronize all bits, you can set the value of this preference
             to -1.
           + Added a log preference (default false), which makes Unison
@@ -1529,7 +1583,7 @@ applies to the release after that.)
             paths matching this pattern to be displayed last.
        The sorting preferences are described in more detail in the user
        manual. The sortnewfirst and sortbysize flags can also be accessed
-       from the 'Sort' menu in the grpahical user interface.
+       from the 'Sort' menu in the graphical user interface.
      * Added two new preferences that can be used to change unison's
        fundamental behavior to make it more like a mirroring tool instead
        of a synchronizer.

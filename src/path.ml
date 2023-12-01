@@ -105,7 +105,7 @@ let deconstructRev path =
 let winAbspathRx = Rx.rx "([a-zA-Z]:)?(/|\\\\).*"
 let unixAbspathRx = Rx.rx "/.*"
 let is_absolute s =
-  if Util.osType=`Win32 then Rx.match_string winAbspathRx s
+  if Sys.win32 || Sys.cygwin then Rx.match_string winAbspathRx s
   else Rx.match_string unixAbspathRx s
 
 (* Function string2path: string -> path
@@ -151,7 +151,7 @@ let is_absolute s =
 *)
 let fromString str =
   let str0 = str in
-  let str = if Util.osType = `Win32 then Fileutil.backslashes2forwardslashes str else str in
+  let str = if Sys.win32 || Sys.cygwin then Fileutil.backslashes2forwardslashes str else str in
   if is_absolute str then
     raise (Util.Transient
              (Printf.sprintf "The path '%s' is not a relative path" str));

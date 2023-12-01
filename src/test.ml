@@ -156,8 +156,8 @@ let writefs p fs =
   verbose (fun() -> Util.msg "Writing new test filesystem\n");
   let rec loop p = function
     | File s ->
-        verbose (fun() -> Util.msg "Writing %s with contents %s (fingerprint %s)\n"
-                   (Fspath.toDebugString p) s (Fingerprint.toString (Fingerprint.string s)));
+        verbose (fun() -> Util.msg "Writing %s with contents %s\n"
+                   (Fspath.toDebugString p) s);
         write p s
     | Link s -> Fs.symlink s p
     | Dir files ->
@@ -235,12 +235,9 @@ let sync ?(verbose=false) () =
     displayRis reconItemList
   end;
   minisleep 0.1;
-  Lwt_unix.run (
-    Lwt_util.iter
-      (fun ri ->
-         Transport.transportItem ri
-           (Uutil.File.ofLine 0) (fun _ _ -> true))
-      reconItemList);
+  Uicommon.transportItems (Array.of_list reconItemList) (fun _ -> true)
+    (fun _ ri ->
+      Transport.transportItem ri (Uutil.File.ofLine 0) (fun _ _ -> true));
   Update.commitUpdates()
 
 let currentTest = ref ""
@@ -337,6 +334,22 @@ let test() =
      just written.  If the length of the contents is also the same and the test is
      running fast enough that the whole thing happens within a second, then the
      update will be missed! *)
+
+  (* Test that update propagation transport works *)
+  let maxth = [| "0"; "1"; "5"; "6"; "7" |] in
+    (* Number of threads: default (0); 1 (corner case);
+       one less, equal to, and one more than number of updates *)
+  for i = 1 to Array.length maxth do
+    runtest ("propagation 1." ^ string_of_int i) ["maxthreads = " ^ maxth.(i - 1)] (fun () ->
+      put R1 (Dir []); put R2 (Dir []); sync ();
+      let r1 = ["a", File "a"; "b", File "b"; "d1", Dir ["a", File "a1"; "b", File "b1"]]
+      and r2 = ["x", File "x"; "y", File "y"; "d2", Dir ["x", File "x2"; "y", File "y2"]] in
+      let expect = Dir (r1 @ r2) in
+      put R1 (Dir r1); put R2 (Dir r2); sync ();
+      check "1" R1 expect;
+      check "2" R2 expect
+    )
+  done;
 
   (* Test that .git is treated atomically. *)
   runtest "Atomicity of certain directories 1" ["atomic = Name .git";

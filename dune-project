@@ -6,7 +6,7 @@
 
 (license GPL-3.0-or-later)
 
-(maintainers "unisonhackers@lists.seas.upenn.edu")
+(maintainers "unison-hackers@lists.seas.upenn.edu")
 
 (authors "Trevor Jim" "Benjamin C. Pierce" "J\195\169r\195\180me Vouillon")
 

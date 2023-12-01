@@ -624,7 +624,7 @@ let processCmdLine usage hook =
   try
     Uarg.parse argspecs anonfun (oneLineDocs usage)
   with IllegalValue str ->
-    raise(Util.Fatal(Printf.sprintf "%s \n%s\n" (oneLineDocs usage) str))
+    raise (Util.Fatal str)
 
 let parseCmdLine usage =
   processCmdLine usage (fun _ sp -> sp)
@@ -688,6 +688,7 @@ let printFullManDocs () =
   let parRe = Str.regexp "\\\\par *" in
   let underRe = Str.regexp "\\\\_ *" in
   let dollarRe = Str.regexp "\\\\\\$ *" in
+  let dquotRe = Str.regexp "\"" in
   let nn1Re = Str.regexp "\\(\\( -NN-\\)+ -NN-\\|\\( -NN-\\)* -NS-\\)\\." in
   let nn2Re = Str.regexp "\\( -NN-\\)+" in
   let substMacro m s =
@@ -726,6 +727,7 @@ let printFullManDocs () =
     Str.global_replace parRe "\n" >>>
     Str.global_replace underRe "_" >>>
     Str.global_replace dollarRe "$" >>>
+    Str.global_replace dquotRe "\\&\"" >>>
     Str.global_replace nn1Re " Ns " >>>
     Str.global_replace nn2Re "\n" >>>
     Str.global_replace newlineRe "\n" >>>

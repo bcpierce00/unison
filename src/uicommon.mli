@@ -34,7 +34,8 @@ val contactingServerMsg : unit -> string
 val profileLabel : string Prefs.t
 
 (* User preference: Synchronize repeatedly *)
-val repeat : string Prefs.t
+val repeat : [ `NoRepeat | `Interval of int | `Watch
+  | `WatchAndInterval of int | `Invalid of string * exn ] Prefs.t
 
 (* User preference: Try failing paths N times *)
 val retry : int Prefs.t
@@ -59,6 +60,7 @@ val displayPath : Path.t -> Path.t -> string
 (* Format the names of the roots for display at the head of the
    corresponding columns in the UI *)
 val roots2string : unit -> string
+val roots2niceStrings : int -> Common.root * Common.root -> string * string
 
 (* Format a reconItem (and its status string) for display, eliding
    initial components that are the same as the previous path *)
@@ -100,22 +102,20 @@ val uiInitClRootsAndProfile :
 
 val initPrefs :
   profileName:string ->
-  displayWaitMessage:(unit->unit) ->
   promptForRoots:(unit -> (string * string) option) ->
   ?prepDebug:(unit -> unit) ->
-  termInteract:(string -> string -> string) option ->
   unit ->
   unit
 
 val clearClRoots : unit -> unit
 
 (* Make sure remote connections (if any) corresponding to active roots
-   are still established and re-establish them if necessary.
-   [refreshConnection] is like [initPrefs] but without reloading the profile
-   and re-initializing the prefs. *)
-val refreshConnection :
+   are established and (re-)establish them if necessary.
+   [initPrefs] must be called before [connectRoots]. *)
+val connectRoots :
+  ?termInteract:(string -> Terminal.termInteract) ->
   displayWaitMessage:(unit -> unit) ->
-  termInteract:(string -> string -> string) option ->
+  unit ->
   unit
 
 val validateAndFixupPrefs : unit -> unit Lwt.t
@@ -145,3 +145,20 @@ val transportStart : unit -> unit
 val transportFinish : unit -> unit
 
 val transportItems : 'a array -> ('a -> bool) -> (int -> 'a -> unit Lwt.t) -> unit
+
+(* Statistics of update propagation *)
+module Stats : sig
+  type t
+  val init :
+       Uutil.Filesize.t (* Total size to complete 100% *)
+    -> t
+  val update :
+       t
+    -> float            (* Current absolute time *)
+    -> Uutil.Filesize.t (* Current completed size (not delta) *)
+    -> unit
+  val curRate : t -> float (* Current progress rate, very volatile *)
+  val avgRate1 : t -> float (* Moving average of the rate above, more stable *)
+  val avgRate2 : t -> float (* Double moving average, very stable *)
+  val eta : t -> ?rate:float -> string -> string (* Defaults to rate2 *)
+end

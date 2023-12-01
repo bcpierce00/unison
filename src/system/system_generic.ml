@@ -68,8 +68,10 @@ let open_in_bin = open_in_bin
 
 let create_process = Unix.create_process
 let open_process_in = Unix.open_process_in
+let open_process_args_in = Unix.open_process_args_in
 let open_process_out = Unix.open_process_out
 let open_process_full cmd = Unix.open_process_full cmd (Unix.environment ())
+let open_process_args_full cmd args = Unix.open_process_args_full cmd args (Unix.environment ())
 let process_in_pid = Unix.process_in_pid
 let process_out_pid = Unix.process_out_pid
 let process_full_pid = Unix.process_full_pid
@@ -79,7 +81,7 @@ let close_process_full = Unix.close_process_full
 
 (****)
 
-let isNotWindows = Sys.os_type <> "Win32"
+let isNotWindows = not Sys.win32
 
 (* Note that Cygwin provides some kind of inode numbers, but we only
    have access to the lower 32 bits on 32bit systems... *)
@@ -122,18 +124,6 @@ let termVtCapable fd = Unix.isatty fd
 
 let has_stdout ~info:_ = true
 let has_stderr ~info:_ = true
-
-(****)
-
-let fingerprint f =
-  let ic = open_in_bin f in
-  try
-    let d = Digest.channel ic (-1) in
-    close_in ic;
-    d
-  with e ->
-    close_in_noerr ic;
-    raise e
 
 (****)
 

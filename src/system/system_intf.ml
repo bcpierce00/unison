@@ -41,7 +41,6 @@ val openfile :
 val open_out_gen : open_flag list -> int -> fspath -> out_channel
 val open_in_bin : fspath -> in_channel
 val file_exists : fspath -> bool
-val fingerprint : fspath -> Digest.t
 
 (****)
 
@@ -99,9 +98,12 @@ val create_process :
   string -> string array ->
   Unix.file_descr -> Unix.file_descr -> Unix.file_descr -> int
 val open_process_in : string -> in_channel
+val open_process_args_in : string -> string array -> in_channel
 val open_process_out : string -> out_channel
 val open_process_full :
   string -> in_channel * out_channel * in_channel
+val open_process_args_full :
+  string -> string array -> in_channel * out_channel * in_channel
 val process_in_pid : in_channel -> int
 val process_out_pid : out_channel -> int
 val process_full_pid : in_channel * out_channel * in_channel -> int

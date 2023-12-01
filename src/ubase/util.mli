@@ -52,7 +52,7 @@ module StringMap : Map.S with type key = string
 val stringSetFromList : string list -> StringSet.t
 
 (* String manipulation *)
-val truncateString : string -> int -> string
+val truncateString : string -> int (* number of Unicode code points *) -> string
 val startswith : string -> string -> bool  (* STR,PREFIX *)
 val endswith : string -> string -> bool
 val findsubstring : ?reverse:bool -> string -> string -> int option
@@ -71,10 +71,6 @@ val padto : int -> string -> string
 
 (* ---------------------------------------------------------------------- *)
 (* Miscellaneous *)
-
-(* Architecture *)
-val osType : [`Unix | `Win32]
-val isCygwin: bool    (* osType will be `Win32 in this case *)
 
 (* Options *)
 val extractValueFromOption : 'a option -> 'a
@@ -130,5 +126,6 @@ val format_to_string : (unit -> unit) -> string
    flush the stream after each one *)
 val msg : ('a, out_channel, unit) format -> 'a
 
-(* Set the info line *)
-val set_infos : string -> unit
+(* Set the info line.
+   [~clr] is an alternative clear sequence to clear this info only. *)
+val set_infos : ?clr:string -> string -> unit

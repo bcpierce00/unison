@@ -322,20 +322,14 @@ let getFileInfos dataFspath dataPath typ =
             { ressInfo =
                 if rsrcLength = 0L then NoRess else
                 AppleDoubleRess
-                  (begin match Util.osType with
-                     `Win32 -> 0
-                   | `Unix  -> (* The inode number is truncated so that
-                                  it fits in a 31 bit ocaml integer *)
-                               stats.Unix.LargeFile.st_ino land 0x3FFFFFFF
+                  (begin
+                   if Sys.win32 || Sys.cygwin then 0
+                   else (* The inode number is truncated so that
+                           it fits in a 31 bit ocaml integer *)
+                     stats.Unix.LargeFile.st_ino land 0x3FFFFFFF
                    end,
                    stats.Unix.LargeFile.st_mtime,
-                   begin match Util.osType with
-                     `Win32 -> (* Was "stats.Unix.LargeFile.st_ctime", but
-                                  this was bogus: Windows ctimes are
-                                  not reliable.  [BCP, Apr 07] *)
-                       0.
-                   | `Unix  -> 0.
-                   end,
+                   0.,
                    Uutil.Filesize.ofInt64 rsrcLength,
                    (doubleFspath, rsrcOffset));
               finfo = extractInfo typ finfo }
@@ -509,7 +503,7 @@ let openRessIn fspath path =
       Unix.in_channel_of_descr
         (Fs.openfile
            (Fspath.concat fspath (ressPath path))
-           [Unix.O_RDONLY] 0o444)
+           [Unix.O_RDONLY; O_CLOEXEC] 0o444)
     with Unix.Unix_error ((Unix.ENOENT | Unix.ENOTDIR), _, _) ->
       let (doublePath, inch, entries) = openDouble fspath path in
       try
@@ -527,7 +521,7 @@ let openRessOut fspath path length =
       let p = Fspath.concat fspath (ressPath path) in
       debug (fun () -> Util.msg "openRessOut %s\n" (Fspath.toString p));
       Unix.out_channel_of_descr
-        (Fs.openfile p [Unix.O_WRONLY;Unix.O_CREAT] 0o600)
+        (Fs.openfile p [Unix.O_WRONLY; O_CREAT; O_CLOEXEC] 0o600)
     with Unix.Unix_error ((Unix.ENOENT | Unix.ENOTDIR), _, _) ->
       debug (fun () -> Util.msg "Opening AppleDouble file for resource fork\n");
       let path = Fspath.appleDouble (Fspath.concat fspath path) in

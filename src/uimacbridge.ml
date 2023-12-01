@@ -264,7 +264,7 @@ let do_unisonInit1 profileName =
   let localRoots,remoteRoots =
     Safelist.partition
       (function Clroot.ConnectLocal _ -> true | _ -> false)
-      (Safelist.map Clroot.parseRoot (Globals.rawRoots())) in
+      (Globals.parsedClRawRoots ()) in
 
   match remoteRoots with
     [r] ->
@@ -501,7 +501,7 @@ let displayDiff title text =
 let displayDiffErr err = displayDiffErr (Unicode.protect err)
 
 (* If only properties have changed, we can't diff or merge.
-   'Can't diff' is produced (uicommon.ml) if diff is attemped
+   'Can't diff' is produced (uicommon.ml) if diff is attempted
    when either side has PropsChanged *)
 let filesAreDifferent status1 status2 =
   match status1, status2 with

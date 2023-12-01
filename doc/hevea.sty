@@ -1,11 +1,11 @@
-% htmlgen Verion 0.0 : html.sty
+% htmlgen Version 0.0 : html.sty
 % This is a very basic style file for latex document to be processed
 % with htmlgen. It contains definitions of LaTeX commands which are
 % processed in a special way by the translator.
 %  Mostly :
 %     - environment latexonly, not processed by htmlgen, processed by latex.
 %     - environment htmlonly , the reverse
-%      - environemnt htmlraw,  to include raw HTML in hevea output.
+%      - environment htmlraw,  to include raw HTML in hevea output.
 %
 \makeatletter%
 
@@ -148,13 +148,13 @@
 % Basic approach:
 % to comment something out, scoop up  every line in verbatim mode
 % as macro argument, then throw it away.
-% For inclusions, both the opening and closing comands
+% For inclusions, both the opening and closing commands
 % are defined as noop
 %
 % Changed \next to \html@next to prevent clashes with other sty files
 % (mike@emn.fr)
 % Changed \html@next to \htmlnext so the \makeatletter and
-% \makeatother commands could be removed (they were cuasing other
+% \makeatother commands could be removed (they were causing other
 % style files - changebar.sty - to crash) (nikos@cbl.leeds.ac.uk)
 
 

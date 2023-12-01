@@ -45,7 +45,7 @@ let maxthreads =
       low-bandwidth link it may be helpful to set it lower (e.g. \
       to 1) so that Unison doesn't soak up all the available bandwidth. \
       The default is the special value 0, which mean 20 threads \
-      when file content streaming is desactivated and 1000 threads \
+      when file content streaming is deactivated and 1000 threads \
       when it is activated.")
 
 let maxThreads () =

@@ -57,19 +57,23 @@ let stringSetFromList l =
 (*                    Debugging / error messages                             *)
 (*****************************************************************************)
 
-let infos = ref ""
+type infos = { s : string; clr : string }
+let infos = ref { s = ""; clr = "" }
 
 let clear_infos () =
-  if !infos <> "" then begin
+  if !infos.clr <> "" then begin
+    print_string !infos.clr;
+    flush stdout
+  end else if !infos.s <> "" then begin
     print_string "\r";
-    print_string (String.make (String.length !infos) ' ');
+    print_string (String.make (String.length !infos.s) ' ');
     print_string "\r";
     flush stdout
   end
 let show_infos () =
-  if !infos <> "" then begin print_string !infos; flush stdout end
-let set_infos s =
-  if s <> !infos then begin clear_infos (); infos := s; show_infos () end
+  if !infos.s <> "" then begin print_string !infos.s; flush stdout end
+let set_infos ?(clr = "") s =
+  if s <> !infos.s then begin clear_infos (); infos := {s; clr}; show_infos () end
 
 let msg f =
   clear_infos ();
@@ -286,18 +290,6 @@ let blockSignals sigs f =
     Printexc.raise_with_backtrace e origbt
 
 (*****************************************************************************)
-(*                         OS TYPE                                           *)
-(*****************************************************************************)
-
-let osType =
-  match Sys.os_type with
-    "Win32" | "Cygwin" -> `Win32
-  | "Unix"             -> `Unix
-  | other              -> raise (Fatal ("Unknown OS: " ^ other))
-
-let isCygwin = (Sys.os_type = "Cygwin")
-
-(*****************************************************************************)
 (*                      MISCELLANEOUS                                        *)
 (*****************************************************************************)
 
@@ -370,11 +362,47 @@ let option2string (prt: 'a -> string) = function
 (*                    String utility functions                               *)
 (*****************************************************************************)
 
-let truncateString string length =
-  let actualLength = String.length string in
-  if actualLength <= length then string^(String.make (length - actualLength) ' ')
-  else if actualLength < 3 then string
-  else (String.sub string 0 (length - 3))^ "..."
+let truncateString s count =
+  (* Truncate a string by counting code points instead of bytes. *)
+  let rec subValidUTF8 ?(extra = 0) s pos len =
+    (* Like [String.sub] but tries to keep the substring a valid UTF-8
+       string (it may not be meaningful in any way but the encoding is not
+       broken). Requires the input string to be valid UTF-8 to work
+       properly.
+       If the initial substring (like a simple [String.sub]) is not valid
+       UTF-8 then it tries to blindly extend (never reduce) the substring
+       until it becomes valid UTF-8. This is a very simple implementation
+       that works without knowing anything about the UTF-8 encoding. *)
+    let totl = String.length s in
+    if pos >= totl then
+      None
+    else if pos + len > totl then
+      Some (String.sub s pos (totl - pos))
+    else
+      let s' = String.sub s pos len in
+      if Unicode.check_utf_8 s' || extra > 5 then
+        Some s'
+      else
+        subValidUTF8 s pos (len + 1) ~extra:(extra + 1)
+  in
+  let rec extractCodepoints pos count s' s =
+    (* Somewhat like [String.sub] but instead of number of bytes, extracts
+       [count] number of code points from the string while [pos] is still
+       counted in bytes. *)
+    match subValidUTF8 s pos 1 with
+    | None -> s'
+    | Some s'' ->
+        if count > 1 then
+          extractCodepoints (pos + String.length s'') (count - 1) (s' ^ s'') s
+        else s' ^ s''
+  in
+  let s = Unicode.compose (Unicode.protect s) in
+  let s' = extractCodepoints 0 (count - 3) "" s in
+  let s'' = extractCodepoints (String.length s') 3 "" s in
+  if String.length s' + String.length s'' < String.length s then
+    s' ^ "..."
+  else
+    s' ^ s''
 
 let findsubstring ?reverse:(rev=false) s1 s2 =
   let l1 = String.length s1 in
@@ -492,9 +520,9 @@ let padto n s = s ^ (String.make (max 0 (n - String.length s)) ' ')
 (*****************************************************************************)
 
 let homeDir () =
-    (if (osType = `Unix) || isCygwin then
+    (if Sys.unix || Sys.cygwin then
        safeGetenv "HOME"
-     else if osType = `Win32 then
+     else if Sys.win32 then
 (*We don't want the behavior of Unison to depends on whether it is run
   from a Cygwin shell (where HOME is set) or in any other way (where
   HOME is usually not set)

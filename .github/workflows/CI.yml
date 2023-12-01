@@ -46,20 +46,14 @@ jobs:
       fail-fast: false
       matrix:
         job:
-        - { os: macos-12      , ocaml-version: 4.14.0 }
-        - { os: macos-10.15   , ocaml-version: 4.14.0           , publish: true }
-        - { os: ubuntu-22.04  , ocaml-version: 4.14.0 }
-        - { os: ubuntu-20.04  , ocaml-version: 4.14.0 }
-        - { os: ubuntu-18.04  , ocaml-version: 4.14.0           , publish: true }
-        - { os: ubuntu-18.04  , ocaml-version: "4.14.0+options,ocaml-option-musl,ocaml-option-static,ocaml-option-flambda"  , publish: true }
-        - { os: ubuntu-18.04  , ocaml-version: 4.13.1 }
-        - { os: ubuntu-18.04  , ocaml-version: 4.12.1 }
-        - { os: ubuntu-18.04  , ocaml-version: 4.11.2 }
-        - { os: ubuntu-18.04  , ocaml-version: 4.10.2 }
-        - { os: ubuntu-18.04  , ocaml-version: 4.09.1 }
-        - { os: ubuntu-18.04  , ocaml-version: 4.08.1           , publish: true }
-        - { os: windows-2022  , ocaml-version: 4.14.0+mingw64c  , publish: true }
-        - { os: windows-2019  , ocaml-version: 4.14.0+mingw32c  , publish: true }
+        - { os: macos-12      , ocaml-version: "5.1.0+options,ocaml-option-no-compression" }
+        - { os: macos-12      , ocaml-version: 4.14.1 }
+        - { os: macos-11      , ocaml-version: 4.14.1           , publish: true  , fnsuffix: -macos-x86_64 }
+        - { os: ubuntu-22.04  , ocaml-version: "5.1.0+options,ocaml-option-no-compression" }
+        - { os: ubuntu-22.04  , ocaml-version: 4.14.1 }
+        - { os: ubuntu-20.04  , ocaml-version: 4.14.1 }
+        - { os: windows-2022  , ocaml-version: 4.14.0+mingw64c  , publish: true  , fnsuffix: -windows-x86_64 }
+        - { os: windows-2019  , ocaml-version: 4.14.0+mingw32c  , publish: true  , fnsuffix: -windows-i386 }
 
     runs-on: ${{ matrix.job.os }}
 
@@ -95,9 +89,15 @@ jobs:
         EXE_suffix='' ; case '${{ matrix.job.os }}' in windows-*) EXE_suffix=".exe" ;; esac
         MinGW_ARCH='x86_64' ; case '${{ matrix.job.ocaml-version }}' in *+mingw32*) MinGW_ARCH='i686' ;; *+mingw64*) MinGW_ARCH='x86_64' ;; esac
         MSVC_ARCH='' ; case '${{ matrix.job.ocaml-version }}' in *+msvc32*) MSVC_ARCH='x86' ;; *+msvc64*) MSVC_ARCH='x64' ;; esac
-        STATIC='false' ; case '${{ matrix.job.ocaml-version }}' in *-musl*) STATIC='true' ;; esac
-        outputs EXE_suffix MinGW_ARCH MSVC_ARCH STATIC
-        case '${{ matrix.job.os }}' in macos-*) echo "MACOSX_DEPLOYMENT_TARGET=10.6" >> $GITHUB_ENV ;; esac
+        outputs EXE_suffix MinGW_ARCH MSVC_ARCH
+        case '${{ matrix.job.os }}','${{ matrix.job.ocaml-version }}' in
+          macos-*,4*) MACOSX_DEPLOYMENT_TARGET=10.6 ;; macos-*,5*) MACOSX_DEPLOYMENT_TARGET=10.7 ;;
+        esac
+        case '${{ matrix.job.os }}' in
+          macos-*) echo "MACOSX_DEPLOYMENT_TARGET=${MACOSX_DEPLOYMENT_TARGET}" >> $GITHUB_ENV ;
+                   echo "XCODEFLAGS=-arch $(uname -m) -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET} MACOSX_DEPLOYMENT_TARGET=${MACOSX_DEPLOYMENT_TARGET}" >> $GITHUB_ENV ;
+                   echo "CFLAGS=${CFLAGS} -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}" >> $GITHUB_ENV ;;
+        esac
         # staging environment
         STAGING_DIR='_staging'
         outputs STAGING_DIR
@@ -114,14 +114,12 @@ jobs:
         outputs DEPLOY
         # package name
         PKG_suffix='.tar.gz' ; case '${{ matrix.job.os }}' in windows-*) PKG_suffix='.zip' ;; esac;
-        PKG_OS='linux' ; case '${{ matrix.job.os }}' in macos-*) PKG_OS='${{ matrix.job.os }}' ;; windows-*) PKG_OS='windows' ;; esac;
-        PKG_STATIC='' ; case '${{ matrix.job.ocaml-version }}' in *-static*) PKG_STATIC='.static' ;; esac;
-        PKG_ARCH='x86_64' ; case '${{ matrix.job.ocaml-version }}' in *+32bit* | *+mingw32*) PKG_ARCH='i386' ;; esac;
-        PKG_VER="${REF_TAG:-$REF_SHAS}"
-        PKG_BASENAME="${PROJECT_NAME}-${PKG_VER}+ocaml-${OCAML_VARIANT//,ocaml-option-*/}+${PKG_ARCH}.${PKG_OS}${PKG_STATIC}"
+        PKG_VER="${REF_TAG:-git_$REF_SHAS}"
+        PKG_VER="${PKG_VER#v}"
+        PKG_BASENAME="${PROJECT_NAME}-${PKG_VER}${{ matrix.job.fnsuffix }}"
         PKG_NAME="${PKG_BASENAME}${PKG_suffix}"
         PKG_DIR="${STAGING_DIR}/${PKG_BASENAME}"
-        outputs PKG_VER PKG_BASENAME PKG_DIR PKG_NAME PKG_OS PKG_suffix
+        outputs PKG_VER PKG_BASENAME PKG_DIR PKG_NAME PKG_suffix
         COMPRESS_CMD='tar czf'; case '${{ matrix.job.os }}' in windows-*) COMPRESS_CMD='7z -y a' ;; esac;
         outputs COMPRESS_CMD
 
@@ -138,18 +136,6 @@ jobs:
       with:
         arch: "${{ steps.vars.outputs.MSVC_ARCH }}"
       if: contains(matrix.job.ocaml-version, '+msvc')
-
-    - name: "Windows: Cygwin setup"
-      if: runner.os == 'Windows'
-      run: Invoke-WebRequest 'https://cygwin.com/setup-x86_64.exe' -OutFile 'setup-x86_64.exe'
-
-    # [2022-05] Cygwin mingw64 binutils 2.38 produces invalid GUI binaries.
-    # Pin binutils to version 2.37 as a workaround.
-    - name: "Windows: mingw64 binutils workaround hack"
-      if: runner.os == 'Windows'
-      # The setup does not complete properly in powershell for some reason
-      shell: cmd
-      run: .\setup-x86_64.exe --quiet-mode --root D:\cygwin --site http://cygwin.mirror.constant.com --symlink-type=sys --packages mingw64-i686-binutils=2.37-2,mingw64-x86_64-binutils=2.37-2
 
     - name: Use OCaml ${{ matrix.job.ocaml-version }}
       uses: ocaml/setup-ocaml@v2
@@ -175,8 +161,11 @@ jobs:
         echo SHELLOPTS=igncr>> %GITHUB_ENV%
 
     - shell: bash
+      env:
+        LDFLAGS: ${{ matrix.job.static }}
       run: |
-        opam exec -- make src OSTYPE=$OSTYPE UISTYLE=text STATIC=${{ steps.vars.outputs.STATIC }}
+        opam exec -- make tui
+        opam exec -- make fsmonitor
         # stage
         # * notes: darwin/macos doesn't build `unison-fsmonitor`
         for file in ${PROJECT_EXES} ; do
@@ -222,33 +211,53 @@ jobs:
       run: |
         opam install opam-depext depext-cygwinports
         setup-x86_64.exe --quiet-mode --root "${CYGWIN_ROOT}" --site http://cygwin.mirror.constant.com --symlink-type=sys --packages hicolor-icon-theme,adwaita-icon-theme
+        # [2022-11] This terrible (terrible) hack is here to forcibly skip
+        # building the fontconfig cache because it can take 30-45 minutes
+        # on GHA runners and is never needed anyway.
+        setup-x86_64.exe --quiet-mode --root "${CYGWIN_ROOT}" --site http://cygwin.mirror.constant.com --symlink-type=sys --local-package-dir D:/a --download --packages mingw64-${{ steps.vars.outputs.MinGW_ARCH }}-fontconfig
+        cd 'D:/a/https%3a%2f%2fcygwin.mirror.constant.com%2f/noarch/release/'mingw64-${{ steps.vars.outputs.MinGW_ARCH }}-fontconfig
+        CNAMEXZ=$(ls mingw64-${{ steps.vars.outputs.MinGW_ARCH }}-fontconfig*.tar.xz)
+        CNAME=${CNAMEXZ%.xz}
+        unxz ${CNAMEXZ}
+        tar --delete --file ${CNAME} etc/postinstall/zp_mingw64-${{ steps.vars.outputs.MinGW_ARCH }}-fontconfig_cache.sh
+        xz ${CNAME}
+        sha512sum > sha512.sum
+        CSZ=$(stat -c %s ${CNAMEXZ})
+        SHASUM=$(sha512sum ${CNAMEXZ})
+        cd 'D:/a/https%3a%2f%2fcygwin.mirror.constant.com%2f/x86_64'
+        mv setup.ini tsetup.ini
+        rm -f setup*
+        sed -E -e "\|install: noarch/release/mingw64-${{ steps.vars.outputs.MinGW_ARCH }}-fontconfig/${CNAMEXZ}|s/xz .+/xz ${CSZ} ${SHASUM%% *}/" tsetup.ini > setup.ini
+        rm tsetup.ini
+        sha512sum > sha512.sum
+        setup-x86_64.exe --quiet-mode --root "${CYGWIN_ROOT}" --symlink-type=sys --local-install --local-package-dir 'D:/a/https%3a%2f%2fcygwin.mirror.constant.com%2f' --mirror-mode --no-verify --packages mingw64-${{ steps.vars.outputs.MinGW_ARCH }}-fontconfig
 
     - name: lablgtk install
       ## [2020-09] non-working/unavailable for MSVC or musl OCaml variants ; also, non-working for 32bit OCaml variant (see [GH:garrigue/lablgtk#64](https://github.com/garrigue/lablgtk/issues/64))
       if: ${{ ! ( contains(matrix.job.ocaml-version, '+msvc') || contains(matrix.job.ocaml-version, '-musl') || contains(matrix.job.ocaml-version, '-32bit') ) }}
       run: opam depext --install --verbose --yes lablgtk3 && opam install ocamlfind
 
-    - if: steps.vars.outputs.STATIC != 'true' ## unable to build static gtk/gui
+    - if: ${{ !matrix.job.static }} ## unable to build static gtk/gui
       shell: bash
       run: |
-        opam exec -- make src OSTYPE=$OSTYPE UISTYLE=gtk3 STATIC=${{ steps.vars.outputs.STATIC }}
+        opam exec -- make gui
         # stage
         # * copy only main/first project binary
         project_exe_stem=${PROJECT_EXES%% *}
-        cp "src/${project_exe_stem}${{ steps.vars.outputs.EXE_suffix }}" "${{ steps.vars.outputs.PKG_DIR }}/bin/${project_exe_stem}-gui${{ steps.vars.outputs.EXE_suffix }}"
+        cp "src/${project_exe_stem}-gui${{ steps.vars.outputs.EXE_suffix }}" "${{ steps.vars.outputs.PKG_DIR }}/bin/"
 
     - name: "Build WinOS text+gui hybrid"
-      if: runner.os == 'Windows' && steps.vars.outputs.STATIC != 'true' ## WinOS, non-static (unable to build static gtk/gui)
+      if: ${{ runner.os == 'Windows' && !matrix.job.static }} ## WinOS, non-static (unable to build static gtk/gui)
       shell: bash
       run: |
         # create and stage text+gui hybrid for Windows
         # * copy only main/first project binary
         project_exe_stem=${PROJECT_EXES%% *}
         # * clean/remove build artifact(s)
-        rm "src/${project_exe_stem}${{ steps.vars.outputs.EXE_suffix }}" ##.or.# opam exec -- make -C src clean #.or.# opam exec -- make clean
+        rm "src/${project_exe_stem}-gui${{ steps.vars.outputs.EXE_suffix }}" ##.or.# opam exec -- make -C src clean #.or.# opam exec -- make clean
         # * re-create (with hybrid text+gui UI)
-        opam exec -- make src OSTYPE=$OSTYPE UISTYLE=gtk3 UI_WINOS=hybrid STATIC=${{ steps.vars.outputs.STATIC }}
-        cp "src/${project_exe_stem}${{ steps.vars.outputs.EXE_suffix }}" "${{ steps.vars.outputs.PKG_DIR }}/bin/${project_exe_stem}-text+gui${{ steps.vars.outputs.EXE_suffix }}"
+        opam exec -- make gui UI_WINOS=hybrid
+        cp "src/${project_exe_stem}-gui${{ steps.vars.outputs.EXE_suffix }}" "${{ steps.vars.outputs.PKG_DIR }}/bin/${project_exe_stem}-text+gui${{ steps.vars.outputs.EXE_suffix }}"
 
     - uses: actions/upload-artifact@v3
       with:
@@ -278,6 +287,12 @@ jobs:
       name: "Windows: Package gtk"
       shell: bash
       run: |
+        # [2023-03] Setting this PATH here (and it has to be right here) is
+        # a workaround for an unknown issue (most likely something with GHA)
+        # causing MinGW binutils not to be found (while other binutils
+        # pre-installed in the GHA images may be found instead), which in turn
+        # causes the DLL extracting functions to silently fail.
+        export PATH="/usr/${{ steps.vars.outputs.MinGW_ARCH }}-w64-mingw32/bin":${PATH}
         ## package artifact(s)
         PKG_DIR='${{ steps.vars.outputs.PKG_DIR }}'
         # collect any needed dlls/libraries
@@ -311,6 +326,7 @@ jobs:
       run: cd '${{ steps.vars.outputs.PKG_DIR }}/' && ${{ steps.vars.outputs.COMPRESS_CMD }} '../${{ steps.vars.outputs.PKG_NAME }}' *
 
     - uses: actions/upload-artifact@v3
+      if: matrix.job.publish
       with:
         name: unison-${{ steps.vars.outputs.REF_SHAS }}.ocaml-${{ matrix.job.ocaml-version }}.${{ matrix.job.os }}-publish
         path: ${{ steps.vars.outputs.STAGING_DIR }}/${{ steps.vars.outputs.PKG_NAME }}
@@ -328,10 +344,10 @@ jobs:
       name: "macOS: Build and package Unison.app"
       id: macapp
       run: |
-        opam exec -- make src UISTYLE=mac
+        opam exec -- make macui
 
         # package
-        APP_NAME=Unison-${{ steps.vars.outputs.PKG_VER }}.ocaml-${{ matrix.job.ocaml-version }}.${{ matrix.job.os }}.app.tar.gz
+        APP_NAME=Unison-${{ steps.vars.outputs.PKG_VER }}-macos.app.tar.gz
         echo APP_NAME=${APP_NAME} >> $GITHUB_OUTPUT
 
         tar czf ${APP_NAME} -C src/uimac/build/Default Unison.app
@@ -361,6 +377,7 @@ jobs:
         # This list is intended to balance good enough coverage and
         # limited resource usage.
         job:
+        - { os: ubuntu-22.04  , ocaml-version: 5.1.x   , ref: v2.53.0 }
         - { os: ubuntu-22.04  , ocaml-version: 4.14.x  , ref: v2.53.0 }
         - { os: ubuntu-22.04  , ocaml-version: 4.14.x  , ref: v2.52.1 }
         - { os: ubuntu-22.04  , ocaml-version: 4.14.x  , ref: v2.51.5 }
@@ -417,9 +434,9 @@ jobs:
         index 60ccd05..45395e5 100644
         --- a/src/test.ml
         +++ b/src/test.ml
-        @@ -338,43 +338,6 @@ let test() =
-              running fast enough that the whole thing happens within a second, then the
-              update will be missed! *)
+        @@ -351,43 +351,6 @@ let test() =
+             )
+           done;
          
         -  (* Test that .git is treated atomically. *)
         -  runtest "Atomicity of certain directories 1" ["atomic = Name .git";
@@ -463,7 +480,7 @@ jobs:
              runtest "backups 1 (remote)" ["backup = Name *"] (fun() ->
         EOF
 
-    - run: cd _new && opam exec -- make src UISTYLE=text OSTYPE=$OSTYPE
+    - run: cd _new && opam exec -- make tui
       shell: bash
 
     - name: Checkout ${{ matrix.job.ref }} to _prev
@@ -1086,6 +1103,122 @@ jobs:
         opam-pin: false
         opam-depext: false
 
-    - run: opam exec -- make src UISTYLE=text NATIVE=false
+    - run: opam exec -- make tui NATIVE=false
 
     - run: opam exec -- make test
+
+
+  build_compat:
+    if: ${{ !cancelled() }}    # Don't fail if 'docs' failed
+    needs: docs
+
+    strategy:
+      fail-fast: false
+      matrix:
+        job:
+        - { ocaml-version: 4.14.x, publish: true, fnsuffix: -ubuntu-x86_64 }
+        - { ocaml-version: "ocaml-variants.4.14.1+options,ocaml-option-musl,ocaml-option-static,ocaml-option-flambda", publish: true, fnsuffix: -ubuntu-x86_64-static, static: -static }
+        - { ocaml-version: 4.13.x }
+        - { ocaml-version: 4.12.x }
+        - { ocaml-version: 4.11.x }
+        - { ocaml-version: 4.10.x }
+        - { ocaml-version: 4.09.x }
+        - { ocaml-version: 4.08.x, publish: true, fnsuffix: +ocaml4.08-ubuntu-x86_64 }
+
+    runs-on: ubuntu-latest
+    container: ubuntu:16.04
+
+    steps:
+    - name: Set up the OS
+      run: |
+        apt-get update
+        apt-get install --assume-yes git make gcc patch wget bzip2 unzip musl-tools
+
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Use OCaml ${{ matrix.job.ocaml-version }}
+      uses: ocaml/setup-ocaml@v2.0.19
+      with:
+        ocaml-compiler: ${{ matrix.job.ocaml-version }}
+        opam-disable-sandboxing: true
+        opam-pin: false
+        opam-depext: false
+
+    - name: Build text UI
+      env:
+        LDFLAGS: ${{ matrix.job.static }}
+      run: |
+        opam exec -- make
+        mkdir -p pkg/bin
+        cp src/unison pkg/bin/
+        cp src/unison-fsmonitor pkg/bin/
+
+    - name: Run local tests
+      run: opam exec -- make test
+
+    - name: Run remote tests
+      run: |
+        mkdir localsocket
+        chmod 700 localsocket
+        # Separate backup dir must be set for server instance so that the central
+        # backup location of both instances doesn't overlap
+        UNISONBACKUPDIR=./src/testbak4 ./src/unison -socket ./localsocket/test.sock &
+        sleep 1 # Wait for the server to be fully started
+        test -S ./localsocket/test.sock
+        ./src/unison -ui text -selftest testr3 socket://{./localsocket/test.sock}/testr4 -killserver
+
+    - name: Build GUI
+      if: ${{ !contains(matrix.job.ocaml-version, '-musl') }}
+      run: |
+        opam depext --install --verbose --yes lablgtk3 && opam install ocamlfind
+        opam exec -- make gui
+        cp src/unison-gui pkg/bin/
+
+    - name: Initialize packaging variables
+      id: vars
+      run: |
+        REF_SHAS=$(echo '${{ github.sha }}' | awk '{ print substr($0, 1, 8) }')
+        unset REF_TAG ; case "${GITHUB_REF}" in refs/tags/*) REF_TAG="${GITHUB_REF#refs/tags/}" ;; esac;
+        PKG_VER="${REF_TAG:-git_$REF_SHAS}"
+        PKG_VER="${PKG_VER#v}"
+        echo PKG_NAME="${PROJECT_NAME}-${PKG_VER}${{ matrix.job.fnsuffix }}.tar.gz" >> $GITHUB_OUTPUT
+        echo REF_SHAS=${REF_SHAS} >> $GITHUB_OUTPUT
+
+    - uses: actions/upload-artifact@v3
+      with:
+        name: unison-${{ steps.vars.outputs.REF_SHAS }}.ocaml-${{ matrix.job.ocaml-version }}.ubuntu.x86_64
+        path: pkg/bin/*
+
+    - name: Copy user manual
+      if: matrix.job.publish
+      continue-on-error: ${{ !(github.ref_type == 'tag' && startsWith(github.ref_name, 'v') && matrix.job.publish) }}
+      uses: actions/download-artifact@v3
+      with:
+        name: unison-docs
+        path: pkg
+
+    - name: Prepare package
+      if: matrix.job.publish
+      run: |
+        strip pkg/bin/*
+        cp README* pkg/
+        cp LICENSE* pkg/
+
+    - name: Package
+      if: matrix.job.publish
+      run: cd pkg && tar czf '${{ steps.vars.outputs.PKG_NAME }}' *
+
+    - uses: actions/upload-artifact@v3
+      if: matrix.job.publish
+      with:
+        name: ${{ steps.vars.outputs.PKG_NAME }}.ocaml-${{ matrix.job.ocaml-version }}.ubuntu_compat-publish
+        path: pkg/${{ steps.vars.outputs.PKG_NAME }}
+
+    - name: Publish
+      if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v') && matrix.job.publish
+      uses: softprops/action-gh-release@v1
+      with:
+        files: pkg/${{ steps.vars.outputs.PKG_NAME }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

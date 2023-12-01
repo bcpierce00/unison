@@ -236,7 +236,7 @@ let archiveHash fspath =
   let thisRoot = thisRootsGlobalName fspath in
   let r = Prefs.read rootsName in
   let n = Printf.sprintf "%s;%s;%d" thisRoot r archiveFormat in
-  let d = Fingerprint.toString (Fingerprint.string n) in
+  let d = Digest.to_hex (Digest.string n) in
   debugverbose (fun()-> Util.msg "Archive name is %s; hashcode is %s\n" n d);
   if Prefs.read showArchiveName then
     Util.msg "Archive name is %s; hashcode is %s\n" n d;
@@ -275,14 +275,14 @@ let archiveName251 fspath (v: archiveVersion): string * string =
        On windows systems, filenames longer than 8 bytes can cause problems, so
        we chop off all but the first 6 from the fingerprint. *)
     let significantDigits =
-      match Util.osType with
-        `Win32 -> 6
-      | `Unix -> 32
+      match Sys.unix with
+      | false -> 6
+      | true  -> 32
     in
     let thisRoot = thisRootsGlobalName fspath in
     let r = Prefs.read rootsName in
     let n = Printf.sprintf "%s;%s;22" thisRoot r in
-    let d = Fingerprint.toString (Fingerprint.string n) in
+    let d = Digest.to_hex (Digest.string n) in
     (String.sub d 0 significantDigits)
   in
   let n = archiveHash251 fspath in
@@ -594,7 +594,7 @@ let storeArchiveLocal fspath thisRoot archive hash magic properties =
    It can be removed when this compatibility is no longer required. *)
 let loadedCompatArchive = ref []
 
-(* Remove the archieve under the root path [fspath] with archiveVersion [v] *)
+(* Remove the archive under the root path [fspath] with archiveVersion [v] *)
 let removeArchiveLocal ((fspath: Fspath.t), (v: archiveVersion)): unit Lwt.t =
   let f' name = Lwt.return (
      let fspath = Util.fileInUnisonDir name in
@@ -678,7 +678,9 @@ let postCommitArchiveLocal (fspath,())
            try f () with e -> close_out_noerr outFd; raise e
          in
          close_on_error (fun () ->
-         System.chmod fto 0o600; (* In case the file already existed *)
+         begin try
+           System.chmod fto 0o600 (* In case the file already existed *)
+         with Unix.Unix_error _ -> () end;
          let inFd = System.open_in_bin ffrom in
          let close_on_error f =
            try f () with e -> close_in_noerr inFd; raise e
@@ -1297,9 +1299,6 @@ let doArchiveCrashRecovery () =
      ^ "between synchronizations.  See the documentation for the UNISONLOCALHOSTNAME\n"
      ^ "environment variable for advice on how to correct this.\n"
      ^ "\n"
-     ^ "Donations to the Unison project are gratefully accepted: \n"
-     ^ "http://www.cis.upenn.edu/~bcpierce/unison\n"
-     ^ "\n"
      (* ^ "\nThe expected archive names were:\n" ^ expectedNames *) );
     Lwt.return ()
   end))
@@ -1499,7 +1498,7 @@ let fastcheck =
 
 let useFastChecking () =
       Prefs.read fastcheck = `True
-   || (Prefs.read fastcheck = `Default (*&& Util.osType = `Unix*))
+   || (Prefs.read fastcheck = `Default (*&& Sys.unix*))
 
 let immutable = Pred.create "immutable"
   ~category:(`Advanced `Sync)
@@ -1606,7 +1605,7 @@ let rec noChildChange childUpdates =
 (* Check whether the directory contents is different from what is in
    the archive *)
 let directoryCheckContentUnchanged
-      currfspath path info propsChanged archDesc childUpdates scanInfo =
+      currfspath path info archDesc childUpdates scanInfo =
   if
     noChildChange childUpdates
       &&
@@ -1622,19 +1621,7 @@ let directoryCheckContentUnchanged
       debugverbose (fun()->
         Util.msg "Contents of directory %s marked unchanged\n"
           (Fspath.toDebugString (Fspath.concat currfspath path)));
-    (* Only update the times in archive if there is nothing to propagate for
-       the dir itself. Otherwise, if propagation fails and times in archive
-       are updated anyway then the changes that failed to propagate may be
-       missed at the next scan. If there is something to propagate then all
-       archive changes must go through propagation. With the exception of
-       dirChangeFlag, which is safe to update without upating mtime. *)
-    if propsChanged then
-      (archDesc, updated)
-    else
-      let updated =
-        updated || not (Props.same_time info.Fileinfo.desc archDesc)
-          || not (Props.same_ctime info.desc archDesc) in
-      (Props.setTime archDesc info.Fileinfo.desc, updated)
+    (archDesc, updated)
   end else begin
     let (archDesc, updated) =
       Props.setDirChangeFlag archDesc Props.changedDirStamp 0 in
@@ -1702,6 +1689,13 @@ let checkContentsChange
              (Uutil.Filesize.toString (Props.length archDesc))
              (Uutil.Filesize.toString  (Props.length info.Fileinfo.desc));
            Util.msg "\n");
+  let resetCTimeAtRescan () =
+    if not scanInfo.rescanProps || Props.same_ctime archDesc Props.dummy then
+      None
+    else (* Props changed when props rescan was requested: reset ctime *)
+      let newprops = Props.resetCTime archDesc Props.dummy in
+      Some (ArchiveFile (newprops, archFp, archStamp, archRess))
+  in
   let fastCheck = scanInfo.fastCheck in
   let dataClearlyUnchanged =
     Fpcache.dataClearlyUnchanged fastCheck path info archDesc archStamp in
@@ -1712,13 +1706,16 @@ let checkContentsChange
     Xferhint.insertEntry currfspath path archFp;
     let propsUpdates = checkPropChange info.Fileinfo.desc archive archDesc in
     let propsChanged = propsUpdates <> NoUpdates in
-    (* Only update the archive if there is nothing to propagate. Otherwise,
-       if propagation fails and times in archive are updated anyway then the
+    (* ctime in the archive is updated under two conditions only: if there is
+       nothing to propagate, or props changed while a props rescan was
+       requested (in this case the ctime is reset to force a rescan every time
+       until the sync is completed). Otherwise, if propagation fails (or the
+       user skips this file) and times in archive are updated anyway then the
        changes that failed to propagate may be missed at the next scan. *)
     let optArch =
-      if propsChanged || Props.same_ctime info.Fileinfo.desc archDesc then
-        None
-      else
+      if propsChanged then resetCTimeAtRescan ()
+      else if Props.same_ctime info.Fileinfo.desc archDesc then None
+      else (* Nothing, other than ctime, changed: update ctime in archive *)
         let newprops = Props.setTime archDesc info.Fileinfo.desc in
         Some (ArchiveFile (newprops, archFp, archStamp, archRess))
     in
@@ -1736,11 +1733,12 @@ let checkContentsChange
     if archFp = newFp then begin
       let propsUpdates = checkPropChange newDesc archive archDesc in
       let propsChanged = propsUpdates <> NoUpdates in
-      (* Only update the archive if there is nothing to propagate. Otherwise,
+      (* Only update the archive if there is nothing to propagate (with one
+         exception, see the comment about resetting ctime above). Otherwise,
          if propagation fails and times in archive are updated anyway then the
          changes that failed to propagate may be missed at the next scan. *)
       begin if propsChanged then
-        None
+        resetCTimeAtRescan ()
       else
       let newprops = Props.setTime archDesc newDesc in
       let newarch = ArchiveFile (newprops, archFp, newStamp, newRess) in
@@ -2047,9 +2045,31 @@ and buildUpdateRec archive currfspath path scanInfo =
              (These are files or directories which used not to be
              ignored and are now ignored.) *)
           if hasIgnoredChildren then (archDesc, true) else
-          let propsChanged = permchange <> PropsSame in
           directoryCheckContentUnchanged
-            currfspath path info propsChanged archDesc childUpdates scanInfo in
+            currfspath path info archDesc childUpdates scanInfo in
+        let (archDesc, updated) =
+          (* Only update the times in archive if there is nothing to propagate
+             for the dir itself (with the exception of ctime). ctime in the
+             archive must be updated if props changed while a props rescan was
+             requested (in this case the ctime is reset to force a rescan every
+             time until the sync is completed). Otherwise, if propagation fails
+             and times in archive are updated anyway then the changes that
+             failed to propagate may be missed at the next scan. If there is
+             something to propagate then all archive changes must go through
+             propagation. With the exception of dirChangeFlag, which is safe to
+             update without updating mtime. *)
+          if permchange <> PropsSame then begin
+            if not scanInfo.rescanProps || Props.same_ctime archDesc Props.dummy then
+              (archDesc, updated)
+            else (* Props changed when props rescan was requested: reset ctime *)
+              (Props.resetCTime archDesc Props.dummy, true)
+          end else begin
+            let updated =
+              updated || not (Props.same_time info.Fileinfo.desc archDesc)
+                || not (Props.same_ctime info.desc archDesc) in
+            (Props.setTime archDesc info.Fileinfo.desc, updated)
+          end
+        in
         (begin match newChildren with
            Some ch ->
              Some (ArchiveDir (archDesc, ch))
@@ -2284,8 +2304,7 @@ let predKey : (string * string list) list Proplist.key =
   Proplist.register "update predicates" Umarshal.(list (prod2 string (list string) id id))
 let rsrcKey : bool Proplist.key = Proplist.register "rsrc pref" Umarshal.bool
 
-let checkNoUpdatePredicateChange thisRoot rescanProps =
-  let props = getArchiveProps thisRoot in
+let updatePredicateChanged props setProps =
   let oldPreds = try Proplist.find predKey props with Not_found -> [] in
   let newPreds =
     Safelist.map (fun (nm, p) -> (nm, Pred.extern p)) updatePredicates in
@@ -2300,17 +2319,13 @@ Format.eprintf "==> %b@." (oldPreds = newPreds);
   let oldRsrc =
     try Some (Proplist.find rsrcKey props) with Not_found -> None in
   let newRsrc = Prefs.read Osx.rsrc in
-  try
-    if oldPreds <> newPreds || oldRsrc <> Some newRsrc || rescanProps then
-      raise Not_found;
-    Proplist.find dirStampKey props
-  with Not_found ->
-    let stamp = Props.freshDirStamp () in
-    setArchivePropsLocal thisRoot
-      (Proplist.add dirStampKey stamp
-         (Proplist.add predKey newPreds
-            (Proplist.add rsrcKey newRsrc props)));
-    stamp
+  if oldPreds <> newPreds || oldRsrc <> Some newRsrc then begin
+    setProps
+      (Proplist.add predKey newPreds
+         (Proplist.add rsrcKey newRsrc props));
+    true
+  end else
+    false
 
 (* All the predicates that may change the set of props scanned during
    update detection *)
@@ -2324,8 +2339,7 @@ let pred2Key : (string * string list) list Proplist.key =
 let xattrsKey : bool Proplist.key = Proplist.register "xattrs pref" Umarshal.bool
 let aclKey : bool Proplist.key = Proplist.register "acl pref" Umarshal.bool
 
-let mustRescanProps thisRoot =
-  let props = getArchiveProps thisRoot in
+let mustRescanProps props setProps =
   let oldPreds = try Proplist.find pred2Key props with Not_found -> [] in
   let newPreds =
     Safelist.filterMap (fun (nm, p, c) ->
@@ -2352,9 +2366,139 @@ let mustRescanProps thisRoot =
     let props =
       if newPreds <> [] then Proplist.add pred2Key newPreds props
       else props in
-    let () = setArchivePropsLocal thisRoot props in
+    let () = setProps props in
     newXattrs = Some true || newACL = Some true
   end
+
+module PathMap = MyMap.Make (Path)
+
+let propPathKey : Proplist.t PathMap.t Proplist.key =
+  Proplist.register "paths" (PathMap.m Proplist.m)
+
+let getArchivePropsForPath thisRoot path =
+  let props = getArchiveProps thisRoot in
+  try
+    PathMap.find path (Proplist.find propPathKey props)
+  with Not_found -> Proplist.empty
+
+let mapPropPaths f props =
+  let propPaths = try Proplist.find propPathKey props with Not_found -> PathMap.empty in
+  Proplist.add propPathKey (f propPaths) props
+
+let setArchivePropsForPath thisRoot path pathProps =
+  mapPropPaths (PathMap.add path pathProps) (getArchiveProps thisRoot)
+  |> setArchivePropsLocal thisRoot
+
+let purgeArchivePropsOverriddenChildren thisRoot paths =
+  let f propPaths =
+    let clearChildren propPaths path =
+      let rec isParent p c =
+        match Path.deconstruct p, Path.deconstruct c with
+        | None, Some _ -> true
+        | Some (p, px), Some (c, cx) -> Name.compare p c = 0 && isParent px cx
+        | _ -> false
+      in
+      let overrideChildren k v acc =
+        (* If a child path is not ignored within a parent path then the properties
+           specific to this child must be removed to avoid any conflicts between
+           child and parent properties. Otherwise, the files under the child path
+           could be synced with overlapping properties (once within the parent,
+           once within the child path), which makes detecting predicate changes
+           difficult. *)
+        if not (isParent path k) then
+          PathMap.add k v acc
+        else if Globals.shouldIgnore k then
+          PathMap.add k v acc
+        else
+          acc
+      in
+      PathMap.fold overrideChildren propPaths PathMap.empty
+    in
+    Safelist.fold_left clearChildren propPaths paths
+  in
+  mapPropPaths f (getArchiveProps thisRoot)
+  |> setArchivePropsLocal thisRoot
+
+(* Purge archive properties for paths that are no longer present
+   in the archive. *)
+let purgePropsForPaths archive props =
+  let f propPaths =
+    let keepExisting k v acc =
+      match getPathInArchive archive Path.empty k with
+      | (_, NoArchive) -> acc
+      | _ -> PathMap.add k v acc
+    in
+    PathMap.fold keepExisting propPaths PathMap.empty
+  in
+  mapPropPaths f props
+
+(* Remove old-style props used by versions <= 2.53.3 as they will be recorded
+   in the per-path format. *)
+let clearOldStyleProps props =
+  props
+  |> Proplist.remove predKey
+  |> Proplist.remove rsrcKey
+  |> Proplist.remove pred2Key
+  |> Proplist.remove xattrsKey
+  |> Proplist.remove aclKey
+
+(* Extract props to be converted to the per-path format from old-style props
+   used by versions <= 2.53.3 *)
+let extractOldStyleProps props =
+  let maybeGet k m =
+    try Proplist.add k (Proplist.find k props) m with Not_found -> m
+  in
+  Proplist.empty
+  |> maybeGet predKey
+  |> maybeGet rsrcKey
+  |> maybeGet pred2Key
+  |> maybeGet xattrsKey
+  |> maybeGet aclKey
+
+let checkNoUpdatePredicateChange thisRoot paths =
+  (* Default to old style (<= 2.53.3) and then the new style, per path *)
+  let oldprops = getArchiveProps thisRoot in
+  setArchivePropsLocal thisRoot (clearOldStyleProps oldprops);
+  let getPropsForPath path =
+    let pprops = getArchivePropsForPath thisRoot path in
+    if pprops <> Proplist.empty then pprops
+    else
+      let newprops = extractOldStyleProps oldprops in
+      let () = setArchivePropsForPath thisRoot path newprops in
+      newprops
+  in
+  let rescanProps = Safelist.fold_left (fun acc path ->
+      mustRescanProps (getPropsForPath path)
+        (fun props -> setArchivePropsForPath thisRoot path props) || acc)
+    false paths
+  in
+  let predsChanged = Safelist.fold_left (fun acc path ->
+      updatePredicateChanged (getPropsForPath path)
+        (fun props -> setArchivePropsForPath thisRoot path props) || acc)
+    false paths
+  in
+  purgeArchivePropsOverriddenChildren thisRoot paths;
+  debug (fun () ->
+    Util.msg "Optim: rescan ext props = %b; rescan dir entries \
+      (dir stamp changed) = %b\n" rescanProps predsChanged);
+  (* If the list of scanned files changes then must also force rescan of all
+     file properties because previously ignored files may already be in the
+     archive (for example, some were synced before being ignored). *)
+  let rescanProps = rescanProps || predsChanged in
+  let dirStamp =
+    try
+      if predsChanged || rescanProps then raise_notrace Not_found;
+      Proplist.find dirStampKey (getArchiveProps thisRoot)
+    with Not_found ->
+      let stamp = Props.freshDirStamp () in
+      (* dirStampKey is intentionally kept as global property (while not
+         strictly correct) because managing it per path is too difficult
+         and fragile. *)
+      setArchivePropsLocal thisRoot
+        (Proplist.add dirStampKey stamp (getArchiveProps thisRoot));
+      stamp
+  in
+  (rescanProps, dirStamp)
 
 (* This contains the list of synchronized paths and the directory stamps
    used by the previous update detection, when a watcher process is used.
@@ -2379,8 +2523,7 @@ let findLocal wantWatcher fspath pathList subpaths :
      deleted.  --BCP 2006 *)
   let (arcName,thisRoot) = archiveName fspath MainArch in
   let archive = getArchive thisRoot in
-  let rescanProps = mustRescanProps thisRoot in
-  let dirStamp = checkNoUpdatePredicateChange thisRoot rescanProps in
+  let (rescanProps, dirStamp) = checkNoUpdatePredicateChange thisRoot pathList in
 (*
 let t1 = Unix.gettimeofday () in
 *)
@@ -2389,7 +2532,7 @@ let t1 = Unix.gettimeofday () in
       (* Directory optimization is disabled under Windows,
          as Windows does not update directory modification times
          on FAT filesystems. *)
-      dirFastCheck = useFastChecking () && Util.osType = `Unix;
+      dirFastCheck = useFastChecking () && Sys.unix;
       dirStamp; rescanProps; archHash = archiveHash fspath;
       showStatus = not !Trace.runningasserver }
   in
@@ -2405,7 +2548,8 @@ let t1 = Unix.gettimeofday () in
   in
   let paths =
     match subpaths with
-      Some (unsynchronizedPaths, blacklistedPaths) when unchangedOptions ->
+      Some (unsynchronizedPaths, blacklistedPaths) when unchangedOptions
+          && Fswatchold.running scanInfo.archHash ->
         let (>>) x f = f x in
         let paths =
           Fswatchold.getChanges scanInfo.archHash
@@ -2595,6 +2739,7 @@ let prepareCommitLocal compatMode (fspath, magic) =
     if not compatMode then checkArchive true [] archive 0
     else checkArchive251 true [] (to_compat251 archive) 0 in
   let props = getArchiveProps root in
+  let props = purgePropsForPaths archive props in
   let props = externArchivePropsdata archive props in
   storeArchiveLocal
     (Util.fileInUnisonDir newName) root archive archiveHash magic props;

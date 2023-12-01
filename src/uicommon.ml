@@ -103,7 +103,31 @@ let contactingServerMsg () =
   Printf.sprintf "Unison %s: Contacting server..." Uutil.myVersion 
 
 let repeat =
-  Prefs.createString "repeat" ""
+  let parseRepeat s =
+    let parseTime ts =
+      try int_of_string ts with Failure _ ->
+        raise (Prefs.IllegalValue ("Value of 'repeat' preference ("
+          ^ s ^ ") should be either a number, 'watch' or 'watch+<number>'"))
+    in
+    let nonBlankLower x =
+      match String.trim x with "" -> None | s -> Some (String.lowercase_ascii s)
+    in
+    try
+      match Safelist.filterMap nonBlankLower (String.split_on_char '+' s) with
+      | [] -> `NoRepeat
+      | ["watch"] -> `Watch
+      | ["watch"; i] | [i; "watch"] -> `WatchAndInterval (parseTime i)
+      | _ -> `Interval (parseTime s)
+    with
+    | Prefs.IllegalValue _ as e -> `Invalid (s, e)
+  in
+  let externRepeat = function
+    | `NoRepeat | `Invalid _ -> ""
+    | `Watch -> "watch"
+    | `WatchAndInterval i -> "watch+" ^ (string_of_int i)
+    | `Interval i -> string_of_int i
+  in
+  Prefs.create "repeat" `NoRepeat
     ~category:(`Advanced `Syncprocess_CLI)
     "synchronize repeatedly (text interface only)"
     ("Setting this preference causes the text-mode interface to synchronize "
@@ -111,8 +135,15 @@ let repeat =
      ^ "argument is a number, Unison will pause for that many seconds before "
      ^ "beginning again. When the argument is \\verb|watch|, Unison relies on "
      ^ "an external file monitoring process to synchronize whenever a change "
-     ^ "happens.")
-let repeatWatcher () = Prefs.read repeat = "watch"
+     ^ "happens.  You can combine the two with a \\verb|+| character to use "
+     ^ "file monitoring and also do a full scan every specificed number of "
+     ^ "seconds.  For example, \\verb|watch+3600| will react to changes "
+     ^ "immediately and additionally do a full scan every hour.")
+    (fun _ -> parseRepeat)
+    (fun r -> [externRepeat r])
+    Umarshal.(sum1 string externRepeat parseRepeat)
+let repeatWatcher () =
+  match Prefs.read repeat with `Watch | `WatchAndInterval _ -> true | _ -> false
 
 let retry =
   Prefs.createInt "retry" 0
@@ -257,7 +288,7 @@ let details2string theRi sep =
   | Different {rc1 = rc1; rc2 = rc2} ->
       let root1str, root2str =
         roots2niceStrings 12 (Globals.roots()) in
-      Printf.sprintf "%s : %s\n%s : %s"
+      Printf.sprintf "%-12s : %s\n%-12s : %s"
         root1str (replicaContent2string rc1 sep)
         root2str (replicaContent2string rc2 sep)
 
@@ -283,7 +314,7 @@ let displayPath previousPath path =
 
 let roots2string () =
   let replica1, replica2 = roots2niceStrings 12 (Globals.roots()) in
-  (Printf.sprintf "%s   %s       " replica1 replica2)
+  (Printf.sprintf "%-12s   %-12s       " replica1 replica2)
 
 type action = AError | ASkip of bool | ALtoR of bool | ARtoL of bool | AMerge
 
@@ -436,6 +467,109 @@ let addIgnorePattern theRegExp =
   Lwt_unix.run (Globals.propagatePrefs ())
 
 (**********************************************************************
+                     Statistics for update progress
+ **********************************************************************)
+
+(* This seemingly very complex code for calculating the progress rate
+   and ETA has partly to do with Unison currently not tracking progress
+   very accurately. Several potentially very time-consuming operations
+   are not tracked at all: hashing files before and after the copy, for
+   example. The entire amount of work may not even be known in advance
+   when continuing partial transfers after the previous sync has been
+   interrupted. This makes it very difficult to provide meaningful rate
+   and ETA information. The code below is the current best approximation.
+   The way to simplify this code here is to first and foremost improve
+   progress tracking and reporting. *)
+
+module Stats = struct
+
+let calcETA rem rate =
+  if Float.is_nan rate || Float.is_nan rem || rem < 0. then "" else
+  let t = truncate (rem /. rate +. 0.5) in
+  (* Estimating the remaining time is not accurate. Reduce the display
+     precision (and reduce more when longer time remaining). *)
+  let h, (m, sec) =
+    if t >= 3420 then
+      let u = t + 180 in u / 3600, (((u mod 3600) / 300) * 5, 0)
+    else
+      0,
+      if t >= 2640 then ((t + 180) / 300) * 5, 0
+      else if t >= 1800 then ((t + 119) / 120) * 2, 0
+      else if t >= 120 then let u = t + 15 in u / 60, ((u mod 60) / 30) * 30
+      else t / 60, t mod 60
+  in
+  Printf.sprintf "%02d:%02d:%02d" h m sec
+
+let movAvg curr prev ?(c = 1.) deltaTime avgPeriod =
+  if Float.is_nan prev then curr else
+  let a = c *. Float.min (1. -. exp (-. deltaTime /. avgPeriod)) 1. in
+  (* Simplified from a *. curr +. (1. -. a) *. prev *)
+  prev +. a *. (curr -. prev)
+
+type t = (* abstract in mli *)
+  { mutable t0 : float;
+    mutable t : float;
+    totalToComplete : int64;
+    mutable completed : int64;
+    mutable curRate : float;
+    mutable avgRateS : float;
+    mutable avgRateDoubleSGauss : float;
+  }
+
+let gaussC = 2. *. (0.025 ** 2.)
+let avgPeriodS = 4.0
+let avgPeriodD = 3.5
+let calcPeriod = 0.25
+
+let init totalToTransfer =
+  let t0 = 0. in
+  { t0; t = t0; totalToComplete = Uutil.Filesize.toInt64 totalToTransfer;
+    completed = 0L;
+    curRate = Float.nan; avgRateS = Float.nan; avgRateDoubleSGauss = Float.nan;
+  }
+
+let calcAvgRate' sta totTime deltaCompleted deltaTime =
+  let curRate = (Int64.to_float deltaCompleted) /. deltaTime in
+  (* We want to ignore small fluctuations but react faster to large
+     changes (like switching from cache to disk or from disk to network
+     of from receiving to sending or with wildly variable network speed). *)
+  let avgRateS = movAvg curRate sta.avgRateS deltaTime
+    (Float.min_num totTime avgPeriodS) in
+  let cpr = (avgRateS -. sta.avgRateDoubleSGauss) /. sta.avgRateDoubleSGauss in
+  let c = 1. -. exp (-.(cpr ** 2.) /. gaussC) in
+  let avgRateDoubleSGauss = movAvg avgRateS sta.avgRateDoubleSGauss ~c deltaTime
+    (Float.min_num totTime avgPeriodD) in
+  sta.curRate <- curRate;
+  sta.avgRateS <- avgRateS;
+  sta.avgRateDoubleSGauss <- avgRateDoubleSGauss
+
+let update sta t1 totalCompleted =
+  let deltaTime = t1 -. sta.t in
+  let totalCompleted = Uutil.Filesize.toInt64 totalCompleted in
+  if sta.completed = 0L then begin
+    (* Skip the very first rate calculation because it will be skewed
+       due to (possibly significant) time losses during transport start. *)
+    sta.completed <- totalCompleted;
+    sta.t0 <- t1;
+    sta.t <- t1
+  end else if deltaTime >= calcPeriod then begin
+    let deltaCompleted = Int64.sub totalCompleted sta.completed in
+    sta.completed <- totalCompleted;
+    sta.t <- t1;
+    calcAvgRate' sta (t1 -. sta.t0) deltaCompleted deltaTime
+  end
+
+let curRate sta = sta.curRate
+let avgRate1 sta = sta.avgRateS
+let avgRate2 sta = sta.avgRateDoubleSGauss
+let eta sta ?(rate = sta.avgRateDoubleSGauss) default =
+  let rem = Int64.(to_float (sub sta.totalToComplete sta.completed)) in
+  let eta = calcETA rem rate in
+  if eta = "" then default else eta
+
+end
+
+(**********************************************************************
                           Update propagation
  **********************************************************************)
 
@@ -540,6 +674,12 @@ let transportItems items pRiThisRound makeAction =
       (fun () -> completed (); Lwt.return ())
       (fun ex -> stopDispense (); failed ex; Lwt.return ())
   in
+  let dispenseDone =
+    let c = ref 0 in (* Make sure [completed] is never called more than once *)
+    fun () ->
+      if (incr c; !c = 1) then completed ();
+      None
+  in
   let rec dispenseAction () =
     let i = !idx in
     if i < im then begin
@@ -550,7 +690,7 @@ let transportItems items pRiThisRound makeAction =
       else
         dispenseAction ()
     end else
-      None
+      dispenseDone ()
   in
 
   let doTransportFailCleanup () =
@@ -591,9 +731,8 @@ let transportItems items pRiThisRound makeAction =
   in
 
   starting (); (* Count the dispense loop as one of the tasks to complete *)
-  Transport.run dispenseAction;
-  completed ();
   try
+    Transport.run dispenseAction;
     Lwt_unix.run (waitAllCompleted ())
   with e -> begin
     (* Cleanup procedure must never raise exceptions. Just in case,
@@ -634,7 +773,7 @@ let architecture =
     "architecture"
     Umarshal.unit
     Umarshal.(prod3 bool bool bool id id)
-    (fun (_,()) -> return (Util.osType = `Win32, Osx.isMacOSX, Util.isCygwin))
+    (fun (_,()) -> return (Sys.win32, Osx.isMacOSX, Sys.cygwin))
 
 (* During startup the client determines the case sensitivity of each root.
    If any root is case insensitive, all roots must know this -- it's
@@ -647,12 +786,12 @@ let validateAndFixupPrefs () =
     Safelist.exists (fun (isWin, _, _) -> isWin) archs in
   let allHostsAreRunningWindows =
     Safelist.for_all (fun (isWin, _, _) -> isWin) archs in
-  let someHostIsRunningBareWindows =
-    Safelist.exists (fun (isWin, _, isCyg) -> isWin && not isCyg) archs in
+  let someHostIsRunningCygwin =
+    Safelist.exists (fun (_, _, isCyg) -> isCyg) archs in
   let someHostRunningOsX =
     Safelist.exists (fun (_, isOSX, _) -> isOSX) archs in
   let someHostIsCaseInsensitive =
-    someHostIsRunningWindows || someHostRunningOsX in
+    someHostIsRunningWindows || someHostRunningOsX || someHostIsRunningCygwin in
   if Prefs.read Globals.fatFilesystem then begin
     Prefs.overrideDefault Props.permMask 0;
     Prefs.overrideDefault Props.dontChmod true;
@@ -661,9 +800,9 @@ let validateAndFixupPrefs () =
     Prefs.overrideDefault Fileinfo.ignoreInodeNumbers true
   end;
   Case.init someHostIsCaseInsensitive someHostRunningOsX;
-  Props.init someHostIsRunningWindows;
+  Props.init (someHostIsRunningWindows || someHostIsRunningCygwin);
   Osx.init someHostRunningOsX;
-  Fileinfo.init someHostIsRunningBareWindows;
+  Fileinfo.init someHostIsRunningWindows;
   Prefs.set Globals.someHostIsRunningWindows someHostIsRunningWindows;
   Prefs.set Globals.allHostsAreRunningWindows allHostsAreRunningWindows;
   if repeatWatcher () then Prefs.set Fswatch.useWatcher true;
@@ -809,8 +948,7 @@ let cmdLineRawRoots = ref []
 let clearClRoots () = cmdLineRawRoots := []
 
 (* BCP: WARNING: Some of the code from here is duplicated in uimacbridge...! *)
-let initPrefs ~profileName ~displayWaitMessage ~promptForRoots
-              ?(prepDebug = fun () -> ()) ~termInteract () =
+let initPrefs ~profileName ~promptForRoots ?(prepDebug = fun () -> ()) () =
   initComplete := false;
   (* Restore prefs to their default values *)
   Prefs.resetToDefaults ();
@@ -895,9 +1033,14 @@ let initPrefs ~profileName ~displayWaitMessage ~promptForRoots
         end
   end;
 
+  Trace.logonly "Roots:\n";
+  Globals.rawRoots () |> Safelist.iter
+    (fun s -> Trace.logonly "  "; Trace.logonly s; Trace.logonly "\n");
+  Trace.logonly "\n";
+
   (* Parse the roots to validate them *)
   let parsedRoots =
-    try Safelist.map Clroot.parseRoot (Globals.rawRoots ()) with
+    try Globals.parsedClRawRoots () with
     | Invalid_argument s | Util.Fatal s | Prefs.IllegalValue s ->
         raise (Util.Fatal ("There's a problem with one of the roots:\n" ^ s))
   in
@@ -920,16 +1063,15 @@ let initPrefs ~profileName ~displayWaitMessage ~promptForRoots
   (* If no paths were specified, then synchronize the whole replicas *)
   if Prefs.read Globals.paths = [] then Prefs.set Globals.paths [Path.empty];
 
-  initRoots displayWaitMessage termInteract;
-
   initComplete := true
 
-let refreshConnection ~displayWaitMessage ~termInteract =
-  if !initComplete &&  (Safelist.length (Globals.rawRoots ()) > 1) then
+let connectRoots ?termInteract ~displayWaitMessage () =
+  let numRoots = Safelist.length (Globals.rawRoots ()) in
+  if !initComplete && numRoots > 1 then
   let numConn = ref 0 in
   Lwt_unix.run (Globals.allRootsIter
     (fun r -> if Remote.isRootConnected r then incr numConn; Lwt.return ()));
-  if !numConn < 2 then initRoots displayWaitMessage termInteract
+  if !numConn < numRoots then initRoots displayWaitMessage termInteract
 
 (**********************************************************************
                        Common startup sequence

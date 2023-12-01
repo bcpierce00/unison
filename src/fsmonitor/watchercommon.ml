@@ -18,7 +18,7 @@
 let debug = ref false
 
 let _ =
-  if Sys.os_type = "Unix" then
+  if Sys.unix || Sys.cygwin then
     ignore(Sys.set_signal Sys.sigpipe Sys.Signal_ignore)
 
 module StringMap = Map.Make(String)

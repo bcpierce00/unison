@@ -4,6 +4,7 @@
 type archiveHash = string
 
 val start : archiveHash -> bool
+val running : archiveHash -> bool
 
 val startScanning : archiveHash -> Fspath.t -> Path.local -> unit
 val stopScanning : unit -> unit

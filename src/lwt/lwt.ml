@@ -53,20 +53,6 @@ let rec connect t t' =
     end
   end
 
-(* similar to [connect t t']; does nothing instead of raising exception when
- * [t] is not asleep
- *)
-let rec try_connect t t' =
-  if t.state <> Sleep then
-    ()
-  else if t'.state = Sleep then
-    add_waiter t' (fun () -> try_connect t t')
-  else begin
-    t.state <- t'.state;
-    List.iter (fun f -> f ()) t.waiters;
-    t.waiters <- []
-  end
-
 (* apply function, reifying explicit exceptions into the thread type
  * apply: ('a -(exn)-> 'b t) -> ('a -(n)-> 'b t)
  * semantically a natural transformation TE -> T, where T is the thread
@@ -155,6 +141,19 @@ let choose l =
     nth_ready l (Random.int !ready)
   else
     let res = wait () in
-    (* XXX We may leak memory here, if we repeatedly select the same event *)
-    List.iter (fun x -> try_connect res x) l;
+    (* All waiters for this [choose] need to be remembered and cleared
+       out once one of the threads finishes, to not leak memory. *)
+    let waits = ref [] in
+    let choose_done x =
+      List.iter (fun (t, waiter) ->
+          t.waiters <- List.filter (fun f -> f !=(*phys*) waiter) t.waiters)
+        !waits;
+      connect res x
+    in
+    let remember_waiter x =
+      let waiter () = choose_done x in
+      waits := (x, waiter) :: !waits;
+      waiter
+    in
+    List.iter (fun x -> remember_waiter x |> add_waiter x) l;
     res

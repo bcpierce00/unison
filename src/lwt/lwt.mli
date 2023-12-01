@@ -41,12 +41,12 @@ val try_bind : (unit -> 'a t) -> ('a -> 'b t) -> (exn -> 'b t) -> 'b t
 
 val choose : 'a t list -> 'a t
       (* [choose l] behaves as the first thread in [l] to terminate.
-         If several threads are already terminated, one is choosen
+         If several threads are already terminated, one is chosen
          at random. *)
 
 val ignore_result : 'a t -> unit
       (* [ignore_result t] start the thread [t] and ignores its result
-         value if the thread terminates sucessfully.  However, if the
+         value if the thread terminates successfully.  However, if the
          thread [t] fails, the exception is raised instead of being
          ignored.
          You should use this function if you want to start a thread

@@ -64,7 +64,7 @@ Protocol description
   only further changes.
 
   Unison can wait for changes in a replica by emitting a 'WAIT hash'
-  command. It can watch several replicas by sending a serie of these
+  command. It can watch several replicas by sending a series of these
   commands. The child process is expected to respond once, by a
   'CHANGE hash1 ... hash2' response that lists the changed replicas
   among those included in a 'WAIT' command, when changes are
@@ -223,7 +223,7 @@ let read_line i =
 
 let path =
     try
-       Str.split (Str.regexp (if Util.osType = `Win32 then ";" else ":"))
+       Str.split (Str.regexp (if Sys.win32 then ";" else ":"))
          (Sys.getenv "PATH")
      with Not_found ->
        []
@@ -261,7 +261,7 @@ let exec_dir = List.map Filename.dirname exec_path
 
 let watcher =
   lazy
-    (let suffix = if Util.osType = `Win32 then ".exe" else "" in
+    (let suffix = if Sys.win32 || Sys.cygwin then ".exe" else "" in
      debug (fun () -> Util.msg "File monitoring helper program...\n");
        (try
           search_in_path ~path:(exec_dir @ path)
@@ -314,10 +314,8 @@ let connected () = !conn <> None
 let startProcess () =
   try
     let w = Lazy.force watcher in
-    let (i1,o1) = Lwt_unix.pipe_out () in
-    let (i2,o2) = Lwt_unix.pipe_in () in
-    Lwt_unix.set_close_on_exec i2;
-    Lwt_unix.set_close_on_exec o1;
+    let (i1,o1) = Lwt_unix.pipe_out ~cloexec:true () in
+    let (i2,o2) = Lwt_unix.pipe_in ~cloexec:true () in
     let pid = Util.convertUnixErrorsToFatal "starting filesystem watcher"
       (fun () -> System.create_process w [|w|] i1 o2 Unix.stderr) in
     Unix.close i1; Unix.close o2;
@@ -445,6 +443,8 @@ let start hash =
     emitCmd "RESET %s\n" (quote hash);
     true
   end
+
+let running _ = connected ()
 
 let wait hash =
   let c = currentConnection () in

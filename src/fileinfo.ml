@@ -30,7 +30,7 @@ let allowSymlinks =
       Windows.  On a Windows client, Unison makes an attempt to detect \
       if symbolic links are supported and allowed by user privileges.  \
       You may have to get elevated privileges to create symbolic links.  \
-      When the flag is set to {\\t default} and symbolic links can't be \
+      When the flag is set to {\\tt default} and symbolic links can't be \
       synchronized then an error is produced during update detection.")
 
 let symlinksAllowed =

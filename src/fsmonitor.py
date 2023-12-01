@@ -664,7 +664,7 @@ to read all the settings from there."""
             while sys.stdin.readline(): pass
             os._exit(0)
         t = threading.Thread(target=exitThread)
-        t.setDaemon(True)
+        t.daemon = True
         t.start()
 
         if sys.platform=='darwin':

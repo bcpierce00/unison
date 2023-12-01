@@ -61,7 +61,7 @@ let clearCommitLog tmpName =
     | Sys_error _ | Unix.Unix_error _ -> commitLogName
   in
   let commitLogUnlinkPath =
-    if Util.osType = `Win32 then commitLogNameWin () else commitLogName in
+    if Sys.unix then commitLogName else commitLogNameWin () in
 
   Util.convertUnixErrorsToFatal
     "clearing commit log"
@@ -260,7 +260,7 @@ let mkdirOnRoot =
     (fun (fspath,(workingDir,path)) ->
        let info = Fileinfo.getBasic false workingDir path in
        if info.Fileinfo.typ = `DIRECTORY then begin
-         begin try
+         if not (Prefs.read Props.dontChmod) then begin try
            (* Make sure the directory is writable *)
            Fs.chmod (Fspath.concat workingDir path)
              (Props.perms info.Fileinfo.desc lor 0o700)
@@ -298,7 +298,18 @@ let makeSymlink =
     (fun (fspath, (workingDir, path, l)) ->
        if Os.exists workingDir path then
          Os.delete workingDir path;
-       Os.symlink workingDir path l;
+       let execInDir dir f =
+         let cwd = System.getcwd () in
+         begin try System.chdir dir with Sys_error _ -> () end;
+         f ();
+         begin try System.chdir cwd with Sys_error _ -> () end
+       in
+       let f () = Os.symlink workingDir path l in
+       (* Changing the working directory in Windows is a workaround to improve
+          the chances of [Unix.symlink] being able to figure out if a relative
+          symlink is supposed to be a file symlink or a directory symlink (this
+          differentiation only exists in Windows). *)
+       if not Sys.win32 then f () else execInDir (Fspath.toString workingDir) f;
        Lwt.return ())
 
 (* ------------------------------------------------------------ *)
@@ -337,7 +348,7 @@ let performRename fspathTo localPathTo workingDir pathFrom pathTo prevArch =
         match (filetypeFrom, filetypeTo) with
         | (_, `ABSENT)            -> false
         | ((`FILE | `SYMLINK),
-           (`FILE | `SYMLINK))    -> Util.osType <> `Unix
+           (`FILE | `SYMLINK))    -> Sys.win32
         | _                       -> true (* Safe default *) in
       if moveFirst then begin
         debug (fun() -> Util.msg "rename: moveFirst=true\n");
@@ -494,7 +505,7 @@ let rec createDirectories fspath localPath props =
           createDirectories fspath parentPath rem;
           try
             let absolutePath = Fspath.concat fspath parentPath in
-             Fs.mkdir absolutePath (Props.perms desc);
+            Fs.mkdir absolutePath (Props.perms Props.dirDefault);
              Fileinfo.set fspath parentPath (`Copy parentPath) desc
             (* The directory may have already been created
                if there are several paths with the same prefix *)

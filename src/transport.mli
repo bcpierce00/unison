@@ -4,7 +4,7 @@
 (* Size of the pool of threads for executing transport actions. *)
 val maxThreads : unit -> int
 
-(* Run tasks concurrently in a pool of threads, aquiring tasks with
+(* Run tasks concurrently in a pool of threads, acquiring tasks with
    the supplied task dispenser function. The tasks received from
    the task dispenser must not raise uncaught exceptions or return
    with [Lwt.fail]. *)

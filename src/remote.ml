@@ -29,7 +29,7 @@ let debugT = Trace.debug "remote+"
 *)
 
 let _ =
-  if Sys.os_type = "Unix" then
+  if Sys.unix || Sys.cygwin then
     ignore(Sys.set_signal Sys.sigpipe Sys.Signal_ignore)
 
 (*
@@ -116,6 +116,11 @@ let catchIoErrors ch th =
                          (* ERROR_PIPE_NOT_CONNECTED *)
        | Unix.Unix_error(Unix.EUNKNOWNERR (-1236), _, _)
                          (* ERROR_CONNECTION_ABORTED *)
+         (* The following may indicate a programming error, but even if that's
+            the case, let's be graceful about it rather than crash the server.
+            (Seen happening on the socket server when the connection is broken
+            before the client has read the updates sent by server.) *)
+       | Unix.Unix_error(Unix.EBADF, _, _)
          (* The following errors _may_ be temporary but we don't know if
             they are or for how long they will persist. We also don't have
             a way to retry and there is no guarantee that the socket remains
@@ -472,7 +477,7 @@ let checkConnection ioServer =
   connectionCheck := Some ioServer;
   (* Poke on the socket to trigger an error if connection has been lost. *)
   Lwt_unix.run (
-    (if (Util.osType = `Win32) then Lwt.return 0 else
+    (if Sys.win32 then Lwt.return 0 else
     Lwt_unix.read ioServer.inputBuffer.channel ioServer.inputBuffer.buffer 0 0)
     (* Try to make sure connection cleanup, if necessary, has finished
        before returning.
@@ -511,14 +516,36 @@ module ClientConn = struct
       conn : connection }
       (* Never do polymorphic comparisons with [connection]! *)
 
+  (* The replica path of a root is not a relevant detail for a connection;
+     on the contrary, it must not impact the connection. Instead of creating
+     a new type for connection tracking, for now, just exclude the path in
+     clroot comparisons. Eventually, this could/should be solved in a better
+     way: see the comment above about [Common.root] not being sufficiently
+     detailed. *)
+  let clrootEq clroot clroot' =
+    match clroot, clroot' with
+    | Clroot.ConnectByShell (shell, host, user, port, _),
+      Clroot.ConnectByShell (shell', host', user', port', _) ->
+        shell = shell' && host = host' && user = user' && port = port'
+    | ConnectBySocket (host, port, _),
+      ConnectBySocket (host', port', _) ->
+        host = host' && port = port'
+    | ConnectByShell _, _ | _, ConnectByShell _ -> false
+    | ConnectBySocket _, _ | _, ConnectBySocket _ -> false
+    | ConnectLocal _, ConnectLocal _ -> assert false
+
+  let clrootNeq clroot clroot' = not (clrootEq clroot clroot')
+
   let connections = ref []
 
-  let findByClroot clroot = Safelist.find (fun x -> x.clroot = clroot) !connections
+  let findByClroot clroot =
+    Safelist.find (fun x -> clrootEq x.clroot clroot) !connections
+
   let findByRoot root = Safelist.find (fun x -> x.root = root) !connections
 
   let register clroot root conn =
     connections := { clroot; root; conn } ::
-      Safelist.filter (fun x -> x.clroot <> clroot) !connections
+      Safelist.filter (fun x -> clrootNeq x.clroot clroot) !connections
 
   let unregister conn =
     connections := Safelist.filter (fun x -> connNeq x.conn conn) !connections
@@ -618,7 +645,7 @@ let clientCloseRootConnection = function
 
 (* Implemented as a record to avoid polluting [Remote] namespace. If
    the number and complexity of functions grows in future then it's
-   propably a good idea to extract this code into a separate module. *)
+   probably a good idea to extract this code into a separate module. *)
 type ('a, 'b, 'c) resourceC =
   { register : 'a -> 'a; release : 'a -> 'b; release_noerr : 'a -> 'c }
 let resourceWithConnCleanup close close_noerr =
@@ -1334,11 +1361,11 @@ let sendHandshakeData conn keyw data =
       * If NOK then closes connection.
 
    3. Client receives and verifies RPC versions.
-      * If not correct verion tag or can't parse then closes connection.
+      * If not correct version tag or can't parse then closes connection.
 
    4. Client selects a version (typically the most recent one) from the
       intersection of its supported RPC versions and server's RPC versions.
-      * If interesection is empty then closes connection.
+      * If intersection is empty then closes connection.
 
    5. Client sends selected RPC version to the server.
 
@@ -1589,7 +1616,7 @@ let negociateFlowControlRemote =
   registerServerCmd "negociateFlowControl" Umarshal.unit Umarshal.bool negociateFlowControlLocal
 
 let negociateFlowControl conn =
-  (* Flow control negociation can be done asynchronously. *)
+  (* Flow control negotiation can be done asynchronously. *)
   if not (Prefs.read halfduplex) then
     Lwt.ignore_result
       (negociateFlowControlRemote conn () >>= fun needed ->
@@ -1651,7 +1678,7 @@ let buildSocket host port kind ?(err="") ai =
     Lwt.catch
       (fun () ->
          let socket =
-           Lwt_unix.socket
+           Lwt_unix.socket ~cloexec:true
              ai.Unix.ai_family ai.Unix.ai_socktype ai.Unix.ai_protocol
          in
          Lwt.catch
@@ -1820,32 +1847,21 @@ let buildShellConnection shell host userOpt portOpt rootName termInteract =
     else
       "") in
   let preargs =
-      ([shellCmd]@userArgs@portArgs@
+    (userArgs @ portArgs @
        [host]@
        (if shell="ssh" then ["-e none"] else [])@
        [shellCmdArgs;remoteCmd]) in
   (* Split compound arguments at space chars, to make
      create_process happy *)
-  let args =
+  let args = [shellCmd] @
     Safelist.concat
       (Safelist.map (fun s -> Util.splitIntoWords s ' ') preargs) in
   let argsarray = Array.of_list args in
-  let (i1,o1) = Lwt_unix.pipe_out () in
-  let (i2,o2) = Lwt_unix.pipe_in () in
+  let (i1,o1) = Lwt_unix.pipe_out ~cloexec:true () in
+  let (i2,o2) = Lwt_unix.pipe_in ~cloexec:true () in
   (* We need to make sure that there is only one reader and one
      writer by pipe, so that, when one side of the connection
      dies, the other side receives an EOF or a SIGPIPE. *)
-  Lwt_unix.set_close_on_exec i2;
-  Lwt_unix.set_close_on_exec o1;
-  (* We add CYGWIN=binmode to the environment before calling
-     ssh because the cygwin implementation on Windows sometimes
-     puts the pipe in text mode (which does end of line
-     translation).  Specifically, if unison is invoked from
-     a DOS command prompt or other non-cygwin context, the pipe
-     goes into text mode; this does not happen if unison is
-     invoked from cygwin's bash.  By setting CYGWIN=binmode
-     we force the pipe to remain in binary mode. *)
-  System.putenv "CYGWIN" "binmode";
   debug (fun ()-> Util.msg "Shell connection: %s (%s)\n"
            shellCmd (String.concat ", " args));
   let (term, termPid) =
@@ -1901,47 +1917,52 @@ let buildShellConnection shell host userOpt portOpt rootName termInteract =
         Terminal.create_session shellCmd argsarray i1 o2 Unix.stderr)
   in
   Unix.close i1; Unix.close o2;
-  let forwardShellStderr fdIn fdOut = function
-    | None -> Lwt.return ()
-    | Some s ->
-        (* When the shell connection has been established then keep
-           forwarding server's stderr to client's stderr; not to GUI. *)
-        let buf = Bytes.create 16000 in
-        let rec loop s len =
-          (* Can't use printf because if stderr is not open in Windows,
-             it will throw an exception when at_exit tries to flush it. *)
-          ignore (try if len > 0 then Unix.write fdOut s 0 len else 0
-                  with Unix.Unix_error _ -> 0);
-          Lwt.catch (fun () -> Lwt_unix.read fdIn buf 0 16000)
-            (fun _ -> debug (fun () ->
-               Util.msg "Caught an exception when reading remote stderr\n");
-               Lwt.return 0)
-          >>= function
-          | 0 -> Lwt.return ()
-          | len -> loop buf len
-        in
-        loop (Bytes.of_string s) (String.length s)
+  let writeSilentNoexn fd s pos len =
+    ignore (try if len > 0 then Unix.write fd s pos len else 0
+            with Unix.Unix_error _ -> 0)
   in
-  let est = ref false in
-  let connReady () = est := true
-  and isReady () = !est = true in
-  let getTermErr =
+  let forwardShellStderr fdIn fdOut s =
+    (* When the shell connection has been established then keep
+       forwarding server's stderr to client's stderr; not to GUI. *)
+    let buf = Bytes.create 16000 in
+    let rec loop s len =
+      (* Can't use printf because if stderr is not open in Windows,
+         it will throw an exception when at_exit tries to flush it. *)
+      writeSilentNoexn fdOut s 0 len;
+      Lwt.catch (fun () -> Lwt_unix.read fdIn buf 0 16000)
+        (fun _ -> debug (fun () ->
+           Util.msg "Caught an exception when reading remote stderr\n");
+           Lwt.return 0)
+      >>= function
+      | 0 -> Lwt.return ()
+      | len -> loop buf len
+    in
+    loop (Bytes.of_string s) (String.length s)
+  in
+  let (connReady, getTermErr) =
     match term, termInteract with
-    | Some fdTerm, Some callBack ->
-        let (readTerm, getErr) =
-          Terminal.handlePasswordRequests fdTerm (callBack rootName) isReady in
+    | Some fdTerm, Some interact ->
+        let (setReady, handleRequests, extractRemainingOutput) =
+          Terminal.handlePasswordRequests fdTerm (interact rootName) in
         Lwt.ignore_result (
-          readTerm >>=
+          handleRequests >>=
           forwardShellStderr (fst fdTerm) Unix.stderr);
-        getErr
+        let connReady () =
+          let s = setReady () in
+          writeSilentNoexn Unix.stderr (Bytes.of_string s) 0 (String.length s)
+        in
+        (connReady, extractRemainingOutput)
     | _ ->
-        fun () -> Lwt.return ""
+        (Fun.id, fun () -> Lwt.return "")
   in
   let cleanup () =
-    (* Hack: Signal connection ready to make sure the [handlePasswordRequests]
-       threads will finish while silencing any exceptions (most likely EBADF)
-       caused by having closed the terminal fds. *)
-    connReady ();
+    (* Make sure the [handlePasswordRequests] threads will finish while
+       silencing any exceptions (most likely EBADF) caused by having closed
+       the terminal fds. *)
+    Lwt.ignore_result (getTermErr () >>= fun s ->
+      debug (fun () ->
+        if s <> "" then Util.msg "Received from remote shell process:\n%s\n" s);
+      Lwt.return ());
     if term = None then
       try ignore (Terminal.safe_waitpid termPid) with Unix.Unix_error _ -> ()
     else
@@ -1961,6 +1982,8 @@ let buildShellConnection shell host userOpt portOpt rootName termInteract =
         (fun () -> getTermErr () >>= fun s ->
                    if s <> "" then Util.warn s;
                    Lwt.fail e)
+        (* Don't close the terminal before reading the final error output
+           or we might miss it completely. *)
         (fun _ ->  cleanup (); Lwt.fail e))
 
 let canonizeLocally s =
@@ -2089,22 +2112,11 @@ let openConnectionStart clroot =
             Safelist.concat
               (Safelist.map (fun s -> Util.splitIntoWords s ' ') preargs) in
           let argsarray = Array.of_list args in
-          let (i1,o1) = Lwt_unix.pipe_out() in
-          let (i2,o2) = Lwt_unix.pipe_in() in
+          let (i1,o1) = Lwt_unix.pipe_out ~cloexec:true () in
+          let (i2,o2) = Lwt_unix.pipe_in ~cloexec:true () in
           (* We need to make sure that there is only one reader and one
              writer by pipe, so that, when one side of the connection
              dies, the other side receives an EOF or a SIGPIPE. *)
-          Lwt_unix.set_close_on_exec i2;
-          Lwt_unix.set_close_on_exec o1;
-          (* We add CYGWIN=binmode to the environment before calling
-             ssh because the cygwin implementation on Windows sometimes
-             puts the pipe in text mode (which does end of line
-             translation).  Specifically, if unison is invoked from
-             a DOS command prompt or other non-cygwin context, the pipe
-             goes into text mode; this does not happen if unison is
-             invoked from cygwin's bash.  By setting CYGWIN=binmode
-             we force the pipe to remain in binary mode. *)
-          System.putenv "CYGWIN" "binmode";
           debug (fun ()-> Util.msg "Shell connection: %s (%s)\n"
                    shellCmd (String.concat ", " args));
           let (term,pid) =
@@ -2138,12 +2150,12 @@ let openConnectionEnd (i1,i2,o1,o2,s,fdopt,clroot,pid) =
          Lwt.return ())
 
 let openConnectionCancel (i1,i2,o1,o2,s,fdopt,clroot,pid) =
-      try Unix.kill pid Sys.sigkill with Unix.Unix_error _ -> ();
-      try Unix.close i1 with Unix.Unix_error _ -> ();
-      try Lwt_unix.close i2 with Unix.Unix_error _ -> ();
-      try Lwt_unix.close o1 with Unix.Unix_error _ -> ();
-      try Unix.close o2 with Unix.Unix_error _ -> ();
-      try Terminal.close_session pid with Unix.Unix_error _ -> ()
+  (try Unix.kill pid Sys.sigkill with Unix.Unix_error _ -> ());
+  (try Unix.close i1 with Unix.Unix_error _ -> ());
+  (try Lwt_unix.close i2 with Unix.Unix_error _ -> ());
+  (try Lwt_unix.close o1 with Unix.Unix_error _ -> ());
+  (try Unix.close o2 with Unix.Unix_error _ -> ());
+  (try Terminal.close_session pid with Unix.Unix_error _ -> ())
 
 (****************************************************************************)
 (*                     SERVER-MODE COMMAND PROCESSING LOOP                  *)

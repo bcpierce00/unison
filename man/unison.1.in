@@ -32,7 +32,7 @@
 .Sh DESCRIPTION
 .Nm Unison
 is a file-synchronization tool for POSIX-compliant systems (e.g. *BSD and
-GNU/Linux), macOS and Windows. It allows two replicas of a collection of files
+GNU/Linux, macOS) and Windows. It allows two replicas of a collection of files
 and directories to be stored on different hosts (or different disks on the same
 host), modified separately, and then brought up to date by propagating the
 changes in each replica to the other.
@@ -119,7 +119,7 @@ grammar is:
             |  socket
             |  ssh
 
-  user ::= [-_a-zA-Z0-9]+
+  user ::= [-_a-zA-Z0-9%@]+
 
   host ::= [-_a-zA-Z0-9.]+
         |  \e[ [a-f0-9:.]+ zone? \e]     IPv6 literals (no future format).
@@ -284,7 +284,7 @@ When Unison starts, it first reads the profile and then the command line, so
 command-line options will override settings from the profile.
 .Sh TERMINATION
 When not synchronizing continuously, the text interface terminates when
-synchronization is finished normally or due to a fatal error occuring.
+synchronization is finished normally or due to a fatal error occurring.
 .Pp
 In the text interface, to interrupt synchronization before it is finished,
 press
@@ -300,6 +300,19 @@ then keep doing it repeatedly. This will bypass cleanup procedures and
 terminates the process forcibly (similar to
 .Sy SIGKILL ) .
 Doing so may leave the archives or replicas in an inconsistent state or locked.
+.Pp
+When synchronizing continuously (time interval repeat or with filesystem
+monitoring), interrupting with
+.Sy Ctrl-C
+or with signal
+.Sy SIGINT
+or
+.Sy SIGTERM
+works the same way as described above and will additionally stop the continuous
+process. To stop only the continuous process and let the last synchronization
+complete normally, send signal
+.Sy SIGUSR2
+instead.
 .Sh ENVIRONMENT
 .Bl -tag
 .It Ev UNISON
@@ -379,7 +392,7 @@ option.
 .Pp
 .It Pa ~/.unison/fp*
 Fingerprint cache files. These files may be safely deleted. Keep in mind that
-deleting a fingerprint cache file means that any unsychronized changes must be
+deleting a fingerprint cache file means that any unsynchronized changes must be
 scanned again. Depending on your replicas, this may mean scanning gigabytes of
 file contents.
 .Pp
@@ -498,8 +511,6 @@ menu) or on the command line by
 (you probably want to pipe the output to a pager).
 .Pp
 .Lk https://github.com/bcpierce00/unison
-.Pp
-.Lk https://www.cis.upenn.edu/~bcpierce/unison/
 .\" .Sh STANDARDS
 .\" .Sh HISTORY
 .\" .Sh BUGS

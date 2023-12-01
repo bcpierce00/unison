@@ -89,7 +89,7 @@ let permMask =
     "The integer value of this preference is a mask indicating which \
      permission bits should be synchronized.  It is set by default to \
      $0o1777$: all bits but the set-uid and set-gid bits are \
-     synchronised (synchronizing theses latter bits can be a security \
+     synchronised (synchronizing these latter bits can be a security \
      hazard).  If you want to synchronize all bits, you can set the \
      value of this preference to $-1$.  If one of the replica is on \
      a FAT [Windows] filesystem, you should consider using the \
@@ -99,8 +99,8 @@ let permMask =
 
 (* Os-specific local conventions on file permissions                         *)
 let (fileDefault, dirDefault, fileSafe, dirSafe) =
-  match Util.osType with
-    `Win32 ->
+  match Sys.win32 with
+  | true ->
       debug
         (fun() ->
            Util.msg "Using windows defaults for file permissions");
@@ -108,7 +108,7 @@ let (fileDefault, dirDefault, fileSafe, dirSafe) =
        (0o700, -1), (* rwx------ *)
        (0o600, -1), (* rw------- *)
        (0o700, -1)) (* rwx------ *)
-  | `Unix ->
+  | false ->
       let umask =
         let u = Unix.umask 0 in
         ignore (Unix.umask u);
@@ -745,7 +745,7 @@ let xattrIgnorePred =
     ~category:(`Advanced `Sync)
     ~send:xattrEnabled
     (* By default ignore the Linux xattr security and trusted namespaces *)
-    ~initial:["Regex !(security|trusted)[.].*"]
+    ~initial:["Regex !(security|trusted)[.].*"; "Path !system.posix_acl_*"]
     ("Preference \\texttt{-xattrignore \\ARG{namespec}} causes Unison to \
      ignore extended attributes with names that match \\ARG{namespec}. \
      This can be used to exclude extended attributes that would fail \
@@ -757,7 +757,9 @@ let xattrIgnorePred =
      applied to the {\\em name} of extended attribute, not to path. \
      {\\em On Linux}, attributes in the security and trusted namespaces \
      are ignored by default (this is achieved by pattern \\texttt{Regex \
-     !(security|trusted)[.].*}). To sync attributes in one or both of \
+     !(security|trusted)[.].*}); also attributes used to store POSIX ACL \
+     are ignored by default (this is achieved by pattern \\texttt{Path \
+     !system.posix\\_acl\\_*}). To sync attributes in one or both of \
      these namespaces, see the \\verb|xattrignorenot| preference. \
      Note that the namespace name must be prefixed with a \"!\" (applies \
      on Linux only). All names not prefixed with a \"!\" are taken \
@@ -782,7 +784,9 @@ let xattrIgnorenotPred =
      namespaces, you may add an \\verb|xattrignorenot| pattern like \
      \\texttt{Path !security.*} to sync all attributes in the \
      security namespace, or \\texttt{Path !security.selinux} to sync \
-     a specific attribute in an otherwise ignored namespace. \
+     a specific attribute in an otherwise ignored namespace. A pattern \
+     like \\texttt{Path !system.posix\\_acl\\_*} can be used to sync \
+     POSIX ACLs on Linux. \
      Note that the namespace name must be prefixed with a \"!\" (applies \
      on Linux only). All names not prefixed with a \"!\" are taken \
      as strictly belonging to the user namespace and therefore the \
@@ -1532,6 +1536,7 @@ let setLength p l = {p with length=l}
 
 let time p = Time.extract p.time
 let setTime p p' = {p with time = Time.replace p.time (time p'); ctime = p'.ctime}
+let resetCTime p p' = {p with ctime = p'.ctime}
 
 let perms p = Perm.extract p.perm
 

@@ -51,7 +51,7 @@ let silent =
 
 let cbreakMode = ref None
 
-let supportSignals = Util.osType = `Unix || Util.isCygwin
+let supportSignals = Sys.unix || Sys.cygwin
 
 let rawTerminal () =
   match !cbreakMode with
@@ -787,7 +787,7 @@ type stateItem =
     mutable bytesTransferred : Uutil.Filesize.t;
     mutable bytesToTransfer : Uutil.Filesize.t }
 
-let doTransport reconItemList =
+let doTransport reconItemList numskip isSkip =
   let items =
     Array.map
       (fun ri ->
@@ -796,54 +796,69 @@ let doTransport reconItemList =
           bytesToTransfer = Common.riLength ri})
       (Array.of_list reconItemList)
   in
+  let totalItemsTransferred = ref 0 in
+  let totalItemsToTransfer = Array.length items - numskip in
+  let totalItemsToTransferStr = string_of_int totalItemsToTransfer in
   let totalBytesTransferred = ref Uutil.Filesize.zero in
   let totalBytesToTransfer =
-    ref
       (Array.fold_left
          (fun s item -> Uutil.Filesize.add item.bytesToTransfer s)
          Uutil.Filesize.zero items)
   in
   let totalBytesToTransferStr = Util.bytes2string
-    (Uutil.Filesize.toInt64 !totalBytesToTransfer) in
-  let t0 = Unix.gettimeofday () in
+    (Uutil.Filesize.toInt64 totalBytesToTransfer) in
+  let totalToTransfer =
+    Uutil.Filesize.(add totalBytesToTransfer (ofInt totalItemsToTransfer)) in
+  let sta = Uicommon.Stats.init totalBytesToTransfer in
   let calcProgress i bytes dbg =
     let i = Uutil.File.toLine i in
     let item = items.(i) in
     item.bytesTransferred <- Uutil.Filesize.add item.bytesTransferred bytes;
     totalBytesTransferred := Uutil.Filesize.add !totalBytesTransferred bytes;
-    let totalBytesTransferredStr = Util.bytes2string
-      (Uutil.Filesize.toInt64 !totalBytesTransferred) in
-    let v =
-      (Uutil.Filesize.percentageOfTotalSize
-         !totalBytesTransferred !totalBytesToTransfer)
-    in
-    let t1 = Unix.gettimeofday () in
-    let remTime =
-      if v <= 0. then "--:--"
-      else if v >= 100. then "00:00:00"
-      else
-        let t = truncate ((t1 -. t0) *. (100. -. v) /. v +. 0.5) in
-        let u = t mod 3600 in
-        let h = t / 3600 in
-        let m = u / 60 in
-        let sec = u mod 60 in
-        Format.sprintf "%02d:%02d:%02d" h m sec
-    in
-    let stat = Format.sprintf "%s  (%s of %s)  %s ETA" (Util.percent2string v)
-      totalBytesTransferredStr totalBytesToTransferStr remTime in
-    t1, stat
+    let totalTransferred =
+      Uutil.Filesize.(add !totalBytesTransferred (ofInt !totalItemsTransferred)) in
+    Uutil.Filesize.percentageOfTotalSize totalTransferred totalToTransfer
   in
-  let tlog = ref t0 in
+  let tlog = ref (Unix.gettimeofday ()) in
+  let t = ref 0. in
+  let prevItems = ref 0 in
+  let displayProgress v =
+    let t1 = Unix.gettimeofday () in
+    let () = Uicommon.Stats.update sta t1 !totalBytesTransferred in
+    if t1 -. !t >= 0.1 || !prevItems <> !totalItemsTransferred then begin
+      t := t1;
+      prevItems := !totalItemsTransferred;
+      let remTime =
+        if v <= 0. then "--:--"
+        else if v >= 100. then "00:00:00"
+        else
+          let rate = Uicommon.Stats.avgRate1 sta in
+          if Float.is_nan rate then "--:--"
+          else
+            Format.sprintf "%8s/s    %s"
+              (Util.bytes2string (Int64.of_float rate))
+              (Uicommon.Stats.eta sta "--:--")
+      in
+      let totalBytesTransferredStr = Util.bytes2string
+        (Uutil.Filesize.toInt64 !totalBytesTransferred) in
+      let s = Format.sprintf "%s  %d/%s  (%s of %s)  %s ETA"
+        (Util.percent2string v)
+        !totalItemsTransferred totalItemsToTransferStr
+        totalBytesTransferredStr totalBytesToTransferStr remTime in
+
+      if not (Prefs.read Trace.terse) && (Prefs.read Trace.debugmods = []) then
+        Util.set_infos s;
+      if (Prefs.read Trace.terse) || (Prefs.read Globals.batch) then
+        if (t1 -. !tlog) >= 60. then
+        begin
+          Trace.logonly (s ^ "\n");
+          tlog := t1
+        end
+    end
+  in
   let showProgress i bytes dbg =
-    let t1, s = calcProgress i bytes dbg in
-    if not (Prefs.read Trace.terse) && (Prefs.read Trace.debugmods = []) then
-      Util.set_infos s;
-    if (Prefs.read Trace.terse) || (Prefs.read Globals.batch) then
-      if (t1 -. !tlog) >= 60. then
-      begin
-        Trace.logonly (s ^ "\n");
-        tlog := t1
-      end
+    let v = calcProgress i bytes dbg in
+    displayProgress v
   in
   Uutil.setProgressPrinter showProgress;
 
@@ -890,20 +905,29 @@ let doTransport reconItemList =
       Printexc.raise_with_backtrace e origbt
   in
 
+  if not (Prefs.read Trace.terse) && (Prefs.read Trace.debugmods = []) then
+    Util.set_infos "Starting...";
   Uicommon.transportStart ();
   let fFailedPaths = ref [] in
   let fPartialPaths = ref [] in
   let notstarted = ref (Array.length items) in
+  let progressItem i =
+    incr totalItemsTransferred;
+    showProgress (Uutil.File.ofLine i) Uutil.Filesize.zero "itm"
+  in
   let uiWrapper i item =
     Lwt.try_bind
       (fun () -> decr notstarted;
                  Transport.transportItem item.ri
                    (Uutil.File.ofLine i) verifyMerge)
       (fun () ->
-         if partiallyProblematic item.ri && not (problematic item.ri) then
+         let notSkip = not (isSkip item.ri) in
+         if partiallyProblematic item.ri && notSkip then
            fPartialPaths := item.ri.path1 :: !fPartialPaths;
+         if notSkip then progressItem i;
          Lwt.return ())
       (fun e ->
+        if not (isSkip item.ri) then progressItem i;
         match e with
           Util.Transient s ->
             let rem =
@@ -969,15 +993,40 @@ let rec interactAndPropagateChanges prevItemList reconItemList
       : bool * bool * bool * bool * (Path.t list)
         (* anySkipped?, anyPartial?, anyFailures?, anyCancels?, failingPaths *) =
   let (proceed,newReconItemList) = interact prevItemList reconItemList in
-  let (updatesToDo, skipped) =
+  let isSkip = problematic in
+  let (updatesToDo, skipped, (totalBytesToRoot1, totalBytesToRoot2)) =
     Safelist.fold_left
-      (fun (howmany, skipped) ri ->
-        if problematic ri then (howmany, skipped + 1)
-        else (howmany + 1, skipped))
-      (0, 0) newReconItemList in
-  let doTransp newReconItemList =
+      (fun (howmany, skipped, (bytes1, bytes2)) ri ->
+        if isSkip ri then (howmany, skipped + 1, (bytes1, bytes2))
+        else (howmany + 1, skipped,
+          match ri.replicas with
+          | Problem _ -> (bytes1, bytes2)
+          | Different {direction; _} ->
+              match direction with
+              | Conflict _ | Merge -> (bytes1, bytes2)
+              | Replica1ToReplica2 -> (bytes1, Uutil.Filesize.add (Common.riLength ri) bytes2)
+              | Replica2ToReplica1 -> (Uutil.Filesize.add (Common.riLength ri) bytes1, bytes2)))
+      (0, 0, (Uutil.Filesize.zero, Uutil.Filesize.zero)) newReconItemList in
+  if not (Prefs.read Trace.terse) && (updatesToDo > 0 || skipped > 0) then begin
+    let root1, root2 =
+      match Globals.roots () with
+      | (Local, path1), (Local, path2) -> Fspath.differentSuffix path1 path2
+      | (Local, _), (Remote host, _) -> "local", host
+      | (Remote host, _), (Local, _) -> host, "local"
+      | (Remote host1, _), (Remote host2, _) -> host1, host2
+    in
+    Trace.log_color (Printf.sprintf
+      "\n%s%d%s items will be synced, %s%d%s skipped\n\
+       %s to be synced from %s to %s\n\
+       %s to be synced from %s to %s\n"
+       (color `Focus) updatesToDo (color `Reset)
+       (color `Information) skipped (color `Reset)
+       (Util.bytes2string (Uutil.Filesize.toInt64 totalBytesToRoot2)) root1 root2
+       (Util.bytes2string (Uutil.Filesize.toInt64 totalBytesToRoot1)) root2 root1)
+  end;
+  let doTransp () =
     try
-      doTransport newReconItemList
+      doTransport newReconItemList skipped isSkip
     with e ->
       let origbt = Printexc.get_raw_backtrace () in
       let summary =
@@ -991,6 +1040,7 @@ let rec interactAndPropagateChanges prevItemList reconItemList
           ^ (match e with Sys.Break -> " by user request" | _ -> " due to a fatal error")
           ^ "\n\n"
       in
+      Util.set_infos "";
       Trace.log_color summary;
       Printexc.raise_with_backtrace e origbt
   in
@@ -998,7 +1048,7 @@ let rec interactAndPropagateChanges prevItemList reconItemList
     if not (Prefs.read Globals.batch || Prefs.read Trace.terse) then newLine();
     if not (Prefs.read Trace.terse) then Trace.status "Propagating updates";
     let timer = Trace.startTimer "Transmitting all files" in
-    let (failedPaths, partialPaths, notstarted, intr) = doTransp newReconItemList in
+    let (failedPaths, partialPaths, notstarted, intr) = doTransp () in
     let failures = Safelist.length failedPaths in
     let partials = Safelist.length partialPaths in
     Trace.showTimer timer;
@@ -1051,7 +1101,7 @@ let rec interactAndPropagateChanges prevItemList reconItemList
     (* JV (5/09): Don't save the archive in repeat mode as it has some
        costs and its unlikely there is much change to the archives in
        this mode. *)
-    if !Update.foundArchives && Prefs.read Uicommon.repeat = "" then
+    if !Update.foundArchives && Prefs.read Uicommon.repeat = `NoRepeat then
       Update.commitUpdates ();
     display "No updates to propagate\n";
     if skipped > 0 then begin
@@ -1159,24 +1209,46 @@ let checkForDangerousPath dangerousPaths =
     end
   end
 
+let displayWaitMessage () =
+  if not (Prefs.read silent) then
+    Util.msg "%s\n" (Uicommon.contactingServerMsg ())
+
+(* Most modern VT100 terminal emulators (and some ANSI) are able to switch
+   automatic line-wrapping off and on by control sequences ESC[?7l and ESC[?7h.
+   This here is a very blunt heuristic to filter out some that can't do it or
+   use a different control sequence. It does not need to be exact, as long as
+   it covers the vast majority of supported systems. *)
+let termNowrapOk =
+  System.termVtCapable Unix.stdout &&
+  let s = try System.getenv "TERM" with Not_found -> "" in
+  not (
+    s = "dumb"
+    || s = "emacs"
+    || Util.startswith s "sun"
+    || Util.startswith s "cons"
+    || Util.startswith s "eterm"
+    || Util.startswith s "cygwin"
+    || Util.startswith s "dvtm"
+  )
+
 let synchronizeOnce ?wantWatcher pathsOpt =
   let showStatus path =
     if path = "" then Util.set_infos "" else
-    let max_len = 70 in
-    let mid = (max_len - 3) / 2 in
-    let path =
+    let shorten path =
+      let max_len = 70 in
+      let mid = (max_len - 3) / 2 in
       let l = String.length path in
       if l <= max_len then path else
       String.sub path 0 (max_len - mid - 3) ^ "..." ^
       String.sub path (l - mid) mid
     in
     let c = "-\\|/".[truncate (mod_float (4. *. Unix.gettimeofday ()) 4.)] in
-    Util.set_infos (Format.sprintf "%c %s" c path)
+    if termNowrapOk && not (Prefs.read dumbtty) then
+      Util.set_infos (Format.sprintf "%c \027[?7l%s\027[?7h" c path) ~clr:"\r\027[K\r"
+    else
+      Util.set_infos (Format.sprintf "%c %s" c (shorten path))
   in
-  Uicommon.refreshConnection
-    ~displayWaitMessage:(fun () -> if not (Prefs.read silent)
-                         then Util.msg "%s\n" (Uicommon.contactingServerMsg()))
-    ~termInteract:None;
+  Uicommon.connectRoots ~displayWaitMessage ();
   Trace.status "Looking for changes";
   if not (Prefs.read Trace.terse) && (Prefs.read Trace.debugmods = []) then
     Uutil.setUpdateStatusPrinter (Some showStatus);
@@ -1194,7 +1266,7 @@ let synchronizeOnce ?wantWatcher pathsOpt =
 
   if not !Update.foundArchives then Update.commitUpdates ();
   if reconItemList = [] then begin
-    if !Update.foundArchives && Prefs.read Uicommon.repeat = "" then
+    if !Update.foundArchives && Prefs.read Uicommon.repeat = `NoRepeat then
       Update.commitUpdates ();
     (if anyEqualUpdates then
       Trace.status ("Nothing to do: replicas have been changed only "
@@ -1209,6 +1281,79 @@ let synchronizeOnce ?wantWatcher pathsOpt =
     let exitStatus = Uicommon.exitCode (anySkipped || anyPartial || anyCancel, anyFailures) in
     (exitStatus, failedPaths)
   end
+
+(* ------------ Safe termination between synchronizations ------------ *)
+
+let safeStopReqd, requestSafeStop =
+  let safeStopReqd = ref false in
+  (* [safeStopReqd] can only go from false to true;
+     it must never be changed from true to false. *)
+  let isRequested () = !safeStopReqd
+  and request () = safeStopReqd := true in
+  isRequested, request
+
+(*** Requesting safe termination by signals ***)
+
+let set_signal_noerr signa nm behv =
+  try Sys.set_signal signa behv; true
+  with Invalid_argument _ | Sys_error _ as e ->
+    Trace.logonly
+      ("Warning: " ^ nm ^ " handler not set: " ^ (Printexc.to_string e) ^ "\n");
+    false
+
+let stopPipe = ref None
+
+let setupSafeStop () =
+  if supportSignals then begin
+    let safeStop _ =
+      if not (safeStopReqd ()) then begin
+        requestSafeStop ();
+        (* Interrupt the interruptible sleep *)
+        match !stopPipe with
+        | Some (i, o) -> Unix.close o; Lwt_unix.close i
+        | None -> ()
+      end
+    in
+    Util.blockSignals [Sys.sigusr2] (fun () ->
+    let ok = set_signal_noerr Sys.sigusr2 "SIGUSR2" (Signal_handle safeStop) in
+    if ok then stopPipe := Some (Lwt_unix.pipe_in ~cloexec:true ()))
+  end
+
+let safeStopRequested () =
+  safeStopReqd ()
+
+(*** Sleep interruptible by a termination request ***)
+
+let safeStopWait =
+  let safeStopWait_aux () =
+    let readStop =
+      match !stopPipe with
+      | None -> Lwt.wait ()
+      | Some (i, _) -> Lwt_unix.wait_read i
+    in
+    let readFail = function
+      | Unix.Unix_error (EBADF, _, _) -> Lwt.return (requestSafeStop ())
+      | e -> Lwt.fail e
+    in
+    let rec loop () =
+      Lwt.catch
+        (fun () -> readStop) readFail >>= fun () ->
+      if not (safeStopRequested ()) then
+        Lwt_unix.sleep 0.15 >>= loop
+      else
+        Lwt.return ()
+    in
+    loop ()
+  in
+  let wt = ref None in
+  fun () ->
+    match !wt with
+    | Some t -> t
+    | None -> let t = safeStopWait_aux () in wt := Some t; t
+
+let interruptibleSleepf dt =
+  Lwt_unix.run (Lwt.choose [Lwt_unix.sleep dt; safeStopWait ()])
+let interruptibleSleep dt = interruptibleSleepf (float dt)
 
 (* ----------------- Filesystem watching mode ---------------- *)
 
@@ -1230,12 +1375,17 @@ let waitForChanges t =
     Lwt_unix.run
       (Globals.allRootsMap (fun r -> Lwt.return (waitForChangesRoot r ()))
          >>= fun l ->
-       Lwt.choose (timeout @ l))
+       Lwt.choose (timeout @ l @ [safeStopWait ()]))
   end
 
-let synchronizePathsFromFilesystemWatcher () =
-  let rec loop isStart delayInfo =
+let synchronizePathsFromFilesystemWatcher fullintv =
+  let fullinterval = match fullintv with None -> 1e20 | Some i -> float i in
+  let rec loop lastFull delayInfo =
     let t = Unix.gettimeofday () in
+    let sinceFull = t -. lastFull in
+    let isFull = sinceFull > fullinterval in
+    let lastFull = if isFull then t else lastFull in
+    let nextFull = lastFull +. fullinterval in
     let (delayedPaths, readyPaths) =
       PathMap.fold
         (fun p (t', _) (delayed, ready) ->
@@ -1244,7 +1394,7 @@ let synchronizePathsFromFilesystemWatcher () =
     in
     let (exitStatus, failedPaths) =
       synchronizeOnce ~wantWatcher:true
-        (if isStart then None else Some (readyPaths, delayedPaths))
+        (if isFull then None else Some (readyPaths, delayedPaths))
     in
     (* After a failure, we retry at once, then use an exponential backoff *)
     let delayInfo =
@@ -1262,13 +1412,13 @@ let synchronizePathsFromFilesystemWatcher () =
         PathMap.empty
         (Safelist.append delayedPaths failedPaths)
     in
-    Lwt_unix.run (Lwt_unix.sleep watchinterval);
+    interruptibleSleepf watchinterval;
     let nextTime =
-      PathMap.fold (fun _ (t, d) t' -> min t t') delayInfo 1e20 in
-    waitForChanges nextTime;
-    loop false delayInfo
+      PathMap.fold (fun _ (t, d) t' -> min t t') delayInfo nextFull in
+    if not (safeStopRequested ()) then waitForChanges nextTime;
+    if safeStopRequested () then exitStatus else loop lastFull delayInfo
   in
-  loop true PathMap.empty
+  loop 0. PathMap.empty
 
 (* ----------------- Repetition ---------------- *)
 
@@ -1277,36 +1427,33 @@ let synchronizeUntilNoFailures repeatMode =
   let rec loop triesLeft pathsOpt =
     let (exitStatus, failedPaths) =
       synchronizeOnce ~wantWatcher pathsOpt in
-    if failedPaths <> [] && triesLeft <> 0 then begin
+    if failedPaths <> [] && triesLeft <> 0
+         && not (repeatMode && safeStopRequested ()) then begin
       loop (triesLeft - 1) (Some (failedPaths, []))
     end else begin
       exitStatus
     end in
   loop (Prefs.read Uicommon.retry) None
 
-let rec synchronizeUntilDone () =
-  let repeatinterval =
-    if Prefs.read Uicommon.repeat = "" then -1 else
-    try int_of_string (Prefs.read Uicommon.repeat)
-    with Failure _ ->
-      (* If the 'repeat' pref is not a valid number, switch modes... *)
-      if Prefs.read Uicommon.repeat = "watch" then
-        synchronizePathsFromFilesystemWatcher()
-      else
-        raise (Util.Fatal ("Value of 'repeat' preference ("
-                           ^Prefs.read Uicommon.repeat
-                           ^") should be either a number or 'watch'\n")) in
-
+let rec synchronizeUntilDone repeatinterval =
   let exitStatus = synchronizeUntilNoFailures(repeatinterval >= 0) in
-  if repeatinterval < 0 then
+  if repeatinterval < 0 || safeStopRequested () then
     exitStatus
   else begin
     (* Do it again *)
     Trace.status (Printf.sprintf
        "\nSleeping for %d seconds...\n" repeatinterval);
-    Unix.sleep repeatinterval;
-    synchronizeUntilDone ()
+    interruptibleSleep repeatinterval;
+    if safeStopRequested () then exitStatus else synchronizeUntilDone repeatinterval
   end
+
+let synchronizeUntilDone () =
+  match Prefs.read Uicommon.repeat with
+  | `Watch -> synchronizePathsFromFilesystemWatcher None
+  | `WatchAndInterval i -> synchronizePathsFromFilesystemWatcher (Some i)
+  | `Interval i -> synchronizeUntilDone i
+  | `NoRepeat -> synchronizeUntilDone (-1)
+  | `Invalid (_, e) -> raise e
 
 (* ----------------- Startup ---------------- *)
 
@@ -1434,6 +1581,9 @@ let getProfile default =
   !selection
 
 let handleException e =
+  (* Keep the current status line (if any) and don't repeat it any more *)
+  alwaysDisplay "\n";
+  Util.set_infos "";
   restoreTerminal();
   let msg = Uicommon.exn2string e in
   let () =
@@ -1448,6 +1598,7 @@ let rec start interface =
     Sys.catch_break true;
     (* Just to make sure something is there... *)
     setWarnPrinterForInitialization();
+    setupSafeStop ();
     let errorOut s =
       Util.msg "%s%s%s\n" Uicommon.shortUsageMsg profmgrUsageMsg s;
       exit 1
@@ -1464,18 +1615,20 @@ let rec start interface =
           end
       | Ok (Some s) -> s
     in
-    Uicommon.initPrefs
-      ~profileName
-      ~displayWaitMessage:
-      (fun () -> setWarnPrinter();
-                 if Prefs.read silent then Prefs.set Trace.terse true;
-                 if not (Prefs.read silent)
-                 then Util.msg "%s\n" (Uicommon.contactingServerMsg()))
-      ~promptForRoots:
-      (fun () -> errorOut "")
-      ~termInteract:
-      None
-      ();
+    Uicommon.initPrefs ~profileName ~promptForRoots:(fun () -> errorOut "") ()
+  with e ->
+    handleException e;
+    exit Uicommon.fatalExit
+  end;
+
+  (* Uncaught exceptions up to this point are non-recoverable, treated
+     as permanent and will inevitably exit the process. Uncaught exceptions
+     from here onwards are treated as potentially temporary or recoverable.
+     The process does not have to exit if in repeat mode and can try again. *)
+  begin try
+    if Prefs.read silent then Prefs.set Trace.terse true;
+
+    Uicommon.connectRoots ~displayWaitMessage ();
 
     if Prefs.read Uicommon.testServer then exit 0;
 
@@ -1492,7 +1645,7 @@ let rec start interface =
       Prefs.set dumbtty true;
       Trace.sendLogMsgsToStderr := false;
     end;
-    if Prefs.read Uicommon.repeat <> "" then begin
+    if Prefs.read Uicommon.repeat <> `NoRepeat then begin
       Prefs.set Globals.batch true;
     end;
     setColorPreference ();
@@ -1517,22 +1670,37 @@ let rec start interface =
       handleException Sys.Break;
       exit Uicommon.fatalExit
     end
+  | e when breakRepeat e -> begin
+      handleException e;
+      exit Uicommon.fatalExit
+    end
   | e -> begin
       (* If any other bad thing happened and the -repeat preference is
          set, then restart *)
-      (* JV: it seems safer to just abort here, as we don't know in which
-         state Unison is; for instance, if the connection is lost, there
-         is no point in restarting as Unison will currently not attempt to
-         establish a new connection. *)
       handleException e;
-      if false (*Prefs.read Uicommon.repeat <> ""*) then begin
-        Util.msg "Restarting in 10 seconds...\n";
-        Unix.sleep 10;
-        start interface
-      end else
-        exit Uicommon.fatalExit
+      if Prefs.read Uicommon.repeat = `NoRepeat
+          || Prefs.read Uicommon.runtests then
+        exit Uicommon.fatalExit;
+
+      Util.msg "\nRestarting in 10 seconds...\n\n";
+      begin try interruptibleSleep 10 with Sys.Break -> exit Uicommon.fatalExit end;
+      if safeStopRequested () then exit Uicommon.fatalExit else start interface
     end
   end
+
+(* Though in some cases we could, there's no point in recovering
+   and continuing at any of these exceptions. *)
+and breakRepeat = function
+  (* Programming errors *)
+  | Assert_failure _
+  | Match_failure _
+  | Invalid_argument _
+  | Fun.Finally_raised _
+  (* Async exceptions *)
+  | Out_of_memory
+  | Stack_overflow
+  | Sys.Break -> true
+  | _ -> false
 
 let defaultUi = Uicommon.Text
 
