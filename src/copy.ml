@@ -931,6 +931,7 @@ let formatConnectionInfo root =
            (Globals.parsedClRawRoots ())
       with
         Clroot.ConnectByShell (_,rawhost,uo,_,_) ->
+          let rawhost = if String.contains rawhost ':' then "[" ^ rawhost ^ "]" else rawhost in
             (match uo with None -> "" | Some u -> u ^ "@")
           ^ rawhost ^ ":"
           (* Note that we don't do anything with the port -- hopefully
