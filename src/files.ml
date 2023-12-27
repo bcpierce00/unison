@@ -738,7 +738,7 @@ let copy
                setDirPropOnRoot rootTo
                  (workingDir, pTo, initialDesc, desc')) >>= fun () ->
              Lwt.return (Update.ArchiveDir (desc, newChildren),
-                         List.flatten pathl)
+                         Safelist.flatten pathl)
          | Update.NoArchive ->
              assert false)
       (fun e ->
