@@ -2,7 +2,8 @@ opam-version: "2.0"
 version: "dev"
 synopsis: "File-synchronization tool for Unix and Windows"
 description: """
-Text based user interface for Unison.
+This optional add-on for unison monitors file system changes
+on all given (relative to root) paths.
 
 Unison is a file-synchronization tool for Unix and Windows.
 It allows two replicas of a collection of files and directories
@@ -10,12 +11,8 @@ to be stored on different hosts (or different disks on the same host),
 modified separately, and then brought up to date by propagating
 the changes in each replica to the other.
 """
-maintainer: "unison-hackers@lists.seas.upenn.edu"
-authors: [
-  "Trevor Jim"
-  "Benjamin C. Pierce"
-  "Jérôme Vouillon"
-]
+maintainer: ["unisonhackers@lists.seas.upenn.edu"]
+authors: ["Trevor Jim" "Benjamin C. Pierce" "Jérôme Vouillon"]
 license: "GPL-3.0-or-later"
 homepage: "https://www.cis.upenn.edu/~bcpierce/unison/"
 doc: "https://github.com/bcpierce00/unison/wiki"
