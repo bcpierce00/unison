@@ -49,13 +49,21 @@ OCAMLLIBDIR:=$(shell $(OCAMLC) -config-var standard_library)
 #     UI_WINOS=hybrid   # (with UISTYLE=gtk3) builds unison as a hybrid application (GUI application attached to a text console)
 # * ref: <https://github.com/bcpierce00/unison/issues/778>
 #
-LABLGTK3LIB=$(OCAMLLIBDIR)/lablgtk3
-ifeq ($(wildcard $(LABLGTK3LIB)),$(LABLGTK3LIB))
-  HAS_LABLGTK3=true
+OCAMLFIND := $(shell command -v ocamlfind 2> /dev/null)
+
+ifdef OCAMLFIND
+  ifneq ($(strip $(shell $(OCAMLFIND) query lablgtk3 2> /dev/null)),)
+    HAS_LABLGTK3=true
+  endif
 else
-  LABLGTK3LIB=$(abspath $(OCAMLLIBDIR)/../lablgtk3)
+  LABLGTK3LIB=$(OCAMLLIBDIR)/lablgtk3
   ifeq ($(wildcard $(LABLGTK3LIB)),$(LABLGTK3LIB))
     HAS_LABLGTK3=true
+  else
+    LABLGTK3LIB=$(abspath $(OCAMLLIBDIR)/../lablgtk3)
+    ifeq ($(wildcard $(LABLGTK3LIB)),$(LABLGTK3LIB))
+      HAS_LABLGTK3=true
+    endif
   endif
 endif
 
@@ -261,8 +269,6 @@ OCAMLLIBS_MAC+=threads.cma
 INCLFLAGS_MAC+=-I +threads
 
 ## Graphic UI
-OCAMLFIND := $(shell command -v ocamlfind 2> /dev/null)
-
 ifndef OCAMLFIND
   CAMLFLAGS_GUI+=-I +lablgtk3 -I +cairo2
 else
