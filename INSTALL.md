@@ -34,6 +34,10 @@ Please refer to instructions provided by the repository.
 
 - lablgtk3 and its prerequisites (ocamlfind, GTK 3 and its dependencies)
 
+##### Optional, on BSDs
+
+- libinotify (optional, for building unison-fsmonitor)
+
 ##### Optional, for building the user manual
 
 - LaTeX

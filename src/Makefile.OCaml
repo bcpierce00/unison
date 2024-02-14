@@ -330,7 +330,21 @@ clean::
 NAME_FSM = $(NAME)-fsmonitor
 
 ifeq ($(OSARCH),Linux)
-  FSMDIR = fsmonitor/linux
+  FSMDIR = fsmonitor/inotify
+endif
+
+ifneq ($(findstring $(OSARCH),FreeBSD OpenBSD NetBSD DragonFly),)
+  LIBINOTIFY_LIB:=-cclib '$(shell pkg-config --libs libinotify 2> /dev/null || printf ' -linotify')'
+  LIBINOTIFY_INC:=-ccopt '$(shell pkg-config --cflags libinotify 2> /dev/null)'
+  FOUND_LIBINOTIFY := $(shell { printf '' > inotifytest__.ml ;\
+    $(CAMLC) $(CAMLCFLAGS) $(CAMLLDFLAGS) $(LIBINOTIFY_LIB) \
+      -o inotifytest__ inotifytest__.ml > /dev/null 2>&1 && printf true ; } ;\
+    rm -f inotifytest__.ml inotifytest__.cm[oix] inotifytest__.o inotifytest__ > /dev/null 2>&1)
+  ifeq ($(FOUND_LIBINOTIFY), true)
+    FSMDIR = fsmonitor/inotify
+    $(NAME_FSM)$(EXEC_EXT): CAMLCFLAGS += $(LIBINOTIFY_INC)
+    $(NAME_FSM)$(EXEC_EXT): CLIBS += $(LIBINOTIFY_LIB)
+  endif
 endif
 
 ifeq ($(OSARCH),SunOS)
@@ -350,7 +364,7 @@ else
 	$(info fsmonitor implementation is not available or not configured for this system. fsmonitor will not be built.)
 endif
 
-DEP_INCLFLAGS+=-I fsmonitor -I fsmonitor/linux -I fsmonitor/solaris -I fsmonitor/windows
+DEP_INCLFLAGS+=-I fsmonitor -I fsmonitor/inotify -I fsmonitor/solaris -I fsmonitor/windows
 
 ####################################################################
 ### Dependencies
