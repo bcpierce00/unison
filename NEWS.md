@@ -14,11 +14,12 @@ unison uses git history for that, and thus there is no changelog file.
 
 ## Changes in 2.53.4
 
-Released 2023-xx-yy
+Released 2024-02-17
 
   * Improved and simplified makefiles. Please review your build scripts
     for changed build goals, input variables and build artifact names.
     See INSTALL.md for details.
+  * opam build uses the makefile build system.
   * Various fixes in Windows and Cygwin builds.
   * Preferences "force", "prefer" and related "partial" preferences now
     work slightly differently with values "newer" and "older". Previously,

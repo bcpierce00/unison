@@ -1051,7 +1051,6 @@ test.cmo : \
     ubase/prefs.cmi \
     path.cmi \
     os.cmi \
-    lwt/lwt_util.cmi \
     lwt/lwt_unix.cmi \
     lwt/lwt.cmi \
     globals.cmi \
@@ -1074,13 +1073,11 @@ test.cmx : \
     ubase/prefs.cmx \
     path.cmx \
     os.cmx \
-    lwt/lwt_util.cmx \
     lwt/lwt_unix.cmx \
     lwt/lwt.cmx \
     globals.cmx \
     fspath.cmx \
     fs.cmx \
-    fingerprint.cmx \
     common.cmx \
     test.cmi
 test.cmi :
