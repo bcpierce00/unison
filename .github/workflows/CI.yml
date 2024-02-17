@@ -17,7 +17,7 @@ jobs:
     - run: sudo apt-get update
 
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Use OCaml
       uses: ocaml/setup-ocaml@v2
@@ -30,7 +30,7 @@ jobs:
     - run: opam exec -- make docs
 
     - name: Store user manual for the build jobs
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: unison-docs
         path: |
@@ -70,7 +70,7 @@ jobs:
       run: rename C:\msys64 dmsys64
 
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Initialize workflow variables
       id: vars
@@ -259,7 +259,7 @@ jobs:
         opam exec -- make gui UI_WINOS=hybrid
         cp "src/${project_exe_stem}-gui${{ steps.vars.outputs.EXE_suffix }}" "${{ steps.vars.outputs.PKG_DIR }}/bin/${project_exe_stem}-text+gui${{ steps.vars.outputs.EXE_suffix }}"
 
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       if: false ## disable by default; only useful for debugging GHA
       with:
         name: unison-${{ steps.vars.outputs.REF_SHAS }}.ocaml-${{ matrix.job.ocaml-version }}.${{ matrix.job.os }}
@@ -267,7 +267,7 @@ jobs:
 
     - name: Copy user manual
       continue-on-error: ${{ !(steps.vars.outputs.DEPLOY && matrix.job.publish) }}
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: unison-docs
         path: '${{ steps.vars.outputs.PKG_DIR }}'
@@ -326,7 +326,7 @@ jobs:
       shell: bash
       run: cd '${{ steps.vars.outputs.PKG_DIR }}/' && ${{ steps.vars.outputs.COMPRESS_CMD }} '../${{ steps.vars.outputs.PKG_NAME }}' *
 
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       if: matrix.job.publish
       with:
         name: unison-${{ steps.vars.outputs.REF_SHAS }}.ocaml-${{ matrix.job.ocaml-version }}.${{ matrix.job.os }}-publish
@@ -355,7 +355,7 @@ jobs:
 
     - if: runner.os == 'macOS' && matrix.job.publish
       name: "macOS: Upload Unison.app artifact"
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: Unison-${{ steps.vars.outputs.REF_SHAS }}.ocaml-${{ matrix.job.ocaml-version }}.${{ matrix.job.os }}.app
         path: ${{ steps.macapp.outputs.APP_NAME }}
@@ -417,7 +417,7 @@ jobs:
         echo SHELLOPTS=igncr>> %GITHUB_ENV%
 
     - name: Checkout HEAD to _new
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         path: _new
 
@@ -481,7 +481,7 @@ jobs:
       shell: bash
 
     - name: Checkout ${{ matrix.job.ref }} to _prev
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         ref: "${{ matrix.job.ref }}"
         path: _prev
@@ -1069,7 +1069,7 @@ jobs:
       run: sudo apt-get update
 
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Use OCaml ${{ matrix.job.ocaml-compiler }}
       uses: ocaml/setup-ocaml@v2
@@ -1096,7 +1096,7 @@ jobs:
       run: sudo apt-get update
 
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Use OCaml ${{ matrix.job.ocaml-compiler }}
       uses: ocaml/setup-ocaml@v2
@@ -1192,7 +1192,7 @@ jobs:
     - name: Copy user manual
       if: matrix.job.publish
       continue-on-error: ${{ !(github.ref_type == 'tag' && startsWith(github.ref_name, 'v') && matrix.job.publish) }}
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: unison-docs
         path: pkg
