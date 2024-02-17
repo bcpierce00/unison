@@ -14,7 +14,7 @@ unison uses git history for that, and thus there is no changelog file.
 
 ## Changes in 2.53.4
 
-Released 2024-02-17
+Released 2024-02-19
 
   * Improved and simplified makefiles. Please review your build scripts
     for changed build goals, input variables and build artifact names.
