@@ -46,9 +46,9 @@ jobs:
       fail-fast: false
       matrix:
         job:
-        - { os: macos-12      , ocaml-version: "5.1.1+options,ocaml-option-no-compression" }
-        - { os: macos-12      , ocaml-version: 4.14.2 }
-        - { os: macos-11      , ocaml-version: 4.14.2           , publish: true  , fnsuffix: -macos-x86_64 }
+        - { os: macos-14      , ocaml-version: "5.1.1+options,ocaml-option-no-compression" }
+        - { os: macos-14      , ocaml-version: 4.14.2           , publish: true  , fnsuffix: -macos-arm64 }
+        - { os: macos-12      , ocaml-version: 4.14.2           , publish: true  , fnsuffix: -macos-x86_64 }
         - { os: ubuntu-22.04  , ocaml-version: "5.1.1+options,ocaml-option-no-compression" }
         - { os: ubuntu-22.04  , ocaml-version: 4.14.2 }
         - { os: ubuntu-20.04  , ocaml-version: 4.14.2 }
@@ -92,6 +92,7 @@ jobs:
         outputs EXE_suffix MinGW_ARCH MSVC_ARCH
         case '${{ matrix.job.os }}','${{ matrix.job.ocaml-version }}' in
           macos-*,4*) MACOSX_DEPLOYMENT_TARGET=10.6 ;; macos-*,5*) MACOSX_DEPLOYMENT_TARGET=10.7 ;;
+          macos-14*,*) MACOSX_DEPLOYMENT_TARGET=10.13 ;;
         esac
         case '${{ matrix.job.os }}' in
           macos-*) echo "MACOSX_DEPLOYMENT_TARGET=${MACOSX_DEPLOYMENT_TARGET}" >> $GITHUB_ENV ;
@@ -348,7 +349,7 @@ jobs:
         opam exec -- make macui
 
         # package
-        APP_NAME=Unison-${{ steps.vars.outputs.PKG_VER }}-macos.app.tar.gz
+        APP_NAME=Unison-${{ steps.vars.outputs.PKG_VER }}${{ matrix.job.fnsuffix }}.app.tar.gz
         echo APP_NAME=${APP_NAME} >> $GITHUB_OUTPUT
 
         tar czf ${APP_NAME} -C src/uimac/build/Default Unison.app
@@ -1060,7 +1061,7 @@ jobs:
       matrix:
         job:
         - { os: ubuntu-22.04   , ocaml-compiler: 4.12.x }
-        - { os: macos-11       , ocaml-compiler: 4.11.x }
+        - { os: macos-14       , ocaml-compiler: 4.14.x }
 
     runs-on: ${{ matrix.job.os }}
 
