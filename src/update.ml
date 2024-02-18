@@ -420,6 +420,13 @@ let verboseArchiveName thisRoot =
   Printf.sprintf "Archive for root %s synchronizing roots %s"
     thisRoot (Prefs.read rootsName)
 
+module PathMap = MyMap.Make (Path)
+
+let mpaths = PathMap.m Proplist.m
+
+let propPathKey : Proplist.t PathMap.t Proplist.key =
+  Proplist.register "paths" mpaths
+
 let mpayload = Umarshal.prod4
                  marchive Umarshal.int Umarshal.string Proplist.m
                  Umarshal.id Umarshal.id
@@ -486,6 +493,14 @@ let loadArchiveLocal fspath (thisRoot: string) :
           (* Load the datastructure *)
           let ((archive, hash, magic, properties) : archive * int * string * Proplist.t) =
             Umarshal.from_channel mpayload c in
+          (* "paths" is stored separately to keep the archive file readable
+             for versions <= 2.53.3 *)
+          let properties =
+            try
+              let paths = Umarshal.from_channel mpaths c in
+              Proplist.add propPathKey paths properties
+            with End_of_file -> properties
+          in
           close_in c;
           (* Restore to the negotiated features *)
           let () = Features.setEnabled negotiatedFts in
@@ -587,7 +602,14 @@ let storeArchiveLocal fspath thisRoot archive hash magic properties =
    output_string c "\030";
    output_string c (String.concat "\030" (Features.changingArchiveFormat ()));
    output_string c "\n";
+   (* "paths" is stored separately to keep the archive file readable
+      for versions <= 2.53.3. Otherwise the older versions would fail
+      with a fatal error "Property lists: paths not yet registered!" *)
+   let paths =
+     try Proplist.find propPathKey properties with Not_found -> PathMap.empty in
+   let properties = Proplist.remove propPathKey properties in
    Umarshal.to_channel mpayload c (archive, hash, magic, properties);
+   if not (PathMap.is_empty paths) then Umarshal.to_channel mpaths c paths;
    close_out c))
 
 (* IMPORTANT! This val is here for smoother upgrades from versions <= 2.51.5
@@ -2370,11 +2392,6 @@ let mustRescanProps props setProps =
     newXattrs = Some true || newACL = Some true
   end
 
-module PathMap = MyMap.Make (Path)
-
-let propPathKey : Proplist.t PathMap.t Proplist.key =
-  Proplist.register "paths" (PathMap.m Proplist.m)
-
 let getArchivePropsForPath thisRoot path =
   let props = getArchiveProps thisRoot in
   try
@@ -2457,8 +2474,20 @@ let extractOldStyleProps props =
 
 let checkNoUpdatePredicateChange thisRoot paths =
   (* Default to old style (<= 2.53.3) and then the new style, per path *)
-  let oldprops = getArchiveProps thisRoot in
-  setArchivePropsLocal thisRoot (clearOldStyleProps oldprops);
+  let hasNewPropPaths =
+    try
+      ignore (Proplist.find propPathKey (getArchiveProps thisRoot));
+      true
+    with Not_found -> false
+  in
+  let oldprops =
+    if hasNewPropPaths then Proplist.empty else getArchiveProps thisRoot in
+  (* FIXME: Enable in some future version:  setArchivePropsLocal thisRoot (clearOldStyleProps oldprops); *)
+  (* FIXME: Remove in some future version.
+     Store global paths props for versions <= 2.53.3. Only for compatibility. *)
+  ignore (mustRescanProps (getArchiveProps thisRoot) (setArchivePropsLocal thisRoot));
+  ignore (updatePredicateChanged (getArchiveProps thisRoot) (setArchivePropsLocal thisRoot));
+  (* FIXME: ^ Remove the above in some future version ^ *)
   let getPropsForPath path =
     let pprops = getArchivePropsForPath thisRoot path in
     if pprops <> Proplist.empty then pprops
