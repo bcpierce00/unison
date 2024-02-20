@@ -284,6 +284,9 @@ jobs:
         # README and LICENSE
         (shopt -s nullglob; for f in [R]'EADME'{,.*}; do cp $f "${PKG_DIR}"/ ; done)
         (shopt -s nullglob; for f in [L]'ICENSE'{-*,}{,.*}; do cp $f "${PKG_DIR}"/ ; done)
+        cp INSTALL.md "${PKG_DIR}"/
+        cp CONTRIBUTING.md "${PKG_DIR}"/
+        cp NEWS.md "${PKG_DIR}"/
 
     - if: runner.os == 'Windows'
       name: "Windows: Package gtk"
@@ -1204,6 +1207,9 @@ jobs:
         strip pkg/bin/*
         cp README* pkg/
         cp LICENSE* pkg/
+        cp INSTALL.md pkg/
+        cp CONTRIBUTING.md pkg/
+        cp NEWS.md pkg/
 
     - name: Package
       if: matrix.job.publish
