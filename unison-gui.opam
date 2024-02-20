@@ -12,6 +12,7 @@ dev-repo: "git://github.com/bcpierce00/unison.git"
 depends: [
   "unison" {= version}
   "lablgtk3"
+  "ocamlfind"
 ]
 synopsis: "Pseudo-package for Unison GUI"
 description: """
