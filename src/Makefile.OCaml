@@ -59,11 +59,6 @@ else
   LABLGTK3LIB=$(OCAMLLIBDIR)/lablgtk3
   ifeq ($(wildcard $(LABLGTK3LIB)),$(LABLGTK3LIB))
     HAS_LABLGTK3=true
-  else
-    LABLGTK3LIB=$(abspath $(OCAMLLIBDIR)/../lablgtk3)
-    ifeq ($(wildcard $(LABLGTK3LIB)),$(LABLGTK3LIB))
-      HAS_LABLGTK3=true
-    endif
   endif
 endif
 
