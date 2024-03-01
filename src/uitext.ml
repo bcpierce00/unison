@@ -1620,6 +1620,20 @@ let rec start interface =
     handleException e;
     exit Uicommon.fatalExit
   end;
+
+  (* Some preference settings imply others... *)
+  if Prefs.read silent then begin
+    Prefs.set Globals.batch true;
+    Prefs.set Trace.terse true;
+    Prefs.set dumbtty true;
+    Trace.sendLogMsgsToStderr := false;
+  end;
+  if Prefs.read Uicommon.repeat <> `NoRepeat then begin
+    Prefs.set Globals.batch true;
+  end;
+  setColorPreference ();
+  Trace.statusFormatter := formatStatus;
+
   start2 ()
 
 (* Uncaught exceptions up to this point are non-recoverable, treated
@@ -1628,8 +1642,6 @@ let rec start interface =
    The process does not have to exit if in repeat mode and can try again. *)
 and start2 () =
   begin try
-    if Prefs.read silent then Prefs.set Trace.terse true;
-
     Uicommon.connectRoots ~displayWaitMessage ();
 
     if Prefs.read Uicommon.testServer then exit 0;
@@ -1640,25 +1652,12 @@ and start2 () =
       exit 0
     end;
 
-    (* Some preference settings imply others... *)
-    if Prefs.read silent then begin
-      Prefs.set Globals.batch true;
-      Prefs.set Trace.terse true;
-      Prefs.set dumbtty true;
-      Trace.sendLogMsgsToStderr := false;
-    end;
-    if Prefs.read Uicommon.repeat <> `NoRepeat then begin
-      Prefs.set Globals.batch true;
-    end;
-    setColorPreference ();
-
     (* Tell OCaml that we want to catch Control-C ourselves, so that
        we get a chance to reset the terminal before exiting *)
     Sys.catch_break true;
     (* Put the terminal in cbreak mode if possible *)
     if not (Prefs.read Globals.batch) then setupTerminal();
     setWarnPrinter();
-    Trace.statusFormatter := formatStatus;
 
     let exitStatus = synchronizeUntilDone() in
 
