@@ -1585,7 +1585,10 @@ let handleException e =
   alwaysDisplay "\n";
   Util.set_infos "";
   restoreTerminal();
-  let msg = Uicommon.exn2string e in
+  let lbl =
+    if e = Sys.Break then ""
+    else "Error: " in
+  let msg = lbl ^ Uicommon.exn2string e in
   let () =
     try Trace.log (msg ^ "\n")
     with Util.Fatal _ -> () in (* Can't allow fatal errors in fatal error handler *)
