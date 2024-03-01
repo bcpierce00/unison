@@ -158,6 +158,10 @@ let alwaysDisplay message =
   print_string message;
   flush stdout
 
+let alwaysDisplayErr message =
+  prerr_string message;
+  flush stderr
+
 let alwaysDisplayAndLog message =
 (*  alwaysDisplay message;*)
   Trace.log (message ^ "\n")
@@ -1580,19 +1584,39 @@ let getProfile default =
   askProfile ();
   !selection
 
-let handleException e =
+let suppressRepeatingMsg =
+  let prevMsg = ref "" in
+  let silencing = ref false in
+  fun retrying msg ->
+    match retrying with
+    | false ->
+        prevMsg := ""; silencing := false;
+        Some msg
+    | true when !prevMsg <> msg ->
+        prevMsg := msg; silencing := false;
+        Some msg
+    | true when not !silencing ->
+        silencing := true;
+        Some "\nRetrying continuously. The error above is repeating and \
+          is not logged repeatedly.\n"
+    | true ->
+        None
+
+let handleException ?(retrying = false) e =
   (* Keep the current status line (if any) and don't repeat it any more *)
   alwaysDisplay "\n";
   Util.set_infos "";
   restoreTerminal();
   let lbl =
     if e = Sys.Break then ""
-    else "Error: " in
+    else if not retrying then "Fatal error: " else "Error: " in
   let msg = lbl ^ Uicommon.exn2string e in
-  let () =
-    try Trace.log (msg ^ "\n")
-    with Util.Fatal _ -> () in (* Can't allow fatal errors in fatal error handler *)
-  if not !Trace.sendLogMsgsToStderr then alwaysDisplay ("\n" ^ msg ^ "\n")
+  alwaysDisplayErr (msg ^ "\n");
+  match suppressRepeatingMsg retrying msg with
+  | None -> ()
+  | Some msg ->
+      try Trace.logonly (msg ^ "\n")
+      with Util.Fatal _ -> () (* Can't allow fatal errors in fatal error handler *)
 
 let rec start interface =
   if interface <> Uicommon.Text then
@@ -1685,7 +1709,7 @@ and start2 () =
   | e -> begin
       (* If any other bad thing happened and the -repeat preference is
          set, then restart *)
-      handleException e;
+      handleException ~retrying:true e;
 
       Util.msg "\nRestarting in 10 seconds...\n\n";
       begin try interruptibleSleep 10 with Sys.Break -> terminate () end;
