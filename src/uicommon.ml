@@ -353,10 +353,10 @@ let reconItem2string oldPath theRI status =
 let exn2string e =
   match e with
      Sys.Break      -> "Terminated!"
-   | Util.Fatal(s)  -> Printf.sprintf "Fatal error: %s" s
-   | Util.Transient(s) -> Printf.sprintf "Error: %s" s
+   | Util.Fatal s   -> s
+   | Util.Transient s -> s
    | Unix.Unix_error (err, fun_name, arg) ->
-       Printf.sprintf "Uncaught unix error: %s failed%s: %s%s\n%s"
+       Printf.sprintf "Uncaught unix error (please report a bug): %s failed%s: %s%s\n%s"
          fun_name
          (if String.length arg > 0 then Format.sprintf " on \"%s\"" arg else "")
          (Unix.error_message err)
@@ -369,8 +369,9 @@ let exn2string e =
          Technical information in case you need to report a bug:\n"
        ^ (Printexc.get_backtrace ())
    | Invalid_argument s ->
-       Printf.sprintf "Invalid argument: %s\n%s" s (Printexc.get_backtrace ())
-   | other -> Printf.sprintf "Uncaught exception %s\n%s"
+       Printf.sprintf "Invalid argument (please report a bug): %s\n%s"
+         s (Printexc.get_backtrace ())
+   | other -> Printf.sprintf "Uncaught exception (please report a bug): %s\n%s"
        (Printexc.to_string other) (Printexc.get_backtrace ())
 
 (* precondition: uc = File (Updates(_, ..) on both sides *)
