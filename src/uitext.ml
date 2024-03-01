@@ -1620,11 +1620,13 @@ let rec start interface =
     handleException e;
     exit Uicommon.fatalExit
   end;
+  start2 ()
 
-  (* Uncaught exceptions up to this point are non-recoverable, treated
-     as permanent and will inevitably exit the process. Uncaught exceptions
-     from here onwards are treated as potentially temporary or recoverable.
-     The process does not have to exit if in repeat mode and can try again. *)
+(* Uncaught exceptions up to this point are non-recoverable, treated
+   as permanent and will inevitably exit the process. Uncaught exceptions
+   from here onwards are treated as potentially temporary or recoverable.
+   The process does not have to exit if in repeat mode and can try again. *)
+and start2 () =
   begin try
     if Prefs.read silent then Prefs.set Trace.terse true;
 
@@ -1684,7 +1686,7 @@ let rec start interface =
 
       Util.msg "\nRestarting in 10 seconds...\n\n";
       begin try interruptibleSleep 10 with Sys.Break -> exit Uicommon.fatalExit end;
-      if safeStopRequested () then exit Uicommon.fatalExit else start interface
+      if safeStopRequested () then exit Uicommon.fatalExit else start2 ()
     end
   end
 
