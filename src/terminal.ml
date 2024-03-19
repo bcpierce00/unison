@@ -336,7 +336,7 @@ let parseCtrlSeq s =
         begin
           match ch with
           | '\024' | '\026' -> state No (* CAN, SUB *)
-          | '\000'..'\025' -> add_char ch (* Control charaters (roughly) *)
+          | '\000'..'\025' -> add_char ch (* Control characters (roughly) *)
           | '\027' -> state Escape
           | '\048'..'\126' -> state No (* Final *)
           | '\127'..'\255' -> state No (* Invalid *)
@@ -346,7 +346,7 @@ let parseCtrlSeq s =
         begin
           match ch with
           | '\024' | '\026' -> state No (* CAN, SUB *)
-          | '\000'..'\025' -> add_char ch (* Control charaters (roughly) *)
+          | '\000'..'\025' -> add_char ch (* Control characters (roughly) *)
           | '\027' -> state Escape
           | '\064'..'\126' -> (* Final *)
               begin
@@ -367,7 +367,7 @@ let parseCtrlSeq s =
           match ch with
           | '\024' | '\026' -> state No (* CAN, SUB *)
           | '\007' -> state No (* BEL *)
-          | '\000'..'\025' -> add_char ch (* Control charaters (roughly) *)
+          | '\000'..'\025' -> add_char ch (* Control characters (roughly) *)
           | '\027' -> state OSCEsc
           | _ -> ()
         end
@@ -381,7 +381,7 @@ let parseCtrlSeq s =
         begin
           match ch with
           | '\024' | '\026' -> state No (* CAN, SUB *)
-          | '\000'..'\025' -> add_char ch (* Control charaters (roughly) *)
+          | '\000'..'\025' -> add_char ch (* Control characters (roughly) *)
           | '\027' -> state StringEsc
           | _ -> ()
         end

@@ -136,7 +136,7 @@ let repeat =
      ^ "beginning again. When the argument is \\verb|watch|, Unison relies on "
      ^ "an external file monitoring process to synchronize whenever a change "
      ^ "happens.  You can combine the two with a \\verb|+| character to use "
-     ^ "file monitoring and also do a full scan every specificed number of "
+     ^ "file monitoring and also do a full scan every specified number of "
      ^ "seconds.  For example, \\verb|watch+3600| will react to changes "
      ^ "immediately and additionally do a full scan every hour.")
     (fun _ -> parseRepeat)

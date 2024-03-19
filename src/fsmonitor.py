@@ -561,7 +561,7 @@ to read all the settings from there."""
         parser.add_option("-w", "--sinceWhen", dest="sinceWhen",
                       help="""starting point for filesystem updates to be captured
                                           Defaults to 'now' in the first run
-                                          or the last caputured change""",default = 'now', metavar="SINCEWHEN")
+                                          or the last captured change""",default = 'now', metavar="SINCEWHEN")
         parser.add_option("-l", "--latency", dest="latency",
                       help="set notification LATENCY in seconds. default 5",default = 5, metavar="LATENCY")
         parser.add_option("-f", "--flags", dest="flags",
