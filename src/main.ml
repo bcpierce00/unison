@@ -236,7 +236,18 @@ let init () = begin
               Uutil.myName)
     end;
     exit 0
-  with Not_found -> () end;
+  with
+  | Not_found -> ()
+  | Sys_error _ (* Broken pipe *) ->
+      (* A broken pipe (when stdout is piped to pager, for example) will cause
+         all output functions, including flush, to raise an exception. Catching
+         the exception here is not sufficient because stdout is implicitly
+         flushed on exit, which will again raise a broken pipe exception. The
+         only way to avoid [exit] raising a broken pipe exception is to close
+         [stdout] beforehand. *)
+      close_out_noerr stdout;
+      exit 0
+  end;
 
   (* Start a server if requested *)
   if Util.StringMap.mem serverPrefName argv then begin
