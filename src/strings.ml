@@ -1919,7 +1919,7 @@ let docs =
       \032         watch, Unison relies on an external file monitoring process to\n\
       \032         synchronize whenever a change happens. You can combine the two\n\
       \032         with a + character to use file monitoring and also do a full\n\
-      \032         scan every specificed number of seconds. For example, watch+3600\n\
+      \032         scan every specified number of seconds. For example, watch+3600\n\
       \032         will react to changes immediately and additionally do a full\n\
       \032         scan every hour.\n\
       \n\

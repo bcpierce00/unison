@@ -86,7 +86,7 @@ It would be nice if Unison could have the "power" to copy write-protected
 * There is no way of selecting files with wildchar. I had to use
      ignorenot = Name opt/root/.unison/*.prf
      ignore = Name opt/root/.unison/*
-  But this is inconvinent, but the worse is that it gets complicated very
+  But this is inconvenient, but the worse is that it gets complicated very
   fast and I cannot make it for more complicated scenarios. I would expect
   something like (suggestion):
      Files = opt/root/.unison/*.prf
