@@ -333,7 +333,7 @@ jobs:
     - uses: actions/upload-artifact@v4
       if: matrix.job.publish
       with:
-        name: unison-${{ steps.vars.outputs.REF_SHAS }}.ocaml-${{ matrix.job.ocaml-version }}.${{ matrix.job.os }}-publish
+        name: ${{ steps.vars.outputs.PKG_NAME }}___ocaml-${{ matrix.job.ocaml-version }}.${{ matrix.job.os }}-publish
         path: ${{ steps.vars.outputs.STAGING_DIR }}/${{ steps.vars.outputs.PKG_NAME }}
 
     - name: Publish
@@ -361,7 +361,7 @@ jobs:
       name: "macOS: Upload Unison.app artifact"
       uses: actions/upload-artifact@v4
       with:
-        name: Unison-${{ steps.vars.outputs.REF_SHAS }}.ocaml-${{ matrix.job.ocaml-version }}.${{ matrix.job.os }}.app
+        name: ${{ steps.macapp.outputs.APP_NAME }}___ocaml-${{ matrix.job.ocaml-version }}.${{ matrix.job.os }}-publish
         path: ${{ steps.macapp.outputs.APP_NAME }}
 
     - if: runner.os == 'macOS' && steps.vars.outputs.DEPLOY && matrix.job.publish
@@ -1218,7 +1218,7 @@ jobs:
     - uses: actions/upload-artifact@v3
       if: matrix.job.publish
       with:
-        name: ${{ steps.vars.outputs.PKG_NAME }}.ocaml-${{ matrix.job.ocaml-version }}.ubuntu_compat-publish
+        name: ${{ steps.vars.outputs.PKG_NAME }}___ocaml-${{ matrix.job.ocaml-version }}.ubuntu_compat-publish
         path: pkg/${{ steps.vars.outputs.PKG_NAME }}
 
     - name: Publish
