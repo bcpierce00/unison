@@ -25,14 +25,18 @@ Please refer to instructions provided by the repository.
 
 #### Build prerequisites
 
-- A recent version of OCaml compiler (version 4.08 at minimum) together with a
-  C99 compiler (such as gcc, clang) -- see https://ocaml.org/
+- A recent version of OCaml compiler (version 4.08 at minimum)
+  together with a C99 compiler (such as gcc, clang) -- see
+  https://ocaml.org/.  (Note that ocaml upstream says that 5.x is
+  experimental.  The standard approach is the most recent 4.x ocaml
+  release.)
 - GNU make
 - Basic POSIX tools: sh, sed (optional, for manuals)
 
 ##### Optional, for the GUI only
 
-- lablgtk3 and its prerequisites (ocamlfind, GTK 3 and its dependencies)
+- lablgtk3 and its prerequisites (GTK 3 and its dependencies)
+- ocamlfind (there is backup code to operate without it in limited circumstances)
 
 ##### Optional, on BSDs
 
@@ -51,20 +55,22 @@ Please refer to instructions provided by the repository.
 
 Building from source is as simple as executing:
 ```
-make
+${MAKE}
 ```
 
-Use `gmake` in environments where GNU make is not the default. If you are
-using OPAM then `opam exec -- make` may work for you, as opam needs to set up
-a specific environment.
+Where ${MAKE} is the name under which GNU make is installed.
+Sometimes this is "make" and sometimes this is "gmake".  If you are
+using OPAM then `opam exec -- make` may work for you, as opam needs to
+set up a specific environment.
 
 Presence of lablgtk3 is detected automatically to build the GUI. If you want
 to build only the GUI, type `make gui`. You can type `make tui` if you have
 lablgtk3 installed but don't want the GUI built. Type `make fsmonitor` to build
 only the filesystem monitor.
 
-There is currently no installation provided by the makefile. You can just copy
-the built binaries to where you need them. The following files are produced:
+To install, `${MAKE} install` should work, assuming `$PREFIX` is set
+in the environment; `$DESTDIR` is also respected.  The set of
+installed files should be
 ```
 src/unison              (the main executable for TUI/CLI)
 src/unison-gui          (the main executable for GUI)
