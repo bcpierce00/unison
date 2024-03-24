@@ -14,14 +14,18 @@ choosing.
 
 ## Building from source
 
-### Package repositories
+### Packaging systems
 
-Many package repositories, including source-based repositories like `pkgsrc`,
-make it easy to build from source by handling all the dependencies for you.
-Please refer to instructions provided by the repository.
+Many packaging systems, including source-based systems like `pkgsrc`
+and binary repositories like Debian GNU/Linux, make it easy to build
+from source by handling all the dependencies for you and encoding the
+unison build recpipe.  Please refer to instructions provided by the
+packaging system.
 
+Issues with packaging systems should be filed with those systems, and
+not in the unison issue tracker.
 
-### Unix-like OS (GNU/Linux, BSDs, macOS, illumos-based OS, Solaris) and Cygwin
+### mostly-POSIX systems (GNU/Linux, BSDs, macOS, illumos-based OS, Solaris) and Cygwin
 
 #### Build prerequisites
 
@@ -30,8 +34,9 @@ Please refer to instructions provided by the repository.
   https://ocaml.org/.  (Note that ocaml upstream says that 5.x is
   experimental.  The standard approach is the most recent 4.x ocaml
   release.)
+- A non-ancient C compiler
 - GNU make
-- Basic POSIX tools: sh, sed (optional, for manuals)
+- Basic POSIX tools: sh, sed (optional, for manuals), perhaps more
 
 ##### Optional, for the GUI only
 
@@ -53,7 +58,14 @@ Please refer to instructions provided by the repository.
 
 #### Building
 
-Building from source is as simple as executing:
+To build from source, first ensure that all prerequisites are
+installed.  See each prerequisite's documentation for instructions, or
+use a package manager.  (Note that bugs in prerequisite's docs and
+packaging systems are not unison bugs and should not be reported in the
+unison issue tracker.)
+
+Building from source is as simple as changing to the source directory
+and executing:
 ```
 ${MAKE}
 ```
@@ -79,28 +91,6 @@ src/fsmonitor.py        (optional, if unison-fsmonitor is not built)
 man/unison.1            (optional, manual page)
 doc/unison-manual.*     (optional, user manual in different formats)
 ```
-
-#### Building all from scratch
-
-It is very easy to build both the OCaml compiler and Unison from source without
-using a package repository. Building OCaml has very few prerequisites. If your
-system has a supported C compiler installed then the following may work out of
-the box:
-
-```
-# Build OCaml compiler
-## In a dir with extracted OCaml source
-./configure
-make
-make install    # you may need elevated privileges
-
-# Build unison
-## In a dir with extracted Unison source
-make
-```
-
-Building the GTK GUI this way is difficult as both GTK 3 and lablgtk3 must be
-built and installed.
 
 ### Cross-compiling for a different target architecture or OS
 
