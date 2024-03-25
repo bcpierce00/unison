@@ -37,6 +37,17 @@ jobs:
           doc/unison-manual.txt
           doc/unison-manual.html
           doc/unison-manual.pdf
+          man/unison.1
+
+    - name: Store user manual for the build jobs (legacy, for build_compat)
+      uses: actions/upload-artifact@v3
+      with:
+        name: unison-docs
+        path: |
+          doc/unison-manual.txt
+          doc/unison-manual.html
+          doc/unison-manual.pdf
+          man/unison.1
 
   build:
     if: ${{ !cancelled() }}    # Don't fail if 'docs' failed
@@ -1196,7 +1207,7 @@ jobs:
     - name: Copy user manual
       if: matrix.job.publish
       continue-on-error: ${{ !(github.ref_type == 'tag' && startsWith(github.ref_name, 'v') && matrix.job.publish) }}
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v3
       with:
         name: unison-docs
         path: pkg
