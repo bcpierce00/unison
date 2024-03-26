@@ -678,6 +678,8 @@ let statistics () =
 
 (* ------ *)
 
+let globalGTKInited = ref false
+
 let gui_safe_eprintf fmt =
   Printf.ksprintf (fun s ->
     if System.has_stderr ~info:s then Printf.eprintf "%s%!" s) fmt
@@ -689,15 +691,15 @@ let fatalError ?(quit=false) message =
     with Util.Fatal _ -> () in (* Can't allow fatal errors in fatal error handler *)
   let title = "Fatal error" in
   let toplevelWindow =
-    try toplevelWindow ()
+    try Some (toplevelWindow ())
     with Util.Fatal err ->
       begin
         gui_safe_eprintf "\n%s:\n%s\n\n%s\n\n" title err message;
-        exit 1
+        if not !globalGTKInited then exit 1 else None
       end
   in
   let t =
-    GWindow.dialog ~parent:toplevelWindow
+    GWindow.dialog ?parent:toplevelWindow ~title
       ~border_width:6 ~modal:true ~resizable:false () in
   t#vbox#set_spacing 12;
   let h1 = GPack.hbox ~border_width:6 ~spacing:12 ~packing:t#vbox#pack () in
@@ -4454,6 +4456,7 @@ let start _ =
 
     (* Initialize the GTK library *)
     ignore (GMain.Main.init ());
+    globalGTKInited := true;
 
     Util.warnPrinter :=
       Some (fun msg -> warnBox ~parent:(toplevelWindow ()) "Warning" msg);
