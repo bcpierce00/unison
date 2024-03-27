@@ -293,7 +293,7 @@ let canonizeFspath p0 =
             (try System.chdir parent with
                Sys_error why2 -> raise (Util.Fatal (Printf.sprintf
                  "Cannot find canonical name of %s: unable to cd either to it \
-(%s)\nor to its parent %s\n(%s)" p why parent why2)));
+(%s)\nor to its parent %s (%s)" p why parent why2)));
             System.getcwd () end in
           System.chdir original;
           let bn = Filename.basename p in
