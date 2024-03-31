@@ -55,7 +55,6 @@ let maxThreads () =
 
 let run dispenseTask =
   let runConcurrent limit dispenseTask =
-    let dispenseTask () = if Abort.isAll () then None else dispenseTask () in
     let avail = ref limit in
     let rec runTask thr =
       Lwt.try_bind thr
