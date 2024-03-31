@@ -649,12 +649,15 @@ let transportStart () = Transport.logStart ()
 let transportFinish () = Transport.logFinish ()
 
 let transportItems items pRiThisRound makeAction =
+  if Abort.isAll () then () else
   let waiter = Lwt.wait () in
   let outstanding = ref 0 in
   let starting () = incr outstanding in
   let completed () =
     decr outstanding;
-    if !outstanding = 0 then begin
+    if !outstanding = 0 || (!outstanding = 1 && Abort.isAll ()) then begin
+      (* If there is a stop request then we might not get the [completed]
+         notice for the dispense loop itself, so we also stop at count 1. *)
       try Lwt.wakeup waiter () with Invalid_argument _ -> ()
     end
   in
@@ -682,7 +685,10 @@ let transportItems items pRiThisRound makeAction =
   in
   let rec dispenseAction () =
     let i = !idx in
-    if i < im then begin
+    if Abort.isAll () then begin
+      stopDispense ();
+      dispenseDone ()
+    end else if i < im then begin
       let item = items.(i) in
       incr idx;
       if pRiThisRound item then
