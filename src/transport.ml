@@ -58,19 +58,21 @@ let run dispenseTask =
     let avail = ref limit in
     let rec runTask thr =
       Lwt.try_bind thr
-        (fun () -> nextTask (); Lwt.return ())
-        (fun _ -> nextTask (); assert false)
+        (fun () -> nextTask ())
+        (fun _ -> assert false)
         (* It is a programming error for an exception to reach this far. *)
-      |> ignore
     and nextTask () =
        match dispenseTask () with
-       | None -> incr avail
+       | None -> Lwt.return (incr avail)
        | Some thr -> runTask thr
     in
     let rec fillPool () =
       match dispenseTask () with
       | None -> ()
-      | Some thr -> decr avail; runTask thr; if !avail > 0 then fillPool ()
+      | Some thr ->
+          decr avail;
+          let _ : unit Lwt.t = runTask thr in
+          if !avail > 0 then fillPool ()
     in
     fillPool ()
   in
