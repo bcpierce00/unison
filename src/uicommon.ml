@@ -226,7 +226,7 @@ let replicaContent2string rc sep =
       "absent"
   | _, `Unchanged ->
       "unchanged "
-     ^(Util.truncateString (Fileinfo.type2string rc.typ) 7)
+     ^(Util.padto 7 (Util.truncateString (Fileinfo.type2string rc.typ) 7))
      ^ sep
      ^ replicaContentDesc rc
   | `ABSENT, `Deleted -> "deleted"
