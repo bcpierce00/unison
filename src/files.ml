@@ -841,8 +841,8 @@ let rec diff root1 path1 ui1 root2 path2 ui2 showDiff id =
         (fun () ->
            let path1 = Update.translatePathLocal fspath1 path1 in
            let (workingDir, realPath) = Fspath.findWorkingDir fspath1 path1 in
-           let tmppath =
-             Path.addSuffixToFinalName realPath (tempName "diff-") in
+           let tmppath = Os.tempPath ~fresh:false workingDir
+             (Path.addSuffixToFinalName realPath "-diff") in
            Os.delete workingDir tmppath;
            Lwt_unix.run
              (Update.translatePath root2 path2 >>= (fun path2 ->
@@ -860,8 +860,8 @@ let rec diff root1 path1 ui1 root2 path2 ui2 showDiff id =
         (fun () ->
            let path2 = Update.translatePathLocal fspath2 path2 in
            let (workingDir, realPath) = Fspath.findWorkingDir fspath2 path2 in
-           let tmppath =
-             Path.addSuffixToFinalName realPath "#unisondiff-" in
+           let tmppath = Os.tempPath ~fresh:false workingDir
+             (Path.addSuffixToFinalName realPath "-diff") in
            Lwt_unix.run
              (Update.translatePath root1 path1 >>= (fun path1 ->
               (* Note that we don't need the resource fork *)
