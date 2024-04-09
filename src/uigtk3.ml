@@ -2889,6 +2889,10 @@ let createToplevelWindow () =
          the user's.gtkrc, not programmatically *)
       ~orientation:`HORIZONTAL (* ~space_size:10 *)
       ~packing:(toplevelVBox#pack ~expand:false) () in
+  (* [show_arrow] is initially false to produce a better default width. *)
+  actionBar#set_show_arrow false;
+  ignore (toplevelWindow#misc#connect#show
+    ~callback:(fun () -> actionBar#set_show_arrow true));
 
   (*********************************************************************
     Create the main window
