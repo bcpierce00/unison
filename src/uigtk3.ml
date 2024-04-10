@@ -720,6 +720,13 @@ let fatalError ?(quit=false) message =
 
 let fatalErrorHandler = ref (fatalError ~quit:true)
 
+let stackOverflowNoQuitMsg () =
+  "Stack overflow. This could indicate a programming error.\n\
+    You should be able to continue without having to quit \
+    the application but the error may repeat.\n\n\
+    Technical information in case you need to report a bug:\n"
+  ^ (Printexc.get_backtrace ())
+
 (* ------ *)
 
 let getFirstRoot () =
@@ -4468,6 +4475,7 @@ let start _ =
     GtkSignal.user_handler :=
       (function
        | Util.Transient s | Util.Fatal s -> !fatalErrorHandler s
+       | Stack_overflow -> !fatalErrorHandler (stackOverflowNoQuitMsg ());
        | exn -> !fatalErrorHandler (Uicommon.exn2string exn));
 
     (* Ask the Remote module to call us back at regular intervals during

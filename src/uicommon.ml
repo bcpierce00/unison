@@ -364,6 +364,10 @@ let exn2string e =
             Unix.EUNKNOWNERR n -> Format.sprintf " (code %d)" n
           | _                  -> "")
          (Printexc.get_backtrace ())
+   | Stack_overflow ->
+       "Stack overflow. This could indicate a programming error.\n\n\
+         Technical information in case you need to report a bug:\n"
+       ^ (Printexc.get_backtrace ())
    | Invalid_argument s ->
        Printf.sprintf "Invalid argument: %s\n%s" s (Printexc.get_backtrace ())
    | other -> Printf.sprintf "Uncaught exception %s\n%s"
