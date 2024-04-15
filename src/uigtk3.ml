@@ -2685,7 +2685,7 @@ let () = documentationFn := documentation
 
 (* ------ *)
 
-let messageBox ~title ?(action = fun t -> t#destroy) message =
+let messageBox ~title ?(action = fun t -> t#destroy) ?styleText message =
   let utitle = transcode title in
   let t = GWindow.dialog ~title:utitle ~parent:(toplevelWindow ())
             ~position:`CENTER () in
@@ -2697,6 +2697,7 @@ let messageBox ~title ?(action = fun t -> t#destroy) message =
       ~packing:(t#vbox#pack ~expand:true) ()
   in
   t_text#insert message;
+  let () = match styleText with None -> () | Some fn -> fn t_text in
   let (width, height) = get_size_chars t_text ~width:82 ~height:20 () in
   t#set_default_size ~width ~height;
   ignore (t#event#connect#delete ~callback:(fun _ -> action t (); true));
@@ -3992,9 +3993,34 @@ let createToplevelWindow () =
           item.bytesToTransfer <- len;
           initGlobalProgress len;
           startStats ();
+          let styleDiff (t_text : scrolled_text) =
+            let diffAdd =
+              t_text#text#buffer#create_tag [`FOREGROUND "green"] in
+            let diffDel =
+              t_text#text#buffer#create_tag [`FOREGROUND "red"] in
+            let diffLoc =
+              t_text#text#buffer#create_tag [`FOREGROUND "dark cyan"; `WEIGHT `BOLD] in
+            let setStyle sty ~start ~stop =
+              t_text#text#buffer#apply_tag sty ~start ~stop
+            in
+            let rec styleDiffLine ~start =
+              let stop = start#forward_line in
+              let styleLine tag = setStyle tag ~start ~stop in
+              let () =
+                match start#get_text ~stop:start#forward_char with
+                | "+" -> styleLine diffAdd
+                | "-" -> styleLine diffDel
+                | "@" -> styleLine diffLoc
+                | _ -> ()
+              in
+              if not (start#equal stop) then styleDiffLine ~start:stop
+            in
+            styleDiffLine ~start:(t_text#text#buffer#start_iter);
+          in
           Uicommon.showDiffs item.ri
             (fun title text ->
-               messageBox ~title:(transcode title) (transcode text))
+               messageBox ~title:(transcode title) (transcode text)
+                 ~styleText:styleDiff)
             Trace.status (Uutil.File.ofLine i);
           stopStats ();
           displayGlobalProgress 0.;
