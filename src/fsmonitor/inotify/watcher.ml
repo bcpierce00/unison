@@ -120,7 +120,12 @@ let event_is_change (_, evl, _, _) = List.exists is_change evl
 let event_is_creation (_, evl, _, _) = List.exists is_creation evl
 let event_is_deletion (_, evl, _, _) = List.exists is_deletion evl
 
-let st = Lwt_inotify.init ()
+let st =
+  try Lwt_inotify.init () with
+  | Unix.Unix_error ((EMFILE | EBADF), _, _) ->
+      Watchercommon.error "unable to start inotify: system limit reached \
+        (you can do a web search for \"inotify max_user_instances\" \
+        to understand the reasons and mitigations for this error)"
 
 module IntSet =
   Set.Make
