@@ -841,13 +841,13 @@ let rec diff root1 path1 ui1 root2 path2 ui2 showDiff id =
         (fun () ->
            let path1 = Update.translatePathLocal fspath1 path1 in
            let (workingDir, realPath) = Fspath.findWorkingDir fspath1 path1 in
-           let tmppath =
-             Path.addSuffixToFinalName realPath (tempName "diff-") in
+           let tmppath = Os.tempPath ~fresh:false workingDir
+             (Path.addSuffixToFinalName realPath "-diff") in
            Os.delete workingDir tmppath;
            Lwt_unix.run
              (Update.translatePath root2 path2 >>= (fun path2 ->
               Copy.file root2 path2 root1 workingDir tmppath realPath
-                `Copy (Props.setLength Props.fileSafe (Props.length desc2))
+                `Copy (Props.setLength desc1 (Props.length desc2))
                  fp2 None ress2 id) >>= fun info ->
               Lwt.return ());
            displayDiff
@@ -860,13 +860,13 @@ let rec diff root1 path1 ui1 root2 path2 ui2 showDiff id =
         (fun () ->
            let path2 = Update.translatePathLocal fspath2 path2 in
            let (workingDir, realPath) = Fspath.findWorkingDir fspath2 path2 in
-           let tmppath =
-             Path.addSuffixToFinalName realPath "#unisondiff-" in
+           let tmppath = Os.tempPath ~fresh:false workingDir
+             (Path.addSuffixToFinalName realPath "-diff") in
            Lwt_unix.run
              (Update.translatePath root1 path1 >>= (fun path1 ->
               (* Note that we don't need the resource fork *)
               Copy.file root1 path1 root2 workingDir tmppath realPath
-                `Copy (Props.setLength Props.fileSafe (Props.length desc1))
+                `Copy (Props.setLength desc2 (Props.length desc1))
                  fp1 None ress1 id >>= fun info ->
               Lwt.return ()));
            displayDiff
