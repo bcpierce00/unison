@@ -299,7 +299,7 @@ let primaryText msg =
    chosen, false if the second button is chosen. *)
 let twoBox ?(kind=`DIALOG_WARNING) ~parent ~title ~astock ~bstock message =
   let t =
-    GWindow.dialog ~parent ~border_width:6 ~modal:true
+    GWindow.dialog ~parent ~title ~border_width:6 ~modal:true
       ~resizable:false () in
   t#vbox#set_spacing 12;
   let h1 = GPack.hbox ~border_width:6 ~spacing:12 ~packing:t#vbox#pack () in
@@ -345,7 +345,7 @@ let warnBox ~parent title message =
   if Prefs.read Globals.batch then begin
     (* In batch mode, just pop up a window and go ahead *)
     let t =
-      GWindow.dialog ~parent
+      GWindow.dialog ~parent ~title
         ~border_width:6 ~modal:true ~resizable:false () in
     t#vbox#set_spacing 12;
     let h1 = GPack.hbox ~border_width:6 ~spacing:12 ~packing:t#vbox#pack () in
@@ -685,11 +685,11 @@ let gui_safe_eprintf fmt =
     if System.has_stderr ~info:s then Printf.eprintf "%s%!" s) fmt
 
 let fatalError ?(quit=false) message =
+  let title = if quit then "Fatal error" else "Error" in
   let () =
     Trace.sendLogMsgsToStderr := false; (* We don't know if stderr is available *)
-    try Trace.log (message ^ "\n")
+    try Trace.log (title ^ ": " ^ message ^ "\n")
     with Util.Fatal _ -> () in (* Can't allow fatal errors in fatal error handler *)
-  let title = "Fatal error" in
   let toplevelWindow =
     try Some (toplevelWindow ())
     with Util.Fatal err ->
@@ -1657,9 +1657,9 @@ let createProfile parent =
       if React.state fat then Printf.fprintf ch "fat = true\n";
       close_out ch);
       profileName := Some (React.state name)
-    with Sys_error _ as e ->
+    with Sys_error errmsg ->
       okBox ~parent:assistant ~typ:`ERROR ~title:"Could not save profile"
-        ~message:(Uicommon.exn2string e)
+        ~message:("Error when saving profile: " ^ errmsg)
     end;
     assistant#destroy ();
   in
@@ -2400,9 +2400,9 @@ let editProfile parent name =
              false);
         close_out ch);
         setModified false
-      with Sys_error _ as e ->
+      with Sys_error errmsg ->
         okBox ~parent:t ~typ:`ERROR ~title:"Could not save profile"
-          ~message:(Uicommon.exn2string e)
+          ~message:("Error when saving profile: " ^ errmsg)
     end
   in
   let applyButton =

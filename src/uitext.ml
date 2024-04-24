@@ -1585,7 +1585,10 @@ let handleException e =
   alwaysDisplay "\n";
   Util.set_infos "";
   restoreTerminal();
-  let msg = Uicommon.exn2string e in
+  let lbl =
+    if e = Sys.Break then ""
+    else "Error: " in
+  let msg = lbl ^ Uicommon.exn2string e in
   let () =
     try Trace.log (msg ^ "\n")
     with Util.Fatal _ -> () in (* Can't allow fatal errors in fatal error handler *)
@@ -1621,13 +1624,36 @@ let rec start interface =
     exit Uicommon.fatalExit
   end;
 
-  (* Uncaught exceptions up to this point are non-recoverable, treated
-     as permanent and will inevitably exit the process. Uncaught exceptions
-     from here onwards are treated as potentially temporary or recoverable.
-     The process does not have to exit if in repeat mode and can try again. *)
-  begin try
-    if Prefs.read silent then Prefs.set Trace.terse true;
+  (* Some preference settings imply others... *)
+  if Prefs.read silent then begin
+    Prefs.set Globals.batch true;
+    Prefs.set Trace.terse true;
+    Prefs.set dumbtty true;
+    Trace.sendLogMsgsToStderr := false;
+  end;
+  if Prefs.read Uicommon.repeat <> `NoRepeat then begin
+    Prefs.set Globals.batch true;
+  end;
+  setColorPreference ();
+  Trace.statusFormatter := formatStatus;
 
+  start2 ()
+
+(* Uncaught exceptions up to this point are non-recoverable, treated
+   as permanent and will inevitably exit the process. Uncaught exceptions
+   from here onwards are treated as potentially temporary or recoverable.
+   The process does not have to exit if in repeat mode and can try again. *)
+and start2 () =
+  let noRepeat =
+    Prefs.read Uicommon.repeat = `NoRepeat
+      || Prefs.read Uicommon.runtests
+      || Prefs.read Uicommon.testServer
+  in
+  let terminate () =
+    handleException Sys.Break;
+    exit Uicommon.fatalExit
+  in
+  begin try
     Uicommon.connectRoots ~displayWaitMessage ();
 
     if Prefs.read Uicommon.testServer then exit 0;
@@ -1638,39 +1664,21 @@ let rec start interface =
       exit 0
     end;
 
-    (* Some preference settings imply others... *)
-    if Prefs.read silent then begin
-      Prefs.set Globals.batch true;
-      Prefs.set Trace.terse true;
-      Prefs.set dumbtty true;
-      Trace.sendLogMsgsToStderr := false;
-    end;
-    if Prefs.read Uicommon.repeat <> `NoRepeat then begin
-      Prefs.set Globals.batch true;
-    end;
-    setColorPreference ();
-
     (* Tell OCaml that we want to catch Control-C ourselves, so that
        we get a chance to reset the terminal before exiting *)
     Sys.catch_break true;
     (* Put the terminal in cbreak mode if possible *)
     if not (Prefs.read Globals.batch) then setupTerminal();
     setWarnPrinter();
-    Trace.statusFormatter := formatStatus;
 
     let exitStatus = synchronizeUntilDone() in
 
     (* Put the terminal back in "sane" mode, if necessary, and quit. *)
     restoreTerminal();
     exit exitStatus
-
   with
-    Sys.Break -> begin
-      (* If we've been killed, then die *)
-      handleException Sys.Break;
-      exit Uicommon.fatalExit
-    end
-  | e when breakRepeat e -> begin
+  | Sys.Break -> terminate ()
+  | e when noRepeat || breakRepeat e -> begin
       handleException e;
       exit Uicommon.fatalExit
     end
@@ -1678,13 +1686,10 @@ let rec start interface =
       (* If any other bad thing happened and the -repeat preference is
          set, then restart *)
       handleException e;
-      if Prefs.read Uicommon.repeat = `NoRepeat
-          || Prefs.read Uicommon.runtests then
-        exit Uicommon.fatalExit;
 
       Util.msg "\nRestarting in 10 seconds...\n\n";
-      begin try interruptibleSleep 10 with Sys.Break -> exit Uicommon.fatalExit end;
-      if safeStopRequested () then exit Uicommon.fatalExit else start interface
+      begin try interruptibleSleep 10 with Sys.Break -> terminate () end;
+      if safeStopRequested () then terminate () else start2 ()
     end
   end
 
