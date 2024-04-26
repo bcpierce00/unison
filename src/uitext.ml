@@ -782,6 +782,9 @@ let verifyMerge title text =
       true
   end
 
+let intrcount = ref 0
+let intrRequested () = !intrcount <> 0
+
 type stateItem =
   { mutable ri : reconItem;
     mutable bytesTransferred : Uutil.Filesize.t;
@@ -862,7 +865,6 @@ let doTransport reconItemList numskip isSkip =
   in
   Uutil.setProgressPrinter showProgress;
 
-  let intrcount = ref 0 in
   let sigtermHandler _ =
     if !intrcount >= 3 then raise Sys.Break;
     Abort.all ();
@@ -1678,7 +1680,7 @@ and start2 () =
     exit exitStatus
   with
   | Sys.Break -> terminate ()
-  | e when noRepeat || breakRepeat e -> begin
+  | e when noRepeat || breakRepeat e || intrRequested () -> begin
       handleException e;
       exit Uicommon.fatalExit
     end

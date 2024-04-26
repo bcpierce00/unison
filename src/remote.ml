@@ -1880,6 +1880,9 @@ let buildShellConnection shell host userOpt portOpt rootName termInteract =
 
            Don't let these signals reach ssh by blocking them.
 
+           Unfortunately, a bug introduced in OpenSSH 9.6 (also present in 9.7)
+           breaks this workaround by unblocking SIGINT in the ssh process.
+
            The signals could be ignored instead of being blocked because ssh
            does not set handlers for SIGINT and SIGQUIT if they've been ignored
            at startup. But this triggers an error in ssh. The interactive
