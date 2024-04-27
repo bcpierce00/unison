@@ -29,14 +29,13 @@ not in the unison issue tracker.
 
 #### Build prerequisites
 
+- A C99 compiler (e.g. gcc, clang)
 - A recent version of OCaml compiler (version 4.08 at minimum)
-  together with a C99 compiler (such as gcc, clang) -- see
-  https://ocaml.org/.  (Note that ocaml upstream says that 5.x is
+  -- see https://ocaml.org/.  (Note that ocaml upstream says that 5.x is
   experimental.  The standard approach is the most recent 4.x ocaml
   release.)
-- A non-ancient C compiler
 - GNU make
-- Basic POSIX tools: sh, sed (optional, for manuals), perhaps more
+- Basic POSIX tools: install, rm, sh
 
 ##### Optional, for the GUI only
 
@@ -49,6 +48,7 @@ not in the unison issue tracker.
 
 ##### Optional, for building the user manual
 
+- sed
 - LaTeX
 - pdf2ps (optional, for PS output; included with Ghostscript, for example)
 - HEVEA (https://hevea.inria.fr/) (optional, for HTML and text formats)
