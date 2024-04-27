@@ -23,7 +23,7 @@ unison build recipe.  Please refer to instructions provided by the
 packaging system.  (Issues about packaging systems should be filed
 with those systems, and not in the unison issue tracker.)
 
-### mostly-POSIX systems (GNU/Linux, BSDs, macOS, illumos-based OS, Solaris) and Cygwin
+### Mostly-POSIX systems (GNU/Linux, BSDs, macOS, illumos-based OS, Solaris) and Cygwin
 
 #### Build prerequisites
 
@@ -38,7 +38,7 @@ with those systems, and not in the unison issue tracker.)
 ##### Optional, for the GUI only
 
 - lablgtk3 and its prerequisites (GTK 3 and its dependencies)
-- ocamlfind (there is backup code to operate without it in limited circumstances)
+- ocamlfind (there is backup code to operate without it in some circumstances)
 
 ##### Optional, on BSDs
 
@@ -75,9 +75,12 @@ to build only the GUI, type `make gui`. You can type `make tui` if you have
 lablgtk3 installed but don't want the GUI built. Type `make fsmonitor` to build
 only the filesystem monitor.
 
-To install, `gmake install` should work, assuming `$PREFIX` is set
-in the environment; `$DESTDIR` is also respected.  The set of
-installed files should be
+To install:
+  - set `$PREFIX` in the environment if you don't want /usr/local
+  - optionally set `$DESTDIR`
+  - run `gmake install`.
+
+The set of installed files (paths from the source directory) should be
 ```
 src/unison              (the main executable for TUI/CLI)
 src/unison-gui          (the main executable for GUI)
@@ -93,8 +96,8 @@ To cross-compile for a different target, you need to have a cross-compilation
 toolchain including both a cross-compiling C compiler and a cross-compiling
 OCaml compiler. When you have cross-compilation toolchain in place, building
 Unison from source works according to instructions above. You just have to add
-an `TOOL_PREFIX` argument to `gmake` to indicate which toolchain to use (also
-ensure the tools are in PATH).
+a `TOOL_PREFIX` argument to `gmake` to indicate which toolchain to use (and
+ensure the tools are in `$PATH`).
 
 For example, to build a native Windows 64-bit executable using the MinGW
 cross-compilation toolchain:
