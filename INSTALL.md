@@ -111,14 +111,21 @@ To build the documentation, first build Unison without cross-compilation.
 
 ### macOS
 
-#### Build prerequisites
+First, note that macOS is a mostly-POSIX system and see that section
+above.
 
-- Xcode Command Line Tools (optional, for the native GUI)
+Second, note that macOS by default is missing a number of expected
+tools, including POSIX-required system headers (e.g. all of
+/usr/include).  The standard approach on macOS is to install either
+Command Line Tools or Xcode, so that one has a working
+C99/mostly-POSIX environment.  These also allow building against the
+libraries required for the mac-native GUI.
 
 #### Building
 
-The Unix instructions above will build the text user interface, the GTK GUI
-and, if you're building on macOS, also the macOS native GUI.
+The mostly-POSIX instructions above will build the text user
+interface, the GTK GUI and, if you have native GUI headers/libs, also
+the macOS native GUI.
 
 To build only the macOS native GUI, execute:
 ```
