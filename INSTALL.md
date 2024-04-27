@@ -67,20 +67,19 @@ unison issue tracker.)
 Building from source is as simple as changing to the source directory
 and executing:
 ```
-${MAKE}
+gmake
 ```
-
-Where ${MAKE} is the name under which GNU make is installed.
-Sometimes this is "make" and sometimes this is "gmake".  If you are
-using OPAM then `opam exec -- make` may work for you, as opam needs to
-set up a specific environment.
+where `gmake` is the command to run GNU make.  (Usually, GNU make is
+available as "gmake", but on some systems it is only available as
+"make".)  If you are using OPAM then `opam exec -- make` may work for
+you, as opam needs to set up a specific environment.
 
 Presence of lablgtk3 is detected automatically to build the GUI. If you want
 to build only the GUI, type `make gui`. You can type `make tui` if you have
 lablgtk3 installed but don't want the GUI built. Type `make fsmonitor` to build
 only the filesystem monitor.
 
-To install, `${MAKE} install` should work, assuming `$PREFIX` is set
+To install, `gmake install` should work, assuming `$PREFIX` is set
 in the environment; `$DESTDIR` is also respected.  The set of
 installed files should be
 ```
@@ -98,13 +97,13 @@ To cross-compile for a different target, you need to have a cross-compilation
 toolchain including both a cross-compiling C compiler and a cross-compiling
 OCaml compiler. When you have cross-compilation toolchain in place, building
 Unison from source works according to instructions above. You just have to add
-an `TOOL_PREFIX` argument to `make` to indicate which toolchain to use (also
+an `TOOL_PREFIX` argument to `gmake` to indicate which toolchain to use (also
 ensure the tools are in PATH).
 
 For example, to build a native Windows 64-bit executable using the MinGW
 cross-compilation toolchain:
 ```
-make TOOL_PREFIX=x86_64-w64-mingw32-
+gmake TOOL_PREFIX=x86_64-w64-mingw32-
 ```
 
 Building the manual page and documentation does not work when cross-compiling.
