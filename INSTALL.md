@@ -19,11 +19,9 @@ choosing.
 Many packaging systems, including source-based systems like `pkgsrc`
 and binary repositories like Debian GNU/Linux, make it easy to build
 from source by handling all the dependencies for you and encoding the
-unison build recpipe.  Please refer to instructions provided by the
-packaging system.
-
-Issues with packaging systems should be filed with those systems, and
-not in the unison issue tracker.
+unison build recipe.  Please refer to instructions provided by the
+packaging system.  (Issues about packaging systems should be filed
+with those systems, and not in the unison issue tracker.)
 
 ### mostly-POSIX systems (GNU/Linux, BSDs, macOS, illumos-based OS, Solaris) and Cygwin
 
@@ -60,9 +58,7 @@ not in the unison issue tracker.
 
 To build from source, first ensure that all prerequisites are
 installed.  See each prerequisite's documentation for instructions, or
-use a package manager.  (Note that bugs in prerequisite's docs and
-packaging systems are not unison bugs and should not be reported in the
-unison issue tracker.)
+use a package manager.
 
 Building from source is as simple as changing to the source directory
 and executing:
