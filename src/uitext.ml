@@ -1647,6 +1647,7 @@ let rec start interface =
    The process does not have to exit if in repeat mode and can try again. *)
 and start2 () =
   let noRepeat =
+    true || (* Disabled by default until a better retry strategy is devised *)
     Prefs.read Uicommon.repeat = `NoRepeat
       || Prefs.read Uicommon.runtests
       || Prefs.read Uicommon.testServer
