@@ -227,6 +227,9 @@ CAMLprim value unison_xattr_updates_ctime(value unit)
 
 
 #if defined(__Solaris__)
+#ifndef _ATFILE_SOURCE
+#define _ATFILE_SOURCE 1
+#endif
 #include <errno.h>
 #include <sys/types.h>
 #include <sys/stat.h>
