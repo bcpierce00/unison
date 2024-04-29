@@ -19,29 +19,26 @@ choosing.
 Many packaging systems, including source-based systems like `pkgsrc`
 and binary repositories like Debian GNU/Linux, make it easy to build
 from source by handling all the dependencies for you and encoding the
-unison build recpipe.  Please refer to instructions provided by the
-packaging system.
+unison build recipe.  Please refer to instructions provided by the
+packaging system.  (Issues about packaging systems should be filed
+with those systems, and not in the unison issue tracker.)
 
-Issues with packaging systems should be filed with those systems, and
-not in the unison issue tracker.
-
-### mostly-POSIX systems (GNU/Linux, BSDs, macOS, illumos-based OS, Solaris) and Cygwin
+### Mostly-POSIX systems (GNU/Linux, BSDs, macOS, illumos-based OS, Solaris) and Cygwin
 
 #### Build prerequisites
 
+- A C99 compiler (e.g. gcc, clang)
 - A recent version of OCaml compiler (version 4.08 at minimum)
-  together with a C99 compiler (such as gcc, clang) -- see
-  https://ocaml.org/.  (Note that ocaml upstream says that 5.x is
+  -- see https://ocaml.org/.  (Note that ocaml upstream says that 5.x is
   experimental.  The standard approach is the most recent 4.x ocaml
   release.)
-- A non-ancient C compiler
 - GNU make
-- Basic POSIX tools: sh, sed (optional, for manuals), perhaps more
+- Basic POSIX tools: install, rm, sh
 
 ##### Optional, for the GUI only
 
 - lablgtk3 and its prerequisites (GTK 3 and its dependencies)
-- ocamlfind (there is backup code to operate without it in limited circumstances)
+- ocamlfind (there is backup code to operate without it in some circumstances)
 
 ##### Optional, on BSDs
 
@@ -49,6 +46,7 @@ not in the unison issue tracker.
 
 ##### Optional, for building the user manual
 
+- sed
 - LaTeX
 - pdf2ps (optional, for PS output; included with Ghostscript, for example)
 - HEVEA (https://hevea.inria.fr/) (optional, for HTML and text formats)
@@ -60,29 +58,29 @@ not in the unison issue tracker.
 
 To build from source, first ensure that all prerequisites are
 installed.  See each prerequisite's documentation for instructions, or
-use a package manager.  (Note that bugs in prerequisite's docs and
-packaging systems are not unison bugs and should not be reported in the
-unison issue tracker.)
+use a package manager.
 
 Building from source is as simple as changing to the source directory
 and executing:
 ```
-${MAKE}
+gmake
 ```
-
-Where ${MAKE} is the name under which GNU make is installed.
-Sometimes this is "make" and sometimes this is "gmake".  If you are
-using OPAM then `opam exec -- make` may work for you, as opam needs to
-set up a specific environment.
+where `gmake` is the command to run GNU make.  (Usually, GNU make is
+available as "gmake", but on some systems it is only available as
+"make".)  If you are using OPAM then `opam exec -- make` may work for
+you, as opam needs to set up a specific environment.
 
 Presence of lablgtk3 is detected automatically to build the GUI. If you want
 to build only the GUI, type `make gui`. You can type `make tui` if you have
 lablgtk3 installed but don't want the GUI built. Type `make fsmonitor` to build
 only the filesystem monitor.
 
-To install, `${MAKE} install` should work, assuming `$PREFIX` is set
-in the environment; `$DESTDIR` is also respected.  The set of
-installed files should be
+To install:
+  - set `$PREFIX` in the environment if you don't want /usr/local
+  - optionally set `$DESTDIR`
+  - run `gmake install`.
+
+The set of installed files (paths from the source directory) should be
 ```
 src/unison              (the main executable for TUI/CLI)
 src/unison-gui          (the main executable for GUI)
@@ -98,13 +96,13 @@ To cross-compile for a different target, you need to have a cross-compilation
 toolchain including both a cross-compiling C compiler and a cross-compiling
 OCaml compiler. When you have cross-compilation toolchain in place, building
 Unison from source works according to instructions above. You just have to add
-an `TOOL_PREFIX` argument to `make` to indicate which toolchain to use (also
-ensure the tools are in PATH).
+a `TOOL_PREFIX` argument to `gmake` to indicate which toolchain to use (and
+ensure the tools are in `$PATH`).
 
 For example, to build a native Windows 64-bit executable using the MinGW
 cross-compilation toolchain:
 ```
-make TOOL_PREFIX=x86_64-w64-mingw32-
+gmake TOOL_PREFIX=x86_64-w64-mingw32-
 ```
 
 Building the manual page and documentation does not work when cross-compiling.
@@ -113,14 +111,21 @@ To build the documentation, first build Unison without cross-compilation.
 
 ### macOS
 
-#### Build prerequisites
+First, note that macOS is a mostly-POSIX system and see that section
+above.
 
-- Xcode Command Line Tools (optional, for the native GUI)
+Second, note that macOS by default is missing a number of expected
+tools, including POSIX-required system headers (e.g. all of
+/usr/include).  The standard approach on macOS is to install either
+Command Line Tools or Xcode, so that one has a working
+C99/mostly-POSIX environment.  These also allow building against the
+libraries required for the mac-native GUI.
 
 #### Building
 
-The Unix instructions above will build the text user interface, the GTK GUI
-and, if you're building on macOS, also the macOS native GUI.
+The mostly-POSIX instructions above will build the text user
+interface, the GTK GUI and, if you have native GUI headers/libs, also
+the macOS native GUI.
 
 To build only the macOS native GUI, execute:
 ```
