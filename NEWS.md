@@ -14,7 +14,7 @@ unison uses git history for that, and thus there is no changelog file.
 
 ## Changes in 2.53.5
 
-Released 2024-mm-dd
+Released 2024-05-06
 
   * Various minor bugfixes.
   * Recovery from errors during repeat mode (enabled in 2.53.1) is disabled
