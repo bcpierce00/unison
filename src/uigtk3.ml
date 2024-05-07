@@ -3293,7 +3293,7 @@ let createToplevelWindow () =
   let blackPixel  = "000000" in
 *)
   let buildPixmap p =
-    GdkPixbuf.from_xpm_data p in
+    Pixmaps.to_pixbuf p in
   let buildPixmaps f c1 =
     (buildPixmap (f c1), buildPixmap (f lightbluePixel)) in
 
