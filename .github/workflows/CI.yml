@@ -393,16 +393,16 @@ jobs:
         # This list is intended to balance good enough coverage and
         # limited resource usage.
         job:
-        - { os: ubuntu-22.04  , ocaml-version: 5.1.x   , ref: v2.53.4 }
-        - { os: ubuntu-22.04  , ocaml-version: 4.14.x  , ref: v2.53.4 }
+        - { os: ubuntu-22.04  , ocaml-version: 5.1.x   , ref: v2.53.5 }
+        - { os: ubuntu-22.04  , ocaml-version: 4.14.x  , ref: v2.53.5 }
         - { os: ubuntu-22.04  , ocaml-version: 4.14.x  , ref: v2.52.1 , oldmake: true }
         - { os: ubuntu-22.04  , ocaml-version: 4.14.x  , ref: v2.51.5 , oldmake: true }
         - { os: ubuntu-22.04  , ocaml-version: 4.08.x  , ref: v2.51.5 , oldmake: true }
         - { os: ubuntu-22.04  , ocaml-version: 4.08.x  , ref: v2.51.2 , oldmake: true }
-        - { os: windows-2019  , ocaml-version: ocaml-variants.4.14.0+mingw64c  , ref: v2.53.4 }
+        - { os: windows-2019  , ocaml-version: ocaml-variants.4.14.0+mingw64c  , ref: v2.53.5 }
         - { os: windows-2019  , ocaml-version: ocaml-variants.4.14.0+mingw64c  , ref: v2.52.1 , oldmake: true }
         - { os: windows-2019  , ocaml-version: ocaml-variants.4.08.1+mingw32c  , ref: v2.51.5 , oldmake: true }
-        - { os: macos-12      , ocaml-version: 4.14.x  , ref: v2.53.4 }
+        - { os: macos-12      , ocaml-version: 4.14.x  , ref: v2.53.5 }
         - { os: macos-12      , ocaml-version: 4.14.x  , ref: v2.52.1 , oldmake: true }
         - { os: macos-12      , ocaml-version: 4.08.x  , ref: v2.51.2 , oldmake: true }
 
