@@ -253,6 +253,63 @@ let copyBAblack_asym = [|
 
 
 (***********************************************************************)
+(*                          XPM parse function                         *)
+(***********************************************************************)
+
+(* This function is not for universal XPM parsing. It is intended only
+   for parsing the icon definitions above in this file.
+   Do not use [GdkPixbuf.from_xpm_data] as it has been removed from
+   upstream gdk-pixbuf. *)
+let to_pixbuf dat =
+  let colormap = Array.make 256 [| 0; 0; 0; 0 |] in
+  let getColor ch = colormap.(Char.code ch) in
+  let setColor ch col =
+    colormap.(Char.code ch) <-
+      [| (col asr 16) land 0xff;
+         (col asr 8) land 0xff;
+         (col asr 0) land 0xff;
+         0xff |]
+  in
+
+  (* width height num_colors chars_per_pixel *)
+  let parseValues w h nc chp =
+    (* Very basic sanity checks *)
+    if w < 1 || w > 128 || h < 1 || h > 128 || nc < 1 || nc > 256 || chp <> 1 then
+      invalid_arg "XPM: Unsupported header values";
+    w, h, nc
+  in
+  let width, height, colors = Scanf.sscanf dat.(0) " %u %u %u %u" parseValues in
+
+  let parseColor ch t s =
+    if t <> 'c' then invalid_arg "XPM: Unsupported color type";
+    if s <> "None" then begin
+      if s = "" || s.[0] <> '#' then invalid_arg "XPM: Unsupported color code";
+      Scanf.sscanf s "#%x" (setColor ch)
+    end
+  in
+  for i = 1 to colors do
+    Scanf.sscanf dat.(i) "%c %c %s" parseColor
+  done;
+
+  let p = GdkPixbuf.create ~width ~height ~has_alpha:true () in
+  let pixels = GdkPixbuf.get_pixels p in
+  let setPixel pos v =
+    let pos = pos * 4 in
+    Gpointer.set_byte pixels ~pos:(pos + 0) v.(0);
+    Gpointer.set_byte pixels ~pos:(pos + 1) v.(1);
+    Gpointer.set_byte pixels ~pos:(pos + 2) v.(2);
+    Gpointer.set_byte pixels ~pos:(pos + 3) v.(3)
+  in
+  let pxlStart = colors + 1 in
+  for i = 0 to height - 1 do
+    for j = 0 to width - 1 do
+      setPixel (i * width + j) (getColor dat.(pxlStart + i).[j])
+    done
+  done;
+  p
+
+
+(***********************************************************************)
 (*                          Unison icon                                *)
 (***********************************************************************)
 
