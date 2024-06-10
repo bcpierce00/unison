@@ -478,12 +478,6 @@ let extract t = match t with Synced v -> v | NotSynced v -> v
 let minus_two = Int64.of_int (-2)
 let approximate t = Int64.logand (Int64.of_float t) minus_two
 
-let oneHour = Int64.of_int 3600
-let minusOneHour = Int64.neg oneHour
-let moduloOneHour t =
-  let v = Int64.rem t oneHour in
-  if v >= Int64.zero then v else Int64.add v oneHour
-
 (* Accept one hour differences and one second differences *)
 let possible_deltas =
   [ -3601L; 3601L; -3600L; 3600L; -3599L; 3599L; -1L; 1L; 0L ]
