@@ -478,9 +478,9 @@ let extract t = match t with Synced v -> v | NotSynced v -> v
 let minus_two = Int64.of_int (-2)
 let approximate t = Int64.logand (Int64.of_float t) minus_two
 
-(* Accept one hour differences and one second differences *)
+(* Set up for ignoring 1s differences in function similar, below *)
 let possible_deltas =
-  [ -3601L; 3601L; -3600L; 3600L; -3599L; 3599L; -1L; 1L; 0L ]
+  [ -1L; 1L; 0L ]
 
 let hash t h =
   Uutil.hash2
