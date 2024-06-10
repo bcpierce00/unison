@@ -493,17 +493,22 @@ let calcETA rem rate =
   let t = truncate (rem /. rate +. 0.5) in
   (* Estimating the remaining time is not accurate. Reduce the display
      precision (and reduce more when longer time remaining). *)
-  let h, (m, sec) =
-    if t >= 3420 then
-      let u = t + 180 in u / 3600, (((u mod 3600) / 300) * 5, 0)
-    else
-      0,
-      if t >= 2640 then ((t + 180) / 300) * 5, 0
-      else if t >= 1800 then ((t + 119) / 120) * 2, 0
-      else if t >= 120 then let u = t + 15 in u / 60, ((u mod 60) / 30) * 30
-      else t / 60, t mod 60
-  in
-  Printf.sprintf "%02d:%02d:%02d" h m sec
+  if t >= 86220 then
+    let u = t + 180 in
+    Printf.sprintf "%dd %02d:%02d:00" (u / 86400) ((u mod 86400) / 3600)
+      (((u mod 3600) / 300) * 5)
+  else
+    let h, (m, sec) =
+      if t >= 3420 then
+        let u = t + 180 in u / 3600, (((u mod 3600) / 300) * 5, 0)
+      else
+        0,
+        if t >= 2640 then ((t + 180) / 300) * 5, 0
+        else if t >= 1800 then ((t + 119) / 120) * 2, 0
+        else if t >= 120 then let u = t + 15 in u / 60, ((u mod 60) / 30) * 30
+        else t / 60, t mod 60
+    in
+    Printf.sprintf "%02d:%02d:%02d" h m sec
 
 let movAvg curr prev ?(c = 1.) deltaTime avgPeriod =
   if Float.is_nan prev then curr else
