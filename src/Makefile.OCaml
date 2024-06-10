@@ -72,7 +72,14 @@ endif
 
 .PHONY: macuimaybe
 ifeq ($(OSARCH), Darwin)
-  macuimaybe: macui
+  # If XCode is not installed, xcodebuild is just a placeholder telling that XCode is not installed
+  # and any invocation of xcodebuild results in a non 0 exit code.
+  ifeq ($(shell xcodebuild -version > /dev/null; echo $$?), 0)
+    macuimaybe: macui
+  else
+    macuimaybe:
+	$(info Not building macOS native GUI because XCode is not installed.)
+  endif
 else
   macuimaybe:
 	$(info Not on macOS. macOS native GUI will not be built.)
