@@ -39,16 +39,6 @@ jobs:
           doc/unison-manual.pdf
           man/unison.1
 
-    - name: Store user manual for the build jobs (legacy, for build_compat)
-      uses: actions/upload-artifact@v3
-      with:
-        name: unison-docs
-        path: |
-          doc/unison-manual.txt
-          doc/unison-manual.html
-          doc/unison-manual.pdf
-          man/unison.1
-
   build:
     if: ${{ !cancelled() }}    # Don't fail if 'docs' failed
     needs: docs
@@ -706,6 +696,37 @@ jobs:
            ULONG  ReparseTag;
         EOF
 
+    - name: "2.52 - 2.53.3: Patch _prev for newer compilers"
+      if: contains(matrix.job.ref, '2.52') || matrix.job.ref == 'v2.53.0' || matrix.job.ref == 'v2.53.1' || matrix.job.ref == 'v2.53.2' || matrix.job.ref == 'v2.53.3'
+      shell: bash
+      run: |
+        cd _prev && git apply - <<"EOF"
+        diff --git a/src/lwt/lwt_unix_stubs.c b/src/lwt/lwt_unix_stubs.c
+        index 37154710..51caabff 100644
+        --- a/src/lwt/lwt_unix_stubs.c
+        +++ b/src/lwt/lwt_unix_stubs.c
+        @@ -392,8 +392,8 @@ CAMLprim value win_check_connection (value socket, value kind, value h) {
+        
+         static HANDLE dummyEvent;
+        
+        -CAMLprim value init_lwt (value callback) {
+        -  CAMLparam1 (callback);
+        +CAMLprim value init_lwt (value callb) {
+        +  CAMLparam1 (callb);
+           //  GUID GuidConnectEx = WSAID_CONNECTEX;
+           //  SOCKET s;
+           //  DWORD l;
+        @@ -401,7 +401,7 @@ CAMLprim value init_lwt (value callback) {
+        
+           D(printf("Init...\n"));
+           caml_register_global_root(&completionCallback);
+        -  completionCallback = callback;
+        +  completionCallback = callb;
+        
+           dummyEvent = CreateEvent(NULL, TRUE, FALSE, NULL);  // Dummy event
+        
+        EOF
+
     - run: cd _prev && opam exec -- make src UISTYLE=text OSTYPE=$OSTYPE
       shell: bash
       if: matrix.job.oldmake
@@ -813,20 +834,14 @@ jobs:
         - { ocaml-version: 4.12.x }
         - { ocaml-version: 4.08.x }
 
-    runs-on: ubuntu-latest
-    container: ubuntu:16.04
+    runs-on: ubuntu-20.04
 
     steps:
-    - name: Set up the OS
-      run: |
-        apt-get update
-        apt-get install --assume-yes git make gcc patch wget bzip2 unzip musl-tools
-
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Use OCaml ${{ matrix.job.ocaml-version }}
-      uses: ocaml/setup-ocaml@v2.0.19
+      uses: ocaml/setup-ocaml@v2
       with:
         ocaml-compiler: ${{ matrix.job.ocaml-version }}
         opam-disable-sandboxing: true
@@ -873,7 +888,7 @@ jobs:
         echo PKG_NAME="${PROJECT_NAME}-${PKG_VER}${{ matrix.job.fnsuffix }}.tar.gz" >> $GITHUB_OUTPUT
         echo REF_SHAS=${REF_SHAS} >> $GITHUB_OUTPUT
 
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       if: false ## disable by default; only useful for debugging GHA
       with:
         name: unison-${{ steps.vars.outputs.REF_SHAS }}.ocaml-${{ matrix.job.ocaml-version }}.ubuntu.x86_64
@@ -882,7 +897,7 @@ jobs:
     - name: Copy user manual
       if: matrix.job.publish
       continue-on-error: ${{ !(github.ref_type == 'tag' && startsWith(github.ref_name, 'v') && matrix.job.publish) }}
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: unison-docs
         path: pkg
@@ -901,7 +916,7 @@ jobs:
       if: matrix.job.publish
       run: cd pkg && tar czf '${{ steps.vars.outputs.PKG_NAME }}' *
 
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       if: matrix.job.publish
       with:
         name: ${{ steps.vars.outputs.PKG_NAME }}___ocaml-${{ matrix.job.ocaml-version }}.ubuntu_compat-publish
