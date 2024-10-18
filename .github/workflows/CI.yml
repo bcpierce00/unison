@@ -39,16 +39,6 @@ jobs:
           doc/unison-manual.pdf
           man/unison.1
 
-    - name: Store user manual for the build jobs (legacy, for build_compat)
-      uses: actions/upload-artifact@v3
-      with:
-        name: unison-docs
-        path: |
-          doc/unison-manual.txt
-          doc/unison-manual.html
-          doc/unison-manual.pdf
-          man/unison.1
-
   build:
     if: ${{ !cancelled() }}    # Don't fail if 'docs' failed
     needs: docs
@@ -813,20 +803,14 @@ jobs:
         - { ocaml-version: 4.12.x }
         - { ocaml-version: 4.08.x }
 
-    runs-on: ubuntu-latest
-    container: ubuntu:16.04
+    runs-on: ubuntu-20.04
 
     steps:
-    - name: Set up the OS
-      run: |
-        apt-get update
-        apt-get install --assume-yes git make gcc patch wget bzip2 unzip musl-tools
-
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Use OCaml ${{ matrix.job.ocaml-version }}
-      uses: ocaml/setup-ocaml@v2.0.19
+      uses: ocaml/setup-ocaml@v2
       with:
         ocaml-compiler: ${{ matrix.job.ocaml-version }}
         opam-disable-sandboxing: true
@@ -873,7 +857,7 @@ jobs:
         echo PKG_NAME="${PROJECT_NAME}-${PKG_VER}${{ matrix.job.fnsuffix }}.tar.gz" >> $GITHUB_OUTPUT
         echo REF_SHAS=${REF_SHAS} >> $GITHUB_OUTPUT
 
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       if: false ## disable by default; only useful for debugging GHA
       with:
         name: unison-${{ steps.vars.outputs.REF_SHAS }}.ocaml-${{ matrix.job.ocaml-version }}.ubuntu.x86_64
@@ -882,7 +866,7 @@ jobs:
     - name: Copy user manual
       if: matrix.job.publish
       continue-on-error: ${{ !(github.ref_type == 'tag' && startsWith(github.ref_name, 'v') && matrix.job.publish) }}
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
       with:
         name: unison-docs
         path: pkg
@@ -901,7 +885,7 @@ jobs:
       if: matrix.job.publish
       run: cd pkg && tar czf '${{ steps.vars.outputs.PKG_NAME }}' *
 
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       if: matrix.job.publish
       with:
         name: ${{ steps.vars.outputs.PKG_NAME }}___ocaml-${{ matrix.job.ocaml-version }}.ubuntu_compat-publish
