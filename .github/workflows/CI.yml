@@ -696,6 +696,37 @@ jobs:
            ULONG  ReparseTag;
         EOF
 
+    - name: "2.52 - 2.53.3: Patch _prev for newer compilers"
+      if: contains(matrix.job.ref, '2.52') || matrix.job.ref == 'v2.53.0' || matrix.job.ref == 'v2.53.1' || matrix.job.ref == 'v2.53.2' || matrix.job.ref == 'v2.53.3'
+      shell: bash
+      run: |
+        cd _prev && git apply - <<"EOF"
+        diff --git a/src/lwt/lwt_unix_stubs.c b/src/lwt/lwt_unix_stubs.c
+        index 37154710..51caabff 100644
+        --- a/src/lwt/lwt_unix_stubs.c
+        +++ b/src/lwt/lwt_unix_stubs.c
+        @@ -392,8 +392,8 @@ CAMLprim value win_check_connection (value socket, value kind, value h) {
+        
+         static HANDLE dummyEvent;
+        
+        -CAMLprim value init_lwt (value callback) {
+        -  CAMLparam1 (callback);
+        +CAMLprim value init_lwt (value callb) {
+        +  CAMLparam1 (callb);
+           //  GUID GuidConnectEx = WSAID_CONNECTEX;
+           //  SOCKET s;
+           //  DWORD l;
+        @@ -401,7 +401,7 @@ CAMLprim value init_lwt (value callback) {
+        
+           D(printf("Init...\n"));
+           caml_register_global_root(&completionCallback);
+        -  completionCallback = callback;
+        +  completionCallback = callb;
+        
+           dummyEvent = CreateEvent(NULL, TRUE, FALSE, NULL);  // Dummy event
+        
+        EOF
+
     - run: cd _prev && opam exec -- make src UISTYLE=text OSTYPE=$OSTYPE
       shell: bash
       if: matrix.job.oldmake
