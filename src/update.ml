@@ -1932,7 +1932,7 @@ let rec buildUpdateChildren
             Error
               ("Two or more files on a case-sensitive system have names \
                 identical except for case.  They cannot be synchronized to a \
-                case-insensitive file system.  (File '" ^
+                file system being treated as case-insensitive.  (File '" ^
                Path.toString path' ^ "')")
           in
           updates := (nm, uiChild) :: !updates;
@@ -2146,7 +2146,7 @@ let rec buildUpdatePathTree archive fspath here tree scanInfo =
                 Error
                   ("Two or more files on a case-sensitive system have names \
                     identical except for case.  They cannot be synchronized \
-                    to a case-insensitive file system.  (File '" ^
+                    to a file system being treated as case-insensitive.  (File '" ^
                    Path.toString path' ^ "')")
               in
               updates := (nm, uiChild) :: !updates;
@@ -2281,8 +2281,8 @@ let rec buildUpdate archive fspath fullpath here path pathTree scanInfo =
               "The path %s is ambiguous at filename %s (i.e., the name \
                of this path is the same, modulo capitalization, as \
                another path in a case-sensitive filesystem, and you are \
-               synchronizing this filesystem with a case-insensitive \
-               filesystem."
+               synchronizing this filesystem with a \
+               filesystem being treated as case-insensitive."
               (Path.toString fullpath) (Name.toString name)
           in
           (archive, Error error, translatePathLocal fspath fullpath, [])
