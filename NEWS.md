@@ -3,14 +3,29 @@
 This file contains a summary of user-visible or important changes, in
 the style of the GNU coding standards.  By user-visible, we include
 changes relevant for those building unison from source.  We omit most
-bugfixes and minor improvements, but of course every release contains
-some.  Refer to the documentation for details; this file is a terse
-notice of changes rather than a tutorial about new features.
+bugfixes, minor improvements, and cleanups, but of course every
+release contains some.  Refer to the documentation for details; this
+file is a terse notice of changes rather than a tutorial about new
+features.
 
 As of 2022, this file (NEWS.md at top level) is used for news.
 
 Some software has a "changelog" file that records all changes, but
 unison uses git history for that, and thus there is no changelog file.
+
+## Changes in 2.53.6 (NOT YET RELEASED) 
+
+Released FUTURE
+
+  * Remove workaround for Windows DST: Time differences of one hour
+    are no longer treated as not different.
+  * Time remaining, when over 24h, shown as days and HMS instead of
+    just HMS.
+  * Stop using deprecated [GdkPixbuf.from_xpm_data] (avoids problems
+    with some versions of gdkpixbuf).
+
+  Deprecation warning: support for external rsync will be removed,
+  likely in 2.54.0.
 
 ## Changes in 2.53.5
 
