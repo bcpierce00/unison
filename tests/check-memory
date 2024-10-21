@@ -1,0 +1,165 @@
+#!/bin/sh
+
+# NB: This program is a work in progress.
+
+# This program invokes unison in varying ways to attempt to determine
+# how much memory is required for a given sync, or alternatively how
+# big a sync can be done in a given amount of memory.
+
+# The program expects to own $HOME/UNISON-TEST, but tries not to
+# damage any files existing when it is run.
+
+# This program is written in POSIX /bin/sh and intends to use only
+# tools specified by POSIX, specifically avoiding bash and GNU/Linux
+# extensions not present on other systems.  Practically, for now, it
+# will use a subset that is present on GNU/Linux, macOS, *BSD, and
+# illumos, documented here.
+#   - seq(1)
+
+# The overall design is
+#  - a number of shell functions for various setup and micro tests
+#  - functions to wrap those in loops
+#  - functions to format output
+#  - written (for now) for nerds; errors understandable from reading
+#    the sources are good enough
+
+# The sh style is
+#   quote when necessary
+#   avoid quotes when static analysis says that is safe
+#   use ${var} always
+
+# TODO
+#   - figure out how to set limits on remote process
+#   - figure out how to set UNISON for remote process
+#   - loop over sizes
+
+log () {
+    now=`date +%s`
+    echo "check-memory: $now $*"
+}
+
+fatal () {
+    log FATAL $*
+    exit 1
+}
+
+CONTAINER=/tmp
+DIR=${CONTAINER}/UNISON-TEST
+
+goto_dir () {
+    cd ${CONTAINER}
+    if [ \! -d ${DIR} ]; then
+	mkdir ${DIR} || fatal mkdir
+    fi
+    cd ${DIR} || fatal cd
+
+    if [ -e local -o -e remote ]; then
+	fatal source or remote exists at startup
+    fi
+
+    # Avoid creating archive files in the user's directory.
+    # Ensure that tests start out without leftover state. 
+    UNISON=${DIR}/.unison.local
+    export UNISON
+    if [ -e .unison ]; then
+	fatal .unison exists at startup
+    fi
+}
+
+# Clean up all state we created.
+fini () {
+    # Be extra careful about removals.
+    if [ -d ../UNISON-TEST ]; then
+	rm -rf local remote .unison
+    else
+	fatal fini not in UNISON-TEST
+    fi
+}
+
+# Create N*M small files.
+init_N_M () {
+    if [ -e local ]; then
+	fatal init_N_m local exists
+    fi
+    mkdir local
+    
+    for n in $(seq $1); do
+	mkdir local/$n
+	for m in $(seq $2); do
+	    echo $n $m > local/$n/$m
+	done
+    done
+}
+
+touch_N_M_all () {
+    if [ ! -e local ]; then
+	fatal touch_N_m local does not exist
+    fi
+
+    find local -type f | while read f; do
+	date >> $f
+    done
+}
+
+# Set limit of arg1 to arg2
+limit () {
+    flag=-"$1"
+    log limit flag $flag
+    old=`ulimit $flag`
+    ulimit $flag $2
+    new=`ulimit $flag`
+    
+    log limit flag $flag old $old req $2 new $new
+}
+
+limit_display () {
+    log SOFT
+    ulimit -S -a
+    if false; then
+	log HARD
+	ulimit -H -a
+    fi
+}
+
+# Perform a sync
+#  expect: local and remote already set up
+#  results: exit status stored in STATUS
+do_sync () {
+    unison -batch $* local ssh://localhost/${DIR}/remote
+    STATUS=$?
+}
+
+simple_test () {
+    # NetBSD 10 amd64: 1408 crashes, 1409 ok
+    #   with second sync: 1430 crashes 1431 ok
+    memory=1431
+    # NetBSD 10 amd64: 68->68 crashes, 69->72 ok
+    #   with second sync: 72 ok
+    stack=72
+    
+    # Create 1000 files (10 dirs of 100).
+    init_N_M 10 1000
+ 
+    # Set limits.
+    limit d ${memory}
+    limit s ${stack}
+    limit_display
+    
+    do_sync -ignorearchives
+    # log a cryptic line, that can be grepped for and parsed programmatically
+    log "sync 10 100 ${memory} ${stack} ${STATUS}"
+
+    touch_N_M_all
+    do_sync
+    log "sync-touch-all 10 100 ${memory} ${stack} ${STATUS}"
+}
+
+all () {
+    goto_dir
+
+    simple_test
+
+    fini
+}
+
+all
