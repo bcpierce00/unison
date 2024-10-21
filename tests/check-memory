@@ -1,0 +1,213 @@
+#!/bin/sh
+
+# NB: This program is a work in progress.
+
+# This program invokes unison in varying ways to attempt to determine
+# how much memory is required for a given sync, or alternatively how
+# big a sync can be done in a given amount of memory.
+
+du# The program expects to own $HOME/UNISON-TEST, but tries not to
+# damage any files existing when it is run.
+
+# This program is written in POSIX /bin/sh and intends to use only
+# tools specified by POSIX, specifically avoiding bash and GNU/Linux
+# extensions not present on other systems.  Practically, for now, it
+# will use a subset that is present on GNU/Linux, macOS, *BSD, and
+# illumos, documented here.
+#   - seq(1)
+
+# The overall design is
+#  - a number of shell functions for various setup and micro tests
+#  - functions to wrap those in loops
+#  - functions to format output
+#  - written (for now) for nerds; errors understandable from reading
+#    the sources are good enough
+
+# The sh style is
+#   quote when necessary
+#   avoid quotes when static analysis says that is safe
+#   use ${var} always
+
+# TODO
+#   - figure out how to set limits on remote process
+#   - figure out how to set UNISON for remote process
+#   - loop over sizes
+
+log () {
+    now=`date +%s`
+    echo "check-memory: $now $*"
+}
+
+fatal () {
+    log FATAL $*
+    exit 1
+}
+
+CONTAINER=/tmp
+DIR=${CONTAINER}/UNISON-TEST
+
+goto_dir () {
+    cd ${CONTAINER}
+    if [ \! -d ${DIR} ]; then
+	mkdir ${DIR} || fatal mkdir
+    fi
+    cd ${DIR} || fatal cd
+
+    # Ensure no other uid can access the socket.
+    chmod 700 . || fatal chmod
+
+    if [ -e local -o -e remote ]; then
+	fatal source or remote exists at startup
+    fi
+
+    # Avoid creating archive files in the user's directory.
+    # Ensure that tests start out without leftover state.
+    UNISON=${DIR}/.unison.local
+    export UNISON
+    if [ -e .unison ]; then
+	fatal .unison exists at startup
+    fi
+}
+
+# Clean up all state we created.
+fini () {
+    # Be extra careful about removals.
+    if [ -d ../UNISON-TEST ]; then
+	rm -rf local remote .unison.local .unison.remote s
+    else
+	fatal fini not in UNISON-TEST
+    fi
+}
+
+# Create N*M small files.
+init_N_M () {
+    if [ -e local ]; then
+	fatal init_N_m local exists
+    fi
+    mkdir local
+
+    for n in $(seq $1); do
+	mkdir local/$n
+	for m in $(seq $2); do
+	    echo $n $m > local/$n/$m
+	done
+    done
+}
+
+touch_N_M_all () {
+    if [ ! -e local ]; then
+	fatal touch_N_m local does not exist
+    fi
+
+    find local -type f | while read f; do
+	date >> $f
+    done
+}
+
+# Set limit of arg1 to arg2.
+# POSIX defines very little:
+#   https://pubs.opengroup.org/onlinepubs/9799919799/
+# and in particular does not define:
+#   -m -v
+#
+# POSIX defines setrlimit(2):
+#   https://pubs.opengroup.org/onlinepubs/9799919799/functions/getrlimit.html
+#
+# Generally, m (not POSIX) corresponds to RLIMIT_RSS (not POSIX) and v
+# (not POSIX) corresponds to RLIMIT_AS (POSIX).
+#
+# With -v/RLIMIT_AS, address space, not memory usage, is limited, and
+# thus there is a larger base load of VA surely not backed by pages.
+#
+# On older macOS, "d" and "m" do not seem to limit malloc.
+# On NetBSD 10, "d" and "m" do not limit malloc.
+#   v limits address space, with background usage higher than one
+#   would guess.  Also, v limits are not repeatable.
+# On Debian 12, "d" limits malloc and "m" does not.
+#
+limit () {
+    flag=-"$1"
+    log limit flag $flag
+    old=`ulimit $flag`
+    ulimit $flag $2
+    new=`ulimit $flag`
+
+    log limit flag $flag old $old req $2 new $new
+}
+
+limit_display () {
+    log SOFT
+    ulimit -S -a
+    if false; then
+	log HARD
+	ulimit -H -a
+    fi
+}
+
+start_server () {
+    UNISON=${DIR}/.unison.remote
+    export UNISON
+
+    unison -socket s $* &
+    sleep 1
+}
+
+# Perform a sync
+#  expect: local and remote already set up
+#  results: exit status stored in STATUS
+do_sync () {
+    unison -killserver -batch $* local socket://{${DIR}/s}//${DIR}/remote
+    STATUS=$?
+}
+
+# For no good reason, pick 10x1000 = 10^4 files.
+# Use the same memory limit for local and remote.  The search space is
+# too large, and finding the level at which one breaks is, for now,
+# good enough.
+# \todo Expand to take args, so it can be used in a loop.
+simple_test () {
+    N=10
+    M=1000
+
+    # NetBSD 10 amd64 10 1000: 1373 bad 1376 ok
+    # NetBSD 10 amd64 20 1000: 1376 ok
+    # NetBSD 10 amd64 40 1000: 1376 ok
+    memory=1376
+    # NetBSD 10 amd64 10 1000: 84 bad 88 ok
+    # NetBSD 10 amd64 20 1000: 124 bad 128 ok
+    # NetBSD 10 amd64 40 1000: 208 bad 212 ok
+    stack=88
+
+    # Create many files, N dirs of M files.
+    init_N_M ${N} ${M}
+
+    # Set limits.  Set both d and m, because of surprising and not yet
+    # understood test results.
+    limit d ${memory}
+    limit m ${memory}
+    limit s ${stack}
+    limit_display
+
+    start_server -ignorearchives
+    do_sync -ignorearchives
+    # log a cryptic line, that can be grepped for and parsed programmatically
+    log "sync ${N} ${M} ${memory} ${stack} ${STATUS}"
+
+    touch_N_M_all
+    start_server
+    do_sync
+    log "sync-touch-all ${N} ${M} ${memory} ${stack} ${STATUS}"
+}
+
+# \todo Write a loop with binary search, to find the memory needed for a given test.
+# \todo Write a loop over test sizes.
+
+all () {
+    goto_dir
+
+    simple_test
+
+    fini
+}
+
+all
