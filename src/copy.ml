@@ -878,6 +878,7 @@ let rec registerFileTransfer pathTo fp f =
 let copyprog =
   Prefs.createString "copyprog" "rsync --partial --inplace --compress"
     ~category:(`Advanced `General)
+    ~deprecated:true
     "external program for copying large files"
     ("A string giving the name of an "
      ^ "external program that can be used to copy large files efficiently  "
@@ -889,6 +890,7 @@ let copyprogrest =
   Prefs.createString
     "copyprogrest" "rsync --partial --append-verify --compress"
     ~category:(`Advanced `General)
+    ~deprecated:true
     "variant of copyprog for resuming partial transfers"
     ("A variant of {\\tt copyprog} that names an external program "
      ^ "that should be used to continue the transfer of a large file "
@@ -901,6 +903,7 @@ let copyprogrest =
 let copythreshold =
   Prefs.createInt "copythreshold" (-1)
     ~category:(`Advanced `General)
+    ~deprecated:true
     "use copyprog on files bigger than this (if >=0, in Kb)"
     ("A number indicating above what filesize (in kilobytes) Unison should "
      ^ "use the external "
@@ -917,6 +920,7 @@ let () = Prefs.markRemoved "copyquoterem"
 let copymax =
   Prefs.createInt "copymax" 1
     ~category:(`Advanced `General)
+    ~deprecated:true
     "maximum number of simultaneous copyprog transfers"
     ("A number indicating how many instances of the external copying utility \
       Unison is allowed to run simultaneously (default to 1).")

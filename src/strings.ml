@@ -1190,10 +1190,13 @@ let docs =
       \032 Other:\n\
       \032  -addprefsto xxx     file to add new prefs to\n\
       \032  -contactquietly     suppress the 'contacting server' message during startup\n\
-      \032  -copymax n          maximum number of simultaneous copyprog transfers\n\
-      \032  -copyprog xxx       external program for copying large files\n\
-      \032  -copyprogrest xxx   variant of copyprog for resuming partial transfers\n\
-      \032  -copythreshold n    use copyprog on files bigger than this (if >=0, in Kb)\n\
+      \032  -copymax n          (deprecated) maximum number of simultaneous copyprog\n\
+      \032                      transfers\n\
+      \032  -copyprog xxx       (deprecated) external program for copying large files\n\
+      \032  -copyprogrest xxx   (deprecated) variant of copyprog for resuming partial\n\
+      \032                      transfers\n\
+      \032  -copythreshold n    (deprecated) use copyprog on files bigger than this (if\n\
+      \032                      >=0, in Kb)\n\
       \032  -diff xxx           set command for showing differences between files\n\
       \032  -ignorelocks        ignore locks left over from previous run (dangerous!)\n\
       \032  -include xxx        include a profile's preferences\n\
@@ -1382,8 +1385,9 @@ let docs =
       \032         server\226\128\153 message (which some users find annoying) during startup.\n\
       \n\
       \032  copymax n\n\
-      \032         A number indicating how many instances of the external copying\n\
-      \032         utility Unison is allowed to run simultaneously (default to 1).\n\
+      \032         (Deprecated) A number indicating how many instances of the\n\
+      \032         external copying utility Unison is allowed to run simultaneously\n\
+      \032         (default to 1).\n\
       \n\
       \032  copyonconflict\n\
       \032         When this flag is set, Unison will make a copy of files that\n\
@@ -1395,27 +1399,27 @@ let docs =
       \032         preferences.\n\
       \n\
       \032  copyprog xxx\n\
-      \032         A string giving the name of an external program that can be used\n\
-      \032         to copy large files efficiently (plus command-line switches\n\
-      \032         telling it to copy files in-place). The default setting invokes\n\
-      \032         rsync with appropriate options\226\128\148most users should not need to\n\
-      \032         change it.\n\
+      \032         (Deprecated) A string giving the name of an external program\n\
+      \032         that can be used to copy large files efficiently (plus\n\
+      \032         command-line switches telling it to copy files in-place). The\n\
+      \032         default setting invokes rsync with appropriate options\226\128\148most\n\
+      \032         users should not need to change it.\n\
       \n\
       \032  copyprogrest xxx\n\
-      \032         A variant of copyprog that names an external program that should\n\
-      \032         be used to continue the transfer of a large file that has\n\
-      \032         already been partially transferred. Typically, copyprogrest will\n\
-      \032         just be copyprog with one extra option (e.g., --partial, for\n\
-      \032         rsync). The default setting invokes rsync with appropriate\n\
-      \032         options\226\128\148most users should not need to change it.\n\
+      \032         (Deprecated) A variant of copyprog that names an external\n\
+      \032         program that should be used to continue the transfer of a large\n\
+      \032         file that has already been partially transferred. Typically,\n\
+      \032         copyprogrest will just be copyprog with one extra option (e.g.,\n\
+      \032         --partial, for rsync). The default setting invokes rsync with\n\
+      \032         appropriate options\226\128\148most users should not need to change it.\n\
       \n\
       \032  copythreshold n\n\
-      \032         A number indicating above what filesize (in kilobytes) Unison\n\
-      \032         should use the external copying utility specified by copyprog.\n\
-      \032         Specifying 0 will cause all copies to use the external program;\n\
-      \032         a negative number will prevent any files from using it. The\n\
-      \032         default is -1. See the section \226\128\156Making Unison Faster on Large\n\
-      \032         Files\226\128\157 for more information.\n\
+      \032         (Deprecated) A number indicating above what filesize (in\n\
+      \032         kilobytes) Unison should use the external copying utility\n\
+      \032         specified by copyprog. Specifying 0 will cause all copies to use\n\
+      \032         the external program; a negative number will prevent any files\n\
+      \032         from using it. The default is -1. See the section \226\128\156Making Unison\n\
+      \032         Faster on Large Files\226\128\157 for more information.\n\
       \n\
       \032  debug xxx\n\
       \032         This preference is used to make Unison print various sorts of\n\
