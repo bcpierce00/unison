@@ -1010,7 +1010,7 @@ let initPrefs ~profileName ~promptForRoots ?(prepDebug = fun () -> ()) () =
   end;
 
   (* Turn on GC messages, if the '-debug gc' flag was provided *)
-  Gc.set {(Gc.get ()) with Gc.verbose = if Trace.enabled "gc" then 0x3F else 0};
+  Gc.set {(Gc.get ()) with Gc.verbose = if Trace.enabled "gc" then 0x43F else 0};
 
   (* Install dummy roots and backup directory if we are running self-tests *)
   if Prefs.read runtests then begin
