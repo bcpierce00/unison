@@ -6,7 +6,7 @@
 # how much memory is required for a given sync, or alternatively how
 # big a sync can be done in a given amount of memory.
 
-du# The program expects to own $HOME/UNISON-TEST, but tries not to
+# The program expects to own $HOME/UNISON-TEST, but tries not to
 # damage any files existing when it is run.
 
 # This program is written in POSIX /bin/sh and intends to use only
