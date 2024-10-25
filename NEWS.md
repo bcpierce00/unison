@@ -13,9 +13,9 @@ As of 2022, this file (NEWS.md at top level) is used for news.
 Some software has a "changelog" file that records all changes, but
 unison uses git history for that, and thus there is no changelog file.
 
-## Changes in 2.53.6 (NOT YET RELEASED) 
+## Changes in 2.53.6
 
-Released FUTURE
+Released 2024-11-01
 
   * Remove workaround for Windows DST: Time differences of one hour
     are no longer treated as not different.
