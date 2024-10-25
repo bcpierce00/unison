@@ -162,7 +162,12 @@ let catch_all f =
       (* Util.msg "Done catch_all...\n"; *)
     with Prefs.IllegalValue str -> raise (Util.Fatal str)
   with e ->
-    Util.msg "Unison server failed: %s\n" (Uicommon.exn2string e); exit 1;;
+    Util.msg "Unison server failed: %s\n" (Uicommon.exn2string e);
+    (* A final desperate attempt to print out some debug information.
+       If we are really-really out of memory then this may fail but
+       then it's unlikely we reach this point anyway. *)
+    if e = Out_of_memory then Gc.print_stat stderr;
+    exit 1
 
 let gui_safe_printf fmt =
   Printf.ksprintf (fun s ->
