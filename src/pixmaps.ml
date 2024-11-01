@@ -256,6 +256,10 @@ let copyBAblack_asym = [|
 (*                          XPM parse function                         *)
 (***********************************************************************)
 
+let static_pixels_buf sz =
+  let buf = Bytearray.create sz in
+  Gpointer.unsafe_create_region ~path:[|1|] ~get_length:(fun _ -> sz) buf
+
 (* This function is not for universal XPM parsing. It is intended only
    for parsing the icon definitions above in this file.
    Do not use [GdkPixbuf.from_xpm_data] as it has been removed from
@@ -291,8 +295,23 @@ let to_pixbuf dat =
     Scanf.sscanf dat.(i) "%c %c %s" parseColor
   done;
 
-  let p = GdkPixbuf.create ~width ~height ~has_alpha:true () in
-  let pixels = GdkPixbuf.get_pixels p in
+(* [GdkPixbuf.from_data] is broken (hands over a non-static pointer to C code;
+   does not account for OCaml values potentially moving around in memory).
+
+   It is not possible to use the alternative method of [GdkPixbuf.create]
+   followed by [GdkPixbuf.get_pixels] either because [get_pixels] is broken,
+   too (casts a pointer to a C long type, which is not the size of pointer on
+   all platforms; additionally, stores a so-called naked pointer in OCaml value,
+   which is no longer supported).
+
+   As a workaround, using a Bigarray as a backing buffer (or alternatively a
+   buffer statically allocated in C code, carefully and transparently avoiding
+   naked pointers, as [Gpointer.region] is coded with the assumption of naked
+   pointers in OCaml values) works with [from_data] because the internal buffer
+   used by Bigarray does not move around in memory. Although highly unlikely,
+   there is a risk that this breaks if Bigarray memory representation changes
+   in future. *)
+  let pixels = static_pixels_buf (width * height * 4) in
   let setPixel pos v =
     let pos = pos * 4 in
     Gpointer.set_byte pixels ~pos:(pos + 0) v.(0);
@@ -306,7 +325,7 @@ let to_pixbuf dat =
       setPixel (i * width + j) (getColor dat.(pxlStart + i).[j])
     done
   done;
-  p
+  GdkPixbuf.from_data ~width ~height ~has_alpha:true pixels
 
 
 (***********************************************************************)
