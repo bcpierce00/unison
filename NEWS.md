@@ -15,17 +15,26 @@ unison uses git history for that, and thus there is no changelog file.
 
 ## Changes in 2.53.6
 
-Released 2024-11-01
+Released 2024-11-04
 
   * Remove workaround for Windows DST: Time differences of one hour
     are no longer treated as not different.
   * Time remaining, when over 24h, shown as days and HMS instead of
     just HMS.
   * Stop using deprecated [GdkPixbuf.from_xpm_data] (avoids problems
-    with some versions of gdkpixbuf).
+    with some versions of gdkpixbuf).  Attempt to avoid soundness
+    issues with lablgtk while doing so.
 
   Deprecation warning: support for external rsync will be removed,
   likely in 2.54.0.
+
+  DEPRECATION MAY HAPPEN WITH LESS THAN TYPICAL NOTICE:
+  lablgtk is difficult to use safely, and future maintenance is
+  unclear.  Implementing the GUI without lablgtk requires more effort
+  than seems likely to happen.  Thus, it is possible that support for
+  the unison GUI may end suddenly, on a particular platform, or on all
+  platforms -- even in a micro release.  See
+    https://github.com/bcpierce00/unison/issues/1075  
 
 ## Changes in 2.53.5
 
