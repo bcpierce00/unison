@@ -13,6 +13,14 @@ As of 2022, this file (NEWS.md at top level) is used for news.
 Some software has a "changelog" file that records all changes, but
 unison uses git history for that, and thus there is no changelog file.
 
+## Changes in 2.53.7
+
+Released 2024-11-04
+
+  * Fix for parallel builds of the gui.  (If 2.53.6 built for you,
+    because you didn't build the GUI, you didn't use -j, or you got
+    lucky, there is no need to update to 2.53.7.)
+
 ## Changes in 2.53.6
 
 Released 2024-11-04
