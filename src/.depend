@@ -761,8 +761,10 @@ path.cmi : \
     ubase/umarshal.cmi \
     pred.cmi \
     name.cmi
-pixmaps.cmo :
-pixmaps.cmx :
+pixmaps.cmo : \
+    bytearray.cmi
+pixmaps.cmx : \
+    bytearray.cmx
 pred.cmo : \
     ubase/util.cmi \
     ubase/umarshal.cmi \
