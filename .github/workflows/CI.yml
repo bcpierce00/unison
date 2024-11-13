@@ -54,6 +54,8 @@ jobs:
         - { os: ubuntu-20.04  , ocaml-version: 4.14.2 }
         - { os: windows-2022  , ocaml-version: "4.14.2,system-mingw"              , publish: true  , fnsuffix: -windows-x86_64 }
         - { os: windows-2019  , ocaml-version: "4.14.2,system-mingw,arch-x86_32"  , publish: true  , fnsuffix: -windows-i386 }
+        - { os: windows-2022  , ocaml-version: "4.14.2,system-msvc" }
+        - { os: windows-2019  , ocaml-version: "4.14.2,system-msvc,arch-x86_32" }
 
     runs-on: ${{ matrix.job.os }}
 
@@ -88,8 +90,7 @@ jobs:
         # architecture/platform vars
         EXE_suffix='' ; case '${{ matrix.job.os }}' in windows-*) EXE_suffix=".exe" ;; esac
         MinGW_ARCH='x86_64' ; case '${{ matrix.job.ocaml-version }}' in *x86_32*) MinGW_ARCH='i686' ;; *mingw*) MinGW_ARCH='x86_64' ;; esac
-        MSVC_ARCH='' ; case '${{ matrix.job.ocaml-version }}' in *+msvc32*) MSVC_ARCH='x86' ;; *+msvc64*) MSVC_ARCH='x64' ;; esac
-        outputs EXE_suffix MinGW_ARCH MSVC_ARCH
+        outputs EXE_suffix MinGW_ARCH
         case '${{ matrix.job.os }}','${{ matrix.job.ocaml-version }}' in
           macos-*,4*) MACOSX_DEPLOYMENT_TARGET=10.6 ;; macos-*,5*) MACOSX_DEPLOYMENT_TARGET=10.7 ;;
           macos-14*,*) MACOSX_DEPLOYMENT_TARGET=10.13 ;;
@@ -131,12 +132,6 @@ jobs:
         mkdir -p '${{ steps.vars.outputs.STAGING_DIR }}'
         mkdir -p '${{ steps.vars.outputs.PKG_DIR }}'
         mkdir -p '${{ steps.vars.outputs.PKG_DIR }}'/bin
-
-    - name: Enable/config MSVC environment (if/when needed)
-      uses: ilammy/msvc-dev-cmd@v1
-      with:
-        arch: "${{ steps.vars.outputs.MSVC_ARCH }}"
-      if: contains(matrix.job.ocaml-version, '+msvc')
 
     - name: Use OCaml ${{ matrix.job.ocaml-version }}
       uses: ocaml/setup-ocaml@v3
@@ -247,10 +242,10 @@ jobs:
 
     - name: lablgtk install
       ## [2020-09] non-working/unavailable for MSVC or musl OCaml variants ; also, non-working for 32bit OCaml variant (see [GH:garrigue/lablgtk#64](https://github.com/garrigue/lablgtk/issues/64))
-      if: ${{ ! ( contains(matrix.job.ocaml-version, '+msvc') || contains(matrix.job.ocaml-version, '-musl') || contains(matrix.job.ocaml-version, '-32bit') ) }}
+      if: ${{ ! ( contains(matrix.job.ocaml-version, 'msvc') || contains(matrix.job.ocaml-version, '-musl') || contains(matrix.job.ocaml-version, '-32bit') ) }}
       run: opam install lablgtk3 ocamlfind
 
-    - if: ${{ !matrix.job.static }} ## unable to build static gtk/gui
+    - if: ${{ !matrix.job.static && !contains(matrix.job.ocaml-version, 'msvc') }} ## unable to build static gtk/gui
       shell: bash
       run: |
         opam exec -- make gui
@@ -260,7 +255,7 @@ jobs:
         cp "src/${project_exe_stem}-gui${{ steps.vars.outputs.EXE_suffix }}" "${{ steps.vars.outputs.PKG_DIR }}/bin/"
 
     - name: "Build WinOS text+gui hybrid"
-      if: ${{ runner.os == 'Windows' && !matrix.job.static }} ## WinOS, non-static (unable to build static gtk/gui)
+      if: ${{ runner.os == 'Windows' && !matrix.job.static && !contains(matrix.job.ocaml-version, 'msvc') }} ## WinOS, non-static (unable to build static gtk/gui)
       shell: bash
       run: |
         # create and stage text+gui hybrid for Windows
@@ -300,7 +295,7 @@ jobs:
         cp CONTRIBUTING.md "${PKG_DIR}"/
         cp NEWS.md "${PKG_DIR}"/
 
-    - if: runner.os == 'Windows'
+    - if: ${{ runner.os == 'Windows' && !contains(matrix.job.ocaml-version, 'msvc') }}
       name: "Windows: Package gtk"
       shell: bash
       run: |
