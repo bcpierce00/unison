@@ -20,10 +20,9 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Use OCaml
-      uses: ocaml/setup-ocaml@v2
+      uses: ocaml/setup-ocaml@v3
       with:
         ocaml-compiler: 4.14.x
-        opam-depext: false
 
     - run: sudo apt-get install hevea lynx texlive-latex-base
 
@@ -49,12 +48,14 @@ jobs:
         job:
         - { os: macos-14      , ocaml-version: 5.2.0 }
         - { os: macos-14      , ocaml-version: 4.14.2           , publish: true  , fnsuffix: -macos-arm64 }
-        - { os: macos-12      , ocaml-version: 4.14.2           , publish: true  , fnsuffix: -macos-x86_64 }
+        - { os: macos-13      , ocaml-version: 4.14.2           , publish: true  , fnsuffix: -macos-x86_64 }
         - { os: ubuntu-22.04  , ocaml-version: 5.2.0 }
         - { os: ubuntu-22.04  , ocaml-version: 4.14.2 }
         - { os: ubuntu-20.04  , ocaml-version: 4.14.2 }
-        - { os: windows-2022  , ocaml-version: 4.14.0+mingw64c  , publish: true  , fnsuffix: -windows-x86_64 }
-        - { os: windows-2019  , ocaml-version: 4.14.0+mingw32c  , publish: true  , fnsuffix: -windows-i386 }
+        - { os: windows-2022  , ocaml-version: "4.14.2,system-mingw"              , publish: true  , fnsuffix: -windows-x86_64 }
+        - { os: windows-2019  , ocaml-version: "4.14.2,system-mingw,arch-x86_32"  , publish: true  , fnsuffix: -windows-i386 }
+        - { os: windows-2022  , ocaml-version: "4.14.2,system-msvc" }
+        - { os: windows-2019  , ocaml-version: "4.14.2,system-msvc,arch-x86_32" }
 
     runs-on: ${{ matrix.job.os }}
 
@@ -88,13 +89,9 @@ jobs:
         outputs OCAML_VARIANT OCAML_COMPILER
         # architecture/platform vars
         EXE_suffix='' ; case '${{ matrix.job.os }}' in windows-*) EXE_suffix=".exe" ;; esac
-        MinGW_ARCH='x86_64' ; case '${{ matrix.job.ocaml-version }}' in *+mingw32*) MinGW_ARCH='i686' ;; *+mingw64*) MinGW_ARCH='x86_64' ;; esac
-        MSVC_ARCH='' ; case '${{ matrix.job.ocaml-version }}' in *+msvc32*) MSVC_ARCH='x86' ;; *+msvc64*) MSVC_ARCH='x64' ;; esac
-        outputs EXE_suffix MinGW_ARCH MSVC_ARCH
-        case '${{ matrix.job.os }}','${{ matrix.job.ocaml-version }}' in
-          macos-*,4*) MACOSX_DEPLOYMENT_TARGET=10.6 ;; macos-*,5*) MACOSX_DEPLOYMENT_TARGET=10.7 ;;
-          macos-14*,*) MACOSX_DEPLOYMENT_TARGET=10.13 ;;
-        esac
+        MinGW_ARCH='x86_64' ; case '${{ matrix.job.ocaml-version }}' in *x86_32*) MinGW_ARCH='i686' ;; *mingw*) MinGW_ARCH='x86_64' ;; esac
+        outputs EXE_suffix MinGW_ARCH
+        MACOSX_DEPLOYMENT_TARGET=10.13
         case '${{ matrix.job.os }}' in
           macos-*) echo "MACOSX_DEPLOYMENT_TARGET=${MACOSX_DEPLOYMENT_TARGET}" >> $GITHUB_ENV ;
                    echo "XCODEFLAGS=-arch $(uname -m) -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET} MACOSX_DEPLOYMENT_TARGET=${MACOSX_DEPLOYMENT_TARGET}" >> $GITHUB_ENV ;
@@ -133,18 +130,11 @@ jobs:
         mkdir -p '${{ steps.vars.outputs.PKG_DIR }}'
         mkdir -p '${{ steps.vars.outputs.PKG_DIR }}'/bin
 
-    - name: Enable/config MSVC environment (if/when needed)
-      uses: ilammy/msvc-dev-cmd@v1
-      with:
-        arch: "${{ steps.vars.outputs.MSVC_ARCH }}"
-      if: contains(matrix.job.ocaml-version, '+msvc')
-
     - name: Use OCaml ${{ matrix.job.ocaml-version }}
-      uses: ocaml/setup-ocaml@v2
+      uses: ocaml/setup-ocaml@v3
       with:
         ocaml-compiler: "${{ steps.vars.outputs.OCAML_COMPILER }}"
         opam-pin: false
-        opam-depext: false
       # setup-ocaml can prepare the build environment from unison.opam
       # We're not relying on that capability here, to make sure the builds
       # also work without using unison.opam
@@ -157,9 +147,6 @@ jobs:
       if: runner.os == 'Windows'
       shell: cmd
       run: |
-        echo %CYGWIN_ROOT_BIN%>> %GITHUB_PATH%
-        echo %CYGWIN_ROOT_WRAPPERBIN%>> %GITHUB_PATH%
-        echo "/usr/${{ steps.vars.outputs.MinGW_ARCH }}-w64-mingw32/sys-root/mingw/bin">> %GITHUB_PATH%
         echo SHELLOPTS=igncr>> %GITHUB_ENV%
 
     - shell: bash
@@ -208,10 +195,9 @@ jobs:
         ./src/unison -ui text -selftest testr3 socket://{./localsocket/test.sock}/testr4 -killserver
 
     - name: Prepare lablgtk install (Windows)
-      if: ${{ runner.os == 'Windows' && contains(matrix.job.ocaml-version, '+mingw') }}
+      if: ${{ runner.os == 'Windows' && contains(matrix.job.ocaml-version, 'mingw') }}
       shell: bash
       run: |
-        opam install opam-depext depext-cygwinports
         setup-x86_64.exe --quiet-mode --root "${CYGWIN_ROOT}" --site http://cygwin.mirror.constant.com --symlink-type=sys --packages hicolor-icon-theme,adwaita-icon-theme
         # [2022-11] This terrible (terrible) hack is here to forcibly skip
         # building the fontconfig cache because it can take 30-45 minutes
@@ -233,13 +219,30 @@ jobs:
         rm tsetup.ini
         sha512sum > sha512.sum
         setup-x86_64.exe --quiet-mode --root "${CYGWIN_ROOT}" --symlink-type=sys --local-install --local-package-dir 'D:/a/https%3a%2f%2fcygwin.mirror.constant.com%2f' --mirror-mode --no-verify --packages mingw64-${{ steps.vars.outputs.MinGW_ARCH }}-fontconfig
+        # [2024-11] Not exactly sure what is happening here, but opam
+        # packages using pkg-config will fail in Windows without this.
+        # /usr/bin/pkg-config is a symlink to /usr/bin/pkgconf
+        # This does not work when opam packages try to execute pkg-config
+        # directly (that is, D:\cygwin\bin\pkg-config).
+        # It looks like this issue is being worked around package-by-package
+        # upstream, but the fix here is universal, so let's keep it for now.
+        cp /usr/bin/pkgconf /usr/bin/pkg-config.exe
+        # [2024-11] opam depext has been broken/disabled by migration to
+        # opam >= 2.2 which can support Windows natively. System dependencies
+        # in Windows must be installed manually (for now, at least).
+        setup-x86_64.exe --quiet-mode --root "${CYGWIN_ROOT}" --site http://cygwin.mirror.constant.com --symlink-type=sys --packages mingw64-${{ steps.vars.outputs.MinGW_ARCH }}-cairo,mingw64-${{ steps.vars.outputs.MinGW_ARCH }}-gtk3
+        # [2024-11] Setting PKG_CONFIG_LIBDIR like this is required with
+        # opam >= 2.2 which can support Windows natively. Not sure why,
+        # but it's likely due to pkg-conf being executed "outside" Cygwin
+        # environment.
+        echo PKG_CONFIG_LIBDIR=/usr/${{ steps.vars.outputs.MinGW_ARCH }}-w64-mingw32/sys-root/mingw/lib/pkgconfig >> "$GITHUB_ENV"
 
     - name: lablgtk install
       ## [2020-09] non-working/unavailable for MSVC or musl OCaml variants ; also, non-working for 32bit OCaml variant (see [GH:garrigue/lablgtk#64](https://github.com/garrigue/lablgtk/issues/64))
-      if: ${{ ! ( contains(matrix.job.ocaml-version, '+msvc') || contains(matrix.job.ocaml-version, '-musl') || contains(matrix.job.ocaml-version, '-32bit') ) }}
-      run: opam depext --install --verbose --yes lablgtk3 && opam install ocamlfind
+      if: ${{ ! ( contains(matrix.job.ocaml-version, 'msvc') || contains(matrix.job.ocaml-version, '-musl') || contains(matrix.job.ocaml-version, '-32bit') ) }}
+      run: opam install lablgtk3 ocamlfind
 
-    - if: ${{ !matrix.job.static }} ## unable to build static gtk/gui
+    - if: ${{ !matrix.job.static && !contains(matrix.job.ocaml-version, 'msvc') }} ## unable to build static gtk/gui
       shell: bash
       run: |
         opam exec -- make gui
@@ -249,7 +252,7 @@ jobs:
         cp "src/${project_exe_stem}-gui${{ steps.vars.outputs.EXE_suffix }}" "${{ steps.vars.outputs.PKG_DIR }}/bin/"
 
     - name: "Build WinOS text+gui hybrid"
-      if: ${{ runner.os == 'Windows' && !matrix.job.static }} ## WinOS, non-static (unable to build static gtk/gui)
+      if: ${{ runner.os == 'Windows' && !matrix.job.static && !contains(matrix.job.ocaml-version, 'msvc') }} ## WinOS, non-static (unable to build static gtk/gui)
       shell: bash
       run: |
         # create and stage text+gui hybrid for Windows
@@ -289,7 +292,7 @@ jobs:
         cp CONTRIBUTING.md "${PKG_DIR}"/
         cp NEWS.md "${PKG_DIR}"/
 
-    - if: runner.os == 'Windows'
+    - if: ${{ runner.os == 'Windows' && !contains(matrix.job.ocaml-version, 'msvc') }}
       name: "Windows: Package gtk"
       shell: bash
       run: |
@@ -298,20 +301,19 @@ jobs:
         # causing MinGW binutils not to be found (while other binutils
         # pre-installed in the GHA images may be found instead), which in turn
         # causes the DLL extracting functions to silently fail.
-        export PATH="/usr/${{ steps.vars.outputs.MinGW_ARCH }}-w64-mingw32/bin":${PATH}
+        export PATH="/usr/${{ steps.vars.outputs.MinGW_ARCH }}-w64-mingw32/bin":"/usr/${{ steps.vars.outputs.MinGW_ARCH }}-w64-mingw32/sys-root/mingw/bin":${PATH}
         ## package artifact(s)
         PKG_DIR='${{ steps.vars.outputs.PKG_DIR }}'
         # collect any needed dlls/libraries
         # dlls
-        dll_refs() { eval "$(opam env)" ; eval "$(ocaml-env cygwin)" ; objdump -x "$@" | grep -Po "\S+[.]dll$" | xargs -I{} 2>/dev/null which "{}" | sort -u ; }
+        dll_refs() { eval "$(opam env)" ; objdump -x "$@" | grep -Po "\S+[.]dll$" | xargs -I{} 2>/dev/null which "{}" | sort -u ; }
         filtered_dll_refs() { list="$(dll_refs "$@" | grep -vF "$(cygpath ${WINDIR})" | perl -lape '$_ = qq/@{[sort @F]}/')" ; echo "$list" ; }
         recursive_filtered_dll_refs() { list="$(filtered_dll_refs "$@")" ; n=0 ; while [ $n -lt $(echo "$list" | wc -l) ]; do n=$(echo "$list" | wc -l) ; list="$(filtered_dll_refs $list)" ; done ; echo "$list" ; }
         IFS=$'\n' DLL_list=( "$(recursive_filtered_dll_refs "${PKG_DIR}"/bin/*)" )
         for dll in ${DLL_list[@]} ; do cp "${dll}" "${PKG_DIR}"/bin ; done
-        TARGET_ARCH_ID='x86_64'; case '${{ matrix.job.ocaml-version }}' in *+mingw32*|*+msvc32*) TARGET_ARCH_ID='i686' ;; esac
         # required gdk support files
         mkdir "${PKG_DIR}"/lib
-        cp -r /usr/${TARGET_ARCH_ID}-w64-mingw32/sys-root/mingw/lib/gdk-pixbuf-2.0 "${PKG_DIR}"/lib/
+        cp -r /usr/${{ steps.vars.outputs.MinGW_ARCH }}-w64-mingw32/sys-root/mingw/lib/gdk-pixbuf-2.0 "${PKG_DIR}"/lib/
         # update loader.cache to point to local relative installation
         mv "${PKG_DIR}"/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache "${PKG_DIR}"/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache.original
         cat "${PKG_DIR}"/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache.original | sed -E 's#([^"]*)(lib/gdk-pixbuf-2.0/2.10.0/loaders/[^"]*[.]dll)#../\2#' > "${PKG_DIR}"/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache
@@ -321,7 +323,7 @@ jobs:
         cp -rL /usr/share/icons "${PKG_DIR}"/share
         # compile glib settings schema
         mkdir -p "${PKG_DIR}"/share/glib-2.0
-        cp -r /usr/${TARGET_ARCH_ID}-w64-mingw32/sys-root/mingw/share/glib-2.0/schemas "${PKG_DIR}"/share/glib-2.0
+        cp -r /usr/${{ steps.vars.outputs.MinGW_ARCH }}-w64-mingw32/sys-root/mingw/share/glib-2.0/schemas "${PKG_DIR}"/share/glib-2.0
         glib-compile-schemas "${PKG_DIR}"/share/glib-2.0/schemas
         # add gtk configuration
         mkdir -p "${PKG_DIR}"/etc/gtk-3.0
@@ -392,9 +394,9 @@ jobs:
         - { os: windows-2019  , ocaml-version: ocaml-variants.4.14.0+mingw64c  , ref: v2.53.5 }
         - { os: windows-2019  , ocaml-version: ocaml-variants.4.14.0+mingw64c  , ref: v2.52.1 , oldmake: true }
         - { os: windows-2019  , ocaml-version: ocaml-variants.4.08.1+mingw32c  , ref: v2.51.5 , oldmake: true }
-        - { os: macos-12      , ocaml-version: 4.14.x  , ref: v2.53.5 }
-        - { os: macos-12      , ocaml-version: 4.14.x  , ref: v2.52.1 , oldmake: true }
-        - { os: macos-12      , ocaml-version: 4.08.x  , ref: v2.51.2 , oldmake: true }
+        - { os: macos-13      , ocaml-version: 4.14.x  , ref: v2.53.5 }
+        - { os: macos-13      , ocaml-version: 4.14.x  , ref: v2.52.1 , oldmake: true }
+        - { os: macos-13      , ocaml-version: 4.08.x  , ref: v2.51.2 , oldmake: true }
 
     runs-on: ${{ matrix.job.os }}
 
@@ -783,7 +785,7 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Use OCaml ${{ matrix.job.ocaml-compiler }}
-      uses: ocaml/setup-ocaml@v2
+      uses: ocaml/setup-ocaml@v3
       with:
         ocaml-compiler: "${{ matrix.job.ocaml-compiler }}"
 
@@ -810,11 +812,10 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Use OCaml ${{ matrix.job.ocaml-compiler }}
-      uses: ocaml/setup-ocaml@v2
+      uses: ocaml/setup-ocaml@v3
       with:
         ocaml-compiler: "${{ matrix.job.ocaml-compiler }}"
         opam-pin: false
-        opam-depext: false
 
     - run: opam exec -- make tui NATIVE=false
 

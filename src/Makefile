@@ -5,7 +5,8 @@
 
 # Set NATIVE=false if you are not using the native code compiler (ocamlopt)
 # This is not advised, though: Unison runs much slower when byte-compiled.
-NATIVE=true
+# Set NATIVE=true to force a native build, should auto-detection fail.
+NATIVE=auto
 
 ########################################################################
 ########################################################################

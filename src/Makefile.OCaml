@@ -189,6 +189,14 @@ clean::
 ####################################################################
 ### Compilation boilerplate
 
+ifeq ($(NATIVE), auto)
+  ifneq ($(strip $(shell command -v $(OCAMLOPT) 2> /dev/null)),)
+    NATIVE=true
+  else
+    NATIVE=false
+  endif
+endif
+
 ifeq ($(NATIVE), true)
   ## Set up for native code compilation
 
@@ -202,7 +210,9 @@ else
 
   CAMLC=$(OCAMLC)
   # -output-complete-exe is available since OCaml 4.10
-  ifneq ($(strip $(shell $(OCAMLC) -output-complete-exe 2>&1)),)
+  # OCaml > 5.2.0 no longer supports detection of compiler options,
+  # hence the hack of comparing the output to -version.
+  ifneq ($(strip $(shell $(OCAMLC) -output-complete-exe -version 2>&1)), $(strip $(shell $(OCAMLC) -version)))
     CAMLLDFLAGS+=-custom
   else
     CAMLLDFLAGS+=-output-complete-exe  # can safely strip the binary
@@ -213,7 +223,10 @@ else
 
 endif
 
-WINDRES := $(or ${TOOL_PREFIX},$(filter i686-w64-mingw32- x86_64-w64-mingw32-,$(CC:gcc${EXEC_EXT}=)))windres
+OCAML_C_COMPILER :=  $(shell $(OCAMLC) -config-var c_compiler)
+C_COMPILER := $(or ${OCAML_C_COMPILER},${CC})
+C_COMPILER_PREFIX := $(C_COMPILER:gcc=)
+WINDRES := $(or ${TOOL_PREFIX},$(filter i686-w64-mingw32- x86_64-w64-mingw32-,$(C_COMPILER_PREFIX:gcc${EXEC_EXT}=)))windres
 ##$(info windres='${WINDRES}')
 
 ####################################################################
