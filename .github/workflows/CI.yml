@@ -48,7 +48,7 @@ jobs:
         job:
         - { os: macos-14      , ocaml-version: 5.2.0 }
         - { os: macos-14      , ocaml-version: 4.14.2           , publish: true  , fnsuffix: -macos-arm64 }
-        - { os: macos-12      , ocaml-version: 4.14.2           , publish: true  , fnsuffix: -macos-x86_64 }
+        - { os: macos-13      , ocaml-version: 4.14.2           , publish: true  , fnsuffix: -macos-x86_64 }
         - { os: ubuntu-22.04  , ocaml-version: 5.2.0 }
         - { os: ubuntu-22.04  , ocaml-version: 4.14.2 }
         - { os: ubuntu-20.04  , ocaml-version: 4.14.2 }
@@ -91,10 +91,7 @@ jobs:
         EXE_suffix='' ; case '${{ matrix.job.os }}' in windows-*) EXE_suffix=".exe" ;; esac
         MinGW_ARCH='x86_64' ; case '${{ matrix.job.ocaml-version }}' in *x86_32*) MinGW_ARCH='i686' ;; *mingw*) MinGW_ARCH='x86_64' ;; esac
         outputs EXE_suffix MinGW_ARCH
-        case '${{ matrix.job.os }}','${{ matrix.job.ocaml-version }}' in
-          macos-*,4*) MACOSX_DEPLOYMENT_TARGET=10.6 ;; macos-*,5*) MACOSX_DEPLOYMENT_TARGET=10.7 ;;
-          macos-14*,*) MACOSX_DEPLOYMENT_TARGET=10.13 ;;
-        esac
+        MACOSX_DEPLOYMENT_TARGET=10.13
         case '${{ matrix.job.os }}' in
           macos-*) echo "MACOSX_DEPLOYMENT_TARGET=${MACOSX_DEPLOYMENT_TARGET}" >> $GITHUB_ENV ;
                    echo "XCODEFLAGS=-arch $(uname -m) -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET} MACOSX_DEPLOYMENT_TARGET=${MACOSX_DEPLOYMENT_TARGET}" >> $GITHUB_ENV ;
@@ -397,9 +394,9 @@ jobs:
         - { os: windows-2019  , ocaml-version: ocaml-variants.4.14.0+mingw64c  , ref: v2.53.5 }
         - { os: windows-2019  , ocaml-version: ocaml-variants.4.14.0+mingw64c  , ref: v2.52.1 , oldmake: true }
         - { os: windows-2019  , ocaml-version: ocaml-variants.4.08.1+mingw32c  , ref: v2.51.5 , oldmake: true }
-        - { os: macos-12      , ocaml-version: 4.14.x  , ref: v2.53.5 }
-        - { os: macos-12      , ocaml-version: 4.14.x  , ref: v2.52.1 , oldmake: true }
-        - { os: macos-12      , ocaml-version: 4.08.x  , ref: v2.51.2 , oldmake: true }
+        - { os: macos-13      , ocaml-version: 4.14.x  , ref: v2.53.5 }
+        - { os: macos-13      , ocaml-version: 4.14.x  , ref: v2.52.1 , oldmake: true }
+        - { os: macos-13      , ocaml-version: 4.08.x  , ref: v2.51.2 , oldmake: true }
 
     runs-on: ${{ matrix.job.os }}
 
