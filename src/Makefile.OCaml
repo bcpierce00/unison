@@ -189,6 +189,14 @@ clean::
 ####################################################################
 ### Compilation boilerplate
 
+ifeq ($(NATIVE), auto)
+  ifneq ($(strip $(shell command -v $(OCAMLOPT) 2> /dev/null)),)
+    NATIVE=true
+  else
+    NATIVE=false
+  endif
+endif
+
 ifeq ($(NATIVE), true)
   ## Set up for native code compilation
 
