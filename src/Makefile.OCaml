@@ -210,7 +210,9 @@ else
 
   CAMLC=$(OCAMLC)
   # -output-complete-exe is available since OCaml 4.10
-  ifneq ($(strip $(shell $(OCAMLC) -output-complete-exe 2>&1)),)
+  # OCaml > 5.2.0 no longer supports detection of compiler options,
+  # hence the hack of comparing the output to -version.
+  ifneq ($(strip $(shell $(OCAMLC) -output-complete-exe -version 2>&1)), $(strip $(shell $(OCAMLC) -version)))
     CAMLLDFLAGS+=-custom
   else
     CAMLLDFLAGS+=-output-complete-exe  # can safely strip the binary
