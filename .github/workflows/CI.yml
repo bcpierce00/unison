@@ -63,14 +63,6 @@ jobs:
     - if: contains(matrix.job.os, 'ubuntu')
       run: sudo apt-get update
 
-    - if: runner.os == 'Windows'
-      name: "Windows: Stash away the default MSYS installation"
-      continue-on-error: true
-      shell: cmd
-      # This conflicts with Cygwin installed by setup-ocaml
-      # Adjusting PATH alone does not seem to work
-      run: rename C:\msys64 dmsys64
-
     - name: Checkout code
       uses: actions/checkout@v4
 
