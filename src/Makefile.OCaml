@@ -287,8 +287,8 @@ INCLFLAGS_MAC+=-I +threads
 ifndef OCAMLFIND
   CAMLFLAGS_GUI+=-I +lablgtk3 -I +cairo2
 else
-  CAMLFLAGS_GUI+=$(shell $(OCAMLFIND) query -i-format lablgtk3 )
-  CAMLFLAGS_GUI+=$(shell $(OCAMLFIND) query -i-format cairo2 )
+  CAMLFLAGS_GUI+=$(shell $(OCAMLFIND) query -format "-I '%d'" lablgtk3 )
+  CAMLFLAGS_GUI+=$(shell $(OCAMLFIND) query -format "-I '%d'" cairo2 )
 endif
 OCAMLOBJS_GUI+=pixmaps.cmo uigtk3.cmo linkgtk3.cmo
 OCAMLLIBS_GUI+=lablgtk3.cma cairo.cma
