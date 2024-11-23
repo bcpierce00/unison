@@ -128,7 +128,7 @@ ifeq ($(OSARCH),Win32)
   endif
   ifeq ($(shell $(OCAMLC) -config-var ccomp_type),msvc)
     OUTPUT_SEL=-Fo
-    CLIBS+=-cclib shell32.lib -cclib user32.lib -cclib "-link win32rc/unison.res"
+    CLIBS+=-cclib user32.lib -cclib "-link win32rc/unison.res"
     buildexecutable: win32rc/unison.res
   else
     OUTPUT_SEL=-o
@@ -287,8 +287,8 @@ INCLFLAGS_MAC+=-I +threads
 ifndef OCAMLFIND
   CAMLFLAGS_GUI+=-I +lablgtk3 -I +cairo2
 else
-  CAMLFLAGS_GUI+=$(shell $(OCAMLFIND) query -i-format lablgtk3 )
-  CAMLFLAGS_GUI+=$(shell $(OCAMLFIND) query -i-format cairo2 )
+  CAMLFLAGS_GUI+=$(shell $(OCAMLFIND) query -format "-I '%d'" lablgtk3 )
+  CAMLFLAGS_GUI+=$(shell $(OCAMLFIND) query -format "-I '%d'" cairo2 )
 endif
 OCAMLOBJS_GUI+=pixmaps.cmo uigtk3.cmo linkgtk3.cmo
 OCAMLLIBS_GUI+=lablgtk3.cma cairo.cma
@@ -494,10 +494,10 @@ clean::
 	-$(RM) win32rc/unison.res win32rc/unison.res.lib
 	-$(RM) fsmonitor/*.cm[iox] fsmonitor/*.o fsmonitor/*.obj fsmonitor/*~
 ifdef FSMDIR
-	-$(RM) $(FSMDIR)/*.cm[iox] $(FSMDIR)/*.o $(FSMDIR)/*~
+	-$(RM) $(FSMDIR)/*.cm[iox] $(FSMDIR)/*.o $(FSMDIR)/*.obj $(FSMDIR)/*~
 endif
 	-$(RM) .depend.dot.tmp DEPENDENCIES.ps
-	-$(RM) ubase/*.cm[ioxa] ubase/*.cmxa ubase/*.a ubase/*.o ubase/*~ ubase/*.bak
+	-$(RM) ubase/*.cm[ioxa] ubase/*.cmxa ubase/*.a ubase/*.o ubase/*.obj ubase/*~ ubase/*.bak
 	-$(RM) lwt/*.cm[ioxa] lwt/*.cmxa lwt/*.a lwt/*.o lwt/*.obj lwt/*~ lwt/*.bak
 	-$(RM) lwt/generic/*.cm[ioxa] lwt/generic/*.cmxa lwt/generic/*.a lwt/generic/*.o lwt/generic/*.obj lwt/generic/*~ lwt/generic/*.bak
 	-$(RM) lwt/win/*.cm[ioxa] lwt/win/*.cmxa lwt/win/*.a lwt/win/*.o lwt/win/*.obj lwt/win/*~ lwt/win/*.bak

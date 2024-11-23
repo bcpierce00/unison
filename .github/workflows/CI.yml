@@ -46,30 +46,22 @@ jobs:
       fail-fast: false
       matrix:
         job:
-        - { os: macos-14      , ocaml-version: 5.2.0 }
-        - { os: macos-14      , ocaml-version: 4.14.2           , publish: true  , fnsuffix: -macos-arm64 }
-        - { os: macos-13      , ocaml-version: 4.14.2           , publish: true  , fnsuffix: -macos-x86_64 }
-        - { os: ubuntu-22.04  , ocaml-version: 5.2.0 }
-        - { os: ubuntu-22.04  , ocaml-version: 4.14.2 }
-        - { os: ubuntu-20.04  , ocaml-version: 4.14.2 }
-        - { os: windows-2022  , ocaml-version: "4.14.2,system-mingw"              , publish: true  , fnsuffix: -windows-x86_64 }
-        - { os: windows-2019  , ocaml-version: "4.14.2,system-mingw,arch-x86_32"  , publish: true  , fnsuffix: -windows-i386 }
-        - { os: windows-2022  , ocaml-version: "4.14.2,system-msvc" }
-        - { os: windows-2019  , ocaml-version: "4.14.2,system-msvc,arch-x86_32" }
+        - { os: macos-14      , ocaml-version: 5.2.x }
+        - { os: macos-14      , ocaml-version: 4.14.x           , publish: true  , fnsuffix: -macos-arm64 }
+        - { os: macos-13      , ocaml-version: 4.14.x           , publish: true  , fnsuffix: -macos-x86_64 }
+        - { os: ubuntu-22.04  , ocaml-version: 5.2.x }
+        - { os: ubuntu-22.04  , ocaml-version: 4.14.x }
+        - { os: ubuntu-20.04  , ocaml-version: 4.14.x }
+        - { os: windows-2022  , ocaml-version: "ocaml.4.14.2,system-mingw"              , publish: true  , fnsuffix: -windows-x86_64 }
+        - { os: windows-2019  , ocaml-version: "ocaml.4.14.2,system-mingw,arch-x86_32"  , publish: true  , fnsuffix: -windows-i386 }
+        - { os: windows-2022  , ocaml-version: "ocaml.4.14.2,system-msvc" }
+        - { os: windows-2019  , ocaml-version: "ocaml.4.14.2,system-msvc,arch-x86_32" }
 
     runs-on: ${{ matrix.job.os }}
 
     steps:
     - if: contains(matrix.job.os, 'ubuntu')
       run: sudo apt-get update
-
-    - if: runner.os == 'Windows'
-      name: "Windows: Stash away the default MSYS installation"
-      continue-on-error: true
-      shell: cmd
-      # This conflicts with Cygwin installed by setup-ocaml
-      # Adjusting PATH alone does not seem to work
-      run: rename C:\msys64 dmsys64
 
     - name: Checkout code
       uses: actions/checkout@v4
@@ -79,14 +71,6 @@ jobs:
       shell: bash
       run: |
         outputs() { for var in "$@" ; do echo steps.vars.outputs.${var}="${!var}"; echo "${var}=${!var}" >> $GITHUB_OUTPUT ; done; }
-        # normalize to pre-compiled ocaml compiler variants for windows/Cygwin (decreases OCaml install time by 50%)
-        case '${{ matrix.job.ocaml-version }}' in
-          *+*) OCAML_COMPILER='ocaml-variants.${{ matrix.job.ocaml-version }}' ;;
-            *) OCAML_COMPILER='ocaml-base-compiler.${{ matrix.job.ocaml-version }}' ;;
-        esac
-        OCAML_VARIANT='${{ matrix.job.ocaml-version }}'
-        OCAML_VARIANT="${OCAML_VARIANT/+options/}"
-        outputs OCAML_VARIANT OCAML_COMPILER
         # architecture/platform vars
         EXE_suffix='' ; case '${{ matrix.job.os }}' in windows-*) EXE_suffix=".exe" ;; esac
         MinGW_ARCH='x86_64' ; case '${{ matrix.job.ocaml-version }}' in *x86_32*) MinGW_ARCH='i686' ;; *mingw*) MinGW_ARCH='x86_64' ;; esac
@@ -133,7 +117,7 @@ jobs:
     - name: Use OCaml ${{ matrix.job.ocaml-version }}
       uses: ocaml/setup-ocaml@v3
       with:
-        ocaml-compiler: "${{ steps.vars.outputs.OCAML_COMPILER }}"
+        ocaml-compiler: "${{ matrix.job.ocaml-version }}"
         opam-pin: false
       # setup-ocaml can prepare the build environment from unison.opam
       # We're not relying on that capability here, to make sure the builds
@@ -170,7 +154,7 @@ jobs:
     ## That remains intentionally so that someone could turn it on if
     ## desired.
     - name: Run self-tests over RPC
-      if: runner.os == 'Windows' && !contains(matrix.job.ocaml-version, '4.14')
+      if: runner.os == 'Windows' && !contains(matrix.job.ocaml-version, '4.14') && !contains(matrix.job.ocaml-version, '5.')
       shell: bash
       run: |
         # Separate backup dir must be set for server instance so that the central
@@ -182,7 +166,7 @@ jobs:
     - name: Run self-tests over local socket
       # Recent Windows versions do support Unix domain sockets
       # but at least OCaml 4.14 is required to use that support
-      if: runner.os != 'Windows' || contains(matrix.job.ocaml-version, '4.14')
+      if: runner.os != 'Windows' || contains(matrix.job.ocaml-version, '4.14') || contains(matrix.job.ocaml-version, '5.')
       shell: bash
       run: |
         mkdir localsocket
@@ -385,16 +369,16 @@ jobs:
         # This list is intended to balance good enough coverage and
         # limited resource usage.
         job:
-        - { os: ubuntu-22.04  , ocaml-version: 5.2.x   , ref: v2.53.5 }
-        - { os: ubuntu-22.04  , ocaml-version: 4.14.x  , ref: v2.53.5 }
+        - { os: ubuntu-22.04  , ocaml-version: 5.2.x   , ref: v2.53.7 }
+        - { os: ubuntu-22.04  , ocaml-version: 4.14.x  , ref: v2.53.7 }
         - { os: ubuntu-22.04  , ocaml-version: 4.14.x  , ref: v2.52.1 , oldmake: true }
         - { os: ubuntu-22.04  , ocaml-version: 4.14.x  , ref: v2.51.5 , oldmake: true }
         - { os: ubuntu-22.04  , ocaml-version: 4.08.x  , ref: v2.51.5 , oldmake: true }
         - { os: ubuntu-22.04  , ocaml-version: 4.08.x  , ref: v2.51.2 , oldmake: true }
-        - { os: windows-2019  , ocaml-version: ocaml-variants.4.14.0+mingw64c  , ref: v2.53.5 }
+        - { os: windows-2019  , ocaml-version: ocaml-variants.4.14.0+mingw64c  , ref: v2.53.7 }
         - { os: windows-2019  , ocaml-version: ocaml-variants.4.14.0+mingw64c  , ref: v2.52.1 , oldmake: true }
         - { os: windows-2019  , ocaml-version: ocaml-variants.4.08.1+mingw32c  , ref: v2.51.5 , oldmake: true }
-        - { os: macos-13      , ocaml-version: 4.14.x  , ref: v2.53.5 }
+        - { os: macos-13      , ocaml-version: 4.14.x  , ref: v2.53.7 }
         - { os: macos-13      , ocaml-version: 4.14.x  , ref: v2.52.1 , oldmake: true }
         - { os: macos-13      , ocaml-version: 4.08.x  , ref: v2.51.2 , oldmake: true }
 
