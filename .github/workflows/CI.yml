@@ -162,7 +162,7 @@ jobs:
     ## That remains intentionally so that someone could turn it on if
     ## desired.
     - name: Run self-tests over RPC
-      if: runner.os == 'Windows' && !contains(matrix.job.ocaml-version, '4.14')
+      if: runner.os == 'Windows' && !contains(matrix.job.ocaml-version, '4.14') && !contains(matrix.job.ocaml-version, '5.')
       shell: bash
       run: |
         # Separate backup dir must be set for server instance so that the central
@@ -174,7 +174,7 @@ jobs:
     - name: Run self-tests over local socket
       # Recent Windows versions do support Unix domain sockets
       # but at least OCaml 4.14 is required to use that support
-      if: runner.os != 'Windows' || contains(matrix.job.ocaml-version, '4.14')
+      if: runner.os != 'Windows' || contains(matrix.job.ocaml-version, '4.14') || contains(matrix.job.ocaml-version, '5.')
       shell: bash
       run: |
         mkdir localsocket
