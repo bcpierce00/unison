@@ -120,6 +120,13 @@ let allChildrenOf fspath path =
       | None ->
           [])
 
+
+let tempkeepdays: int Prefs.t =
+  Prefs.createInt "tempkeepdays" 30
+    ~category:(`Advanced `General)
+    "set the number of days to keep temporary files"
+    "Specifies the number of days temporary files are kept before being deleted."
+
 (* Assumes that (fspath, path) is a directory, and returns the list of       *)
 (* children, except for temporary files and AppleDouble files.               *)
 let rec childrenOf fspath path =
@@ -138,8 +145,8 @@ let rec childrenOf fspath path =
          if Util.endswith file !tempFileSuffix then begin
            let p = Path.child path filename in
            let i = Fileinfo.getBasic false fspath p in
-           let secondsinthirtydays = 2592000.0 in
-           if Props.time i.Fileinfo.desc +. secondsinthirtydays < Util.time()
+           let secondsInRetentionPeriod = float_of_int (Prefs.read tempkeepdays) *. 86400.0 in
+           if Props.time i.Fileinfo.desc +. secondsInRetentionPeriod < Util.time()
            then begin
              debug (fun()-> Util.msg "deleting old temp file %s\n"
                       (Fspath.toDebugString (Fspath.concat fspath p)));

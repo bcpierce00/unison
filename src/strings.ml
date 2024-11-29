@@ -1213,6 +1213,7 @@ let docs =
       \032  -rootalias xxx      register alias for canonical root names\n\
       \032  -showarchive        show 'true names' (for rootalias) of roots and archive\n\
       \032  -source xxx         include a file's preferences\n\
+      \032  -tempkeepdays n     after how many days should be temporary files deleted 
       \032  -ui xxx             select UI ('text' or 'graphic'); command-line only\n\
       \032  -unicode xxx        assume Unicode encoding in case insensitive mode\n\
       \032  -watch              when set, use a file watcher process to detect changes\n\
