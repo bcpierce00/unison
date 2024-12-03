@@ -221,6 +221,16 @@ jobs:
         # environment.
         echo PKG_CONFIG_LIBDIR=/usr/${{ steps.vars.outputs.MinGW_ARCH }}-w64-mingw32/sys-root/mingw/lib/pkgconfig >> "$GITHUB_ENV"
 
+    # [2024-12] Recent dune release switched from using pkg-config to pkgconf.
+    # However, pkgconf is broken in many environments and this breaks building
+    # cairo2, a dependency for lablgtk3 (and likely would break lablgtk3, too,
+    # if building ever got to that point). ubuntu-20.04 is one such case
+    # (pkgconf segfaults). As a workaround, just uninstall pkgconf, which makes
+    # dune fall back to pkg-config.
+    - name: "Ubuntu 20.04: Prepare lablgtk install"
+      if: ${{ contains(matrix.job.os, 'ubuntu-20.04') }}
+      run: sudo apt-get remove pkgconf
+
     - name: lablgtk install
       ## [2020-09] non-working/unavailable for MSVC or musl OCaml variants ; also, non-working for 32bit OCaml variant (see [GH:garrigue/lablgtk#64](https://github.com/garrigue/lablgtk/issues/64))
       if: ${{ ! ( contains(matrix.job.ocaml-version, 'msvc') || contains(matrix.job.ocaml-version, '-musl') || contains(matrix.job.ocaml-version, '-32bit') ) }}
@@ -856,9 +866,16 @@ jobs:
         test -S ./localsocket/test.sock
         ./src/unison -ui text -selftest testr3 socket://{./localsocket/test.sock}/testr4 -killserver
 
+    # [2024-12] Recent dune release switched from using pkg-config to pkgconf.
+    # However, pkgconf is broken in many environments and this breaks building
+    # cairo2, a dependency for lablgtk3 (and likely would break lablgtk3, too,
+    # if building ever got to that point). ubuntu-20.04 is one such case
+    # (pkgconf segfaults). As a workaround, just uninstall pkgconf, which makes
+    # dune fall back to pkg-config.
     - name: Build GUI
       if: ${{ !contains(matrix.job.ocaml-version, '-musl') }}
       run: |
+        sudo apt-get remove pkgconf
         opam depext --install --verbose --yes lablgtk3 && opam install ocamlfind
         opam exec -- make gui
         cp src/unison-gui pkg/bin/
