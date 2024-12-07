@@ -262,6 +262,16 @@ jobs:
       if: ${{ runner.os == 'Windows' && contains(matrix.job.ocaml-version, 'msvc') }}
       shell: pwsh
       run: |
+        # Prevent Cygwin env messing up the Windows build (opam will add Cygwin
+        # back to PATH, but still...)
+        # [2024-12] Somehow this was not required before a dune update that
+        # switched from using pkg-config to pkgconf, but doing this should not
+        # hurt in any case.
+        rm D:\cygwin\bin\pkgconf*
+        rm D:\cygwin\bin\pkg-config*
+        "PKG_CONFIG=D:\gtk\bin\pkgconf.exe" >> "${env:GITHUB_ENV}"
+        $env:Path = (${env:Path} -split ';' | Where-Object { $_ -Notlike "*cygwin*" }) -join ";"
+        ##
         "PATH=D:\gtk\bin;${env:Path}" >> "${env:GITHUB_ENV}"
         "LIB=D:\gtk\lib;${env:LIB}" >> "${env:GITHUB_ENV}"
         "INCLUDE=D:\gtk\include;D:\gtk\include\cairo;D:\gtk\include\glib-2.0;D:\gtk\include\gobject-introspection-1.0;D:\gtk\lib\glib-2.0\include;${env:INCLUDE}" >> "${env:GITHUB_ENV}"
