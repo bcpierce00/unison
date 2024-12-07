@@ -75,7 +75,8 @@ jobs:
         # architecture/platform vars
         EXE_suffix='' ; case '${{ matrix.job.os }}' in windows-*) EXE_suffix=".exe" ;; esac
         MinGW_ARCH='x86_64' ; case '${{ matrix.job.ocaml-version }}' in *x86_32*) MinGW_ARCH='i686' ;; *mingw*) MinGW_ARCH='x86_64' ;; esac
-        outputs EXE_suffix MinGW_ARCH
+        WINBUILD_ARCH='x64' ; case '${{ matrix.job.ocaml-version }}' in *x86_32*) WINBUILD_ARCH='x86' ;; *x86_64*) WINBUILD_ARCH='x64' ;; esac
+        outputs EXE_suffix MinGW_ARCH WINBUILD_ARCH
         MACOSX_DEPLOYMENT_TARGET=10.13
         case '${{ matrix.job.os }}' in
           macos-*) echo "MACOSX_DEPLOYMENT_TARGET=${MACOSX_DEPLOYMENT_TARGET}" >> $GITHUB_ENV ;
@@ -222,6 +223,205 @@ jobs:
         # environment.
         echo PKG_CONFIG_LIBDIR=/usr/${{ steps.vars.outputs.MinGW_ARCH }}-w64-mingw32/sys-root/mingw/lib/pkgconfig >> "$GITHUB_ENV"
 
+    - name: "Windows: Cache GTK installation"
+      if: ${{ runner.os == 'Windows' && contains(matrix.job.ocaml-version, 'msvc') }}
+      id: win-gtk-cache
+      uses: actions/cache@v4
+      with:
+        key: wingtk-${{ matrix.job.os }}-${{ steps.vars.outputs.WINBUILD_ARCH }}
+        path: D:\gtk
+
+    - if: ${{ runner.os == 'Windows' && contains(matrix.job.ocaml-version, 'msvc') && !steps.win-gtk-cache.outputs.cache-hit }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: 3.x
+
+    - name: "Windows: Install GTK"
+      # 32-bit GTK builds are not distributed; build locally
+      if: ${{ runner.os == 'Windows' && contains(matrix.job.ocaml-version, 'msvc') && !steps.win-gtk-cache.outputs.cache-hit }}
+      shell: pwsh
+      run: |
+        $env:PIPX_DEFAULT_PYTHON = (Get-Command -CommandType Application python -Syntax | Select-Object -First 1)
+        $env:PIPX_HOME = ".\pipx"
+        mkdir pipx
+        pipx install gvsbuild
+        gvsbuild build --platform ${{ steps.vars.outputs.WINBUILD_ARCH }} --configuration release --ninja-opts -j2 --vs-install-path $(Resolve-Path "C:\Program Files*\Microsoft Visual Studio\*\*\" | Select-Object -First 1) --build-dir D:\gtk-build gtk3
+        Move-Item "D:\gtk-build\gtk\*\release" D:\gtk
+        # Reset PKG_CONFIG_PATH, which would otherwise point to Python installation in GHA
+        "PKG_CONFIG_PATH=" >> "${env:GITHUB_ENV}"
+
+    # Disabled, but here for the record. 64-bit installation only
+    #- name: "Windows: Install GTK"
+    #  if: ${{ false && runner.os == 'Windows' && contains(matrix.job.ocaml-version, 'msvc') && !contains(matrix.job.ocaml-version, 'x86_32') }}
+    #  shell: pwsh
+    #  run: |
+    #    Invoke-WebRequest https://github.com/wingtk/gvsbuild/releases/download/2024.11.1/GTK3_Gvsbuild_2024.11.1_x64.zip -OutFile GTK3.zip
+    #    Expand-Archive -Path GTK3.zip -DestinationPath D:\gtk
+
+    - name: "Windows: Prepare lablgtk install"
+      if: ${{ runner.os == 'Windows' && contains(matrix.job.ocaml-version, 'msvc') }}
+      shell: pwsh
+      run: |
+        "PATH=D:\gtk\bin;${env:Path}" >> "${env:GITHUB_ENV}"
+        "LIB=D:\gtk\lib;${env:LIB}" >> "${env:GITHUB_ENV}"
+        "INCLUDE=D:\gtk\include;D:\gtk\include\cairo;D:\gtk\include\glib-2.0;D:\gtk\include\gobject-introspection-1.0;D:\gtk\lib\glib-2.0\include;${env:INCLUDE}" >> "${env:GITHUB_ENV}"
+        "PKG_CONFIG_PATH=D:\gtk\lib\pkgconfig" >> "${env:GITHUB_ENV}"
+        # [2024-12] Patch opam packages for MSVC. Only needed for as long as
+        # upstream does not work with MSVC out of the box.
+        mkdir _opampkgs
+        cd _opampkgs
+        opam source cairo2
+        cd cairo2*
+        @'
+        --- a/config/discover.ml
+        +++ b/config/discover.ml
+        @@ -15,7 +15,7 @@ let default_cairo c =
+               libs = ["/LC:\\gtk\\lib"; "cairo.lib"] }
+           else { P.cflags = ["-I/usr/include/cairo"];  libs = ["-lcairo"] }
+
+        -let c_header_has_ft () =
+        +let c_header ~has_ft () =
+           let fh = open_in "cairo_ocaml.h.p" in
+           let buf = Buffer.create 4096 in
+           let b = Bytes.create 4096 in
+        @@ -25,8 +25,12 @@ let c_header_has_ft () =
+           done;
+           close_in fh;
+           let s = Buffer.contents buf in
+        -  let re = Str.regexp "/\\* *#define *OCAML_CAIRO_HAS_FT .*\\*/" in
+        -  let s = Str.global_replace re "#define OCAML_CAIRO_HAS_FT 1" s in
+        +  let s =
+        +    if has_ft then
+        +      let re = Str.regexp "/\\* *#define *OCAML_CAIRO_HAS_FT .*\\*/" in
+        +      Str.global_replace re "#define OCAML_CAIRO_HAS_FT 1" s
+        +    else s
+        +  in
+           let fh = open_out "cairo_ocaml.h" in
+           output_string fh s;
+           close_out fh
+        @@ -70,7 +74,8 @@ let discover_cairo c =
+             | C.C_define.Value.Switch b -> b
+             | _ -> false in
+           let cflags, libs =
+        -    if has_ft_font && has_fc_font then (
+        +    c_header ~has_ft:has_ft_font ();
+        +    if has_ft_font || has_fc_font then (
+               match P.get c with
+               | Some p ->
+                  (match P.query p ~package:"fontconfig freetype2" with
+        @@ -81,7 +86,6 @@ let discover_cairo c =
+                        if String.length f > 2 && f.[0] = '-' && f.[1] = 'I' then
+                          f :: (f ^ "/freetype") :: l
+                        else f :: l in
+        -             c_header_has_ft ();
+                      (List.fold_left freetype [] f.cflags @ cflags,
+                       f.libs @ libs)
+                   | None -> cflags, libs)
+        --- a/src/cairo_stubs.c
+        +++ b/src/cairo_stubs.c
+        @@ -1082,7 +1082,7 @@ CAMLexport value caml_cairo_scaled_font_get_type(value vff)
+         /* Ft : TrueType fonts
+         ***********************************************************************/
+
+        -#if CAIRO_HAS_FT_FONT && CAIRO_HAS_FC_FONT
+        +#if CAIRO_HAS_FT_FONT
+         #include <cairo-ft.h>
+
+         CAMLexport value caml_cairo_Ft_init_FreeType(value unit)
+        @@ -1132,6 +1132,8 @@ CAMLexport value caml_cairo_ft_create_for_ft_face(
+           CAMLreturn(vff);
+         }
+
+        +#if CAIRO_HAS_FC_FONT
+        +
+         CAMLexport value caml_cairo_ft_create_for_pattern(
+           value voptions, value vpattern)
+         {
+        @@ -1170,6 +1172,12 @@ CAMLexport value caml_cairo_ft_create_for_pattern(
+           CAMLreturn(vff);
+         }
+
+        +#else
+        +
+        +UNAVAILABLE2(cairo_ft_create_for_pattern)
+        +
+        +#endif
+        +
+         CAMLexport value caml_cairo_ft_scaled_font_lock_face(value vsf)
+         {
+           CAMLparam1(vsf);
+        @@ -1228,15 +1236,15 @@ CAMLexport value caml_cairo_ft_synthesize_unset(
+
+         #else
+
+        -UNAVAILABLE1(Ft_init_FreeType)
+        -UNAVAILABLE2(caml_Ft_new_face)
+        -UNAVAILABLE3(caml_cairo_ft_create_for_ft_face)
+        -UNAVAILABLE2(caml_cairo_ft_create_for_pattern)
+        -UNAVAILABLE1(caml_cairo_ft_scaled_font_lock_face)
+        -UNAVAILABLE1(caml_cairo_ft_scaled_font_unlock_face)
+        -UNAVAILABLE1(caml_cairo_ft_synthesize_get)
+        -UNAVAILABLE3(caml_cairo_ft_synthesize_set)
+        -UNAVAILABLE3(caml_cairo_ft_synthesize_unset)
+        +UNAVAILABLE1(cairo_Ft_init_FreeType)
+        +UNAVAILABLE2(cairo_Ft_new_face)
+        +UNAVAILABLE3(cairo_ft_create_for_ft_face)
+        +UNAVAILABLE2(cairo_ft_create_for_pattern)
+        +UNAVAILABLE1(cairo_ft_scaled_font_lock_face)
+        +UNAVAILABLE1(cairo_ft_scaled_font_unlock_face)
+        +UNAVAILABLE1(cairo_ft_synthesize_get)
+        +UNAVAILABLE3(cairo_ft_synthesize_set)
+        +UNAVAILABLE3(cairo_ft_synthesize_unset)
+
+         #endif
+
+        @@ -1613,13 +1621,13 @@ SURFACE_CREATE_DATA(data8)
+         SURFACE_CREATE_DATA(data32)
+         #undef b
+
+        -#define SURFACE_GET_DATA(type, num_dims, dims ...)                      \
+        +#define SURFACE_GET_DATA(type, num_dims, ...)                           \
+           CAMLexport value caml_cairo_image_surface_get_##type(value vsurf)     \
+           {                                                                     \
+             CAMLparam1(vsurf);                                                  \
+             CAMLlocal1(vb);                                                     \
+             unsigned char* data = cairo_image_surface_get_data(SURFACE_VAL(vsurf)); \
+        -    intnat dim[num_dims] = {dims};                                      \
+        +    intnat dim[num_dims] = {__VA_ARGS__};                               \
+             struct caml_ba_proxy * proxy = (struct caml_ba_proxy *)             \
+               cairo_surface_get_user_data(SURFACE_VAL(vsurf), &image_bigarray_key); \
+                                                                                 \
+        '@ | patch -Nu -p 1
+        opam pin --no-action add cairo2 .
+        cd ..
+        opam source lablgtk3
+        cd lablgtk3*
+        @'
+        --- a/lablgtk3.opam
+        +++ b/lablgtk3.opam
+        @@ -22,8 +22,6 @@ depends: [
+           "dune"      {         >= "1.8.0"  }
+           "cairo2"    {         >= "0.6"    }
+           "conf-gtk3" {         >= "18"     }
+        -  "ocamlfind" { dev                 }
+        -  "camlp5"    { dev                 }
+         ]
+
+         build: [
+        --- a/src/dune
+        +++ b/src/dune
+        @@ -34,6 +34,6 @@
+            ml_gtkmenu ml_gtkfile ml_gtktree ml_gtkpack
+            ml_gtkstock ml_gtkrange ml_gtkassistant
+          )
+        - (c_flags         (:include cflag-gtk+-3.0.sexp) (:include cflag-extraflags.sexp) -Wno-deprecated-declarations)
+        + (c_flags         (:include cflag-gtk+-3.0.sexp) (:include cflag-extraflags.sexp))
+          (c_library_flags (:include clink-gtk+-3.0.sexp))
+          (libraries threads cairo2))
+
+        '@ | patch -Nu -p 1
+        opam pin --no-action add lablgtk3 .
+
     - name: "Ubuntu: Prepare lablgtk install (i386)"
       if: ${{ contains(matrix.job.os, 'ubuntu') && contains(matrix.job.ocaml-version, '-32bit') }}
       run: |
@@ -241,11 +441,11 @@ jobs:
       run: sudo apt-get remove pkgconf
 
     - name: lablgtk install
-      ## [2020-09] non-working/unavailable for MSVC or musl OCaml variants
-      if: ${{ ! ( contains(matrix.job.ocaml-version, 'msvc') || contains(matrix.job.ocaml-version, '-musl') ) }}
+      ## [2020-09] non-working/unavailable for musl OCaml variant
+      if: ${{ !contains(matrix.job.ocaml-version, '-musl') }}
       run: opam install lablgtk3 ocamlfind
 
-    - if: ${{ !matrix.job.static && !contains(matrix.job.ocaml-version, 'msvc') }} ## unable to build static gtk/gui
+    - if: ${{ !matrix.job.static }} ## unable to build static gtk/gui
       shell: bash
       run: |
         opam exec -- make gui
@@ -295,7 +495,7 @@ jobs:
         cp CONTRIBUTING.md "${PKG_DIR}"/
         cp NEWS.md "${PKG_DIR}"/
 
-    - if: ${{ runner.os == 'Windows' && !contains(matrix.job.ocaml-version, 'msvc') }}
+    - if: ${{ runner.os == 'Windows' && contains(matrix.job.ocaml-version, 'mingw') }}
       name: "Windows: Package gtk"
       shell: bash
       run: |
@@ -331,6 +531,26 @@ jobs:
         # add gtk configuration
         mkdir -p "${PKG_DIR}"/etc/gtk-3.0
         printf "[Settings]\ngtk-button-images=true\ngtk-font-name=Segoe UI 9\n" > "${PKG_DIR}"/etc/gtk-3.0/settings.ini
+
+    - if: ${{ runner.os == 'Windows' && contains(matrix.job.ocaml-version, 'msvc') }}
+      name: "Windows: Package gtk"
+      shell: pwsh
+      run: |
+        # Make sure MSVC is in the path (for dumpbin) and GTK is first in path
+        opam env | Invoke-Expression
+        $env:Path = "C:\gtk\bin;" + $env:Path
+        # collect any needed dlls/libraries
+        function recursive_deps { param ($prefix, $list, $filename) if ($list.Keys -contains $filename.ToLower()) { Write-Debug "$prefix  NOT dumping $filename"; return }; Write-Debug "$prefix  DUMPING $filename"; $files = (dumpbin /dependents $filename | ForEach-Object { $_.Trim() | Where-Object { $_ -Like "*.dll" } } | ForEach-Object { Get-Command -CommandType Application -Syntax -ErrorAction SilentlyContinue $_ | Select-Object -First 1 | Where-Object { $_ -notlike "$env:WINDIR*" -and $_ -notlike "*\api-ms-win-*" } }); $list[$filename.ToLower()] = $files; $files | ForEach-Object { recursive_deps "    $prefix" $list $_ } }
+        function all_deps { param ($filename) $dep_list = @{}; recursive_deps "" $dep_list $filename; $dep_list.Values | ForEach-Object {$_} | Sort-Object -CaseSensitive | Get-Unique }
+        cd "${{ steps.vars.outputs.PKG_DIR }}\bin"
+        Get-ChildItem | ForEach-Object { all_deps $_.FullName | ForEach-Object { Write-Debug $_; Copy-Item $_ } }
+        cd ..
+        # glib settings schema
+        mkdir -p "share\glib-2.0\schemas"
+        Split-Path (Get-Command -Type Application glib-compile-schemas).Source | Join-Path -ChildPath "..\share\glib-2.0\schemas\gschemas.compiled" | Copy-Item -Destination "share\glib-2.0\schemas"
+        # add gtk configuration
+        mkdir -p "etc\gtk-3.0"
+        "[Settings]`ngtk-button-images=true`n" > "etc\gtk-3.0\settings.ini"
 
     - name: Package
       shell: bash
