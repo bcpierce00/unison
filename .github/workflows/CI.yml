@@ -51,6 +51,7 @@ jobs:
         - { os: macos-13      , ocaml-version: 4.14.x           , publish: true  , fnsuffix: -macos-x86_64 }
         - { os: ubuntu-22.04  , ocaml-version: 5.2.x }
         - { os: ubuntu-22.04  , ocaml-version: 4.14.x }
+        - { os: ubuntu-22.04  , ocaml-version: "ocaml-variants.4.14.2+options,ocaml-option-32bit", publish: true, fnsuffix: -ubuntu-i386 }
         - { os: ubuntu-20.04  , ocaml-version: 4.14.x }
         - { os: windows-2022  , ocaml-version: "ocaml.4.14.2,system-mingw"              , publish: true  , fnsuffix: -windows-x86_64 }
         - { os: windows-2019  , ocaml-version: "ocaml.4.14.2,system-mingw,arch-x86_32"  , publish: true  , fnsuffix: -windows-i386 }
@@ -221,6 +222,14 @@ jobs:
         # environment.
         echo PKG_CONFIG_LIBDIR=/usr/${{ steps.vars.outputs.MinGW_ARCH }}-w64-mingw32/sys-root/mingw/lib/pkgconfig >> "$GITHUB_ENV"
 
+    - name: "Ubuntu: Prepare lablgtk install (i386)"
+      if: ${{ contains(matrix.job.os, 'ubuntu') && contains(matrix.job.ocaml-version, '-32bit') }}
+      run: |
+        sudo dpkg --add-architecture i386
+        sudo apt-get update
+        sudo apt-get install libgtk-3-dev:i386 libexpat1-dev:i386
+        echo PKG_CONFIG_LIBDIR=/usr/lib/i386-linux-gnu/pkgconfig:/usr/share/pkgconfig:"$PKG_CONF_LIBDIR" >> "$GITHUB_ENV"
+
     # [2024-12] Recent dune release switched from using pkg-config to pkgconf.
     # However, pkgconf is broken in many environments and this breaks building
     # cairo2, a dependency for lablgtk3 (and likely would break lablgtk3, too,
@@ -232,8 +241,8 @@ jobs:
       run: sudo apt-get remove pkgconf
 
     - name: lablgtk install
-      ## [2020-09] non-working/unavailable for MSVC or musl OCaml variants ; also, non-working for 32bit OCaml variant (see [GH:garrigue/lablgtk#64](https://github.com/garrigue/lablgtk/issues/64))
-      if: ${{ ! ( contains(matrix.job.ocaml-version, 'msvc') || contains(matrix.job.ocaml-version, '-musl') || contains(matrix.job.ocaml-version, '-32bit') ) }}
+      ## [2020-09] non-working/unavailable for MSVC or musl OCaml variants
+      if: ${{ ! ( contains(matrix.job.ocaml-version, 'msvc') || contains(matrix.job.ocaml-version, '-musl') ) }}
       run: opam install lablgtk3 ocamlfind
 
     - if: ${{ !matrix.job.static && !contains(matrix.job.ocaml-version, 'msvc') }} ## unable to build static gtk/gui
