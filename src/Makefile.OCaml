@@ -184,7 +184,7 @@ ubase/projectInfo.ml: Makefile.ProjectInfo
 	echo 'let myMajorVersion = "'$(MAJORVERSION)'";;' >> $@
 
 clean::
-	$(RM) ubase/projectInfo.ml
+	cd ubase && $(RM) projectInfo.ml
 
 ####################################################################
 ### Compilation boilerplate
@@ -479,26 +479,28 @@ $(NAME)-blob.o: $$(CAMLOBJS) $(COBJS)
 ####################################################################
 ### Misc
 
+RM_FILES = $(RM) *.cmi *.cmo *.cmx *.cma *.cmxa *.o *.obj *.lib *.exp *~ .*~ *.bak *.tmp
+
 clean::
 	-$(RM) $(NAME) $(NAME).exe
 	-$(RM) $(NAME_GUI) $(NAME_GUI).exe
 	-$(RM) $(NAME_FSM) $(NAME_FSM).exe
 	-$(RM) $(NAME)-blob.o
-	-$(RM) -r *.cmi *.cmo *.cmx *.cma *.cmxa TAGS tags
-	-$(RM) -r *.o core gmon.out *~ .*~
-	-$(RM) -r *.obj *.lib *.exp
-	-$(RM) -r *.tmp *.bak?.tmp .*.bak?.tmp
-	-$(RM) system/*.cm[iox] system/*.o system/*.obj system/win/*~
-	-$(RM) system/generic/*.cm[iox] system/generic/*.o system/generic/*.obj system/generic/*~
-	-$(RM) system/win/*.cm[iox] system/win/*.o system/win/*.obj system/win/*~
-	-$(RM) win32rc/unison.res win32rc/unison.res.lib
-	-$(RM) fsmonitor/*.cm[iox] fsmonitor/*.o fsmonitor/*.obj fsmonitor/*~
-	-$(RM) fsmonitor/../$(FSMDIR)/*.cm[iox] fsmonitor/../$(FSMDIR)/*.o fsmonitor/../$(FSMDIR)/*.obj fsmonitor/../$(FSMDIR)/*~
+	-$(RM) TAGS tags
+	-$(RM) core gmon.out
+	-$(RM) *.tmp *.bak?.tmp .*.bak?.tmp
 	-$(RM) .depend.dot.tmp DEPENDENCIES.ps
-	-$(RM) ubase/*.cm[ioxa] ubase/*.cmxa ubase/*.a ubase/*.o ubase/*.obj ubase/*~ ubase/*.bak
-	-$(RM) lwt/*.cm[ioxa] lwt/*.cmxa lwt/*.a lwt/*.o lwt/*.obj lwt/*~ lwt/*.bak
-	-$(RM) lwt/generic/*.cm[ioxa] lwt/generic/*.cmxa lwt/generic/*.a lwt/generic/*.o lwt/generic/*.obj lwt/generic/*~ lwt/generic/*.bak
-	-$(RM) lwt/win/*.cm[ioxa] lwt/win/*.cmxa lwt/win/*.a lwt/win/*.o lwt/win/*.obj lwt/win/*~ lwt/win/*.bak
+	-(cd win32rc && $(RM) unison.res unison.res.lib)
+	-$(RM_FILES)
+	-(cd system && $(RM_FILES))
+	-(cd system/generic && $(RM_FILES))
+	-(cd system/win && $(RM_FILES))
+	-(cd fsmonitor && $(RM_FILES))
+	-(cd fsmonitor/../$(FSMDIR) && $(RM_FILES))
+	-(cd ubase && $(RM_FILES))
+	-(cd lwt && $(RM_FILES))
+	-(cd lwt/generic && $(RM_FILES))
+	-(cd lwt/win && $(RM_FILES))
 
 .PHONY: paths
 paths:
