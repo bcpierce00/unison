@@ -459,7 +459,7 @@ $(NAME_FSM)$(EXEC_EXT): COBJS = $(FSMCOBJS)
 
 $(NAME)$(EXEC_EXT) $(NAME_GUI)$(EXEC_EXT) $(NAME_FSM)$(EXEC_EXT): $$(CAMLOBJS) $$(COBJS)
 	@echo Linking $@
-	$(CAMLC) -verbose $(CAMLFLAGS) $(CAMLLDFLAGS) -o $@ $(CAMLCFLAGS) $(CAMLLIBS) $^ $(CLIBS)
+	$(CAMLC) -verbose $(CAMLFLAGS) $(CAMLLDFLAGS) -o $@ $(CAMLLIBS) $^ $(CLIBS)
 
 $(NAME)-blob.o: OCAMLOBJS += $(OCAMLOBJS_MAC)
 $(NAME)-blob.o: OCAMLLIBS += $(OCAMLLIBS_MAC)
@@ -472,7 +472,7 @@ $(NAME)-blob.o: INCLFLAGS += $(INCLFLAGS_MAC)
 # threads (needed by uimacbridge): https://github.com/ocaml/ocaml/issues/7933
 $(NAME)-blob.o: $$(CAMLOBJS) $(COBJS)
 	@echo Linking $@
-	$(CAMLC) -dstartup -output-obj -verbose -cclib -keep_private_externs $(CAMLFLAGS) -o u-b.o $(CAMLCFLAGS) $(CAMLLDFLAGS) $(CAMLLIBS) $(CLIBS) $(CAMLOBJS)
+	$(CAMLC) -dstartup -output-obj -verbose -cclib -keep_private_externs $(CAMLFLAGS) -o u-b.o $(CAMLLDFLAGS) $(CAMLLIBS) $(CLIBS) $(CAMLOBJS)
 	$(LD) -r -keep_private_externs -o $@ u-b.o $(COBJS)
 	$(RM) u-b.o
 
@@ -493,9 +493,7 @@ clean::
 	-$(RM) system/win/*.cm[iox] system/win/*.o system/win/*.obj system/win/*~
 	-$(RM) win32rc/unison.res win32rc/unison.res.lib
 	-$(RM) fsmonitor/*.cm[iox] fsmonitor/*.o fsmonitor/*.obj fsmonitor/*~
-ifdef FSMDIR
-	-$(RM) $(FSMDIR)/*.cm[iox] $(FSMDIR)/*.o $(FSMDIR)/*.obj $(FSMDIR)/*~
-endif
+	-$(RM) fsmonitor/../$(FSMDIR)/*.cm[iox] fsmonitor/../$(FSMDIR)/*.o fsmonitor/../$(FSMDIR)/*.obj fsmonitor/../$(FSMDIR)/*~
 	-$(RM) .depend.dot.tmp DEPENDENCIES.ps
 	-$(RM) ubase/*.cm[ioxa] ubase/*.cmxa ubase/*.a ubase/*.o ubase/*.obj ubase/*~ ubase/*.bak
 	-$(RM) lwt/*.cm[ioxa] lwt/*.cmxa lwt/*.a lwt/*.o lwt/*.obj lwt/*~ lwt/*.bak
