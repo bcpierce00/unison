@@ -493,9 +493,7 @@ clean::
 	-$(RM) system/win/*.cm[iox] system/win/*.o system/win/*.obj system/win/*~
 	-$(RM) win32rc/unison.res win32rc/unison.res.lib
 	-$(RM) fsmonitor/*.cm[iox] fsmonitor/*.o fsmonitor/*.obj fsmonitor/*~
-ifdef FSMDIR
-	-$(RM) $(FSMDIR)/*.cm[iox] $(FSMDIR)/*.o $(FSMDIR)/*.obj $(FSMDIR)/*~
-endif
+	-$(RM) fsmonitor/../$(FSMDIR)/*.cm[iox] fsmonitor/../$(FSMDIR)/*.o fsmonitor/../$(FSMDIR)/*.obj fsmonitor/../$(FSMDIR)/*~
 	-$(RM) .depend.dot.tmp DEPENDENCIES.ps
 	-$(RM) ubase/*.cm[ioxa] ubase/*.cmxa ubase/*.a ubase/*.o ubase/*.obj ubase/*~ ubase/*.bak
 	-$(RM) lwt/*.cm[ioxa] lwt/*.cmxa lwt/*.a lwt/*.o lwt/*.obj lwt/*~ lwt/*.bak
