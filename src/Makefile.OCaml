@@ -202,8 +202,8 @@ ifeq ($(NATIVE), true)
 
   CAMLC=$(OCAMLOPT)
 
-  CAMLOBJS=$(subst .cmo,.cmx, $(subst .cma,.cmxa, $(OCAMLOBJS)))
-  CAMLLIBS=$(subst .cma,.cmxa, $(OCAMLLIBS))
+  CAMLOBJS = $(OCAMLOBJS:.cmo=.cmx)
+  CAMLLIBS = $(OCAMLLIBS:.cma=.cmxa)
 
 else
   ## Set up for bytecode compilation
