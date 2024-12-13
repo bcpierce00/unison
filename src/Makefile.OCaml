@@ -202,8 +202,8 @@ ifeq ($(NATIVE), true)
 
   CAMLC=$(OCAMLOPT)
 
-  CAMLOBJS=$(subst .cmo,.cmx, $(subst .cma,.cmxa, $(OCAMLOBJS)))
-  CAMLLIBS=$(subst .cma,.cmxa, $(OCAMLLIBS))
+  CAMLOBJS = $(OCAMLOBJS:.cmo=.cmx)
+  CAMLLIBS = $(OCAMLLIBS:.cma=.cmxa)
 
 else
   ## Set up for bytecode compilation
@@ -422,23 +422,22 @@ win32rc/unison.res.lib: win32rc/unison.rc win32rc/U.ico
 	$(WINDRES) win32rc/unison.rc win32rc/unison.res
 	$(WINDRES) win32rc/unison.res win32rc/unison.res.lib
 
-%.ml: %.mll
-	-$(RM) $@
-	ocamllex $<
+.SUFFIXES:
+.SUFFIXES: .mli .cmi .ml .cmo .cmx .c .o .obj
 
-%.cmi : %.mli
+.mli.cmi:
 	@echo "$(CAMLC): $< ---> $@"
 	$(CAMLC) $(CAMLFLAGS) -c $(CWD)/$<
 
-%.cmo: %.ml
+.ml.cmo:
 	@echo "$(OCAMLC): $< ---> $@"
 	$(OCAMLC) $(CAMLFLAGS) -c $(CWD)/$<
 
-%.cmx: %.ml
+.ml.cmx:
 	@echo "$(OCAMLOPT): $< ---> $@"
 	$(OCAMLOPT) $(CAMLFLAGS) -c $(CWD)/$<
 
-%$(OBJ_EXT): %.c
+.c$(OBJ_EXT):
 	@echo "$(CAMLC): $< ---> $@"
 	$(CAMLC) $(CAMLFLAGS) $(CAMLCFLAGS) -ccopt $(OUTPUT_SEL)$(CWD)/$@ -c $(CWD)/$<
 
