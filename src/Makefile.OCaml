@@ -311,33 +311,12 @@ gui: buildexecutable $(NAME_GUI)$(EXEC_EXT)
 .PHONY: macui
 macui: buildexecutable macexecutable
 
-UIMACDIR=uimac
-
-ifeq ($(OSARCH),Darwin)
-ifeq ($(strip $(XCODEFLAGS)),)
-  XCODEFLAGS=-arch $(shell uname -m)  ## Prevent Xcode from trying to build universal binaries by default
-endif
-endif
-
-# Note: The OCaml library names changed starting with OCaml 5.1.0
 .PHONY: macexecutable
-macexecutable:
-	(cd $(UIMACDIR); \
-	  LIB_SUFFIX=$$(ocaml -e 'if Sys.ocaml_release.major > 5 || Sys.ocaml_release.major = 5 && Sys.ocaml_release.minor >= 1 then print_string "nat"' 2> /dev/null); \
-	  printf "MARKETING_VERSION = $(VERSION)\nOCAMLLIBDIR = $(OCAMLLIBDIR)\nOCAMLLIB_UNIX = -lunix$${LIB_SUFFIX}\nOCAMLLIB_STR = -lcamlstr$${LIB_SUFFIX}" > ExternalSettings.xcconfig)
-	(cd $(UIMACDIR); xcodebuild $(XCODEFLAGS) SYMROOT=build)
-	$(CC) $(CFLAGS) $(UIMACDIR)/cltool.c -o $(UIMACDIR)/build/Default/Unison.app/Contents/MacOS/cltool -framework Carbon
-	codesign --remove-signature $(UIMACDIR)/build/Default/Unison.app
-	codesign --force --sign - $(UIMACDIR)/build/Default/Unison.app/Contents/MacOS/cltool
-	codesign --force --sign - --entitlements $(UIMACDIR)/build/uimac*.build/Default/uimac.build/Unison.app.xcent $(UIMACDIR)/build/Default/Unison.app
-	codesign --verify --deep --strict $(UIMACDIR)/build/Default/Unison.app
-# cltool was added into the .app after it was signed, so the signature is now
-# broken. It must be removed, cltool separately signed, and then the entire
-# .app (re-)signed.
+macexecutable: $(NAME)-blob.o
+	cd uimac && $(MAKE) macexecutable VERSION="$(VERSION)" OCAMLLIBDIR="$(OCAMLLIBDIR)"
 
 clean::
-	-(cd $(UIMACDIR); xcodebuild clean 2> /dev/null) || true
-	-(cd $(UIMACDIR); $(RM) -r build ExternalSettings.xcconfig)
+	cd uimac && $(MAKE) clean
 
 ####################################################################
 ### Filesystem monitoring

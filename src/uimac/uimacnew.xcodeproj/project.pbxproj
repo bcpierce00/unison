@@ -325,7 +325,6 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 2A3C3F280992245300E404E9 /* Build configuration list for PBXNativeTarget "uimac" */;
 			buildPhases = (
-				2E282CBA0D9AE17300439D01 /* Run Script (make unison-blob.o) */,
 				69C625E50664EC3300B3C46A /* Resources */,
 				69C625E90664EC3300B3C46A /* Sources */,
 				69C625F10664EC3300B3C46A /* Frameworks */,
@@ -419,25 +418,6 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
-
-/* Begin PBXShellScriptBuildPhase section */
-		2E282CBA0D9AE17300439D01 /* Run Script (make unison-blob.o) */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-			);
-			name = "Run Script (make unison-blob.o)";
-			outputPaths = (
-				"../unison-blob.o",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "echo \"Building unison-blob.o...\"\nif [ -x /usr/libexec/path_helper ]; then\n    eval `/usr/libexec/path_helper -s`\nfi\nif [ -x `which opam` ]; then\n    eval `opam config env`\nfi\nmake -C .. unison-blob.o\necho \"done\"\n";
-			showEnvVarsInLog = 0;
-		};
-/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		69C625E90664EC3300B3C46A /* Sources */ = {
