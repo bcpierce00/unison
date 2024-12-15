@@ -203,6 +203,11 @@ ifeq ($(NATIVE), true)
   CAMLC=$(OCAMLOPT)
 
   CAMLOBJS = $(OCAMLOBJS:.cmo=.cmx)
+  CAMLOBJS_TUI = $(OCAMLOBJS_TUI:.cmo=.cmx)
+  CAMLOBJS_GUI = $(OCAMLOBJS_GUI:.cmo=.cmx)
+  CAMLOBJS_MAC = $(OCAMLOBJS_MAC:.cmo=.cmx)
+  CAMLOBJS_FSM = $(FSMOCAMLOBJS:.cmo=.cmx)
+
   CAMLLIBS = $(OCAMLLIBS:.cma=.cmxa)
 
 else
@@ -218,7 +223,12 @@ else
     CAMLLDFLAGS+=-output-complete-exe  # can safely strip the binary
   endif
 
-  CAMLOBJS=$(OCAMLOBJS)
+  CAMLOBJS = $(OCAMLOBJS)
+  CAMLOBJS_TUI = $(OCAMLOBJS_TUI)
+  CAMLOBJS_GUI = $(OCAMLOBJS_GUI)
+  CAMLOBJS_MAC = $(OCAMLOBJS_MAC)
+  CAMLOBJS_FSM = $(FSMOCAMLOBJS)
+
   CAMLLIBS=$(OCAMLLIBS)
 
 endif
@@ -420,26 +430,21 @@ win32rc/unison.res.lib: win32rc/unison.rc win32rc/U.ico
 	@echo "$(CAMLC): $< ---> $@"
 	$(CAMLC) $(CAMLFLAGS) $(CAMLCFLAGS) -ccopt $(OUTPUT_SEL)$(CWD)/$@ -c $(CWD)/$<
 
-# Need secondary expansion to bypass the immediate evaluation of pre-requisites
-.SECONDEXPANSION:
+$(NAME)$(EXEC_EXT): $(CAMLOBJS) $(CAMLOBJS_TUI) $(COBJS)
 
-$(NAME)$(EXEC_EXT): OCAMLOBJS += $(OCAMLOBJS_TUI)
-
-$(NAME_GUI)$(EXEC_EXT): OCAMLOBJS += $(OCAMLOBJS_GUI)
 $(NAME_GUI)$(EXEC_EXT): OCAMLLIBS += $(OCAMLLIBS_GUI)
 $(NAME_GUI)$(EXEC_EXT): CAMLFLAGS += $(CAMLFLAGS_GUI)
 $(NAME_GUI)$(EXEC_EXT): CAMLLDFLAGS += $(CAMLLDFLAGS_GUI)
+$(NAME_GUI)$(EXEC_EXT): $(CAMLOBJS) $(CAMLOBJS_GUI) $(COBJS)
 
-$(NAME_FSM)$(EXEC_EXT): OCAMLOBJS = $(FSMOCAMLOBJS)
 $(NAME_FSM)$(EXEC_EXT): OCAMLLIBS = $(FSMOCAMLLIBS)
 $(NAME_FSM)$(EXEC_EXT): CAMLFLAGS += -I fsmonitor -I $(FSMDIR)
-$(NAME_FSM)$(EXEC_EXT): COBJS = $(FSMCOBJS)
+$(NAME_FSM)$(EXEC_EXT): $(CAMLOBJS_FSM) $(FSMCOBJS)
 
-$(NAME)$(EXEC_EXT) $(NAME_GUI)$(EXEC_EXT) $(NAME_FSM)$(EXEC_EXT): $$(CAMLOBJS) $$(COBJS)
+$(NAME)$(EXEC_EXT) $(NAME_GUI)$(EXEC_EXT) $(NAME_FSM)$(EXEC_EXT):
 	@echo Linking $@
 	$(CAMLC) -verbose $(CAMLFLAGS) $(CAMLLDFLAGS) -o $@ $(CAMLLIBS) $^ $(CLIBS)
 
-$(NAME)-blob.o: OCAMLOBJS += $(OCAMLOBJS_MAC)
 $(NAME)-blob.o: OCAMLLIBS += $(OCAMLLIBS_MAC)
 $(NAME)-blob.o: INCLFLAGS += $(INCLFLAGS_MAC)
 # Unfortunately -output-obj does not put .o files into the output, only .cmx
@@ -448,9 +453,9 @@ $(NAME)-blob.o: INCLFLAGS += $(INCLFLAGS_MAC)
 # -output-complete-obj, available since OCaml 4.02.2. Still, this option can't
 # be used here because there is a bug which breaks linking on macOS when using
 # threads (needed by uimacbridge): https://github.com/ocaml/ocaml/issues/7933
-$(NAME)-blob.o: $$(CAMLOBJS) $(COBJS)
+$(NAME)-blob.o: $(CAMLOBJS) $(CAMLOBJS_MAC) $(COBJS)
 	@echo Linking $@
-	$(CAMLC) -dstartup -output-obj -verbose -cclib -keep_private_externs $(CAMLFLAGS) -o u-b.o $(CAMLLDFLAGS) $(CAMLLIBS) $(CLIBS) $(CAMLOBJS)
+	$(CAMLC) -dstartup -output-obj -verbose -cclib -keep_private_externs $(CAMLFLAGS) -o u-b.o $(CAMLLDFLAGS) $(CAMLLIBS) $(CLIBS) $(CAMLOBJS) $(CAMLOBJS_MAC)
 	$(LD) -r -keep_private_externs -o $@ u-b.o $(COBJS)
 	$(RM) u-b.o
 
