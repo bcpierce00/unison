@@ -209,6 +209,9 @@ ifeq ($(NATIVE), true)
   CAMLOBJS_FSM = $(FSMOCAMLOBJS:.cmo=.cmx)
 
   CAMLLIBS = $(OCAMLLIBS:.cma=.cmxa)
+  CAMLLIBS_GUI = $(OCAMLLIBS_GUI:.cma=.cmxa)
+  CAMLLIBS_MAC = $(OCAMLLIBS_MAC:.cma=.cmxa)
+  CAMLLIBS_FSM = $(FSMOCAMLLIBS:.cma=.cmxa)
 
 else
   ## Set up for bytecode compilation
@@ -229,7 +232,10 @@ else
   CAMLOBJS_MAC = $(OCAMLOBJS_MAC)
   CAMLOBJS_FSM = $(FSMOCAMLOBJS)
 
-  CAMLLIBS=$(OCAMLLIBS)
+  CAMLLIBS = $(OCAMLLIBS)
+  CAMLLIBS_GUI = $(OCAMLLIBS_GUI)
+  CAMLLIBS_MAC = $(OCAMLLIBS_MAC)
+  CAMLLIBS_FSM = $(FSMOCAMLLIBS)
 
 endif
 
@@ -347,7 +353,7 @@ ifneq ($(findstring $(OSARCH),FreeBSD OpenBSD NetBSD DragonFly),)
   ifeq ($(FOUND_LIBINOTIFY), true)
     FSMDIR = fsmonitor/inotify
     $(NAME_FSM)$(EXEC_EXT): CAMLCFLAGS += $(LIBINOTIFY_INC)
-    $(NAME_FSM)$(EXEC_EXT): CLIBS += $(LIBINOTIFY_LIB)
+    CLIBS_FSM = $(LIBINOTIFY_LIB)
   endif
 endif
 
@@ -434,20 +440,16 @@ $(NAME)$(EXEC_EXT): $(CAMLOBJS) $(CAMLOBJS_TUI) $(COBJS)
 	@echo Linking $@
 	$(CAMLC) -verbose $(CAMLFLAGS) $(CAMLLDFLAGS) -o $@ $(CAMLLIBS) $^ $(CLIBS)
 
-$(NAME_GUI)$(EXEC_EXT): OCAMLLIBS += $(OCAMLLIBS_GUI)
 $(NAME_GUI)$(EXEC_EXT): CAMLFLAGS += $(CAMLFLAGS_GUI)
-$(NAME_GUI)$(EXEC_EXT): CAMLLDFLAGS += $(CAMLLDFLAGS_GUI)
 $(NAME_GUI)$(EXEC_EXT): $(CAMLOBJS) $(CAMLOBJS_GUI) $(COBJS)
 	@echo Linking $@
-	$(CAMLC) -verbose $(CAMLFLAGS) $(CAMLLDFLAGS) -o $@ $(CAMLLIBS) $^ $(CLIBS)
+	$(CAMLC) -verbose $(CAMLFLAGS) $(CAMLLDFLAGS) $(CAMLLDFLAGS_GUI) -o $@ $(CAMLLIBS) $(CAMLLIBS_GUI) $^ $(CLIBS)
 
-$(NAME_FSM)$(EXEC_EXT): OCAMLLIBS = $(FSMOCAMLLIBS)
 $(NAME_FSM)$(EXEC_EXT): CAMLFLAGS += -I fsmonitor -I $(FSMDIR)
 $(NAME_FSM)$(EXEC_EXT): $(CAMLOBJS_FSM) $(FSMCOBJS)
 	@echo Linking $@
-	$(CAMLC) -verbose $(CAMLFLAGS) $(CAMLLDFLAGS) -o $@ $(CAMLLIBS) $^ $(CLIBS)
+	$(CAMLC) -verbose $(CAMLFLAGS) $(CAMLLDFLAGS) -o $@ $(CAMLLIBS_FSM) $^ $(CLIBS) $(CLIBS_FSM)
 
-$(NAME)-blob.o: OCAMLLIBS += $(OCAMLLIBS_MAC)
 $(NAME)-blob.o: INCLFLAGS += $(INCLFLAGS_MAC)
 # Unfortunately -output-obj does not put .o files into the output, only .cmx
 # files, so we have to use $(LD) to take care of COBJS.
@@ -457,7 +459,7 @@ $(NAME)-blob.o: INCLFLAGS += $(INCLFLAGS_MAC)
 # threads (needed by uimacbridge): https://github.com/ocaml/ocaml/issues/7933
 $(NAME)-blob.o: $(CAMLOBJS) $(CAMLOBJS_MAC) $(COBJS)
 	@echo Linking $@
-	$(CAMLC) -dstartup -output-obj -verbose -cclib -keep_private_externs $(CAMLFLAGS) -o u-b.o $(CAMLLDFLAGS) $(CAMLLIBS) $(CLIBS) $(CAMLOBJS) $(CAMLOBJS_MAC)
+	$(CAMLC) -dstartup -output-obj -verbose -cclib -keep_private_externs $(CAMLFLAGS) -o u-b.o $(CAMLLDFLAGS) $(CAMLLIBS) $(CAMLLIBS_MAC) $(CLIBS) $(CAMLOBJS) $(CAMLOBJS_MAC)
 	$(LD) -r -keep_private_externs -o $@ u-b.o $(COBJS)
 	$(RM) u-b.o
 
