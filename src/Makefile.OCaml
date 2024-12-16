@@ -352,7 +352,7 @@ ifneq ($(findstring $(OSARCH),FreeBSD OpenBSD NetBSD DragonFly),)
     rm -f inotifytest__.ml inotifytest__.cm[oix] inotifytest__.o inotifytest__ > /dev/null 2>&1)
   ifeq ($(FOUND_LIBINOTIFY), true)
     FSMDIR = fsmonitor/inotify
-    $(NAME_FSM)$(EXEC_EXT): CAMLCFLAGS_FSM_X = $(LIBINOTIFY_INC)
+    $(FSMCOBJS): CAMLCFLAGS_FSM_X = $(LIBINOTIFY_INC)
     CLIBS_FSM = $(LIBINOTIFY_LIB)
   endif
 endif
@@ -444,17 +444,17 @@ $(NAME)$(EXEC_EXT): $(CAMLOBJS) $(CAMLOBJS_TUI) $(COBJS)
 	@echo Linking $@
 	$(CAMLC) -verbose $(CAMLFLAGS_X) $(CAMLLDFLAGS) -o $@ $(CAMLLIBS) $^ $(CLIBS)
 
-$(NAME_GUI)$(EXEC_EXT): CAMLFLAGS_GUI_X = $(CAMLFLAGS_GUI)
+$(NAME_GUI)$(EXEC_EXT) $(CAMLOBJS_GUI): CAMLFLAGS_GUI_X = $(CAMLFLAGS_GUI)
 $(NAME_GUI)$(EXEC_EXT): $(CAMLOBJS) $(CAMLOBJS_GUI) $(COBJS)
 	@echo Linking $@
 	$(CAMLC) -verbose $(CAMLFLAGS_X) $(CAMLLDFLAGS) $(CAMLLDFLAGS_GUI) -o $@ $(CAMLLIBS) $(CAMLLIBS_GUI) $^ $(CLIBS)
 
-$(NAME_FSM)$(EXEC_EXT): CAMLFLAGS_FSM_X = -I fsmonitor -I $(FSMDIR)
+$(NAME_FSM)$(EXEC_EXT) $(CAMLOBJS_FSM) $(FSMOCAMLOBJS:.cmo=.cmi): CAMLFLAGS_FSM_X = -I fsmonitor -I $(FSMDIR)
 $(NAME_FSM)$(EXEC_EXT): $(CAMLOBJS_FSM) $(FSMCOBJS)
 	@echo Linking $@
 	$(CAMLC) -verbose $(CAMLFLAGS_X) $(CAMLLDFLAGS) -o $@ $(CAMLLIBS_FSM) $^ $(CLIBS) $(CLIBS_FSM)
 
-$(NAME)-blob.o: CAMLFLAGS_MAC_X = $(CAMLFLAGS_MAC)
+$(NAME)-blob.o $(CAMLOBJS_MAC): CAMLFLAGS_MAC_X = $(CAMLFLAGS_MAC)
 # Unfortunately -output-obj does not put .o files into the output, only .cmx
 # files, so we have to use $(LD) to take care of COBJS.
 # [2023-07] The limitations of -output-obj have been overcome by a new option
