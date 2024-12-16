@@ -431,17 +431,19 @@ win32rc/unison.res.lib: win32rc/unison.rc win32rc/U.ico
 	$(CAMLC) $(CAMLFLAGS) $(CAMLCFLAGS) -ccopt $(OUTPUT_SEL)$(CWD)/$@ -c $(CWD)/$<
 
 $(NAME)$(EXEC_EXT): $(CAMLOBJS) $(CAMLOBJS_TUI) $(COBJS)
+	@echo Linking $@
+	$(CAMLC) -verbose $(CAMLFLAGS) $(CAMLLDFLAGS) -o $@ $(CAMLLIBS) $^ $(CLIBS)
 
 $(NAME_GUI)$(EXEC_EXT): OCAMLLIBS += $(OCAMLLIBS_GUI)
 $(NAME_GUI)$(EXEC_EXT): CAMLFLAGS += $(CAMLFLAGS_GUI)
 $(NAME_GUI)$(EXEC_EXT): CAMLLDFLAGS += $(CAMLLDFLAGS_GUI)
 $(NAME_GUI)$(EXEC_EXT): $(CAMLOBJS) $(CAMLOBJS_GUI) $(COBJS)
+	@echo Linking $@
+	$(CAMLC) -verbose $(CAMLFLAGS) $(CAMLLDFLAGS) -o $@ $(CAMLLIBS) $^ $(CLIBS)
 
 $(NAME_FSM)$(EXEC_EXT): OCAMLLIBS = $(FSMOCAMLLIBS)
 $(NAME_FSM)$(EXEC_EXT): CAMLFLAGS += -I fsmonitor -I $(FSMDIR)
 $(NAME_FSM)$(EXEC_EXT): $(CAMLOBJS_FSM) $(FSMCOBJS)
-
-$(NAME)$(EXEC_EXT) $(NAME_GUI)$(EXEC_EXT) $(NAME_FSM)$(EXEC_EXT):
 	@echo Linking $@
 	$(CAMLC) -verbose $(CAMLFLAGS) $(CAMLLDFLAGS) -o $@ $(CAMLLIBS) $^ $(CLIBS)
 
