@@ -111,10 +111,10 @@ ifneq ($(strip $(LDLIBS)),)
   CLIBS+=-cclib '$(LDLIBS)'
 endif
 
-INCLFLAGS=-I lwt -I ubase -I system
-DEP_INCLFLAGS=-I lwt -I ubase -I system
+INCLFLAGS = -I lwt -I ubase -I system -I system/$(SYSTEM) -I lwt/$(SYSTEM)
+DEP_INCLFLAGS = -I lwt -I ubase -I system \
+                -I fsmonitor -I fsmonitor/inotify -I fsmonitor/solaris -I fsmonitor/windows
 CAMLFLAGS+=$(INCLFLAGS)
-CAMLFLAGS+=-I system/$(SYSTEM) -I lwt/$(SYSTEM)
 
 # The messy situation requiring the use of OUTPUT_SEL was fixed in OCaml 4.13.
 # All usages of OUTPUT_SEL should be removed when 4.13 becomes a requirement.
@@ -143,7 +143,7 @@ ifeq ($(OSARCH),Win32)
     # respective MSVC linker arg: /SUBSYSTEM:WINDOWS
   endif
   CWD=.
-  COBJS+=system/system_win_stubs$(OBJ_EXT) lwt/lwt_unix_stubs$(OBJ_EXT)
+  WINCOBJS=system/system_win_stubs$(OBJ_EXT) lwt/lwt_unix_stubs$(OBJ_EXT)
   WINOBJS=system/system_win.cmo
   SYSTEM=win
   building_for = Building for Windows
@@ -251,7 +251,7 @@ WINDRES := $(or ${TOOL_PREFIX},$(filter i686-w64-mingw32- x86_64-w64-mingw32-,$(
 # OCaml objects for the bytecode version
 # File extensions will be substituted for the native code version
 
-OCAMLOBJS += \
+OCAMLOBJS = \
           ubase/umarshal.cmo \
           ubase/rx.cmo \
           \
@@ -275,39 +275,39 @@ OCAMLOBJS += \
           remote.cmo external.cmo negotiate.cmo globals.cmo fswatchold.cmo \
           fpcache.cmo update.cmo copy.cmo stasher.cmo \
           files.cmo sortri.cmo recon.cmo transport.cmo \
-          strings.cmo uicommon.cmo uitext.cmo test.cmo
-
-OCAMLOBJS+=main.cmo
+          strings.cmo uicommon.cmo uitext.cmo test.cmo \
+          main.cmo
 
 # OCaml libraries for the bytecode version
 # File extensions will be substituted for the native code version
-OCAMLLIBS+=unix.cma str.cma
-INCLFLAGS+=-I +unix -I +str
+OCAMLLIBS = unix.cma str.cma
+OCAMLINCLUDES = -I +unix -I +str
 
 # C objects for both bytecode and native versions
-COBJS += osxsupport$(OBJ_EXT) pty$(OBJ_EXT) bytearray_stubs$(OBJ_EXT) \
-         hash_compat$(OBJ_EXT) props_xattr$(OBJ_EXT) props_acl$(OBJ_EXT)
+COBJS = osxsupport$(OBJ_EXT) pty$(OBJ_EXT) bytearray_stubs$(OBJ_EXT) \
+        hash_compat$(OBJ_EXT) props_xattr$(OBJ_EXT) props_acl$(OBJ_EXT) \
+        $(WINCOBJS)
 
 ####################################################################
 ### User Interface setup
 
 ## Text UI
-OCAMLOBJS_TUI+=linktext.cmo
+OCAMLOBJS_TUI = linktext.cmo
 
 ## Mac UI
-OCAMLOBJS_MAC+=uimacbridge.cmo
-OCAMLLIBS_MAC+=threads.cma
-CAMLFLAGS_MAC+=-I +threads
+OCAMLOBJS_MAC = uimacbridge.cmo
+OCAMLLIBS_MAC = threads.cma
+CAMLFLAGS_MAC = -I +threads
 
 ## Graphic UI
 ifndef OCAMLFIND
-  CAMLFLAGS_GUI+=-I +lablgtk3 -I +cairo2
+  CAMLFLAGS_GUI = -I +lablgtk3 -I +cairo2
 else
-  CAMLFLAGS_GUI+=$(shell $(OCAMLFIND) query -format "-I '%d'" lablgtk3 )
-  CAMLFLAGS_GUI+=$(shell $(OCAMLFIND) query -format "-I '%d'" cairo2 )
+  CAMLFLAGS_GUI = $(shell $(OCAMLFIND) query -format "-I '%d'" lablgtk3 ) \
+                  $(shell $(OCAMLFIND) query -format "-I '%d'" cairo2 )
 endif
-OCAMLOBJS_GUI+=pixmaps.cmo uigtk3.cmo linkgtk3.cmo
-OCAMLLIBS_GUI+=lablgtk3.cma cairo.cma
+OCAMLOBJS_GUI = pixmaps.cmo uigtk3.cmo linkgtk3.cmo
+OCAMLLIBS_GUI = lablgtk3.cma cairo.cma
 
 ifneq ($(strip $(LDFLAGS_GUI)),)
   CAMLLDFLAGS_GUI+=-cclib "$(LDFLAGS_GUI)"
@@ -374,8 +374,6 @@ else
 	$(info fsmonitor implementation is not available or not configured for this system. fsmonitor will not be built.)
 endif
 
-DEP_INCLFLAGS+=-I fsmonitor -I fsmonitor/inotify -I fsmonitor/solaris -I fsmonitor/windows
-
 ####################################################################
 ### Dependencies
 
@@ -418,7 +416,7 @@ win32rc/unison.res.lib: win32rc/unison.rc win32rc/U.ico
 	$(WINDRES) win32rc/unison.res win32rc/unison.res.lib
 
 # Context-specific variables, enabling target local variables
-CAMLFLAGS_X = $(CAMLFLAGS) $(CAMLFLAGS_GUI_X) $(CAMLFLAGS_FSM_X) $(CAMLFLAGS_MAC_X)
+CAMLFLAGS_X = $(CAMLFLAGS) $(OCAMLINCLUDES) $(CAMLFLAGS_GUI_X) $(CAMLFLAGS_FSM_X) $(CAMLFLAGS_MAC_X)
 CAMLCFLAGS_X = $(CAMLCFLAGS) $(CAMLCFLAGS_FSM_X)
 
 .SUFFIXES:
