@@ -1,7 +1,7 @@
 (library
  (name unison_lib)
  (wrapped false)
- (modules :standard \ linktext linkgtk3 uigtk3 pixmaps uimacbridge test)
+ (modules :standard \ linktext linkgtk3 uigtk3 pixmaps uimacbridge test make_tools)
  (modules_without_implementation ui)
  (flags :standard
         -w -3-6-9-10-26-27-32-34-35-38-39-50-52

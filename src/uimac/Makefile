@@ -4,10 +4,6 @@ default:
 	$(MAKE) -C .. macui
 .PHONY: default
 
-ifeq ($(strip $(XCODEFLAGS)),)
-  XCODEFLAGS=-arch $(shell uname -m)  ## Prevent Xcode from trying to build universal binaries by default
-endif
-
 # Note: The OCaml library names changed starting with OCaml 5.1.0
 .PHONY: macexecutable
 macexecutable:
