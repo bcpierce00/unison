@@ -234,6 +234,31 @@ $(NAME)-blob.o: $(CAMLOBJS) $(CAMLOBJS_MAC) $(COBJS)
 	$(RM) u-b.o
 
 ####################################################################
+### Documentation
+
+.PHONY: manpage
+manpage:
+
+.PHONY: manpagefile
+manpagefile: ../man/$(NAME).1
+
+../man/$(NAME).1: ../man/$(NAME).1.in opt_short.tmp opt_full.tmp
+	sed -e '/@OPTIONS_SHORT@/r ./opt_short.tmp' \
+		-e '/@OPTIONS_SHORT@/d' \
+		-e '/@OPTIONS_FULL@/r ./opt_full.tmp' \
+		-e '/@OPTIONS_FULL@/d' ../man/$(NAME).1.in > $@
+
+# Listing of preferences
+opt_short.tmp: $(NAME)$(EXEC_EXT)
+	./$(NAME)$(EXEC_EXT) -prefsman short > $@
+
+opt_full.tmp: $(NAME)$(EXEC_EXT)
+	./$(NAME)$(EXEC_EXT) -prefsman full > $@
+
+clean::
+	cd ../man && $(RM) *.tmp $(NAME).1
+
+####################################################################
 ### Misc
 
 RM_FILES = $(RM) *.cmi *.cmo *.cmx *.cma *.cmxa *.o *.obj *.lib *.exp *~ .*~ *.bak *.tmp
