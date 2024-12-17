@@ -176,6 +176,8 @@ let () =
       "building_for" <-- "Building for Unix";
     end;
     outp "manpage: manpagefile";
+    outp "docs: docfiles";
+    outp "clean::\n\tcd ../doc && $(MAKE) clean";
   end
 
 (*********************************************************************

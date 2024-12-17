@@ -258,6 +258,13 @@ opt_full.tmp: $(NAME)$(EXEC_EXT)
 clean::
 	cd ../man && $(RM) *.tmp $(NAME).1
 
+.PHONY: docs
+docs:
+
+.PHONY: docfiles
+docfiles: manpagefile
+	cd ../doc && $(MAKE) all
+
 ####################################################################
 ### Misc
 
