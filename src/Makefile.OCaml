@@ -1,249 +1,50 @@
 # Unison file synchronizer: src/Makefile.OCaml
 # See ../LICENSE for terms.
 
+# IMPORTANT!
+#
+# This file is portable and compatible with GNU Make, BSD make, Solaris
+# (d)make and NMAKE. Do not make any changes in this file unless you are
+# certain that the changes do not break this portability.
+
+all: tui guimaybe macuimaybe fsmonitor
+.PHONY: all # This .PHONY definition must come after the first target,
+            # so that make implementations which don't support .PHONY
+            # don't treat it as the default target (which in turn
+            # would cause _all_ targets to be made).
+.PHONY: clean
+
+# NAME, VERSION, and MAJORVERSION
+include Makefile.ProjectInfo
+
+# Automatically generated configuration
+include Makefile.cfg
+
 ####################################################################
 #         Makefile rules for compiling ocaml programs              #
 ####################################################################
 
 ####################################################################
-### Compilers
-
-OCAMLC=$(TOOL_PREFIX)ocamlc
-OCAMLOPT=$(TOOL_PREFIX)ocamlopt
-
-####################################################################
-### Try to automatically guess OS
-
-ifeq (${OSCOMP},cross) # Cross-compilation under Linux
-  TOOL_PREFIX=x86_64-w64-mingw32-
-endif
-
-# Cygwin is for doing POSIX builds in Windows.
-# MinGW is for doing native Windows builds in a minimal POSIX environment.
-# MSVC is for native Windows builds without POSIX env (yet this Makefile
-# requires a minimal POSIX environment anyway).
-OCAML_OSTYPE:=$(shell $(OCAMLC) -config-var os_type)
-
-ifeq (${OCAML_OSTYPE},Win32)        # Native Windows build
-  OSARCH=Win32
-else ifeq (${OCAML_OSTYPE},Cygwin)  # POSIX build for Windows
-  OSARCH=Cygwin
-else
-  OSARCH:=$(shell uname)
-  # Darwin is reported for macOS
-  # SunOS is reported for Solaris, OpenSolaris and derivatives (illumos)
-endif
-
-####################################################################
 ### Try to automatically guess UI style
 
-ifneq ($(strip $(UISTYLE)),)
-  $(error UISTYLE is no longer used. See build instructions)
-endif
-
-OCAMLLIBDIR:=$(shell $(OCAMLC) -config-var standard_library)
-
-# For Windows, an additional UI style modifier is available, `UI_WINOS`
-#   Legal values are
-#     UI_WINOS=         # *default*; builds unison purely as a Windows console ('text') or GUI ('gtk3') application
-#     UI_WINOS=hybrid   # (with UISTYLE=gtk3) builds unison as a hybrid application (GUI application attached to a text console)
-# * ref: <https://github.com/bcpierce00/unison/issues/778>
-#
-OCAMLFIND := $(shell command -v ocamlfind 2> /dev/null)
-
-ifdef OCAMLFIND
-  ifneq ($(strip $(shell $(OCAMLFIND) query lablgtk3 2> /dev/null)),)
-    HAS_LABLGTK3=true
-  endif
-else
-  LABLGTK3LIB=$(OCAMLLIBDIR)/lablgtk3
-  ifeq ($(wildcard $(LABLGTK3LIB)),$(LABLGTK3LIB))
-    HAS_LABLGTK3=true
-  endif
-endif
-
 .PHONY: guimaybe
-ifeq ($(HAS_LABLGTK3), true)
-  guimaybe: gui
-else
-  guimaybe:
-	$(info GUI library lablgtk not found. GTK GUI will not be built.)
-endif
+guimaybe:
 
 .PHONY: macuimaybe
-ifeq ($(OSARCH), Darwin)
-  # If XCode is not installed, xcodebuild is just a placeholder telling that XCode is not installed
-  # and any invocation of xcodebuild results in a non 0 exit code.
-  ifeq ($(shell xcodebuild -version > /dev/null; echo $$?), 0)
-    macuimaybe: macui
-  else
-    macuimaybe:
-	$(info Not building macOS native GUI because XCode is not installed.)
-  endif
-else
-  macuimaybe:
-	$(info Not on macOS. macOS native GUI will not be built.)
-endif
+macuimaybe:
 
 ####################################################################
 ### Default parameters
 
-.PHONY: buildinfodebug
-buildinfodebug:
-	$(info $(building_for))
-	$(info NATIVE = $(NATIVE))
-
-buildexecutable: buildinfodebug
-
-# Generate backtrace information for exceptions
-CAMLFLAGS+=-g
-
-ifneq ($(strip $(CFLAGS)),)
-  CAMLCFLAGS+=-ccopt '$(CFLAGS)'
-endif
-ifneq ($(strip $(CPPFLAGS)),)
-  CAMLCFLAGS+=-ccopt '$(CPPFLAGS)'
-endif
-ifneq ($(strip $(LDFLAGS)),)
-  CAMLLDFLAGS+=-cclib '$(LDFLAGS)'
-endif
-ifneq ($(strip $(LDLIBS)),)
-  CLIBS+=-cclib '$(LDLIBS)'
-endif
-
 INCLFLAGS = -I lwt -I ubase -I system -I system/$(SYSTEM) -I lwt/$(SYSTEM)
 DEP_INCLFLAGS = -I lwt -I ubase -I system \
                 -I fsmonitor -I fsmonitor/inotify -I fsmonitor/solaris -I fsmonitor/windows
-CAMLFLAGS+=$(INCLFLAGS)
-
-# The messy situation requiring the use of OUTPUT_SEL was fixed in OCaml 4.13.
-# All usages of OUTPUT_SEL should be removed when 4.13 becomes a requirement.
-ifeq ($(OSARCH),Win32)
-  # Native Win32 build
-  EXEC_EXT=.exe
-  ifeq ($(shell $(OCAMLC) -config-var ext_obj),.obj)
-    OBJ_EXT=.obj
-  else
-    OBJ_EXT=.o
-  endif
-  ifeq ($(shell $(OCAMLC) -config-var ccomp_type),msvc)
-    OUTPUT_SEL=-Fo
-    CLIBS+=-cclib user32.lib -cclib "-link win32rc/unison.res"
-    buildexecutable: win32rc/unison.res
-  else
-    OUTPUT_SEL=-o
-    CLIBS+=-cclib "-link win32rc/unison.res.lib"
-    buildexecutable: win32rc/unison.res.lib
-  endif
-  # Make Windows GUI come up with no console window
-  ifneq ($(UI_WINOS), hybrid)
-    LDFLAGS_GUI+=-subsystem windows
-    # -subsystem is a flexlink arg;
-    # respective gcc args: -mwindows or -Wl,--subsystem,windows
-    # respective MSVC linker arg: /SUBSYSTEM:WINDOWS
-  endif
-  CWD=.
-  WINCOBJS=system/system_win_stubs$(OBJ_EXT) lwt/lwt_unix_stubs$(OBJ_EXT)
-  WINOBJS=system/system_win.cmo
-  SYSTEM=win
-  building_for = Building for Windows
-else
-  # Unix build, or Cygwin POSIX (GNU C) build
-  OBJ_EXT=.o
-  OUTPUT_SEL="-o "
-  WINOBJS=
-  SYSTEM=generic
-  # This is not strictly necessary as Cygwin can do a generic Unix build
-  # (and is actually meant to).
-  ifeq ($(OSARCH),Cygwin)
-    CWD=.
-    EXEC_EXT=.exe
-    CLIBS+=-cclib win32rc/unison.res.lib
-    buildexecutable: win32rc/unison.res.lib
-    building_for = Building for Cygwin
-  else
-    CWD=$(shell pwd)
-    EXEC_EXT=
-    # openpty is in the libutil library
-    ifneq ($(OSARCH),SunOS)
-      ifneq ($(OSARCH),Darwin)
-        CLIBS+=-cclib -lutil
-      endif
-    endif
-    ifeq ($(OSARCH),SunOS)
-      # ACL functions
-      CLIBS+=-cclib -lsec
-    endif
-    building_for = Building for Unix
-  endif
-endif
 
 ubase/projectInfo.ml: Makefile.ProjectInfo
-	echo 'let myName = "'$(NAME)'";;' > $@
-	echo 'let myVersion = "'$(VERSION)'";;' >> $@
-	echo 'let myMajorVersion = "'$(MAJORVERSION)'";;' >> $@
+	ocaml make_tools.ml projectinfo NAME="$(NAME)" VERSION="$(VERSION)" MAJORVERSION="$(MAJORVERSION)" > $@
 
 clean::
 	cd ubase && $(RM) projectInfo.ml
-
-####################################################################
-### Compilation boilerplate
-
-ifeq ($(NATIVE), auto)
-  ifneq ($(strip $(shell command -v $(OCAMLOPT) 2> /dev/null)),)
-    NATIVE=true
-  else
-    NATIVE=false
-  endif
-endif
-
-ifeq ($(NATIVE), true)
-  ## Set up for native code compilation
-
-  CAMLC=$(OCAMLOPT)
-
-  CAMLOBJS = $(OCAMLOBJS:.cmo=.cmx)
-  CAMLOBJS_TUI = $(OCAMLOBJS_TUI:.cmo=.cmx)
-  CAMLOBJS_GUI = $(OCAMLOBJS_GUI:.cmo=.cmx)
-  CAMLOBJS_MAC = $(OCAMLOBJS_MAC:.cmo=.cmx)
-  CAMLOBJS_FSM = $(FSMOCAMLOBJS:.cmo=.cmx)
-
-  CAMLLIBS = $(OCAMLLIBS:.cma=.cmxa)
-  CAMLLIBS_GUI = $(OCAMLLIBS_GUI:.cma=.cmxa)
-  CAMLLIBS_MAC = $(OCAMLLIBS_MAC:.cma=.cmxa)
-  CAMLLIBS_FSM = $(FSMOCAMLLIBS:.cma=.cmxa)
-
-else
-  ## Set up for bytecode compilation
-
-  CAMLC=$(OCAMLC)
-  # -output-complete-exe is available since OCaml 4.10
-  # OCaml > 5.2.0 no longer supports detection of compiler options,
-  # hence the hack of comparing the output to -version.
-  ifneq ($(strip $(shell $(OCAMLC) -output-complete-exe -version 2>&1)), $(strip $(shell $(OCAMLC) -version)))
-    CAMLLDFLAGS+=-custom
-  else
-    CAMLLDFLAGS+=-output-complete-exe  # can safely strip the binary
-  endif
-
-  CAMLOBJS = $(OCAMLOBJS)
-  CAMLOBJS_TUI = $(OCAMLOBJS_TUI)
-  CAMLOBJS_GUI = $(OCAMLOBJS_GUI)
-  CAMLOBJS_MAC = $(OCAMLOBJS_MAC)
-  CAMLOBJS_FSM = $(FSMOCAMLOBJS)
-
-  CAMLLIBS = $(OCAMLLIBS)
-  CAMLLIBS_GUI = $(OCAMLLIBS_GUI)
-  CAMLLIBS_MAC = $(OCAMLLIBS_MAC)
-  CAMLLIBS_FSM = $(FSMOCAMLLIBS)
-
-endif
-
-OCAML_C_COMPILER :=  $(shell $(OCAMLC) -config-var c_compiler)
-C_COMPILER := $(or ${OCAML_C_COMPILER},${CC})
-C_COMPILER_PREFIX := $(C_COMPILER:gcc=)
-WINDRES := $(or ${TOOL_PREFIX},$(filter i686-w64-mingw32- x86_64-w64-mingw32-,$(C_COMPILER_PREFIX:gcc${EXEC_EXT}=)))windres
-##$(info windres='${WINDRES}')
 
 ####################################################################
 ### Unison objects and libraries
@@ -300,23 +101,16 @@ OCAMLLIBS_MAC = threads.cma
 CAMLFLAGS_MAC = -I +threads
 
 ## Graphic UI
-ifndef OCAMLFIND
-  CAMLFLAGS_GUI = -I +lablgtk3 -I +cairo2
-else
-  CAMLFLAGS_GUI = $(shell $(OCAMLFIND) query -format "-I '%d'" lablgtk3 ) \
-                  $(shell $(OCAMLFIND) query -format "-I '%d'" cairo2 )
-endif
 OCAMLOBJS_GUI = pixmaps.cmo uigtk3.cmo linkgtk3.cmo
 OCAMLLIBS_GUI = lablgtk3.cma cairo.cma
-
-ifneq ($(strip $(LDFLAGS_GUI)),)
-  CAMLLDFLAGS_GUI+=-cclib "$(LDFLAGS_GUI)"
-endif
 
 ####################################################################
 ### Unison executables
 
 NAME_GUI = $(NAME)-gui
+
+.PHONY: buildexecutable
+buildexecutable:
 
 .PHONY: tui
 tui: buildexecutable $(NAME)$(EXEC_EXT)
@@ -329,56 +123,29 @@ macui: buildexecutable macexecutable
 
 .PHONY: macexecutable
 macexecutable: $(NAME)-blob.o
-	cd uimac && $(MAKE) macexecutable VERSION="$(VERSION)" OCAMLLIBDIR="$(OCAMLLIBDIR)"
+	cd uimac && $(MAKE) macexecutable VERSION="$(VERSION)" OCAMLLIBDIR="$(OCAMLLIBDIR)" XCODEFLAGS="$(XCODEFLAGS)"
 
 clean::
-	cd uimac && $(MAKE) clean
+	-cd uimac && $(MAKE) clean
 
 ####################################################################
 ### Filesystem monitoring
 
 NAME_FSM = $(NAME)-fsmonitor
 
-ifeq ($(OSARCH),Linux)
-  FSMDIR = fsmonitor/inotify
-endif
-
-ifneq ($(findstring $(OSARCH),FreeBSD OpenBSD NetBSD DragonFly),)
-  LIBINOTIFY_LIB:=-cclib '$(shell pkg-config --libs libinotify 2> /dev/null || printf ' -linotify')'
-  LIBINOTIFY_INC:=-ccopt '$(shell pkg-config --cflags libinotify 2> /dev/null)'
-  FOUND_LIBINOTIFY := $(shell { printf '' > inotifytest__.ml ;\
-    $(CAMLC) $(CAMLCFLAGS) $(CAMLLDFLAGS) $(LIBINOTIFY_LIB) \
-      -o inotifytest__ inotifytest__.ml > /dev/null 2>&1 && printf true ; } ;\
-    rm -f inotifytest__.ml inotifytest__.cm[oix] inotifytest__.o inotifytest__ > /dev/null 2>&1)
-  ifeq ($(FOUND_LIBINOTIFY), true)
-    FSMDIR = fsmonitor/inotify
-    $(FSMCOBJS): CAMLCFLAGS_FSM_X = $(LIBINOTIFY_INC)
-    CLIBS_FSM = $(LIBINOTIFY_LIB)
-  endif
-endif
-
-ifeq ($(OSARCH),SunOS)
-  FSMDIR = fsmonitor/solaris
-endif
-
-ifeq ($(OSARCH),Win32)
-  FSMDIR = fsmonitor/windows
-endif
-
 .PHONY: fsmonitor
-ifdef FSMDIR
-  fsmonitor: buildexecutable $(NAME_FSM)$(EXEC_EXT)
-  -include $(FSMDIR)/Makefile
-else
-  fsmonitor:
-	$(info fsmonitor implementation is not available or not configured for this system. fsmonitor will not be built.)
-endif
+fsmonitor:
+
+.PHONY: fsmonitorexecutable
+fsmonitorexecutable: buildexecutable $(NAME_FSM)$(EXEC_EXT)
+
+CAMLFLAGS_FSM = -I fsmonitor -I ./$(FSMDIR)
 
 ####################################################################
 ### Dependencies
 
 # Include an automatically generated list of dependencies
--include .depend
+include .depend
 # Additional dependencies depending on the system
 system.cmo fspath.cmo fs.cmo: system/$(SYSTEM)/system_impl.cmo
 system.cmx fspath.cmx fs.cmx: system/$(SYSTEM)/system_impl.cmx
@@ -438,21 +205,22 @@ CAMLCFLAGS_X = $(CAMLCFLAGS) $(CAMLCFLAGS_FSM_X)
 	@echo "$(CAMLC): $< ---> $@"
 	$(CAMLC) $(CAMLFLAGS_X) $(CAMLCFLAGS_X) -ccopt $(OUTPUT_SEL)$(CWD)/$@ -c $(CWD)/$<
 
+# The second part of configuration must be included here because rule lines
+# are expanded at parsing, so we need all variables to be defined by then.
+include Makefile2.cfg
+
 $(NAME)$(EXEC_EXT): $(CAMLOBJS) $(CAMLOBJS_TUI) $(COBJS)
 	@echo Linking $@
-	$(CAMLC) -verbose $(CAMLFLAGS_X) $(CAMLLDFLAGS) -o $@ $(CAMLLIBS) $^ $(CLIBS)
+	$(CAMLC) -verbose $(CAMLFLAGS_X) $(CAMLLDFLAGS) -o $@ $(CAMLLIBS) $(ALL__SRC) $(CLIBS)
 
-$(NAME_GUI)$(EXEC_EXT) $(CAMLOBJS_GUI): CAMLFLAGS_GUI_X = $(CAMLFLAGS_GUI)
 $(NAME_GUI)$(EXEC_EXT): $(CAMLOBJS) $(CAMLOBJS_GUI) $(COBJS)
 	@echo Linking $@
-	$(CAMLC) -verbose $(CAMLFLAGS_X) $(CAMLLDFLAGS) $(CAMLLDFLAGS_GUI) -o $@ $(CAMLLIBS) $(CAMLLIBS_GUI) $^ $(CLIBS)
+	$(CAMLC) -verbose $(CAMLFLAGS_X) $(CAMLLDFLAGS) $(CAMLLDFLAGS_GUI) -o $@ $(CAMLLIBS) $(CAMLLIBS_GUI) $(ALL__SRC) $(CLIBS)
 
-$(NAME_FSM)$(EXEC_EXT) $(CAMLOBJS_FSM) $(FSMOCAMLOBJS:.cmo=.cmi): CAMLFLAGS_FSM_X = -I fsmonitor -I $(FSMDIR)
 $(NAME_FSM)$(EXEC_EXT): $(CAMLOBJS_FSM) $(FSMCOBJS)
 	@echo Linking $@
-	$(CAMLC) -verbose $(CAMLFLAGS_X) $(CAMLLDFLAGS) -o $@ $(CAMLLIBS_FSM) $^ $(CLIBS) $(CLIBS_FSM)
+	$(CAMLC) -verbose $(CAMLFLAGS_X) $(CAMLLDFLAGS) -o $@ $(CAMLLIBS_FSM) $(ALL__SRC) $(CLIBS) $(CLIBS_FSM)
 
-$(NAME)-blob.o $(CAMLOBJS_MAC): CAMLFLAGS_MAC_X = $(CAMLFLAGS_MAC)
 # Unfortunately -output-obj does not put .o files into the output, only .cmx
 # files, so we have to use $(LD) to take care of COBJS.
 # [2023-07] The limitations of -output-obj have been overcome by a new option
@@ -466,11 +234,44 @@ $(NAME)-blob.o: $(CAMLOBJS) $(CAMLOBJS_MAC) $(COBJS)
 	$(RM) u-b.o
 
 ####################################################################
+### Documentation
+
+.PHONY: manpage
+manpage:
+
+.PHONY: manpagefile
+manpagefile: ../man/$(NAME).1
+
+../man/$(NAME).1: ../man/$(NAME).1.in opt_short.tmp opt_full.tmp
+	sed -e '/@OPTIONS_SHORT@/r ./opt_short.tmp' \
+		-e '/@OPTIONS_SHORT@/d' \
+		-e '/@OPTIONS_FULL@/r ./opt_full.tmp' \
+		-e '/@OPTIONS_FULL@/d' ../man/$(NAME).1.in > $@
+
+# Listing of preferences
+opt_short.tmp: $(NAME)$(EXEC_EXT)
+	./$(NAME)$(EXEC_EXT) -prefsman short > $@
+
+opt_full.tmp: $(NAME)$(EXEC_EXT)
+	./$(NAME)$(EXEC_EXT) -prefsman full > $@
+
+clean::
+	cd ../man && $(RM) *.tmp $(NAME).1
+
+.PHONY: docs
+docs:
+
+.PHONY: docfiles
+docfiles: manpagefile
+	cd ../doc && $(MAKE) all
+
+####################################################################
 ### Misc
 
 RM_FILES = $(RM) *.cmi *.cmo *.cmx *.cma *.cmxa *.o *.obj *.lib *.exp *~ .*~ *.bak *.tmp
 
 clean::
+	-$(RM) Makefile.cfg Makefile2.cfg _mk.cfg
 	-$(RM) $(NAME) $(NAME).exe
 	-$(RM) $(NAME_GUI) $(NAME_GUI).exe
 	-$(RM) $(NAME_FSM) $(NAME_FSM).exe

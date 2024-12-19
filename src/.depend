@@ -628,6 +628,8 @@ main.cmx : \
     remote.cmx \
     ubase/prefs.cmx \
     os.cmx
+make_tools.cmo :
+make_tools.cmx :
 name.cmo : \
     ubase/util.cmi \
     ubase/umarshal.cmi \
