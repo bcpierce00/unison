@@ -1,10 +1,5 @@
 name: CI
 
-env:
-  PROJECT_NAME: unison
-  PROJECT_DESC: "`unison` file synchronizer"
-  PROJECT_EXES: "unison unison-fsmonitor"
-
 on:
   - pull_request
   - push
@@ -101,7 +96,7 @@ jobs:
         PKG_suffix='.tar.gz' ; case '${{ matrix.job.os }}' in windows-*) PKG_suffix='.zip' ;; esac;
         PKG_VER="${REF_TAG:-git_$REF_SHAS}"
         PKG_VER="${PKG_VER#v}"
-        PKG_BASENAME="${PROJECT_NAME}-${PKG_VER}${{ matrix.job.fnsuffix }}"
+        PKG_BASENAME="unison-${PKG_VER}${{ matrix.job.fnsuffix }}"
         PKG_NAME="${PKG_BASENAME}${PKG_suffix}"
         PKG_DIR="${STAGING_DIR}/${PKG_BASENAME}"
         outputs PKG_VER PKG_BASENAME PKG_DIR PKG_NAME PKG_suffix
@@ -143,7 +138,7 @@ jobs:
         opam exec -- make fsmonitor
         # stage
         # * notes: darwin/macos doesn't build `unison-fsmonitor`
-        for file in ${PROJECT_EXES} ; do
+        for file in unison unison-fsmonitor ; do
           if [ -f "src/${file}${{ steps.vars.outputs.EXE_suffix }}" ]; then
             cp "src/${file}${{ steps.vars.outputs.EXE_suffix }}" '${{ steps.vars.outputs.PKG_DIR }}/bin'
             echo "'src/${file}${{ steps.vars.outputs.EXE_suffix }}' copied to '${{ steps.vars.outputs.PKG_DIR }}/bin'"
@@ -460,22 +455,18 @@ jobs:
       run: |
         opam exec -- make gui
         # stage
-        # * copy only main/first project binary
-        project_exe_stem=${PROJECT_EXES%% *}
-        cp "src/${project_exe_stem}-gui${{ steps.vars.outputs.EXE_suffix }}" "${{ steps.vars.outputs.PKG_DIR }}/bin/"
+        cp "src/unison-gui${{ steps.vars.outputs.EXE_suffix }}" "${{ steps.vars.outputs.PKG_DIR }}/bin/"
 
     - name: "Build WinOS text+gui hybrid"
       if: ${{ runner.os == 'Windows' && !matrix.job.static && !contains(matrix.job.ocaml-version, 'msvc') }} ## WinOS, non-static (unable to build static gtk/gui)
       shell: bash
       run: |
         # create and stage text+gui hybrid for Windows
-        # * copy only main/first project binary
-        project_exe_stem=${PROJECT_EXES%% *}
         # * clean/remove build artifact(s)
-        rm "src/${project_exe_stem}-gui${{ steps.vars.outputs.EXE_suffix }}" ##.or.# opam exec -- make -C src clean #.or.# opam exec -- make clean
+        rm "src/unison-gui${{ steps.vars.outputs.EXE_suffix }}" ##.or.# opam exec -- make -C src clean #.or.# opam exec -- make clean
         # * re-create (with hybrid text+gui UI)
         opam exec -- make gui UI_WINOS=hybrid
-        cp "src/${project_exe_stem}-gui${{ steps.vars.outputs.EXE_suffix }}" "${{ steps.vars.outputs.PKG_DIR }}/bin/${project_exe_stem}-text+gui${{ steps.vars.outputs.EXE_suffix }}"
+        cp "src/unison-gui${{ steps.vars.outputs.EXE_suffix }}" "${{ steps.vars.outputs.PKG_DIR }}/bin/unison-text+gui${{ steps.vars.outputs.EXE_suffix }}"
 
     - uses: actions/upload-artifact@v4
       if: false ## disable by default; only useful for debugging GHA
@@ -1126,7 +1117,7 @@ jobs:
         unset REF_TAG ; case "${GITHUB_REF}" in refs/tags/*) REF_TAG="${GITHUB_REF#refs/tags/}" ;; esac;
         PKG_VER="${REF_TAG:-git_$REF_SHAS}"
         PKG_VER="${PKG_VER#v}"
-        echo PKG_NAME="${PROJECT_NAME}-${PKG_VER}${{ matrix.job.fnsuffix }}.tar.gz" >> $GITHUB_OUTPUT
+        echo PKG_NAME="unison-${PKG_VER}${{ matrix.job.fnsuffix }}.tar.gz" >> $GITHUB_OUTPUT
         echo REF_SHAS=${REF_SHAS} >> $GITHUB_OUTPUT
 
     - uses: actions/upload-artifact@v4
