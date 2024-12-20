@@ -256,8 +256,8 @@ jobs:
         # [2024-12] Somehow this was not required before a dune update that
         # switched from using pkg-config to pkgconf, but doing this should not
         # hurt in any case.
-        rm D:\cygwin\bin\pkgconf*
-        rm D:\cygwin\bin\pkg-config*
+        Remove-Item -Force D:\cygwin\bin\pkgconf*
+        Remove-Item -Force D:\cygwin\bin\pkg-config*
         "PKG_CONFIG=D:\gtk\bin\pkgconf.exe" >> "${env:GITHUB_ENV}"
         $env:Path = (${env:Path} -split ';' | Where-Object { $_ -Notlike "*cygwin*" }) -join ";"
         ##
