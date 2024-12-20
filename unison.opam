@@ -9,8 +9,14 @@ license: "GPL-3.0-or-later"
 homepage: "https://www.cis.upenn.edu/~bcpierce/unison/"
 bug-reports: "https://github.com/bcpierce00/unison/issues"
 dev-repo: "git://github.com/bcpierce00/unison.git"
-build: [make "NATIVE=%{ocaml:native}%" "-j" jobs]
-install: [make "NATIVE=%{ocaml:native}%" "PREFIX=%{prefix}%" "install"]
+build: [
+  [make "NATIVE=%{ocaml:native}%" "-j" jobs] {!host-system-msvc:installed}
+  ["nmake" "NATIVE=%{ocaml:native}%"] {host-system-msvc:installed}
+]
+install: [
+  [make "install" "PREFIX=%{prefix}%"] {os != "win32"}
+  ["cmd" "/c" "copy" "src\\unison*.exe" "%{prefix}%\\bin"] {os = "win32"}
+]
 depends: [
   "ocaml" {>= "4.08"}
 ]
