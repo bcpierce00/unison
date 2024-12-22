@@ -585,10 +585,6 @@ let install () =
   install_if_exists "src" "unison" (destdir ^ bindir);
   install_if_exists "src" "unison-gui" (destdir ^ bindir);
   install_if_exists "src" "unison-fsmonitor" (destdir ^ bindir);
-  if not (exists "src" "unison-fsmonitor") then begin
-    (* FIXME: fsmonitor.py is legacy and unmaintained. Drop? *)
-    install_if_exists "src" "fsmonitor.py" (destdir ^ bindir)
-  end;
   if exists "man" "unison.1" then begin
     exec [install; "-d"; destdir ^ man1dir];
     exec [install_data; "man/unison.1"; destdir ^ man1dir ^ "/unison" ^ manext]
