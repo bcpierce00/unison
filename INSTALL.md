@@ -11,7 +11,6 @@ https://github.com/bcpierce00/unison/releases for macOS, Linux and Windows.
 No specific installation is needed, just unpack the files at a location of your
 choosing.
 
-
 ## Building from source
 
 ### Packaging systems
@@ -32,17 +31,18 @@ with those systems, and not in the unison issue tracker.)
   -- see https://ocaml.org/.  (Note that ocaml upstream says that 5.x is
   experimental.  The standard approach is the most recent 4.x ocaml
   release.)
-- GNU make
-- Basic POSIX tools: install, rm, sh
+- make (any of GNU, BSD, Solaris variants works)
+- Basic POSIX tools: install, rm, sh (perhaps more)
 
 ##### Optional, for the GUI only
 
 - lablgtk3 and its prerequisites (GTK 3 and its dependencies)
 - ocamlfind (there is backup code to operate without it in some circumstances)
 
-##### Optional, on BSDs
+##### Optional, on BSDs, for building unison-fsmonitor
 
-- libinotify (optional, for building unison-fsmonitor)
+- pkg-config
+- libinotify
 
 ##### Optional, for building the user manual
 
@@ -63,29 +63,30 @@ use a package manager.
 Building from source is as simple as changing to the source directory
 and executing:
 ```
-gmake
+make
 ```
-where `gmake` is the command to run GNU make.  (Usually, GNU make is
-available as "gmake", but on some systems it is only available as
-"make".)  If you are using OPAM then `opam exec -- make` may work for
-you, as opam needs to set up a specific environment.
+If you are using OPAM then `opam exec -- make` may work for you, as opam needs
+to set up a specific environment.
 
-Presence of lablgtk3 is detected automatically to build the GUI. If you want
-to build only the GUI, type `make gui`. You can type `make tui` if you have
-lablgtk3 installed but don't want the GUI built. Type `make fsmonitor` to build
-only the filesystem monitor.
+Presence of lablgtk3 is detected automatically to build the GUI.  On
+BSDs, the presence of libinotify is detected automatically.  On
+systems supported by one of the unison-fsmonitor variants, it is built
+automatically.
+
+If you want to build only the GUI, type `make gui`. You can type `make
+tui` if you have lablgtk3 installed but don't want the GUI built. Type
+`make fsmonitor` to build only the filesystem monitor.
 
 To install:
   - set `$PREFIX` in the environment if you don't want /usr/local
   - optionally set `$DESTDIR`
-  - run `gmake install`.
+  - run `make install`.
 
 The set of installed files (paths from the source directory) should be
 ```
 src/unison              (the main executable for TUI/CLI)
 src/unison-gui          (the main executable for GUI)
 src/unison-fsmonitor    (optional, on some build platforms)
-src/fsmonitor.py        (optional, if unison-fsmonitor is not built)
 man/unison.1            (optional, manual page)
 doc/unison-manual.*     (optional, user manual in different formats)
 ```
@@ -96,13 +97,13 @@ To cross-compile for a different target, you need to have a cross-compilation
 toolchain including both a cross-compiling C compiler and a cross-compiling
 OCaml compiler. When you have cross-compilation toolchain in place, building
 Unison from source works according to instructions above. You just have to add
-a `TOOL_PREFIX` argument to `gmake` to indicate which toolchain to use (and
+a `TOOL_PREFIX` argument to `make` to indicate which toolchain to use (and
 ensure the tools are in `$PATH`).
 
 For example, to build a native Windows 64-bit executable using the MinGW
 cross-compilation toolchain:
 ```
-gmake TOOL_PREFIX=x86_64-w64-mingw32-
+make TOOL_PREFIX=x86_64-w64-mingw32-
 ```
 
 Building the manual page and documentation does not work when cross-compiling.
@@ -121,6 +122,12 @@ Command Line Tools or Xcode, so that one has a working
 C99/mostly-POSIX environment.  These also allow building against the
 libraries required for the mac-native GUI.
 
+There is no support in the unison sources for unison-fsmonitor on
+macOS.  See
+https://github.com/bcpierce00/unison/wiki/Software-for-use-with-Unison
+for a list of fsmonitor implementations maintained outside the unison
+source tree.
+
 #### Building
 
 The mostly-POSIX instructions above will build the text user
@@ -133,7 +140,6 @@ make macui
 ```
 
 The built application will be located at `src/uimac/build/Default/Unison.app`.
-
 
 ### Windows
 
@@ -217,7 +223,6 @@ For building the GUI (optional) with MSVC, you also need the following:
 - lablgtk3 and its prerequisites (ocamlfind, dune build system)
 
 Once the prerequisites are installed, continue by MinGW instructions above.
-
 
 ### Build options
 
