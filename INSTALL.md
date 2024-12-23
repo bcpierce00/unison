@@ -143,14 +143,10 @@ The built application will be located at `src/uimac/build/Default/Unison.app`.
 
 ### Windows
 
-Building on Windows is currently somewhat complicated. All methods require
-Cygwin as a POSIX-like layer for Windows. Cygwin is required for the build
-process only; the build can produce fully native Windows binaries that don't
-require Cygwin to run. To build Unison for usage within Cygwin environment
-(not a native Windows executable), follow build instructions for Unix-like
-OS above.
-
 Builds are possible with MS Visual C++ (MSVC) and MinGW-w64 compilers.
+
+To build Unison for usage within Cygwin environment (not a native Windows
+executable), follow build instructions for Unix-like OS above.
 
 The build system automatically detects if the build is of MSVC, MinGW or Cygwin
 GNU C (not native Windows) type based on the first OCaml compiler (ocamlc and
@@ -160,7 +156,7 @@ select between these methods by adjusting the PATH accordingly when running
 
 #### MinGW
 
-Building with MinGW, you still need a Cygwin installation as the build
+Building with MinGW, you need a Cygwin installation as the POSIX-like build
 environment (if you are using OPAM, this can be installed automatically by
 OPAM). Cygwin is not required to run the produced executables. You need to
 have the following prerequisites:
@@ -202,14 +198,29 @@ gcc and binutils.
 
 #### MSVC
 
-Building with MSVC is in principle similar to building with MinGW, except that
-the C compiler is now MSVC and the OCaml compiler must itself be built with
-MSVC. A complete Visual Studio installation is not required, having Build Tools
-installed is sufficient. It is possible to find pre-compiled OCaml compiler
-binaries, but it may be easiest to use OPAM as it will also automatically set
-up the correct environment for using MSVC and, if necessary, set up a Cygwin
-environment behind the scenes. Just make sure to include the system-msvc OPAM
-package when installing the OCaml compiler.
+When building with MSVC, a Cygwin installation is not needed. It is possible to
+find pre-compiled OCaml compiler binaries, but it may be easiest to use OPAM as
+it will also automatically set up the correct environment for using MSVC and
+NMAKE. You need to have the following prerequisites:
+
+- Microsoft Visual C++ (MSVC). A complete Visual Studio installation is not
+  required, having Build Tools installed is sufficient. The build tools,
+  including NMAKE, must be found in PATH.
+- A recent version of OCaml compiler (version 4.08 at minimum) which itself
+  is built with MSVC. If using OPAM, be sure to include the system-msvc OPAM
+  package when installing the OCaml compiler.
+
+To build, change to directory where Unison source code is and execute:
+```
+nmake
+```
+
+If all goes well, the following files will be produced:
+```
+src\unison.exe              (the main executable for TUI/CLI)
+src\unison-gui.exe          (the main executable for GUI, optional, see below)
+src\unison-fsmonitor.exe    (filesystem monitor, optional)
+```
 
 For building the GUI (optional) with MSVC, you also need the following:
 
@@ -222,7 +233,8 @@ For building the GUI (optional) with MSVC, you also need the following:
   installation location).
 - lablgtk3 and its prerequisites (ocamlfind, dune build system)
 
-Once the prerequisites are installed, continue by MinGW instructions above.
+Once built, a GTK 3 installation must be found in PATH or DLLs for GTK 3 be
+present where unison-gui.exe is located in order to run the GUI.
 
 ### Build options
 
