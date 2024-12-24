@@ -32,7 +32,7 @@ with those systems, and not in the unison issue tracker.)
   experimental.  The standard approach is the most recent 4.x ocaml
   release.)
 - make (any of GNU, BSD, Solaris variants works)
-- Basic POSIX tools: install, rm, sh (perhaps more)
+- Basic POSIX tools (e.g., echo, install, rm, sh, sed, touch)
 
 ##### Optional, for the GUI only
 
