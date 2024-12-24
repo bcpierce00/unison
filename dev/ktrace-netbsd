@@ -1,0 +1,49 @@
+#!/bin/sh
+
+# Copyright 2024 Gregory D. Troxel
+
+# Permission is granted to copy under the GNU GENERAL PUBLIC LICENSE,
+# Version 3, or any later version.  Alternatively, permission is
+# granted to copy under the 2-clause BSD license as used by NetBSD.
+
+# This script does a full build of unison, installs it to a DESTDIR,
+# and then cleans the build.  While doing so, it asks the operating
+# system to log call system calls.  That log is examined for pathname
+# lookups, such as are invoked by exec system calls, and the names
+# extracted.  The list is filtered to absolute paths with /bin or
+# /sbin, with /usr and /usr/pkg projected down, and then uniquified
+# and counted.  The point is to make a list of programs in bin-type
+# directories that may have been executed.
+
+if [ -f src/Makefile.OCaml ]; then
+    # in unison top level
+    true
+else
+    echo "ktrace-netbsd: must be at top level of unison sources"
+    exit 1
+fi
+
+make clean
+rm -f ktrace*
+
+ktrace -i make
+kdump > ktrace-make.txt
+
+mkdir /tmp/U
+ktrace -i make DESTDIR=/tmp/U install
+kdump > ktrace-install.txt
+# One could clean up the DESTDIR, but rm -rf in scripts is scary, so I
+# won't, and it's in /tmp anyway.
+
+ktrace -i make clean
+kdump > ktrace-clean.txt
+
+# Find NAMI lines, extract path, remove quotes, project to canonical
+# bin, filter to absolute bin-like dirs, and uniqify-count.
+cat ktrace-*.txt | egrep NAMI | \
+    awk '{print $5}' | \
+    sed -e 's/^"//' -e 's/"$//' | \
+    sed -e 's,/usr,,' -e 's,/pkg,,' | \
+    egrep '^/(bin|sbin)' | \
+    sort | uniq -c \
+		> NAMI.txt
