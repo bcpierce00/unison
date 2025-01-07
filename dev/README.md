@@ -17,3 +17,8 @@ and is intended to make it easier to understand memory usage.  It is
 not a fully-baked test.  It's here rather than in tests because it's
 an exploratory tool, not a regression test.
 
+# test-limits.c
+
+This program will try to allocate memory until it fails.  It was
+useful at some point in understanding behavior of systems under high
+memory pressure.
