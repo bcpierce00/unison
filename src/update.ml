@@ -1005,6 +1005,32 @@ let clearArchiveData thisRoot =
   Lwt.return (Some (0, ""))
 
 (* Load (main) root archive and cache it on the given server *)
+(* FIXME?
+   Due to a slight bug (or possibly a design oversight) in the current code,
+   under some circumstances the archives will be loaded twice. In particular,
+   [archivesIdentical checksums] in [loadArchives] below fails at [optimistic]
+   loading when one of the hosts has the archive cached in memory and the other
+   one loads from the disk, causing both hosts to load the archive from disk
+   again, this time with [optimistic = false]. The verification fails because
+   [optimistic] loading of an archive that is already cached in memory returns
+   [Some (0, "")], a value that can't be verified against an archive loaded
+   from disk.
+
+   In practice, this scenario will happen in a very specific situation only: A
+   long-running socket server to which a client connects repeatedly (client has
+   to have exited between connects because this is the only way it would not
+   have the archive cached in memory; the caches are currently not purged). It
+   can't happen with ssh server as that has the same life cycle as the client.
+   This means that the vast majority of users will never even hit this bug; and
+   those few who do will never notice it.
+
+   In future, should purging of the in-memory archive cache be implemented,
+   this scenario could become more common when the server and client don't
+   purge their caches at the same time.
+
+   Additionally, while not directly conflicting with the situation above, it is
+   unfortunate that [clearArchiveData] also returns [Some (0, "")] to signal an
+   empty/missing archive. *)
 let loadArchiveOnRoot: Common.root -> bool -> (int * string) option Lwt.t =
   Remote.registerRootCmd
     "loadArchive" Umarshal.bool Umarshal.(option (prod2 int string id id))
