@@ -41,10 +41,10 @@ jobs:
       fail-fast: false
       matrix:
         job:
-        - { os: macos-14      , ocaml-version: 5.2.x }
+        - { os: macos-14      , ocaml-version: 5.3.x }
         - { os: macos-14      , ocaml-version: 4.14.x           , publish: true  , fnsuffix: -macos-arm64 }
         - { os: macos-13      , ocaml-version: 4.14.x           , publish: true  , fnsuffix: -macos-x86_64 }
-        - { os: ubuntu-22.04  , ocaml-version: 5.2.x }
+        - { os: ubuntu-22.04  , ocaml-version: 5.3.x }
         - { os: ubuntu-22.04  , ocaml-version: 4.14.x }
         - { os: ubuntu-22.04  , ocaml-version: "ocaml-variants.4.14.2+options,ocaml-option-32bit", publish: true, fnsuffix: -ubuntu-i386 }
         - { os: ubuntu-20.04  , ocaml-version: 4.14.x }
@@ -602,7 +602,7 @@ jobs:
         # This list is intended to balance good enough coverage and
         # limited resource usage.
         job:
-        - { os: ubuntu-22.04  , ocaml-version: 5.2.x   , ref: v2.53.7 }
+        - { os: ubuntu-22.04  , ocaml-version: 5.3.x   , ref: v2.53.7 }
         - { os: ubuntu-22.04  , ocaml-version: 4.14.x  , ref: v2.53.7 }
         - { os: ubuntu-22.04  , ocaml-version: 4.14.x  , ref: v2.52.1 , oldmake: true }
         - { os: ubuntu-22.04  , ocaml-version: 4.14.x  , ref: v2.51.5 , oldmake: true }
