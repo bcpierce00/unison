@@ -1709,7 +1709,7 @@ let editPreference parent nm ty vl =
   let rows = if isList then 3 else 2 in
   let tbl =
     GPack.table ~rows ~columns ~col_spacings:12 ~row_spacings:6
-      ~packing:(vb#pack ~expand:false) () in
+      ~packing:(vb#pack ~expand:true) () in
   ignore (GMisc.label ~text:"Preference:" ~xalign:0.
             ~packing:(tbl#attach ~left:0 ~top:0 ~expand:`NONE) ());
   ignore (GMisc.label ~text:"Description:" ~xalign:0.
@@ -1735,7 +1735,7 @@ let editPreference parent nm ty vl =
       let lst_store = GTree.list_store cols in
       let lst =
         let sw =
-          GBin.scrolled_window ~packing:(tbl#attach ~left:1 ~top:3 ~expand:`X)
+          GBin.scrolled_window ~packing:(tbl#attach ~left:1 ~top:3 ~expand:`BOTH)
             ~shadow_type:`IN ~height:200 ~width:400
             ~hpolicy:`AUTOMATIC ~vpolicy:`AUTOMATIC () in
         GTree.view ~model:lst_store ~headers_visible:false
@@ -2054,8 +2054,8 @@ let addPreference parent =
       ~modal:true () in
   t#set_default_height 575;
   let vb = t#vbox in
-(*  vb#set_spacing 18;*)
-  let paned = GPack.paned `VERTICAL ~packing:vb#add () in
+  vb#set_spacing 12;
+  let paned = GPack.paned `VERTICAL ~packing:(vb#pack ~expand:true) () in
 
   let lvb = GPack.vbox ~spacing:6 ~packing:(paned#pack1 ~resize:true) () in
   let preferenceLabel =
@@ -2197,8 +2197,8 @@ let editProfile parent name =
       ~title:(Format.sprintf "%s - Profile Editor" name)
       ~modal:true () in
   let vb = t#vbox in
-(*  t#vbox#set_spacing 18;*)
-  let paned = GPack.paned `VERTICAL ~packing:vb#add () in
+  t#vbox#set_spacing 12;
+  let paned = GPack.paned `VERTICAL ~packing:(vb#pack ~expand:true) () in
 
   let lvb = GPack.vbox ~spacing:6 ~packing:paned#pack1 () in
   let preferenceLabel =
@@ -2484,6 +2484,7 @@ let getProfile quit =
   al#set_left_padding 12;
 
   let lvb = GPack.vbox ~spacing:6 ~packing:(al#add) () in
+  lvb#set_expand true;
   let selectLabel =
     GMisc.label
       ~text:"Select a _profile:" ~use_underline:true
@@ -2685,7 +2686,7 @@ let () = documentationFn := documentation
 
 (* ------ *)
 
-let messageBox ~title ?(action = fun t -> t#destroy) message =
+let messageBox ~title ?(action = fun t -> t#destroy) ?styleText message =
   let utitle = transcode title in
   let t = GWindow.dialog ~title:utitle ~parent:(toplevelWindow ())
             ~position:`CENTER () in
@@ -2697,6 +2698,7 @@ let messageBox ~title ?(action = fun t -> t#destroy) message =
       ~packing:(t#vbox#pack ~expand:true) ()
   in
   t_text#insert message;
+  let () = match styleText with None -> () | Some fn -> fn t_text in
   let (width, height) = get_size_chars t_text ~width:82 ~height:20 () in
   t#set_default_size ~width ~height;
   ignore (t#event#connect#delete ~callback:(fun _ -> action t (); true));
@@ -2896,6 +2898,7 @@ let createToplevelWindow () =
          the user's.gtkrc, not programmatically *)
       ~orientation:`HORIZONTAL (* ~space_size:10 *)
       ~packing:(toplevelVBox#pack ~expand:false) () in
+  actionBar#set_icon_size `SMALL_TOOLBAR;
   (* [show_arrow] is initially false to produce a better default width. *)
   actionBar#set_show_arrow false;
   ignore (toplevelWindow#misc#connect#show
@@ -3992,9 +3995,34 @@ let createToplevelWindow () =
           item.bytesToTransfer <- len;
           initGlobalProgress len;
           startStats ();
+          let styleDiff (t_text : scrolled_text) =
+            let diffAdd =
+              t_text#text#buffer#create_tag [`FOREGROUND "green"] in
+            let diffDel =
+              t_text#text#buffer#create_tag [`FOREGROUND "red"] in
+            let diffLoc =
+              t_text#text#buffer#create_tag [`FOREGROUND "dark cyan"; `WEIGHT `BOLD] in
+            let setStyle sty ~start ~stop =
+              t_text#text#buffer#apply_tag sty ~start ~stop
+            in
+            let rec styleDiffLine ~start =
+              let stop = start#forward_line in
+              let styleLine tag = setStyle tag ~start ~stop in
+              let () =
+                match start#get_text ~stop:start#forward_char with
+                | "+" -> styleLine diffAdd
+                | "-" -> styleLine diffDel
+                | "@" -> styleLine diffLoc
+                | _ -> ()
+              in
+              if not (start#equal stop) then styleDiffLine ~start:stop
+            in
+            styleDiffLine ~start:(t_text#text#buffer#start_iter);
+          in
           Uicommon.showDiffs item.ri
             (fun title text ->
-               messageBox ~title:(transcode title) (transcode text))
+               messageBox ~title:(transcode title) (transcode text)
+                 ~styleText:styleDiff)
             Trace.status (Uutil.File.ofLine i);
           stopStats ();
           displayGlobalProgress 0.;
