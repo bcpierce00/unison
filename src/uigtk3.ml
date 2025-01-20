@@ -2047,20 +2047,32 @@ let documentPreference ~compact ~packing =
 
 let addPreference parent =
   let t =
-    GWindow.dialog ~parent ~border_width:12
+    GWindow.dialog ~parent ~border_width:0
       ~title:"Add a Preference"
       ~modal:true () in
   t#set_default_height 575;
   let vb = t#vbox in
+  (* The border_width of dialog used to be 12 (now 0). Instead, now the
+     margins of the inner box are set to 12 to get the same visual result.
+     The top margin is reduced because otherwise there would be too much
+     space due to [expand_all_btn]. *)
+  vb#set_margin 12;
+  vb#set_margin_top 0;
   vb#set_spacing 12;
   let paned = GPack.paned `VERTICAL ~packing:(vb#pack ~expand:true) () in
 
-  let lvb = GPack.vbox ~spacing:6 ~packing:(paned#pack1 ~resize:true) () in
+  let lvb = GPack.vbox ~spacing:1 ~packing:(paned#pack1 ~resize:true) () in
+  let lvhb = GPack.hbox ~spacing:6 ~packing:(lvb#pack ~expand:false) () in
   let preferenceLabel =
     GMisc.label
       ~text:"_Preferences:" ~use_underline:true
-      ~xalign:0. ~packing:(lvb#pack ~expand:false) ()
+      ~xalign:0. ~yalign:1. ~packing:(lvhb#pack ~expand:true) ()
   in
+  (* The spacing of [lvb] used to be 6. Now it's set to 1 and additionally
+     the bottom margin of [preferenceLabel] is set to 5 to get the same
+     visual result. This is done because otherwise there would be too much
+     space due to [expand_all_btn]. *)
+  preferenceLabel#set_margin_bottom 5;
   let cols = new GTree.column_list in
   let c_name = cols#add Gobject.Data.string in
   let c_font = cols#add Gobject.Data.string in
@@ -2072,6 +2084,30 @@ let addPreference parent =
         ~hpolicy:`AUTOMATIC ~vpolicy:`AUTOMATIC () in
     GTree.view ~headers_visible:false ~packing:sw#add () in
   preferenceLabel#set_mnemonic_widget (Some (lst :> GObj.widget));
+
+  let expand_all_btn =
+    GButton.button ~label:"Expand all" ~relief:`NONE
+      ~packing:(lvhb#pack ~expand:false) () in
+  let expander =
+    let xicon =
+      GMisc.image ~icon_name:"pan-end-symbolic"
+        ~packing:expand_all_btn#set_image () in
+    let expanded = ref false in
+    fun _ev ->
+      lst#misc#grab_focus ();
+      if not !expanded then begin
+        lst#expand_all ();
+        xicon#set_icon_name "pan-down-symbolic";
+        expand_all_btn#set_label "Collapse all";
+        expanded := true
+      end else begin
+        lst#collapse_all ();
+        xicon#set_icon_name "pan-end-symbolic";
+        expand_all_btn#set_label "Expand all";
+        expanded := false
+      end
+  in
+  ignore (expand_all_btn#connect#clicked ~callback:expander);
 
   let cell_r = GTree.cell_renderer_text [] in
   let view_col = (GTree.view_column ~renderer:(cell_r, ["text", c_name]) ()) in
@@ -2150,6 +2186,11 @@ let addPreference parent =
 
   lst#set_model (Some store#coerce);
 
+  begin match lst#model#get_iter_first with
+  | None -> ()
+  | Some iter -> lst#expand_row (lst#model#get_path iter)
+  end;
+
   let getSelectedPref row =
     if isParent row then
       None
@@ -2201,6 +2242,26 @@ let addPreference parent =
       false
   in
   ignore (lst#event#connect#key_press ~callback:lst_expand_by_keyboard);
+
+  let lst_expand_by_mouse ev =
+    let x = int_of_float (GdkEvent.Button.x ev)
+    and y = int_of_float (GdkEvent.Button.y ev) in
+    match lst#get_path_at_pos ~x ~y with
+    | None -> false
+    | Some (path, col, _, _) ->
+        lst#set_cursor path col;
+        lst#misc#grab_focus ();
+        if lst#row_expanded path then lst#collapse_row path
+        else lst#expand_row path;
+        if GdkEvent.get_type ev = `TWO_BUTTON_PRESS then
+          lst#row_activated path col;
+        (* Disable the default handler because clicking on the little expander
+           arrow would revert the expand/collapse that was just done. (We could
+           potentially check if the arrow was clicked if we created a separate
+           column just for the expander arrows.) *)
+        true
+  in
+  ignore (lst#event#connect#button_press ~callback:lst_expand_by_mouse);
 
   let cancelCommand () = t#destroy () in
   let cancelButton =
