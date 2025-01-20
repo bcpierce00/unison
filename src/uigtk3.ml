@@ -2150,20 +2150,57 @@ let addPreference parent =
 
   lst#set_model (Some store#coerce);
 
-  let getSelectedPref rf =
-    let row = rf#iter in
+  let getSelectedPref row =
     if isParent row then
       None
     else
       Some (store#get ~row ~column:c_name)
   in
+  let getSelectedPref' () =
+    match lst#selection#get_selected_rows with
+    | [path] -> getSelectedPref (lst#model#get_iter path)
+    | _ -> None
+  in
+  let getSelectedPrefReact = function
+    | [rf] -> getSelectedPref rf#iter
+    | _ -> None
+  in
   let selection = GtkReact.tree_view_selection lst in
   let updateDoc = documentPreference ~compact:true ~packing:(paned#pack2 ~resize:true) in
-  let prefSelection = selection >> (function
-    | [rf] -> getSelectedPref rf
-    | _ -> None)
-  in
+  let prefSelection = selection >> getSelectedPrefReact in
   prefSelection >| updateDoc;
+
+  lst#set_enable_search true;
+  let lst_expand_by_keyboard ev =
+    let key = GdkEvent.Key.keyval ev in
+    if key = GdkKeysyms._Right then begin
+      lst#selection#get_selected_rows
+      |> Safelist.iter (fun p ->
+          let lst_iter = lst#model#get_iter p in
+          if isParent lst_iter then begin
+            if not (lst#row_expanded p) then
+              lst#expand_row p
+            else
+              let chld = lst#model#iter_children (Some lst_iter) in
+              lst#set_cursor (lst#model#get_path chld) (lst#get_column 0)
+          end);
+      true
+    end else if key = GdkKeysyms._Left then begin
+      lst#selection#get_selected_rows
+      |> Safelist.iter (fun p ->
+          let lst_iter = lst#model#get_iter p in
+          if isParent lst_iter && lst#row_expanded p then
+            lst#collapse_row p
+          else
+            match lst#model#iter_parent lst_iter with
+            | None -> ()
+            | Some pr ->
+                lst#set_cursor (lst#model#get_path pr) (lst#get_column 0));
+      true
+    end else
+      false
+  in
+  ignore (lst#event#connect#key_press ~callback:lst_expand_by_keyboard);
 
   let cancelCommand () = t#destroy () in
   let cancelButton =
@@ -2171,7 +2208,11 @@ let addPreference parent =
   ignore (cancelButton#connect#clicked ~callback:cancelCommand);
   ignore (t#event#connect#delete ~callback:(fun _ -> cancelCommand (); true));
   let ok = ref false in
-  let addCommand _ = ok := true; t#destroy () in
+  let addCommand _ =
+    match getSelectedPref' () with
+    | None -> ()
+    | Some _ -> ok := true; t#destroy ()
+  in
   let addButton =
     GButton.button ~stock:`ADD ~packing:t#action_area#add () in
   ignore (addButton#connect#clicked ~callback:addCommand);
@@ -2184,11 +2225,7 @@ let addPreference parent =
   lst#misc#grab_focus ();
   GMain.Main.main ();
   if not !ok then None else
-    match React.state selection with
-    | [rf] ->
-        getSelectedPref rf
-    | _ ->
-        None
+  getSelectedPrefReact (React.state selection)
 
 let editProfile parent name =
   let t =
