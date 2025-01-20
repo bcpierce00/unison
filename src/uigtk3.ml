@@ -1207,11 +1207,9 @@ let createProfile parent =
   React.lift2 (&&) (name >> nonEmpty) (profileExists >> not)
     >| setPageComplete description;
 
-  let connection = GPack.vbox ~border_width:12 ~spacing:18 () in
-  let al = GBin.alignment ~packing:(connection#pack ~expand:false) () in
-  al#set_left_padding 12;
+  let connection = GPack.vbox ~border_width:12 ~spacing:12 () in
   let vb =
-    GPack.vbox ~spacing:6 ~packing:(al#add) () in
+    GPack.vbox ~spacing:6 ~packing:(connection#pack ~expand:false) () in
   adjustSize
     (GMisc.label ~xalign:0. ~line_wrap:true ~justify:`LEFT
        ~text:"You can use Unison to synchronize a local directory \
@@ -1484,7 +1482,7 @@ let createProfile parent =
     >| setPageComplete directorySelection;
 
   (* Specific options *)
-  let options = GPack.vbox ~border_width:18 ~spacing:12 () in
+  let options = GPack.vbox ~border_width:12 ~spacing:12 () in
   (* Do we need to set specific options for FAT partitions?
      If under Windows, then all the options are set properly, except for
      ignoreinodenumbers in case one replica is on a FAT partition on a
@@ -1535,7 +1533,7 @@ let createProfile parent =
     (GMisc.label ~xalign:0. ~line_wrap:true ~justify:`LEFT
        ~text:"When synchronizing in case insensitive mode, \
               Unison has to make some assumptions regarding \
-              filename encoding.  If ensure, use Unicode."
+              filename encoding.  If unsure, use Unicode."
        ~packing:(vb#pack ~expand:false) ());
   let vb =
     let al = GBin.alignment
@@ -1705,7 +1703,7 @@ let editPreference parent nm ty vl =
       `STRING_LIST | `CUSTOM | `UNKNOWN -> true
     | _ -> false
   in
-  let columns = if isList then 5 else 4 in
+  let columns = if isList then 3 else 2 in
   let rows = if isList then 3 else 2 in
   let tbl =
     GPack.table ~rows ~columns ~col_spacings:12 ~row_spacings:6
@@ -2160,7 +2158,7 @@ let addPreference parent =
       Some (store#get ~row ~column:c_name)
   in
   let selection = GtkReact.tree_view_selection lst in
-  let updateDoc = documentPreference ~compact:true ~packing:paned#pack2 in
+  let updateDoc = documentPreference ~compact:true ~packing:(paned#pack2 ~resize:true) in
   let prefSelection = selection >> (function
     | [rf] -> getSelectedPref rf
     | _ -> None)
@@ -2183,6 +2181,7 @@ let addPreference parent =
 
   ignore (t#connect#destroy ~callback:GMain.Main.quit);
   t#show ();
+  lst#misc#grab_focus ();
   GMain.Main.main ();
   if not !ok then None else
     match React.state selection with
@@ -2480,11 +2479,10 @@ let getProfile quit =
   let vb = t#vbox in
   t#vbox#set_spacing 18;
 
-  let al = GBin.alignment ~packing:(vb#add) () in
+  let al = GBin.alignment ~packing:(vb#pack ~expand:true) () in
   al#set_left_padding 12;
 
   let lvb = GPack.vbox ~spacing:6 ~packing:(al#add) () in
-  lvb#set_expand true;
   let selectLabel =
     GMisc.label
       ~text:"Select a _profile:" ~use_underline:true
@@ -2625,7 +2623,6 @@ let getProfile quit =
 
   ignore (lst#connect#row_activated ~callback:(fun _ _ -> okCommand ()));
   fillLst None;
-  lst#misc#grab_focus ();
   ignore (t#connect#destroy ~callback:GMain.Main.quit);
   t#show ();
   GMain.Main.main ();
