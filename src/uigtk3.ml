@@ -1345,7 +1345,7 @@ let createProfile parent =
     let al = GBin.alignment ~packing:(vb#pack ~expand:false) () in
     al#set_left_padding 12;
     (GButton.check_button ~label:"Enable _compression" ~use_mnemonic:true
-       ~active:true ~packing:(al#add) ())
+       ~active:false ~packing:al#add ())
   in
   GtkReact.show compressButton isSSH;
   let compress = GtkReact.toggle_button compressButton in
