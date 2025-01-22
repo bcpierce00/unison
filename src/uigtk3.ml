@@ -1207,11 +1207,9 @@ let createProfile parent =
   React.lift2 (&&) (name >> nonEmpty) (profileExists >> not)
     >| setPageComplete description;
 
-  let connection = GPack.vbox ~border_width:12 ~spacing:18 () in
-  let al = GBin.alignment ~packing:(connection#pack ~expand:false) () in
-  al#set_left_padding 12;
+  let connection = GPack.vbox ~border_width:12 ~spacing:12 () in
   let vb =
-    GPack.vbox ~spacing:6 ~packing:(al#add) () in
+    GPack.vbox ~spacing:6 ~packing:(connection#pack ~expand:false) () in
   adjustSize
     (GMisc.label ~xalign:0. ~line_wrap:true ~justify:`LEFT
        ~text:"You can use Unison to synchronize a local directory \
@@ -1347,7 +1345,7 @@ let createProfile parent =
     let al = GBin.alignment ~packing:(vb#pack ~expand:false) () in
     al#set_left_padding 12;
     (GButton.check_button ~label:"Enable _compression" ~use_mnemonic:true
-       ~active:true ~packing:(al#add) ())
+       ~active:false ~packing:al#add ())
   in
   GtkReact.show compressButton isSSH;
   let compress = GtkReact.toggle_button compressButton in
@@ -1484,7 +1482,7 @@ let createProfile parent =
     >| setPageComplete directorySelection;
 
   (* Specific options *)
-  let options = GPack.vbox ~border_width:18 ~spacing:12 () in
+  let options = GPack.vbox ~border_width:12 ~spacing:12 () in
   (* Do we need to set specific options for FAT partitions?
      If under Windows, then all the options are set properly, except for
      ignoreinodenumbers in case one replica is on a FAT partition on a
@@ -1535,7 +1533,7 @@ let createProfile parent =
     (GMisc.label ~xalign:0. ~line_wrap:true ~justify:`LEFT
        ~text:"When synchronizing in case insensitive mode, \
               Unison has to make some assumptions regarding \
-              filename encoding.  If ensure, use Unicode."
+              filename encoding.  If unsure, use Unicode."
        ~packing:(vb#pack ~expand:false) ());
   let vb =
     let al = GBin.alignment
@@ -1705,7 +1703,7 @@ let editPreference parent nm ty vl =
       `STRING_LIST | `CUSTOM | `UNKNOWN -> true
     | _ -> false
   in
-  let columns = if isList then 5 else 4 in
+  let columns = if isList then 3 else 2 in
   let rows = if isList then 3 else 2 in
   let tbl =
     GPack.table ~rows ~columns ~col_spacings:12 ~row_spacings:6
@@ -2049,20 +2047,32 @@ let documentPreference ~compact ~packing =
 
 let addPreference parent =
   let t =
-    GWindow.dialog ~parent ~border_width:12
+    GWindow.dialog ~parent ~border_width:0
       ~title:"Add a Preference"
       ~modal:true () in
   t#set_default_height 575;
   let vb = t#vbox in
+  (* The border_width of dialog used to be 12 (now 0). Instead, now the
+     margins of the inner box are set to 12 to get the same visual result.
+     The top margin is reduced because otherwise there would be too much
+     space due to [expand_all_btn]. *)
+  vb#set_margin 12;
+  vb#set_margin_top 0;
   vb#set_spacing 12;
   let paned = GPack.paned `VERTICAL ~packing:(vb#pack ~expand:true) () in
 
-  let lvb = GPack.vbox ~spacing:6 ~packing:(paned#pack1 ~resize:true) () in
+  let lvb = GPack.vbox ~spacing:1 ~packing:(paned#pack1 ~resize:true) () in
+  let lvhb = GPack.hbox ~spacing:6 ~packing:(lvb#pack ~expand:false) () in
   let preferenceLabel =
     GMisc.label
       ~text:"_Preferences:" ~use_underline:true
-      ~xalign:0. ~packing:(lvb#pack ~expand:false) ()
+      ~xalign:0. ~yalign:1. ~packing:(lvhb#pack ~expand:true) ()
   in
+  (* The spacing of [lvb] used to be 6. Now it's set to 1 and additionally
+     the bottom margin of [preferenceLabel] is set to 5 to get the same
+     visual result. This is done because otherwise there would be too much
+     space due to [expand_all_btn]. *)
+  preferenceLabel#set_margin_bottom 5;
   let cols = new GTree.column_list in
   let c_name = cols#add Gobject.Data.string in
   let c_font = cols#add Gobject.Data.string in
@@ -2074,6 +2084,30 @@ let addPreference parent =
         ~hpolicy:`AUTOMATIC ~vpolicy:`AUTOMATIC () in
     GTree.view ~headers_visible:false ~packing:sw#add () in
   preferenceLabel#set_mnemonic_widget (Some (lst :> GObj.widget));
+
+  let expand_all_btn =
+    GButton.button ~label:"Expand all" ~relief:`NONE
+      ~packing:(lvhb#pack ~expand:false) () in
+  let expander =
+    let xicon =
+      GMisc.image ~icon_name:"pan-end-symbolic"
+        ~packing:expand_all_btn#set_image () in
+    let expanded = ref false in
+    fun _ev ->
+      lst#misc#grab_focus ();
+      if not !expanded then begin
+        lst#expand_all ();
+        xicon#set_icon_name "pan-down-symbolic";
+        expand_all_btn#set_label "Collapse all";
+        expanded := true
+      end else begin
+        lst#collapse_all ();
+        xicon#set_icon_name "pan-end-symbolic";
+        expand_all_btn#set_label "Expand all";
+        expanded := false
+      end
+  in
+  ignore (expand_all_btn#connect#clicked ~callback:expander);
 
   let cell_r = GTree.cell_renderer_text [] in
   let view_col = (GTree.view_column ~renderer:(cell_r, ["text", c_name]) ()) in
@@ -2152,20 +2186,82 @@ let addPreference parent =
 
   lst#set_model (Some store#coerce);
 
-  let getSelectedPref rf =
-    let row = rf#iter in
+  begin match lst#model#get_iter_first with
+  | None -> ()
+  | Some iter -> lst#expand_row (lst#model#get_path iter)
+  end;
+
+  let getSelectedPref row =
     if isParent row then
       None
     else
       Some (store#get ~row ~column:c_name)
   in
-  let selection = GtkReact.tree_view_selection lst in
-  let updateDoc = documentPreference ~compact:true ~packing:paned#pack2 in
-  let prefSelection = selection >> (function
-    | [rf] -> getSelectedPref rf
-    | _ -> None)
+  let getSelectedPref' () =
+    match lst#selection#get_selected_rows with
+    | [path] -> getSelectedPref (lst#model#get_iter path)
+    | _ -> None
   in
+  let getSelectedPrefReact = function
+    | [rf] -> getSelectedPref rf#iter
+    | _ -> None
+  in
+  let selection = GtkReact.tree_view_selection lst in
+  let updateDoc = documentPreference ~compact:true ~packing:(paned#pack2 ~resize:true) in
+  let prefSelection = selection >> getSelectedPrefReact in
   prefSelection >| updateDoc;
+
+  lst#set_enable_search true;
+  let lst_expand_by_keyboard ev =
+    let key = GdkEvent.Key.keyval ev in
+    if key = GdkKeysyms._Right then begin
+      lst#selection#get_selected_rows
+      |> Safelist.iter (fun p ->
+          let lst_iter = lst#model#get_iter p in
+          if isParent lst_iter then begin
+            if not (lst#row_expanded p) then
+              lst#expand_row p
+            else
+              let chld = lst#model#iter_children (Some lst_iter) in
+              lst#set_cursor (lst#model#get_path chld) (lst#get_column 0)
+          end);
+      true
+    end else if key = GdkKeysyms._Left then begin
+      lst#selection#get_selected_rows
+      |> Safelist.iter (fun p ->
+          let lst_iter = lst#model#get_iter p in
+          if isParent lst_iter && lst#row_expanded p then
+            lst#collapse_row p
+          else
+            match lst#model#iter_parent lst_iter with
+            | None -> ()
+            | Some pr ->
+                lst#set_cursor (lst#model#get_path pr) (lst#get_column 0));
+      true
+    end else
+      false
+  in
+  ignore (lst#event#connect#key_press ~callback:lst_expand_by_keyboard);
+
+  let lst_expand_by_mouse ev =
+    let x = int_of_float (GdkEvent.Button.x ev)
+    and y = int_of_float (GdkEvent.Button.y ev) in
+    match lst#get_path_at_pos ~x ~y with
+    | None -> false
+    | Some (path, col, _, _) ->
+        lst#set_cursor path col;
+        lst#misc#grab_focus ();
+        if lst#row_expanded path then lst#collapse_row path
+        else lst#expand_row path;
+        if GdkEvent.get_type ev = `TWO_BUTTON_PRESS then
+          lst#row_activated path col;
+        (* Disable the default handler because clicking on the little expander
+           arrow would revert the expand/collapse that was just done. (We could
+           potentially check if the arrow was clicked if we created a separate
+           column just for the expander arrows.) *)
+        true
+  in
+  ignore (lst#event#connect#button_press ~callback:lst_expand_by_mouse);
 
   let cancelCommand () = t#destroy () in
   let cancelButton =
@@ -2173,7 +2269,11 @@ let addPreference parent =
   ignore (cancelButton#connect#clicked ~callback:cancelCommand);
   ignore (t#event#connect#delete ~callback:(fun _ -> cancelCommand (); true));
   let ok = ref false in
-  let addCommand _ = ok := true; t#destroy () in
+  let addCommand _ =
+    match getSelectedPref' () with
+    | None -> ()
+    | Some _ -> ok := true; t#destroy ()
+  in
   let addButton =
     GButton.button ~stock:`ADD ~packing:t#action_area#add () in
   ignore (addButton#connect#clicked ~callback:addCommand);
@@ -2183,13 +2283,10 @@ let addPreference parent =
 
   ignore (t#connect#destroy ~callback:GMain.Main.quit);
   t#show ();
+  lst#misc#grab_focus ();
   GMain.Main.main ();
   if not !ok then None else
-    match React.state selection with
-    | [rf] ->
-        getSelectedPref rf
-    | _ ->
-        None
+  getSelectedPrefReact (React.state selection)
 
 let editProfile parent name =
   let t =
@@ -2480,11 +2577,10 @@ let getProfile quit =
   let vb = t#vbox in
   t#vbox#set_spacing 18;
 
-  let al = GBin.alignment ~packing:(vb#add) () in
+  let al = GBin.alignment ~packing:(vb#pack ~expand:true) () in
   al#set_left_padding 12;
 
   let lvb = GPack.vbox ~spacing:6 ~packing:(al#add) () in
-  lvb#set_expand true;
   let selectLabel =
     GMisc.label
       ~text:"Select a _profile:" ~use_underline:true
@@ -2625,7 +2721,6 @@ let getProfile quit =
 
   ignore (lst#connect#row_activated ~callback:(fun _ _ -> okCommand ()));
   fillLst None;
-  lst#misc#grab_focus ();
   ignore (t#connect#destroy ~callback:GMain.Main.quit);
   t#show ();
   GMain.Main.main ();
