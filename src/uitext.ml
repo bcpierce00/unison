@@ -969,7 +969,7 @@ let setWarnPrinter() =
            if not (Prefs.read Globals.batch) then begin
              display "Press return to continue.";
              selectAction None
-               [(["";" ";"y"],
+               [(["";"";" ";"y"],
                  ("Continue"),
                  (fun () -> newLine()));
                 (["n";"q";"x"],
