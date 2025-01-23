@@ -79,6 +79,11 @@ let rename f1 f2 =
 
 let chown _ _ _ = raise (Unix.Unix_error (Unix.ENOSYS, "chown", ""))
 
+(* TODO: O_APPEND in [Unix.openfile] for Windows was fixed in OCaml 5.3.
+   Remove the entire [openfile] definition below once the minimum supported
+   compiler version is >= 5.3.
+   Note: at the time of adding this comment, there is actually no code calling
+   [openfile] with O_APPEND. *)
 let openfile f flags perm =
   let fd = Unix.openfile f flags perm in
   (* Comment from original C stub implementation:
