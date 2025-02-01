@@ -38,6 +38,7 @@ let tryAgainMessage =
   Printf.sprintf
 "You can use %s to synchronize a local directory with another local directory,
 or with a remote directory.
+You can also synchronize a single file if you enter a file name.
 
 Please enter the first (local) directory that you want to synchronize."
 myNameCapitalized
@@ -46,7 +47,8 @@ myNameCapitalized
 
 let helpmessage = Printf.sprintf
 "%s can synchronize a local directory with another local directory, or with
-a directory on a remote machine.
+a directory on a remote machine. You can also synchronize a single file
+by entering a file name instead of a directory.
 
 To synchronize with a local directory, just enter the file name.
 
@@ -1473,6 +1475,14 @@ let createProfile parent =
       (GtkReact.file_chooser secondDirButton >> noneToEmpty)
       (GtkReact.entry remoteDirEdit)
   in
+  let dirExplanationLabel =
+    GMisc.label ~xalign:0. ~line_wrap:true ~justify:`LEFT
+      ~text:"Note: To synchronize a single file with another file, you \
+             currently have to create the profile manually or specify the \
+             files on the command line."
+      ~packing:(directorySelection#pack ~expand:false) ()
+  in
+  dirExplanationLabel#set_max_width_chars 80;
   ignore
     (assistant#append_page
        ~title:"Directory Selection"
