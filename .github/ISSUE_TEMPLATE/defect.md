@@ -1,8 +1,8 @@
 ---
-name: Defect
+name: Defect Report
 about: Create an issue that argues that there is a bug in unison
 title: ''
-labels: ''
+labels: defect
 assignees: ''
 ---
 
@@ -21,7 +21,7 @@ I have thoroughly read the [Reporting Bugs and Feature Requests](https://github.
 
 # Meta
 
-Bug reports must be minimal, as described in the wiki page.
+Bug reports must be about a minimized configuration, as described in the wiki page.
 
 People filing bug reports will be expected to follow up and perhaps
 test proposed fixes.
@@ -37,6 +37,13 @@ test proposed fixes.
 
 # Reproduction Recipe
 
-Describe how to reproduce the bug
+[Describe how to reproduce the bug.  This must be the smallest
+configuration you can find that exhibits the bug, and you should
+include the largest working configuration also.  Generally this means
+local sync, TUI, no watcher, unless e.g. the bug is phrased as
+"Without the watcher, behavior is correct, but on adding
+fsmonitor-foo, ....".]
 
 # Expected behavior vs actual behavior
+
+[Describe the actual behavior.  Argue that the behavior is incorrect.]
