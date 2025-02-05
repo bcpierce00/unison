@@ -1407,51 +1407,104 @@ let createProfile parent =
 
   (* Directory selection *)
   let directorySelection = GPack.vbox ~border_width:12 ~spacing:6 () in
+  let dirhb = GPack.hbox ~packing:(directorySelection#pack ~expand:false) () in
+  adjustSize
+    (GMisc.label ~xalign:0. ~line_wrap:false ~justify:`LEFT
+       ~text:"Please select the two "
+       ~packing:(dirhb#pack ~expand:false) ());
+  let dirKindCombo =
+    GEdit.combo_box_text
+      ~strings:["directories"; "files"]
+      ~active:0 ~packing:(dirhb#pack ~expand:false) () in
+  let dirKind =
+    GtkReact.text_combo dirKindCombo
+      >> fun i -> List.nth [`Dir; `File] i
+  in
   adjustSize
     (GMisc.label ~xalign:0. ~line_wrap:true ~justify:`LEFT
-       ~text:"Please select the two directories that you want to synchronize."
-       ~packing:(directorySelection#pack ~expand:false) ());
+       ~text:" that you want to synchronize."
+       ~packing:(dirhb#pack ~expand:false) ());
+  (* Not sure what's going on here, but when setting the focus on an element,
+     it's actually the next element that gets the focus by default. We want
+     the focus to be on the first directory selector. Setting the focus on the
+     combo here achieves exactly that... *)
+  ignore ((fst dirKindCombo)#misc#connect#map ~callback:(fst dirKindCombo)#misc#grab_focus);
   let secondDirLabel1 =
     GMisc.label ~xalign:0. ~line_wrap:true ~justify:`LEFT
-      ~text:"The second directory is relative to your home \
-             directory on the remote machine."
+      ~text:""
       ~packing:(directorySelection#pack ~expand:false) ()
   in
   adjustSize secondDirLabel1;
   GtkReact.show secondDirLabel1 ((React.lift2 (||) isLocal isSocket) >> not);
+  GtkReact.label secondDirLabel1 (dirKind >> function
+    | `Dir  -> "The second directory is relative to your home \
+                directory on the remote machine."
+    | `File -> "The second file is relative to your home \
+                directory on the remote machine.");
   let secondDirLabel2 =
     GMisc.label ~xalign:0. ~line_wrap:true ~justify:`LEFT
-      ~text:"The second directory is relative to \
-             the working directory of the Unison server \
-             running on the remote machine."
+      ~text:""
       ~packing:(directorySelection#pack ~expand:false) ()
   in
   adjustSize secondDirLabel2;
   GtkReact.show secondDirLabel2 isSocket;
+  GtkReact.label secondDirLabel2 (dirKind >> function
+    | `Dir  -> "The second directory is relative to \
+                the working directory of the Unison server \
+                running on the remote machine."
+    | `File -> "The second file is relative to \
+                the working directory of the Unison server \
+                running on the remote machine.");
   let tbl =
     let al =
       GBin.alignment ~packing:(directorySelection#pack ~expand:false) () in
     al#set_left_padding 12;
     GPack.table ~rows:2 ~columns:2 ~col_spacings:12 ~row_spacings:6
       ~packing:(al#add) () in
-(*XXX Should focus on this button when becomes visible... *)
   let firstDirButton =
     GFile.chooser_button ~action:`SELECT_FOLDER ~title:"First Directory"
        ~packing:(tbl#attach ~left:1 ~top:0 ~expand:`X) ()
   in
-  isLocal >| (fun b -> firstDirButton#set_title
-                         (if b then "First Directory" else "Local Directory"));
+  React.lift2
+    (fun local dirkind ->
+      firstDirButton#set_action (
+        match dirkind with
+        | `Dir  -> `SELECT_FOLDER
+        | `File -> `OPEN
+      );
+      firstDirButton#set_title (
+        match local, dirkind with
+        | true, `Dir   -> "First Directory"
+        | false, `Dir  -> "Local Directory"
+        | true, `File  -> "First File"
+        | false, `File -> "Local File"
+      )
+    ) isLocal dirKind |> ignore;
+
   GtkReact.label_underlined
     (GMisc.label ~xalign:0.
        ~mnemonic_widget:firstDirButton
        ~packing:(tbl#attach ~left:0 ~top:0 ~expand:`NONE) ())
-    (isLocal >> fun b ->
-       if b then "_First directory:" else "_Local directory:");
+    (React.lift2 (fun local dirkind ->
+        match local, dirkind with
+        | true, `Dir -> "_First directory:"
+        | false, `Dir -> "_Local directory:"
+        | true, `File -> "_First file:"
+        | false, `File -> "_Local file:"
+      ) isLocal dirKind);
   let noneToEmpty o = match o with None -> "" | Some s -> s in
   let firstDir = GtkReact.file_chooser firstDirButton >> noneToEmpty in
+
   let secondDirButton =
     GFile.chooser_button ~action:`SELECT_FOLDER ~title:"Second Directory"
        ~packing:(tbl#attach ~left:1 ~top:1 ~expand:`X) () in
+  dirKind >| (function
+    | `Dir  -> secondDirButton#set_action `SELECT_FOLDER;
+               secondDirButton#set_title "Second Directory"
+    | `File -> secondDirButton#set_action `OPEN;
+               secondDirButton#set_title "Second File"
+  );
+
   let secondDirLabel =
     GMisc.label ~xalign:0.
       ~text:"Se_cond directory:"
@@ -1459,6 +1512,8 @@ let createProfile parent =
       ~packing:(tbl#attach ~left:0 ~top:1 ~expand:`NONE) () in
   GtkReact.show secondDirButton isLocal;
   GtkReact.show secondDirLabel isLocal;
+  GtkReact.label_underlined secondDirLabel
+    (dirKind >> function `Dir -> "Se_cond directory:" | `File -> "Se_cond file:");
   let remoteDirEdit =
     GEdit.entry ~packing:(tbl#attach ~left:1 ~top:1 ~expand:`X) ()
   in
@@ -1470,19 +1525,13 @@ let createProfile parent =
   in
   GtkReact.show remoteDirEdit (isLocal >> not);
   GtkReact.show remoteDirLabel (isLocal >> not);
+  GtkReact.label_underlined remoteDirLabel
+    (dirKind >> function `Dir -> "_Remote directory:" | `File -> "_Remote file:");
   let secondDir =
     React.lift3 (fun b l r -> if b then l else r) isLocal
       (GtkReact.file_chooser secondDirButton >> noneToEmpty)
       (GtkReact.entry remoteDirEdit)
   in
-  let dirExplanationLabel =
-    GMisc.label ~xalign:0. ~line_wrap:true ~justify:`LEFT
-      ~text:"Note: To synchronize a single file with another file, you \
-             currently have to create the profile manually or specify the \
-             files on the command line."
-      ~packing:(directorySelection#pack ~expand:false) ()
-  in
-  dirExplanationLabel#set_max_width_chars 80;
   ignore
     (assistant#append_page
        ~title:"Directory Selection"
