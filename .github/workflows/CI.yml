@@ -112,6 +112,14 @@ jobs:
         mkdir -p '${{ steps.vars.outputs.PKG_DIR }}'
         mkdir -p '${{ steps.vars.outputs.PKG_DIR }}'/bin
 
+    - name: "Ubuntu: Prepare multilib (i386)"
+      if: ${{ contains(matrix.job.os, 'ubuntu') && contains(matrix.job.ocaml-version, '-32bit') }}
+      run: |
+        sudo dpkg --add-architecture i386
+        sudo apt-get update
+        sudo apt-get install gcc-multilib g++-multilib libgtk-3-dev:i386 libexpat1-dev:i386
+        echo PKG_CONFIG_LIBDIR=/usr/lib/i386-linux-gnu/pkgconfig:/usr/share/pkgconfig:"$PKG_CONF_LIBDIR" >> "$GITHUB_ENV"
+
     - name: Use OCaml ${{ matrix.job.ocaml-version }}
       uses: ocaml/setup-ocaml@v3
       with:
@@ -420,14 +428,6 @@ jobs:
 
         '@ | patch -Nu -p 1
         opam pin --no-action add lablgtk3 .
-
-    - name: "Ubuntu: Prepare lablgtk install (i386)"
-      if: ${{ contains(matrix.job.os, 'ubuntu') && contains(matrix.job.ocaml-version, '-32bit') }}
-      run: |
-        sudo dpkg --add-architecture i386
-        sudo apt-get update
-        sudo apt-get install libgtk-3-dev:i386 libexpat1-dev:i386
-        echo PKG_CONFIG_LIBDIR=/usr/lib/i386-linux-gnu/pkgconfig:/usr/share/pkgconfig:"$PKG_CONF_LIBDIR" >> "$GITHUB_ENV"
 
     # [2024-12] Recent dune release switched from using pkg-config to pkgconf.
     # However, pkgconf is broken in many environments and this breaks building
