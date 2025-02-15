@@ -68,6 +68,12 @@ let file_exists f =
 
 (****)
 
+let clone_path f1 f2 = System.clone_path (path f1) (path f2)
+let clone_file = System.clone_file
+let copy_file = System.copy_file
+
+(****)
+
 exception XattrNotSupported = System.XattrNotSupported
 
 let xattr_list f = System.xattr_list (path f)

@@ -66,6 +66,14 @@ let open_in_bin = open_in_bin
 
 (****)
 
+external clone_path : string -> string -> bool = "unison_clone_path"
+external clone_file : Unix.file_descr -> Unix.file_descr -> bool =
+  "unison_clone_file"
+external copy_file : Unix.file_descr -> Unix.file_descr -> int64
+  -> int -> int = "unison_copy_file"
+
+(****)
+
 let create_process = Unix.create_process
 let open_process_in = Unix.open_process_in
 let open_process_args_in = Unix.open_process_args_in

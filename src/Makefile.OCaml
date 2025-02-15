@@ -87,7 +87,7 @@ OCAMLINCLUDES = -I +unix -I +str
 # C objects for both bytecode and native versions
 COBJS = osxsupport$(OBJ_EXT) pty$(OBJ_EXT) bytearray_stubs$(OBJ_EXT) \
         hash_compat$(OBJ_EXT) props_xattr$(OBJ_EXT) props_acl$(OBJ_EXT) \
-        $(WINCOBJS)
+        copy_stubs$(OBJ_EXT) $(WINCOBJS)
 
 ####################################################################
 ### User Interface setup

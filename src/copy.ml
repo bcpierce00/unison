@@ -415,6 +415,86 @@ let readPropsExtDataG root path desc =
 
 (****)
 
+let copy_size l =
+  let def = 10_485_760L in (* 10 MiB, to get periodic progress feedback *)
+  Int64.to_int @@
+  if Int64.compare l def > 0 then def else l
+
+let rec copyFileAux src dst src_offs len notify =
+  let open Uutil in
+  if len > Filesize.zero then begin
+    let n = Fs.copy_file src dst (Filesize.toInt64 src_offs)
+      (copy_size (Filesize.toInt64 len)) in
+    let n' = Filesize.ofInt n in
+    let () = notify n' in
+    if n > 0 then
+      copyFileAux src dst (Filesize.add src_offs n') (Filesize.sub len n') notify
+  end
+
+let copyFileRange src dst src_offs len fallback notify =
+  let bytesCopied = ref Uutil.Filesize.zero in
+  let copied n =
+    bytesCopied := Uutil.Filesize.add !bytesCopied n;
+    notify n
+  in
+  try
+    copyFileAux src dst src_offs len copied
+  with
+  | Unix.Unix_error ((EINVAL | ENOSYS | EBADF | EXDEV
+                      | ESPIPE | ENOTSOCK | EOPNOTSUPP) as err, _, _)
+  | Unix.Unix_error (EUNKNOWNERR -50 (* ERROR_NOT_SUPPORTED *) as err, _, _)
+  | Unix.Unix_error (EUNKNOWNERR -1 as err, _, _)
+      (* The errors above are not expected in the middle of a copy; these
+         indicate that [copy_file] is not supported at all (by the OS or
+         by the filesystem, or for these specific files) and nothing
+         has been copied so far, which makes fallback straight-forward.
+         However, this can't be relied upon. While expected extremely rarely,
+         failure after partial success is to be expected and fallback routine
+         must be able to handle this; so all errors are handled the same. *)
+  | Unix.Unix_error (err, _, _) ->
+      debug (fun () -> Util.msg
+        "Falling back to regular copy: copyFileRange failed [%s]%s\n"
+        (Unix.error_message err)
+        (if !bytesCopied = Uutil.Filesize.zero then "" else
+          " (copied " ^ (Uutil.Filesize.toString !bytesCopied) ^ ")"));
+      fallback !bytesCopied
+
+let copyFile inCh outCh kind len fallback notify =
+  (* Flush the buffered output channel just in case since we're going to
+     manipulate the channel's underlying fd directly. *)
+  flush outCh;
+  let src = Unix.descr_of_in_channel inCh
+  and dst = Unix.descr_of_out_channel outCh in
+  if kind = `DATA && Fs.clone_file src dst then
+    notify len
+  else
+    let tryCopyFileRange src dst src_offs len fallback notify =
+      let fallback' copied =
+        (* Fallback to read-write loop expects that seek positions in input
+           and output fds have not changed. By invariant, if [copyFileRange]
+           succeeded partially then the seek position of output fd was updated
+           accordingly. To not break fallback, the seek position of input fd
+           must be updated by the same amount. *)
+        let open Uutil in
+        if copied <> Filesize.zero then begin
+          let pos =
+            Int64.add (Filesize.toInt64 src_offs) (Filesize.toInt64 copied) in
+          LargeFile.seek_in inCh pos
+        end;
+        fallback ()
+      in
+      copyFileRange src dst src_offs len fallback' notify
+    in
+    match kind with
+    | `DATA -> tryCopyFileRange src dst Uutil.Filesize.zero len fallback notify
+    | `DATA_APPEND offs -> tryCopyFileRange src dst offs len fallback notify
+    | `RESS -> fallback ()
+
+let copyByPath fspathFrom pathFrom fspathTo pathTo =
+  Fs.clone_path
+    (Fspath.concat fspathFrom pathFrom)
+    (Fspath.concat fspathTo pathTo)
+
 (* The fds opened in this function normally shouldn't be tracked for extra
    cleanup at connection close because this is sequential non-Lwt code. Yet,
    there is a risk that code called by [Uutil.showProgress] may include Lwt
@@ -423,18 +503,25 @@ let readPropsExtDataG root path desc =
    [closeFile*] functions). *)
 let copyContents fspathFrom pathFrom fspathTo pathTo fileKind fileLength ido =
   let use_id f = match ido with Some id -> f id | None -> () in
+  if fileKind = `DATA && copyByPath fspathFrom pathFrom fspathTo pathTo then
+    use_id (fun id -> Uutil.showProgress id fileLength "l")
+  else
+  (* Open fds only if copying by path did not work *)
   let inFd = openFileIn fspathFrom pathFrom fileKind in
   protect
     (fun () ->
        let outFd = openFileOut fspathTo pathTo fileKind fileLength in
        protect
          (fun () ->
-            Uutil.readWriteBounded inFd outFd fileLength
-              (fun l ->
+            let showProgress l =
                  use_id (fun id ->
 (* (Util.msg "Copied file %s (%d bytes)\n" (Path.toString pathFrom) l); *)
                    if fileKind <> `RESS then Abort.checkAll ();
-                   Uutil.showProgress id (Uutil.Filesize.ofInt l) "l"));
+                   Uutil.showProgress id l "l")
+            in
+            let fallback () = Uutil.readWriteBounded inFd outFd fileLength
+              (fun l -> showProgress (Uutil.Filesize.ofInt l)) in
+            copyFile inFd outFd fileKind fileLength fallback showProgress;
             closeFileIn inFd;
             closeFileOut outFd;
 (* ignore (Sys.command ("ls -l " ^ (Fspath.toString (Fspath.concat fspathTo pathTo)))) *)

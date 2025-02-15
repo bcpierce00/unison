@@ -44,6 +44,16 @@ val file_exists : fspath -> bool
 
 (****)
 
+(* [clone_path] does not raise exceptions. *)
+val clone_path : fspath -> fspath -> bool
+(* [clone_file] does not raise exceptions. *)
+val clone_file : Unix.file_descr -> Unix.file_descr -> bool
+(* [copy_file] updates destination file seek position if and only if
+   writing succeeded, returning the number of bytes written. *)
+val copy_file : Unix.file_descr -> Unix.file_descr -> int64 -> int -> int
+
+(****)
+
 val hasInodeNumbers : unit -> bool
 val hasSymlink : unit -> bool
 
