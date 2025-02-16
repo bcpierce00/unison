@@ -94,6 +94,13 @@ module Rsync :
            int                   (* block size *)
         -> in_channel            (* old file descriptor *)
         -> out_channel           (* output file descriptor *)
+        -> ?copyFn:              (* function for optimized copying *)
+           (   Uutil.Filesize.t  (* input file offset *)
+            -> Uutil.Filesize.t  (* data length *)
+            -> fallback:         (* default function for copying *)
+               (Uutil.Filesize.t (* bytes copied before fallback *)
+                -> unit)
+            -> unit)
         -> (int -> unit)         (* progress report *)
         -> transfer_instruction  (* transfer instruction received *)
         -> bool

@@ -832,6 +832,14 @@ let transferFileContents
                   fspathTo pathTo fileKind srcFileSize outfd id in
               let eof =
                 Transfer.Rsync.rsyncDecompress blockSize ifd fd showProgress ti
+                  ~copyFn:(fun in_offs len ~fallback ->
+                    (* Flush the buffered output channel just in case since
+                       we manipulate the channel's underlying fd directly. *)
+                    flush fd;
+                    copyFileRange
+                      (Unix.descr_of_in_channel ifd)
+                      (Unix.descr_of_out_channel fd)
+                      in_offs len fallback (fun _ -> ()))
               in
               if eof then close_all infd outfd))
       else
