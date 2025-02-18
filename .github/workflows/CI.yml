@@ -548,7 +548,7 @@ jobs:
 
     - name: Package
       shell: bash
-      run: cd '${{ steps.vars.outputs.PKG_DIR }}/' && ${{ steps.vars.outputs.COMPRESS_CMD }} '../${{ steps.vars.outputs.PKG_NAME }}' *
+      run: cd '${{ steps.vars.outputs.STAGING_DIR }}/' && ${{ steps.vars.outputs.COMPRESS_CMD }} '${{ steps.vars.outputs.PKG_NAME }}' *
 
     - uses: actions/upload-artifact@v4
       if: matrix.job.publish
@@ -1112,6 +1112,7 @@ jobs:
         unset REF_TAG ; case "${GITHUB_REF}" in refs/tags/*) REF_TAG="${GITHUB_REF#refs/tags/}" ;; esac;
         PKG_VER="${REF_TAG:-git_$REF_SHAS}"
         PKG_VER="${PKG_VER#v}"
+        echo PKG_DIR="unison-${PKG_VER}${{ matrix.job.fnsuffix }}" >> $GITHUB_OUTPUT
         echo PKG_NAME="unison-${PKG_VER}${{ matrix.job.fnsuffix }}.tar.gz" >> $GITHUB_OUTPUT
         echo REF_SHAS=${REF_SHAS} >> $GITHUB_OUTPUT
 
@@ -1141,18 +1142,18 @@ jobs:
 
     - name: Package
       if: matrix.job.publish
-      run: cd pkg && tar czf '${{ steps.vars.outputs.PKG_NAME }}' *
+      run: mv pkg '${{ steps.vars.outputs.PKG_DIR }}' && tar czf '${{ steps.vars.outputs.PKG_NAME }}' '${{ steps.vars.outputs.PKG_DIR }}'
 
     - uses: actions/upload-artifact@v4
       if: matrix.job.publish
       with:
         name: ${{ steps.vars.outputs.PKG_NAME }}___ocaml-${{ matrix.job.ocaml-version }}.ubuntu_compat-publish
-        path: pkg/${{ steps.vars.outputs.PKG_NAME }}
+        path: ${{ steps.vars.outputs.PKG_NAME }}
 
     - name: Publish
       if: github.ref_type == 'tag' && startsWith(github.ref_name, 'v') && matrix.job.publish
       uses: softprops/action-gh-release@v1
       with:
-        files: pkg/${{ steps.vars.outputs.PKG_NAME }}
+        files: ${{ steps.vars.outputs.PKG_NAME }}
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
