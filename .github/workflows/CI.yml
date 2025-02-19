@@ -82,12 +82,13 @@ jobs:
         STAGING_DIR='_staging'
         outputs STAGING_DIR
         # parse commit reference info
+        GIT_SHA=${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
         echo GITHUB_REF=${GITHUB_REF}
-        echo GITHUB_SHA=${GITHUB_SHA}
+        echo GIT_SHA=${GIT_SHA}
         REF_NAME="${GITHUB_REF#refs/*/}"
         unset REF_BRANCH ; case "${GITHUB_REF}" in refs/heads/*) REF_BRANCH="${GITHUB_REF#refs/heads/}" ;; esac;
         unset REF_TAG ; case "${GITHUB_REF}" in refs/tags/*) REF_TAG="${GITHUB_REF#refs/tags/}" ;; esac;
-        REF_SHAS="${GITHUB_SHA:0:8}"
+        REF_SHAS="${GIT_SHA:0:8}"
         outputs REF_BRANCH REF_NAME REF_SHAS REF_TAG
         # deployable tag? (ie, leading "vM" or "M"; M == version number)
         unset DEPLOY ; if [[ $REF_TAG =~ ^[vV]?[0-9].* ]]; then DEPLOY='true' ; fi
@@ -1108,7 +1109,7 @@ jobs:
     - name: Initialize packaging variables
       id: vars
       run: |
-        REF_SHAS=$(echo '${{ github.sha }}' | awk '{ print substr($0, 1, 8) }')
+        REF_SHAS=$(echo '${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}' | awk '{ print substr($0, 1, 8) }')
         unset REF_TAG ; case "${GITHUB_REF}" in refs/tags/*) REF_TAG="${GITHUB_REF#refs/tags/}" ;; esac;
         PKG_VER="${REF_TAG:-git_$REF_SHAS}"
         PKG_VER="${PKG_VER#v}"
