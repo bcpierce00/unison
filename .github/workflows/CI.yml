@@ -95,7 +95,7 @@ jobs:
         outputs DEPLOY
         # package name
         PKG_suffix='.tar.gz' ; case '${{ matrix.job.os }}' in windows-*) PKG_suffix='.zip' ;; esac;
-        PKG_VER="${REF_TAG:-git_$REF_SHAS}"
+        PKG_VER="${REF_TAG:${{ github.event_name == 'pull_request' && format('-unmerged-pr-{0}', github.event.pull_request.number) || '' }}-git_$REF_SHAS}"
         PKG_VER="${PKG_VER#v}"
         PKG_BASENAME="unison-${PKG_VER}${{ matrix.job.fnsuffix }}"
         PKG_NAME="${PKG_BASENAME}${PKG_suffix}"
@@ -1111,7 +1111,7 @@ jobs:
       run: |
         REF_SHAS=$(echo '${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}' | awk '{ print substr($0, 1, 8) }')
         unset REF_TAG ; case "${GITHUB_REF}" in refs/tags/*) REF_TAG="${GITHUB_REF#refs/tags/}" ;; esac;
-        PKG_VER="${REF_TAG:-git_$REF_SHAS}"
+        PKG_VER="${REF_TAG:${{ github.event_name == 'pull_request' && format('-unmerged-pr-{0}', github.event.pull_request.number) || '' }}-git_$REF_SHAS}"
         PKG_VER="${PKG_VER#v}"
         echo PKG_DIR="unison-${PKG_VER}${{ matrix.job.fnsuffix }}" >> $GITHUB_OUTPUT
         echo PKG_NAME="unison-${PKG_VER}${{ matrix.job.fnsuffix }}.tar.gz" >> $GITHUB_OUTPUT
