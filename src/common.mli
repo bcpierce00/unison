@@ -75,7 +75,9 @@ and updateContent251 =
       of string                       (*   - link text *)
 
 type prevState =
-    Previous of Fileinfo.typ * Props.t * Os.fullfingerprint * Osx.ressStamp
+  | PrevDir of Props.t
+  | PrevFile of Props.t * Os.fullfingerprint * Fileinfo.stamp * Osx.ressStamp
+  | PrevSymlink
   | New
 
 type contentschange =
@@ -118,15 +120,81 @@ val uc_of_compat251 : updateContent251 -> updateContent
 (*            COMMON TYPES SHARED BY RECONCILER AND TRANSPORT AGENT          *)
 (*****************************************************************************)
 
+(* `MovedOut is set as the status on the old path. In this case, the new path
+   will not have a separate difference record at all (the corresponding
+   replicaContent records for both replicas are embedded in the `MovedOut
+   status). Status of the new path is guaranteed to be not conflicting.
+   `MovedOut is a combination of `Deleted on the old path and `Created on the
+   new path. The virtual status equivalent for both paths combined is
+   `Unchanged or `PropsChanged, meaning that except for the path change (and
+   potentially the props), the file/dir contents have not changed.
+
+       (in the illustrations below, the boxes with double lines represent
+          the two replicaContents of the one difference record that is
+                  visible to the user and will be propagated)
+
+                         REPLICA A                          REPLICA B
+
+                                                on path n'
+                              /   +--------------+      +-----------------+
+         on path n           |    | p = `Created |      | q = `Unchanged  |
+  +======================+   |    +--------------+      +-----------------+
+  |                      |   /
+  | `MovedOut (n', p, q) |  <                   on path n
+  |                      |   \    +--------------+      +=================+
+  +======================+   |    |   `Deleted   |      | anything except |
+                             |    +--------------+      |    `Deleted     |
+                              \                         +=================+
+
+
+   If `MovedOut can not be set (for example, there is a conflict on the new
+   path) then `MovedIn may be set instead. `MovedOut and `MovedIn are never
+   used together on a pair of paths.
+   `MovedIn is set as the status of the new path. In this case, the old path
+   will not have a separate difference record at all (the corresponding
+   replicaContent records for both replicas are embedded in the `MovedIn
+   status). Status of the old path is guaranteed to be not conflicting.
+   `MovedIn is a combination of `Created on the new path and `Deleted on the
+   old path. The virtual status equivalent for both paths combined is
+   `Unchanged or `PropsChanged, meaning tat except for the path change (and
+   potentially the props), the file/dir contents have not changed.
+
+                         REPLICA A                          REPLICA B
+
+                                                on path n
+                              /   +--------------+      +================+
+         on path n           |    |   `Created   |      |    anything    |
+  +======================+   |    +--------------+      +================+
+  |                      |   /
+  | `MovedIn  (n', p, q) |  <
+  |                      |   \                  on path n'
+  +======================+   |    +--------------+      +----------------+
+                             |    | p = `Deleted |      | q = `Unchanged |
+                              \   +--------------+      +----------------+
+
+  (Usually the status of replica b on path n will not be `Unchanged, because
+   then `MovedOut will be used instead. It can be `Unchanged if typ is not
+   `ABSENT. In other words, `Create in replica b is overwriting something.)
+
+   Note that even though path for only one replica is recorded in `MovedOut/
+   `MovedIn, it will not cause trouble when in case insensitive mode on a
+   case sensitive filesystem (commit 005a53075b998dba27eeff74a1fc8f9d73558fb8
+   for details). Correct path translation is done by [Update.translatePath]. *)
 type status =
   [ `Deleted
   | `Modified
   | `PropsChanged
   | `Created
+  | `MovedOut of Path.t          (* new path *)
+              * replicaContent   (* rc of new path, this replica *)
+              * replicaContent   (* rc of new path, other replica *)
+  | `MovedIn of Path.t           (* old path *)
+              * replicaContent   (* rc of old path, this replica *)
+              * replicaContent   (* rc of old path, other replica *)
   | `Unchanged ]
 
 (* Variable name prefix: "rc" *)
-type replicaContent =
+and replicaContent =
   { typ : Fileinfo.typ;
     status : status;
     desc : Props.t;                (* Properties (for the UI) *)
