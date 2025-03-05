@@ -6,7 +6,7 @@ on:
 
 jobs:
   docs:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
 
     steps:
     - run: sudo apt-get update
@@ -44,10 +44,9 @@ jobs:
         - { os: macos-14      , ocaml-version: 5.3.x }
         - { os: macos-14      , ocaml-version: 4.14.x           , publish: true  , fnsuffix: -macos-arm64 }
         - { os: macos-13      , ocaml-version: 4.14.x           , publish: true  , fnsuffix: -macos-x86_64 }
-        - { os: ubuntu-22.04  , ocaml-version: 5.3.x }
+        - { os: ubuntu-24.04  , ocaml-version: 5.3.x }
         - { os: ubuntu-22.04  , ocaml-version: 4.14.x }
         - { os: ubuntu-22.04  , ocaml-version: "ocaml-variants.4.14.2+options,ocaml-option-32bit", publish: true, fnsuffix: -ubuntu-i386 }
-        - { os: ubuntu-20.04  , ocaml-version: 4.14.x }
         - { os: windows-2022  , ocaml-version: "ocaml.4.14.2,system-mingw"              , publish: true  , fnsuffix: -windows-x86_64 }
         - { os: windows-2019  , ocaml-version: "ocaml.4.14.2,system-mingw,arch-x86_32"  , publish: true  , fnsuffix: -windows-i386 }
         - { os: windows-2022  , ocaml-version: "ocaml.4.14.2,system-msvc" }
@@ -429,16 +428,6 @@ jobs:
 
         '@ | patch -Nu -p 1
         opam pin --no-action add lablgtk3 .
-
-    # [2024-12] Recent dune release switched from using pkg-config to pkgconf.
-    # However, pkgconf is broken in many environments and this breaks building
-    # cairo2, a dependency for lablgtk3 (and likely would break lablgtk3, too,
-    # if building ever got to that point). ubuntu-20.04 is one such case
-    # (pkgconf segfaults). As a workaround, just uninstall pkgconf, which makes
-    # dune fall back to pkg-config.
-    - name: "Ubuntu 20.04: Prepare lablgtk install"
-      if: ${{ contains(matrix.job.os, 'ubuntu-20.04') }}
-      run: sudo apt-get remove pkgconf
 
     - name: lablgtk install
       ## [2020-09] non-working/unavailable for musl OCaml variant
@@ -990,7 +979,7 @@ jobs:
       fail-fast: false
       matrix:
         job:
-        - { os: ubuntu-22.04   , ocaml-compiler: 4.12.x }
+        - { os: ubuntu-24.04   , ocaml-compiler: 4.12.x }
         - { os: macos-14       , ocaml-compiler: 4.14.x }
 
     runs-on: ${{ matrix.job.os }}
@@ -1018,7 +1007,7 @@ jobs:
       fail-fast: false
       matrix:
         job:
-        - { os: ubuntu-22.04   , ocaml-compiler: 4.14.x }
+        - { os: ubuntu-24.04   , ocaml-compiler: 4.14.x }
 
     runs-on: ${{ matrix.job.os }}
 
@@ -1053,7 +1042,7 @@ jobs:
         - { ocaml-version: 4.12.x }
         - { ocaml-version: 4.08.x }
 
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     steps:
     - run: sudo apt-get update
@@ -1092,16 +1081,9 @@ jobs:
         test -S ./localsocket/test.sock
         ./src/unison -ui text -selftest testr3 socket://{./localsocket/test.sock}/testr4 -killserver
 
-    # [2024-12] Recent dune release switched from using pkg-config to pkgconf.
-    # However, pkgconf is broken in many environments and this breaks building
-    # cairo2, a dependency for lablgtk3 (and likely would break lablgtk3, too,
-    # if building ever got to that point). ubuntu-20.04 is one such case
-    # (pkgconf segfaults). As a workaround, just uninstall pkgconf, which makes
-    # dune fall back to pkg-config.
     - name: Build GUI
       if: ${{ !contains(matrix.job.ocaml-version, '-musl') }}
       run: |
-        sudo apt-get remove pkgconf
         opam depext --install --verbose --yes lablgtk3 && opam install ocamlfind
         opam exec -- make gui
         cp src/unison-gui pkg/bin/
