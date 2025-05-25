@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: MIT-0
+[Desktop Entry]
+Type=Application
+Exec=unison-gui
+Name=Unison
+GenericName=File Synchronizer
+Comment=GUI for Unison file synchronizer
+Terminal=false
+Icon=unison-gui
+StartupNotify=true
+Categories=Utility;
