@@ -241,7 +241,14 @@ jobs:
         $env:PIPX_DEFAULT_PYTHON = (Get-Command -CommandType Application python -Syntax | Select-Object -First 1)
         $env:PIPX_HOME = ".\pipx"
         mkdir pipx
-        pipx install gvsbuild
+        # [2025-07] For a currently unknown reason, since gvsbuild 2025.3.0,
+        # libexpat no longer gets installed in the correct location.
+        # fontconfig expects libexpat at
+        # D:\gtk-build\gtk\{arch}\release\lib\libexpat.lib
+        # but it is actually installed at
+        # D:\gtk-build\build\{arch}\release\expat-rel\lib\libexpat.lib
+        # For now, work around this by locking gvsbuild to version 2025.2.0
+        pipx install gvsbuild==2025.2.0
         gvsbuild build --platform ${{ steps.vars.outputs.WINBUILD_ARCH }} --configuration release --ninja-opts -j2 --vs-install-path $(Resolve-Path "C:\Program Files*\Microsoft Visual Studio\*\*\" | Select-Object -First 1) --build-dir D:\gtk-build gtk3
         Move-Item "D:\gtk-build\gtk\*\release" D:\gtk
         # Reset PKG_CONFIG_PATH, which would otherwise point to Python installation in GHA
@@ -522,7 +529,7 @@ jobs:
       run: |
         # Make sure MSVC is in the path (for dumpbin) and GTK is first in path
         opam env | Invoke-Expression
-        $env:Path = "C:\gtk\bin;" + $env:Path
+        $env:Path = "D:\gtk\bin;" + $env:Path
         # collect any needed dlls/libraries
         function recursive_deps { param ($prefix, $list, $filename) if ($list.Keys -contains $filename.ToLower()) { Write-Debug "$prefix  NOT dumping $filename"; return }; Write-Debug "$prefix  DUMPING $filename"; $files = (dumpbin /dependents $filename | ForEach-Object { $_.Trim() | Where-Object { $_ -Like "*.dll" } } | ForEach-Object { Get-Command -CommandType Application -Syntax -ErrorAction SilentlyContinue $_ | Select-Object -First 1 | Where-Object { $_ -notlike "$env:WINDIR*" -and $_ -notlike "*\api-ms-win-*" } }); $list[$filename.ToLower()] = $files; $files | ForEach-Object { recursive_deps "    $prefix" $list $_ } }
         function all_deps { param ($filename) $dep_list = @{}; recursive_deps "" $dep_list $filename; $dep_list.Values | ForEach-Object {$_} | Sort-Object -CaseSensitive | Get-Unique }
@@ -531,7 +538,7 @@ jobs:
         cd ..
         # glib settings schema
         mkdir -p "share\glib-2.0\schemas"
-        Split-Path (Get-Command -Type Application glib-compile-schemas).Source | Join-Path -ChildPath "..\share\glib-2.0\schemas\gschemas.compiled" | Copy-Item -Destination "share\glib-2.0\schemas"
+        Split-Path (Get-Command -Type Application glib-compile-schemas | Select-Object -First 1).Source | Join-Path -ChildPath "..\share\glib-2.0\schemas\gschemas.compiled" | Copy-Item -Destination "share\glib-2.0\schemas"
         # add gtk configuration
         mkdir -p "etc\gtk-3.0"
         "[Settings]`ngtk-button-images=true`n" > "etc\gtk-3.0\settings.ini"
