@@ -281,12 +281,17 @@ typedef struct _FSCTL_GET_INTEGRITY_INFORMATION_BUFFER {
 #define FSCTL_DUPLICATE_EXTENTS_TO_FILE 0x98344
 #endif
 
+#if !defined(__MINGW64_VERSION_MAJOR) || __MINGW64_VERSION_MAJOR < 13
+
+/* This typedef is included in mingw since version 13.0.0 */
 typedef struct _DUPLICATE_EXTENTS_DATA {
   HANDLE        FileHandle;
   LARGE_INTEGER SourceFileOffset;
   LARGE_INTEGER TargetFileOffset;
   LARGE_INTEGER ByteCount;
 } DUPLICATE_EXTENTS_DATA;
+
+#endif /* __MINGW64_VERSION_MAJOR < 13 */
 
 #endif /* defined(__MINGW32__) */
 
