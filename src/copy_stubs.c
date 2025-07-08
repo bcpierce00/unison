@@ -328,22 +328,9 @@ BOOL unsn_copy_file_get_sparse(HANDLE h)
   return (info.FileAttributes & FILE_ATTRIBUTE_SPARSE_FILE) != 0;
 }
 
-BOOL unsn_copy_file_api_checked = FALSE;
-BOOL unsn_copy_file_api_available = FALSE;
-
 CAMLprim value unison_copy_file(value in_fd, value out_fd, value in_offs, value len)
 {
   CAMLparam4(in_fd, out_fd, in_offs, len);
-
-  if (!unsn_copy_file_api_checked) {
-    unsn_copy_file_api_checked = TRUE;
-    unsn_copy_file_api_available =
-      GetProcAddress(GetModuleHandleW(L"kernel32.dll"),
-                                      "GetVolumeInformationByHandleW") != NULL;
-  }
-  if (!unsn_copy_file_api_available) {
-    caml_unix_error(ENOSYS, "copy_file", Nothing);
-  }
 
   HANDLE hin = Handle_val(in_fd);
   HANDLE hout = Handle_val(out_fd);
