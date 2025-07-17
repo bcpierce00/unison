@@ -168,7 +168,7 @@ let display message =
 let displayWhenInteractive message =
   if not (Prefs.read Globals.batch) then alwaysDisplay message
 
-let getInput () =
+let readInput () =
   match !cbreakMode with
     None -> input_line stdin
   | Some funs ->
@@ -191,19 +191,69 @@ let getInput () =
       funs.System.startReading ();
       let c = input_char () in
       funs.System.stopReading ();
-      let c = match c with
-        | "\000" -> "(invalid input)" (* Windows*)
-        | "\n" | "\r" -> ""
-        | c when Sys.win32 -> Unicode.protect c
-                 (* This is not correct because [Unicode.protect] assumes
-                    Latin1 encoding. But it does not matter here as currently
-                    non-ASCII input is not expected to be processed anyway. *)
-                 (* FIX: Must reassess this once proper UTF-8 input becomes
-                    possible and widespread on Windows. *)
-        | c -> c in
-      if c <> "" && c.[0] <> '\027' then
-        display c;
       c
+
+(* This is a really basic and dumb parser to extract input tokens from
+   non-delimited input read in raw terminal mode. Input tokens are:
+   US-ASCII byte, Latin1 byte, Unicode "character" in UTF-8 encoding,
+   ANSI escape sequence.
+   The parser does not support partial reads from the input; that is,
+   tokens split between reads from input are not supported.
+   Normally with interactive input we'd read one keypress at a time
+   but this won't always work (extremely fast key repeat, pressing
+   multiple keys at once, buffering by ssh, non-interactive input and
+   other similar situations). *)
+let getInput =
+  let inputBuffer = ref "" in
+  let subInput s len =
+    if String.length s > len then
+      inputBuffer := String.sub s len (String.length s - len);
+    String.sub s 0 len
+  in
+  let nextInputToken () =
+    let s = if !inputBuffer <> "" then !inputBuffer else readInput () in
+    inputBuffer := "";
+    if s = "" then
+      s
+    else if s.[0] = '\027' then
+      (* ANSI escape sequence *)
+      (* If a beginning of an escape sequence is detected then the
+         entire input string is considered as the escape sequence,
+         or until another escape character is found. *)
+      match String.index_from s 1 '\027' with
+      | i -> subInput s i
+      | exception  (Not_found | Invalid_argument _) -> s
+    else if s.[0] < '\128' then
+      (* US-ASCII byte *)
+      subInput s 1
+    else if s.[0] < '\224' && String.length s >= 2 &&
+        (Unicode.check_utf_8 (String.sub s 0 2)) then
+      (* UTF-8 2-byte sequence *)
+      subInput s 2
+    else if s.[0] < '\240' && String.length s >= 3 &&
+        (Unicode.check_utf_8 (String.sub s 0 3)) then
+      (* UTF-8 3-byte sequence *)
+      subInput s 3
+    else if String.length s >= 4 &&
+        (Unicode.check_utf_8 (String.sub s 0 4)) then
+      (* UTF-8 4-byte sequence *)
+      subInput s 4
+    else
+      (* Latin1 byte *)
+      subInput s 1
+  in
+  fun () ->
+    let c = match nextInputToken () with
+      | "\000" -> "(invalid input)" (* Windows*)
+      | "\n" | "\r" -> ""
+      | c when not (Unicode.check_utf_8 c) -> Unicode.protect c
+               (* This is not correct because [Unicode.protect] assumes
+                  Latin1 encoding. But it does not matter here as currently
+                  non-ASCII input is not expected to be processed anyway. *)
+      | c -> c in
+    if c <> "" && c.[0] <> '\027' then
+      display c;
+    c
 
 let newLine () =
   (* If in dumb mode (i.e. not in cbreak mode) the newline is entered by the
