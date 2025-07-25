@@ -314,14 +314,16 @@ let makeSymlink =
 
 (* ------------------------------------------------------------ *)
 
-let performRename fspathTo localPathTo workingDir pathFrom pathTo prevArch =
-  debug (fun () -> Util.msg "Renaming %s to %s in %s; root is %s\n"
+let performRename fspathTo localPathTo (workingDirFrom, pathFrom)
+      (workingDirTo, pathTo) ?exdev prevArch =
+  debug (fun () -> Util.msg "Renaming %s in %s to %s in %s; root is %s\n"
       (Path.toString pathFrom)
+      (Fspath.toDebugString workingDirFrom)
       (Path.toString pathTo)
-      (Fspath.toDebugString workingDir)
+      (Fspath.toDebugString workingDirTo)
       (Fspath.toDebugString fspathTo));
-  let source = Fspath.concat workingDir pathFrom in
-  let target = Fspath.concat workingDir pathTo in
+  let source = Fspath.concat workingDirFrom pathFrom in
+  let target = Fspath.concat workingDirTo pathTo in
   Util.convertUnixErrorsToTransient
     (Printf.sprintf "renaming %s to %s"
        (Fspath.toDebugString source) (Fspath.toDebugString target))
@@ -352,8 +354,8 @@ let performRename fspathTo localPathTo workingDir pathFrom pathTo prevArch =
         | _                       -> true (* Safe default *) in
       if moveFirst then begin
         debug (fun() -> Util.msg "rename: moveFirst=true\n");
-        let tmpPath = Os.tempPath workingDir pathTo in
-        let temp = Fspath.concat workingDir tmpPath in
+        let tmpPath = Os.tempPath workingDirTo pathTo in
+        let temp = Fspath.concat workingDirTo tmpPath in
         let temp' = Fspath.toDebugString temp in
 
         debug (fun() ->
@@ -374,7 +376,7 @@ let performRename fspathTo localPathTo workingDir pathFrom pathTo prevArch =
               debug (fun() -> Util.msg "rename %s to %s\n"
                        (Fspath.toDebugString source)
                        (Fspath.toDebugString target));
-              Os.rename "renameLocal(2)"
+              Os.rename "renameLocal(2)" ?exdev
                 source Path.empty target Path.empty))
           (fun _ -> clearCommitLog tmpPath);
         (* It is ok to leave a temporary file.  So, the log can be
@@ -383,7 +385,7 @@ let performRename fspathTo localPathTo workingDir pathFrom pathTo prevArch =
       end else begin
         debug (fun() -> Util.msg "rename: moveFirst=false\n");
         Stasher.backup fspathTo localPathTo `ByCopying prevArch;
-        Os.rename "renameLocal(3)" source Path.empty target Path.empty;
+        Os.rename "renameLocal(3)" ?exdev source Path.empty target Path.empty;
         debug (fun() ->
           if filetypeFrom = `FILE then
             Util.msg
@@ -416,7 +418,7 @@ let renameLocal
   let pathTo = match finishCopy copyInfo with
   | Some conflictPath -> conflictPath
   | None -> pathTo in
-  performRename fspathTo localPathTo workingDir pathFrom pathTo prevArch;
+  performRename fspathTo localPathTo (workingDir, pathFrom) (workingDir, pathTo) prevArch;
   begin match archOpt with
     Some archTo -> Stasher.stashCurrentVersion fspathTo localPathTo None;
                    Update.iterFiles fspathTo localPathTo archTo
@@ -776,6 +778,162 @@ let copy
 
 (* ------------------------------------------------------------ *)
 
+let moveArchiveLocal (fspath, (pathFrom, pathFrom', reverting)) =
+  (* We update the archive to reflect the move on disk only. Other changes
+     like props updates will be updated in the archive separately. *)
+  let localPathFrom = Update.translatePathLocal fspath pathFrom in
+  let localPathTo = Update.translatePathLocal fspath pathFrom' in
+  debug (fun () -> Util.msg "moveArchiveLocal: %s/%s to %s/%s\n"
+    (Fspath.toDebugString fspath)
+    (Path.toString localPathFrom)
+    (Fspath.toDebugString fspath)
+    (Path.toString localPathTo));
+  (* Archive update must be done first (before Stasher call) *)
+  if not reverting then begin
+    let prevSrcArch = Update.updateArchive fspath localPathFrom NoUpdates in
+    Update.replaceArchiveLocal fspath localPathTo prevSrcArch
+  end;
+  Update.replaceArchiveLocal fspath localPathFrom NoArchive;
+  Stasher.stashCurrentVersion fspath localPathTo None;
+  Lwt.return ()
+
+let moveArchiveOnRoot =
+  Remote.registerRootCmd "moveArchive"
+    Umarshal.(prod3 Path.m Path.m bool id id)
+    Umarshal.unit
+    moveArchiveLocal
+
+let moveLocal (fspath, ((pathSource, uiSource, pathTarget, uiTarget),
+                        (propsTarget, reverting, notDefault))) =
+  if reverting then debug (fun () -> Util.msg "moveLocal: reverting a move\n");
+  (* Calculate source and target paths *)
+  setupTargetPathsAndCreateParentDirectoryLocal
+    (fspath, (pathTarget, propsTarget))
+     >>= fun (workingDirTo, realPathTo, _, localPathTo) ->
+  let localPathFrom = Update.translatePathLocal fspath pathSource in
+  let (workingDirFrom, realPathFrom) =
+    Fspath.findWorkingDir fspath localPathFrom in
+  debug (fun () -> Util.msg "moveLocal: %s/%s to %s/%s\n"
+    (Fspath.toDebugString fspath)
+    (Path.toString localPathFrom)
+    (Fspath.toDebugString fspath)
+    (Path.toString localPathTo));
+  (* When in Unicode case-insensitive mode, we want to create files
+     with NFC normal-form filenames. *)
+  let realPathTo =
+    match Path.deconstructRev realPathTo with
+    | None -> assert false
+    | Some (name, parentPath) ->
+        Path.child parentPath (Name.normalize name)
+  in
+  (* Check that move source is unchanged *)
+  let fastCheck = Update.useFastChecking () in
+  let curSrcArch = Update.checkNoUpdates ~fastCheck fspath localPathFrom uiSource in
+  let copyInfo = prepareCopy workingDirTo realPathTo notDefault in
+  (* Make sure the target is unchanged, then do the rename.
+     (Note that there is an unavoidable race condition here...) *)
+  let curTgtArch = Update.checkNoUpdates fspath localPathTo uiTarget in
+  let realPathTo = match finishCopy copyInfo with
+  | Some conflictPath -> conflictPath
+  | None -> realPathTo in
+  Stasher.backup fspath localPathTo `AndRemove curTgtArch;
+  performRename fspath localPathTo
+    (workingDirFrom, realPathFrom) (workingDirTo, realPathTo) curTgtArch
+    ~exdev:(fun () -> raise_notrace (Util.Transient "EXDEV"));
+  Stasher.stashCurrentVersion fspath localPathTo None;
+  Update.iterFiles fspath localPathTo curSrcArch Xferhint.insertEntry;
+  (* Archive update must be done last *) (* TODO: but why tho? *)
+  if not reverting then begin
+    let prevSrcArch = Update.updateArchive fspath localPathFrom NoUpdates in
+    Update.replaceArchiveLocal fspath localPathTo prevSrcArch
+  end;
+  Update.replaceArchiveLocal fspath localPathFrom NoArchive;
+  (* Target archive is first updated to the common state after the previous
+     sync as this is the only thing the rename itself has achieved. Properties
+     are updated separately. If there remain any other updates in this root
+     that were not overwritten by props updates then they'll show up as changed
+     properties at the next sync. This will never happen with the current code
+     (because all properties are supposed to be overwritten once move-mode has
+     been enabled) but it may become possible in the future.
+
+     When reverting a move, only the move itself will be reverted. None of the
+     other potential (non-conflicting) changes that may have been done in
+     addition to the move will be reverted. The only exception is if any
+     (props) updates propagated from the other root overwrite a change in this
+     root. If there remain any other updates in this root that were not
+     overwritten by props updates then they'll show up as changes at the next
+     sync. This will not happen with the current code (because such updates
+     are not fed into move-mode but go straight to copy+delete) but it may
+     become possible in the future. *)
+  Lwt.return ()
+
+let moveOnRoot = Remote.registerRootCmd "move"
+  Umarshal.(prod2
+              (prod4 Path.m Common.mupdateItem Path.m Common.mupdateItem id id)
+              (prod3 (list Props.mx) bool bool id id)
+            id id)
+  Umarshal.unit
+  moveLocal
+
+let move
+      rootFrom
+        pathFrom uiFrom
+        pathFrom' uiFrom' newDesc propsFrom'
+      rootTo
+        pathTo uiTo oldDesc
+        pathTo' uiTo' propsTo'
+      notDefault size id =
+  debug (fun () ->
+    Util.msg "move %s %s --> %s\n   %s %s --> %s\n"
+      (root2string rootFrom) (Path.toString pathFrom) (Path.toString pathFrom')
+      (root2string rootTo) (Path.toString pathTo) (Path.toString pathTo'));
+  (* Decide if we're propagating a move made in this root to the other root
+     or reverting a move made in the other root. Reverting is currently only
+     supported if the move hasn't overwritten anything.
+     (Propably could use [notDefault] to know if reverting, but don't want
+     to rely on that.) *)
+  let reverting = match uiFrom with
+    | Updates (Absent, New) -> true
+    | _ -> false
+  in
+  (* Do some crude sanity checks first (even though both the Moves and Transport
+     module have done their part). Verify that uiFrom means the source has
+     moved completely and is now empty. This is the only scenario we currently
+     support. Verify that uiTo and uiTo' mean (roughly) that a file or a
+     directory is moved. When reverting, the original move source (now the
+     target to revert back to) must have been completely emptied. *)
+  begin match uiFrom, uiTo, uiTo' with
+  | Updates (Absent, _),
+      (NoUpdates | Updates ((File _ | Dir _), _)),
+      _ when not reverting -> ()
+  | Updates (Absent, _),
+      Updates ((File _ | Dir _), _),
+      Updates (Absent, _) when reverting -> ()
+  | _ -> raise (Util.Transient "Internal error. Please report this bug (keep\n\
+                 the details of what you were doing) and (temporarily)\n\
+                 turn off the \"moves\" preference to continue with\n\
+                 update propagation.")
+  end;
+  Update.translatePath rootFrom pathFrom' >>= fun localPathFrom ->
+  normalizeProps propsFrom' propsTo'
+  |> readParentsExtData rootFrom localPathFrom [] >>= fun parentProps ->
+  moveOnRoot rootTo ((pathTo, uiTo, pathTo', uiTo'),
+                     (parentProps, reverting, notDefault)) >>= fun () ->
+  (* Having reached here, we can't stop or roll back anymore. We go ahead and
+     update the source archive. If any props updates fail then they will have
+     to be picked up by the next sync. *)
+  moveArchiveOnRoot rootFrom (pathFrom, pathFrom', reverting) >>= fun () ->
+  Uutil.showProgress id size "mov";
+  (* Set the props after the rename to avoid the move changing them
+     (unlikely, but may happen with inheritance, xattrs, and such).
+
+     In current implementation, if a directory was moved then props are set
+     on the directory itself only. Any props changes to children have to be
+     propagated by the next sync. *)
+  setProp rootFrom pathFrom' rootTo pathTo' newDesc oldDesc uiFrom' NoUpdates
+
+(* ------------------------------------------------------------ *)
+
 let (>>=) = Lwt.bind
 
 let diffCmd =
@@ -1036,13 +1194,13 @@ let merge root1 path1 ui1 root2 path2 ui2 id showMergeFn =
       (* retrieve the archive for this file, if any *)
       let arch =
         match ui1, ui2 with
-        | Updates (_, Previous (_,_,fp,_)), Updates (_, Previous (_,_,fp2,_)) ->
+        | Updates (_, PrevFile (_,fp,_,_)), Updates (_, PrevFile (_,fp2,_,_)) ->
             if fp = fp2 then
               Stasher.getRecentVersion fspath1 localPath1 fp
             else
               assert false
-        | NoUpdates, Updates(_, Previous (_,_,fp,_))
-        | Updates(_, Previous (_,_,fp,_)), NoUpdates ->
+        | NoUpdates, Updates(_, PrevFile (_,fp,_,_))
+        | Updates(_, PrevFile (_,fp,_,_)), NoUpdates ->
             Stasher.getRecentVersion fspath1 localPath1 fp
         | Updates (_, New), Updates(_, New)
         | Updates (_, New), NoUpdates
@@ -1251,8 +1409,8 @@ let merge root1 path1 ui1 root2 path2 ui2 id showMergeFn =
              let pref_desc =
                if Props.similar desc1' desc2' then Some desc1 else
                match ui1, ui2 with
-               | Updates (_, Previous (_, pdesc1, _, _)),
-                 Updates (_, Previous (_, pdesc2, _, _)) ->
+               | Updates (_, PrevFile (pdesc1, _, _, _)),
+                 Updates (_, PrevFile (pdesc2, _, _, _)) ->
                    if Props.similar pdesc1 desc1 then Some desc1 else
                    if Props.similar pdesc2 desc2 then Some desc2 else
                    if Props.similar pdesc1 pdesc2 then Some pdesc1 else
