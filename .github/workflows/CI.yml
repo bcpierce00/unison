@@ -185,8 +185,8 @@ jobs:
         # [2022-11] This terrible (terrible) hack is here to forcibly skip
         # building the fontconfig cache because it can take 30-45 minutes
         # on GHA runners and is never needed anyway.
-        setup-x86_64.exe --quiet-mode --root "${CYGWIN_ROOT}" --site http://cygwin.mirror.constant.com --symlink-type=sys --local-package-dir D:/a --download --packages mingw64-${{ steps.vars.outputs.MinGW_ARCH }}-fontconfig
-        cd 'D:/a/https%3a%2f%2fcygwin.mirror.constant.com%2f/noarch/release/'mingw64-${{ steps.vars.outputs.MinGW_ARCH }}-fontconfig
+        setup-x86_64.exe --quiet-mode --root "${CYGWIN_ROOT}" --site http://cygwin.mirror.constant.com --symlink-type=sys --local-package-dir C:/a --download --packages mingw64-${{ steps.vars.outputs.MinGW_ARCH }}-fontconfig
+        cd 'C:/a/https%3a%2f%2fcygwin.mirror.constant.com%2f/noarch/release/'mingw64-${{ steps.vars.outputs.MinGW_ARCH }}-fontconfig
         CNAMEXZ=$(ls mingw64-${{ steps.vars.outputs.MinGW_ARCH }}-fontconfig*.tar.xz)
         CNAME=${CNAMEXZ%.xz}
         unxz ${CNAMEXZ}
@@ -195,18 +195,18 @@ jobs:
         sha512sum > sha512.sum
         CSZ=$(stat -c %s ${CNAMEXZ})
         SHASUM=$(sha512sum ${CNAMEXZ})
-        cd 'D:/a/https%3a%2f%2fcygwin.mirror.constant.com%2f/x86_64'
+        cd 'C:/a/https%3a%2f%2fcygwin.mirror.constant.com%2f/x86_64'
         mv setup.ini tsetup.ini
         rm -f setup*
         sed -E -e "\|install: noarch/release/mingw64-${{ steps.vars.outputs.MinGW_ARCH }}-fontconfig/${CNAMEXZ}|s/xz .+/xz ${CSZ} ${SHASUM%% *}/" tsetup.ini > setup.ini
         rm tsetup.ini
         sha512sum > sha512.sum
-        setup-x86_64.exe --quiet-mode --root "${CYGWIN_ROOT}" --symlink-type=sys --local-install --local-package-dir 'D:/a/https%3a%2f%2fcygwin.mirror.constant.com%2f' --mirror-mode --no-verify --packages mingw64-${{ steps.vars.outputs.MinGW_ARCH }}-fontconfig
+        setup-x86_64.exe --quiet-mode --root "${CYGWIN_ROOT}" --symlink-type=sys --local-install --local-package-dir 'C:/a/https%3a%2f%2fcygwin.mirror.constant.com%2f' --mirror-mode --no-verify --packages mingw64-${{ steps.vars.outputs.MinGW_ARCH }}-fontconfig
         # [2024-11] Not exactly sure what is happening here, but opam
         # packages using pkg-config will fail in Windows without this.
         # /usr/bin/pkg-config is a symlink to /usr/bin/pkgconf
         # This does not work when opam packages try to execute pkg-config
-        # directly (that is, D:\cygwin\bin\pkg-config).
+        # directly (that is, C:\cygwin\bin\pkg-config).
         # It looks like this issue is being worked around package-by-package
         # upstream, but the fix here is universal, so let's keep it for now.
         cp /usr/bin/pkgconf /usr/bin/pkg-config.exe
@@ -226,7 +226,7 @@ jobs:
       uses: actions/cache@v4
       with:
         key: wingtk-${{ matrix.job.os }}-${{ steps.vars.outputs.WINBUILD_ARCH }}
-        path: D:\gtk
+        path: C:\gtk
 
     - if: ${{ runner.os == 'Windows' && contains(matrix.job.ocaml-version, 'msvc') && !steps.win-gtk-cache.outputs.cache-hit }}
       uses: actions/setup-python@v5
@@ -244,13 +244,13 @@ jobs:
         # [2025-07] For a currently unknown reason, since gvsbuild 2025.3.0,
         # libexpat no longer gets installed in the correct location.
         # fontconfig expects libexpat at
-        # D:\gtk-build\gtk\{arch}\release\lib\libexpat.lib
+        # C:\gtk-build\gtk\{arch}\release\lib\libexpat.lib
         # but it is actually installed at
-        # D:\gtk-build\build\{arch}\release\expat-rel\lib\libexpat.lib
+        # C:\gtk-build\build\{arch}\release\expat-rel\lib\libexpat.lib
         # For now, work around this by locking gvsbuild to version 2025.2.0
         pipx install gvsbuild==2025.2.0
-        gvsbuild build --platform ${{ steps.vars.outputs.WINBUILD_ARCH }} --configuration release --ninja-opts -j2 --vs-install-path $(Resolve-Path "C:\Program Files*\Microsoft Visual Studio\*\*\" | Select-Object -First 1) --build-dir D:\gtk-build gtk3
-        Move-Item "D:\gtk-build\gtk\*\release" D:\gtk
+        gvsbuild build --platform ${{ steps.vars.outputs.WINBUILD_ARCH }} --configuration release --ninja-opts -j2 --vs-install-path $(Resolve-Path "C:\Program Files*\Microsoft Visual Studio\*\*\" | Select-Object -First 1) --build-dir C:\gtk-build gtk3
+        Move-Item "C:\gtk-build\gtk\*\release" C:\gtk
         # Reset PKG_CONFIG_PATH, which would otherwise point to Python installation in GHA
         "PKG_CONFIG_PATH=" >> "${env:GITHUB_ENV}"
 
@@ -260,7 +260,7 @@ jobs:
     #  shell: pwsh
     #  run: |
     #    Invoke-WebRequest https://github.com/wingtk/gvsbuild/releases/download/2024.11.1/GTK3_Gvsbuild_2024.11.1_x64.zip -OutFile GTK3.zip
-    #    Expand-Archive -Path GTK3.zip -DestinationPath D:\gtk
+    #    Expand-Archive -Path GTK3.zip -DestinationPath C:\gtk
 
     - name: "Windows: Prepare lablgtk install"
       if: ${{ runner.os == 'Windows' && contains(matrix.job.ocaml-version, 'msvc') }}
@@ -271,15 +271,15 @@ jobs:
         # [2024-12] Somehow this was not required before a dune update that
         # switched from using pkg-config to pkgconf, but doing this should not
         # hurt in any case.
-        Remove-Item -Force D:\cygwin\bin\pkgconf*
-        Remove-Item -Force D:\cygwin\bin\pkg-config*
-        "PKG_CONFIG=D:\gtk\bin\pkgconf.exe" >> "${env:GITHUB_ENV}"
+        Remove-Item -Force C:\cygwin\bin\pkgconf*
+        Remove-Item -Force C:\cygwin\bin\pkg-config*
+        "PKG_CONFIG=C:\gtk\bin\pkgconf.exe" >> "${env:GITHUB_ENV}"
         $env:Path = (${env:Path} -split ';' | Where-Object { $_ -Notlike "*cygwin*" }) -join ";"
         ##
-        "PATH=D:\gtk\bin;${env:Path}" >> "${env:GITHUB_ENV}"
-        "LIB=D:\gtk\lib;${env:LIB}" >> "${env:GITHUB_ENV}"
-        "INCLUDE=D:\gtk\include;D:\gtk\include\cairo;D:\gtk\include\glib-2.0;D:\gtk\include\gobject-introspection-1.0;D:\gtk\lib\glib-2.0\include;${env:INCLUDE}" >> "${env:GITHUB_ENV}"
-        "PKG_CONFIG_PATH=D:\gtk\lib\pkgconfig" >> "${env:GITHUB_ENV}"
+        "PATH=C:\gtk\bin;${env:Path}" >> "${env:GITHUB_ENV}"
+        "LIB=C:\gtk\lib;${env:LIB}" >> "${env:GITHUB_ENV}"
+        "INCLUDE=C:\gtk\include;C:\gtk\include\cairo;C:\gtk\include\glib-2.0;C:\gtk\include\gobject-introspection-1.0;C:\gtk\lib\glib-2.0\include;${env:INCLUDE}" >> "${env:GITHUB_ENV}"
+        "PKG_CONFIG_PATH=C:\gtk\lib\pkgconfig" >> "${env:GITHUB_ENV}"
         # [2024-12] Patch opam packages for MSVC. Only needed for as long as
         # upstream does not work with MSVC out of the box.
         mkdir _opampkgs
@@ -529,7 +529,7 @@ jobs:
       run: |
         # Make sure MSVC is in the path (for dumpbin) and GTK is first in path
         opam env | Invoke-Expression
-        $env:Path = "D:\gtk\bin;" + $env:Path
+        $env:Path = "C:\gtk\bin;" + $env:Path
         # collect any needed dlls/libraries
         function recursive_deps { param ($prefix, $list, $filename) if ($list.Keys -contains $filename.ToLower()) { Write-Debug "$prefix  NOT dumping $filename"; return }; Write-Debug "$prefix  DUMPING $filename"; $files = (dumpbin /dependents $filename | ForEach-Object { $_.Trim() | Where-Object { $_ -Like "*.dll" } } | ForEach-Object { Get-Command -CommandType Application -Syntax -ErrorAction SilentlyContinue $_ | Select-Object -First 1 | Where-Object { $_ -notlike "$env:WINDIR*" -and $_ -notlike "*\api-ms-win-*" } }); $list[$filename.ToLower()] = $files; $files | ForEach-Object { recursive_deps "    $prefix" $list $_ } }
         function all_deps { param ($filename) $dep_list = @{}; recursive_deps "" $dep_list $filename; $dep_list.Values | ForEach-Object {$_} | Sort-Object -CaseSensitive | Get-Unique }
