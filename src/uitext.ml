@@ -515,7 +515,7 @@ let interact prilist rilist =
         in
         displayri ri;
         match ri.replicas with
-          Problem s -> display "\n"; display s; display "\n"; next()
+          Problem s -> alwaysDisplay "\n"; alwaysDisplay s; alwaysDisplay "\n"; next()
         | Different {rc1 = _; rc2 = _; direction = dir} ->
             if Prefs.read Uicommon.auto && not (isConflict dir) then begin
               display "\n"; next()
@@ -528,6 +528,7 @@ let interact prilist rilist =
                   "from "^host2^" to "^host1
               in
               if Prefs.read Globals.batch then begin
+                if Prefs.read silent && isConflict dir then alwaysDisplay "\n";
                 display "\n";
                 if not (Prefs.read Trace.terse) then
                   displayDetails ri
