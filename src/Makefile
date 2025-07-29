@@ -18,7 +18,7 @@ default: all
 # Executed only by BSD make
 .BEGIN:
 	@touch _mk.cfg
-	@ocaml make_tools.ml conf > Makefile.cfg
+	@ocaml make_tools.ml conf MAKE="$(MAKE)" > Makefile.cfg
 	@ocaml make_tools.ml conf2 > Makefile2.cfg
 
 # Executed only by Solaris dmake
