@@ -258,9 +258,9 @@ let () = "WINDRES" <--
 
 let () =
   if is_empty inputs.$("_NMAKE_VER") then begin
-    if is_empty inputs.$("MAKE") || not_empty (
-          shell ~err_null:true ("printf '_cf_test: FRC ; @echo $^\nFRC: ;' | " ^
-            inputs.$("MAKE") ^ " -f -")) then
+    if is_empty inputs.$("MAKE") || has_substring "FRC true" (
+        shell_input "_cf_test: FRC ; @echo $^ true\nFRC: ;"
+          (inputs.$("MAKE") ^ " -f -")) then
       "ALL__SRC" <-- "$^"  (* GNU and POSIX make, new versions of BSD make *)
     else
       "ALL__SRC" <-- "$>"  (* Older versions of BSD make *)
