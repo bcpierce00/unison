@@ -19,7 +19,7 @@ default: all
 .BEGIN:
 	@touch _mk.cfg
 	@ocaml make_tools.ml conf MAKE="$(MAKE)" > Makefile.cfg
-	@ocaml make_tools.ml conf2 > Makefile2.cfg
+	@ocaml make_tools.ml conf2 MAKE="$(MAKE)" > Makefile2.cfg
 
 # Executed only by Solaris dmake
 .INIT:
