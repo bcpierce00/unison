@@ -305,10 +305,7 @@ let fsmonitor_dir =
           let pkg_flags = shell "pkg-config --cflags libinotify 2> /dev/null" in
           if not_empty pkg_flags then begin
             let libinotify_inc = "-ccopt '" ^ pkg_flags ^ "'" in
-            (* OpenBSD make does not support local variables *)
-            let target = if osarch <> "OpenBSD" then "$(FSMCOBJS): " else "" in
-            fsmon_outp :=
-              (target ^ "CAMLCFLAGS_FSM_X = " ^ libinotify_inc) :: !fsmon_outp
+            fsmon_outp := ("CAMLCFLAGS_FSM = " ^ libinotify_inc) :: !fsmon_outp
           end;
           let pkg_lib = shell "pkg-config --libs libinotify 2> /dev/null" in
           if not_empty pkg_lib then begin
@@ -526,13 +523,15 @@ let target_local_vars () =
     [
       ["$(NAME_GUI)$(EXEC_EXT) $(CAMLOBJS_GUI)"; rule_sep; "CAMLFLAGS_GUI_X = $(CAMLFLAGS_GUI)"];
       ["$(NAME_FSM)$(EXEC_EXT) $(CAMLOBJS_FSM) $(FSMOCAMLOBJS:.cmo=.cmi)"; rule_sep; "CAMLFLAGS_FSM_X = $(CAMLFLAGS_FSM)"];
+      ["$(FSMCOBJS)"; rule_sep; "CAMLCFLAGS_FSM_X = $(CAMLCFLAGS_FSM)"];
       ["$(NAME)-blob.o $(CAMLOBJS_MAC)"; rule_sep; "CAMLFLAGS_MAC_X = $(CAMLFLAGS_MAC)"];
     ]
     |> List.iter (fun l -> String.concat "" l |> print_endline)
   end else
     print_string
       "CAMLFLAGS_GUI_X = $(CAMLFLAGS_GUI)\n\
-       CAMLFLAGS_FSM_X = $(CAMLFLAGS_FSM)"
+       CAMLFLAGS_FSM_X = $(CAMLFLAGS_FSM)\n\
+       CAMLCFLAGS_FSM_X = $(CAMLCFLAGS_FSM)"
 
 
 let project_info () =
