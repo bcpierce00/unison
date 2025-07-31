@@ -12,10 +12,12 @@ module type TOOLS = sig
   val ( <-- ) : string -> string -> unit  (* Set value in [vars] *)
   val ( <-+= ) : string -> string -> unit (* Append to value in [vars] (defaults to value in [inputs]) *)
   val ( <--? ) : string -> string -> string (* Copy from [inputs] to [vars], or set a default *)
-  val shell : ?err_null:bool -> string -> string
+  val shell : ?err_null:bool -> ?exit_status:Unix.process_status ref -> string -> string
+  val shell_input : ?exit_status:Unix.process_status ref -> string -> string -> string
   val get_command : string -> string option
   val is_empty : string -> bool
   val not_empty : string -> bool
+  val has_substring : string -> string -> bool
   val exists : string -> string -> bool
   val info : string -> unit
   val error : string -> 'a
@@ -256,9 +258,9 @@ let () = "WINDRES" <--
 
 let () =
   if is_empty inputs.$("_NMAKE_VER") then begin
-    if is_empty inputs.$("MAKE") || not_empty (
-          shell ~err_null:true ("printf '_cf_test: FRC ; @echo $^\nFRC: ;' | " ^
-            inputs.$("MAKE") ^ " -f -")) then
+    if is_empty inputs.$("MAKE") || has_substring "FRC true" (
+        shell_input "_cf_test: FRC ; @echo $^ true\nFRC: ;"
+          (inputs.$("MAKE") ^ " -f -")) then
       "ALL__SRC" <-- "$^"  (* GNU and POSIX make, new versions of BSD make *)
     else
       "ALL__SRC" <-- "$>"  (* Older versions of BSD make *)
@@ -305,10 +307,7 @@ let fsmonitor_dir =
           let pkg_flags = shell "pkg-config --cflags libinotify 2> /dev/null" in
           if not_empty pkg_flags then begin
             let libinotify_inc = "-ccopt '" ^ pkg_flags ^ "'" in
-            (* OpenBSD make does not support local variables *)
-            let target = if osarch <> "OpenBSD" then "$(FSMCOBJS): " else "" in
-            fsmon_outp :=
-              (target ^ "CAMLCFLAGS_FSM_X = " ^ libinotify_inc) :: !fsmon_outp
+            fsmon_outp := ("CAMLCFLAGS_FSM = " ^ libinotify_inc) :: !fsmon_outp
           end;
           let pkg_lib = shell "pkg-config --libs libinotify 2> /dev/null" in
           if not_empty pkg_lib then begin
@@ -432,7 +431,7 @@ let error msg =
   prerr_endline msg;
   exit 2
 
-let shell ?(err_null = false) cmd =
+let shell_internal ?(err_null = false) ?exit_status ?(input_str = "") cmd =
   let shell' open_proc close_proc =
     let outp = open_proc () in
     let buf = Buffer.create 512 in
@@ -446,18 +445,36 @@ let shell ?(err_null = false) cmd =
       end else if Buffer.length buf >= 1 && Buffer.(sub buf (length buf - 1) 1) = "\n" then 1
       else 0
     in
-    match close_proc () with
-    | _ -> Buffer.(sub buf 0 (length buf - trim_end))
+    let proc_status = close_proc () in
+    (proc_status, Buffer.(sub buf 0 (length buf - trim_end)))
   in
-  Unix.handle_unix_error (fun () ->
-    if err_null then
-      let (sh_out, sh_in, _) as sh_full = Unix.open_process_full cmd [||] in
-      let () = close_out sh_in in
-      shell' (fun () -> sh_out) (fun () -> Unix.close_process_full sh_full)
-    else
-      let sh_out = Unix.open_process_in cmd in
-      shell' (fun () -> sh_out) (fun () -> Unix.close_process_in sh_out)
-  ) ()
+  let status, output =
+    Unix.handle_unix_error (fun () ->
+      if err_null || input_str <> "" then
+        let (sh_out, sh_in, _) as sh_full =
+          Unix.open_process_full cmd [|"PATH=" ^ env.$("PATH")|] in
+        if input_str <> "" then begin
+          output_string sh_in input_str;
+          flush sh_in
+        end;
+        let () = close_out sh_in in
+        shell' (fun () -> sh_out) (fun () -> Unix.close_process_full sh_full)
+      else
+        let sh_out = Unix.open_process_in cmd in
+        shell' (fun () -> sh_out) (fun () -> Unix.close_process_in sh_out)
+    ) ()
+  in
+  begin match exit_status with
+  | None -> ()
+  | Some ref -> ref := status
+  end;
+  output
+
+let shell ?err_null ?exit_status cmd =
+  shell_internal ?err_null ?exit_status cmd
+
+let shell_input ?exit_status input_str cmd =
+  shell_internal ?exit_status ~input_str cmd
 
 let exec cmd =
   let cmd = String.concat " " cmd in
@@ -507,16 +524,37 @@ let is_empty s =
 
 let not_empty s = not (is_empty s)
 
+let has_substring needle haystack =
+  let l1 = String.length needle in
+  let l2 = String.length haystack in
+  let max_i = l2 - l1 in
+  let rec loop i =
+    if i > max_i then false
+    else if needle = String.sub haystack i l1 then true
+    else loop (i + 1)
+  in loop 0
+
 end
 
 
 let target_local_vars () =
   let open Tools in
-  let is_openbsd_make =
-    is_empty inputs.$("_NMAKE_VER") && (shell "uname" = "OpenBSD")
-  in
   (* NMAKE and OpenBSD don't support target-specific local variables *)
-  if is_empty inputs.$("_NMAKE_VER") && not is_openbsd_make then begin
+  (* The same applies for make in NetBSD < 10 and FreeBSD < 13 *)
+  let make_supports_local_vars =
+    is_empty inputs.$("_NMAKE_VER") && (
+      is_empty inputs.$("MAKE") ||
+      (let exit_status = ref (Unix.WEXITED (-1)) in
+      has_substring "test ok" (
+        shell_input ~exit_status
+          "TEST_VAL = test\n\
+           _local_var_test: LOCAL_VAR_TEST = $(TEST_VAL)\n\
+           _local_var_test: ; @echo $(LOCAL_VAR_TEST) ok"
+          (inputs.$("MAKE") ^ " -f -")) &&
+      !exit_status = Unix.WEXITED 0)
+    )
+  in
+  if make_supports_local_vars then begin
     let is_old_gmake =
       not_empty inputs.$("MAKE") &&
       let s = shell ~err_null:true (inputs.$("MAKE") ^ " --version") in
@@ -526,13 +564,15 @@ let target_local_vars () =
     [
       ["$(NAME_GUI)$(EXEC_EXT) $(CAMLOBJS_GUI)"; rule_sep; "CAMLFLAGS_GUI_X = $(CAMLFLAGS_GUI)"];
       ["$(NAME_FSM)$(EXEC_EXT) $(CAMLOBJS_FSM) $(FSMOCAMLOBJS:.cmo=.cmi)"; rule_sep; "CAMLFLAGS_FSM_X = $(CAMLFLAGS_FSM)"];
+      ["$(FSMCOBJS)"; rule_sep; "CAMLCFLAGS_FSM_X = $(CAMLCFLAGS_FSM)"];
       ["$(NAME)-blob.o $(CAMLOBJS_MAC)"; rule_sep; "CAMLFLAGS_MAC_X = $(CAMLFLAGS_MAC)"];
     ]
     |> List.iter (fun l -> String.concat "" l |> print_endline)
   end else
     print_string
       "CAMLFLAGS_GUI_X = $(CAMLFLAGS_GUI)\n\
-       CAMLFLAGS_FSM_X = $(CAMLFLAGS_FSM)"
+       CAMLFLAGS_FSM_X = $(CAMLFLAGS_FSM)\n\
+       CAMLCFLAGS_FSM_X = $(CAMLCFLAGS_FSM)"
 
 
 let project_info () =
