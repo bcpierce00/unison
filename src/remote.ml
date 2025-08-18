@@ -423,7 +423,9 @@ let connectionIO conn =
 let setConnectionVersion conn ver =
   conn.version <- ver
 
-let connectionVersion conn = conn.version
+let connectionVersion = function
+  | None -> rpcDefaultVersion
+  | Some conn -> conn.version
 
 let connEq conn conn' =
   conn.inputBuffer.channel = conn'.inputBuffer.channel
@@ -596,7 +598,12 @@ module ClientConn = struct
 
 end (* module ClientConn *)
 
-let connectionOfRoot root = ClientConn.ofRoot root
+let connectionOfRoot root =
+  (* This is not the same as [ClientConn.ofRootOpt]. We want this function
+     to fail when the remote connection is not found. *)
+  match root with
+  | (Common.Local, _) -> None
+  | (Common.Remote _ , _) -> Some (ClientConn.ofRoot root)
 
 (****)
 
@@ -1141,6 +1148,17 @@ let registerServerCmd name ?(convV0=convV0_id_pair) mArg mRet f =
     name (defaultMarshalingFunctions (fst convV0) mArg)
          (defaultMarshalingFunctions (snd convV0) mRet) f
 
+(* Same as [registerServerCmd] but returns a function that runs either
+   the proxy or the local version, depending on whether the call is to
+   the local host (in this case [conn] is None) or a remote one. *)
+let registerRemoteCmd name ?convV0 mArg mRet f =
+  let serverSide = (fun conn args -> f (Some conn) args) in
+  let client0 = registerServerCmd name ?convV0 mArg mRet serverSide in
+  fun conn args ->
+    match conn with
+    | None -> f None args
+    | Some conn -> client0 conn args
+
 (* RegisterHostCmd is a simpler version of registerClientServer [registerServerCmd?].
    It is used to create remote procedure calls: the only communication
    between the client and server is the sending of arguments from
@@ -1174,16 +1192,15 @@ let registerRootCmd (cmdName : string)
   fun root args -> r root ((snd root), args)
 
 let registerRootCmdWithConnection (cmdName : string)
-  ?(convV0=convV0_id_pair) mArg mRet (cmd : connection -> 'a -> 'b) =
-  let client0 = registerServerCmd cmdName ~convV0 mArg mRet cmd in
+  ?(convV0=convV0_id_pair) mArg mRet (cmd : connection option -> 'a -> 'b) =
+  let serverSide = (fun conn args -> cmd (Some conn) args) in
+  let client0 = registerServerCmd cmdName ~convV0 mArg mRet serverSide in
   (* Return a function that runs either the proxy or the local version,
      depending on whether the call is to the local host or a remote one *)
   fun localRoot remoteRoot args ->
     match (fst localRoot) with
-    | Common.Local -> let conn = ClientConn.ofRoot remoteRoot in
-            cmd conn args
-    | _  -> let conn = ClientConn.ofRoot localRoot in
-            client0 conn args
+    | Common.Local -> cmd (connectionOfRoot remoteRoot) args
+    | _ -> client0 (ClientConn.ofRoot localRoot) args
 
 let streamReg = lwtRegionWithConnCleanup 1
 
@@ -1199,13 +1216,13 @@ let streamingActivated =
 let registerStreamCmd
     (cmdName : string)
     marshalingFunctionsArgs
-    (serverSide : connection -> 'a -> unit)
+    (serverSide : connection option -> 'a -> unit)
     =
   let cmd =
     registerSpecialServerCmd
       cmdName marshalingFunctionsArgs
       (defaultMarshalingFunctions convV0_id Umarshal.unit)
-      (fun conn v -> serverSide conn v; Lwt.return ())
+      (fun conn v -> serverSide (Some conn) v; Lwt.return ())
   in
   let ping =
     registerServerCmd (cmdName ^ "Ping") Umarshal.int Umarshal.unit
@@ -1227,7 +1244,7 @@ let registerStreamCmd
   (* Create a server function and remember it *)
   let server conn buf =
     let args = unmarshalArgs conn buf in
-    serverSide conn args
+    serverSide (Some conn) args
   in
   serverStreams := Util.StringMap.add cmdName server !serverStreams;
   (* Create a client function and return it *)
@@ -1240,7 +1257,7 @@ let registerStreamCmd
     in
     dumpIdle conn request
   in
-  fun conn sender ->
+  let proxy conn sender =
     if not (Prefs.read streamingActivated) then
       sender (fun v -> cmd conn v)
     else begin
@@ -1259,6 +1276,11 @@ let registerStreamCmd
            end else
              Lwt.fail e)
     end
+  in
+  fun conn sender ->
+    match conn with
+    | None -> sender (fun v -> Lwt.return (serverSide conn v))
+    | Some conn -> proxy conn sender
 
 let commandAvailable =
   registerRootCmd "commandAvailable" Umarshal.string Umarshal.bool
