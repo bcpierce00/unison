@@ -227,7 +227,10 @@ let batch =
     "batch mode: ask no questions at all"
     ("When this is set to {\\tt true}, the user "
      ^ "interface will ask no questions at all.  Non-conflicting changes "
-     ^ "will be propagated; conflicts will be skipped.")
+     ^ "will be propagated; conflicts will be skipped.  Note that the "
+     ^ "preference {\\tt merge} remains active; some additional "
+     ^ "{\\tt -mergenot} can prevent interactive and/or risky merge "
+     ^ "operations from happening.")
 
 let confirmBigDeletes =
   Prefs.createBool "confirmbigdel" true
@@ -302,7 +305,14 @@ let merge =
      ^ "details on Merging functions are present in "
      ^ "\\sectionref{merge}{Merging Conflicting Versions}.")
 
-let shouldMerge p = Pred.test merge (Path.toString p)
+let mergenot =
+  Pred.create "mergenot" ~advanced:true ~local:true
+    ("This preference overrides {\\tt merge}: the specified paths are "
+    ^ "{\\em not} merged, even if the {\\tt merge} preference selects them.")
+
+let shouldMerge p =
+  let p = Path.toString p in
+  Pred.test merge p && not (Pred.test mergenot p)
 
 let mergeCmdForPath p = Pred.assoc merge (Path.toString p)
 
