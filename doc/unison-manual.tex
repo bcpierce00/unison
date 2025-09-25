@@ -2356,8 +2356,15 @@ To prevent accidents, Unison provides a preference called
 \end{verbatim}
 in your preference file will cause Unison to check, after it finishes
 detecting updates, that something actually exists at the path
-\verb|foo| on both replicas; if it does not, the Unison run will
+\verb|foo| within both replicas; if it does not, the Unison run will
 abort.
+
+Note that the preference's name is confusing; it is intended to be
+used when a root might or might not be mounted, but the value is a
+relative path within a root, for a file or directory that should be
+present.
+(The preference is not used to specify the path at which a replica is
+mounted.)
 
 \appendix
 
