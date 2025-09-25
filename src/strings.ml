@@ -1792,10 +1792,11 @@ let docs =
       \n\
       \032  mountpoint xxx\n\
       \032         Including the preference -mountpoint PATH causes Unison to\n\
-      \032         double-check, at the end of update detection, that PATH exists\n\
-      \032         and abort if it does not. This is useful when Unison is used to\n\
-      \032         synchronize removable media. This preference can be given more\n\
-      \032         than once. See the section \226\128\156Mount Points and Removable Media\226\128\157 .\n\
+      \032         check, at the end of update detection, that PATH exists within\n\
+      \032         each root, and abort if not. This can avoid synchronzing\n\
+      \032         whenremovable media is not mounted. This preference can be given\n\
+      \032         more than once. See the section \226\128\156Mount Points and Removable\n\
+      \032         Media\226\128\157 .\n\
       \n\
       \032  nocreation xxx\n\
       \032         Including the preference -nocreation root prevents Unison from\n\
@@ -3087,8 +3088,14 @@ let docs =
       \032            mountpoint = foo\n\
       \n\
       \032  in your preference file will cause Unison to check, after it finishes\n\
-      \032  detecting updates, that something actually exists at the path foo on\n\
-      \032  both replicas; if it does not, the Unison run will abort.\n\
+      \032  detecting updates, that something actually exists at the path foo\n\
+      \032  within both replicas; if it does not, the Unison run will abort.\n\
+      \n\
+      \032  Note that the preference\226\128\153s name is confusing; it is intended to be used\n\
+      \032  when a root might or might not be mounted, but the value is a relative\n\
+      \032  path within a root, for a file or directory that should be present.\n\
+      \032  (The preference is not used to specify the path at which a replica is\n\
+      \032  mounted.)\n\
       \n\
       "))
 ::
