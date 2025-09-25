@@ -1435,9 +1435,9 @@ let mountpoints =
     ~category:(`Advanced `General)
     "abort if this path does not exist"
     ("Including the preference \\texttt{-mountpoint PATH} causes Unison to "
-     ^ "double-check, at the end of update detection, that \\texttt{PATH} exists "
-     ^ "and abort if it does not.  This is useful when Unison is used to synchronize "
-     ^ "removable media.  This preference can be given more than once.  "
+     ^ "check, at the end of update detection, that \\texttt{PATH} exists "
+     ^ "within each root, and abort if not.  This can avoid synchronzing when"
+     ^ "removable media is not mounted.  This preference can be given more than once.  "
      ^ "See \\sectionref{mountpoints}{Mount Points and Removable Media}.")
 
 let abortIfAnyMountpointsAreMissing fspath =
