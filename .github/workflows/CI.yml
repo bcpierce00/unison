@@ -55,7 +55,7 @@ jobs:
         - { os: macos-15-intel, ocaml-version: 4.14.x           , publish: true  , fnsuffix: -macos-x86-64 }
         - { os: ubuntu-24.04  , ocaml-version: 5.3.x }
         - { os: ubuntu-22.04  , ocaml-version: 4.14.x }
-        - { os: ubuntu-22.04  , ocaml-version: "ocaml-variants.4.14.2+options,ocaml-option-32bit", publish: true, fnsuffix: -ubuntu-i386 }
+        - { os: ubuntu-22.04  , ocaml-version: "ocaml-variants.4.14.2+options,ocaml-option-32bit", publish: true, fnsuffix: -ubuntu-22.04-i386 }
         - { os: windows-2022  , ocaml-version: "ocaml.4.14.2,system-mingw"              , publish: true  , fnsuffix: -windows-x86_64 }
         - { os: windows-2022  , ocaml-version: "ocaml.4.14.2,system-mingw,arch-x86_32"  , publish: true  , fnsuffix: -windows-i386 }
         - { os: windows-2022  , ocaml-version: "ocaml.4.14.2,system-msvc" }
@@ -1054,8 +1054,8 @@ jobs:
       fail-fast: false
       matrix:
         job:
-        - { ocaml-version: 4.14.x, publish: true, fnsuffix: -ubuntu-x86_64 }
-        - { ocaml-version: "ocaml-variants.4.14.2+options,ocaml-option-musl,ocaml-option-static,ocaml-option-flambda", publish: true, fnsuffix: -ubuntu-x86_64-static, static: -static }
+        - { ocaml-version: 4.14.x, publish: true, fnsuffix: -ubuntu-22.04-x86_64 }
+        - { ocaml-version: "ocaml-variants.4.14.2+options,ocaml-option-musl,ocaml-option-static,ocaml-option-flambda", publish: true, fnsuffix: -ubuntu-22.04-x86_64-static, static: -static }
         - { ocaml-version: 4.12.x }
         - { ocaml-version: 4.08.x }
 
