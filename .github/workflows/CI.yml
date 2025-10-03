@@ -40,10 +40,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # github regularly deprecates runners.  The current list is
+        # at: https://github.com/actions/runner-images
+        # In 2025-10, a macos-14-large runner failed because of
+        # non-payment.
+        # For macOS, the mapping of runner names to arm64 vs x86_64
+        # appears arbitrary.  We use the latest macOS version to test
+        # ocaml 5, letting it be arm64.  Then, we use the oldest
+        # non-deprecated version for each arch, for published
+        # packages.
         job:
-        - { os: macos-14      , ocaml-version: 5.3.x }
+        - { os: macos-15      , ocaml-version: 5.3.x }
         - { os: macos-14      , ocaml-version: 4.14.x           , publish: true  , fnsuffix: -macos-arm64 }
-        - { os: macos-13      , ocaml-version: 4.14.x           , publish: true  , fnsuffix: -macos-x86_64 }
+        - { os: macos-15-intel, ocaml-version: 4.14.x           , publish: true  , fnsuffix: -macos-x86-64 }
         - { os: ubuntu-24.04  , ocaml-version: 5.3.x }
         - { os: ubuntu-22.04  , ocaml-version: 4.14.x }
         - { os: ubuntu-22.04  , ocaml-version: "ocaml-variants.4.14.2+options,ocaml-option-32bit", publish: true, fnsuffix: -ubuntu-i386 }
@@ -598,6 +607,7 @@ jobs:
       matrix:
         # This list is intended to balance good enough coverage and
         # limited resource usage.
+        # Apparently 4.08 is not available for macos14-arm64.
         job:
         - { os: ubuntu-22.04  , ocaml-version: 5.3.x   , ref: v2.53.7 }
         - { os: ubuntu-22.04  , ocaml-version: 4.14.x  , ref: v2.53.7 }
@@ -608,9 +618,9 @@ jobs:
         - { os: windows-2022  , ocaml-version: ocaml-variants.4.14.0+mingw64c  , ref: v2.53.7 }
         - { os: windows-2022  , ocaml-version: ocaml-variants.4.14.0+mingw64c  , ref: v2.52.1 , oldmake: true }
         - { os: windows-2022  , ocaml-version: ocaml-variants.4.08.1+mingw32c  , ref: v2.51.5 , oldmake: true }
-        - { os: macos-13      , ocaml-version: 4.14.x  , ref: v2.53.7 }
-        - { os: macos-13      , ocaml-version: 4.14.x  , ref: v2.52.1 , oldmake: true }
-        - { os: macos-13      , ocaml-version: 4.08.x  , ref: v2.51.2 , oldmake: true }
+        - { os: macos-14      , ocaml-version: 4.14.x  , ref: v2.53.7 }
+        - { os: macos-14      , ocaml-version: 4.14.x  , ref: v2.52.1 , oldmake: true }
+        - { os: macos-15-intel, ocaml-version: 4.08.x  , ref: v2.51.2 , oldmake: true }
 
     runs-on: ${{ matrix.job.os }}
 
