@@ -40,8 +40,11 @@ let mentry = Umarshal.(prod3 int string
 
 let mentry_list = Umarshal.list mentry
 
+type state_out_channel =
+  | OpenForWriting of out_channel | Closed of (unit -> state_out_channel) | Error
+
 type state =
-  { oc : out_channel;
+  { mutable oc : state_out_channel;
     mutable count : int;
     mutable size : Uutil.Filesize.t;
     mutable last : string;
@@ -108,21 +111,30 @@ let read st ic =
 let closeOut st =
   state := None;
   try
-    close_out st.oc
+    match st.oc with OpenForWriting oc -> close_out oc | _ -> ()
   with Sys_error error ->
     debug (fun () -> Util.msg "error in closing cache file: %s\n" error)
 
-let write state =
-  let q = Safelist.rev state.queue in
-  let s = Umarshal.to_string mentry_list q in
-  let fp1 = Digest.substring s 0 Umarshal.header_size in
-  let fp2 = Digest.string s in
-  begin try
-    Digest.output state.oc fp1; Digest.output state.oc fp2;
-    output_string state.oc s; flush state.oc
-  with Sys_error error ->
-    debug (fun () -> Util.msg "error in writing to cache file: %s\n" error);
-    closeOut state
+let rec write ?(tries = 1) state =
+  begin match state.oc with
+  | Closed tryOpenOc when tries > 0 ->
+      state.oc <- tryOpenOc ();
+      write ~tries:(tries - 1) state
+  | Error | Closed _->
+      closeOut state
+  | OpenForWriting oc ->
+      debug (fun () -> Util.msg "Writing cache...\n");
+      let q = Safelist.rev state.queue in
+      let s = Umarshal.to_string mentry_list q in
+      let fp1 = Digest.substring s 0 Umarshal.header_size in
+      let fp2 = Digest.string s in
+      begin try
+        Digest.output oc fp1; Digest.output oc fp2;
+        output_string oc s; flush oc
+      with Sys_error error ->
+        debug (fun () -> Util.msg "error in writing to cache file: %s\n" error);
+        closeOut state
+      end
   end;
   state.count <- 0;
   state.size <- Uutil.Filesize.zero;
@@ -170,20 +182,23 @@ let init fastCheck ignorearchives fspath =
       debug (fun () -> Util.msg "could not open cache file %s: %s\n"
                          (System.fspathToDebugString fspath) error)
     end;
-    begin try
-      debug (fun () -> Util.msg "opening cache file %s for output\n"
-                         (System.fspathToDebugString fspath));
-      let oc =
-        System.open_out_gen
-          [Open_wronly; Open_creat; Open_trunc; Open_binary] 0o600 fspath in
-      output_string oc magic; output_string oc "\n"; flush oc;
-      state :=
-        Some { oc = oc; count = 0; size = Uutil.Filesize.zero;
-               last = ""; queue = [] }
-    with Sys_error error ->
-      debug (fun () -> Util.msg "could not open cache file %s: %s\n"
-                         (System.fspathToDebugString fspath) error)
-    end
+    let open_cache_file () =
+      try
+        debug (fun () -> Util.msg "opening cache file %s for output\n"
+                           (System.fspathToDebugString fspath));
+        let oc =
+          System.open_out_gen
+            [Open_wronly; Open_creat; Open_trunc; Open_binary] 0o600 fspath in
+        output_string oc magic; output_string oc "\n"; flush oc;
+        OpenForWriting oc
+      with Sys_error error ->
+        debug (fun () -> Util.msg "could not open cache file %s: %s\n"
+                           (System.fspathToDebugString fspath) error);
+        Error
+    in
+    state :=
+      Some { oc = Closed open_cache_file; count = 0; size = Uutil.Filesize.zero;
+             last = ""; queue = [] }
   end
 
 (****)
