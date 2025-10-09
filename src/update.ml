@@ -1145,10 +1145,45 @@ let loadArchives (optimistic: bool) =
 (*                               Archive locking                             *)
 (*****************************************************************************)
 
+(* Keep track of acquired locks to attempt releasing stale locks at process
+   exit. There is no point in keeping unnecessary locks around. *)
+let heldLocks = Hashtbl.create 4
+
+let releaseHeldLocks () =
+  Hashtbl.iter (fun l _ -> Lock.release l) heldLocks;
+  Hashtbl.clear heldLocks
+
+let () = at_exit releaseHeldLocks
+
+(* Attempt releasing locks when the connection is dropped (yet the process
+   may remain running). This is normally done via exception handlers but
+   these are not reliably run in all cases (as they are Lwt-based and may
+   be stopped/collected before getting a chance to run; also restricted when
+   there is no more communication between client and server). *)
+let lockResourceAcquire, lockResourceRelease =
+  let acquire reg_f name =
+    if Lock.acquire name then begin
+      ignore (reg_f name);
+      Hashtbl.add heldLocks name true;
+      true
+    end else
+      false
+  in
+  let release name =
+    Hashtbl.remove heldLocks name;
+    Lock.release name
+  in
+  let res = Remote.resourceWithConnCleanup release release in
+  acquire res.register, res.release
+
+let acquireLock name = lockResourceAcquire name
+
+let releaseLock name = lockResourceRelease name
+
 let lockArchiveLocal fspath =
   let (lockFilename, _) = archiveName fspath Lock in
   let lockFile = Util.fileInUnisonDir lockFilename in
-  if Lock.acquire lockFile then
+  if acquireLock lockFile then
     None
   else
     Some (Printf.sprintf "The file %s on host %s should be deleted"
@@ -1159,7 +1194,7 @@ let lockArchiveOnRoot: Common.root -> unit -> string option Lwt.t =
     "lockArchive" Umarshal.unit Umarshal.(option string) (fun (fspath, ()) -> Lwt.return (lockArchiveLocal fspath))
 
 let unlockArchiveLocal fspath =
-  Lock.release
+  releaseLock
     (Util.fileInUnisonDir (fst (archiveName fspath Lock)))
 
 let unlockArchiveOnRoot: Common.root -> unit -> unit Lwt.t =
@@ -1184,6 +1219,15 @@ let ignorelocks =
      ^ "command-line use.")
 
 let locked = ref false
+
+(* [unlockArchives] may not always be run in exceptional conditions even
+   though the locks are dropped when the connection is closed.
+
+   FIXME: [locked] is likely a relic that could be removed. It does not seem to
+   serve any functional purpose and it is not aware of multiple connections. *)
+let () =
+  Remote.at_conn_close
+    (fun () -> if Hashtbl.length heldLocks = 0 then locked := false)
 
 let lockArchives () =
   assert (!locked = false);
