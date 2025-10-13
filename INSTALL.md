@@ -28,9 +28,7 @@ with those systems, and not in the unison issue tracker.)
 
 - A C99 compiler (e.g. gcc, clang)
 - A recent version of OCaml compiler (version 4.08 at minimum)
-  -- see https://ocaml.org/.  (Note that ocaml upstream says that 5.x is
-  experimental.  The standard approach is the most recent 4.x ocaml
-  release.)
+  -- see https://ocaml.org/.
 - make (any of GNU, BSD, Solaris variants works)
 - Basic POSIX tools (e.g., echo, install, rm, sh, sed, touch)
 
