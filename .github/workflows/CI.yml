@@ -50,10 +50,10 @@ jobs:
         # non-deprecated version for each arch, for published
         # packages.
         job:
-        - { os: macos-15      , ocaml-version: 5.3.x }
+        - { os: macos-15      , ocaml-version: 5.4.x }
         - { os: macos-14      , ocaml-version: 4.14.x           , publish: true  , fnsuffix: -macos-arm64 }
         - { os: macos-15-intel, ocaml-version: 4.14.x           , publish: true  , fnsuffix: -macos-x86-64 }
-        - { os: ubuntu-24.04  , ocaml-version: 5.3.x }
+        - { os: ubuntu-24.04  , ocaml-version: 5.4.x }
         - { os: ubuntu-22.04  , ocaml-version: 4.14.x }
         - { os: ubuntu-22.04  , ocaml-version: "ocaml-variants.4.14.2+options,ocaml-option-32bit", publish: true, fnsuffix: -ubuntu-22.04-i386 }
         - { os: windows-2022  , ocaml-version: "ocaml.4.14.2,system-mingw"              , publish: true  , fnsuffix: -windows-x86_64 }
@@ -609,7 +609,7 @@ jobs:
         # limited resource usage.
         # Apparently 4.08 is not available for macos14-arm64.
         job:
-        - { os: ubuntu-22.04  , ocaml-version: 5.3.x   , ref: v2.53.7 }
+        - { os: ubuntu-22.04  , ocaml-version: 5.4.x   , ref: v2.53.7 }
         - { os: ubuntu-22.04  , ocaml-version: 4.14.x  , ref: v2.53.7 }
         - { os: ubuntu-22.04  , ocaml-version: 4.14.x  , ref: v2.52.1 , oldmake: true }
         - { os: ubuntu-22.04  , ocaml-version: 4.14.x  , ref: v2.51.5 , oldmake: true }
