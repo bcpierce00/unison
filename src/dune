@@ -1,9 +1,15 @@
 (library
+ (name compat)
+ (wrapped false)
+ (modules compat_digest))
+
+(library
  (name unison_lib)
  (wrapped false)
- (modules :standard \ linktext linkgtk3 uigtk3 pixmaps uimacbridge test make_tools)
+ (modules :standard \ linktext linkgtk3 uigtk3 pixmaps uimacbridge test make_tools compat_digest)
  (modules_without_implementation ui)
  (flags :standard
+        -open Compat_digest
         -w -3-6-9-10-26-27-32-34-35-38-39-50-52
         -warn-error -3-6-9-10-26-27-32-34-35-39-50-52
         -no-strict-sequence)
@@ -11,7 +17,7 @@
   (language c)
   (names bytearray_stubs osxsupport pty hash_compat props_xattr props_acl copy_stubs))
  (c_library_flags -lutil)
- (libraries str unix lwt_lib bigarray))
+ (libraries compat str unix lwt_lib bigarray))
 
 (include_subdirs unqualified)
 
