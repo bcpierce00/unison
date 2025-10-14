@@ -427,7 +427,7 @@ struct
     let addBlock i buf offset =
       weakCs.{i} <- Int32.of_int (Checksum.subbytes buf offset blockSize);
       Bytearray.blit_from_string
-        (Digest.subbytes buf offset blockSize) 0 strongCs (i * csSize) csSize
+        (Digest.MD5.subbytes buf offset blockSize) 0 strongCs (i * csSize) csSize
     in
     (* Make sure we are at the beginning of the file
        (important for AppleDouble files *)
@@ -839,7 +839,7 @@ struct
           -1
       | (k, cs) :: tl, None
         when cs = checksum ->
-          let fingerprint = Digest.subbytes comprBuf st.offset blockSize in
+          let fingerprint = Digest.MD5.subbytes comprBuf st.offset blockSize in
           findBlock st checksum entry (Some fingerprint)
       | (k, cs) :: tl, Some fingerprint
         when cs = checksum && fingerprintMatch k fingerprint ->

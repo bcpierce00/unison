@@ -357,7 +357,7 @@ let genTempPath fresh fspath path prefix suffix =
           let maxLen = maxFileNameLength - prefixLen - suffixLen in
           let name =
             if nameLen <= maxLen then name else
-              let nameDigest = Digest.to_hex (Digest.string name) in
+              let nameDigest = Digest.MD5.to_hex (Digest.MD5.string name) in
               let nameDigestLen = String.length nameDigest in
               let maxLen = maxLen - nameDigestLen in
               assert (maxLen>0);

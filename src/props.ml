@@ -863,9 +863,9 @@ let attrToString = function
   | (n, String v) ->
       Printf.sprintf "Name: %s    Value: %s" n (String.escaped v)
   | (n, Hash h) ->
-      Printf.sprintf "Name: %s    Fingerprint: %s" n (Digest.to_hex h)
+      Printf.sprintf "Name: %s    Fingerprint: %s" n (Digest.MD5.to_hex h)
   | (n, Loaded (_, h)) ->
-      Printf.sprintf "Name: %s    Fingerprint: %s" n (Digest.to_hex h)
+      Printf.sprintf "Name: %s    Fingerprint: %s" n (Digest.MD5.to_hex h)
 
 let toString' style = function
   | Some ([], _) -> "0 xattrs"
@@ -904,7 +904,7 @@ let attrEqual (n, v) (n', v') =
   | Loaded (_, a), Hash b
   | Loaded (_, a), Loaded (_, b) -> String.equal a b
   | String s, Hash h
-  | Hash h, String s -> String.equal h (Digest.string s)
+  | Hash h, String s -> String.equal h (Digest.MD5.string s)
 
 let rec attrlist_mem x = function
   | [] -> false
@@ -952,7 +952,7 @@ let readAll path t =
               v
           | None ->
               let v = Fs.xattr_get path n in
-              if Digest.string v <> h then
+              if Digest.MD5.string v <> h then
                 raise (Util.Transient (
                   Printf.sprintf "The value of extended attribute '%s' has \
                     changed on source file %s" n (Fspath.toPrintString path)))
@@ -1004,7 +1004,7 @@ let getXattrs path =
     let value =
       if len <= 32 then String v
       else
-        let h = Digest.string v in
+        let h = Digest.MD5.string v in
         let _ = Cache.add h v in
         Hash h
     in
@@ -1143,7 +1143,7 @@ end
 let deflate acl =
   if acl = "" then acl
   else begin
-    let key = Digest.string acl in
+    let key = Digest.MD5.string acl in
     Data.add key acl;
     key
   end

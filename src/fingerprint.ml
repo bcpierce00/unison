@@ -24,7 +24,7 @@ let m = Umarshal.string
 let pseudo_prefix = "LEN"
 
 let pseudo path len = pseudo_prefix ^ (Uutil.Filesize.toString len) ^ "@" ^
-                      (Digest.string (Path.toString path))
+                      (Digest.MD5.string (Path.toString path))
 
 let ispseudo f = Util.startswith f pseudo_prefix
 
@@ -37,7 +37,7 @@ let file fspath path =
     (fun () ->
        let ic = Fs.open_in_bin f in
        try
-         let d = Digest.channel ic (-1) in
+         let d = Digest.MD5.channel ic (-1) in
          close_in ic;
          d
        with e ->
@@ -57,7 +57,7 @@ let subfile path offset len =
        let inch = Fs.open_in_bin path in
        begin try
          LargeFile.seek_in inch offset;
-         let res = Digest.channel inch (Uutil.Filesize.toInt len) in
+         let res = Digest.MD5.channel inch (Uutil.Filesize.toInt len) in
          close_in inch;
          res
        with

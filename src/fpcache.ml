@@ -81,12 +81,12 @@ let compress state path =
 
 let read st ic =
   (* I/O errors are dealt with at a higher level *)
-  let fp1 = Digest.input ic in
-  let fp2 = Digest.input ic in
+  let fp1 = Digest.MD5.input ic in
+  let fp2 = Digest.MD5.input ic in
   let headerSize = Umarshal.header_size in
   let header = Bytes.create headerSize in
   really_input ic header 0 headerSize;
-  if fp1 <> Digest.bytes header then begin
+  if fp1 <> Digest.MD5.bytes header then begin
     debug (fun () -> Util.msg "bad header checksum\n");
     raise End_of_file
   end;
@@ -94,7 +94,7 @@ let read st ic =
   let s = Bytes.create (headerSize + dataSize) in
   Bytes.blit header 0 s 0 headerSize;
   really_input ic s headerSize dataSize;
-  if fp2 <> Digest.bytes s then begin
+  if fp2 <> Digest.MD5.bytes s then begin
     debug (fun () -> Util.msg "bad chunk checksum\n");
     raise End_of_file
   end;
@@ -126,10 +126,10 @@ let rec write ?(tries = 1) state =
       debug (fun () -> Util.msg "Writing cache...\n");
       let q = Safelist.rev state.queue in
       let s = Umarshal.to_string mentry_list q in
-      let fp1 = Digest.substring s 0 Umarshal.header_size in
-      let fp2 = Digest.string s in
+      let fp1 = Digest.MD5.substring s 0 Umarshal.header_size in
+      let fp2 = Digest.MD5.string s in
       begin try
-        Digest.output oc fp1; Digest.output oc fp2;
+        Digest.MD5.output oc fp1; Digest.MD5.output oc fp2;
         output_string oc s; flush oc
       with Sys_error error ->
         debug (fun () -> Util.msg "error in writing to cache file: %s\n" error);
