@@ -46,6 +46,9 @@ let ocamlopt = "OCAMLOPT" <--? tool_prefix ^ "ocamlopt"
 
 let ocaml_conf_var varname = shell (ocamlc ^ " -config-var " ^ varname)
 
+let ocaml_ver_major, ocaml_ver_minor, ocaml_ver_patch =
+  Scanf.sscanf (ocaml_conf_var "version") "%d.%d.%d" (fun x y z -> x, y, z)
+
 (*********************************************************************
 *** Try to automatically guess OS ***)
 
@@ -238,6 +241,25 @@ let () =
     "CAMLLIBS_MAC" <-- "$(OCAMLLIBS_MAC)";
     "CAMLLIBS_FSM" <-- "$(FSMOCAMLLIBS)";
   end
+
+(* Compiler compatibility *)
+(* To be used in exceptional cases; the first priority is to not require
+   compatibility shims at all. *)
+let compat_mods = [
+    (* File name (without extension), enabling condition (bool) *)
+  ]
+
+let () =
+  compat_mods
+  |> List.filter (fun (_, cond) -> cond)
+  |> List.iter (fun (name, _) ->
+      "CAMLFLAGS" <-+= "-open " ^ (String.capitalize_ascii name);
+      "COMPAT_OBJS" <-+= name ^ ".cmo";
+      outp (Printf.sprintf
+        "%s.cmo: %s.ml\n\
+        \t$(OCAMLC) $(OCAMLINCLUDES) -c $(ALL__SRC)\n\
+        %s.cmx: %s.ml\n\
+        \t$(OCAMLOPT) $(OCAMLINCLUDES) -c $(ALL__SRC)" name name name name))
 
 let () = "WINDRES" <--
   (if not_empty tool_prefix then tool_prefix else begin

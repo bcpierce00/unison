@@ -53,6 +53,7 @@ clean::
 # File extensions will be substituted for the native code version
 
 OCAMLOBJS = \
+          $(COMPAT_OBJS) \
           ubase/umarshal.cmo \
           ubase/rx.cmo \
           \
