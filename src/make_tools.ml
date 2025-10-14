@@ -247,6 +247,7 @@ let () =
    compatibility shims at all. *)
 let compat_mods = [
     (* File name (without extension), enabling condition (bool) *)
+    "compat_digest", ocaml_ver_major < 5 || ocaml_ver_major = 5 && ocaml_ver_minor < 2;
   ]
 
 let () =
