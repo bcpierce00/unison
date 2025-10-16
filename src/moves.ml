@@ -30,7 +30,7 @@ let featMoves =
 let enabled () = Features.enabled featMoves
 
 let detectmoves =
-  Prefs.createBool "moves" false
+  Prefs.createBool "moves-experimental" false
     ~category:(`Advanced `Sync)
     ~local:true
     ~send:enabled
@@ -40,7 +40,9 @@ let detectmoves =
      recognizing when a file or a directory has been renamed or moved to \
      a new location.  This usually allows to propagate only the rename, \
      without transferring or copying any data.  The default value is \
-     \\texttt{false}."
+     \\texttt{false}.\n\n\
+     This feature is currently experimental and may change in incompatible \
+     ways in future versions."
 
 let () = featMovesValid :=
   fun feats enabledThis ->

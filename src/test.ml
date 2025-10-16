@@ -618,7 +618,7 @@ let test() =
       check_assert (n ^ "b") (assert_n_mov expect_n_moved err)
     in
 
-    runtest "moves/renames 1 (plain)" ["moves = true"] (fun () ->
+    runtest "moves/renames 1 (plain)" ["moves-experimental = true"] (fun () ->
       put R1 (Dir []); put R2 (Dir []); sync ();
       (* Create a file and a directory *)
       put R1 (Dir ["x", File "foo"; "d", Dir ["a", File "barr"]]); sync ();
@@ -662,7 +662,7 @@ let test() =
       check "12" R2 (Dir ["x", File "bah"]);
     );
 
-    runtest "moves/renames 2 (reverting)" ["moves = true"; "force = " ^ rr1] (fun () ->
+    runtest "moves/renames 2 (reverting)" ["moves-experimental = true"; "force = " ^ rr1] (fun () ->
       put R1 (Dir []); put R2 (Dir []); sync ();
       (* Create a file and a directory *)
       let origfs = Dir ["x", File "foo"; "d", Dir ["a", File "barr"]] in
@@ -702,7 +702,7 @@ let test() =
       check "10" R1 origfs;
     );
 
-    runtest "moves/renames 3 (overwriting)" ["moves = true"] (fun () ->
+    runtest "moves/renames 3 (overwriting)" ["moves-experimental = true"] (fun () ->
       put R1 (Dir []); put R2 (Dir []); sync ();
       (* Create files and directories *)
       let origfs = Dir ["x", File "foo"; "y", File "bar"; "c", Dir ["b", File "quu"]; "d", Dir ["a", File "barr"]] in
@@ -724,7 +724,7 @@ let test() =
       check "4" R2 newfs;
     );
 
-    runtest "moves/renames 4 (reverting overwrites)" ["moves = true"; "force = " ^ rr1] (fun () ->
+    runtest "moves/renames 4 (reverting overwrites)" ["moves-experimental = true"; "force = " ^ rr1] (fun () ->
       put R1 (Dir []); put R2 (Dir []); sync ();
       (* Create files and directories *)
       let origfs = Dir ["x", File "foo"; "y", File "bar"; "c", Dir ["b", File "quu"]; "d", Dir ["a", File "barr"]] in
@@ -742,7 +742,7 @@ let test() =
       check "4" R2 origfs;
     );
 
-    runtest "moves/renames 5 (conflicts)" ["moves = true"; "force = " ^ rr1] (fun () ->
+    runtest "moves/renames 5 (conflicts)" ["moves-experimental = true"; "force = " ^ rr1] (fun () ->
       put R1 (Dir []); put R2 (Dir []); sync ();
       (* Create files and directories *)
       let origfs = Dir ["x", File "foo"; "y", File "bar"; "c", Dir ["b", File "quu"]; "d", Dir ["a", File "barr"]] in
