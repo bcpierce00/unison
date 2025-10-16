@@ -209,18 +209,26 @@ let prevProps newprops ui =
   if not (Prefs.read showprev) then ""
   else match ui with
     NoUpdates | Error _
+  | Updates (_, PrevSymlink)
       -> ""
   | Updates (_, New) ->
       " (new)"
-  | Updates (_, Previous(_,oldprops,_,_)) ->
+  | Updates (_, (PrevFile (oldprops, _, _, _) | PrevDir oldprops)) ->
       (* || Props.similar newprops oldprops *)
       " (was: "^(Props.toString oldprops)^")"
+
+let overwriteWarning = function
+  | {status = `MovedOut (_, _, {typ; _}); _} when typ <> `ABSENT ->
+      " <will overwrite a " ^ Fileinfo.type2string typ
+      ^ " in the other replica>"
+  | _ -> ""
 
 let replicaContentDesc rc =
   Props.toString (Props.setLength rc.desc (snd rc.size))
 
 let replicaContent2string rc sep =
   let d s = s ^ sep ^ replicaContentDesc rc ^ prevProps rc.desc rc.ui in
+  let m s s2 rc = s ^ sep ^ replicaContentDesc rc ^ " " ^ s2 in
   match rc.typ, rc.status with
     `ABSENT, `Unchanged ->
       "absent"
@@ -236,6 +244,11 @@ let replicaContent2string rc sep =
      d "changed file     "
   | `FILE, `PropsChanged ->
      d "changed props    "
+  | `FILE, `MovedOut (n, p, _) ->
+     m "moved/renamed fil" ("||--> new name: " ^ (Path.toString n) ^
+       overwriteWarning rc) p
+  | `FILE, `MovedIn (n, _, _) ->
+     m "moved/renamed fil" ("||<-- previous name: " ^ (Path.toString n)) rc
   | `SYMLINK, `Created ->
      d (choose "new symlink      " "symlink          ")
   | `SYMLINK, `Modified ->
@@ -246,10 +259,15 @@ let replicaContent2string rc sep =
      d "changed dir      "
   | `DIRECTORY, `PropsChanged ->
      d "dir props changed"
+  | `DIRECTORY, `MovedOut (n, p, _) ->
+     m "moved/renamed dir" ("||--> new name: " ^ (Path.toString n) ^
+       overwriteWarning rc) p
+  | `DIRECTORY, `MovedIn (n, _, _) ->
+     m "moved/renamed dir" ("||<-- previous name: " ^ (Path.toString n)) rc
 
   (* Some cases that can't happen... *)
-  | `ABSENT, (`Created | `Modified | `PropsChanged)
-  | `SYMLINK, `PropsChanged
+  | `ABSENT, (`Created | `Modified | `PropsChanged | `MovedOut _ | `MovedIn _)
+  | `SYMLINK, (`PropsChanged | `MovedOut _ | `MovedIn _)
   | (`FILE|`SYMLINK|`DIRECTORY), `Deleted ->
       assert false
 
@@ -260,14 +278,18 @@ let replicaContent2shortString rc =
   | `FILE, `Created           -> choose "new file" "file    "
   | `FILE, `Modified          -> "changed "
   | `FILE, `PropsChanged      -> "props   "
+  | `FILE, `MovedOut _        -> "renamed "
+  | `FILE, `MovedIn _         -> "renamed "
   | `SYMLINK, `Created        -> choose "new link" "link    "
   | `SYMLINK, `Modified       -> "chgd lnk"
   | `DIRECTORY, `Created      -> choose "new dir " "dir     "
   | `DIRECTORY, `Modified     -> "chgd dir"
   | `DIRECTORY, `PropsChanged -> "props   "
+  | `DIRECTORY, `MovedOut _   -> "rnmd dir"
+  | `DIRECTORY, `MovedIn _    -> "rnmd dir"
   (* Cases that can't happen... *)
-  | `ABSENT, (`Created | `Modified | `PropsChanged)
-  | `SYMLINK, `PropsChanged
+  | `ABSENT, (`Created | `Modified | `PropsChanged | `MovedOut _ | `MovedIn _)
+  | `SYMLINK, (`PropsChanged | `MovedOut _ | `MovedIn _)
   | (`FILE|`SYMLINK|`DIRECTORY), `Deleted
                               -> assert false
 
@@ -341,10 +363,23 @@ let reconItem2stringList oldPath theRI =
       ("        ", AError, "        ", displayPath oldPath theRI.path1)
   | Different diff ->
       let partial = diff.errors1 <> [] || diff.errors2 <> [] in
+      let onemoved =
+        match diff.rc1, diff.rc2 with
+        | {status = `MovedOut _ | `MovedIn _; _},
+          {status = `MovedOut _ | `MovedIn _; _} ->
+            ""
+        | ({status = `MovedOut (n, _, _); _} as rc), _
+        | _, ({status = `MovedOut (n, _, _); _} as rc) ->
+            " (--> new name: " ^ Path.toString n ^ ")" ^ overwriteWarning rc
+        | {status = `MovedIn (n, _, _); _}, _
+        | _, {status = `MovedIn (n, _, _); _} ->
+            " (<-- previous name: " ^ Path.toString n ^ ")"
+        | _ -> ""
+      in
       (replicaContent2shortString diff.rc1,
        direction2action partial diff.direction,
        replicaContent2shortString diff.rc2,
-       Path.toString theRI.path1)
+       Path.toString theRI.path1 ^ onemoved)
 
 let reconItem2string oldPath theRI status =
   let (r1, action, r2, path) = reconItem2stringList oldPath theRI in
@@ -380,10 +415,16 @@ let showDiffs ri printer errprinter id =
     Problem _ ->
       errprinter
         "Can't diff files: there was a problem during update detection"
-  | Different {rc1 = {typ = `FILE; ui = ui1}; rc2 = {typ = `FILE; ui = ui2}} ->
+  | Different {rc1 = {typ = `FILE; status = st1; ui = ui1};
+               rc2 = {typ = `FILE; status = st2; ui = ui2}} ->
       let (root1,root2) = Globals.roots() in
       begin
-        try Files.diff root1 ri.path1 ui1 root2 ri.path2 ui2 printer id
+        let path1, ui1 =
+          match st1 with | `MovedOut (n, {ui}, _) -> n, ui | _ -> ri.path1, ui1
+        and path2, ui2 =
+          match st2 with | `MovedOut (n, {ui}, _) -> n, ui | _ -> ri.path2, ui2
+        in
+        try Files.diff root1 path1 ui1 root2 path2 ui2 printer id
         with Util.Transient e -> errprinter e
       end
   | Different _ ->

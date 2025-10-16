@@ -49,6 +49,28 @@ val setProp :
   -> Common.updateItem          (* target updates *)
   -> unit Lwt.t
 
+(* Replicate a rename/move done on a path in one replica to a rename/move on  *)
+(* another path in a second replica (or revert the original rename/move).     *)
+val move :
+     Common.root                (* from what root *)
+  -> Path.t                     (* original path *)
+  -> Common.updateItem          (* original path updates *)
+  -> Path.t                     (* moved path (new path) *)
+  -> Common.updateItem          (* moved path updates *)
+  -> Props.t                    (* moved path properties *)
+  -> Props.t list               (* properties of new parent directories *)
+  -> Common.root                (* to what root *)
+  -> Path.t                     (* path to rename *)
+  -> Common.updateItem          (* original path updates *)
+  -> Props.t                    (* original path properties *)
+  -> Path.t                     (* path after rename (new path) *)
+  -> Common.updateItem          (* new path updates (before move) *)
+  -> Props.t list               (* properties of new parent directories *)
+  -> bool                       (* [true] if not Unison's default action *)
+  -> Uutil.Filesize.t           (* total size (for showing progress) *)
+  -> Uutil.File.t               (* id for showing progress of transfer *)
+  -> unit Lwt.t
+
 (* Generate a difference summary for two (possibly remote) versions of a     *)
 (* file and send it to a given function                                      *)
 val diff :

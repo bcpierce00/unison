@@ -1666,19 +1666,16 @@ let showStatusDir path = ()
 
 (* ------- *)
 
-let symlinkInfo =
-  Common.Previous (`SYMLINK, Props.dummy, Os.fullfingerprint_dummy, Osx.ressDummy)
-
 let absentInfo = Common.New
 
 let oldInfoOf archive =
   match archive with
     ArchiveDir  (oldDesc, _) ->
-      Common.Previous (`DIRECTORY, oldDesc, Os.fullfingerprint_dummy, Osx.ressDummy)
-  | ArchiveFile (oldDesc, dig, _, ress) ->
-      Common.Previous (`FILE, oldDesc, dig, ress)
+      Common.PrevDir oldDesc
+  | ArchiveFile (oldDesc, dig, oldStamp, ress) ->
+      Common.PrevFile (oldDesc, dig, oldStamp, ress)
   | ArchiveSymlink _ ->
-      symlinkInfo
+      Common.PrevSymlink
   | NoArchive ->
       absentInfo
 
@@ -1687,9 +1684,9 @@ let rec noChildChange childUpdates =
   match childUpdates with
     [] ->
       true
-  | (_, Updates (File _, Previous (`FILE, _, _, _))) :: rem
-  | (_, Updates (Dir _, Previous (`DIRECTORY, _, _, _))) :: rem
-  | (_, Updates (Symlink _, Previous (`SYMLINK, _, _, _))) :: rem ->
+  | (_, Updates (File _, PrevFile _)) :: rem
+  | (_, Updates (Dir _, PrevDir _)) :: rem
+  | (_, Updates (Symlink _, PrevSymlink)) :: rem ->
       noChildChange rem
   | _ ->
       false
@@ -2960,6 +2957,8 @@ let rec updateArchiveRec ui archive =
                    children NameMap.empty)
           end
 
+let makeArchive ui = updateArchiveRec ui NoArchive
+
 (* Remove ignored files and properties that are not synchronized *)
 let rec stripArchive path arch =
   if Globals.shouldIgnore path then NoArchive else
@@ -3145,7 +3144,7 @@ let markPossiblyUpdated fspath path =
 let rec markPossiblyUpdatedRec fspath path ui =
   match ui with
     Updates (File (desc, ContentsUpdated (_, _, ress)),
-             Previous (`FILE, oldDesc, _, oldRess)) ->
+             PrevFile (oldDesc, _, _, oldRess)) ->
       if fastCheckMiss path desc ress oldDesc oldRess then
         markPossiblyUpdated fspath path
   | Updates (Dir (_, uiChildren, _, _), _) ->
@@ -3182,7 +3181,7 @@ let rec explainUpdate path ui =
         (Format.sprintf "The properties of file %s have been modified\n"
            (Path.toString path))
   | Updates (File (desc, ContentsUpdated (_, _, ress)),
-             Previous (`FILE, oldDesc, oldFp, oldRess)) ->
+             PrevFile (oldDesc, oldFp, _, oldRess)) ->
       if not (Os.isPseudoFingerprint oldFp) then
         reportUpdate (fastCheckMiss path desc ress oldDesc oldRess)
           (Format.sprintf "The contents of file %s have been modified\n"
@@ -3191,7 +3190,7 @@ let rec explainUpdate path ui =
       reportUpdate false
         (Format.sprintf "The file %s has been created\n"
            (Path.toString path))
-  | Updates (Symlink _, Previous (`SYMLINK, _, _, _)) ->
+  | Updates (Symlink _, PrevSymlink) ->
       reportUpdate false
         (Format.sprintf "The symlink %s has been modified\n"
            (Path.toString path))
@@ -3199,7 +3198,7 @@ let rec explainUpdate path ui =
       reportUpdate false
         (Format.sprintf "The symlink %s has been created\n"
            (Path.toString path))
-  | Updates (Dir (_, _, PropsUpdated, _), Previous (`DIRECTORY, _, _, _)) ->
+  | Updates (Dir (_, _, PropsUpdated, _), PrevDir _) ->
       reportUpdate false
         (Format.sprintf
            "The properties of directory %s have been modified\n"
@@ -3213,7 +3212,7 @@ let rec explainUpdate path ui =
         (fun (nm, uiChild) -> explainUpdate (Path.child path nm) uiChild)
         uiChildren
 
-let checkNoUpdates fspath pathInArchive ui =
+let checkNoUpdates ?(fastCheck=false) fspath pathInArchive ui =
   debug (fun() ->
     Util.msg "checkNoUpdates %s %s\n"
       (Fspath.toDebugString fspath) (Path.toString pathInArchive));
@@ -3225,7 +3224,7 @@ let checkNoUpdates fspath pathInArchive ui =
   let archive = updateArchiveRec ui archive in
   (* ...and check that this is a good description of what's out in the world *)
   let scanInfo =
-    { fastCheck = false; dirFastCheck = false;
+    { fastCheck; dirFastCheck = false;
       dirStamp = Props.changedDirStamp; rescanProps = true;
       archHash = "" (* Not used *); showStatus = false } in
   let (_, uiNew) = buildUpdateRec archive fspath localPath scanInfo in
@@ -3300,12 +3299,16 @@ let rec updateSizeRec archive ui =
                    sizeAdd size (updateSizeRec NoArchive uiChild))
                 sizeOne children
 
-let updateSize path ui =
+let getSubArchiveLocal path =
   let rootLocal = Globals.localRoot () in
   let fspathLocal = snd rootLocal in
   let root = thisRootsGlobalName fspathLocal in
   let archive = getArchive root in
   let (_, subArch) = getPathInArchive archive Path.empty path in
+  subArch
+
+let updateSize path ui =
+  let subArch = getSubArchiveLocal path in
   updateSizeRec subArch ui
 
 (*****************************************************************************)

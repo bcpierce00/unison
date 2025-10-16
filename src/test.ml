@@ -284,6 +284,7 @@ let test() =
   Lwt_unix.run (Globals.allRootsIter (fun r -> makeRootEmpty r ()));
 
   let (r2,r1) = Globals.roots () in
+  let (rr2, rr1) = Globals.rawRootPair () in
   (* Util.msg "r1 = %s  r2 = %s...\n" (Common.root2string r1) (Common.root2string r2); *)
   let bothRootsLocal =
     match (r1,r2) with
@@ -326,6 +327,24 @@ let test() =
       failures := !failures+1;
       raise (Util.Fatal (Printf.sprintf "Self-test %s / %s failed!" (!currentTest) name))
     end in
+
+  let check_assert name thunk =
+    debug (fun () -> Util.msg "Checking %s / %s\n" (!currentTest) name);
+    let fail s =
+      Util.msg "Test %s / %s: \n%s\n" (!currentTest) name s;
+      incr failures;
+      raise (Util.Fatal (Printf.sprintf "Self-test %s / %s failed!" (!currentTest) name)) in
+    match thunk () with
+    | None -> ()
+    | Some err -> fail err in
+
+  let assert_n_ris n err () =
+    match Recon.reconcileAll (Update.findUpdates None) with
+    | (ris, _, _) when List.compare_length_with ris n = 0 -> None
+    | (ris, _, _) -> debug (fun () -> displayRis ris); Some err
+  in
+
+  let assert_eq a b err () = if a = b then None else Some err in
 
   (* N.b.: When making up tests, it's important to choose file contents of different
      lengths.  The reason for this is that, on some Unix systems, it is possible for
@@ -565,6 +584,225 @@ let test() =
       checkOwner "1" R2 "a/b" "testuser";  (* does not exist *)
     );
     *)
+  end;
+
+  if Moves.enabled () then begin
+    let sync_count_moves () =
+      let moved = ref 0 in
+      let count_moves _ _ dbg =
+        (* A very crude way of counting propagated moves *)
+        if dbg = "mov" then incr moved
+      in
+      Uutil.setProgressPrinter count_moves;
+      sync ~verbose:false ();
+      Uutil.setProgressPrinter (fun _ _ _ -> ());
+      !moved
+    in
+
+    let assert_n_mov n err () = assert_eq (sync_count_moves ()) n err () in
+
+    let testmoves n name (expect_move : [`NoMove | `Move | `RevertMove | `RevertNoMove]) ?total expect_n_mov =
+      let expect_n_ris = match total with Some x -> x | None -> expect_n_mov in
+      let err = name ^ " was not detected" in
+      check_assert (n ^ "a") (assert_n_ris expect_n_ris err);
+      let expect_n_moved = match expect_move with
+        | `NoMove | `RevertNoMove -> 0
+        | `Move | `RevertMove -> expect_n_mov
+      in
+      let err = name ^ match expect_move with
+        | `NoMove -> " was propagated as a move"
+        | `Move -> " was not propagated as a move"
+        | `RevertMove -> " was not reverted as a move"
+        | `RevertNoMove -> " was reverted as a move"
+      in
+      check_assert (n ^ "b") (assert_n_mov expect_n_moved err)
+    in
+
+    runtest "moves/renames 1 (plain)" ["moves-experimental = true"] (fun () ->
+      put R1 (Dir []); put R2 (Dir []); sync ();
+      (* Create a file and a directory *)
+      put R1 (Dir ["x", File "foo"; "d", Dir ["a", File "barr"]]); sync ();
+      (* Rename a file *)
+      let newfs = Dir ["y", File "foo"; "d", Dir ["a", File "barr"]] in
+      put R2 newfs;
+      testmoves "1" "File rename" `Move 1;
+      check "2" R1 newfs;
+      (* Rename a directory *)
+      let newfs = Dir ["y", File "foo"; "e", Dir ["a", File "barr"]] in
+      put R2 newfs;
+      testmoves "3" "Directory rename" `Move 1;
+      check "4" R1 newfs;
+      (* Move a file *)
+      let newfs = Dir ["e", Dir ["a", File "barr"; "y", File "foo"]] in
+      put R2 newfs;
+      testmoves "5" "File move" `Move 1;
+      check "6" R1 newfs;
+      (* Move a directory *)
+      put R1 (Dir ["d", Dir ["a", File "barr"]; "q", Dir []]); sync ();
+      let newfs = Dir ["q", Dir ["d", Dir ["a", File "barr"]]] in
+      put R2 newfs;
+      testmoves "7" "Directory move" `Move 1;
+      check "8" R1 newfs;
+      (* Multiple moves and renames *)
+      put R1 (Dir []); put R2 (Dir []); sync ();
+      put R1 (Dir ["x", File "foo"; "y", File "bar"; "z", File "bah";
+        "c", Dir ["b", File "quu"]; "d", Dir ["a", File "barr"]]);
+      sync ();
+      let newfs = Dir ["y", File "bar"; "o", File "bah";
+        "c", Dir ["b", File "quu"; "x", File "foo"; "z", File "bar"];
+        "e", Dir ["a", File "barr"]] in
+      put R1 newfs;
+      testmoves "9" "Multi-rename" `Move ~total:4 3;
+      check "10" R2 newfs;
+      (* Non-rename a file *)
+      put R1 (Dir []); put R2 (Dir []); sync ();
+      put R1 (Dir ["y", File "bar"]); sync ();
+      put R1 (Dir ["x", File "bah"]);
+      testmoves "11" "Non-rename" `NoMove ~total:2 0;
+      check "12" R2 (Dir ["x", File "bah"]);
+    );
+
+    runtest "moves/renames 2 (reverting)" ["moves-experimental = true"; "force = " ^ rr1] (fun () ->
+      put R1 (Dir []); put R2 (Dir []); sync ();
+      (* Create a file and a directory *)
+      let origfs = Dir ["x", File "foo"; "d", Dir ["a", File "barr"]] in
+      put R1 origfs; sync ();
+      (* Rename a file *)
+      let newfs = Dir ["y", File "foo"; "d", Dir ["a", File "barr"]] in
+      put R2 newfs;
+      testmoves "1" "File rename" `RevertMove 1;
+      check "2" R2 origfs;
+      (* Rename a directory *)
+      let newfs = Dir ["x", File "foo"; "e", Dir ["a", File "barr"]] in
+      put R2 newfs;
+      testmoves "3" "Directory rename" `RevertMove 1;
+      check "4" R2 origfs;
+      (* Move a file *)
+      let newfs = Dir ["d", Dir ["a", File "barr"; "x", File "foo"]] in
+      put R2 newfs;
+      testmoves "5" "File move" `RevertMove 1;
+      check "6" R1 origfs;
+      (* Move a directory *)
+      let origfs = Dir ["d", Dir ["a", File "barr"]; "q", Dir []] in
+      put R1 origfs; put R2 origfs; sync ();
+      let newfs = Dir ["q", Dir ["d", Dir ["a", File "barr"]]] in
+      put R2 newfs;
+      testmoves "7" "Directory move" `RevertMove 1;
+      check "8" R1 origfs;
+      (* Multiple moves and renames *)
+      put R1 (Dir []); put R2 (Dir []); sync ();
+      let origfs = Dir ["x", File "foo"; "y", File "bar"; "z", File "bah";
+        "c", Dir ["b", File "quu"]; "d", Dir ["a", File "barr"]] in
+      put R1 origfs; put R2 origfs; sync ();
+      let newfs = Dir ["y", File "bar"; "o", File "bah";
+        "c", Dir ["b", File "quu"; "x", File "foo"; "z", File "bar"];
+        "e", Dir ["a", File "barr"]] in
+      put R2 newfs;
+      testmoves "9" "Multi-rename" `Move ~total:4 3;
+      check "10" R1 origfs;
+    );
+
+    runtest "moves/renames 3 (overwriting)" ["moves-experimental = true"] (fun () ->
+      put R1 (Dir []); put R2 (Dir []); sync ();
+      (* Create files and directories *)
+      let origfs = Dir ["x", File "foo"; "y", File "bar"; "c", Dir ["b", File "quu"]; "d", Dir ["a", File "barr"]] in
+      put R1 origfs; put R2 origfs; sync ();
+      (* Rename a file over another *)
+        (* Currently not supported by move detection *)
+      (* Rename a file over a directory *)
+      let newfs = Dir ["c", File "foo"; "y", File "bar"; "d", Dir ["a", File "barr"]] in
+      put R1 newfs;
+      testmoves "1" "File rename" `Move 1;
+      check "2" R2 newfs;
+      (* Rename a directory over another *)
+        (* Currently not supported by move detection *)
+      (* Rename a directory over a file *)
+      put R1 origfs; put R2 origfs; sync ();
+      let newfs = Dir ["x", File "foo"; "c", Dir ["b", File "quu"]; "y", Dir ["a", File "barr"]] in
+      put R1 newfs;
+      testmoves "3" "Directory rename" `Move 1;
+      check "4" R2 newfs;
+    );
+
+    runtest "moves/renames 4 (reverting overwrites)" ["moves-experimental = true"; "force = " ^ rr1] (fun () ->
+      put R1 (Dir []); put R2 (Dir []); sync ();
+      (* Create files and directories *)
+      let origfs = Dir ["x", File "foo"; "y", File "bar"; "c", Dir ["b", File "quu"]; "d", Dir ["a", File "barr"]] in
+      put R1 origfs; sync ();
+      (* Rename a file over a directory *)
+      let newfs = Dir ["c", File "foo"; "y", File "bar"; "d", Dir ["a", File "barr"]] in
+      put R2 newfs;
+      testmoves "1" "File rename" `RevertNoMove 1;
+      check "2" R2 origfs;
+      (* Rename a directory over a file *)
+      put R1 origfs; put R2 origfs; sync ();
+      let newfs = Dir ["x", File "foo"; "c", Dir ["b", File "quu"]; "y", Dir ["a", File "barr"]] in
+      put R2 newfs;
+      testmoves "3" "Directory rename" `RevertNoMove 1;
+      check "4" R2 origfs;
+    );
+
+    runtest "moves/renames 5 (conflicts)" ["moves-experimental = true"; "force = " ^ rr1] (fun () ->
+      put R1 (Dir []); put R2 (Dir []); sync ();
+      (* Create files and directories *)
+      let origfs = Dir ["x", File "foo"; "y", File "bar"; "c", Dir ["b", File "quu"]; "d", Dir ["a", File "barr"]] in
+      put R1 origfs; sync ();
+      (* Rename a file with delete conflict *)
+      let newfs1 = Dir ["c", File "foo"; "y", File "bar"; "d", Dir ["a", File "barr"]]
+      and newfs2 = Dir ["x", File "foo"; "y", File "bar"; "d", Dir ["a", File "barr"]] in
+      put R1 newfs1;
+      put R2 newfs2;
+      testmoves "1" "Conflicting file rename" `Move 1;
+      check "2" R2 newfs1;
+      (* Rename directory with delete conflict *)
+      put R1 origfs; put R2 origfs; sync ();
+      let newfs1 = Dir ["x", File "foo"; "y", Dir ["b", File "quu"]; "d", Dir ["a", File "barr"]]
+      and newfs2 = Dir ["x", File "foo"; "c", Dir ["b", File "quu"]; "d", Dir ["a", File "barr"]] in
+      put R1 newfs1;
+      put R2 newfs2;
+      testmoves "3" "Conflicting directory rename" `Move 1;
+      check "4" R2 newfs1;
+      (* Rename a file with change conflict *)
+      put R1 origfs; put R2 origfs; sync ();
+      let newfs1 = Dir ["z", File "foo"; "y", File "bar"; "c", Dir ["b", File "quu"]; "d", Dir ["a", File "barr"]]
+      and newfs2 = Dir ["x", File "fooz"; "y", File "bar"; "c", Dir ["b", File "quu"]; "d", Dir ["a", File "barr"]] in
+      put R1 newfs1;
+      put R2 newfs2;
+      testmoves "5" "Conflicting file rename" `NoMove 1;
+      check "6" R2 newfs1;
+      (* Rename directory with change conflict *)
+      let newfs = Dir ["x", File "foo"; "e", Dir ["a", File "barr"]] in
+      put R1 newfs;
+      put R2 (Dir ["x", File "foo"; "d", Dir ["b", File "barr"]]);
+      testmoves "7" "Conflicting directory rename" `NoMove 1;
+      check "8" R2 newfs;
+      (* Rename a file with file create conflict *)
+      put R1 origfs; put R2 origfs; sync ();
+      let newfs1 = Dir ["z", File "foo"; "y", File "bar"; "c", Dir ["b", File "quu"]; "d", Dir ["a", File "barr"]]
+      and newfs2 = Dir ["x", File "foo"; "y", File "bar"; "z", File "fooz"; "c", Dir ["b", File "quu"]; "d", Dir ["a", File "barr"]] in
+      put R1 newfs1;
+      put R2 newfs2;
+      testmoves "9" "Conflicting file rename" `Move 1;
+      check "10" R2 newfs1;
+      (* Rename a file with dir create conflict *)
+      put R1 origfs; put R2 origfs; sync ();
+      let newfs1 = Dir ["z", File "foo"; "y", File "bar"; "c", Dir ["b", File "quu"]; "d", Dir ["a", File "barr"]]
+      and newfs2 = Dir ["x", File "foo"; "y", File "bar"; "z", Dir []; "c", Dir ["b", File "quu"]; "d", Dir ["a", File "barr"]] in
+      put R1 newfs1;
+      put R2 newfs2;
+      testmoves "11" "Conflicting file rename" `Move 1;
+      check "12" R2 newfs1;
+      (* Rename a dir with file create conflict *)
+      put R1 origfs; put R2 origfs; sync ();
+      let newfs1 = Dir ["x", File "foo"; "y", File "bar"; "z", Dir ["b", File "quu"]; "d", Dir ["a", File "barr"]]
+      and newfs2 = Dir ["x", File "foo"; "y", File "bar"; "z", File "fooz"; "c", Dir ["b", File "quu"]; "d", Dir ["a", File "barr"]] in
+      put R1 newfs1;
+      put R2 newfs2;
+      testmoves "13" "Conflicting directory rename" `Move 1;
+      check "14" R2 newfs1;
+      (* Rename a dir with dir create conflict *)
+        (* Currently not supported by reconciliation + move detection *)
+    );
   end;
 
   if not bothRootsLocal then

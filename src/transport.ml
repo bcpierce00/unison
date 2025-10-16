@@ -29,7 +29,7 @@ let fileSize uiFrom uiTo =
   match uiFrom, uiTo with
     _, Updates (File (props, ContentsUpdated (_, _, ress)), _) ->
       (Props.length props, Osx.ressLength ress)
-  | Updates (_, Previous (`FILE, props, _, ress)),
+  | Updates (_, PrevFile (props, _, _, ress)),
     (NoUpdates | Updates (File (_, ContentsSame), _)) ->
       (Props.length props, Osx.ressLength ress)
   | _ ->
@@ -111,13 +111,183 @@ let logLwtNumbered (lwtDescription: string) (lwtShortDescription: string)
     (fun _ ->
       Printf.sprintf "[END] %s\n" lwtShortDescription)
 
-let doAction
+let rec moveFallback
+      fromRoot fromPath fromContents toRoot toPath toContents notDefault id =
+  (* For cases when renaming is not possible, fall back to separate
+     copy and delete actions. *)
+  match fromContents, toContents with
+  | {status = `MovedOut _}, {status = `MovedOut _}
+  | {status = `MovedIn _},  {status = `MovedIn _} ->
+      (* This is currently not possible, but it may be in future *)
+      assert false
+  | {status = `MovedOut (fromPath', fromContents', toContents')},
+    _ ->
+      doAction fromRoot fromPath' fromContents'
+               toRoot fromPath' toContents' notDefault id >>= fun () ->
+      doAction fromRoot fromPath (Moves.originalRc fromContents)
+               toRoot toPath toContents notDefault id
+  | _,
+    {status = `MovedOut (toPath', toContents', fromContents')} ->
+      doAction fromRoot fromPath fromContents
+               toRoot toPath (Moves.originalRc toContents) notDefault id
+        >>= fun () ->
+      doAction fromRoot toPath' fromContents'
+               toRoot toPath' toContents' notDefault id
+  | {status = `MovedIn (fromPath', fromContents', toContents')},
+    _ ->
+      doAction fromRoot fromPath (Moves.originalRc fromContents)
+               toRoot toPath toContents notDefault id >>= fun () ->
+      doAction fromRoot fromPath' fromContents'
+               toRoot fromPath' toContents' notDefault id
+  | _,
+    {status = `MovedIn (toPath', toContents', fromContents')} ->
+      doAction fromRoot toPath' fromContents'
+               toRoot toPath' toContents' notDefault id >>= fun () ->
+      doAction fromRoot fromPath fromContents
+               toRoot toPath (Moves.originalRc toContents) notDefault id
+  | _, _ ->
+      doAction
+        fromRoot fromPath fromContents toRoot toPath toContents notDefault id
+
+and tryMove move fallback () =
+  Lwt.catch move
+    (function
+    | Util.Transient "EXDEV" ->
+       debug (fun () ->
+         Util.msg ("Attempt to rename across filesystems failed. "
+           ^^ "Falling back to copy + delete.\n"));
+       fallback ()
+    | e -> raise e)
+
+and doMove
+      fromRoot fromPath fromContents toRoot toPath toContents notDefault id =
+  (* There is some code duplication going on between cases 1 & 3 and 2 & 4
+     (or even all of the cases, if you push it). It is intentionally left so
+     because wrapping your head around extracting the right data from the
+     `Move* replicaContents is a bit tricky, so better not make it worse. *)
+  match fromContents, toContents with
+  | {status = `MovedOut _}, {status = `MovedOut _}
+  | {status = `MovedIn _},  {status = `MovedIn _} ->
+      (* This is currently not possible, but it may be in future *)
+      assert false
+  | {typ = `ABSENT}, {status = `MovedOut _} ->
+      (* This is currently not possible, but it may be in future *)
+      assert false
+  | {status = `MovedOut (fromPath', fromContents', toContents'); ui = uiFrom},
+    {status = `Unchanged | `PropsChanged; desc = descTo; ui = uiTo} ->
+      (* CASE 1 *)
+      (* The contents of the move source in the to-replica are unchanged,
+         so a move can be propagated instead of a copy.
+         Whatever exists on fromPath' in toRoot, will be overwritten. *)
+      logLwtNumbered
+        ("Moving/renaming file " ^ Path.toString toPath ^ " --> "
+         ^ Path.toString fromPath' ^ "\n  on " ^ root2string toRoot)
+        ("Moving/renaming file " ^ Path.toString toPath)
+        (tryMove
+          (fun () ->
+            Files.move
+              fromRoot
+                fromPath uiFrom
+                fromPath' fromContents'.ui fromContents'.desc fromContents'.props
+              toRoot
+                toPath uiTo descTo
+                fromPath' toContents'.ui toContents'.props
+              notDefault (snd fromContents.size) id)
+          (fun () ->
+            moveFallback fromRoot fromPath fromContents
+              toRoot toPath toContents notDefault id))
+  | {status = `Unchanged | `PropsChanged; desc = descFrom; ui = uiFrom; props = propsFrom},
+    {status = `MovedOut (toPath', toContents', {typ = `ABSENT}); ui = uiTo; props = propsTo} ->
+      (* CASE 2 *)
+      (* The move target in the from-replica does not exist and the
+         contents of the move source are unchanged, so a revert move
+         can be propagated instead of a copy. *)
+      logLwtNumbered
+        ("Moving/renaming file " ^ Path.toString toPath' ^ " --> "
+         ^ Path.toString toPath ^ "\n  on " ^ root2string toRoot)
+        ("Moving/renaming file " ^ Path.toString toPath')
+        (tryMove
+          (fun () ->
+            Files.move
+              fromRoot
+                toPath' (Updates (Absent, New))
+                fromPath uiFrom descFrom propsFrom
+              toRoot
+                toPath' toContents'.ui toContents'.desc
+                toPath uiTo propsTo
+              notDefault (snd toContents.size) id)
+          (fun () ->
+            moveFallback fromRoot fromPath fromContents
+              toRoot toPath toContents notDefault id))
+  | {status = `MovedIn (fromPath', fromContents',
+      ({status = `Unchanged | `PropsChanged; _} as toContents'));
+      ui = uiFrom; desc = descFrom; props = propsFrom},
+    {ui = uiTo; props = propsTo} ->
+      (* CASE 3 *)
+      (* The contents of the move source in the to-replica are unchanged,
+         so a move can be propagated instead of a copy.
+         Whatever exists on toPath in toRoot, will be overwritten. *)
+      logLwtNumbered
+        ("Moving/renaming file " ^ Path.toString fromPath' ^ " --> "
+         ^ Path.toString toPath ^ "\n  on " ^ root2string toRoot)
+        ("Moving/renaming file " ^ Path.toString fromPath')
+        (tryMove
+          (fun () ->
+            Files.move
+              fromRoot
+                fromPath' fromContents'.ui
+                fromPath uiFrom descFrom propsFrom
+              toRoot
+                fromPath' toContents'.ui toContents'.desc
+                toPath uiTo propsTo
+              notDefault (snd fromContents.size) id)
+          (fun () ->
+            moveFallback fromRoot fromPath fromContents
+              toRoot toPath toContents notDefault id))
+  | {typ = `ABSENT; ui = uiFrom; props = propsFrom},
+    {status = `MovedIn (toPath', toContents',
+      ({status = `Unchanged | `PropsChanged; _} as fromContents'));
+      ui = uiTo; desc = descTo; props = propsTo} ->
+      (* CASE 4 *)
+      (* The move target in the from-replica does not exist and the
+         contents of the move source are unchanged, so a revert move
+         can be propagated instead of a copy. *)
+      logLwtNumbered
+        ("Moving/renaming file " ^ Path.toString toPath ^ " --> "
+         ^ Path.toString toPath' ^ "\n  on " ^ root2string toRoot)
+        ("Moving/renaming file " ^ Path.toString toPath)
+        (tryMove
+          (fun () ->
+            Files.move
+              fromRoot
+                fromPath (Updates (Absent, New))
+                toPath' fromContents'.ui fromContents'.desc fromContents'.props
+              toRoot
+                toPath uiTo descTo
+                toPath' toContents'.ui toContents'.props
+              notDefault (snd toContents.size) id)
+          (fun () ->
+            moveFallback fromRoot fromPath fromContents
+              toRoot toPath toContents notDefault id))
+  | {status = `MovedOut _ | `MovedIn _}, _
+  | _, {status = `MovedOut _ | `MovedIn _} ->
+      (* Fallback to copy + delete *)
+      moveFallback fromRoot fromPath fromContents
+        toRoot toPath toContents notDefault id
+  | _ -> assert false
+
+and doAction
       fromRoot fromPath fromContents toRoot toPath toContents notDefault id =
   if not !Trace.sendLogMsgsToStderr then
     Trace.statusDetail (Path.toString toPath);
   Remote.Thread.unwindProtect (fun () ->
     match fromContents, toContents with
-        {typ = `ABSENT}, {ui = uiTo} ->
+        | {status = `MovedOut _ | `MovedIn _}, _
+        | _, {status = `MovedOut _ | `MovedIn _} ->
+            doMove
+              fromRoot fromPath fromContents
+              toRoot toPath toContents notDefault id
+        | {typ = `ABSENT}, {ui = uiTo} ->
            logLwtNumbered
              ("Deleting " ^ Path.toString toPath ^
               "\n  from "^ root2string toRoot)

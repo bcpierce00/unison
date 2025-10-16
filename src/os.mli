@@ -16,7 +16,8 @@ val childrenOf : Fspath.t -> Path.local -> Name.t list
 val readLink : Fspath.t -> Path.local -> string
 val symlink : Fspath.t -> Path.local -> string -> unit
 
-val rename : string -> Fspath.t -> Path.local -> Fspath.t -> Path.local -> unit
+val rename : ?exdev:(unit -> unit) -> string -> Fspath.t -> Path.local ->
+  Fspath.t -> Path.local -> unit
 val createDir : Fspath.t -> Path.local -> int -> unit
 val delete : Fspath.t -> Path.local -> unit
 

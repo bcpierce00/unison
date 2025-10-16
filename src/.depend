@@ -62,6 +62,7 @@ common.cmo : \
     name.cmi \
     fspath.cmi \
     fileinfo.cmi \
+    features.cmi \
     common.cmi
 common.cmx : \
     uutil.cmx \
@@ -75,6 +76,7 @@ common.cmx : \
     name.cmx \
     fspath.cmx \
     fileinfo.cmx \
+    features.cmx \
     common.cmi
 common.cmi : \
     uutil.cmi \
@@ -632,6 +634,37 @@ main.cmx : \
     os.cmx
 make_tools.cmo :
 make_tools.cmx :
+moves.cmo : \
+    uutil.cmi \
+    ubase/util.cmi \
+    update.cmi \
+    ubase/trace.cmi \
+    ubase/safelist.cmi \
+    props.cmi \
+    ubase/prefs.cmi \
+    path.cmi \
+    os.cmi \
+    name.cmi \
+    features.cmi \
+    common.cmi \
+    moves.cmi
+moves.cmx : \
+    uutil.cmx \
+    ubase/util.cmx \
+    update.cmx \
+    ubase/trace.cmx \
+    ubase/safelist.cmx \
+    props.cmx \
+    ubase/prefs.cmx \
+    path.cmx \
+    os.cmx \
+    name.cmx \
+    features.cmx \
+    common.cmx \
+    moves.cmi
+moves.cmi : \
+    path.cmi \
+    common.cmi
 name.cmo : \
     ubase/util.cmi \
     ubase/umarshal.cmi \
@@ -847,6 +880,7 @@ recon.cmo : \
     pred.cmi \
     path.cmi \
     name.cmi \
+    moves.cmi \
     globals.cmi \
     fileinfo.cmi \
     common.cmi \
@@ -865,6 +899,7 @@ recon.cmx : \
     pred.cmx \
     path.cmx \
     name.cmx \
+    moves.cmx \
     globals.cmx \
     fileinfo.cmx \
     common.cmx \
@@ -1057,6 +1092,7 @@ test.cmo : \
     ubase/prefs.cmi \
     path.cmi \
     os.cmi \
+    moves.cmi \
     lwt/lwt_unix.cmi \
     lwt/lwt.cmi \
     globals.cmi \
@@ -1079,6 +1115,7 @@ test.cmx : \
     ubase/prefs.cmx \
     path.cmx \
     os.cmx \
+    moves.cmx \
     lwt/lwt_unix.cmx \
     lwt/lwt.cmx \
     globals.cmx \
@@ -1121,6 +1158,7 @@ transport.cmo : \
     ubase/prefs.cmi \
     path.cmi \
     osx.cmi \
+    moves.cmi \
     lwt/lwt_util.cmi \
     lwt/lwt.cmi \
     globals.cmi \
@@ -1137,6 +1175,7 @@ transport.cmx : \
     ubase/prefs.cmx \
     path.cmx \
     osx.cmx \
+    moves.cmx \
     lwt/lwt_util.cmx \
     lwt/lwt.cmx \
     globals.cmx \

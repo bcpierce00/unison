@@ -1120,6 +1120,7 @@ let docs =
       \032  -links xxx          allow the synchronization of symbolic links\n\
       \032                      (true/false/default)\n\
       \032  -merge xxx          add a pattern to the merge list\n\
+      \032  -moves-experimental optimize transfers by detecting renames and moves\n\
       \032  -nocreationpartial xxx add a pattern to the nocreationpartial list\n\
       \032  -nodeletionpartial xxx add a pattern to the nodeletionpartial list\n\
       \032  -noupdatepartial xxx add a pattern to the noupdatepartial list\n\
@@ -1797,6 +1798,17 @@ let docs =
       \032         whenremovable media is not mounted. This preference can be given\n\
       \032         more than once. See the section \226\128\156Mount Points and Removable\n\
       \032         Media\226\128\157 .\n\
+      \n\
+      \032  moves-experimental\n\
+      \032         When this preference is set, Unison will try to avoid\n\
+      \032         transferring file contents across the network, or making a local\n\
+      \032         copy, by recognizing when a file or a directory has been renamed\n\
+      \032         or moved to a new location. This usually allows to propagate\n\
+      \032         only the rename, without transferring or copying any data. The\n\
+      \032         default value is false.\n\
+      \n\
+      \032         This feature is currently experimental and may change in\n\
+      \032         incompatible ways in future versions.\n\
       \n\
       \032  nocreation xxx\n\
       \032         Including the preference -nocreation root prevents Unison from\n\

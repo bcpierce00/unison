@@ -77,11 +77,11 @@ type prevState251 =
     Previous of Fileinfo.typ * Props.t251 * Os.fullfingerprint * Osx.ressStamp
   | New
 
-type prevState =
+type prevState1 =
     Previous of Fileinfo.typ * Props.t * Os.fullfingerprint * Osx.ressStamp
   | New
 
-let mprevState = Umarshal.(sum2
+let mprevState1 = Umarshal.(sum2
                              (prod4 Fileinfo.mtyp Props.m Os.mfullfingerprint Osx.mressStamp id id)
                              unit
                              (function
@@ -90,6 +90,53 @@ let mprevState = Umarshal.(sum2
                              (function
                               | I21 (a, b, c, d) -> Previous (a, b, c, d)
                               | I22 () -> New))
+
+type prevState =
+  | PrevDir of Props.t
+  | PrevFile of Props.t * Os.fullfingerprint * Fileinfo.stamp * Osx.ressStamp
+  | PrevSymlink
+  | New
+
+let mprevState2 = Umarshal.(sum4
+                             Props.m
+                             (prod4 Props.m Os.mfullfingerprint Fileinfo.mstamp Osx.mressStamp id id)
+                             unit
+                             unit
+                             (function
+                              | PrevDir a -> I41 a
+                              | PrevFile (a, b, c, d) -> I42 (a, b, c, d)
+                              | PrevSymlink -> I43 ()
+                              | New -> I44 ())
+                             (function
+                              | I41 a -> PrevDir a
+                              | I42 (a, b, c, d) -> PrevFile (a, b, c, d)
+                              | I43 () -> PrevSymlink
+                              | I44 () -> New))
+
+let prev_to_old = function
+  | PrevDir desc ->
+      Previous (`DIRECTORY, desc, Os.fullfingerprint_dummy, Osx.ressDummy)
+  | PrevFile (desc, fp, _, ress) ->
+      Previous (`FILE, desc, fp, ress)
+  | PrevSymlink ->
+      Previous (`SYMLINK, Props.dummy, Os.fullfingerprint_dummy, Osx.ressDummy)
+  | New ->
+      New
+
+let prev_of_old = function
+  | Previous (`DIRECTORY, desc, _, _) -> PrevDir desc
+  | Previous (`FILE, desc, fp, ress) -> PrevFile (desc, fp, NoStamp, ress)
+  | Previous (`SYMLINK, _, _, _) -> PrevSymlink
+  | Previous (`ABSENT, _, _, _)
+  | New -> New
+
+let featPrevState2 = Features.register "prevState2" None
+
+let newPrevStateType () = Features.enabled featPrevState2
+
+let mprevState = Umarshal.(switch newPrevStateType
+  mprevState2 id id
+  mprevState1 prev_to_old prev_of_old)
 
 (* IMPORTANT!
    This is the 2.51-compatible version of type [Common.contentschange]. It
@@ -207,16 +254,16 @@ let mupdateContent, mupdateItem =
 (* Compatibility conversion functions *)
 
 let prev_to_compat251 (prev : prevState) : prevState251 =
-  match prev with
+  match prev_to_old prev with
   | Previous (typ, props, fp, ress) ->
       Previous (typ, Props.to_compat251 props, fp, ress)
   | New -> New
 
 let prev_of_compat251 (prev : prevState251) : prevState =
-  match prev with
+  prev_of_old (match prev with
   | Previous (typ, props, fp, ress) ->
       Previous (typ, Props.of_compat251 props, fp, ress)
-  | New -> New
+  | New -> New)
 
 let change_to_compat251 (c : contentschange) : contentschange251 =
   match c with
@@ -273,9 +320,11 @@ type status =
   | `Modified
   | `PropsChanged
   | `Created
+  | `MovedOut of Path.t * replicaContent * replicaContent
+  | `MovedIn of Path.t * replicaContent * replicaContent
   | `Unchanged ]
 
-type replicaContent =
+and replicaContent =
   { typ : Fileinfo.typ;
     status : status;
     desc : Props.t;                (* Properties (for the UI) *)
@@ -335,7 +384,12 @@ let rcLength rc rc' =
   if riAction rc rc' = `SetProps then
     Uutil.Filesize.zero
   else
-    snd rc.size
+    match rc'.status with
+    | `MovedIn _ ->
+        (* A move/rename will be reverted, count its size too *)
+        Uutil.Filesize.add (snd rc.size) (snd rc'.size)
+    | _ ->
+        snd rc.size
 
 let riLength ri =
   match ri.replicas with
@@ -355,17 +409,17 @@ let riLength ri =
 let fileInfos ui1 ui2 =
   match ui1, ui2 with
     (Updates (File (desc1, ContentsUpdated (fp1, _, ress1)),
-              Previous (`FILE, desc2, fp2, ress2)),
+              PrevFile (desc2, fp2, _, ress2)),
      NoUpdates)
   | (Updates (File (desc1, ContentsUpdated (fp1, _, ress1)),
-              Previous (`FILE, desc2, fp2, ress2)),
+              PrevFile (desc2, fp2, _, ress2)),
      Updates (File (_, ContentsSame), _))
   | (NoUpdates,
      Updates (File (desc2, ContentsUpdated (fp2, _, ress2)),
-              Previous (`FILE, desc1, fp1, ress1)))
+              PrevFile (desc1, fp1, _, ress1)))
   | (Updates (File (_, ContentsSame), _),
      Updates (File (desc2, ContentsUpdated (fp2, _, ress2)),
-              Previous (`FILE, desc1, fp1, ress1)))
+              PrevFile (desc1, fp1, _, ress1)))
   | (Updates (File (desc1, ContentsUpdated (fp1, _, ress1)), _),
      Updates (File (desc2, ContentsUpdated (fp2, _, ress2)), _)) ->
        (desc1, fp1, ress1, desc2, fp2, ress2)
