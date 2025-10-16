@@ -255,7 +255,7 @@ let () =
   |> List.filter (fun (_, cond) -> cond)
   |> List.iter (fun (name, _) ->
       "CAMLFLAGS" <-+= "-open " ^ (String.capitalize_ascii name);
-      "COMPAT_OBJS" <-+= name ^ ".cmo";
+      "COMPAT_OBJS" <-+= name ^ "." ^ (if native then "cmx" else "cmo");
       outp (Printf.sprintf
         "%s.cmo: %s.ml\n\
         \t$(OCAMLC) $(OCAMLINCLUDES) -c $(ALL__SRC)\n\

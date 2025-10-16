@@ -53,7 +53,6 @@ clean::
 # File extensions will be substituted for the native code version
 
 OCAMLOBJS = \
-          $(COMPAT_OBJS) \
           ubase/umarshal.cmo \
           ubase/rx.cmo \
           \
@@ -155,6 +154,8 @@ lwt/lwt_unix.cmx: lwt/$(SYSTEM)/lwt_unix_impl.cmx
 lwt/win/lwt_win.cmo: lwt/win/lwt_unix_impl.cmo system/system_win.cmo
 lwt/win/lwt_win.cmx: lwt/win/lwt_unix_impl.cmx system/system_win.cmx
 
+$(CAMLOBJS) $(CAMLOBJS_FSM) $(OCAMLOBJS:.cmo=.cmi) system.cmi fspath.cmi fs.cmi system.cmo fspath.cmo fs.cmo system.cmx fspath.cmx fs.cmx lwt/lwt_unix.cmi lwt/lwt_unix.cmo lwt/lwt_unix.cmx lwt/win/lwt_win.cmi lwt/win/lwt_win.cmo lwt/win/lwt_win.cmx: $(COMPAT_OBJS)
+
 .PHONY: depend
 depend:
 	ocamlc -depend $(DEP_INCLFLAGS) *.mli *.ml */*.ml */*.mli */*/*.ml */*/*.mli > .depend
@@ -210,15 +211,15 @@ CAMLCFLAGS_X = $(CAMLCFLAGS) $(CAMLCFLAGS_FSM_X)
 # are expanded at parsing, so we need all variables to be defined by then.
 include Makefile2.cfg
 
-$(NAME)$(EXEC_EXT): $(CAMLOBJS) $(CAMLOBJS_TUI) $(COBJS)
+$(NAME)$(EXEC_EXT): $(COMPAT_OBJS) $(CAMLOBJS) $(CAMLOBJS_TUI) $(COBJS)
 	@echo Linking $@
 	$(CAMLC) -verbose $(CAMLFLAGS_X) $(CAMLLDFLAGS) -o $@ $(CAMLLIBS) $(ALL__SRC) $(CLIBS)
 
-$(NAME_GUI)$(EXEC_EXT): $(CAMLOBJS) $(CAMLOBJS_GUI) $(COBJS)
+$(NAME_GUI)$(EXEC_EXT): $(COMPAT_OBJS) $(CAMLOBJS) $(CAMLOBJS_GUI) $(COBJS)
 	@echo Linking $@
 	$(CAMLC) -verbose $(CAMLFLAGS_X) $(CAMLLDFLAGS) $(CAMLLDFLAGS_GUI) -o $@ $(CAMLLIBS) $(CAMLLIBS_GUI) $(ALL__SRC) $(CLIBS)
 
-$(NAME_FSM)$(EXEC_EXT): $(CAMLOBJS_FSM) $(FSMCOBJS)
+$(NAME_FSM)$(EXEC_EXT): $(COMPAT_OBJS) $(CAMLOBJS_FSM) $(FSMCOBJS)
 	@echo Linking $@
 	$(CAMLC) -verbose $(CAMLFLAGS_X) $(CAMLLDFLAGS) -o $@ $(CAMLLIBS_FSM) $(ALL__SRC) $(CLIBS) $(CLIBS_FSM)
 
@@ -228,9 +229,9 @@ $(NAME_FSM)$(EXEC_EXT): $(CAMLOBJS_FSM) $(FSMCOBJS)
 # -output-complete-obj, available since OCaml 4.02.2. Still, this option can't
 # be used here because there is a bug which breaks linking on macOS when using
 # threads (needed by uimacbridge): https://github.com/ocaml/ocaml/issues/7933
-$(NAME)-blob.o: $(CAMLOBJS) $(CAMLOBJS_MAC) $(COBJS)
+$(NAME)-blob.o: $(COMPAT_OBJS) $(CAMLOBJS) $(CAMLOBJS_MAC) $(COBJS)
 	@echo Linking $@
-	$(CAMLC) -dstartup -output-obj -verbose -cclib -keep_private_externs $(CAMLFLAGS_X) -o u-b.o $(CAMLLDFLAGS) $(CAMLLIBS) $(CAMLLIBS_MAC) $(CLIBS) $(CAMLOBJS) $(CAMLOBJS_MAC)
+	$(CAMLC) -dstartup -output-obj -verbose -cclib -keep_private_externs $(CAMLFLAGS_X) -o u-b.o $(CAMLLDFLAGS) $(CAMLLIBS) $(CAMLLIBS_MAC) $(CLIBS) $(COMPAT_OBJS) $(CAMLOBJS) $(CAMLOBJS_MAC)
 	$(LD) -r -keep_private_externs -o $@ u-b.o $(COBJS)
 	$(RM) u-b.o
 
