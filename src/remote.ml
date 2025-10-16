@@ -2238,6 +2238,12 @@ let compatServerRun conn =
    the relevant functions. *)
 let commandLoop ~compatMode in_ch out_ch =
   Trace.runningasserver := true;
+  (* Restore prefs to their default values. It is possible to do here because
+     command line preferences are never parsed by the server process directly.
+     New preference values are going to be received from the client. Resetting
+     to defaults here prevents any values from a previous client session
+     leaking over to this session. *)
+  Prefs.resetToDefaults ();
   (* Send header indicating to the client that it has successfully
      connected to the server *)
   let conn = makeConnection true in_ch out_ch in
