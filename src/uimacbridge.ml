@@ -419,6 +419,8 @@ let rcToString rc =
   | `Modified     -> "Modified"
   | `PropsChanged -> "PropsChanged"
   | `Created      -> "Created"
+  | `MovedOut _   -> "PropsChanged"
+  | `MovedIn _    -> "PropsChanged"
   | `Unchanged    -> "";;
 let unisonRiToLeft ri =
   match ri.ri.replicas with
