@@ -154,7 +154,7 @@ lwt/lwt_unix.cmx: lwt/$(SYSTEM)/lwt_unix_impl.cmx
 lwt/win/lwt_win.cmo: lwt/win/lwt_unix_impl.cmo system/system_win.cmo
 lwt/win/lwt_win.cmx: lwt/win/lwt_unix_impl.cmx system/system_win.cmx
 
-$(CAMLOBJS) $(CAMLOBJS_FSM) $(OCAMLOBJS:.cmo=.cmi) system.cmi fspath.cmi fs.cmi system.cmo fspath.cmo fs.cmo system.cmx fspath.cmx fs.cmx lwt/lwt_unix.cmi lwt/lwt_unix.cmo lwt/lwt_unix.cmx lwt/win/lwt_win.cmi lwt/win/lwt_win.cmo lwt/win/lwt_win.cmx: $(COMPAT_OBJS)
+$(CAMLOBJS) $(CAMLOBJS_FSM) $(OCAMLOBJS:.cmo=.cmi) $(FSMOCAMLOBJS:.cmo=.cmi) system.cmi fspath.cmi fs.cmi system.cmo fspath.cmo fs.cmo system.cmx fspath.cmx fs.cmx lwt/lwt_unix.cmi lwt/lwt_unix.cmo lwt/lwt_unix.cmx lwt/win/lwt_win.cmi lwt/win/lwt_win.cmo lwt/win/lwt_win.cmx: $(COMPAT_OBJS)
 
 .PHONY: depend
 depend:
