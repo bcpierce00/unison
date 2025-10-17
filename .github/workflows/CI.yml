@@ -21,7 +21,7 @@ jobs:
 
     - run: sudo apt-get install hevea lynx texlive-latex-base
 
-    - run: opam exec -- make docs
+    - run: opam exec -- make -j 2 docs
 
     - name: Store user manual for the build jobs
       uses: actions/upload-artifact@v4
