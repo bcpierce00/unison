@@ -2,14 +2,23 @@
 
 ## Pre-built binaries
 
-The easiest and quickest way is to install pre-built binaries available at many
-package repositories. The caveat: some repositories are slow to update and
-often include a very old version of Unison.
+The Unison project releases source code, and building from source is
+thus the standard approach.  This section briefly points to ways to
+obtain binaries as an alternate approach.  It precedes instructions
+for building from source only because it is brief.
 
-Alternatively, some pre-built binaries are made available at
-https://github.com/bcpierce00/unison/releases for macOS, Linux and Windows.
-No specific installation is needed, just unpack the files at a location of your
-choosing.
+Many packaging systems have unison binary packages.  (Most
+"distributions" are packaging systems for entire operating systems.)
+Unison is easy to install from these packaging systems, but many of
+them have old versions.
+
+The Unison project currently builds binaries for a limited set of
+operating systems and CPU types as part of Continuous Integration and
+many have found these useful.
+
+See
+https://github.com/bcpierce00/unison/wiki/Obtaining-Unison-Sources-and-Binaries
+for pointers to packaging systems and CI binaries.
 
 ## Building from source
 
@@ -106,7 +115,6 @@ make TOOL_PREFIX=x86_64-w64-mingw32-
 
 Building the manual page and documentation does not work when cross-compiling.
 To build the documentation, first build Unison without cross-compilation.
-
 
 ### macOS
 
