@@ -8,10 +8,40 @@ release contains some.  Refer to the documentation for details; this
 file is a terse notice of changes rather than a tutorial about new
 features.
 
-As of 2022, this file (NEWS.md at top level) is used for news.
-
 Some software has a "changelog" file that records all changes, but
 unison uses git history for that, and thus there is no changelog file.
+
+## Changes in 2.53.8
+
+Released 2025-11-05
+
+  * Improve and simplify makefiles.
+    It is now possible to build with BSD make, Solaris/illumos make and
+	NMAKE, in addition to GNU Make.  Building with MSVC is much simpler
+	now.  The changes are larger than might be expected in a micro;
+    anyone building from source (or packaging) should consult
+    INSTALL.md for updated build instructions.
+  * Stop installing fsmonitor.py.
+  * Add ability to use reflinking instead of copying (if supported by
+    filesystem).
+  * Don't write fpcache if it is not necessary.
+  * Experimental default-off support to detect moves/renames and
+	rename on destination instead of copying (see -moves-experimental).
+
+  Deprecation warning: support for external rsync will be removed,
+  likely in 2.54.0.
+
+  DEPRECATION MAY HAPPEN WITH LESS THAN TYPICAL NOTICE:
+  lablgtk is difficult to use safely, and future maintenance is
+  unclear.  Implementing the GUI without lablgtk requires more effort
+  than seems likely to happen.  Thus, it is possible that support for
+  the unison GUI may end suddenly, on a particular platform, or on all
+  platforms -- even in a micro release.  See
+    https://github.com/bcpierce00/unison/issues/1075  
+
+  MAINTENANCE WARNING: No one is contributing to verify that the Mac
+  GUI continues to work -- so it might not.  (So far, there are no
+  reports of serious failures.)
 
 ## Changes in 2.53.7
 
