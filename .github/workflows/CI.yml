@@ -504,12 +504,19 @@ jobs:
         # causing MinGW binutils not to be found (while other binutils
         # pre-installed in the GHA images may be found instead), which in turn
         # causes the DLL extracting functions to silently fail.
+        # [2025-10] Setting this PATH here is also required because at some
+        # point opam started pushing the i686 mingw path unconditionally to the
+        # beginning of PATH, including for 64-bit only builds (this _may_ be
+        # due to setup-ocaml setting up 32-bit build environment by default),
+        # which caused the DLL extracting functions to find 32-bit DLLs (that
+        # don't work with a 64-bit executable). The functions below must use
+        # this PATH and not the one provided by `opam env`.
         export PATH="/usr/${{ steps.vars.outputs.MinGW_ARCH }}-w64-mingw32/bin":"/usr/${{ steps.vars.outputs.MinGW_ARCH }}-w64-mingw32/sys-root/mingw/bin":${PATH}
         ## package artifact(s)
         PKG_DIR='${{ steps.vars.outputs.PKG_DIR }}'
         # collect any needed dlls/libraries
         # dlls
-        dll_refs() { eval "$(opam env)" ; objdump -x "$@" | grep -Po "\S+[.]dll$" | xargs -I{} 2>/dev/null which "{}" | sort -u ; }
+        dll_refs() { objdump -x "$@" | grep -Po "\S+[.]dll$" | xargs -I{} 2>/dev/null which "{}" | sort -u ; }
         filtered_dll_refs() { list="$(dll_refs "$@" | grep -vF "$(cygpath ${WINDIR})" | perl -lape '$_ = qq/@{[sort @F]}/')" ; echo "$list" ; }
         recursive_filtered_dll_refs() { list="$(filtered_dll_refs "$@")" ; n=0 ; while [ $n -lt $(echo "$list" | wc -l) ]; do n=$(echo "$list" | wc -l) ; list="$(filtered_dll_refs $list)" ; done ; echo "$list" ; }
         IFS=$'\n' DLL_list=( "$(recursive_filtered_dll_refs "${PKG_DIR}"/bin/*)" )
