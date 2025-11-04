@@ -4,7 +4,7 @@
 let docs =
     ("about", ("About Unison", 
      "Unison File Synchronizer\n\
-      Version 2.53.7\n\
+      Version 2.53.8\n\
       \n\
       "))
 ::
