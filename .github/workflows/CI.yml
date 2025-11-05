@@ -616,16 +616,16 @@ jobs:
         # limited resource usage.
         # Apparently 4.08 is not available for macos14-arm64.
         job:
-        - { os: ubuntu-22.04  , ocaml-version: 5.4.x   , ref: v2.53.7 }
-        - { os: ubuntu-22.04  , ocaml-version: 4.14.x  , ref: v2.53.7 }
+        - { os: ubuntu-22.04  , ocaml-version: 5.4.x   , ref: v2.53.8 }
+        - { os: ubuntu-22.04  , ocaml-version: 4.14.x  , ref: v2.53.8 }
         - { os: ubuntu-22.04  , ocaml-version: 4.14.x  , ref: v2.52.1 , oldmake: true }
         - { os: ubuntu-22.04  , ocaml-version: 4.14.x  , ref: v2.51.5 , oldmake: true }
         - { os: ubuntu-22.04  , ocaml-version: 4.08.x  , ref: v2.51.5 , oldmake: true }
         - { os: ubuntu-22.04  , ocaml-version: 4.08.x  , ref: v2.51.2 , oldmake: true }
-        - { os: windows-2022  , ocaml-version: ocaml-variants.4.14.0+mingw64c  , ref: v2.53.7 }
+        - { os: windows-2022  , ocaml-version: ocaml-variants.4.14.0+mingw64c  , ref: v2.53.8 }
         - { os: windows-2022  , ocaml-version: ocaml-variants.4.14.0+mingw64c  , ref: v2.52.1 , oldmake: true }
         - { os: windows-2022  , ocaml-version: ocaml-variants.4.08.1+mingw32c  , ref: v2.51.5 , oldmake: true }
-        - { os: macos-14      , ocaml-version: 4.14.x  , ref: v2.53.7 }
+        - { os: macos-14      , ocaml-version: 4.14.x  , ref: v2.53.8 }
         - { os: macos-14      , ocaml-version: 4.14.x  , ref: v2.52.1 , oldmake: true }
         - { os: macos-15-intel, ocaml-version: 4.08.x  , ref: v2.51.2 , oldmake: true }
 
