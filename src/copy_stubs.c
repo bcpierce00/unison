@@ -15,6 +15,25 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifdef _WIN32
+
+/* Minimum Windows API needed for getting the definition of
+ * struct DUPLICATE_EXTENTS_DATA with MinGW headers under MSYS2.
+ * As of 2025-11, MSYS2 by default targets Windows 7, which is
+ * not sufficient in this case. */
+#define WINVER 0x0603
+#define _WIN32_WINNT 0x0603  /* Windows 8.1 */
+
+#ifndef UNICODE
+#define UNICODE
+#endif
+#ifndef _UNICODE
+#define _UNICODE
+#endif
+
+#endif /* _WIN32 */
+
+
 #include <caml/memory.h>
 #include <caml/threads.h>
 #include <caml/unixsupport.h>
@@ -243,13 +262,6 @@ CAMLprim value unison_copy_file(value in_fd, value out_fd, value in_offs, value 
 
 #elif defined(_WIN32)
 
-
-#ifndef UNICODE
-#define UNICODE
-#endif
-#ifndef _UNICODE
-#define _UNICODE
-#endif
 
 #include <windows.h>
 #include <winioctl.h>
