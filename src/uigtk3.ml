@@ -1729,6 +1729,8 @@ let createProfile parent =
 
 (* ------ *)
 
+let documentationFn = ref (fun ~parent _ -> ())
+
 let nameOfType t =
   match t with
     `BOOL        -> "boolean"
@@ -1753,7 +1755,11 @@ let editPreference parent nm ty vl =
   let t =
     GWindow.dialog ~parent ~border_width:12
       ~title:"Edit the Preference"
-      ~modal:true () in
+      ~modal:false () in
+  (* Simulate modal dialog (allowing to open other windows, such as help) *)
+  parent#set_sensitive false;
+  ignore (t#connect#destroy ~callback:(fun () -> parent#set_sensitive true));
+
   let vb = t#vbox in
   vb#set_spacing 6;
 
@@ -1963,6 +1969,12 @@ let editPreference parent nm ty vl =
       end
     end
   in
+
+  let helpButton =
+    GButton.button ~stock:`HELP ~packing:t#action_area#add () in
+  let () = t#action_area#set_child_secondary helpButton#coerce true in
+  ignore (helpButton#connect#clicked
+     ~callback:(fun () -> !documentationFn ~parent:t "running"));
 
   let res = ref None in
   let cancelCommand () = t#destroy () in
@@ -2351,12 +2363,17 @@ let editProfile parent name =
   let t =
     GWindow.dialog ~parent ~border_width:12
       ~title:(Format.sprintf "%s - Profile Editor" name)
-      ~modal:true () in
+      ~modal:false () in
+  (* Simulate modal dialog (allowing to open other windows, such as help) *)
+  parent#set_sensitive false;
+  ignore (t#connect#destroy ~callback:(fun () -> parent#set_sensitive true));
+
   let vb = t#vbox in
   t#vbox#set_spacing 12;
   let paned = GPack.paned `VERTICAL ~packing:(vb#pack ~expand:true) () in
 
   let lvb = GPack.vbox ~spacing:6 ~packing:paned#pack1 () in
+  lvb#set_margin_bottom 12;
   let preferenceLabel =
     GMisc.label
       ~text:"_Preferences:" ~use_underline:true
@@ -2393,9 +2410,10 @@ let editProfile parent name =
     (GTree.view_column
        ~title:"Value"
        ~renderer:(GTree.cell_renderer_text [], ["text", c_value]) ()));
+  let vvb = GPack.vbox ~packing:hb#pack () in
   let vb =
     GPack.button_box
-      `VERTICAL ~layout:`START ~spacing:6 ~packing:(hb#pack ~expand:false) ()
+      `VERTICAL ~layout:`START ~spacing:6 ~packing:(vvb#pack ~expand:true) ()
   in
   let selection = GtkReact.tree_view_selection lst in
   let hasSel = selection >> fun l -> l <> [] in
@@ -2408,6 +2426,12 @@ let editProfile parent name =
   List.iter (fun b -> b#set_xalign 0.) [addB; editB; deleteB];
   GtkReact.set_sensitive editB hasSel;
   GtkReact.set_sensitive deleteB hasSel;
+
+  let helpButton =
+    GButton.button ~stock:`HELP ~packing:(vvb#pack ~expand:false) () in
+  helpButton#set_xalign 0.;
+  ignore (helpButton#connect#clicked
+     ~callback:(fun () -> !documentationFn ~parent:t "running"));
 
   let (modified, setModified) = React.make false in
   let formatValue vl = Unicode.protect (String.concat ", " vl) in
@@ -2598,8 +2622,6 @@ TODO:
   GMain.Main.main ()
 
 (* ------ *)
-
-let documentationFn = ref (fun ~parent _ -> ())
 
 let getProfile quit =
   let ok = ref false in
@@ -2794,48 +2816,53 @@ let get_size_chars obj ?desc ?lang ~height ~width () =
   (width * GPango.to_pixels metrics#approx_digit_width,
    height * GPango.to_pixels (metrics#ascent+metrics#descent))
 
-let documentation ~parent sect =
+let docWindow = ref None
+
+let documentation_aux ~parent sect =
   let title = "Documentation" in
   let t = GWindow.dialog ~title ~parent () in
   let t_dismiss =
     GButton.button ~stock:`CLOSE ~packing:t#action_area#add () in
   t_dismiss#grab_default ();
-  let dismiss () = t#destroy () in
+  let dismiss () = docWindow := None; t#destroy () in
   ignore (t_dismiss#connect#clicked ~callback:dismiss);
   ignore (t#event#connect#delete ~callback:(fun _ -> dismiss (); true));
 
   let nb = GPack.notebook ~show_tabs:true ~tab_pos:`LEFT ~border_width:5
     ~packing:(t#vbox#pack ~expand:true) () in
 
-  let sect_idx = ref 0 in
-  let add_nb_page label active w =
-    let i = nb#append_page ~tab_label:label#coerce w in
-    if active then sect_idx := i
-  in
-
   let lw = ref 1 in
   let addDocSection (shortname, (name, docstr)) =
-    if shortname = "" || name = "" then () else
+    if shortname = "" || name = "" then ("", 0) else
     let namelen = String.length name in
     if namelen <= 20 then lw := max !lw namelen;
     let label = GMisc.label ~markup:("<b>" ^ name ^ "</b>")
                   ~xalign:1. ~justify:`RIGHT ~ellipsize:`NONE
                   ~line_wrap:(namelen > 20) () in
     label#set_width_chars 20;
-    let box = GBin.frame ~border_width:8
-                ~packing:(add_nb_page label (shortname = sect)) () in
+    let box = GBin.frame ~border_width:8 () in
     let text = new scrolled_text ~editable:false ~wrap_mode:`NONE
                  ~packing:box#add () in
-    text#insert docstr
+    text#insert docstr;
+    (shortname, nb#append_page ~tab_label:label#coerce box#coerce)
   in
-  Safelist.iter addDocSection Strings.docs;
+  let pages = Safelist.map addDocSection Strings.docs in
 
-  nb#goto_page !sect_idx;
+  let openSect sect =
+    try nb#goto_page (Safelist.assoc sect pages) with Not_found -> ()
+  in
+  openSect sect;
+  docWindow := Some (fun sect -> openSect sect; t#present ());
 
   let (width, height) = get_size_chars t ~width:(80 + !lw) ~height:25 () in
   t#set_default_size ~width ~height;
 
   t#show ()
+
+let documentation ~parent sect =
+  match !docWindow with
+  | None -> documentation_aux ~parent sect
+  | Some documentation_show -> documentation_show sect
 let () = documentationFn := documentation
 
 (* ------ *)
