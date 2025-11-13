@@ -2794,48 +2794,53 @@ let get_size_chars obj ?desc ?lang ~height ~width () =
   (width * GPango.to_pixels metrics#approx_digit_width,
    height * GPango.to_pixels (metrics#ascent+metrics#descent))
 
-let documentation ~parent sect =
+let docWindow = ref None
+
+let documentation_aux ~parent sect =
   let title = "Documentation" in
   let t = GWindow.dialog ~title ~parent () in
   let t_dismiss =
     GButton.button ~stock:`CLOSE ~packing:t#action_area#add () in
   t_dismiss#grab_default ();
-  let dismiss () = t#destroy () in
+  let dismiss () = docWindow := None; t#destroy () in
   ignore (t_dismiss#connect#clicked ~callback:dismiss);
   ignore (t#event#connect#delete ~callback:(fun _ -> dismiss (); true));
 
   let nb = GPack.notebook ~show_tabs:true ~tab_pos:`LEFT ~border_width:5
     ~packing:(t#vbox#pack ~expand:true) () in
 
-  let sect_idx = ref 0 in
-  let add_nb_page label active w =
-    let i = nb#append_page ~tab_label:label#coerce w in
-    if active then sect_idx := i
-  in
-
   let lw = ref 1 in
   let addDocSection (shortname, (name, docstr)) =
-    if shortname = "" || name = "" then () else
+    if shortname = "" || name = "" then ("", 0) else
     let namelen = String.length name in
     if namelen <= 20 then lw := max !lw namelen;
     let label = GMisc.label ~markup:("<b>" ^ name ^ "</b>")
                   ~xalign:1. ~justify:`RIGHT ~ellipsize:`NONE
                   ~line_wrap:(namelen > 20) () in
     label#set_width_chars 20;
-    let box = GBin.frame ~border_width:8
-                ~packing:(add_nb_page label (shortname = sect)) () in
+    let box = GBin.frame ~border_width:8 () in
     let text = new scrolled_text ~editable:false ~wrap_mode:`NONE
                  ~packing:box#add () in
-    text#insert docstr
+    text#insert docstr;
+    (shortname, nb#append_page ~tab_label:label#coerce box#coerce)
   in
-  Safelist.iter addDocSection Strings.docs;
+  let pages = Safelist.map addDocSection Strings.docs in
 
-  nb#goto_page !sect_idx;
+  let openSect sect =
+    try nb#goto_page (Safelist.assoc sect pages) with Not_found -> ()
+  in
+  openSect sect;
+  docWindow := Some (fun sect -> openSect sect; t#present ());
 
   let (width, height) = get_size_chars t ~width:(80 + !lw) ~height:25 () in
   t#set_default_size ~width ~height;
 
   t#show ()
+
+let documentation ~parent sect =
+  match !docWindow with
+  | None -> documentation_aux ~parent sect
+  | Some documentation_show -> documentation_show sect
 let () = documentationFn := documentation
 
 (* ------ *)
