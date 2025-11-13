@@ -1729,6 +1729,8 @@ let createProfile parent =
 
 (* ------ *)
 
+let documentationFn = ref (fun ~parent _ -> ())
+
 let nameOfType t =
   match t with
     `BOOL        -> "boolean"
@@ -1753,7 +1755,11 @@ let editPreference parent nm ty vl =
   let t =
     GWindow.dialog ~parent ~border_width:12
       ~title:"Edit the Preference"
-      ~modal:true () in
+      ~modal:false () in
+  (* Simulate modal dialog (allowing to open other windows, such as help) *)
+  parent#set_sensitive false;
+  ignore (t#connect#destroy ~callback:(fun () -> parent#set_sensitive true));
+
   let vb = t#vbox in
   vb#set_spacing 6;
 
@@ -1963,6 +1969,12 @@ let editPreference parent nm ty vl =
       end
     end
   in
+
+  let helpButton =
+    GButton.button ~stock:`HELP ~packing:t#action_area#add () in
+  let () = t#action_area#set_child_secondary helpButton#coerce true in
+  ignore (helpButton#connect#clicked
+     ~callback:(fun () -> !documentationFn ~parent:t "running"));
 
   let res = ref None in
   let cancelCommand () = t#destroy () in
@@ -2351,12 +2363,17 @@ let editProfile parent name =
   let t =
     GWindow.dialog ~parent ~border_width:12
       ~title:(Format.sprintf "%s - Profile Editor" name)
-      ~modal:true () in
+      ~modal:false () in
+  (* Simulate modal dialog (allowing to open other windows, such as help) *)
+  parent#set_sensitive false;
+  ignore (t#connect#destroy ~callback:(fun () -> parent#set_sensitive true));
+
   let vb = t#vbox in
   t#vbox#set_spacing 12;
   let paned = GPack.paned `VERTICAL ~packing:(vb#pack ~expand:true) () in
 
   let lvb = GPack.vbox ~spacing:6 ~packing:paned#pack1 () in
+  lvb#set_margin_bottom 12;
   let preferenceLabel =
     GMisc.label
       ~text:"_Preferences:" ~use_underline:true
@@ -2393,9 +2410,10 @@ let editProfile parent name =
     (GTree.view_column
        ~title:"Value"
        ~renderer:(GTree.cell_renderer_text [], ["text", c_value]) ()));
+  let vvb = GPack.vbox ~packing:hb#pack () in
   let vb =
     GPack.button_box
-      `VERTICAL ~layout:`START ~spacing:6 ~packing:(hb#pack ~expand:false) ()
+      `VERTICAL ~layout:`START ~spacing:6 ~packing:(vvb#pack ~expand:true) ()
   in
   let selection = GtkReact.tree_view_selection lst in
   let hasSel = selection >> fun l -> l <> [] in
@@ -2408,6 +2426,12 @@ let editProfile parent name =
   List.iter (fun b -> b#set_xalign 0.) [addB; editB; deleteB];
   GtkReact.set_sensitive editB hasSel;
   GtkReact.set_sensitive deleteB hasSel;
+
+  let helpButton =
+    GButton.button ~stock:`HELP ~packing:(vvb#pack ~expand:false) () in
+  helpButton#set_xalign 0.;
+  ignore (helpButton#connect#clicked
+     ~callback:(fun () -> !documentationFn ~parent:t "running"));
 
   let (modified, setModified) = React.make false in
   let formatValue vl = Unicode.protect (String.concat ", " vl) in
@@ -2598,8 +2622,6 @@ TODO:
   GMain.Main.main ()
 
 (* ------ *)
-
-let documentationFn = ref (fun ~parent _ -> ())
 
 let getProfile quit =
   let ok = ref false in
