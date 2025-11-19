@@ -126,15 +126,18 @@ module MsgIdMap : Map.S with type key = msgId
 val newMsgId : unit -> msgId
 
 type connection
-val connectionVersion : connection -> int
-val connectionOfRoot : Common.root -> connection
+val connectionVersion : connection option -> int
+val connectionOfRoot : Common.root -> connection option
+(* [connectionOfRoot] is None for a local root,
+   Some connection for a remote root,
+   raises if a remote connection is not found. *)
 
-val registerServerCmd :
+val registerRemoteCmd :
   string
  -> ?convV0: 'a convV0Fun * 'b convV0Fun
  -> 'a Umarshal.t -> 'b Umarshal.t
- -> (connection -> 'a -> 'b Lwt.t)
- -> connection -> 'a -> 'b Lwt.t
+ -> (connection option -> 'a -> 'b Lwt.t)
+ -> connection option -> 'a -> 'b Lwt.t
 val intSize : int
 val encodeInt : int -> Bytearray.t * int * int
 val decodeInt : Bytearray.t -> int -> int
@@ -144,7 +147,7 @@ val registerRootCmdWithConnection :
                                     (* 2.51-compatibility functions for args
                                        and result *)
  -> 'a Umarshal.t -> 'b Umarshal.t
- -> (connection -> 'a -> 'b Lwt.t)  (* local command *)
+ -> (connection option -> 'a -> 'b Lwt.t)  (* local command *)
  ->    Common.root                  (* root on which the command is executed *)
     -> Common.root                  (* other root *)
     -> 'a                           (* additional arguments *)
@@ -157,8 +160,8 @@ val registerStreamCmd :
   (connection -> 'a ->
    (Bytearray.t * int * int) list -> (Bytearray.t * int * int) list * int) *
   (connection -> Bytearray.t -> int -> 'a) ->
-  (connection -> 'a -> unit) ->
-  connection -> (('a -> unit Lwt.t) -> 'b Lwt.t) -> 'b Lwt.t
+  (connection option -> 'a -> unit) ->
+  connection option -> (('a -> unit Lwt.t) -> 'b Lwt.t) -> 'b Lwt.t
 
 (* Register a function to be run when the connection between client and server
    is closed (willingly or unexpectedly). The function should not raise
