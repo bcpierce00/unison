@@ -644,6 +644,8 @@ let install () =
   let mandir = "MANDIR" <--? datarootdir ^ "/man" in
   let man1dir = "MAN1DIR" <--? mandir ^ "/man1" in
   let manext = "MANEXT" <--? ".1" in
+  let desktopdir = "DESKTOPDIR" <--? datarootdir ^ "/applications" in
+  let iconthemedir = "ICONTHEMEDIR" <--? datarootdir ^ "/icons/hicolor" in
 
   let install_if_exists dir name dest =
     if exists dir name then exec
@@ -659,6 +661,16 @@ let install () =
   if exists "man" "unison.1" then begin
     exec [install; "-d"; destdir ^ man1dir];
     exec [install_data; "man/unison.1"; destdir ^ man1dir ^ "/unison" ^ manext]
+  end;
+  if exists "src" "unison-gui" then begin
+    exec [install; "-d"; destdir ^ desktopdir];
+    exec [install_data; "data/unison-gui.desktop"; destdir ^ desktopdir ^ "/unison-gui.desktop"];
+    let installpng size =
+      exec [install; "-d"; destdir ^ iconthemedir ^ "/" ^ size ^ "x" ^ size ^ "/apps"];
+      exec [install_data; "icons/U." ^ size ^ "x" ^ size ^ "x16m.png"; destdir ^ iconthemedir ^ "/" ^ size ^ "x" ^ size ^ "/apps/unison-gui.png"]
+    in List.iter installpng ["16"; "24"; "32"; "48"; "256"];
+    exec [install; "-d"; destdir ^ iconthemedir ^ "/scalable/apps"];
+    exec [install_data; "icons/U.svg"; destdir ^ iconthemedir ^ "/scalable/apps/unison-gui.svg"]
   end;
   if exists "src/uimac/build/Default" "Unison.app" then begin
     print_endline ("!!! The GUI for macOS has been built but will NOT be \
