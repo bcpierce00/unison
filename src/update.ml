@@ -2628,7 +2628,8 @@ let t1 = Unix.gettimeofday () in
       (* Directory optimization is disabled under Windows,
          as Windows does not update directory modification times
          on FAT filesystems. *)
-      dirFastCheck = useFastChecking () && Sys.unix;
+      (* A.Frycze: dirFastCheck is disabled on exFAT filesystems *)
+      dirFastCheck = useFastChecking () && Sys.unix && not (Prefs.read Globals.fatFilesystem);
       dirStamp; rescanProps; archHash = archiveHash fspath;
       showStatus = not !Trace.runningasserver }
   in
