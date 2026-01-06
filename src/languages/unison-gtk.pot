@@ -1,0 +1,6 @@
+msgid "TranslationTestString"
+msgstr "This is shown when translation works, and language is EN"
+msgid "TranslationTestString2"
+msgstr "This also is shown when translation works, language is still EN"
+msgid "SomethingElseIsAdded"
+msgstr "Something else is here later, to see if update lang correctly updates translations"

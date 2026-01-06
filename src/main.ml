@@ -55,13 +55,15 @@
    if any more are added.
 *)
 
+open Bin
+
 let versionPrefName = "version"
 let printVersionAndExit =
   Prefs.createBool versionPrefName false
     ~category:(`Basic `General)
     ~cli_only:true
-    "print version and exit"
-    ("Print the current version number and exit.  "
+    (Bin.TranslateProg.s_ "print version and exit")
+    (Bin.TranslateProg.s_ "Print the current version number and exit.  "
      ^ "(This option only makes sense on the command line.)")
 
 let docsPrefName = "doc"

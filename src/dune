@@ -4,6 +4,12 @@
  (modules compat_digest))
 
 (library
+ (name internationalization)
+ (wrapped false)
+ (libraries gettext.base gettext.camomile)
+ (modules bin lib))
+
+(library
  (name unison_lib)
  (wrapped false)
  (modules :standard \ linktext linkgtk3 uigtk3 pixmaps uimacbridge test make_tools compat_digest)
@@ -26,7 +32,7 @@
  (public_name unison)
  (package unison) ; Dummy: we don't use packages
  (modules linktext)
- (libraries unison_lib))
+ (libraries unison_lib internationalization))
 
 (executable
  (name linkgtk3)
@@ -34,4 +40,4 @@
  (package unison-gui) ; Dummy: we don't use packages
  (flags :standard -w -3-6-9-27-32-52)
  (modules linkgtk3 uigtk3 pixmaps)
- (libraries threads unison_lib lablgtk3))
+ (libraries threads unison_lib lablgtk3 internationalization))

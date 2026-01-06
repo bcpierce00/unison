@@ -445,10 +445,10 @@ jobs:
         '@ | patch -Nu -p 1
         opam pin --no-action add lablgtk3 .
 
-    - name: lablgtk install
+    - name: lablgtk ocamlfind ocaml-gettext install
       ## [2020-09] non-working/unavailable for musl OCaml variant
       if: ${{ !contains(matrix.job.ocaml-version, '-musl') }}
-      run: opam install lablgtk3 ocamlfind
+      run: opam install lablgtk3 ocamlfind gettext
 
     - if: ${{ !matrix.job.static }} ## unable to build static gtk/gui
       run: |

@@ -262,6 +262,16 @@ let () =
         %s.cmx: %s.ml\n\
         \t$(OCAMLOPT) $(OCAMLINCLUDES) -c $(ALL__SRC)" name name name name))
 
+let () =
+  "CAMLFLAGS" <-+=
+  match ocamlfind with
+  | Some cmd ->
+      (* The weird quoting is required for Windows, but harmless in sh *)
+      shell (cmd ^ " query -format \"-I \"\"%d\"\"\" gettext") ^ " " ^
+      shell (cmd ^ " query -format \"-I \"\"%d\"\"\" gettext-camomile")
+  | None -> ""
+
+
 let () = "WINDRES" <--
   (if not_empty tool_prefix then tool_prefix else begin
     let cc = Filename.basename (ocaml_conf_var "c_compiler") in
@@ -304,6 +314,8 @@ let () =
   | Some cmd ->
       (* The weird quoting is required for Windows, but harmless in sh *)
       shell (cmd ^ " query -format \"-I \"\"%d\"\"\" lablgtk3") ^ " " ^
+      shell (cmd ^ " query -format \"-I \"\"%d\"\"\" gettext") ^ " " ^
+      shell (cmd ^ " query -format \"-I \"\"%d\"\"\" gettext-camomile") ^ " " ^
       shell (cmd ^ " query -format \"-I \"\"%d\"\"\" cairo2")
   | None -> "-I +lablgtk3 -I +cairo2"
 

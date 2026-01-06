@@ -1,0 +1,8 @@
+(include_subdirs no)
+; (libraries gettext.base lablgtk3)
+
+(library
+ (name internationalization)
+ (wrapped false)
+ (libraries gettext.base gettext-camomile)
+ (modules bin lib))
