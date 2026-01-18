@@ -13,6 +13,8 @@ depends: [
   "unison" {= version}
   "lablgtk3"
   "ocamlfind"
+]
+depopts: [
   "gettext"
 ]
 synopsis: "Pseudo-package for Unison GUI"

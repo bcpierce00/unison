@@ -55,15 +55,31 @@
    if any more are added.
 *)
 
-open Bin
+(*
+In case i commited this - what are those? Me being lazy, copying and testing them,
+cause i have no clue what tf will it name the module/lib. peculiar language so to speak
+
+let () = let open Langs_lib in s_ ()
+let () = let open Msgs in s_ ()
+let () = Langs_lib.s_ ()
+let () = Msgs.s_ ()
+let () = let open Msgs in s_ ()
+let () = Langs_lib.s_ ()
+open Gettext
+
+open Lang_fallback  # ok, module visible, after Makefile build `make` - should work
+open Lang_bin       # ok, module visible, after Makefile build `GETTEXT_ENABLED=1 make`
+however! some of those might simply build due to disabled strings replacement, and maybe its then optimized out
+*)
+
 
 let versionPrefName = "version"
 let printVersionAndExit =
   Prefs.createBool versionPrefName false
     ~category:(`Basic `General)
     ~cli_only:true
-    (Bin.TranslateProg.s_ "print version and exit")
-    (Bin.TranslateProg.s_ "Print the current version number and exit.  "
+    "print version and exit"
+    ("Print the current version number and exit.  "
      ^ "(This option only makes sense on the command line.)")
 
 let docsPrefName = "doc"

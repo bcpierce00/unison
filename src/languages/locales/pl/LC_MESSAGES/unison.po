@@ -18,7 +18,7 @@ msgid "TranslationTestString"
 msgstr "To jest testowy ciąg znaków dla języka polskiego: Zażółć gęślą jaźń"
 
 msgid "TranslationTestString2"
-msgstr "To jest testowy ciąg znaków dla języka polskiego: Zażółć gęślą jaźń"
+msgstr "To jest testowy ciag bez pl znakow"
 
 msgid "print version and exit"
 msgstr "wyświetl wersję i zakończ działanie"

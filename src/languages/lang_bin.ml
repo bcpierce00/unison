@@ -20,10 +20,18 @@
 (*  USA                                                                   *)
 (**************************************************************************)
 
+let () = print_endline "internationalization bin"
+
 module TranslateProg = Gettext.Program (struct
   let textdomain = "unison"
   let codeset = Some "UTF-8"
   let dir = None
   let dependencies = Gettext.init
 end)
-(GettextCamomile.Map)
+
+
+   (GettextCamomile.Map)
+
+(* TODO: makefile still 'links' it not gettext-stub
+
+   (GettextCamomile.Map) *)

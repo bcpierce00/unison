@@ -1,8 +1,11 @@
-(include_subdirs no)
-; (libraries gettext.base lablgtk3)
-
 (library
  (name internationalization)
  (wrapped false)
- (libraries gettext.base gettext-camomile)
- (modules bin lib))
+ (libraries gettext.base gettext-camomile); TODO: gettext-stub instead of gettext-camomile
+
+ ; (modules lang_bin lang_lib lang_fallback "langs_lib.enabled" "langs_lib.disabled")       dot named modules are error in older ocaml/dune; builds fine in 5.3
+ ; for this to work, main binary has to have one entry point, or single call to `s_` to avoid preprocessor. It has to expose the module/function with the same name
+ (modules lang_bin lang_lib)
+ (optional)
+)
+(include_subdirs no)

@@ -448,7 +448,7 @@ jobs:
     - name: lablgtk ocamlfind ocaml-gettext install
       ## [2020-09] non-working/unavailable for musl OCaml variant
       if: ${{ !contains(matrix.job.ocaml-version, '-musl') }}
-      run: opam install lablgtk3 ocamlfind gettext
+      run: opam install lablgtk3 ocamlfind gettext gettext-camomile gettext-stub
 
     - if: ${{ !matrix.job.static }} ## unable to build static gtk/gui
       run: |

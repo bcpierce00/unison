@@ -19,7 +19,7 @@ all: src manpage
 
 .PHONY: src
 src: FRC
-	cd src && $(MAKE)
+	cd src && $(MAKE) $(MAKEFLAGS)
 FRC: ;
 # Not all make seem to work without FRC, even with .PHONY
 

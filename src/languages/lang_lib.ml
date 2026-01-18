@@ -20,6 +20,8 @@
 (*  USA                                                                   *)
 (**************************************************************************)
 
+let () = print_endline "internationalization lib"
+
 module TranslateLib = Gettext.Library (struct
   let textdomain = "unison-gtk"
   let codeset = Some "UTF-8"

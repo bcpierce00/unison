@@ -63,6 +63,44 @@ When `unison` is distributed as a package (like a deb), package maintainer would
 [ ] workdir is clean, make is run either without opam environment initialized or opam installed, but uses system OCaml and system libraries - it will build until failing to find opam package
 
 [ ] while `unison` (cmdline) works, it seems `unison-gui` segfaults
+    updated, backtrace in the code, linked to either how unison calculates size for window OR a bug in lablgtk
+    it was discussed to drop lablgtk anyways: github.com/bcpierce00/unison/issues/1075
+    When it does crash, stracktrace is as follows:
+    ```
+        Adding  `~text: (TranslateLib.s_ "TranslationTestString2")` to uigtk3.ml    crashes in runtime with:
+
+	Thread 1 "unison-gui" received signal SIGSEGV, Segmentation fault.
+	caml_darken (v=0, ignored=0x0, state=0x0) at major_gc.c:761
+	warning: 761   major_gc.c: No such file or a directory
+	(gdb) where
+	#0  caml_darken (v=0, ignored=0x0, state=0x0) at major_gc.c:761
+	#1  0x0000555555b97990 in caml_darken (state=state@entry=0x0, v=<optimized out>, ignored=ignored@entry=0x0) at major_gc.c:759
+	#2  0x0000555555b9aca0 in write_barrier (obj=140737315273400, obj@entry=93825004394232, field=0, old_val=<optimized out>, new_val=93825004394224) at memory.c:140
+	#3  caml_initialize (fp=fp@entry=0x7ffff5aefab8, val=val@entry=93825004394224) at memory.c:212
+	#4  0x0000555555b867b5 in Val_GObject (p=0x5555560ed6f0) at ml_gobject.c:61
+	#5  0x0000555555b82409 in ml_gtk_simple_callback (w=<optimized out>, data=0x7fffffffdac8) at ml_gtk.c:665
+	#6  0x00007ffff7731be5 in ??? () at /lib/x86_64-linux-gnu/libgtk-3.so.0
+	#7  0x0000555555b84f21 in ml_gtk_container_forall (w=140737319907464, clos=<optimized out>) at ml_gtk.c:678
+	#8  0x0000555555bbaa0b in <signal handler called> ()
+	#9  0x0000555555aade85 in camlGContainer__fun_2261 () at src/gContainer.ml:60
+	#10 0x00005555558f2c2e in camlUigtk3__calcWinSize_5163 () at src/uigtk3.ml:3379
+	#11 0x00005555558eec4c in camlUigtk3__createToplevelWindow_4876 () at src/uigtk3.ml:3420
+
+        it appears that some size calculations are done in L3397
+    ```
+
+    Lovely. So, when building with gettext disabled, with stuff from opam:
+    ```
+    opam list
+    lablgtk3          3.1.5-1                OCaml interface to GTK+3
+    ocaml             4.12.0                 The OCaml compiler (virtual package)
+    ```
+    it builds, but crashes gui (tui works) - that means, this crash is NOT related to any changes with GETTEXT
+
+    When built with `OCaml 5.3 + lablgtk3 3.1.5-1+b3` (system pkg) - it works (builds both via `dune build` and `make`)
+      However, due to constrains on gettext (0.4.2 required) - it cannot use internationalization.
+    When built with Ocaml 5.3.0 (via OPAM switch) `dune build` is unable to link unison_lib.a (camlSystem_win.stat_927 and similar), `make` works
+      However, trying to build with 5.3.0 and gettext 0.5.0 (that is upstream HEAD)
 
 
 It might be totally possible, that above gettext from how-to is too C-like, and ocaml-gettext is doing stuff differently

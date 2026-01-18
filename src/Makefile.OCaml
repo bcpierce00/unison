@@ -36,6 +36,7 @@ guimaybe:
 macuimaybe:
 
 ####################################################################
+ifdef GETTEXT_ENABLED
 GETTEXT_DIRS = -I $(OCAMLPATH)/camomile/default_config \
 		-I $(OCAMLPATH)/camomile/library        \
 		-I $(OCAMLPATH)/camomile/lib_default    \
@@ -46,15 +47,21 @@ GETTEXT_DIRS = -I $(OCAMLPATH)/camomile/default_config \
 		-I $(OCAMLPATH)/gettext                 \
 		-I $(OCAMLPATH)/gettext/base            \
 		-I $(OCAMLPATH)/gettext/extension       \
-		-I $(OCAMLPATH)/gettext-camomile
-
+		-I $(OCAMLPATH)/gettext-camomile        \
+		-I languages
+else
+GETTEXT_DIRS = -I languages
+endif
 ####################################################################
 ### Default parameters
 
 INCLFLAGS = -I lwt -I ubase -I system -I system/$(SYSTEM) -I lwt/$(SYSTEM) -I languages
 DEP_INCLFLAGS = -I lwt -I ubase -I system \
                 -I fsmonitor -I fsmonitor/inotify -I fsmonitor/solaris -I fsmonitor/windows \
-                $(GETTEXT_DIRS) -I languages
+
+ifdef GETTEXT_ENABLED
+DEP_INCLFLAGS += $(GETTEXT_DIRS)
+endif
 
 ubase/projectInfo.ml: Makefile.ProjectInfo
 	ocaml make_tools.ml projectinfo NAME="$(NAME)" VERSION="$(VERSION)" MAJORVERSION="$(MAJORVERSION)" > $@
@@ -83,10 +90,14 @@ OCAMLOBJS = \
           \
           lwt/pqueue.cmo lwt/lwt.cmo lwt/lwt_util.cmo \
           lwt/$(SYSTEM)/lwt_unix_impl.cmo lwt/lwt_unix.cmo \
-          \
-          languages/lib.cmo languages/bin.cmo \
-          \
-          features.cmo uutil.cmo case.cmo pred.cmo terminal.cmo \
+
+ifdef GETTEXT_ENABLED
+OCAMLOBJS += languages/langs_lib.enabled.cmo languages/lang_lib.cmo languages/lang_bin.cmo
+else
+OCAMLOBJS += languages/langs_lib.disabled.cmo languages/lang_fallback.cmo
+endif
+
+OCAMLOBJS += features.cmo uutil.cmo case.cmo pred.cmo terminal.cmo \
           fileutil.cmo name.cmo path.cmo fspath.cmo fs.cmo fingerprint.cmo \
           abort.cmo osx.cmo fswatch.cmo propsdata.cmo \
           props.cmo fileinfo.cmo os.cmo lock.cmo clroot.cmo common.cmo \
@@ -99,12 +110,31 @@ OCAMLOBJS = \
 
 
 # hardcoded dependencies, given that version is frozen to 0.4.2
-GETTEXT_IMPLS = $(OCAMLPATH)/camomile/default_config/camomileDefaultConfig.cmxa $(OCAMLPATH)/camomile/library/camomileLibrary.cmxa $(OCAMLPATH)/camomile/lib_default/camomileLibraryDefault.cmxa $(OCAMLPATH)/camomile/dyn/camomileLibraryDyn.cmxa $(OCAMLPATH)/camomile/camomile_yuge.cmxa $(OCAMLPATH)/fileutils/fileutils.cmxa $(OCAMLPATH)/gettext/gettext.cmxa $(OCAMLPATH)/gettext/base/gettextBase.cmxa $(OCAMLPATH)/gettext/extension/gettextExtension.cmxa $(OCAMLPATH)/gettext-camomile/gettextCamomile.cmxa
+
+ifndef GETTEXT_0_5
+CAMOMILE = $(OCAMLPATH)/camomile/default_config/camomileDefaultConfig.cmxa $(OCAMLPATH)/camomile/library/camomileLibrary.cmxa $(OCAMLPATH)/camomile/lib_default/camomileLibraryDefault.cmxa $(OCAMLPATH)/camomile/dyn/camomileLibraryDyn.cmxa $(OCAMLPATH)/camomile/camomile_yuge.cmxa
+else
+CAMOMILE = $(OCAMLPATH)/camomile/camomile.cmxa $(OCAMLPATH)/camomile/lib/camomileLib.cmxa
+# $(OCAMLPATH)/camomile/lib/
+endif
+ifdef GETTEXT_ENABLED
+GETTEXT_IMPLS = $(CAMOMILE) $(OCAMLPATH)/fileutils/fileutils.cmxa $(OCAMLPATH)/gettext/gettext.cmxa $(OCAMLPATH)/gettext/base/gettextBase.cmxa $(OCAMLPATH)/gettext/extension/gettextExtension.cmxa $(OCAMLPATH)/gettext-camomile/gettextCamomile.cmxa
+else
+GETTEXT_IMPLS =
+endif
 
 # OCaml libraries for the bytecode version
 # File extensions will be substituted for the native code version
-OCAMLLIBS = unix.cma str.cma bigarray.cmxa $(GETTEXT_IMPLS)
-OCAMLINCLUDES = -I +unix -I +str $(GETTEXT_DIRS) -I languages
+OCAMLLIBS = unix.cma str.cma
+ifdef GETTEXT_ENABLED
+ifndef GETTEXT_0_5
+OCAMLLIBS += bigarray.cmxa
+endif
+endif
+ifdef GETTEXT_ENABLED
+OCAMLLIBS += $(GETTEXT_IMPLS)
+endif
+OCAMLINCLUDES = -I +unix -I +str $(GETTEXT_DIRS)
 
 # C objects for both bytecode and native versions
 COBJS = osxsupport$(OBJ_EXT) pty$(OBJ_EXT) bytearray_stubs$(OBJ_EXT) \

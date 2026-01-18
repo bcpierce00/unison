@@ -3,11 +3,68 @@
  (wrapped false)
  (modules compat_digest))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(rule
+ (enabled_if
+  (= %{env:GETTEXT_ENABLED=0} "1"))
+ (target gettext_lib_enabled.ml)
+ (action (with-stdout-to %{target} (echo ""))))
+(rule
+ (enabled_if
+  (= %{env:GETTEXT_ENABLED=0} "1"))
+ (target langs_lib.disabled.ml)
+ (action (with-stdout-to %{target} (echo ""))))
+
+(rule
+  (enabled_if
+   (= %{env:GETTEXT_ENABLED=0} "1"))
+ ;(deps languages/langs_lib.enabled.ml languages/langs_lib.disabled.ml)
+   (target msgs.ml)
+ ;   (target langs_lib.enabled.ml)
+  (action (copy languages/langs_lib.enabled.ml %{target})))
+
+(rule
+ (enabled_if
+  (= %{env:GETTEXT_ENABLED=0} "1"))
+ (target link_check.enabled.ml)
+ (action (with-stdout-to %{target} (echo ""))))
+(rule
+ (enabled_if
+  (= %{env:GETTEXT_ENABLED=0} "1"))
+ (target link_check.disabled.ml)
+ (action (with-stdout-to %{target} (echo ""))))
+
+;;;;;;;;;;;;;;;;;;;;
+
+ (rule
+  (enabled_if
+   (<> %{env:GETTEXT_ENABLED=0} "1"))
+ ;(deps languages/langs_lib.enabled.ml languages/langs_lib.disabled.ml)
+  (target msgs.ml)
+ ;  (target langs_lib.disabled.ml)
+  (action (copy languages/langs_lib.disabled.ml %{target})))
+
+(rule
+ (enabled_if
+  (<> %{env:GETTEXT_ENABLED=0} "1"))
+ (target langs_lib.disabled.ml)
+ (action (with-stdout-to %{target} (echo ""))))
+
+(rule
+ (enabled_if
+  (<> %{env:GETTEXT_ENABLED=0} "1"))
+  (target link_check.disabled.ml)
+ (action (with-stdout-to %{target} (echo ""))))
+
+;;;;;;;;;;;;;;;;;;;;
+
 (library
- (name internationalization)
- (wrapped false)
- (libraries gettext.base gettext.camomile)
- (modules bin lib))
+ (name conditional_translation)
+ (optional)
+ (libraries gettext_lib_enabled internationalization)
+ (modules ())
+)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (library
  (name unison_lib)
@@ -23,7 +80,20 @@
   (language c)
   (names bytearray_stubs osxsupport pty hash_compat props_xattr props_acl copy_stubs))
  (c_library_flags -lutil)
- (libraries compat str unix lwt_lib bigarray))
+ (libraries compat str unix lwt_lib bigarray
+  (select langs_lib.ml from
+    ;(conditional_translation -> msgs.ml)
+    ;(!conditional_translation -> msgs.ml))
+    (conditional_translation -> langs_lib.enabled.ml)
+    ;(!conditional_translation -> langs_lib.disabled.ml))
+    (-> langs_lib.disabled.ml))
+  (select link_check.ml from
+    (conditional_translation -> link_check.enabled.ml)
+    ;(!internationalization -> link_check.disabled.ml)
+    (-> link_check.disabled.ml)
+  )
+ )
+)
 
 (include_subdirs unqualified)
 
@@ -31,8 +101,22 @@
  (name linktext)
  (public_name unison)
  (package unison) ; Dummy: we don't use packages
- (modules linktext)
- (libraries unison_lib internationalization))
+ (modules linktext )
+ (libraries unison_lib
+;  (select langs_lib.ml from
+;    ;(conditional_translation -> msgs.ml)
+;    ;(!conditional_translation -> msgs.ml))
+;
+;    (conditional_translation -> langs_lib.enabled.ml)
+;    ;(!conditional_translation -> langs_lib.disabled.ml))
+;    (-> langs_lib.disabled.ml))
+;  (select link_check.ml from
+;    (conditional_translation -> link_check.enabled.ml)
+;    ;(!internationalization -> link_check.disabled.ml)
+;    (-> link_check.disabled.ml)
+;  )
+ )
+)
 
 (executable
  (name linkgtk3)
@@ -40,4 +124,4 @@
  (package unison-gui) ; Dummy: we don't use packages
  (flags :standard -w -3-6-9-27-32-52)
  (modules linkgtk3 uigtk3 pixmaps)
- (libraries threads unison_lib lablgtk3 internationalization))
+ (libraries threads unison_lib lablgtk3))

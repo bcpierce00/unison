@@ -39,7 +39,7 @@ FILES = unison unison.exe
 .NOTPARALLEL:
 .PHONY: $(TARGETS)
 $(TARGETS) $(FILES): Makefile.cfg
-	$(MAKE) -f Makefile.OCaml $@
+	$(MAKE) -f Makefile.OCaml $(MAKEFLAGS) $@
 
 # Though not ideal, recursive make is needed here, in the name of portability.
 #
