@@ -1,7 +1,5 @@
-let () = print_endline "internationalization fallback"
-
 (* from https://github.com/gildor478/ocaml-gettext/blob/master/doc/reference-manual.md *)
-module Gettext = struct
+module Translate = struct
   external s_ : string -> string = "%identity"
   external f_ : ('a -> 'b, 'c, 'd) format -> ('a -> 'b, 'c, 'd) format = "%identity"
 

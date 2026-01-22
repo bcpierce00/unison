@@ -32,6 +32,8 @@
 /src/unison
 /src/unison-gui
 /src/unison-fsmonitor
+/src/languages/lang_entry.ml
+/src/languages/dune
 TAGS
 build
 logmsg

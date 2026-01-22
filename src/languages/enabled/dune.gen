@@ -1,6 +1,7 @@
 (library
  (name internationalization)
  (wrapped false)
+ (libraries gettext.base gettext-camomile)
  (modules lang_entry)
 )
 (include_subdirs no)

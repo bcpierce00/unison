@@ -71,14 +71,14 @@ open Lang_fallback  # ok, module visible, after Makefile build `make` - should w
 open Lang_bin       # ok, module visible, after Makefile build `GETTEXT_ENABLED=1 make`
 however! some of those might simply build due to disabled strings replacement, and maybe its then optimized out
 *)
-
+open Lang_entry.Translate
 
 let versionPrefName = "version"
 let printVersionAndExit =
   Prefs.createBool versionPrefName false
     ~category:(`Basic `General)
     ~cli_only:true
-    "print version and exit"
+    (s_ "print version and exit")
     ("Print the current version number and exit.  "
      ^ "(This option only makes sense on the command line.)")
 

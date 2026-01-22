@@ -272,6 +272,9 @@ let () =
         shell (cmd ^ " query -format \"-I \"\"%d\"\"\" gettext-camomile")
     | None -> ""
 
+let () =
+  if inputs.$("GETTEXT_ENABLED") = "1" && inputs.$("GETTEXTSTUBSLIB") <> "" then
+        "CLIBS" <-+= "-cclib -lintl"
 
 let () = "WINDRES" <--
   (if not_empty tool_prefix then tool_prefix else begin

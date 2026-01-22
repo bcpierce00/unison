@@ -1,0 +1,32 @@
+#!/bin/bash
+
+src=$(dirname "$0")
+if [ "${GETTEXT_ENABLED}"x = "1"x ]; then
+	lang_mode=enabled
+else
+	lang_mode=disabled
+fi
+
+cp ${src}/languages/${lang_mode}/dune.gen ${src}/languages/dune
+cp ${src}/languages/${lang_mode}/lang_entry.ml.gen ${src}/languages/lang_entry.ml
+
+# Above files are rewritten - in case of both dune or make builds, based on single env variable
+# Note, this does NOT automatically change gettext-framework, based on env vars CAMOMILE_0? or GETTEXTSTUBSLIB
+# Note 2, while it is enough for `dune build`, for make build one still has to keep env variable set after change
+
+# optional, used for convenience - never triggered automatically in builds.
+# Note, after GETTEXT_CHANGE, one has to run it again to apply to src/build dir
+case "${GETTEXT_CHANGE}" in
+	use_camomile|uc)
+		sed "s/gettext-stub/gettext-camomile/g" -i ${src}/languages/enabled/dune.gen
+		sed "s/gettext-stub/gettext-camomile/g" -i ${src}/make_tools.ml
+		sed "s/GettextStub.Native/GettextCamomile.Map/g" -i ${src}/languages/enabled/lang_entry.ml.gen
+		echo "ok, make sure to adjust the env variables accordingly"
+		;;
+	use_gtxtstub|ug)
+		sed "s/gettext-camomile/gettext-stub/g" -i ${src}/languages/enabled/dune.gen
+		sed "s/gettext-camomile/gettext-stub/g" -i ${src}/make_tools.ml
+		sed "s/GettextCamomile.Map/GettextStub.Native/g" -i ${src}/languages/enabled/lang_entry.ml.gen
+		echo "ok, make sure to adjust the env variables accordingly"
+		;;
+esac

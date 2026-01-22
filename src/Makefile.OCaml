@@ -9,7 +9,7 @@
 
 export OCAMLPATH := $(shell opam var lib)
 
-all: tui guimaybe macuimaybe fsmonitor
+all: maybetranslate tui guimaybe macuimaybe fsmonitor
 .PHONY: all # This .PHONY definition must come after the first target,
             # so that make implementations which don't support .PHONY
             # don't treat it as the default target (which in turn
@@ -35,31 +35,57 @@ guimaybe:
 .PHONY: macuimaybe
 macuimaybe:
 
+.PHONY: maybetraslate
+
+maybetranslate:
+	./dune.prepare
+
+##################################################################################################################
+# Gettext user choices are:
+# - no gettext (default),
+# - gettext-camomile with ocaml 4.x, gettext-camomile with ocaml 5.x
+# - gettext-stub with ocaml 4.x, gettext-stub with ocaml 5.x
 ####################################################################
-ifdef GETTEXT_ENABLED
-GETTEXT_DIRS = -I $(OCAMLPATH)/camomile/default_config \
-		-I $(OCAMLPATH)/camomile/library        \
-		-I $(OCAMLPATH)/camomile/lib_default    \
-		-I $(OCAMLPATH)/camomile/dyn            \
-		-I $(OCAMLPATH)/camomile                \
-		-I $(OCAMLPATH)/bytes                   \
-		-I $(OCAMLPATH)/fileutils               \
-		-I $(OCAMLPATH)/gettext                 \
-		-I $(OCAMLPATH)/gettext/base            \
-		-I $(OCAMLPATH)/gettext/extension       \
-		-I $(OCAMLPATH)/gettext-camomile        \
-		-I languages
+ifeq ($(GETTEXT_ENABLED),1)
+GETTEXT_DIRS = -I $(OCAMLPATH)/bytes                   \
+               -I $(OCAMLPATH)/fileutils               \
+               -I $(OCAMLPATH)/gettext                 \
+               -I $(OCAMLPATH)/gettext/base            \
+               -I $(OCAMLPATH)/gettext/extension       \
+               -I languages
 else
 GETTEXT_DIRS = -I languages
 endif
+
+ifdef CAMOMILE_04
+USES_CAMOMILE=1
+GETTEXT_DIRS += -I $(OCAMLPATH)/gettext-camomile        \
+                -I $(OCAMLPATH)/camomile/default_config \
+                -I $(OCAMLPATH)/camomile/library        \
+                -I $(OCAMLPATH)/camomile/lib_default    \
+                -I $(OCAMLPATH)/camomile/dyn            \
+                -I $(OCAMLPATH)/camomile
+endif
+ifdef CAMOMILE_05
+USES_CAMOMILE=1
+GETTEXT_DIRS += -I $(OCAMLPATH)/gettext-camomile        \
+                -I $(OCAMLPATH)/camomile/lib            \
+                -I $(OCAMLPATH)/camomile
+endif
+
+ifdef GETTEXTSTUBSLIB
+USES_GETTEXTSTUB=1
+GETTEXT_DIRS +=	-I $(OCAMLPATH)/gettext-stub # TODO -I /usr/lib/x86_64-linux-gnu/ocaml/5.3.0/stublibs
+endif
+
 ####################################################################
 ### Default parameters
 
-INCLFLAGS = -I lwt -I ubase -I system -I system/$(SYSTEM) -I lwt/$(SYSTEM) -I languages
+INCLFLAGS = -I lwt -I ubase -I system -I system/$(SYSTEM) -I lwt/$(SYSTEM)
 DEP_INCLFLAGS = -I lwt -I ubase -I system \
                 -I fsmonitor -I fsmonitor/inotify -I fsmonitor/solaris -I fsmonitor/windows \
 
-ifdef GETTEXT_ENABLED
+ifeq ($(GETTEXT_ENABLED),1)
 DEP_INCLFLAGS += $(GETTEXT_DIRS)
 endif
 
@@ -91,11 +117,7 @@ OCAMLOBJS = \
           lwt/pqueue.cmo lwt/lwt.cmo lwt/lwt_util.cmo \
           lwt/$(SYSTEM)/lwt_unix_impl.cmo lwt/lwt_unix.cmo \
 
-ifdef GETTEXT_ENABLED
-OCAMLOBJS += languages/langs_lib.enabled.cmo languages/lang_lib.cmo languages/lang_bin.cmo
-else
-OCAMLOBJS += languages/langs_lib.disabled.cmo languages/lang_fallback.cmo
-endif
+OCAMLOBJS += languages/lang_entry.cmo
 
 OCAMLOBJS += features.cmo uutil.cmo case.cmo pred.cmo terminal.cmo \
           fileutil.cmo name.cmo path.cmo fspath.cmo fs.cmo fingerprint.cmo \
@@ -109,33 +131,50 @@ OCAMLOBJS += features.cmo uutil.cmo case.cmo pred.cmo terminal.cmo \
           main.cmo
 
 
-# hardcoded dependencies, given that version is frozen to 0.4.2
-
-ifndef GETTEXT_0_5
-CAMOMILE = $(OCAMLPATH)/camomile/default_config/camomileDefaultConfig.cmxa $(OCAMLPATH)/camomile/library/camomileLibrary.cmxa $(OCAMLPATH)/camomile/lib_default/camomileLibraryDefault.cmxa $(OCAMLPATH)/camomile/dyn/camomileLibraryDyn.cmxa $(OCAMLPATH)/camomile/camomile_yuge.cmxa
-else
-CAMOMILE = $(OCAMLPATH)/camomile/camomile.cmxa $(OCAMLPATH)/camomile/lib/camomileLib.cmxa
-# $(OCAMLPATH)/camomile/lib/
+ifdef CAMOMILE_04
+USES_CAMOMILE=1
+CAMOMILE_IMPLS = $(OCAMLPATH)/camomile/default_config/camomileDefaultConfig.cmxa $(OCAMLPATH)/camomile/library/camomileLibrary.cmxa $(OCAMLPATH)/camomile/lib_default/camomileLibraryDefault.cmxa $(OCAMLPATH)/camomile/dyn/camomileLibraryDyn.cmxa $(OCAMLPATH)/camomile/camomile_yuge.cmxa $(OCAMLPATH)/gettext-camomile/gettextCamomile.cmxa
 endif
-ifdef GETTEXT_ENABLED
-GETTEXT_IMPLS = $(CAMOMILE) $(OCAMLPATH)/fileutils/fileutils.cmxa $(OCAMLPATH)/gettext/gettext.cmxa $(OCAMLPATH)/gettext/base/gettextBase.cmxa $(OCAMLPATH)/gettext/extension/gettextExtension.cmxa $(OCAMLPATH)/gettext-camomile/gettextCamomile.cmxa
-else
+ifdef CAMOMILE_05
+USES_CAMOMILE=1
+CAMOMILE_IMPLS = $(OCAMLPATH)/camomile/camomile.cmxa $(OCAMLPATH)/camomile/lib/camomileLib.cmxa $(OCAMLPATH)/gettext-camomile/gettextCamomile.cmxa
+endif
+ifdef GETTEXTSTUBSLIB
+USES_GETTEXTSTUB=1
+GETTEXT_STUB_IMPLS = $(OCAMLPATH)/gettext-stub/gettextStub.cmxa  $(OCAMLPATH)/gettext-stub/gettextStubCompat.cmx
+endif
+
+ifeq ($(GETTEXT_ENABLED),1)
+ifndef CAMOMILE_04
+ifndef CAMOMILE_05
+ifndef GETTEXTSTUBSLIB
+$(error None of the gettext variables are set: GETTEXTSTUBSLIB or CAMOMILE_04 or CAMOMILE_05)
+endif
+endif
+endif
+endif
+
+ifeq ($(GETTEXT_ENABLED),1)
+GETTEXT_IMPLS = $(OCAMLPATH)/fileutils/fileutils.cmxa $(OCAMLPATH)/gettext/gettext.cmxa $(OCAMLPATH)/gettext/base/gettextBase.cmxa $(OCAMLPATH)/gettext/extension/gettextExtension.cmxa
+endif
+ifdef USES_CAMOMILE
+GETTEXT_IMPLS += $(CAMOMILE_IMPLS)
+endif
+ifdef USES_GETTEXTSTUB
+GETTEXT_IMPLS += $(GETTEXT_STUB_IMPLS)
+endif
+ifneq ($(GETTEXT_ENABLED),1)
 GETTEXT_IMPLS =
 endif
 
 # OCaml libraries for the bytecode version
 # File extensions will be substituted for the native code version
 OCAMLLIBS = unix.cma str.cma
-ifdef GETTEXT_ENABLED
-ifndef GETTEXT_0_5
-OCAMLLIBS += bigarray.cmxa
-endif
-endif
-ifdef GETTEXT_ENABLED
-OCAMLLIBS += $(GETTEXT_IMPLS)
-endif
+# ifndef CAMOMILE_05
+# OCAMLLIBS += bigarray.cmxa
+# endif
+### TODO: OCAMLLIBS += $(GETTEXT_IMPLS) - link order is wrong sometimes
 OCAMLINCLUDES = -I +unix -I +str $(GETTEXT_DIRS)
-
 # C objects for both bytecode and native versions
 COBJS = osxsupport$(OBJ_EXT) pty$(OBJ_EXT) bytearray_stubs$(OBJ_EXT) \
         hash_compat$(OBJ_EXT) props_xattr$(OBJ_EXT) props_acl$(OBJ_EXT) \
@@ -265,11 +304,11 @@ include Makefile2.cfg
 
 $(NAME)$(EXEC_EXT): $(COMPAT_OBJS) $(CAMLOBJS) $(CAMLOBJS_TUI) $(COBJS)
 	@echo Linking $@
-	$(CAMLC) -verbose $(CAMLFLAGS_X) $(CAMLLDFLAGS) -o $@ $(GETTEXT_IMPLS) $(CAMLLIBS) $(ALL__SRC) $(CLIBS)
+	$(CAMLC) -verbose $(CAMLFLAGS_X) $(CAMLLDFLAGS) -o $@ $(CAMLLIBS) $(GETTEXT_IMPLS) $(ALL__SRC) $(CLIBS)
 
 $(NAME_GUI)$(EXEC_EXT): $(COMPAT_OBJS) $(CAMLOBJS) $(CAMLOBJS_GUI) $(COBJS)
 	@echo Linking $@
-	$(CAMLC) -verbose $(CAMLFLAGS_X) $(CAMLLDFLAGS) $(CAMLLDFLAGS_GUI) -o $@ $(GETTEXT_IMPLS) $(CAMLLIBS) $(CAMLLIBS_GUI) $(ALL__SRC) $(CLIBS)
+	$(CAMLC) -verbose $(CAMLFLAGS_X) $(CAMLLDFLAGS) $(CAMLLDFLAGS_GUI) -o $@ $(CAMLLIBS) $(GETTEXT_IMPLS) $(CAMLLIBS_GUI) $(ALL__SRC) $(CLIBS)
 
 $(NAME_FSM)$(EXEC_EXT): $(COMPAT_OBJS) $(CAMLOBJS_FSM) $(FSMCOBJS)
 	@echo Linking $@
