@@ -9,7 +9,7 @@ default:
 macexecutable:
 	( \
 	  LIB_SUFFIX=$$(ocaml -e 'if Sys.ocaml_release.major > 5 || Sys.ocaml_release.major = 5 && Sys.ocaml_release.minor >= 1 then print_string "nat"' 2> /dev/null); \
-	  printf "MARKETING_VERSION = $(VERSION)\nOCAMLLIBDIR = $(OCAMLLIBDIR)\nOCAMLLIB_UNIX = -lunix$${LIB_SUFFIX}\nOCAMLLIB_STR = -lcamlstr$${LIB_SUFFIX}" > ExternalSettings.xcconfig)
+	  printf "MARKETING_VERSION = $(VERSION)\nOCAMLLIBDIR = $(OCAMLLIBDIR)\nOCAMLLIB_UNIX = -lunix$${LIB_SUFFIX}\nOCAMLLIB_STR = -lcamlstr$${LIB_SUFFIX}\nOCAMLLIBDIR_GETTEXT = $(OCAMLLIBDIR_GETTEXT)\nOCAMLLIB_GETTEXT = $(OCAMLLIB_GETTEXT)" > ExternalSettings.xcconfig)
 	xcodebuild $(XCODEFLAGS) SYMROOT=build
 	$(CC) $(CFLAGS) cltool.c -o build/Default/Unison.app/Contents/MacOS/cltool -framework Carbon
 	codesign --remove-signature build/Default/Unison.app
