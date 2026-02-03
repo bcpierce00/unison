@@ -21,6 +21,7 @@ jobs:
 
     - run: sudo apt-get install hevea lynx texlive-latex-base
 
+    ## [2026-02] no need to modify this for GETTEXT - not used for now in docs
     - run: opam exec -- make -j 2 docs
 
     - name: Store user manual for the build jobs
@@ -54,11 +55,13 @@ jobs:
         - { os: macos-14      , ocaml-version: 4.14.x           , publish: true  , fnsuffix: -macos-arm64 }
         - { os: macos-15-intel, ocaml-version: 4.14.x           , publish: true  , fnsuffix: -macos-x86-64 }
         - { os: ubuntu-24.04  , ocaml-version: 5.4.x }
-        - { os: ubuntu-22.04  , ocaml-version: 4.14.x }
+        - { os: ubuntu-24.04  , ocaml-version: 5.4.x            , gettext: true }
+        - { os: ubuntu-22.04  , ocaml-version: 4.14.x           , gettext: true }
         - { os: ubuntu-22.04  , ocaml-version: "ocaml-variants.4.14.2+options,ocaml-option-32bit", publish: true, fnsuffix: -ubuntu-22.04-i386 }
         - { os: windows-2022  , ocaml-version: "ocaml.4.14.2,system-mingw"              , publish: true  , fnsuffix: -windows-x86_64 }
         - { os: windows-2022  , ocaml-version: "ocaml.4.14.2,system-mingw,arch-x86_32"  , publish: true  , fnsuffix: -windows-i386 }
         - { os: windows-2022  , ocaml-version: "ocaml.4.14.2,system-msvc" }
+        - { os: windows-2022  , ocaml-version: "ocaml.4.14.2,system-msvc", gettext: true }
         - { os: windows-2022  , ocaml-version: "ocaml.4.14.2,system-msvc,arch-x86_32" }
 
     runs-on: ${{ matrix.job.os }}
@@ -112,6 +115,7 @@ jobs:
         COMPRESS_CMD='tar czf'; case '${{ matrix.job.os }}' in windows-*) COMPRESS_CMD='7z -y a' ;; esac;
         outputs COMPRESS_CMD
         case '${{ matrix.job.ocaml-version }}' in *msvc*) echo "_MAKE=nmake" >> $GITHUB_ENV ;; *) echo "_MAKE=make" >> $GITHUB_ENV ;; esac
+        if '${{ matrix.job.gettext }}'; then echo "GETTEXT_ENABLED=1" >> $GITHUB_ENV ; fi
 
     - name: Create/configure any needed build/workspace
       shell: bash
@@ -147,6 +151,11 @@ jobs:
       shell: cmd
       run: |
         echo SHELLOPTS=igncr>> %GITHUB_ENV%
+
+    ## [2026-02] while GETTEXT_ENABLED=1 should be taken from env setup step, better safe than sorry
+    - name: gettext - replace src files
+      if: matrix.job.gettext
+      run: GETTEXT_ENABLED=1 ./src/dune.prepare
 
     - run: |
         opam exec -- ${{ env._MAKE }} tui fsmonitor
@@ -445,10 +454,16 @@ jobs:
         '@ | patch -Nu -p 1
         opam pin --no-action add lablgtk3 .
 
-    - name: lablgtk ocamlfind ocaml-gettext install
+    ## [2026-02] versions depend on ocaml version, gettext 0.4.2 will be used automatically when ocaml 4.x is used
+    ##           Also, probably unavailable for musl variant, possibly others too
+    - name: opam install gettext deps
+      if: matrix.job.gettext
+      run: opam install ocamlfind gettext gettext-stub
+
+    - name: lablgtk
       ## [2020-09] non-working/unavailable for musl OCaml variant
       if: ${{ !contains(matrix.job.ocaml-version, '-musl') }}
-      run: opam install lablgtk3 ocamlfind gettext gettext-camomile gettext-stub
+      run: opam install lablgtk3 ocamlfind
 
     - if: ${{ !matrix.job.static }} ## unable to build static gtk/gui
       run: |
@@ -1004,6 +1019,7 @@ jobs:
       matrix:
         job:
         - { os: ubuntu-24.04   , ocaml-compiler: 4.12.x }
+        - { os: ubuntu-24.04   , ocaml-compiler: 4.12.x , gettext: true }
         - { os: macos-14       , ocaml-compiler: 4.14.x }
 
     runs-on: ${{ matrix.job.os }}
@@ -1021,6 +1037,16 @@ jobs:
         ocaml-compiler: "${{ matrix.job.ocaml-compiler }}"
 
     - run: opam install . --deps-only
+
+    ## [2026-02] versions depend on ocaml version, gettext 0.4.2 will be used automatically when ocaml 4.x is used
+    - name: opam install gettext deps
+      if: matrix.job.gettext
+      run: opam install ocamlfind gettext gettext-stub
+
+    ## [2026-02] while GETTEXT_ENABLED=1 should be taken from env setup step, better safe than sorry
+    - name: gettext - replace src files
+      if: matrix.job.gettext
+      run: GETTEXT_ENABLED=1 ./src/dune.prepare
 
     - run: opam exec -- dune build && cp -L ./_build/install/default/bin/unison* ./src/
 

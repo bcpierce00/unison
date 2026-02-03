@@ -40,50 +40,22 @@ macuimaybe:
 maybetranslate:
 	./dune.prepare
 
-##################################################################################################################
-# Gettext user choices are:
-# - no gettext (default),
-# - gettext-camomile with ocaml 4.x, gettext-camomile with ocaml 5.x
-# - gettext-stub with ocaml 4.x, gettext-stub with ocaml 5.x
-####################################################################
 ifeq ($(GETTEXT_ENABLED),1)
 GETTEXT_DIRS = -I $(OCAMLPATH)/bytes                   \
                -I $(OCAMLPATH)/fileutils               \
                -I $(OCAMLPATH)/gettext                 \
                -I $(OCAMLPATH)/gettext/base            \
                -I $(OCAMLPATH)/gettext/extension       \
-               -I languages
-else
-GETTEXT_DIRS = -I languages
-endif
-
-ifdef CAMOMILE_04
-USES_CAMOMILE=1
-GETTEXT_DIRS += -I $(OCAMLPATH)/gettext-camomile        \
-                -I $(OCAMLPATH)/camomile/default_config \
-                -I $(OCAMLPATH)/camomile/library        \
-                -I $(OCAMLPATH)/camomile/lib_default    \
-                -I $(OCAMLPATH)/camomile/dyn            \
-                -I $(OCAMLPATH)/camomile
-endif
-ifdef CAMOMILE_05
-USES_CAMOMILE=1
-GETTEXT_DIRS += -I $(OCAMLPATH)/gettext-camomile        \
-                -I $(OCAMLPATH)/camomile/lib            \
-                -I $(OCAMLPATH)/camomile
-endif
-
-ifdef GETTEXTSTUBSLIB
-USES_GETTEXTSTUB=1
-GETTEXT_DIRS +=	-I $(OCAMLPATH)/gettext-stub # TODO -I /usr/lib/x86_64-linux-gnu/ocaml/5.3.0/stublibs
+               -I $(OCAMLPATH)/gettext-stub
 endif
 
 ####################################################################
 ### Default parameters
 
-INCLFLAGS = -I lwt -I ubase -I system -I system/$(SYSTEM) -I lwt/$(SYSTEM)
+INCLFLAGS = -I lwt -I ubase -I system -I system/$(SYSTEM) -I lwt/$(SYSTEM) -I languages
 DEP_INCLFLAGS = -I lwt -I ubase -I system \
                 -I fsmonitor -I fsmonitor/inotify -I fsmonitor/solaris -I fsmonitor/windows \
+                -I languages
 
 ifeq ($(GETTEXT_ENABLED),1)
 DEP_INCLFLAGS += $(GETTEXT_DIRS)
@@ -130,50 +102,18 @@ OCAMLOBJS += features.cmo uutil.cmo case.cmo pred.cmo terminal.cmo \
           strings.cmo uicommon.cmo uitext.cmo test.cmo \
           main.cmo
 
-
-ifdef CAMOMILE_04
-USES_CAMOMILE=1
-CAMOMILE_IMPLS = $(OCAMLPATH)/camomile/default_config/camomileDefaultConfig.cmxa $(OCAMLPATH)/camomile/library/camomileLibrary.cmxa $(OCAMLPATH)/camomile/lib_default/camomileLibraryDefault.cmxa $(OCAMLPATH)/camomile/dyn/camomileLibraryDyn.cmxa $(OCAMLPATH)/camomile/camomile_yuge.cmxa $(OCAMLPATH)/gettext-camomile/gettextCamomile.cmxa
-endif
-ifdef CAMOMILE_05
-USES_CAMOMILE=1
-CAMOMILE_IMPLS = $(OCAMLPATH)/camomile/camomile.cmxa $(OCAMLPATH)/camomile/lib/camomileLib.cmxa $(OCAMLPATH)/gettext-camomile/gettextCamomile.cmxa
-endif
-ifdef GETTEXTSTUBSLIB
-USES_GETTEXTSTUB=1
-GETTEXT_STUB_IMPLS = $(OCAMLPATH)/gettext-stub/gettextStub.cmxa  $(OCAMLPATH)/gettext-stub/gettextStubCompat.cmx
-endif
-
 ifeq ($(GETTEXT_ENABLED),1)
-ifndef CAMOMILE_04
-ifndef CAMOMILE_05
-ifndef GETTEXTSTUBSLIB
-$(error None of the gettext variables are set: GETTEXTSTUBSLIB or CAMOMILE_04 or CAMOMILE_05)
-endif
-endif
-endif
+GETTEXT_IMPLS = $(OCAMLPATH)/fileutils/fileutils.cmxa \
+		$(OCAMLPATH)/gettext/gettext.cmxa \
+		$(OCAMLPATH)/gettext/base/gettextBase.cmxa \
+		$(OCAMLPATH)/gettext/extension/gettextExtension.cmxa \
+		$(OCAMLPATH)/gettext-stub/gettextStub.cmxa
 endif
 
-ifeq ($(GETTEXT_ENABLED),1)
-GETTEXT_IMPLS = $(OCAMLPATH)/fileutils/fileutils.cmxa $(OCAMLPATH)/gettext/gettext.cmxa $(OCAMLPATH)/gettext/base/gettextBase.cmxa $(OCAMLPATH)/gettext/extension/gettextExtension.cmxa
-endif
-ifdef USES_CAMOMILE
-GETTEXT_IMPLS += $(CAMOMILE_IMPLS)
-endif
-ifdef USES_GETTEXTSTUB
-GETTEXT_IMPLS += $(GETTEXT_STUB_IMPLS)
-endif
-ifneq ($(GETTEXT_ENABLED),1)
-GETTEXT_IMPLS =
-endif
 
 # OCaml libraries for the bytecode version
 # File extensions will be substituted for the native code version
 OCAMLLIBS = unix.cma str.cma
-# ifndef CAMOMILE_05
-# OCAMLLIBS += bigarray.cmxa
-# endif
-### TODO: OCAMLLIBS += $(GETTEXT_IMPLS) - link order is wrong sometimes
 OCAMLINCLUDES = -I +unix -I +str $(GETTEXT_DIRS)
 # C objects for both bytecode and native versions
 COBJS = osxsupport$(OBJ_EXT) pty$(OBJ_EXT) bytearray_stubs$(OBJ_EXT) \
@@ -214,7 +154,9 @@ macui: buildexecutable macexecutable
 
 .PHONY: macexecutable
 macexecutable: $(NAME)-blob.o
-	cd uimac && $(MAKE) macexecutable VERSION="$(VERSION)" OCAMLLIBDIR="$(OCAMLLIBDIR)" XCODEFLAGS="$(XCODEFLAGS)"
+	cd uimac && $(MAKE) macexecutable VERSION="$(VERSION)" OCAMLLIBDIR="$(OCAMLLIBDIR)" XCODEFLAGS="$(XCODEFLAGS)" \
+	 OCAMLLIBDIR_GETTEXT="$(OCAMLLIBDIR_GETTEXT)" OCAMLLIB_GETTEXT="$(OCAMLLIB_GETTEXT)"
+
 
 clean::
 	-cd uimac && $(MAKE) clean

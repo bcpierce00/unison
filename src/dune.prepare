@@ -1,11 +1,7 @@
-#!/bin/bash
+#!/bin/sh
 
 src=$(dirname "$0")
-if [ "${GETTEXT_ENABLED}"x = "1"x ]; then
-	lang_mode=enabled
-else
-	lang_mode=disabled
-fi
+[ "1${GETTEXT_ENABLED}" = "11" ] && lang_mode=enabled || lang_mode=disabled
 
 cp ${src}/languages/${lang_mode}/dune.gen ${src}/languages/dune
 cp ${src}/languages/${lang_mode}/lang_entry.ml.gen ${src}/languages/lang_entry.ml
