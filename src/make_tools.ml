@@ -269,12 +269,8 @@ let () =
     | Some cmd ->
         (* The weird quoting is required for Windows, but harmless in sh *)
         shell (cmd ^ " query -format \"-I \"\"%d\"\"\" gettext") ^ " " ^
-        shell (cmd ^ " query -format \"-I \"\"%d\"\"\" gettext-camomile")
+        shell (cmd ^ " query -format \"-I \"\"%d\"\"\" gettext-stub")
     | None -> ""
-
-let () =
-  if inputs.$("GETTEXT_ENABLED") = "1" && inputs.$("GETTEXTSTUBSLIB") <> "" then
-        "CLIBS" <-+= "-cclib -lintl"
 
 let () = "WINDRES" <--
   (if not_empty tool_prefix then tool_prefix else begin
@@ -328,7 +324,7 @@ let () =
     | Some cmd ->
         (* The weird quoting is required for Windows, but harmless in sh *)
         shell (cmd ^ " query -format \"-I \"\"%d\"\"\" gettext") ^ " " ^
-        shell (cmd ^ " query -format \"-I \"\"%d\"\"\" gettext-camomile")
+        shell (cmd ^ " query -format \"-I \"\"%d\"\"\" gettext-stub")
     | None -> ""
 
 let () =

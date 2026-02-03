@@ -26,4 +26,4 @@ module Translate = Gettext.Program (struct
   let dir = None
   let dependencies = Gettext.init
 end)
-(GettextCamomile.Map)
+(GettextStub.Native)

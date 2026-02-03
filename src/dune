@@ -28,18 +28,6 @@
  (package unison) ; Dummy: we don't use packages
  (modules linktext )
  (libraries unison_lib
-;  (select langs_lib.ml from
-;    ;(conditional_translation -> msgs.ml)
-;    ;(!conditional_translation -> msgs.ml))
-;
-;    (conditional_translation -> langs_lib.enabled.ml)
-;    ;(!conditional_translation -> langs_lib.disabled.ml))
-;    (-> langs_lib.disabled.ml))
-;  (select link_check.ml from
-;    (conditional_translation -> link_check.enabled.ml)
-;    ;(!internationalization -> link_check.disabled.ml)
-;    (-> link_check.disabled.ml)
-;  )
  )
 )
 
