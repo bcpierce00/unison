@@ -262,6 +262,16 @@ let () =
         %s.cmx: %s.ml\n\
         \t$(OCAMLOPT) $(OCAMLINCLUDES) -c $(ALL__SRC)" name name name name))
 
+let () =
+  if inputs.$("GETTEXT_ENABLED") <> "" then
+    "CAMLFLAGS" <-+=
+    match ocamlfind with
+    | Some cmd ->
+        (* The weird quoting is required for Windows, but harmless in sh *)
+        shell (cmd ^ " query -format \"-I \"\"%d\"\"\" gettext") ^ " " ^
+        shell (cmd ^ " query -format \"-I \"\"%d\"\"\" gettext-stub")
+    | None -> ""
+
 let () = "WINDRES" <--
   (if not_empty tool_prefix then tool_prefix else begin
     let cc = Filename.basename (ocaml_conf_var "c_compiler") in
@@ -306,6 +316,16 @@ let () =
       shell (cmd ^ " query -format \"-I \"\"%d\"\"\" lablgtk3") ^ " " ^
       shell (cmd ^ " query -format \"-I \"\"%d\"\"\" cairo2")
   | None -> "-I +lablgtk3 -I +cairo2"
+
+let () =
+  if inputs.$("GETTEXT_ENABLED") <> "" then
+    "CAMLFLAGS_GUI" <-+=
+    match ocamlfind with
+    | Some cmd ->
+        (* The weird quoting is required for Windows, but harmless in sh *)
+        shell (cmd ^ " query -format \"-I \"\"%d\"\"\" gettext") ^ " " ^
+        shell (cmd ^ " query -format \"-I \"\"%d\"\"\" gettext-stub")
+    | None -> ""
 
 let () =
   if osarch_macos && is_empty inputs.$("XCODEFLAGS") then

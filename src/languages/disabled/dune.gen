@@ -1,0 +1,6 @@
+(library
+ (name internationalization)
+ (wrapped false)
+ (modules lang_entry)
+)
+(include_subdirs no)

@@ -1,0 +1,7 @@
+(library
+ (name internationalization)
+ (wrapped false)
+ (libraries gettext.base gettext-stub)
+ (modules lang_entry)
+)
+(include_subdirs no)

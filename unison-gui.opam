@@ -14,6 +14,9 @@ depends: [
   "lablgtk3"
   "ocamlfind"
 ]
+depopts: [
+  "gettext"
+]
 synopsis: "Pseudo-package for Unison GUI"
 description: """
 Unison is a file-synchronization tool for Unix and Windows. It allows

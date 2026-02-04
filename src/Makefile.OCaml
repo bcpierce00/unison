@@ -7,7 +7,9 @@
 # (d)make and NMAKE. Do not make any changes in this file unless you are
 # certain that the changes do not break this portability.
 
-all: tui guimaybe macuimaybe fsmonitor
+export OCAMLPATH := $(shell opam var lib)
+
+all: maybetranslate tui guimaybe macuimaybe fsmonitor
 .PHONY: all # This .PHONY definition must come after the first target,
             # so that make implementations which don't support .PHONY
             # don't treat it as the default target (which in turn
@@ -33,12 +35,35 @@ guimaybe:
 .PHONY: macuimaybe
 macuimaybe:
 
+.PHONY: maybetraslate
+ifeq ($(GETTEXT_ENABLED),1)
+maybetranslate:
+	./dune.prepare
+	$(MAKE) -C languages all_langs
+else
+maybetranslate:
+endif
+
+ifeq ($(GETTEXT_ENABLED),1)
+GETTEXT_DIRS = -I $(OCAMLPATH)/bytes                   \
+               -I $(OCAMLPATH)/fileutils               \
+               -I $(OCAMLPATH)/gettext                 \
+               -I $(OCAMLPATH)/gettext/base            \
+               -I $(OCAMLPATH)/gettext/extension       \
+               -I $(OCAMLPATH)/gettext-stub
+endif
+
 ####################################################################
 ### Default parameters
 
-INCLFLAGS = -I lwt -I ubase -I system -I system/$(SYSTEM) -I lwt/$(SYSTEM)
+INCLFLAGS = -I lwt -I ubase -I system -I system/$(SYSTEM) -I lwt/$(SYSTEM) -I languages
 DEP_INCLFLAGS = -I lwt -I ubase -I system \
-                -I fsmonitor -I fsmonitor/inotify -I fsmonitor/solaris -I fsmonitor/windows
+                -I fsmonitor -I fsmonitor/inotify -I fsmonitor/solaris -I fsmonitor/windows \
+                -I languages
+
+ifeq ($(GETTEXT_ENABLED),1)
+DEP_INCLFLAGS += $(GETTEXT_DIRS)
+endif
 
 ubase/projectInfo.ml: Makefile.ProjectInfo
 	ocaml make_tools.ml projectinfo NAME="$(NAME)" VERSION="$(VERSION)" MAJORVERSION="$(MAJORVERSION)" > $@
@@ -67,8 +92,10 @@ OCAMLOBJS = \
           \
           lwt/pqueue.cmo lwt/lwt.cmo lwt/lwt_util.cmo \
           lwt/$(SYSTEM)/lwt_unix_impl.cmo lwt/lwt_unix.cmo \
-          \
-          features.cmo uutil.cmo case.cmo pred.cmo terminal.cmo \
+
+OCAMLOBJS += languages/lang_entry.cmo
+
+OCAMLOBJS += features.cmo uutil.cmo case.cmo pred.cmo terminal.cmo \
           fileutil.cmo name.cmo path.cmo fspath.cmo fs.cmo fingerprint.cmo \
           abort.cmo osx.cmo fswatch.cmo propsdata.cmo \
           props.cmo fileinfo.cmo os.cmo lock.cmo clroot.cmo common.cmo \
@@ -79,11 +106,19 @@ OCAMLOBJS = \
           strings.cmo uicommon.cmo uitext.cmo test.cmo \
           main.cmo
 
+ifeq ($(GETTEXT_ENABLED),1)
+GETTEXT_IMPLS = $(OCAMLPATH)/fileutils/fileutils.cmxa \
+		$(OCAMLPATH)/gettext/gettext.cmxa \
+		$(OCAMLPATH)/gettext/base/gettextBase.cmxa \
+		$(OCAMLPATH)/gettext/extension/gettextExtension.cmxa \
+		$(OCAMLPATH)/gettext-stub/gettextStub.cmxa
+endif
+
+
 # OCaml libraries for the bytecode version
 # File extensions will be substituted for the native code version
 OCAMLLIBS = unix.cma str.cma
-OCAMLINCLUDES = -I +unix -I +str
-
+OCAMLINCLUDES = -I +unix -I +str $(GETTEXT_DIRS)
 # C objects for both bytecode and native versions
 COBJS = osxsupport$(OBJ_EXT) pty$(OBJ_EXT) bytearray_stubs$(OBJ_EXT) \
         hash_compat$(OBJ_EXT) props_xattr$(OBJ_EXT) props_acl$(OBJ_EXT) \
@@ -102,7 +137,7 @@ CAMLFLAGS_MAC = -I +threads
 
 ## Graphic UI
 OCAMLOBJS_GUI = pixmaps.cmo uigtk3.cmo linkgtk3.cmo
-OCAMLLIBS_GUI = lablgtk3.cma cairo.cma
+OCAMLLIBS_GUI = lablgtk3.cma cairo.cma $(GETTEXT_IMPLS)
 
 ####################################################################
 ### Unison executables
@@ -123,7 +158,9 @@ macui: buildexecutable macexecutable
 
 .PHONY: macexecutable
 macexecutable: $(NAME)-blob.o
-	cd uimac && $(MAKE) macexecutable VERSION="$(VERSION)" OCAMLLIBDIR="$(OCAMLLIBDIR)" XCODEFLAGS="$(XCODEFLAGS)"
+	cd uimac && $(MAKE) macexecutable VERSION="$(VERSION)" OCAMLLIBDIR="$(OCAMLLIBDIR)" XCODEFLAGS="$(XCODEFLAGS)" \
+	 OCAMLLIBDIR_GETTEXT="$(OCAMLLIBDIR_GETTEXT)" OCAMLLIB_GETTEXT="$(OCAMLLIB_GETTEXT)"
+
 
 clean::
 	-cd uimac && $(MAKE) clean
@@ -213,11 +250,11 @@ include Makefile2.cfg
 
 $(NAME)$(EXEC_EXT): $(COMPAT_OBJS) $(CAMLOBJS) $(CAMLOBJS_TUI) $(COBJS)
 	@echo Linking $@
-	$(CAMLC) -verbose $(CAMLFLAGS_X) $(CAMLLDFLAGS) -o $@ $(CAMLLIBS) $(ALL__SRC) $(CLIBS)
+	$(CAMLC) -verbose $(CAMLFLAGS_X) $(CAMLLDFLAGS) -o $@ $(CAMLLIBS) $(GETTEXT_IMPLS) $(ALL__SRC) $(CLIBS)
 
 $(NAME_GUI)$(EXEC_EXT): $(COMPAT_OBJS) $(CAMLOBJS) $(CAMLOBJS_GUI) $(COBJS)
 	@echo Linking $@
-	$(CAMLC) -verbose $(CAMLFLAGS_X) $(CAMLLDFLAGS) $(CAMLLDFLAGS_GUI) -o $@ $(CAMLLIBS) $(CAMLLIBS_GUI) $(ALL__SRC) $(CLIBS)
+	$(CAMLC) -verbose $(CAMLFLAGS_X) $(CAMLLDFLAGS) $(CAMLLDFLAGS_GUI) -o $@ $(CAMLLIBS) $(GETTEXT_IMPLS) $(CAMLLIBS_GUI) $(ALL__SRC) $(CLIBS)
 
 $(NAME_FSM)$(EXEC_EXT): $(COMPAT_OBJS) $(CAMLOBJS_FSM) $(FSMCOBJS)
 	@echo Linking $@
@@ -293,6 +330,7 @@ clean::
 	-(cd lwt && $(RM_FILES))
 	-(cd lwt/generic && $(RM_FILES))
 	-(cd lwt/win && $(RM_FILES))
+	-(cd languages && $(RM_FILES))
 
 .PHONY: paths
 paths:

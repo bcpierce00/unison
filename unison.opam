@@ -23,6 +23,7 @@ depends: [
 depopts: [
   "lablgtk3" {>= "3.1.0"}
   "ocamlfind"
+  "gettext"
 ]
 synopsis: "File-synchronization tool for Unix and Windows"
 description: """

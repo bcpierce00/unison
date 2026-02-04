@@ -17,7 +17,8 @@
   (language c)
   (names bytearray_stubs osxsupport pty hash_compat props_xattr props_acl copy_stubs))
  (c_library_flags -lutil)
- (libraries compat str unix lwt_lib bigarray))
+ (libraries compat str unix lwt_lib bigarray internationalization)
+)
 
 (include_subdirs unqualified)
 
@@ -25,8 +26,10 @@
  (name linktext)
  (public_name unison)
  (package unison) ; Dummy: we don't use packages
- (modules linktext)
- (libraries unison_lib))
+ (modules linktext )
+ (libraries unison_lib
+ )
+)
 
 (executable
  (name linkgtk3)
