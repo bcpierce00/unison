@@ -11,14 +11,14 @@ msgstr ""
 "Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 "
 "|| n%100>=20) ? 1 : 2);\n"
 
-msgid "SomethingElseIsAdded"
-msgstr "Something else is here - tak to wygląda zanim zostanie przetłumaczone"
-
 msgid "TranslationTestString"
 msgstr "To jest testowy ciąg znaków dla języka polskiego: Zażółć gęślą jaźń"
 
 msgid "TranslationTestString2"
 msgstr "To jest testowy ciag bez pl znakow"
+
+msgid "SomethingElseIsAdded"
+msgstr "Something else is here - tak to wygląda zanim zostanie przetłumaczone"
 
 msgid "print version and exit"
 msgstr "wyświetl wersję i zakończ działanie"

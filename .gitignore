@@ -34,6 +34,7 @@
 /src/unison-fsmonitor
 /src/languages/lang_entry.ml
 /src/languages/dune
+/src/languages/_tmp
 TAGS
 build
 logmsg

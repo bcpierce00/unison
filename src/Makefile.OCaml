@@ -36,9 +36,13 @@ guimaybe:
 macuimaybe:
 
 .PHONY: maybetraslate
-
+ifeq ($(GETTEXT_ENABLED),1)
 maybetranslate:
 	./dune.prepare
+	$(MAKE) -C languages all_langs
+else
+maybetranslate:
+endif
 
 ifeq ($(GETTEXT_ENABLED),1)
 GETTEXT_DIRS = -I $(OCAMLPATH)/bytes                   \

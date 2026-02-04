@@ -32,12 +32,14 @@ OCAML_GETTEXT_COMPILE_OPTIONS=
 OCAML_GETTEXT_INSTALL_OPTIONS=
 OCAML_GETTEXT_MERGE_OPTIONS=
 
-BUILDPO=../../_build/share/locale/
+# This dir exists for Dune builds, not for Makefile ones
+BUILDPO=$(if $(shell test -d ../../_build/), ../../_build/share/locale, ./_tmp/share/locale)
 
 POFILES=$(addsuffix .po,$(LINGUAS))
 MOFILES=$(addsuffix .mo,$(LINGUAS))
 POTFILE=$(OCAML_GETTEXT_PACKAGE).pot
 
+# keep this first, in order to be user-friendly
 help:
 	@printf "Usage: \n"
 	@printf "make [add-lang | update-lang | edit-lang | finish-lang | help | update-sources]\n"
@@ -64,6 +66,19 @@ finish-lang:
 	@read -p "Language code (2 letters):" preplang; \
 	mkdir -p $(BUILDPO)/$$preplang/LC_MESSAGES/; \
 	msgfmt locales/$$preplang/LC_MESSAGES/$(OCAML_GETTEXT_PACKAGE).po -o $(BUILDPO)/$$preplang/LC_MESSAGES/$(OCAML_GETTEXT_PACKAGE).mo
+
+# TODO: this would poison CIs env, should cleanup after packaging, if vanilla CI is important. Notice:
+#       - copying to /usr/local/share/locale and creating directories needs elevated permissions
+#       - we don't want to fail the build when file cannot be copied (probably it should display warning, but ignores for now)
+.PHONY: all_langs
+all_langs:
+	@for lang in $(LINGUAS); do \
+		mkdir -p locales/$$lang/LC_MESSAGES/; \
+		mkdir -p $(BUILDPO)/$$lang/LC_MESSAGES; \
+		msgmerge --update locales/$$lang/LC_MESSAGES/$(OCAML_GETTEXT_PACKAGE).po $(POTFILE); \
+		msgfmt locales/$$lang/LC_MESSAGES/$(OCAML_GETTEXT_PACKAGE).po -o $(BUILDPO)/$$lang/LC_MESSAGES/$(OCAML_GETTEXT_PACKAGE).mo; \
+		cp $(BUILDPO)/$$lang/LC_MESSAGES/$(OCAML_GETTEXT_PACKAGE).mo /usr/local/share/locale/$$lang/LC_MESSAGES/$(OCAML_GETTEXT_PACKAGE).mo || true; \
+	done
 
 install: install-po
 
