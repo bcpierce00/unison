@@ -133,13 +133,15 @@ CAMLprim value unison_clone_path(value src, value dst)
 #define FICLONE _IOW(0x94, 9, int)
 #endif
 
-CAMLprim value unison_clone_file(value in_fd, value out_fd)
+CAMLprim value unison_clone_file(value vin_fd, value vout_fd)
 {
-  CAMLparam2(in_fd, out_fd);
+  CAMLparam2(vin_fd, vout_fd);
+  int in_fd = Int_val(vin_fd);
+  int out_fd = Int_val(vout_fd);
 
 #ifdef FICLONE
   caml_release_runtime_system();
-  int status = ioctl(Int_val(out_fd), FICLONE, Int_val(in_fd));
+  int status = ioctl(out_fd, FICLONE, in_fd);
   caml_acquire_runtime_system();
 
   /* Don't raise an exception, just return false in case of errors */
@@ -181,22 +183,25 @@ CAMLprim value unison_clone_file(value in_fd, value out_fd)
 #include <sys/syscall.h>
 #include <sys/sendfile.h>
 
-CAMLprim value unison_copy_file(value in_fd, value out_fd, value in_offs, value len)
+CAMLprim value unison_copy_file(value vin_fd, value vout_fd, value vin_offs, value vlen)
 {
-  CAMLparam4(in_fd, out_fd, in_offs, len);
-  off_t off_i = Int64_val(in_offs);
+  CAMLparam4(vin_fd, vout_fd, vin_offs, vlen);
+  int in_fd = Int_val(vin_fd);
+  int out_fd = Int_val(vout_fd);
+  off_t off_i = Int64_val(vin_offs);
+  size_t len = Long_val(vlen);
   ssize_t ret;
 
   caml_release_runtime_system();
 #ifdef __NR_copy_file_range
   /* First, try copy_file_range() */
   /* Using off_i prevents changing in_fd file offset */
-  ret = syscall(__NR_copy_file_range, Int_val(in_fd), &off_i, Int_val(out_fd), NULL, Long_val(len), 0);
+  ret = syscall(__NR_copy_file_range, in_fd, &off_i, out_fd, NULL, len, 0);
   if (ret == -1 && (errno == ENOSYS || errno == EBADF || errno == EXDEV))
 #endif /* defined(__NR_copy_file_range) */
   {
     /* Second, try sendfile(); this one changes out_fd file offset */
-    ret = sendfile(Int_val(out_fd), Int_val(in_fd), &off_i, Long_val(len));
+    ret = sendfile(out_fd, in_fd, &off_i, len);
   }
   caml_acquire_runtime_system();
   if (ret == -1) caml_uerror("copy_file", Nothing);
@@ -211,16 +216,19 @@ CAMLprim value unison_copy_file(value in_fd, value out_fd, value in_offs, value 
 #include <sys/types.h>
 #include <unistd.h>
 
-CAMLprim value unison_copy_file(value in_fd, value out_fd, value in_offs, value len)
+CAMLprim value unison_copy_file(value vin_fd, value vout_fd, value vin_offs, value vlen)
 {
-  CAMLparam4(in_fd, out_fd, in_offs, len);
+  CAMLparam4(vin_fd, vout_fd, vin_offs, vlen);
 #if __FreeBSD_version >= 1300037
-  off_t off_i = Int64_val(in_offs);
+  int in_fd = Int_val(vin_fd);
+  int out_fd = Int_val(vout_fd);
+  off_t off_i = Int64_val(vin_offs);
+  size_t len = Long_val(vlen);
   ssize_t ret;
 
   caml_release_runtime_system();
   /* Using off_i prevents changing in_fd file offset */
-  ret = copy_file_range(Int_val(in_fd), &off_i, Int_val(out_fd), NULL, Long_val(len), 0);
+  ret = copy_file_range(in_fd, &off_i, out_fd, NULL, len, 0);
   caml_acquire_runtime_system();
   if (ret == -1) caml_uerror("copy_file", Nothing);
 
@@ -237,16 +245,19 @@ CAMLprim value unison_copy_file(value in_fd, value out_fd, value in_offs, value 
 
 #include <sys/sendfile.h>
 
-CAMLprim value unison_copy_file(value in_fd, value out_fd, value in_offs, value len)
+CAMLprim value unison_copy_file(value vin_fd, value vout_fd, value vin_offs, value vlen)
 {
-  CAMLparam4(in_fd, out_fd, in_offs, len);
+  CAMLparam4(vin_fd, vout_fd, vin_offs, vlen);
+  int in_fd = Int_val(vin_fd);
+  int out_fd = Int_val(vout_fd);
   off_t off_orig;
-  off_t off = off_orig = Int64_val(in_offs);
+  off_t off = off_orig = Int64_val(vin_offs);
+  size_t len = Long_val(vlen);
   ssize_t ret;
 
   caml_release_runtime_system();
   /* This one changes out_fd file offset */
-  ret = sendfile(Int_val(out_fd), Int_val(in_fd), &off, Long_val(len));
+  ret = sendfile(out_fd, in_fd, &off, len);
   caml_acquire_runtime_system();
   if (ret == -1) {
     if (off > off_orig) {
