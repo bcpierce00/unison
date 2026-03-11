@@ -37,7 +37,7 @@ and directories to be stored on different hosts (or different disks on the same
 host), modified separately, and then brought up to date by propagating the
 changes in each replica to the other.
 .Pp
-Unison has been in use for over 20 years and many people use it to synchronize
+Unison has been in use for over 25 years and many people use it to synchronize
 data they care about.
 .Pp
 Unison shares a number of features with other tools. Some of the distinguishing
@@ -54,10 +54,10 @@ Unlike most distributed filesystems, Unison is a user-level program that simply
 uses normal systems calls: there is no need to modify the kernel, to have
 superuser privileges on either host, or to have a FUSE implementation.
 .It
-Unison works between any pair of machines connected to the internet, typically
-communicating over
+Unison works between any pair of machines connected to the internet,
+each having an instance of unison, communicating over
 .Xr ssh 1 ,
-but also directly over TCP. It is careful with network bandwidth, and runs well
+or (deprecated) directly over TCP. It is careful with network bandwidth, and runs well
 over slow links. Transfers of small updates to large files are optimized using
 a compression protocol similar to
 .Xr rsync 1 .
