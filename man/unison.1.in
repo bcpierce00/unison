@@ -37,7 +37,7 @@ and directories to be stored on different hosts (or different disks on the same
 host), modified separately, and then brought up to date by propagating the
 changes in each replica to the other.
 .Pp
-Unison has been in use for over 20 years and many people use it to synchronize
+Unison has been in use for over 25 years and many people use it to synchronize
 data they care about.
 .Pp
 Unison shares a number of features with other tools. Some of the distinguishing
