@@ -346,7 +346,7 @@ let makeOutputQueue isServer flush =
    changes in a breaking way. Changes on the API level (functions and data
    types) normally do not cause a breaking change at the RPC level. *)
 (* Version 0 is special in that it must not be listed as a supported version.
-   It is used for 2.51-compatibility mode and is never negotiated. *)
+   It was used for 2.51-compatibility mode and is never negotiated. *)
 (* Supported RPC versions should be ordered from newest to oldest. *)
 let rpcSupportedVersions = [1]
 let rpcDefaultVersion = Safelist.hd rpcSupportedVersions
@@ -361,7 +361,12 @@ let rpcSupportedVersionStrHdr =
     (Safelist.map (fun v -> string_of_int v)
        rpcSupportedVersions)
 
-(* FIX: Added in 2021. Should be removed after a couple of years. *)
+(* FIXME: [2026-03] This is used for interop with 2.52 - 2.53.8 servers that
+   would be started in 2.51-compatibility mode. This only works with SSH and
+   is relevant for keeping interop once the magic string exchange below is
+   finally removed. Having this is harmless and can remain in the code for
+   a long time (or indefinitely) but could also be removed some time after
+   the magic string exchange code is removed. *)
 let rpcServerCmdlineOverride = "__new-rpc-mode"
 
 (****)
@@ -704,20 +709,6 @@ type 'a marshalFunction = connection ->
 type 'a unmarshalFunction = connection -> Bytearray.t -> 'a
 type 'a marshalingFunctions = 'a marshalFunction * 'a unmarshalFunction
 
-type 'a convV0Fun =
-  V0 : ('a -> 'compat) * ('compat -> 'a) -> 'a convV0Fun
-
-external id : 'a -> 'a = "%identity"
-let convV0_id = V0 (id, id)
-let convV0_id_pair = convV0_id, convV0_id
-
-let makeConvV0FunArg compat_to compat_from =
-  (V0 (compat_to, compat_from)), convV0_id
-let makeConvV0FunRet compat_to compat_from =
-  convV0_id, (V0 (compat_to, compat_from))
-let makeConvV0Funs compat_to compat_from compat_to2 compat_from2 =
-  (V0 (compat_to, compat_from)), (V0 (compat_to2, compat_from2))
-
 let registeredSet = ref Util.StringSet.empty
 
 let rec first_chars len msg =
@@ -771,18 +762,6 @@ let registerTag string =
     registeredSet := Util.StringSet.add string !registeredSet;
   Bytearray.of_string string
 
-let marshalV0 (V0 (to251, _)) data rem =
-  let s = Bytearray.marshal (to251 data) [Marshal.No_sharing] in
-  let l = Bytearray.length s in
-  ((s, 0, l) :: rem, l)
-
-let unmarshalV0 (V0 (_, from251)) buf pos =
-  try from251 (Bytearray.unmarshal buf pos)
-  with Failure s -> raise (Util.Fatal (Printf.sprintf
-"Fatal error during unmarshaling (%s),
-possibly because client and server have been compiled with different \
-versions of the OCaml compiler." s))
-
 let marshalV1 m data rem =
   let s = Umarshal.marshal_to_bytearray m data in
   let l = Bytearray.length s in
@@ -793,9 +772,13 @@ let unmarshalV1 m buf pos =
   with Failure s | Umarshal.Error s -> raise (Util.Fatal (Printf.sprintf
 "Fatal error during unmarshaling (%s)" s))
 
-let defaultMarshalingFunctions convV0 m =
-  (fun conn -> if conn.version = 0 then marshalV0 convV0 else marshalV1 m),
-  (fun conn -> if conn.version = 0 then unmarshalV0 convV0 else unmarshalV1 m)
+let errRPCVersion conn  =
+  raise (Util.Fatal (Printf.sprintf
+    "Internal error: invalid RPC version: %d" (connectionVersion conn)))
+
+let defaultMarshalingFunctions m =
+  (fun conn -> if conn.version = 1 then marshalV1 m else errRPCVersion conn),
+  (fun conn -> if conn.version = 1 then unmarshalV1 m else errRPCVersion conn)
 
 let makeMarshalingFunctions payloadMarshalingFunctions string =
   let (marshalPayload, unmarshalPayload) = payloadMarshalingFunctions in
@@ -944,7 +927,7 @@ let mheader = Umarshal.(sum6 unit string string string string unit
                            | I66 () -> StreamAbort))
 
 let ((marshalHeader, unmarshalHeader) : header marshalingFunctions) =
-  makeMarshalingFunctions (defaultMarshalingFunctions convV0_id mheader) "rsp"
+  makeMarshalingFunctions (defaultMarshalingFunctions mheader) "rsp"
 
 let processRequest conn id cmdName buf =
   let cmd =
@@ -1136,10 +1119,10 @@ let registerSpecialServerCmd
   in
   client
 
-let registerServerCmd name ?(convV0=convV0_id_pair) mArg mRet f =
+let registerServerCmd name mArg mRet f =
   registerSpecialServerCmd
-    name (defaultMarshalingFunctions (fst convV0) mArg)
-         (defaultMarshalingFunctions (snd convV0) mRet) f
+    name (defaultMarshalingFunctions mArg)
+         (defaultMarshalingFunctions mRet) f
 
 (* RegisterHostCmd is a simpler version of registerClientServer [registerServerCmd?].
    It is used to create remote procedure calls: the only communication
@@ -1151,10 +1134,10 @@ let registerServerCmd name ?(convV0=convV0_id_pair) mArg mRet f =
    RegisterHostCmd recognizes the case where the server is the local
    host, and it avoids socket communication in this case.
 *)
-let registerHostCmd cmdName ?(convV0=convV0_id_pair) mArg mRet cmd =
+let registerHostCmd cmdName mArg mRet cmd =
   let serverSide = (fun _ args -> cmd args) in
   let client0 =
-    registerServerCmd cmdName ~convV0 mArg mRet serverSide in
+    registerServerCmd cmdName mArg mRet serverSide in
   let client root args =
     let conn = ClientConn.ofRoot root in
     client0 conn args in
@@ -1168,14 +1151,14 @@ let registerHostCmd cmdName ?(convV0=convV0_id_pair) mArg mRet cmd =
 (* RegisterRootCmd is like registerHostCmd but it indexes connections by
    root instead of host. *)
 let registerRootCmd (cmdName : string)
-  ?(convV0=convV0_id_pair) mArg mRet (cmd : (Fspath.t * 'a) -> 'b) =
+  mArg mRet (cmd : (Fspath.t * 'a) -> 'b) =
   let mArg = Umarshal.(prod2 Fspath.m mArg id id) in
-  let r = registerHostCmd cmdName ~convV0 mArg mRet cmd in
+  let r = registerHostCmd cmdName mArg mRet cmd in
   fun root args -> r root ((snd root), args)
 
 let registerRootCmdWithConnection (cmdName : string)
-  ?(convV0=convV0_id_pair) mArg mRet (cmd : connection -> 'a -> 'b) =
-  let client0 = registerServerCmd cmdName ~convV0 mArg mRet cmd in
+  mArg mRet (cmd : connection -> 'a -> 'b) =
+  let client0 = registerServerCmd cmdName mArg mRet cmd in
   (* Return a function that runs either the proxy or the local version,
      depending on whether the call is to the local host or a remote one *)
   fun localRoot remoteRoot args ->
@@ -1204,7 +1187,7 @@ let registerStreamCmd
   let cmd =
     registerSpecialServerCmd
       cmdName marshalingFunctionsArgs
-      (defaultMarshalingFunctions convV0_id Umarshal.unit)
+      (defaultMarshalingFunctions Umarshal.unit)
       (fun conn v -> serverSide conn v; Lwt.return ())
   in
   let ping =
@@ -1381,6 +1364,9 @@ let sendHandshakeData conn keyw data =
 *)
 
 let connectionHeader = "Unison RPC\n"
+
+(* FIXME: [2026-03] Compat headers only used for interop with 2.52 - 2.53.8
+   servers that started in 2.51-compatibility mode. Remove after a few years. *)
 let compatConnectionHeader = "Unison 2.51 with OCaml >= 4.01.2\n"
 (* Every supported version released prior to the RPC version negotiation
    mechanism uses this connection header string. *)
@@ -1459,14 +1445,12 @@ let selectServerVersion conn =
           | Unknown reply -> handshakeUnknown (reply ^ getTheRest ())
 
 let checkServerVersion conn header =
-  if header = compatConnectionHeader then begin
-    setConnectionVersion conn 0;
-    debug (fun () -> Util.msg "Selected RPC version: 2.51-compatibility\n");
-    (* skip negotiation *) Lwt.return ()
-  end else if header = compat248ConnectionHeader then begin
-    setConnectionVersion conn 0;
-    debug (fun () -> Util.msg "Selected RPC version: 2.48-compatibility\n");
-    (* skip negotiation *) Lwt.return ()
+  if header = compatConnectionHeader || header = compat248ConnectionHeader then begin
+    Lwt.fail
+      (Util.Fatal
+        ("The server runs an old and unsupported Unison version.\n\
+          Version received from server: " ^ header ^ "\n\
+          Please see the documentation about upgrading."))
   end else
     selectServerVersion conn
 
@@ -1519,6 +1503,8 @@ let checkHeader conn =
 
 (****)
 
+(* FIXME: [2026-03] Only used for interop with 2.52 - 2.53.8 servers that
+   started in 2.51-compatibility mode. Remove after a few years. *)
 (* Magic string exchange is used within the old protocol to detect if both
    the server and the client support the new RPC version negotiation mechanism.
 
@@ -1644,7 +1630,7 @@ let initConnection ?(connReady=fun () -> ()) ?cleanup in_ch out_ch =
     peekWithBlocking conn.inputBuffer >>= fun _ ->
     connReady (); Lwt.return () >>= fun () -> (* Connection working, notify *)
     checkHeader conn >>=
-    checkServerUpgrade conn >>=
+    checkServerUpgrade conn >>= (* FIXME: [2026-03] Remove after a few years *)
     checkServerVersion conn)) >>= fun () ->
   registerConnCleanup conn cleanup;
   (* From this moment forward, the RPC version has been selected. All
@@ -2000,7 +1986,7 @@ let canonizeOnServer =
        Lwt.return (Os.myCanonicalHostName (), canonizeLocally s))
 
 let canonizeOnServer conn s =
-  (* The second tuple item is required for compatibility with <= 2.52 *)
+  (* The second tuple item was required for compatibility with <= 2.52 *)
   canonizeOnServer conn (s, true)
 
 let canonize clroot = (* connection for clroot must have been set up already *)
@@ -2205,38 +2191,9 @@ let forwardMsgToClient =
        (fun _ str -> (*msg "forwardMsgToClient: %s\n" str; *)
           Lwt.return (Trace.displayMessageLocally str)))
 
-(* Compatibility mode for 2.51 clients. *)
-let compatServerInit mode conn =
-  let compatConnectionHeader =
-    match mode with
-    | Some "2.48" -> compat248ConnectionHeader
-    | _ -> compatConnectionHeader
-  in
-  dump conn [(Bytearray.of_string compatConnectionHeader, 0,
-                String.length compatConnectionHeader)] >>= fun () ->
-  (* Send the magic string to notify new clients *)
-  dumpUrgent conn magic >>= fun () ->
-  (* Must enable flow control because that is the default for 2.51.
-     This must be done after dumpUrgent above to ensure that the write
-     token is sent the last. *)
-  enableFlowControl conn true >>= fun () ->
-  (* Let's see if the client noticed the magic string. This is
-     a no-op for old clients. *)
-  checkForMagicString conn
-
-let compatServerRun conn =
-  (* Set the local warning printer to make an RPC to the client and
-     show the warning there; ditto for the message printer *)
-  Util.warnPrinter :=
-    Some (fun str -> Lwt_unix.run (showWarningOnClient conn str));
-  Trace.messageForwarder :=
-    Some (fun str -> Lwt_unix.run (forwardMsgToClient conn str));
-  receive conn >>=
-  Lwt.wait
-
 (* This function loops, waits for commands, and passes them to
    the relevant functions. *)
-let commandLoop ~compatMode in_ch out_ch =
+let commandLoop in_ch out_ch =
   Trace.runningasserver := true;
   (* Restore prefs to their default values. It is possible to do here because
      command line preferences are never parsed by the server process directly.
@@ -2249,22 +2206,6 @@ let commandLoop ~compatMode in_ch out_ch =
   let conn = makeConnection true in_ch out_ch in
   Lwt.catch
     (fun () ->
-       (if compatMode <> None then
-         let () = setConnectionVersion conn 0 in
-         compatServerInit compatMode conn >>= (fun upgrade ->
-         if upgrade then begin
-           (* Restore the state before starting protocol negotiation *)
-           allowWrites conn.outputQueue;
-           disableFlowControl conn.outputQueue
-         end;
-         Lwt.return upgrade)
-       else
-         Lwt.return true) >>= fun upgrade ->
-       debug (fun () -> Util.msg "%sGoing to attempt RPC version upgrade\n"
-                 (if upgrade then "" else "NOT "));
-       if not upgrade then
-         compatServerRun conn
-       else
        sendStrings conn [connectionHeader; rpcVersionsStr] >>=
        checkClientVersion conn >>= fun () ->
        (* From this moment forward, the RPC version has been selected. All
@@ -2313,11 +2254,6 @@ let killServer =
 
 (* For backward compatibility *)
 let _ = Prefs.alias killServer "killServer"
-
-(* FIX: This code should be removed when removing 2.51-compatibility code. *)
-let is248Exe =
-  let exeName = Filename.basename (Sys.executable_name) in
-  String.length exeName >= 11 && String.sub exeName 0 11 = "unison-2.48"
 
 let rec accept_retry l =
   Lwt.catch
@@ -2373,8 +2309,7 @@ let waitOnPort hosts port =
          registerIOClose (connected, connected) (fun () -> doCleanup connected);
          begin try
            (* Accept a connection *)
-           let compatMode = Some (if is248Exe then "2.48" else "2.51") in
-           Lwt_unix.run (commandLoop ~compatMode connected connected)
+           Lwt_unix.run (commandLoop connected connected)
          with Util.Fatal "Lost connection with the server" -> () end;
          (* The client has closed its end of the connection *)
          if not (Prefs.read killServer) then handleClients ()
@@ -2405,28 +2340,7 @@ let beAServer () =
       "Environment variable HOME unbound: \
        executing server in current directory\n"
   end;
-  (* Let's start with 2.51-compatibility mode. Newer clients will add
-     a special override keyword in server args that will disable the
-     compatibility mode.
-
-     FIX: It is a bit of a hack, so better not make it permanent.
-     It was added in 2021 and should be removed after a couple of years. *)
-  let compatMode =
-     try
-       not (Prefs.scanCmdLine "" |> Util.StringMap.find "rest"
-            |> Safelist.mem rpcServerCmdlineOverride)
-     with Not_found -> true
-  in
-  (* Additionally, do a best effort emulation of 2.48.
-     FIX: remove together with code above. *)
-  let compatMode =
-    match compatMode with
-    | true when is248Exe -> Some "2.48"
-    | true -> Some "2.51"
-    | false -> None
-  in
-  begin end;
   Lwt_unix.run
-    (commandLoop ~compatMode
+    (commandLoop
        (Lwt_unix.of_unix_file_descr Unix.stdin)
        (Lwt_unix.of_unix_file_descr Unix.stdout))
