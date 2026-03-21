@@ -179,12 +179,15 @@ let docs =
       \032  upgrade Unison on the local machine (compiled with any OCaml version)\n\
       \032  and keep the existing archive.\n\
       \n\
-      \032  If version interoperability requirements are followed then Unison 2.52\n\
-      \032  and newer can upgrade the archive created by earlier Unison versions.\n\
-      \032  To avoid rebuilding archive files when upgrading from a version older\n\
-      \032  than 2.52, you must install version 2.52 or newer built with the same\n\
-      \032  OCaml version as your previous version of Unison, and then run it at\n\
-      \032  least once on each root. Doing so will upgrade the archive file.\n\
+      \032  Upgrading from Unison 2.48 or 2.51: If version interoperability\n\
+      \032  requirements are followed then Unison 2.52 up to 2.53.8 can upgrade the\n\
+      \032  archive created by Unison 2.48 to 2.51. To avoid rebuilding archive\n\
+      \032  files when upgrading from a version older than 2.52, you must install\n\
+      \032  version 2.52 or newer built with the same OCaml version as your\n\
+      \032  previous version of Unison, and then run it at least once on each root.\n\
+      \032  Doing so will upgrade the archive file. Upgrading directly to version\n\
+      \032  newer than 2.53.8 is not supported; upgrade first to a version between\n\
+      \032  2.52 and 2.53.8 if you want to keep the archives.\n\
       \n\
       \032  After upgrading the archive, you are free to swap the Unison 2.52 or\n\
       \032  newer executable to one compiled with a different version of OCaml. The\n\
@@ -203,6 +206,8 @@ let docs =
       \032    * Unison 2.52 or newer (for as long as backwards compatibility is\n\
       \032      maintained in the newer versions). You do not have to pay any\n\
       \032      attention to OCaml compiler versions.\n\
+      \n\
+      \032  Additionally, Unison 2.52 up to 2.53.8 (included) are compatible with:\n\
       \032    * Unison 2.51 if both versions are compiled with same OCaml compiler\n\
       \032      version (you can see which compiler version was used by running\n\
       \032      unison -version).\n\
@@ -211,9 +216,15 @@ let docs =
       \n\
       \032  Interoperability matrix for quick reference:\n\
       \n\
+      \032  Client versions   Server versions\n\
+      \032                    newer than 2.53.8 2.52 to 2.53.8 older than 2.52\n\
+      \032  newer than 2.53.8 full interop      full interop   no interop\n\
+      \032  2.52 to 2.53.8    full interop      full interop   see below\n\
+      \032  older than 2.52   no interop        see below      see below\n\
+      \n\
       \032  Client versions Server versions\n\
-      \032                  2.52 or newer       2.51               2.48\n\
-      \032  2.52 or newer   full interop        same OCaml version same OCaml version\n\
+      \032                  2.52 to 2.53.8      2.51               2.48\n\
+      \032  2.52 to 2.53.8  full interop        same OCaml version same OCaml version\n\
       \032  2.51            same OCaml version  full interop       no interop\n\
       \032  2.48            same OCaml version* no interop         full interop\n\
       \n\
