@@ -26,10 +26,8 @@
  (name linktext)
  (public_name unison)
  (package unison) ; Dummy: we don't use packages
- (modules linktext )
- (libraries unison_lib
- )
-)
+ (modules linktext)
+ (libraries unison_lib))
 
 (executable
  (name linkgtk3)

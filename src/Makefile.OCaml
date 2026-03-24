@@ -7,7 +7,10 @@
 # (d)make and NMAKE. Do not make any changes in this file unless you are
 # certain that the changes do not break this portability.
 
-export OCAMLPATH := $(shell opam var lib)
+IS_WIN ?= $(shell echo %OS%)
+ifneq ($(IS_WIN),Windows_NT)
+    export OCAMLPATH := $(shell opam var lib)
+endif
 
 all: maybetranslate tui guimaybe macuimaybe fsmonitor
 .PHONY: all # This .PHONY definition must come after the first target,

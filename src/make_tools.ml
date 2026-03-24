@@ -213,11 +213,11 @@ let () =
     "CAMLOBJS_GUI" <-- "$(OCAMLOBJS_GUI:.cmo=.cmx)";
     "CAMLOBJS_FSM" <-- "$(FSMOCAMLOBJS:.cmo=.cmx)";
     "CAMLOBJS_MAC" <-- "$(OCAMLOBJS_MAC:.cmo=.cmx)";
-    "CAMLLIBS" <-- "$(OCAMLLIBS:.cma=.cmxa)";
+    "CAMLLIBS" <-- "$(OCAMLLIBS_GETTEXT:.cma=.cmxa) $(OCAMLLIBS:.cma=.cmxa)";
     "CAMLLIBS_TUI" <-- "$(OCAMLLIBS_TUI:.cma=.cmxa)";
     "CAMLLIBS_GUI" <-- "$(OCAMLLIBS_GUI:.cma=.cmxa)";
     "CAMLLIBS_MAC" <-- "$(OCAMLLIBS_MAC:.cma=.cmxa)";
-    "CAMLLIBS_FSM" <-- "$(FSMOCAMLLIBS:.cma=.cmxa)";
+    "CAMLLIBS_FSM" <-- "$(OCAMLLIBS_GETTEXT:.cma=.cmxa) $(FSMOCAMLLIBS:.cma=.cmxa)";
   end else begin
     (* Set up for bytecode compilation *)
     "CAMLC" <-- ocamlc;
@@ -235,11 +235,11 @@ let () =
     "CAMLOBJS_GUI" <-- "$(OCAMLOBJS_GUI)";
     "CAMLOBJS_MAC" <-- "$(OCAMLOBJS_MAC)";
     "CAMLOBJS_FSM" <-- "$(FSMOCAMLOBJS)";
-    "CAMLLIBS" <-- "$(OCAMLLIBS)";
+    "CAMLLIBS" <-- "$(OCAMLLIBS_GETTEXT) $(OCAMLLIBS)";
     "CAMLLIBS_TUI" <-- "$(OCAMLLIBS_TUI)";
     "CAMLLIBS_GUI" <-- "$(OCAMLLIBS_GUI)";
     "CAMLLIBS_MAC" <-- "$(OCAMLLIBS_MAC)";
-    "CAMLLIBS_FSM" <-- "$(FSMOCAMLLIBS)";
+    "CAMLLIBS_FSM" <-- "$(OCAMLLIBS_GETTEXT) $(FSMOCAMLLIBS)";
   end
 
 (* Compiler compatibility *)

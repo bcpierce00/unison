@@ -476,6 +476,8 @@
 					"-lthreadsnat",
 					"$(OCAMLLIB_STR)",
 					"-lasmrun",
+					"-L$(OCAMLLIBDIR_GETTEXT)",
+					"$(OCAMLLIB_GETTEXT)",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = edu.upenn.cis.Unison;
 				PRODUCT_NAME = Unison;
@@ -507,6 +509,8 @@
 					"-lthreadsnat",
 					"$(OCAMLLIB_STR)",
 					"-lasmrun",
+					"-L$(OCAMLLIBDIR_GETTEXT)",
+					"$(OCAMLLIB_GETTEXT)",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = edu.upenn.cis.Unison;
 				PRODUCT_NAME = Unison;
@@ -536,6 +540,8 @@
 					"-lthreadsnat",
 					"$(OCAMLLIB_STR)",
 					"-lasmrun",
+					"-L$(OCAMLLIBDIR_GETTEXT)",
+					"$(OCAMLLIB_GETTEXT)",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = edu.upenn.cis.Unison;
 				PRODUCT_NAME = Unison;
