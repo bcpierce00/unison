@@ -803,6 +803,25 @@ let test() =
       (* Rename a dir with dir create conflict *)
         (* Currently not supported by reconciliation + move detection *)
     );
+
+    runtest "moves/renames 6 (unsupported)" ["moves-experimental = true"] (fun () ->
+      put R1 (Dir []); put R2 (Dir []); sync ();
+      (* Create files and directories *)
+      let origfs = Dir ["x", File "foo"; "y", File "bar"; "c", Dir ["b", File "quu"]; "d", Dir ["a", File "barr"]] in
+      put R1 origfs; sync ();
+      (* Rename two files with a target conflict *)
+      let newfs1 = Dir ["z", File "foo"; "y", File "bar"; "c", Dir ["b", File "quu"]; "d", Dir ["a", File "barr"]]
+      and newfs2 = Dir ["x", File "foo"; "z", File "bar"; "c", Dir ["b", File "quu"]; "d", Dir ["a", File "barr"]] in
+      put R1 newfs1;
+      put R2 newfs2;
+      testmoves "1" "Unsupported conflicting file rename target" `NoMove ~total:2 0;
+      (* Rename two directories with a target conflict *)
+      let newfs1 = Dir ["x", File "foo"; "y", File "bar"; "z", Dir ["b", File "quu"]; "d", Dir ["a", File "barr"]]
+      and newfs2 = Dir ["x", File "foo"; "y", File "bar"; "c", Dir ["b", File "quu"]; "z", Dir ["a", File "barr"]] in
+      put R1 newfs1;
+      put R2 newfs2;
+      testmoves "2" "Unsupported conflicting dir rename target" `NoMove ~total:4 0;
+    );
   end;
 
   if not bothRootsLocal then

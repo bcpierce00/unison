@@ -61,6 +61,7 @@ let hide path = Hashtbl.add hides path true
 let isHidden path = Hashtbl.mem hides path
 
 let set path differ = Hashtbl.add moves path differ
+let isSet path = Hashtbl.mem moves path
 let getMove path = Hashtbl.find_opt moves path
 
 let makeReconItem path ri =
@@ -194,16 +195,28 @@ let prepMove rep a b =
   and shadowedB = (getOtherRc b rep).typ <> `ABSENT in
   (* TODO Perhaps should not create a "move" if a deletion of another
      entity has been shadowed on the new path? *)
+  let makeMove rep ~toRi ~toHide =
+    (* Conflicting moves on both replicas are currently not supported.
+       Theoretically could support a case where both replicas have moved to
+       the same new path, from different old paths. To consider in future. *)
+    if not (isSet toRi.path) then begin
+      set toRi.path (moveDiffer rep toRi toHide);
+      hide toHide.path
+    end else
+      debug (fun () ->
+        Util.msg "Path already has a move instruction (from \
+          other replica), not creating another move instruction\n")
+  in
   match conflictA, conflictB with
   | false, false when deletedA && not shadowedB ->
-                    set a.path (moveDiffer rep a b); hide b.path
+                    makeMove rep ~toRi:a ~toHide:b
   | false, false when deletedA ->
-                    hide a.path; set b.path (moveDiffer rep b a)
+                    makeMove rep ~toRi:b ~toHide:a
   | false, false when deletedB && not shadowedA ->
-                    hide a.path; set b.path (moveDiffer rep b a)
-  | false, false -> set a.path (moveDiffer rep a b); hide b.path
-  | true, false  -> set a.path (moveDiffer rep a b); hide b.path
-  | false, true  -> hide a.path; set b.path (moveDiffer rep b a)
+                    makeMove rep ~toRi:b ~toHide:a
+  | false, false -> makeMove rep ~toRi:a ~toHide:b
+  | true, false  -> makeMove rep ~toRi:a ~toHide:b
+  | false, true  -> makeMove rep ~toRi:b ~toHide:a
   | true, true   ->
       debug (fun () -> Util.msg "Move source and target both have conflicts\n")
 
