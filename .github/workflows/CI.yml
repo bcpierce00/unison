@@ -12,7 +12,7 @@ jobs:
     - run: sudo apt-get update
 
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
     - name: Use OCaml
       uses: ocaml/setup-ocaml@v3
@@ -24,7 +24,7 @@ jobs:
     - run: opam exec -- make -j 2 docs
 
     - name: Store user manual for the build jobs
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: unison-docs
         path: |
@@ -68,7 +68,7 @@ jobs:
       run: sudo apt-get update
 
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
     - name: Initialize workflow variables
       id: vars
@@ -504,7 +504,7 @@ jobs:
         opam exec -- make gui UI_WINOS=hybrid
         cp "src/unison-gui${{ steps.vars.outputs.EXE_suffix }}" "${{ steps.vars.outputs.PKG_DIR }}/bin/unison-text+gui${{ steps.vars.outputs.EXE_suffix }}"
 
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v6
       if: false ## disable by default; only useful for debugging GHA
       with:
         name: unison-${{ steps.vars.outputs.REF_SHAS }}.ocaml-${{ matrix.job.ocaml-version }}.${{ matrix.job.os }}
@@ -512,7 +512,7 @@ jobs:
 
     - name: Copy user manual
       continue-on-error: ${{ !(steps.vars.outputs.DEPLOY && matrix.job.publish) }}
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         name: unison-docs
         path: '${{ steps.vars.outputs.PKG_DIR }}'
@@ -600,7 +600,7 @@ jobs:
       shell: bash
       run: cd '${{ steps.vars.outputs.STAGING_DIR }}/' && ${{ steps.vars.outputs.COMPRESS_CMD }} '${{ steps.vars.outputs.PKG_NAME }}' *
 
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v6
       if: matrix.job.publish
       with:
         name: ${{ steps.vars.outputs.PKG_NAME }}___ocaml-${{ matrix.job.ocaml-version }}.${{ matrix.job.os }}-publish
@@ -629,7 +629,7 @@ jobs:
 
     - if: runner.os == 'macOS' && matrix.job.publish
       name: "macOS: Upload Unison.app artifact"
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: ${{ steps.macapp.outputs.APP_NAME }}___ocaml-${{ matrix.job.ocaml-version }}.${{ matrix.job.os }}-publish
         path: ${{ steps.macapp.outputs.APP_NAME }}
@@ -681,7 +681,7 @@ jobs:
       # also work without using unison.opam
 
     - name: Checkout HEAD to _new
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         path: _new
 
@@ -689,7 +689,7 @@ jobs:
       shell: bash
 
     - name: Checkout ${{ matrix.job.ref }} to _prev
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
       with:
         ref: "${{ matrix.job.ref }}"
         path: _prev
@@ -1040,7 +1040,7 @@ jobs:
       run: sudo apt-get update
 
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
     - name: Use OCaml ${{ matrix.job.ocaml-compiler }}
       uses: ocaml/setup-ocaml@v3
@@ -1067,7 +1067,7 @@ jobs:
       run: sudo apt-get update
 
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
     - name: Use OCaml ${{ matrix.job.ocaml-compiler }}
       uses: ocaml/setup-ocaml@v3
@@ -1099,7 +1099,7 @@ jobs:
     - run: sudo apt-get update
 
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
     - name: Use OCaml ${{ matrix.job.ocaml-version }}
       uses: ocaml/setup-ocaml@v3
@@ -1149,7 +1149,7 @@ jobs:
         echo PKG_NAME="unison-${PKG_VER}${{ matrix.job.fnsuffix }}.tar.gz" >> $GITHUB_OUTPUT
         echo REF_SHAS=${REF_SHAS} >> $GITHUB_OUTPUT
 
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v6
       if: false ## disable by default; only useful for debugging GHA
       with:
         name: unison-${{ steps.vars.outputs.REF_SHAS }}.ocaml-${{ matrix.job.ocaml-version }}.ubuntu.x86_64
@@ -1158,7 +1158,7 @@ jobs:
     - name: Copy user manual
       if: matrix.job.publish
       continue-on-error: ${{ !(github.ref_type == 'tag' && startsWith(github.ref_name, 'v') && matrix.job.publish) }}
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v8
       with:
         name: unison-docs
         path: pkg
@@ -1177,7 +1177,7 @@ jobs:
       if: matrix.job.publish
       run: mv pkg '${{ steps.vars.outputs.PKG_DIR }}' && tar czf '${{ steps.vars.outputs.PKG_NAME }}' '${{ steps.vars.outputs.PKG_DIR }}'
 
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v6
       if: matrix.job.publish
       with:
         name: ${{ steps.vars.outputs.PKG_NAME }}___ocaml-${{ matrix.job.ocaml-version }}.ubuntu_compat-publish
