@@ -401,6 +401,86 @@ jobs:
 
         '@ | patch -Nu -p 1
         opam pin --no-action add lablgtk3 .
+        # [2026-03] Work around broken opam packages
+        cd ..
+        opam source conf-cairo
+        cd conf-cairo*
+        @'
+        --- a/opam   2026-03-26 14:25:41.425149472 +0100
+        +++ b/opam   2026-03-26 14:26:47.244837353 +0100
+        @@ -9,19 +9,13 @@
+         bug-reports: "https://github.com/ocaml/opam-repository/issues"
+         depends: [
+           "conf-pkg-config" {>= "3" & build}
+        -  ("host-arch-x86_32" {os = "win32" & os-distribution != "cygwinports"} &
+        -   "conf-mingw-w64-cairo-i686"
+        -     {os = "win32" & os-distribution != "cygwinports"} |
+        -   "host-arch-x86_64" {os = "win32" & os-distribution != "cygwinports"} &
+        -   "conf-mingw-w64-cairo-x86_64"
+        -     {os = "win32" & os-distribution != "cygwinports"})
+         ]
+         flags: conf
+         build: [
+        -  ["pkgconf" "--personality=i686-w64-mingw32" "cairo"]
+        +  ["pkgconf" "cairo"]
+             {os = "win32" & os-distribution != "cygwinports" &
+              host-arch-x86_32:installed}
+        -  ["pkgconf" "--personality=x86_64-w64-mingw32" "cairo"]
+        +  ["pkgconf" "cairo"]
+             {os = "win32" & os-distribution != "cygwinports" &
+              host-arch-x86_64:installed}
+           ["pkg-config" "cairo"] {os != "macos" & os != "win32"}
+        '@ | patch -Nu -p 1
+        opam pin --no-action add conf-cairo .
+        cd ..
+        opam source conf-gtk3
+        cd conf-gtk3*
+        @'
+        --- a/opam    2026-03-26 14:26:07.284355590 +0100
+        +++ b/opam    2026-03-26 14:27:18.653678149 +0100
+        @@ -9,18 +9,11 @@
+         bug-reports: "https://github.com/garrigue/lablgtk/issues"
+         depends: [
+           "conf-pkg-config" {build}
+        -  ("host-arch-x86_32" {os = "win32" & os-distribution != "cygwinports"} &
+        -   "conf-mingw-w64-gtk3-i686"
+        -     {os = "win32" & os-distribution != "cygwinports"} |
+        -   "host-arch-x86_64" {os = "win32" & os-distribution != "cygwinports"} &
+        -   "conf-mingw-w64-gtk3-x86_64"
+        -     {os = "win32" & os-distribution != "cygwinports"})
+         ]
+         flags: conf
+         build: [
+           [
+             "pkgconf"
+        -    "--personality=i686-w64-mingw32"
+             "--print-errors"
+             "--exists"
+             "gtk+-3.0"
+        @@ -29,7 +22,6 @@
+              host-arch-x86_32:installed}
+           [
+             "pkgconf"
+        -    "--personality=x86_64-w64-mingw32"
+             "--print-errors"
+             "--exists"
+             "gtk+-3.0"
+        '@ | patch -Nu -p 1
+        opam pin --no-action add conf-gtk3 .
+        cd ..
+        opam source conf-pkg-config
+        cd conf-pkg-config*
+        @'
+        --- a/opam      2026-03-26 14:52:18.634978101 +0100
+        +++ b/opam      2026-03-26 14:54:20.148430000 +0100
+        @@ -41,5 +41,4 @@
+           ["pkgconf-pkg-config"] {os-distribution = "centos" & os-version >= "8"}
+           ["pkgconf-pkg-config"] {os-distribution = "ol" & os-version >= "8"}
+           ["system:pkgconf"] {os = "win32" & os-distribution = "cygwinports"}
+        -  ["pkgconf"] {os-distribution = "cygwin"}
+         ]
+        '@ | patch -Nu -p 1
+        opam pin --no-action add conf-pkg-config .
 
     - name: lablgtk install
       ## [2020-09] non-working/unavailable for musl OCaml variant
