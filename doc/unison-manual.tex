@@ -221,12 +221,15 @@ problematic historically).  Lastly, it is possible to upgrade Unison on
 the local machine (compiled with any OCaml version) and keep the existing
 archive.
 
-If version interoperability requirements are followed then Unison 2.52 and
-newer can upgrade the archive created by earlier Unison versions.  To avoid
+{\bf Upgrading from Unison 2.48 or 2.51}:
+If version interoperability requirements are followed then Unison 2.52 up to
+2.53.8 can upgrade the archive created by Unison 2.48 to 2.51.  To avoid
 rebuilding archive files when upgrading from a version older than 2.52, you
 must install version 2.52 or newer built with the same OCaml version as your
 previous version of Unison, and then run it at least once on each root.  Doing
 so will upgrade the archive file.
+Upgrading directly to version newer than 2.53.8 is not supported; upgrade first
+to a version between 2.52 and 2.53.8 if you want to keep the archives.
 
 After upgrading the archive, you are free to swap the Unison 2.52 or newer
 executable to one compiled with a different version of OCaml.
@@ -246,6 +249,10 @@ replicas.
 \item {\em Unison 2.52 or newer} (for as long as backwards compatibility
 is maintained in the newer versions). You do not have to pay any attention
 to OCaml compiler versions.
+\end{itemize}
+
+Additionally, {\bf Unison 2.52 up to 2.53.8 (included)} are compatible with:
+\begin{itemize}
 \item {\em Unison 2.51} if both versions are compiled with same OCaml
 compiler version (you can see which compiler version was used by running
 {\tt unison -version}).
@@ -259,9 +266,21 @@ compiler version.  See special notes below.
 \vspace{1em}
 \begin{tabular}{r||c|c|c}
   Client versions & \multicolumn{3}{c}{Server versions} \\
-  & 2.52 or newer & 2.51  & 2.48 \\
+  & newer than 2.53.8 & 2.52 to 2.53.8 & older than 2.52 \\
   \hline \hline
-  2.52 or newer & full interop & same OCaml version & same OCaml version \\
+  newer than 2.53.8 & full interop & full interop & {\bf no interop} \\
+  \hline
+  2.52 to 2.53.8 & full interop & full interop & {\em see below} \\
+  \hline
+  older than 2.52 & {\bf no interop} & {\em see below} & {\em see below} \\
+\end{tabular}
+
+\vspace{1em}
+\begin{tabular}{r||c|c|c}
+  Client versions & \multicolumn{3}{c}{Server versions} \\
+  & 2.52 to 2.53.8 & 2.51  & 2.48 \\
+  \hline \hline
+  2.52 to 2.53.8 & full interop & same OCaml version & same OCaml version \\
   \hline
   2.51 & same OCaml version & full interop & no interop \\
   \hline

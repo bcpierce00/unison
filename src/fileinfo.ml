@@ -64,13 +64,6 @@ let type2string = function
   | `DIRECTORY -> "dir"
   | `SYMLINK   -> "symlink"
 
-(* IMPORTANT!
-   This is the 2.51-compatible version of type [Fileinfo.t]. It must always
-   remain exactly the same as the type [Fileinfo.t] in version 2.51.5. This
-   means that if any of the types it is composed of changes then for each
-   changed type also a 2.51-compatible version must be created. *)
-type t251 = { typ : typ; inode : int; desc : Props.t251; osX : Osx.info}
-
 type ('a, 'b) info = { typ : typ; inode : int; desc : 'a; osX : Osx.info }
      constraint 'a = _ Props.props
 type t = (Props.t, [`WithRess]) info
@@ -83,18 +76,6 @@ let minfo propsm = Umarshal.(prod4 mtyp int propsm Osx.minfo
 
 let m = minfo Props.m
 let mbasic = minfo Props.mbasic
-
-let to_compat251 (x : basic) : t251 =
-  { typ = x.typ;
-    inode = x.inode;
-    desc = Props.to_compat251 x.desc;
-    osX = x.osX }
-
-let of_compat251 (x : t251) : basic =
-  { typ = x.typ;
-    inode = x.inode;
-    desc = Props.of_compat251 x.desc;
-    osX = x.osX }
 
 (* Stat function that pays attention to pref for following links             *)
 let statFn fromRoot fspath path =
@@ -220,14 +201,6 @@ let set fspath path action newDesc =
   Props.set fspath path kind p;
   check fspath path p
 
-(* IMPORTANT!
-   This is the 2.51-compatible version of type [Fileinfo.stamp]. It must
-   always remain exactly the same as the type [Fileinfo.stamp] in version
-   2.51.5. *)
-type stamp251 =
-    InodeStamp of int         (* inode number, for Unix systems *)
-  | CtimeStamp of float       (* creation time, for windows systems *)
-
 type stamp =
   | InodeStamp of int         (* inode number, for Unix systems *)
   | NoStamp
@@ -243,17 +216,6 @@ let mstamp = Umarshal.(sum3 int unit unit
                           | I31 a -> InodeStamp a
                           | I32 () -> NoStamp
                           | I33 () -> RescanStamp))
-
-let stamp_to_compat251 (st : stamp) : stamp251 =
-  match st with
-  | InodeStamp i -> InodeStamp i
-  | NoStamp -> CtimeStamp 0.0
-  | RescanStamp -> InodeStamp (-1)
-
-let stamp_of_compat251 (st : stamp251) : stamp =
-  match st with
-  | InodeStamp i -> if i <> -1 then InodeStamp i else RescanStamp
-  | CtimeStamp _ -> NoStamp
 
 let ignoreInodeNumbers =
   Prefs.createBool "ignoreinodenumbers" false

@@ -1276,19 +1276,6 @@ end
 (*                           Properties                                      *)
 (* ------------------------------------------------------------------------- *)
 
-(* IMPORTANT!
-   This is the 2.51-compatible version of type [Props.t]. It must always remain
-   exactly the same as the type [Props.t] in version 2.51.5. This means that if
-   any of the types it is composed of changes then for each changed type also a
-   2.51-compatible version must be created. *)
-type t251 =
-  { perm : Perm.t;
-    uid : Uid.t;
-    gid : Gid.t;
-    time : Time.t;
-    typeCreator : TypeCreator.t;
-    length : Uutil.Filesize.t }
-
 type t =
   { perm : Perm.t;
     uid : Uid.t;
@@ -1318,26 +1305,6 @@ let m = Umarshal.(prod4
 let mbasic = m
 let mx = m
 
-let to_compat251 (p : t) : t251 =
-  { perm = p.perm;
-    uid = p.uid;
-    gid = p.gid;
-    time = p.time;
-    typeCreator = p.typeCreator;
-    length = p.length }
-
-let of_compat251 (p : t251) : t =
-  { perm = p.perm;
-    uid = p.uid;
-    gid = p.gid;
-    time = p.time;
-    typeCreator = p.typeCreator;
-    length = p.length;
-    ctime = CTime.dummy;
-    xattr = Xattr.dummy;
-    acl = ACL.dummy;
-  }
-
 let template perm =
   { perm = perm; uid = Uid.dummy; gid = Gid.dummy;
     time = Time.dummy; typeCreator = TypeCreator.dummy;
@@ -1358,18 +1325,6 @@ let hash p h =
   |> Gid.hash p.gid
   |> Uid.hash p.uid
   |> Perm.hash p.perm
-
-(* IMPORTANT!
-   This is the 2.51-compatible version of [hash]. It must always produce exactly
-   the same result as the [hash] in version 2.51.5.
-   If code changes elsewhere make this function produce a different result then
-   it must be updated accordingly to again return the 2.51-compatible result. *)
-let hash251 (p : t251) h =
-  Perm.hash p.perm
-    (Uid.hash p.uid
-       (Gid.hash p.gid
-          (Time.hash p.time
-             (TypeCreator.hash p.typeCreator h))))
 
 let similar p p' =
   Perm.similar p.perm p'.perm

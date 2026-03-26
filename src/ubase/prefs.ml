@@ -265,6 +265,10 @@ let registerPref name typ cell pspec category cli_only deprec doc fulldoc =
   let pref = {category; doc; pspec; fulldoc; typ; cli_only; deprec} in
   prefs := Util.StringMap.add name pref !prefs
 
+let errRPCVersion ver  =
+  raise (Util.Fatal (Printf.sprintf
+    "Internal error: invalid RPC version: %d" ver))
+
 let createPrefInternal name typ category cli_only local send default deprecated doc fulldoc printer parsefn m =
   let m = Umarshal.(prod2 m (list string) id id) in
   let newCell = rawPref default name in
@@ -276,8 +280,8 @@ let createPrefInternal name typ category cli_only local send default deprecated 
   adddumper name local
     (fun () -> match send with None -> true | Some f -> f ())
     (function
-     | 0 -> Marshal.to_string (newCell.value, newCell.names) []
-     | _ -> Umarshal.to_string m (newCell.value, newCell.names));
+     | 1 -> Umarshal.to_string m (newCell.value, newCell.names)
+     | v -> errRPCVersion v);
   addprinter name (fun () -> printer newCell.value);
   addresetter
     (fun () ->
@@ -287,8 +291,8 @@ let createPrefInternal name typ category cli_only local send default deprecated 
        if not cli_only then   (* Better for compatibility to not fail if cli_only *)
        let (value, names) =
          match rpcVer with
-         | 0 -> Marshal.from_string s 0
-         | _ -> Umarshal.from_string m s 0
+         | 1 -> Umarshal.from_string m s 0
+         | v -> errRPCVersion v
        in
        newCell.value <- value);
   newCell

@@ -47,17 +47,6 @@ let archiveFormat = 23
 
 module NameMap = MyMap.Make (Name)
 
-(* IMPORTANT!
-   This is the 2.51-compatible version of type [archive]. It must always remain
-   exactly the same as the type [archive] in version 2.51.5. This means that if
-   any of the types it is composed of changes, for each changed type a 2.51-
-   compatible version must be created (like has been done for [Props.t]). *)
-type archive251 =
-    ArchiveDir of Props.t251 * archive251 NameMap.t
-  | ArchiveFile of Props.t251 * Os.fullfingerprint * Fileinfo.stamp251 * Osx.ressStamp
-  | ArchiveSymlink of string
-  | NoArchive
-
 type archive =
     ArchiveDir of Props.t * archive NameMap.t
   | ArchiveFile of Props.t * Os.fullfingerprint * Fileinfo.stamp * Osx.ressStamp
@@ -84,24 +73,6 @@ let marchive = Umarshal.rec1 marchive_rec
 
 (* For directories, only the permissions part of the file description (desc)
    is used for synchronization at the moment. *)
-
-let rec to_compat251 (arch : archive) : archive251 =
-  match arch with
-  | ArchiveDir (desc, children) ->
-      ArchiveDir (Props.to_compat251 desc, NameMap.map to_compat251 children)
-  | ArchiveFile (desc, dig, stamp, ress) ->
-      ArchiveFile (Props.to_compat251 desc, dig, Fileinfo.stamp_to_compat251 stamp, ress)
-  | ArchiveSymlink content -> ArchiveSymlink content
-  | NoArchive -> NoArchive
-
-let rec of_compat251 (arch : archive251) : archive =
-  match arch with
-  | ArchiveDir (desc, children) ->
-      ArchiveDir (Props.of_compat251 desc, NameMap.map of_compat251 children)
-  | ArchiveFile (desc, dig, stamp, ress) ->
-      ArchiveFile (Props.of_compat251 desc, dig, Fileinfo.stamp_of_compat251 stamp, ress)
-  | ArchiveSymlink content -> ArchiveSymlink content
-  | NoArchive -> NoArchive
 
 let archive2string = function
     ArchiveDir(_) -> "ArchiveDir"
@@ -260,39 +231,6 @@ let archiveName fspath (v: archiveVersion): string * string =
   (Printf.sprintf "%s%s" temp n,
    thisRootsGlobalName fspath)
 
-(* IMPORTANT!
-   This is the 2.51-compatible version of [archiveName]. It must produce
-   exactly the same result as [archiveName] would in version 2.51.5.
-   If code changes elsewhere make this function produce a different result then
-   it must be updated accordingly to again return the 2.51-compatible result.
-
-   This code is here only to support a smooth upgrade from versions <= 2.51.5
-   It is safe to delete it when that support is no longer required. *)
-let archiveName251 fspath (v: archiveVersion): string * string =
-  let archiveHash251 fspath =
-    (* How many characters of the filename should be used for the unique id of
-       the archive?  On Unix systems, we use the full fingerprint (32 bytes).
-       On windows systems, filenames longer than 8 bytes can cause problems, so
-       we chop off all but the first 6 from the fingerprint. *)
-    let significantDigits =
-      match Sys.unix with
-      | false -> 6
-      | true  -> 32
-    in
-    let thisRoot = thisRootsGlobalName fspath in
-    let r = Prefs.read rootsName in
-    let n = Printf.sprintf "%s;%s;22" thisRoot r in
-    let d = Digest.MD5.to_hex (Digest.MD5.string n) in
-    (String.sub d 0 significantDigits)
-  in
-  let n = archiveHash251 fspath in
-  let temp = match v with
-    MainArch -> "ar" | NewArch -> "tm" | ScratchArch -> "sc"
-  | Lock     -> "lk" | FPCache   -> "fp"
-  in
-  (Printf.sprintf "%s%s" temp n,
-   thisRootsGlobalName fspath)
-
 
 (*****************************************************************************)
 (*                             SANITY CHECKS                                 *)
@@ -342,48 +280,6 @@ let rec checkArchive
   | NoArchive ->
       135
 
-(* IMPORTANT!
-   This is the 2.51-compatible version of [checkArchive]. It must produce
-   exactly the same result as [checkArchive] in version 2.51.5.
-   If code changes elsewhere make this function produce a different result then
-   it must be updated accordingly to again return the 2.51-compatible result. *)
-let rec checkArchive251
-      (top: bool) (path: Name.t list) (arch: archive251) (h: int): int =
-  match arch with
-    ArchiveDir (desc, children) ->
-      begin match NameMap.validate children with
-        `Ok ->
-          ()
-      | `Duplicate nm ->
-          let path =
-            List.fold_right (fun n p -> Path.child p n) path Path.empty in
-          raise
-            (Util.Fatal (Printf.sprintf
-                           "Corrupted archive: \
-                            the file %s occurs twice in path %s"
-                           (Name.toString nm) (Path.toString path)));
-      | `Invalid (nm, nm') ->
-          let path =
-            List.fold_right (fun n p -> Path.child p n) path Path.empty in
-          raise
-            (Util.Fatal (Printf.sprintf
-                           "Corrupted archive: the files %s and %s are not \
-                            correctly ordered in directory %s"
-                           (Name.toString nm) (Name.toString nm')
-                           (Path.toString path)));
-      end;
-      NameMap.fold
-        (fun n a h ->
-           Uutil.hash2 (Name.hash n)
-                       (checkArchive251 false (n :: path) a h))
-        children (Props.hash251 desc h)
-  | ArchiveFile (desc, dig, _, ress) ->
-      Uutil.hash2 (Uutil.hash dig) (Props.hash251 desc h)
-  | ArchiveSymlink content ->
-      Uutil.hash2 (Uutil.hash content) h
-  | NoArchive ->
-      135
-
 (* [archivesIdentical l] returns true if all elements in [l] are the
    same and distinct from None *)
 let archivesIdentical l =
@@ -412,9 +308,6 @@ let (archiveNameOnRoot
    archiveFormat and root names.  They appear in the header of the archive
    files *)
 let formatString = Printf.sprintf "Unison archive format %d" archiveFormat
-let compatFormatString = "Unison archive format 22"
-(* Every supported version released prior to the new archive encoding
-   uses this archive format string. *)
 
 let verboseArchiveName thisRoot =
   Printf.sprintf "Archive for root %s synchronizing roots %s"
@@ -515,66 +408,6 @@ let loadArchiveLocal fspath (thisRoot: string) :
            (System.fspathToDebugString fspath));
       None))
 
-(* IMPORTANT!
-   This is the 2.51-compatible version of [loadArchiveLocal]. It must remain
-   capable of reading archives written by version 2.51.5. Be careful, as code
-   changes elsewhere may break this function unintentionally.
-
-   This code is here only to support a smooth upgrade from versions <= 2.51.5
-   It is safe to delete it when that support is no longer required. *)
-let loadArchiveLocal251 fspath (thisRoot: string) :
-    (archive * int * string * Proplist.t) option =
-  debug (fun() ->
-    Util.msg "Loading archive from %s\n" (System.fspathToDebugString fspath));
-  Util.convertUnixErrorsToFatal "loading archive" (fun () ->
-    if System.file_exists fspath then
-      let c = System.open_in_bin fspath in
-      let header = input_line c in
-      (* Sanity check on archive format *)
-      if header<>compatFormatString then begin
-        debug (fun () ->
-          Util.msg
-             "Archive format mismatch: found\n '%s'\n\
-              but expected\n '%s'.\n\
-              I will delete the old archive and start from scratch.\n"
-             header compatFormatString);
-        None
-      end else
-      let roots = input_line c in
-      (* Sanity check on roots. *)
-      if roots <> verboseArchiveName thisRoot then begin
-        debug (fun () ->
-          Util.msg
-             "Archive mismatch: found\n '%s'\n\
-              but expected\n '%s'.\n\
-              I will delete the old archive and start from scratch.\n"
-             roots (verboseArchiveName thisRoot));
-        None
-      end else
-        (* Throw away the timestamp line *)
-        let _ = input_line c in
-        (* Load the datastructure *)
-        try
-          let ((archive, hash, magic) : archive251 * int * string) =
-            Marshal.from_channel c in
-          let properties =
-            try
-              ignore (input_char c); (* Marker *)
-              Marshal.from_channel c
-            with End_of_file ->
-              Proplist.empty
-          in
-          close_in c;
-          Some (of_compat251 archive, hash, magic, properties)
-        with Failure s -> raise (Util.Fatal (Printf.sprintf
-           "Archive file seems damaged (%s): \
-            use the -ignorearchives option, or throw away archives on both machines and try again" s))
-    else
-      (debug (fun() ->
-         Util.msg "Archive %s not found\n"
-           (System.fspathToDebugString fspath));
-      None))
-
 (* Inverse to loadArchiveLocal *)
 let storeArchiveLocal fspath thisRoot archive hash magic properties =
  debug (fun() ->
@@ -612,34 +445,16 @@ let storeArchiveLocal fspath thisRoot archive hash magic properties =
    if not (PathMap.is_empty paths) then Umarshal.to_channel mpaths c paths;
    close_out c))
 
-(* IMPORTANT! This val is here for smoother upgrades from versions <= 2.51.5
-   It can be removed when this compatibility is no longer required. *)
-let loadedCompatArchive = ref []
-
 (* Remove the archive under the root path [fspath] with archiveVersion [v] *)
 let removeArchiveLocal ((fspath: Fspath.t), (v: archiveVersion)): unit Lwt.t =
-  let f' name = Lwt.return (
+  Lwt.return
+    (let (name, _) = archiveName fspath v in
      let fspath = Util.fileInUnisonDir name in
      debug (fun() ->
        Util.msg "Removing archive %s\n" (System.fspathToDebugString fspath));
      Util.convertUnixErrorsToFatal "removing archive" (fun () ->
        try System.unlink fspath
        with Unix.Unix_error (Unix.ENOENT, _, _) -> ()))
-  in
-  let ret = f' (fst (archiveName fspath v)) in
-  (* IMPORTANT! This code is for smoother upgrades from versions <= 2.51.5
-     It can be removed when this compatibility is no longer required. *)
-  if Safelist.exists (fun x -> x = fspath) !loadedCompatArchive then begin
-    loadedCompatArchive := Safelist.filter (fun x -> x <> fspath)
-      !loadedCompatArchive;
-    (try
-      ignore (f' (fst (archiveName251 fspath MainArch)))
-    with Util.Fatal _ -> ());
-    try
-      ignore (f' (fst (archiveName251 fspath FPCache)))
-    with Util.Fatal _ -> ()
-  end;
-  ret
 
 (* [removeArchiveOnRoot root v] invokes [removeArchive fspath v] on the
    server, where [fspath] is the path to root on the server *)
@@ -1070,37 +885,16 @@ let loadArchiveOnRoot: Common.root -> bool -> (int * string) option Lwt.t =
                    (* The archive was modified during loading.  We fail. *)
                    Lwt.return None
              | None ->
-                   (* No archive found, try 2.51 upgrade mode *)
-                   (* IMPORTANT! This code is for smoother upgrades from
-                      versions <= 2.51.5
-                      It can be removed when this compatibility is no longer
-                      required. *)
-                   let (arcName, thisRoot) = archiveName251 fspath MainArch in
-                   let arcFspath = Util.fileInUnisonDir arcName in
-                   match loadArchiveLocal251 arcFspath thisRoot with
-                   | Some archData ->
-                       loadedCompatArchive := fspath :: !loadedCompatArchive;
-                       setArchiveData thisRoot fspath archData
-                         (getArchiveInfo arcFspath)
-                   | None -> Lwt.return None
+                 (* No archive found *)
+                 Lwt.return None
            end
        end else begin
          match loadArchiveLocal arcFspath thisRoot with
            Some archData ->
              setArchiveData thisRoot fspath archData (getArchiveInfo arcFspath)
          | None ->
-             (* No archive found, try 2.51 upgrade mode *)
-             (* IMPORTANT! This code is for smoother upgrades from
-                versions <= 2.51.5
-                It can be removed when this compatibility is no longer
-                required. *)
-             let (arcName, thisRoot) = archiveName251 fspath MainArch in
-             let arcFspath = Util.fileInUnisonDir arcName in
-             match loadArchiveLocal251 arcFspath thisRoot with
-             | Some archData ->
-                 loadedCompatArchive := fspath :: !loadedCompatArchive;
-                 setArchiveData thisRoot fspath archData (getArchiveInfo arcFspath)
-             | None -> clearArchiveData thisRoot
+             (* No archive found *)
+             clearArchiveData thisRoot
        end)
 
 let dumpArchives =
@@ -1301,16 +1095,6 @@ let archivesExistOnRoot: Common.root -> unit -> (bool * bool) Lwt.t =
        let (newname,_) = archiveName fspath NewArch in
        let newexists =
          System.file_exists (Util.fileInUnisonDir newname) in
-       let oldexists =
-         if oldexists || newexists then oldexists else
-           (* No archive found, try 2.51 upgrade mode *)
-           (* IMPORTANT! This code is for smoother upgrades from
-              versions <= 2.51.5
-              It can be removed when this compatibility is no longer
-              required. *)
-           let (oldname, _) = archiveName251 fspath MainArch in
-           System.file_exists (Util.fileInUnisonDir oldname)
-       in
        Lwt.return (oldexists, newexists))
 
 let forall = Safelist.for_all (fun x -> x)
@@ -2713,17 +2497,9 @@ Format.eprintf "Update detection: %f@." (t2 -. t1);
   abortIfAnyMountpointsAreMissing fspath;
   updates
 
-(* Conversion functions for 2.51-compatible return type:
-     (Path.local * Common.updateItem * Props.t list) list *)
-let convV0 = Remote.makeConvV0FunRet
-  (fun r -> Safelist.map
-    (fun (a, b, c) -> a, Common.ui_to_compat251 b, Safelist.map Props.to_compat251 c) r)
-  (fun r -> Safelist.map
-    (fun (a, b, c) -> a, Common.ui_of_compat251 b, Safelist.map Props.of_compat251 c) r)
-
 let findOnRoot =
   Remote.registerRootCmd
-    "find" ~convV0
+    "find"
     Umarshal.(prod3 bool (list Path.m) (option (prod2 (list Path.m) (list Path.m) id id)) id id)
     Umarshal.(list (prod3 Path.mlocal Common.mupdateItem (list Props.m) id id))
     (fun (fspath, (wantWatcher, pathList, subpaths)) ->
@@ -2821,7 +2597,7 @@ let findUpdates ?wantWatcher subpaths =
 (*****************************************************************************)
 
 (* To prepare for committing, write to Scratch Archive *)
-let prepareCommitLocal compatMode (fspath, magic) =
+let prepareCommitLocal (fspath, magic) =
   let (newName, root) = archiveName fspath ScratchArch in
   let archive = getArchive root in
   (**
@@ -2831,9 +2607,7 @@ let prepareCommitLocal compatMode (fspath, magic) =
      showArchive archive;
      Format.print_flush();
    **)
-  let archiveHash =
-    if not compatMode then checkArchive true [] archive 0
-    else checkArchive251 true [] (to_compat251 archive) 0 in
+  let archiveHash = checkArchive true [] archive 0 in
   let props = getArchiveProps root in
   let props = purgePropsForPaths archive props in
   let props = externArchivePropsdata archive props in
@@ -2842,19 +2616,9 @@ let prepareCommitLocal compatMode (fspath, magic) =
   Lwt.return (Some archiveHash)
 
 let prepareCommitOnRoot =
-   Remote.registerRootCmdWithConnection "prepareCommit"
-     Umarshal.(prod2 Fspath.m string id id) Umarshal.(option int)
-     (fun conn (fspath, magic) ->
-       let compatMode = Remote.connectionVersion conn = 0 in
-       prepareCommitLocal compatMode (fspath, magic))
-
-let prepareCommitOnRoots magic =
-  match Globals.rootsInCanonicalOrder () with
-  | [(Local, _); (Local, _)] ->
-      Globals.allRootsMap (fun r -> prepareCommitLocal false (snd r, magic))
-  | [(Local, _); (Remote _, _) as r'] ->
-      Globals.allRootsMap (fun r -> prepareCommitOnRoot r r' (snd r, magic))
-  | _ -> assert false
+   Remote.registerRootCmd "prepareCommit"
+     Umarshal.string Umarshal.(option int)
+     prepareCommitLocal
 
 (* To really commit, first prepare (write to scratch arch.), then make sure
    the checksum on all archives are equal, finally flip scratch to main.  In
@@ -2869,7 +2633,7 @@ let commitUpdates () =
             Format.sprintf "%s\000%.0f.%d"
               ((Case.ops ())#modeDesc) (Unix.gettimeofday ()) (Unix.getpid ())
           in
-          prepareCommitOnRoots magic
+          Globals.allRootsMap (fun r -> prepareCommitOnRoot r magic)
             >>= (fun checksums ->
           if archivesIdentical checksums then begin
             (* Move scratch archives to new *)
@@ -3009,16 +2773,9 @@ let markEqualLocal fspath paths =
        archive := arch);
   setArchiveLocal root !archive
 
-let convV0 =
-  let to_compat251 = Tree.map (fun nm -> nm) Common.uc_to_compat251
-  and of_compat251 = Tree.map (fun nm -> nm) Common.uc_of_compat251 in
-  Remote.makeConvV0FunArg
-    (fun (fspath, paths) -> (fspath, to_compat251 paths))
-    (fun (fspath, paths) -> (fspath, of_compat251 paths))
-
 let markEqualOnRoot =
   Remote.registerRootCmd
-    "markEqual" ~convV0 (Tree.m Name.m Common.mupdateContent) Umarshal.unit
+    "markEqual" (Tree.m Name.m Common.mupdateContent) Umarshal.unit
     (fun (fspath, paths) -> markEqualLocal fspath paths; Lwt.return ())
 
 let markEqual equals =
@@ -3043,13 +2800,9 @@ let replaceArchiveLocal fspath path newArch =
     updatePathInArchive archive fspath Path.empty path (fun _ _ -> newArch) in
   setArchiveLocal root archive
 
-let convV0 = Remote.makeConvV0FunArg
-  (fun (fspath, (pathTo, arch)) -> (fspath, (pathTo, to_compat251 arch)))
-  (fun (fspath, (pathTo, arch)) -> (fspath, (pathTo, of_compat251 arch)))
-
 let replaceArchiveOnRoot =
   Remote.registerRootCmd
-    "replaceArchive" ~convV0
+    "replaceArchive"
     Umarshal.(prod2 Path.m marchive id id) Umarshal.unit
     (fun (fspath, (pathTo, arch)) ->
        replaceArchiveLocal fspath pathTo arch;

@@ -150,13 +150,7 @@ let deleteLocal (fspathTo, (pathTo, ui, notDefault)) =
   Update.replaceArchiveLocal fspathTo localPathTo Update.NoArchive;
   Lwt.return ()
 
-let convV0 = Remote.makeConvV0FunArg
-  (fun (fspathTo, (pathTo, ui, notDefault)) ->
-       (fspathTo, (pathTo, Common.ui_to_compat251 ui, notDefault)))
-  (fun (fspathTo, (pathTo, ui, notDefault)) ->
-       (fspathTo, (pathTo, Common.ui_of_compat251 ui, notDefault)))
-
-let deleteOnRoot = Remote.registerRootCmd "delete" ~convV0
+let deleteOnRoot = Remote.registerRootCmd "delete"
   Umarshal.(prod3 Path.m Common.mupdateItem bool id id) Umarshal.unit
   deleteLocal
 
@@ -183,37 +177,13 @@ let setPropLocal (fspath, (path, ui, newDesc, oldDesc)) =
   Update.updateProps fspath localPath (Some newDesc) ui;
   Lwt.return ()
 
-let convV0 = Remote.makeConvV0FunArg
-  (fun (fspath, (path, ui, newDesc, oldDesc)) ->
-       (fspath, (path, Common.ui_to_compat251 ui,
-         Props.to_compat251 newDesc, Props.to_compat251 oldDesc)))
-  (fun (fspath, (path, ui, newDesc, oldDesc)) ->
-       (fspath, (path, Common.ui_of_compat251 ui,
-         Props.of_compat251 newDesc, Props.of_compat251 oldDesc)))
-
-let setPropOnRoot = Remote.registerRootCmd "setProp" ~convV0
+let setPropOnRoot = Remote.registerRootCmd "setProp"
   Umarshal.(prod4 Path.m Common.mupdateItem Props.mx Props.m id id) Umarshal.unit
   setPropLocal
 
-let propOpt_to_compat251 = function
-  | Some prop -> Some (Props.to_compat251 prop)
-  | None -> None
-
-let propOpt_of_compat251 = function
-  | Some prop -> Some (Props.of_compat251 prop)
-  | None -> None
-
-let convV0 = Remote.makeConvV0FunArg
-  (fun (fspath, (path, propOpt, ui)) ->
-       (fspath, (Path.makeGlobal path, propOpt_to_compat251 propOpt,
-         Common.ui_to_compat251 ui)))
-  (fun (fspath, (path, propOpt, ui)) ->
-       (fspath, (Path.forceLocal path,
-         propOpt_of_compat251 propOpt, Common.ui_of_compat251 ui)))
-
 let updatePropsOnRoot =
   Remote.registerRootCmd
-   "updateProps" ~convV0
+   "updateProps"
    Umarshal.(prod3 Path.mlocal (option Props.m) Common.mupdateItem id id)
    Umarshal.unit
      (fun (fspath, (path, propOpt, ui)) ->
@@ -248,13 +218,9 @@ let setProp rootFrom pathFrom rootTo pathTo newDesc oldDesc uiFrom uiTo =
 
 (* ------------------------------------------------------------ *)
 
-let convV0 = Remote.makeConvV0FunRet
-  (fun (b, desc) -> (b, Props.to_compat251 desc))
-  (fun (b, desc) -> (b, Props.of_compat251 desc))
-
 let mkdirOnRoot =
   Remote.registerRootCmd
-    "mkdir" ~convV0
+    "mkdir"
     Umarshal.(prod2 Fspath.m Path.mlocal id id)
     Umarshal.(prod2 bool Props.mbasic id id)
     (fun (fspath,(workingDir,path)) ->
@@ -273,17 +239,9 @@ let mkdirOnRoot =
          Lwt.return (false, (Fileinfo.getBasic false workingDir path).desc)
        end)
 
-let convV0 = Remote.makeConvV0FunArg
-  (fun (fspath, (workingDir, path, initialDesc, newDesc)) ->
-       (fspath, (workingDir, path,
-         Props.to_compat251 initialDesc, Props.to_compat251 newDesc)))
-  (fun (fspath, (workingDir, path, initialDesc, newDesc)) ->
-       (fspath, (workingDir, path,
-         Props.of_compat251 initialDesc, Props.of_compat251 newDesc)))
-
 let setDirPropOnRoot =
   Remote.registerRootCmd
-    "setDirProp" ~convV0
+    "setDirProp"
     Umarshal.(prod4 Fspath.m Path.mlocal Props.mbasic Props.mx id id)
     Umarshal.unit
     (fun (_, (workingDir, path, initialDesc, newDesc)) ->
@@ -429,33 +387,13 @@ let renameLocal
   end;
   Lwt.return ()
 
-let archOpt_to_compat251 = function
-  | Some arch -> Some (Update.to_compat251 arch)
-  | None -> None
-
-let archOpt_of_compat251 = function
-  | Some arch -> Some (Update.of_compat251 arch)
-  | None -> None
-
-let convV0 = Remote.makeConvV0FunArg
-  (fun (fspathTo,
-         ((localPathTo, workingDir, pathFrom, pathTo), (ui, archOpt, notDefault))) ->
-       (fspathTo,
-         (localPathTo, workingDir, pathFrom, pathTo,
-         Common.ui_to_compat251 ui, archOpt_to_compat251 archOpt, notDefault)))
-  (fun (fspathTo,
-         (localPathTo, workingDir, pathFrom, pathTo, ui, archOpt, notDefault)) ->
-       (fspathTo,
-         ((localPathTo, workingDir, pathFrom, pathTo),
-         (Common.ui_of_compat251 ui, archOpt_of_compat251 archOpt, notDefault))))
-
 let mrename = Umarshal.(prod2
                           (prod4 Path.mlocal Fspath.m Path.mlocal Path.mlocal id id)
                           (prod3 Common.mupdateItem (option Update.marchive) bool id id)
                           id id)
 
 let renameOnHost =
-  Remote.registerRootCmd "rename" ~convV0 mrename Umarshal.unit renameLocal
+  Remote.registerRootCmd "rename" mrename Umarshal.unit renameLocal
 
 let rename root localPath workingDir pathOld pathNew ui archOpt notDefault =
   debug (fun() ->
@@ -522,14 +460,8 @@ let setupTargetPathsAndCreateParentDirectoryLocal (fspath, (path, props)) =
   let tempPath = Os.tempPath ~fresh:false workingDir realPath in
   Lwt.return (workingDir, realPath, tempPath, localPath)
 
-let convV0 = Remote.makeConvV0FunArg
-  (fun (fspath, (path, props)) ->
-       (fspath, (path, Safelist.map Props.to_compat251 props)))
-  (fun (fspath, (path, props)) ->
-       (fspath, (path, Safelist.map Props.of_compat251 props)))
-
 let setupTargetPathsAndCreateParentDirectory =
-  Remote.registerRootCmd "setupTargetPathsAndCreateParentDirectory" ~convV0
+  Remote.registerRootCmd "setupTargetPathsAndCreateParentDirectory"
     Umarshal.(prod2 Path.m (list Props.mx) id id)
     Umarshal.(prod4 Fspath.m Path.mlocal Path.mlocal Path.mlocal id id)
     setupTargetPathsAndCreateParentDirectoryLocal
@@ -561,14 +493,8 @@ let updateSourceArchiveLocal (fspathFrom, (localPathFrom, uiFrom, errPaths)) =
   Stasher.stashCurrentVersion fspathFrom localPathFrom None;
   Lwt.return ()
 
-let convV0 = Remote.makeConvV0FunArg
-  (fun (fspathFrom, (localPathFrom, uiFrom, errPaths)) ->
-       (fspathFrom, (localPathFrom, Common.ui_to_compat251 uiFrom, errPaths)))
-  (fun (fspathFrom, (localPathFrom, uiFrom, errPaths)) ->
-       (fspathFrom, (localPathFrom, Common.ui_of_compat251 uiFrom, errPaths)))
-
 let updateSourceArchive =
-  Remote.registerRootCmd "updateSourceArchive" ~convV0
+  Remote.registerRootCmd "updateSourceArchive"
     Umarshal.(prod3 Path.mlocal Common.mupdateItem (list Path.mlocal) id id) Umarshal.unit
     updateSourceArchiveLocal
 

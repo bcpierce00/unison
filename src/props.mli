@@ -3,7 +3,6 @@
 
 (* File properties: time, permission, length, etc. *)
 
-type t251
 type _ props
 type basic = [`Basic] props
 type t = [`Full] props
@@ -11,11 +10,8 @@ type x = [`ExtLoaded] props
 val m : t Umarshal.t
 val mbasic : basic Umarshal.t
 val mx : x Umarshal.t
-val to_compat251 : _ props -> t251
-val of_compat251 : t251 -> _ props
 val dummy : _ props
 val hash : t -> int -> int
-val hash251 : t251 -> int -> int
 val similar : t -> t -> bool
 val override : _ props -> 'a props -> 'a props
 val strip : t -> t

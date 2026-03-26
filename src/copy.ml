@@ -104,29 +104,9 @@ let mcheckForChangesToSource =
               (prod3 Osx.mressStamp (option Os.mfullfingerprint) bool id id)
               id id)
 
-let archStamp_to_compat251 = function
-  | Some stamp -> Some (Fileinfo.stamp_to_compat251 stamp)
-  | None -> None
-
-let archStamp_of_compat251 = function
-  | Some stamp -> Some (Fileinfo.stamp_of_compat251 stamp)
-  | None -> None
-
-let convV0 = Remote.makeConvV0FunArg
-  (fun (fspathFrom,
-          ((pathFrom, archDesc, archFp, archStamp), (archRess, newFpOpt, paranoid))) ->
-       (fspathFrom,
-          (pathFrom, Props.to_compat251 archDesc, archFp,
-            archStamp_to_compat251 archStamp, archRess, newFpOpt, paranoid)))
-  (fun (fspathFrom,
-          (pathFrom, archDesc, archFp, archStamp, archRess, newFpOpt, paranoid)) ->
-       (fspathFrom,
-          ((pathFrom, Props.of_compat251 archDesc, archFp,
-            archStamp_of_compat251 archStamp), (archRess, newFpOpt, paranoid))))
-
 let checkForChangesToSourceOnRoot =
   Remote.registerRootCmd
-    "checkForChangesToSource" ~convV0
+    "checkForChangesToSource"
     mcheckForChangesToSource Umarshal.unit
     (fun (fspathFrom,
           ((pathFrom, archDesc, archFp, archStamp), (archRess, newFpOpt, paranoid))) ->
@@ -194,16 +174,6 @@ let validFilePrefix connFrom fspathFrom pathFrom fspathTo pathTo info desc =
   end else
     Lwt.return None
 
-(* IMPORTANT!
-   This is the 2.51-compatible version of type [transferStatus]. It must always
-   remain exactly the same as the type [transferStatus] in version 2.51.5. This
-   means that if any of the types it is composed of changes then for each
-   changed type also a 2.51-compatible version must be created. *)
-type transferStatus251 =
-    TransferSucceeded of Fileinfo.t251
-  | TransferNeedsDoubleCheckAgainstCurrentSource of Fileinfo.t251 * Os.fullfingerprint
-  | TransferFailed of string
-
 type transferStatus =
     TransferSucceeded of Fileinfo.basic
   | TransferNeedsDoubleCheckAgainstCurrentSource of Fileinfo.basic * Os.fullfingerprint
@@ -221,20 +191,6 @@ let mtransferStatus = Umarshal.(sum3
                                    | I31 a -> TransferSucceeded a
                                    | I32 (a, b) -> TransferNeedsDoubleCheckAgainstCurrentSource (a, b)
                                    | I33 a -> TransferFailed a))
-
-let transferStatus_to_compat251 (st : transferStatus) : transferStatus251 =
-  match st with
-  | TransferSucceeded info -> TransferSucceeded (Fileinfo.to_compat251 info)
-  | TransferNeedsDoubleCheckAgainstCurrentSource (info, fp) ->
-      TransferNeedsDoubleCheckAgainstCurrentSource (Fileinfo.to_compat251 info, fp)
-  | TransferFailed s -> TransferFailed s
-
-let transferStatus_of_compat251 (st : transferStatus251) : transferStatus =
-  match st with
-  | TransferSucceeded info -> TransferSucceeded (Fileinfo.of_compat251 info)
-  | TransferNeedsDoubleCheckAgainstCurrentSource (info, fp) ->
-      TransferNeedsDoubleCheckAgainstCurrentSource (Fileinfo.of_compat251 info, fp)
-  | TransferFailed s -> TransferFailed s
 
 (* Paranoid check: recompute the transferred file's fingerprint to match it
    with the archive's.  If the old
@@ -718,14 +674,8 @@ let mcompress = Umarshal.(prod2
                             (prod3 Uutil.Filesize.m Uutil.File.m int id id)
                             id id)
 
-let convV0 = Remote.makeConvV0FunArg
-  (fun ((biOpt, fspathFrom, pathFrom, fileKind), (sizeFrom, id, file_id)) ->
-       (biOpt, fspathFrom, pathFrom, fileKind, sizeFrom, id, file_id))
-  (fun (biOpt, fspathFrom, pathFrom, fileKind, sizeFrom, id, file_id) ->
-       ((biOpt, fspathFrom, pathFrom, fileKind), (sizeFrom, id, file_id)))
-
 let compressRemotely =
-  Remote.registerServerCmd "compress" ~convV0 mcompress Umarshal.unit compress
+  Remote.registerServerCmd "compress" mcompress Umarshal.unit compress
 
 let close_all infd outfd =
   Util.convertUnixErrorsToTransient
@@ -1086,18 +1036,6 @@ let finishExternalTransferLocal connFrom
   Xferhint.insertEntry fspathTo pathTo fp;
   Lwt.return res
 
-let convV0 = Remote.makeConvV0Funs
-  (fun ((fspathFrom, pathFrom, fspathTo, pathTo, realPathTo),
-         (update, desc, fp, ress, id)) ->
-       (fspathFrom, pathFrom, fspathTo, pathTo, realPathTo,
-         update, Props.to_compat251 desc, fp, ress, id))
-  (fun (fspathFrom, pathFrom, fspathTo, pathTo, realPathTo,
-         update, desc, fp, ress, id) ->
-       ((fspathFrom, pathFrom, fspathTo, pathTo, realPathTo),
-         (update, Props.of_compat251 desc, fp, ress, id)))
-  transferStatus_to_compat251
-  transferStatus_of_compat251
-
 let mcopyOrUpdate = Umarshal.(sum2 unit (prod2 Uutil.Filesize.m Uutil.Filesize.m id id)
                                 (function
                                  | `Copy -> I21 ()
@@ -1113,7 +1051,7 @@ let mfinishExternalTransfer = Umarshal.(prod2
 
 let finishExternalTransferOnRoot =
   Remote.registerRootCmdWithConnection
-    "finishExternalTransfer" ~convV0
+    "finishExternalTransfer"
     mfinishExternalTransfer mtransferStatus finishExternalTransferLocal
 
 let copyprogReg = Remote.lwtRegionWithConnCleanup 1
@@ -1192,22 +1130,6 @@ let transferFileLocal connFrom
                Lwt.return (`DONE (status, None))
              end)
 
-let convV0 = Remote.makeConvV0Funs
-  (fun ((fspathFrom, pathFrom, fspathTo, pathTo, realPathTo),
-         (update, desc, fp, ress, id)) ->
-       (fspathFrom, pathFrom, fspathTo, pathTo, realPathTo,
-         update, Props.to_compat251 desc, fp, ress, id))
-  (fun (fspathFrom, pathFrom, fspathTo, pathTo, realPathTo,
-         update, desc, fp, ress, id) ->
-       ((fspathFrom, pathFrom, fspathTo, pathTo, realPathTo),
-         (update, Props.of_compat251 desc, fp, ress, id)))
-  (function
-   | `DONE (a, b) -> `DONE (transferStatus_to_compat251 a, b)
-   | `EXTERNAL a -> `EXTERNAL a)
-  (function
-   | `DONE (a, b) -> `DONE (transferStatus_of_compat251 a, b)
-   | `EXTERNAL a -> `EXTERNAL a)
-
 let mtransferFile = Umarshal.(sum2 (prod2 mtransferStatus (option string) id id) bool
                                 (function
                                  | `DONE (a, b) -> I21 (a, b)
@@ -1217,7 +1139,7 @@ let mtransferFile = Umarshal.(sum2 (prod2 mtransferStatus (option string) id id)
                                  | I22 a -> `EXTERNAL a))
 
 let transferFileOnRoot =
-  Remote.registerRootCmdWithConnection "transferFile" ~convV0
+  Remote.registerRootCmdWithConnection "transferFile"
     mfinishExternalTransfer mtransferFile transferFileLocal
 
 (* We limit the size of the output buffers to about 512 KB

@@ -5,7 +5,6 @@ type typ = [`ABSENT | `FILE | `DIRECTORY | `SYMLINK]
 val mtyp : typ Umarshal.t
 val type2string : typ -> string
 
-type t251 = { typ : typ; inode : int; desc : Props.t251; osX : Osx.info}
 type ('a, 'b) info = private { typ : typ; inode : int; desc : 'a; osX : Osx.info }
      constraint 'a = _ Props.props
 type t = (Props.t, [`WithRess]) info
@@ -17,9 +16,6 @@ val basic : bress -> basic
 val m : t Umarshal.t
 val mbasic : basic Umarshal.t
 
-val to_compat251 : basic -> t251
-val of_compat251 : t251 -> basic
-
 val getType : bool (* fromRoot *) -> Fspath.t -> Path.local -> typ
 val getBasic : bool (* fromRoot *) -> Fspath.t -> Path.local -> basic
 val getBasicWithRess : bool (* fromRoot *) -> Fspath.t -> Path.local -> bress
@@ -29,10 +25,6 @@ val set : Fspath.t -> Path.local ->
           Props.x -> unit
 
 (* IF THIS CHANGES, MAKE SURE TO INCREMENT THE ARCHIVE VERSION NUMBER!       *)
-type stamp251 =
-    InodeStamp of int         (* inode number, for Unix systems *)
-  | CtimeStamp of float       (* creation time, for windows systems *)
-
 type stamp =
   | InodeStamp of int         (* inode number, for Unix systems *)
   | NoStamp
@@ -40,9 +32,6 @@ type stamp =
                                  (perhaps because previous transfer failed) *)
 
 val mstamp : stamp Umarshal.t
-
-val stamp_to_compat251 : stamp -> stamp251
-val stamp_of_compat251 : stamp251 -> stamp
 
 val stamp : _ info -> stamp
 
