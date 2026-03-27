@@ -33,8 +33,6 @@ test:
 # Note: unison binary is not built automatically for the test target,
 # so as to avoid building it with unwanted configuration.
 
-prefix = /usr/local
-
 .PHONY: install
 install:
 	ocaml src/make_tools.ml install
