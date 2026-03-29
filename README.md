@@ -22,7 +22,7 @@ collection of files and directories to be stored on different hosts
 brought up to date by propagating the changes in each replica to the
 other.
 
-Unison has been in use for over 20 years and many people use it to
+Unison has been in use for over 25 years and many people use it to
 synchronize data they care about.
 
 Features:
