@@ -60,8 +60,15 @@ let state = ref None
 let decompress st i path =
   let l = String.length path in
   let s = Bytes.create (l + i) in
-  String.blit !st 0 s 0 i;
-  String.blit path 0 s i l;
+  begin try
+    String.blit !st 0 s 0 i;
+    String.blit path 0 s i l;
+  with Invalid_argument _ ->
+    debug (fun () -> Util.msg "Delta path error when reading from file, \
+                               ignoring remainder of the file; len_st = %d; \
+                               i = %d; l = %d\n" (String.length !st) i l);
+    raise End_of_file
+  end;
   let s = Bytes.to_string s in
   st := s;
   s
@@ -101,9 +108,9 @@ let read st ic =
   let q =
     try Umarshal.from_bytes mentry_list s 0 with
     | Umarshal.Error _ ->
-        debug (fun () -> Util.msg ("Umarshal error when reading from file, "
-                                ^^ "ignoring and continuing\n"));
-        []
+        debug (fun () -> Util.msg "Umarshal error when reading from file, \
+                                   ignoring remainder of the file\n");
+        raise End_of_file
   in
   debug (fun () -> Util.msg "read chunk of %d files\n" (List.length q));
   List.iter (fun (l, p, i) -> PathTbl.add tbl (decompress st l p) i) q
