@@ -2795,6 +2795,44 @@ let docs =
       \032         + If any of the non-ignored children are directories, then the\n\
       \032           process continues recursively.\n\
       \n\
+      Moved or Renamed Paths\n\
+      \n\
+      \032  Unison can, under certain conditions, detect moved and/or renamed files\n\
+      \032  and directories. In that case, the move/rename is atomically propagated\n\
+      \032  to the other replica, completely bypassing copying any data over the\n\
+      \032  network or locally. To ask Unison to detect moves/renames, enable the\n\
+      \032  moves-experimental preference. When the moves-experimental preference\n\
+      \032  is not enabled then all moved and/or renamed files and directories will\n\
+      \032  be detected and propagated as a separate creation at the new path and\n\
+      \032  deletion at the old path, potentially having to copy a large amount of\n\
+      \032  data.\n\
+      \n\
+      \032  It is not possible to detect actual moves and renames simply by\n\
+      \032  scanning the file system. Thus, moved and/or renamed files and\n\
+      \032  directories are detected heuristically by matching detected deletions\n\
+      \032  and creations that have the same contents; this may detect supposed\n\
+      \032  moves/renames that do not match the actions done by user. For\n\
+      \032  directories, contents means the names and contents of all children\n\
+      \032  recursively.\n\
+      \n\
+      \032  When having the same contents, a deletion and a creation are matched as\n\
+      \032  a possible move/rename by following tests (up to first passing test):\n\
+      \032    * (for files only) inodes match;\n\
+      \032    * modification time and parent are same, but names are not (a renamed\n\
+      \032      file/directory);\n\
+      \032    * modification time and name are the same, but parents are not (a\n\
+      \032      moved file/directory);\n\
+      \032    * parent is the same, but names are not (a renamed file/directory);\n\
+      \032    * name is the same, but parents are not (a moved file/directory);\n\
+      \032    * modification time is the same, but parents and names are not\n\
+      \032      (renamed and moved file/directory);\n\
+      \032    * nothing is the same (except contents) (renamed and moved\n\
+      \032      file/directory).\n\
+      \n\
+      \032  If the contents have changed since the last sync then it will not be\n\
+      \032  detected as a move/rename. If propagating a move/rename fails in the\n\
+      \032  other replica then Unison falls back to a regular copy.\n\
+      \n\
       Symbolic Links\n\
       \n\
       \032  Ordinarily, Unison treats symbolic links in Unix replicas as \226\128\156opaque\226\128\157:\n\
