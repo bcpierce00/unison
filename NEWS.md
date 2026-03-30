@@ -11,6 +11,33 @@ features.
 Some software has a "changelog" file that records all changes, but
 unison uses git history for that, and thus there is no changelog file.
 
+## Changes in 2.54.0
+
+Probably Will Be Released 2026-05-01
+
+  * Drop old wire protocol.  Unison will no longer interoperate with
+    versions before 2.52.0 and will no longer read pre-2.52.0 archive
+    files.
+  * Document that LLM output is unwelcome in the Unison project (code,
+    issues, mailinglists, etc.).
+
+  * Add desktop file.
+
+  Deprecation warning: support for external rsync will be removed;
+  this may happen even in a micro release.
+
+  DEPRECATION MAY HAPPEN WITH LESS THAN TYPICAL NOTICE:
+  lablgtk is difficult to use safely, and future maintenance is
+  unclear.  Implementing the GUI without lablgtk requires more effort
+  than seems likely to happen.  Thus, it is possible that support for
+  the unison GUI may end suddenly, on a particular platform, or on all
+  platforms -- even in a micro release.  See
+    https://github.com/bcpierce00/unison/issues/1075  
+
+  MAINTENANCE WARNING: No one is contributing to verify that the Mac
+  GUI continues to work -- so it might not.  (So far, there are no
+  reports of serious, frequent failures.)
+
 ## Changes in 2.53.8
 
 Released 2025-11-05
