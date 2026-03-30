@@ -2037,6 +2037,45 @@ therefore they do not get recreated in the new version of the directory).
   \end{itemize}
 \end{itemize}
 
+
+\SUBSECTION{Moved or Renamed Paths}{moves}
+
+Unison can, under certain conditions, detect moved and/or renamed files and
+directories. In that case, the move/rename is atomically propagated to the
+other replica, completely bypassing copying any data over the network or
+locally.  To ask Unison to detect moves/renames, enable the
+\verb|moves-experimental| preference.  When the \verb|moves-experimental|
+preference is not enabled then all moved and/or renamed files and directories
+will be detected and propagated as a separate creation at the new path and
+deletion at the old path, potentially having to copy a large amount of data.
+
+It is not possible to detect actual moves and renames simply by scanning the
+file system. Thus, moved and/or renamed files and directories are detected
+heuristically by matching detected deletions and creations that have the same
+contents; this may detect supposed moves/renames that do not match the actions
+done by user.  For directories, contents means the names and contents of all
+children recursively.
+
+When having the same contents, a deletion and a creation are matched as a
+possible move/rename by following tests (up to first passing test):
+\begin{itemize}
+  \item (for files only) inodes match;
+  \item modification time and parent are same, but names are not (a renamed
+    file/directory);
+  \item modification time and name are the same, but parents are not (a moved
+    file/directory);
+  \item parent is the same, but names are not (a renamed file/directory);
+  \item name is the same, but parents are not (a moved file/directory);
+  \item modification time is the same, but parents and names are not (renamed
+    and moved file/directory);
+  \item nothing is the same (except contents) (renamed and moved
+    file/directory).
+\end{itemize}
+If the contents have changed since the last sync then it will not be detected
+as a move/rename. If propagating a move/rename fails in the other replica then
+Unison falls back to a regular copy.
+
+
 \SUBSECTION{Symbolic Links}{symlinks}
 
 Ordinarily, Unison treats symbolic links in Unix replicas as
