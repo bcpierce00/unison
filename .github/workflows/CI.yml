@@ -191,13 +191,13 @@ jobs:
     - name: "Windows: Cache GTK installation"
       if: ${{ runner.os == 'Windows' && contains(matrix.job.win-comp, 'msvc') }}
       id: win-gtk-cache
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         key: wingtk-${{ matrix.job.os }}-${{ steps.vars.outputs.WINBUILD_ARCH }}
         path: C:\gtk
 
     - if: ${{ runner.os == 'Windows' && contains(matrix.job.win-comp, 'msvc') && !steps.win-gtk-cache.outputs.cache-hit }}
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version: 3.x
 
