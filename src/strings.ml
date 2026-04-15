@@ -3060,51 +3060,6 @@ let docs =
       \032  enabling ssh\226\128\153s compression feature. Do this by adding the option\n\
       \032  \226\128\156-sshargs -C\226\128\157 to the command line or \226\128\156sshargs = -C\226\128\157 to your profile.\n\
       \n\
-      Making Unison Faster on Large Files\n\
-      \n\
-      \032  Unison\226\128\153s built-in implementation of the rsync algorithm makes\n\
-      \032  transferring updates to existing files pretty fast. However, for\n\
-      \032  whole-file copies of newly created files, the built-in transfer method\n\
-      \032  is not highly optimized. Also, if Unison is interrupted in the middle\n\
-      \032  of transferring a large file, it will attempt to retransfer the whole\n\
-      \032  thing on the next run.\n\
-      \n\
-      \032  These shortcomings can be addressed with a little extra work by telling\n\
-      \032  Unison to use an external file copying utility for whole-file\n\
-      \032  transfers. The recommended one is the standalone rsync tool, which is\n\
-      \032  available by default on most Unix systems and can easily be installed\n\
-      \032  on Windows systems using Cygwin.\n\
-      \n\
-      \032  If you have rsync installed on both hosts, you can make Unison use it\n\
-      \032  simply by setting the copythreshold flag to something non-negative. If\n\
-      \032  you set it to 0, Unison will use the external copy utility for all\n\
-      \032  whole-file transfers. (This is probably slower than letting Unison copy\n\
-      \032  small files by itself, but can be useful for testing.) If you set it to\n\
-      \032  a larger value, Unison will use the external utility for all files\n\
-      \032  larger than this size (which is given in kilobytes, so setting it to\n\
-      \032  1000 will cause the external tool to be used for all transfers larger\n\
-      \032  than a megabyte).\n\
-      \n\
-      \032  If you want to use a different external copy utility, set both the\n\
-      \032  copyprog and copyprogrest preferences\226\128\148the former is used for the first\n\
-      \032  transfer of a file, while the latter is used when Unison sees a\n\
-      \032  partially transferred temp file on the receiving host. Be careful here:\n\
-      \032  Your external tool needs to be instructed to copy files in place\n\
-      \032  (otherwise if the transfer is interrupted Unison will not notice that\n\
-      \032  some of the data has already been transferred, the next time it tries).\n\
-      \032  The default values are:\n\
-      \032  copyprog      =   rsync --inplace --compress\n\
-      \032  copyprogrest  =   rsync --partial --inplace --compress\n\
-      \n\
-      \032  If a directory transfer is interrupted, the next run of Unison will\n\
-      \032  automatically skip any files that were completely transferred before\n\
-      \032  the interruption. (This behavior is always on: it does not depend on\n\
-      \032  the setting of the copythreshold preference.) Note, though, that the\n\
-      \032  new directory will not appear in the destination filesystem until\n\
-      \032  everything has been transferred\226\128\148partially transferred directories are\n\
-      \032  kept in a temporary location (with names like .unison.DIRNAME....)\n\
-      \032  until the transfer is complete.\n\
-      \n\
       Fast Update Detection\n\
       \n\
       \032  If your replicas are large and at least one of them is on a Windows\n\
