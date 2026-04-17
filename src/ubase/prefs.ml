@@ -490,8 +490,17 @@ let processLines lines =
 
 let loadTheFile () =
   match !profileName with
-    None -> ()
-  | Some(n) -> processLines(readAFile n)
+  | None -> ()
+  | Some(n) ->
+      let path = profilePathname n in
+      try
+        let stat = System.stat path in
+        if stat.Unix.LargeFile.st_kind = Unix.S_REG then
+          processLines (readAFile n)
+        else
+          ()
+      with _ ->
+        ()
 
 let loadStrings l =
   let rec loop n out = function
