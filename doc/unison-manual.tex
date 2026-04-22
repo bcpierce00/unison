@@ -2098,6 +2098,12 @@ refuse to propagate an opaque symbolic link from Unix to Windows and flag the
 path as erroneous if the support or privileges are lacking on the Windows side.
 When a Unix replica is to be synchronized with such Windows system, all symbolic
 links should match either an \verb|ignore| pattern or a \verb|follow| pattern.
+To completely ignore all symbolic links, you may set the preference {\tt links}
+to {\tt false}.
+
+{\em Warning}: Just like with \verb|ignore|, be careful with ``{\tt links =
+false}''. This makes Unison effectively ignore symbolic links, so they could be
+deleted without notice.
 
 You may need to acquire extra privileges to create symbolic links under
 Windows. By default, this is only allowed for administrators. Unison may not
