@@ -955,9 +955,7 @@ let copythreshold =
      ^ "copying utility specified by {\\tt copyprog}. Specifying 0 will cause "
      ^ "{\\em all} copies to use the external program; "
      ^ "a negative number will prevent any files from using it.  "
-     ^ "The default is -1.  "
-     ^ "See \\sectionref{speeding}{Making Unison Faster on Large Files} "
-     ^ "for more information.")
+     ^ "The default is -1.")
 
 (* Pref copyquoterem removed since 2.53.3 *)
 let () = Prefs.markRemoved "copyquoterem"
