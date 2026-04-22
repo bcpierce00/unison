@@ -126,7 +126,7 @@ let forceRoot: string Prefs.t =
     ~category:(`Advanced `Sync)
     "force changes from this replica to the other"
     ("Including the preference \\texttt{-force \\ARG{root}} causes Unison to "
-     ^ "resolve all differences (even non-conflicting changes) in favor of "
+     ^ "resolve all differences (including non-conflicting changes) in favor of "
      ^ "\\ARG{root}.  "
      ^ "This effectively changes Unison from a synchronizer into a mirroring "
      ^ "utility.  \n\n"
