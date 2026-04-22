@@ -579,12 +579,7 @@ let docs =
       \032   2. Create a subdirectory called shared (or current, or whatever) in\n\
       \032      your home directory on each host, and put all the files you want to\n\
       \032      synchronize into this directory.\n\
-      \032   3. Create a subdirectory called shared (or current, or whatever) in\n\
-      \032      your home directory on each host, and put links to all the files\n\
-      \032      you want to synchronize into this directory. Use the follow\n\
-      \032      preference (see the section \226\128\156Symbolic Links\226\128\157 ) to make Unison treat\n\
-      \032      these links as transparent.\n\
-      \032   4. Make your home directory the root of the synchronization, but tell\n\
+      \032   3. Make your home directory the root of the synchronization, but tell\n\
       \032      Unison to synchronize only some of the files and subdirectories\n\
       \032      within it on any given run. This can be accomplished by using the\n\
       \032      -path switch on the command line:\n\
@@ -1430,8 +1425,7 @@ let docs =
       \032         kilobytes) Unison should use the external copying utility\n\
       \032         specified by copyprog. Specifying 0 will cause all copies to use\n\
       \032         the external program; a negative number will prevent any files\n\
-      \032         from using it. The default is -1. See the section \226\128\156Making Unison\n\
-      \032         Faster on Large Files\226\128\157 for more information.\n\
+      \032         from using it. The default is -1.\n\
       \n\
       \032  debug xxx\n\
       \032         This preference is used to make Unison print various sorts of\n\
@@ -1568,8 +1562,8 @@ let docs =
       \n\
       \032  force xxx\n\
       \032         Including the preference -force root causes Unison to resolve\n\
-      \032         all differences (even non-conflicting changes) in favor of root.\n\
-      \032         This effectively changes Unison from a synchronizer into a\n\
+      \032         all differences (including non-conflicting changes) in favor of\n\
+      \032         root. This effectively changes Unison from a synchronizer into a\n\
       \032         mirroring utility.\n\
       \n\
       \032         You can also specify a unique prefix or suffix of the path of\n\
@@ -2849,12 +2843,52 @@ let docs =
       \032  to the profile, where pathspec is a path pattern as described in the\n\
       \032  section \226\128\156Path Specification\226\128\157 .\n\
       \n\
+      \032    Warning: Be careful when using the follow preference. Using a\n\
+      \032    Pathspec that is not detailed and accurate enough will cause Unison\n\
+      \032    to follow symlinks that you may have not intended to. This can cause\n\
+      \032    paths outside the replica to be overwritten and deleted due to\n\
+      \032    updates in the other replica. This can also cause the targets of\n\
+      \032    links pointing to within the replica to be synchronized under two or\n\
+      \032    more names (once directly and once via the link, for example),\n\
+      \032    leading to unintended results and conflicts.\n\
+      \n\
+      \032  Warning: Deleting, in one replica, the path where a followed symbolic\n\
+      \032  link is in the other replica will cause the target of the \226\128\156transparent\226\128\157\n\
+      \032  link to be deleted in the other replica. The symbolic link itself will\n\
+      \032  not be deleted and remains as a broken link. This happens even if there\n\
+      \032  was a symbolic link in both replicas and only the link, not the link\n\
+      \032  target, was deleted in one.\n\
+      \n\
+      \032  Treating symbolic links \226\128\156transparently\226\128\157 may not always work as expected\n\
+      \032  when it comes to directories. Deleting a file or directory in one\n\
+      \032  replica will cause the target of a \226\128\156transparent\226\128\157 link to be deleted in\n\
+      \032  the other replica. Deleting a parent directory, however, which itself\n\
+      \032  might or might not be a followed link, will not delete the targets of\n\
+      \032  any \226\128\156transparent\226\128\157 links contained within.\n\
+      \n\
+      \032  Renaming or moving a file or directory in one replica behaves as a\n\
+      \032  combination of a delete on the old path and a recreate on the new path.\n\
+      \032  Thus, all the caveats regarding deletion of followed symbolic links\n\
+      \032  apply (see above). Additionally, the link target is recreated in-place\n\
+      \032  on the new path, not the symbolic link.\n\
+      \n\
+      \032  Followed symbolic links are treated \226\128\156transparently\226\128\157 also when it comes\n\
+      \032  to the copyonconflict and backup preferences. This means that the\n\
+      \032  target of the link is copied to the conflict or backup location, and\n\
+      \032  you need to restore to the original link target location outside the\n\
+      \032  replica, should you need the backup.\n\
+      \n\
       \032  Not all Windows versions and file systems support symbolic links;\n\
       \032  Unison will refuse to propagate an opaque symbolic link from Unix to\n\
       \032  Windows and flag the path as erroneous if the support or privileges are\n\
       \032  lacking on the Windows side. When a Unix replica is to be synchronized\n\
       \032  with such Windows system, all symbolic links should match either an\n\
-      \032  ignore pattern or a follow pattern.\n\
+      \032  ignore pattern or a follow pattern. To completely ignore all symbolic\n\
+      \032  links, you may set the preference links to false.\n\
+      \n\
+      \032  Warning: Just like with ignore, be careful with \226\128\156links = false\226\128\157. This\n\
+      \032  makes Unison effectively ignore symbolic links, so they could be\n\
+      \032  deleted without notice.\n\
       \n\
       \032  You may need to acquire extra privileges to create symbolic links under\n\
       \032  Windows. By default, this is only allowed for administrators. Unison\n\
