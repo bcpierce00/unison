@@ -119,17 +119,30 @@
 
 % The quote-based macros looks a imperfect, perhaps due to the lack of
 % alignment
+% The itemize-based macros cause warnings with hevea, due to hevea not being
+% able to remove the bullet point from \item[]. The bullet points actually look
+% relevant for the text-only version, so it's good to keep them, even if they
+% could be removed via CSS.
 % \newenvironment{textui}{{\em Textual Interface:}\begin{quote}}{\end{quote}}
 % \newenvironment{tkui}{{\em Graphical Interface:}\begin{quote}}{\end{quote}}
-\newenvironment{textui}{\medskip{\em Textual Interface:}\begin{itemize}\item[]
+\newenvironment{textui}{\medskip{\em Textual Interface:}\begin{itemize}\ifhevea\item\else\item[]\fi
   }{\end{itemize}}
-\newenvironment{tkui}{\medskip{\em Graphical Interface:}\begin{itemize}\item[]
+\newenvironment{tkui}{\medskip{\em Graphical Interface:}\begin{itemize}\ifhevea\item\else\item[]\fi
   }{\end{itemize}}
 \newenvironment{changesfromversion}[1]{%
   \noindent Changes since #1:
   \begin{itemize}
 }{
   \end{itemize}
+}
+
+% To stop hevea from complaining about arguments to \item
+\newcommand{\numitem}[1][]{
+  \ifhevea
+    \item #1%
+  \else
+    \item[#1]%
+  \fi
 }
 
 \newcommand{\incompatible}{%

@@ -1861,12 +1861,12 @@ When running in the textual mode, Unison returns an exit status, which
 describes whether, and at which level, the synchronization was successful.
 The exit status could be useful when Unison is invoked from a script.
 Currently, there are four possible values for the exit status:
-\begin{itemize}
-\item [0]: successful synchronization; everything is up-to-date now.
-\item [1]: some files were skipped, but all file transfers were successful.
-\item [2]: non-fatal failures occurred during file transfer.
-\item [3]: a fatal error occurred, or the execution was interrupted.
-\end{itemize}
+\ifhevea\begin{itemize}\else\begin{quote}\begin{description}\fi
+\numitem [0]: successful synchronization; everything is up-to-date now.
+\numitem [1]: some files were skipped, but all file transfers were successful.
+\numitem [2]: non-fatal failures occurred during file transfer.
+\numitem [3]: a fatal error occurred, or the execution was interrupted.
+\ifhevea\end{itemize}\else\end{description}\end{quote}\fi
 The graphical interface does not return any useful information through the
 exit status.
 
