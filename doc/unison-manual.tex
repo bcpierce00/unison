@@ -678,7 +678,7 @@ Clients can connect to a server over a Unix domain socket by specifying
 the absolute or relative path to the socket, instead of a server address
 and port number:
 \begin{alltt}
-       unison a.tmp socket://\{\NT{path/to/unix/socket}\}/a.tmp
+       unison a.tmp socket://\textrm{\{}\NT{path/to/unix/socket}\textrm{\}}/a.tmp
 \end{alltt}
 (socket path is enclosed in curly braces).
 
@@ -812,8 +812,8 @@ is used to specify the hostname and the port that the client Unison should
 use to contact it.
 Syntax
 \begin{alltt}
-      socket://\{\NT{path/of/socket}\}//\NT{absolute/path/of/root}
-      socket://\{\NT{path/of/socket}\}/\NT{relative/path/of/root}
+      socket://\textrm{\{}\NT{path/of/socket}\textrm{\}}//\NT{absolute/path/of/root}
+      socket://\textrm{\{}\NT{path/of/socket}\textrm{\}}/\NT{relative/path/of/root}
 \end{alltt}
 \noindent
 is used to specify the Unix domain socket the client Unison should use to
@@ -832,8 +832,8 @@ The full grammar is:
   \NT{user} ::= [-\_a-zA-Z0-9\%@]+
 
   \NT{host} ::= [-\_a-zA-Z0-9.]+
-        |  \textbackslash[ [a-f0-9:.]+ \NT{zone}? \textbackslash]    IPv6 literals (no future format).
-        |  \{ [\^{}\}]+ \}                   For Unix domain sockets only.
+        |  \textrm{\textbackslash}[ [a-f0-9:.]+ \NT{zone}? \textrm{\textbackslash}]    IPv6 literals (no future format).
+        |  \textrm{\{} [\^{}\textrm{\}}]+ \textrm{\}}                   For Unix domain sockets only.
 
   \NT{zone} ::= \%[-\_a-zA-Z0-9~\%.]+
 
