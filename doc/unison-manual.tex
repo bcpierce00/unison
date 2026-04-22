@@ -702,11 +702,6 @@ one host.
 \item Create a subdirectory called {\tt shared} (or {\tt current}, or
 whatever) in your home directory on each host, and put all the files
 you want to synchronize into this directory.
-\item Create a subdirectory called {\tt shared} (or {\tt current}, or
-whatever) in your home directory on each host, and put {\em links to}
-all the files you want to synchronize into this directory.  Use the
-{\tt follow} preference (see \sectionref{symlinks}{Symbolic Links}) to make
-Unison treat these links as transparent.
 \item Make your home directory the root of the synchronization, but
 tell Unison to synchronize only some of the files and subdirectories
 within it on any given run.  This can be accomplished by using the {\tt -path} switch
@@ -2092,6 +2087,46 @@ to treat a link in this manner, add a line of the form
 \end{alltt}
 to the profile, where \ARG{pathspec} is a path pattern as described in
 \sectionref{pathspec}{Path Specification}.
+
+\begin{quote}
+  {\bf\ifhevea\red\fi Warning:} Be careful when using the \verb|follow|
+  preference. Using a \verb|Pathspec| that is not detailed and accurate enough
+  will cause Unison to follow symlinks that you may have not intended to. This
+  can cause paths outside the replica to be overwritten and deleted due to
+  updates in the other replica.  This can also cause the targets of links
+  pointing to within the replica to be synchronized under two or more names
+  (once directly and once via the link, for example), leading to unintended
+  results and conflicts.
+\end{quote}
+
+{\em Warning}: Deleting, in one replica, the path where a followed symbolic
+link is in the other replica will cause the {\em target} of the ``transparent''
+link to be deleted in the other replica. The symbolic link itself will not be
+deleted and remains as a broken link. %% FIXME: [2026-04] Is this intentional
+                                      %% or is it a bug?
+This happens even if there was a symbolic link in both replicas and only the
+link, not the link target, was deleted in one.
+
+Treating symbolic links ``transparently'' may not always work as expected when
+it comes to directories. Deleting a file or directory in one replica will cause
+the target of a ``transparent'' link to be deleted in the other replica.
+Deleting a parent directory, however, which itself might or might not be a
+followed link, will not delete the targets of any ``transparent'' links
+contained within. %% FIXME: [2026-04] Is this intentional or is it a bug?
+
+Renaming or moving a file or directory in one replica behaves as a combination
+of a delete on the old path and a recreate on the new path. Thus, all the
+caveats regarding deletion of followed symbolic links apply (see above).
+Additionally, the link {\em target} is recreated in-place on the new path,
+{\em not} the symbolic link.
+
+Followed symbolic links are treated ``transparently'' also when it comes to the
+\verb|copyonconflict| and \verb|backup| preferences. This means that the target
+of the link is copied to the conflict or backup location, and you need to
+restore to the original link target location outside the replica, should you
+need the backup. %% FIXME: [2026-04] Unlike deletion, these copies follow
+                 %% links within directory hierarchy, too. Is this inconsistency
+                 %% intentional or a bug?
 
 Not all Windows versions and file systems support symbolic links; Unison will
 refuse to propagate an opaque symbolic link from Unix to Windows and flag the
