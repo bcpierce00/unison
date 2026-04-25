@@ -956,7 +956,7 @@ jobs:
     - name: Build GUI
       if: ${{ !contains(matrix.job.ocaml-version, '-musl') }}
       run: |
-        opam depext --install --verbose --yes lablgtk3 && opam install ocamlfind
+        opam install --verbose --yes lablgtk3 && opam install ocamlfind
         opam exec -- make gui
         cp src/unison-gui pkg/bin/
 
