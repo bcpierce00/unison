@@ -485,7 +485,7 @@ jobs:
     - name: lablgtk install
       ## [2020-09] non-working/unavailable for musl OCaml variant
       if: ${{ !contains(matrix.job.ocaml-version, '-musl') }}
-      run: opam install lablgtk3 ocamlfind
+      run: opam install lablgtk3
 
     - if: ${{ !matrix.job.static }} ## unable to build static gtk/gui
       run: |
@@ -956,7 +956,7 @@ jobs:
     - name: Build GUI
       if: ${{ !contains(matrix.job.ocaml-version, '-musl') }}
       run: |
-        opam install --verbose --yes lablgtk3 && opam install ocamlfind
+        opam install --verbose --yes lablgtk3
         opam exec -- make gui
         cp src/unison-gui pkg/bin/
 
