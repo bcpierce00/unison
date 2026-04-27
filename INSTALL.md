@@ -44,7 +44,6 @@ with those systems, and not in the unison issue tracker.)
 ##### Optional, for the GUI only
 
 - lablgtk3 and its prerequisites (GTK 3 and its dependencies)
-- ocamlfind (there is backup code to operate without it in some circumstances)
 
 ##### Optional, on BSDs, for building unison-fsmonitor
 
@@ -196,7 +195,7 @@ For building the GUI (optional), you also need the following:
 - MinGW GTK 3 and its dependencies (Cygwin package example mingw64-x86_64-gtk3)
 - Some MinGW GTK icon theme (optional, but recommended; Cygwin package example
   mingw64-x86_64-adwaita-icon-theme)
-- lablgtk3 and its prerequisites (ocamlfind, dune build system)
+- lablgtk3 and its prerequisites (dune build system)
 
 Building lablgtk3 from source is complicated. It is recommended to use OPAM for
 that (Cygwin package name opam). Make sure that OPAM uses the MinGW version of
@@ -237,7 +236,7 @@ For building the GUI (optional) with MSVC, you also need the following:
   to pkgconf or pkg-config then you may also need to set the PKG_CONFIG_PATH
   environment to point to C:\gtk\lib\pkgconfig (adjust according to your GTK
   installation location).
-- lablgtk3 and its prerequisites (ocamlfind, dune build system)
+- lablgtk3 and its prerequisites (dune build system)
 
 Once built, a GTK 3 installation must be found in PATH or DLLs for GTK 3 be
 present where unison-gui.exe is located in order to run the GUI.
