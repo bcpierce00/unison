@@ -13,7 +13,7 @@ unison uses git history for that, and thus there is no changelog file.
 
 ## Changes in 2.54.0
 
-Probably Will Be Released 2026-05-01
+Released 2026-05-01
 
   * Drop old wire protocol.  Unison will no longer interoperate with
     versions before 2.52.0 and will no longer read pre-2.52.0 archive
