@@ -78,8 +78,8 @@ text-indent: 0;
 <!--HEVEA command line is: hevea unison-manual.tex -->
 <!--CUT STYLE article--><!--CUT DEF section 1 --><p><div id="manualbody"></p><p><div id="manualheader"></p><div class="center"><span style="font-size:xx-large"><span style="font-size:150%"><span style="color:black">Unison File Synchronizer</span></span></span><span style="font-size:xx-large"><span style="font-size:150%"><br>
 </span></span><span style="font-size:150%"><span style="font-size:xx-large"><span style="color:black">User Manual and Reference Guide</span></span></span><span style="font-size:150%"><span style="font-size:xx-large"><br>
-<span style="font-size:x-large">Version 2.53.3<br>
-<span style="font-size:large">Copyright 1998-2020, Benjamin C. Pierce
+<span style="font-size:x-large">Version 2.53.8<br>
+<span style="font-size:large">Copyright 1998-2023, Benjamin C. Pierce
 </span></span></span></span></div><p></div></p><!--TOC section id="sec1" Contents-->
 <h2 id="sec1" class="section">Contents</h2><!--SEC END --><blockquote class="quote">
 <a href="#overview"><span style="font-size:large"><span style="font-weight:bold">Overview</span></span></a><br>
@@ -127,54 +127,38 @@ text-indent: 0;
           •<a href="#exit">Exit Code</a><br>
           •<a href="#pathspec">Path Specification</a><br>
           •<a href="#ignore">Ignoring Paths</a><br>
+          •<a href="#moves">Moved or Renamed Paths</a><br>
           •<a href="#symlinks">Symbolic Links</a><br>
           •<a href="#perms">Permissions</a><br>
           •<a href="#acls">Access Control Lists - ACLs</a><br>
           •<a href="#xattrs">Extended Attributes - xattrs</a><br>
           •<a href="#crossplatform">Cross-Platform Synchronization</a><br>
           •<a href="#speed">Slow Links</a><br>
-          •<a href="#speeding">Making Unison Faster on Large Files</a><br>
           •<a href="#fastcheck">Fast Update Detection</a><br>
           •<a href="#mountpoints">Mount Points and Removable Media</a><br>
 
 </blockquote><p><hr></p><!--TOC section id="sec2" Overview-->
-<h2 id="sec2" class="section"><a id="overview">Overview</a></h2><!--SEC END --><p>Unison is a file-synchronization tool for Unix and Windows. It allows
+<h2 id="sec2" class="section"><a id="overview">Overview</a></h2><!--SEC END --><p>Unison is a file-synchronization tool for POSIX-compliant systems
+(e.g. BSDs, GNU/Linux, macOS) and Windows. It allows
 two replicas of a collection of files and directories to be stored on
 different hosts (or different disks on the same host), modified
 separately, and then brought up to date by propagating the changes in
-each replica to the other.</p><p>Unison
-shares a number of features with tools such as configuration
-management packages (<a href="http://www.cyclic.com/">CVS</a>,
-<a href="http://www.XCF.Berkeley.EDU/~jmacd/prcs.html">PRCS</a>,
-etc.),
-distributed filesystems
-(<a href="http://www.coda.cs.cmu.edu/">Coda</a>,
-etc.),
-uni-directional mirroring utilities
-(<a href="http://samba.anu.edu.au/rsync/">rsync</a>,
-etc.),
-and other synchronizers
-(<a href="http://www.pumatech.com">Intellisync</a>,
-<a href="http://www.merl.com/reports/TR99-14/">Reconcile</a>,
-etc). 
-However, there are several points where it differs:
+each replica to the other.</p><p>Features:
 </p><ul class="itemize"><li class="li-itemize">
-Unison runs on both Windows (95, 98, NT, 2k, and XP) and Unix (OSX, Solaris,
-Linux, etc.) systems. Moreover, Unison works <em>across</em>
-platforms, allowing you to synchronize a Windows laptop with a
-Unix server, for example.
+Unison works <em>across</em> platforms, allowing you to synchronize a
+Windows laptop with a Unix server, for example.
 </li><li class="li-itemize">Unlike a distributed filesystem, Unison is a user-level program:
 there is no need to modify the kernel or to have
 superuser privileges on either host.
 </li><li class="li-itemize">Unlike simple mirroring or backup utilities, Unison can deal
 with updates to both replicas of a distributed directory structure.
-Updates that do not conflict are propagated automatically.
+Updates that do not conflict can be propagated automatically.
 Conflicting updates are detected and displayed.
 </li><li class="li-itemize">Unison works between any pair of machines connected to the
 internet, communicating over either a direct socket link or
 tunneling over an encrypted <span style="font-family:monospace">ssh</span> connection.
-It is careful with network bandwidth, and runs well over slow links
-such as PPP connections. Transfers of small updates to large files are
+It is careful with network bandwidth, and runs well over slow links.
+Transfers of small updates to large files are
 optimized using a compression protocol similar to rsync.
 </li><li class="li-itemize">Unison has a clear and precise specification, described
 below. </li><li class="li-itemize">Unison is resilient to failure. It is careful to leave the
@@ -278,12 +262,15 @@ possible for local and remote machines to run a version (same or different)
 of Unison built with a different version of OCaml compiler (this has been
 problematic historically). Lastly, it is possible to upgrade Unison on
 the local machine (compiled with any OCaml version) and keep the existing
-archive.</p><p>If version interoperability requirements are followed then Unison 2.52 and
-newer can upgrade the archive created by earlier Unison versions. To avoid
+archive.</p><p><span style="font-weight:bold">Upgrading from Unison 2.48 or 2.51</span>:
+If version interoperability requirements are followed then Unison 2.52 up to
+2.53.8 can upgrade the archive created by Unison 2.48 to 2.51. To avoid
 rebuilding archive files when upgrading from a version older than 2.52, you
 must install version 2.52 or newer built with the same OCaml version as your
 previous version of Unison, and then run it at least once on each root. Doing
-so will upgrade the archive file.</p><p>After upgrading the archive, you are free to swap the Unison 2.52 or newer
+so will upgrade the archive file.
+Upgrading directly to version newer than 2.53.8 is not supported; upgrade first
+to a version between 2.52 and 2.53.8 if you want to keep the archives.</p><p>After upgrading the archive, you are free to swap the Unison 2.52 or newer
 executable to one compiled with a different version of OCaml.
 The archive file is no longer dependent on the compiler version.</p><!--TOC subsection id="sec14" Version interoperability-->
 <h3 id="sec14" class="subsection"><a id="interoperability">Version interoperability</a></h3><!--SEC END --><p>To ensure interoperability with different Unison versions on local and
@@ -296,7 +283,9 @@ replicas.</p><p><span style="font-weight:bold">Unison 2.52 and newer</span> are 
 <em>Unison 2.52 or newer</em> (for as long as backwards compatibility
 is maintained in the newer versions). You do not have to pay any attention
 to OCaml compiler versions.
-</li><li class="li-itemize"><em>Unison 2.51</em> if both versions are compiled with same OCaml
+</li></ul><p>Additionally, <span style="font-weight:bold">Unison 2.52 up to 2.53.8 (included)</span> are compatible with:
+</p><ul class="itemize"><li class="li-itemize">
+<em>Unison 2.51</em> if both versions are compiled with same OCaml
 compiler version (you can see which compiler version was used by running
 <span style="font-family:monospace">unison -version</span>).
 </li><li class="li-itemize"><em>Unison 2.48</em> if both versions are compiled with same OCaml
@@ -306,8 +295,15 @@ compiler version. See special notes below.
 <span style="font-weight:bold">Interoperability matrix</span> for quick reference:</p><p><br>
 
 </p><table border=1  style="border-spacing:0;" class="cellpadding1"><tr><td style="text-align:right;border:solid 1px;white-space:nowrap" > Client versions</td><td style="text-align:center;border:solid 1px;white-space:nowrap"  colspan=3>Server versions </td></tr>
-<tr><td style="text-align:right;border:solid 1px;white-space:nowrap" >&nbsp;</td><td style="text-align:center;border:solid 1px;white-space:nowrap" >2.52 or newer</td><td style="text-align:center;border:solid 1px;white-space:nowrap" >2.51</td><td style="text-align:center;border:solid 1px;white-space:nowrap" >2.48 </td></tr>
-<tr><td style="text-align:right;border:solid 1px;white-space:nowrap" > 2.52 or newer</td><td style="text-align:center;border:solid 1px;white-space:nowrap" >full interop</td><td style="text-align:center;border:solid 1px;white-space:nowrap" >same OCaml version</td><td style="text-align:center;border:solid 1px;white-space:nowrap" >same OCaml version </td></tr>
+<tr><td style="text-align:right;border:solid 1px;white-space:nowrap" >&nbsp;</td><td style="text-align:center;border:solid 1px;white-space:nowrap" >newer than 2.53.8</td><td style="text-align:center;border:solid 1px;white-space:nowrap" >2.52 to 2.53.8</td><td style="text-align:center;border:solid 1px;white-space:nowrap" >older than 2.52 </td></tr>
+<tr><td style="text-align:right;border:solid 1px;white-space:nowrap" > newer than 2.53.8</td><td style="text-align:center;border:solid 1px;white-space:nowrap" >full interop</td><td style="text-align:center;border:solid 1px;white-space:nowrap" >full interop</td><td style="text-align:center;border:solid 1px;white-space:nowrap" ><span style="font-weight:bold">no interop</span> </td></tr>
+<tr><td style="text-align:right;border:solid 1px;white-space:nowrap" > 2.52 to 2.53.8</td><td style="text-align:center;border:solid 1px;white-space:nowrap" >full interop</td><td style="text-align:center;border:solid 1px;white-space:nowrap" >full interop</td><td style="text-align:center;border:solid 1px;white-space:nowrap" ><em>see below</em> </td></tr>
+<tr><td style="text-align:right;border:solid 1px;white-space:nowrap" > older than 2.52</td><td style="text-align:center;border:solid 1px;white-space:nowrap" ><span style="font-weight:bold">no interop</span></td><td style="text-align:center;border:solid 1px;white-space:nowrap" ><em>see below</em></td><td style="text-align:center;border:solid 1px;white-space:nowrap" ><em>see below</em> </td></tr>
+</table><p><br>
+
+</p><table border=1  style="border-spacing:0;" class="cellpadding1"><tr><td style="text-align:right;border:solid 1px;white-space:nowrap" > Client versions</td><td style="text-align:center;border:solid 1px;white-space:nowrap"  colspan=3>Server versions </td></tr>
+<tr><td style="text-align:right;border:solid 1px;white-space:nowrap" >&nbsp;</td><td style="text-align:center;border:solid 1px;white-space:nowrap" >2.52 to 2.53.8</td><td style="text-align:center;border:solid 1px;white-space:nowrap" >2.51</td><td style="text-align:center;border:solid 1px;white-space:nowrap" >2.48 </td></tr>
+<tr><td style="text-align:right;border:solid 1px;white-space:nowrap" > 2.52 to 2.53.8</td><td style="text-align:center;border:solid 1px;white-space:nowrap" >full interop</td><td style="text-align:center;border:solid 1px;white-space:nowrap" >same OCaml version</td><td style="text-align:center;border:solid 1px;white-space:nowrap" >same OCaml version </td></tr>
 <tr><td style="text-align:right;border:solid 1px;white-space:nowrap" > 2.51</td><td style="text-align:center;border:solid 1px;white-space:nowrap" >same OCaml version</td><td style="text-align:center;border:solid 1px;white-space:nowrap" >full interop</td><td style="text-align:center;border:solid 1px;white-space:nowrap" >no interop </td></tr>
 <tr><td style="text-align:right;border:solid 1px;white-space:nowrap" > 2.48</td><td style="text-align:center;border:solid 1px;white-space:nowrap" >same OCaml version*</td><td style="text-align:center;border:solid 1px;white-space:nowrap" >no interop</td><td style="text-align:center;border:solid 1px;white-space:nowrap" >full interop </td></tr>
 </table><p>
@@ -375,12 +371,10 @@ able to tell next time what has changed.) Type:
 </pre><p>
 (You may need to add <code class="verb">-ui text</code>, depending how your unison binary was built.)</p><p><br>
 <em>Textual Interface:</em></p><ul class="itemize"><li class="li-itemize">
-
 You should see a message notifying you that all the files are actually
 equal and then get returned to the command line.
 </li></ul><p><br>
 <em>Graphical Interface:</em></p><ul class="itemize"><li class="li-itemize">
-
 You should get a big empty window with a message at the bottom
 notifying you that all files are identical. Choose the Exit item from
 the File menu to get back to the command line.
@@ -416,7 +410,6 @@ nothing is shown. Unison simply notes that the file is up to date.</p><p>These d
 interface. The only difference lies in the way in which Unison’s
 default actions are either accepted or overridden by the user.</p><p><br>
 <em>Textual Interface:</em></p><ul class="itemize"><li class="li-itemize">
-
 The status of each modified file is displayed, in turn.
 When the copies of a file in the two replicas are not identical, the
 user interface will ask for instructions as to how to propagate the
@@ -431,7 +424,6 @@ been selected.<p>When Unison stops to wait for input from the user, pressing “
 will always give a list of possible responses and their meanings.
 </p></li></ul><p><br>
 <em>Graphical Interface:</em></p><ul class="itemize"><li class="li-itemize">
-
 The main window shows all the files that have been modified in either
 <span style="font-family:monospace">a.tmp</span> or <span style="font-family:monospace">b.tmp</span>. To override a default action (or to select
 an action in the case when there is no default), first select the file, either
@@ -455,7 +447,9 @@ without setuid before being reported as bugs.)</p><p>Follow the instructions in 
 build an executable version of Unison on the server machine, and
 install it somewhere on your search path. (It doesn’t matter whether
 you install the textual or graphical version, since the copy of Unison on
-the server doesn’t need to display any user interface at all.)</p><p>It is important that the version of Unison installed on the server
+the server doesn’t need to display any user interface at all. The major
+benefit of installing the textual version is that it doesn’t have any external
+dependencies required by the GUI executable.)</p><p>It is important that the version of Unison installed on the server
 machine is the same as the version of Unison on the client machine.
 But some flexibility on the version of Unison at the client side can
 be achieved by using the <code class="verb">-addversionno</code> option; see
@@ -600,11 +594,6 @@ one host.
 </li><li class="li-enumerate">Create a subdirectory called <span style="font-family:monospace">shared</span> (or <span style="font-family:monospace">current</span>, or
 whatever) in your home directory on each host, and put all the files
 you want to synchronize into this directory.
-</li><li class="li-enumerate">Create a subdirectory called <span style="font-family:monospace">shared</span> (or <span style="font-family:monospace">current</span>, or
-whatever) in your home directory on each host, and put <em>links to</em>
-all the files you want to synchronize into this directory. Use the
-<span style="font-family:monospace">follow</span> preference (see the <a href="#symlinks">Symbolic Links</a> section) to make
-Unison treat these links as transparent.
 </li><li class="li-enumerate">Make your home directory the root of the synchronization, but
 tell Unison to synchronize only some of the files and subdirectories
 within it on any given run. This can be accomplished by using the <span style="font-family:monospace">-path</span> switch
@@ -630,9 +619,7 @@ Unison on the laptop.) This is a bit different from the usual
 situation with asymmetric mirroring programs like <code class="verb">rdist</code>, where
 the mirroring operation typically needs to be initiated from the
 machine with the most recent changes. the <a href="#profile">Profiles</a> section
-covers the syntax of Unison profiles, together with some sample profiles.</p><p>Some tips on improving Unison’s performance can be found on the
-<a href="http://www.cis.upenn.edu/~bcpierce/unison/faq.html">Frequently
-Asked Questions page</a>.</p><!--TOC subsection id="sec24" Using Unison to Synchronize More Than Two Machines-->
+covers the syntax of Unison profiles, together with some sample profiles.</p><!--TOC subsection id="sec24" Using Unison to Synchronize More Than Two Machines-->
 <h3 id="sec24" class="subsection"><a id="usingmultiple">Using Unison to Synchronize More Than Two Machines</a></h3><!--SEC END --><p>Unison is designed for synchronizing pairs of replicas. However, it is
 possible to use it to keep larger groups of machines in sync by performing
 multiple pairwise synchronizations.</p><p>If you need to do this, the most reliable way to set things up is to
@@ -699,7 +686,7 @@ The full grammar is:
             |  socket
             |  ssh
 
-  <span style="font-style:italic">user</span> ::= [-_a-zA-Z0-9]+
+  <span style="font-style:italic">user</span> ::= [-_a-zA-Z0-9%@]+
 
   <span style="font-style:italic">host</span> ::= [-_a-zA-Z0-9.]+
         |  \[ [a-f0-9:.]+ <span style="font-style:italic">zone</span>? \]    IPv6 literals (no future format).
@@ -1052,6 +1039,7 @@ Advanced options:
    -links xxx          allow the synchronization of symbolic links
                        (true/false/default)
    -merge xxx          add a pattern to the merge list
+   -moves-experimental optimize transfers by detecting renames and moves
    -nocreationpartial xxx add a pattern to the nocreationpartial list
    -nodeletionpartial xxx add a pattern to the nodeletionpartial list
    -noupdatepartial xxx add a pattern to the noupdatepartial list
@@ -1122,10 +1110,13 @@ Advanced options:
   Other:
    -addprefsto xxx     file to add new prefs to
    -contactquietly     suppress the 'contacting server' message during startup
-   -copymax n          maximum number of simultaneous copyprog transfers
-   -copyprog xxx       external program for copying large files
-   -copyprogrest xxx   variant of copyprog for resuming partial transfers
-   -copythreshold n    use copyprog on files bigger than this (if &gt;=0, in Kb)
+   -copymax n          (deprecated) maximum number of simultaneous copyprog
+                       transfers
+   -copyprog xxx       (deprecated) external program for copying large files
+   -copyprogrest xxx   (deprecated) variant of copyprog for resuming partial
+                       transfers
+   -copythreshold n    (deprecated) use copyprog on files bigger than this (if
+                       &gt;=0, in Kb)
    -diff xxx           set command for showing differences between files
    -ignorelocks        ignore locks left over from previous run (dangerous!)
    -include xxx        include a profile's preferences
@@ -1177,11 +1168,11 @@ When set to <span style="font-family:monospace">true</span>, this flag enables c
 When this is set to <span style="font-family:monospace">true</span>, Unison will request an extra confirmation if it appears that the entire replica has been deleted, before propagating the change. If the <span style="font-family:monospace">batch</span> flag is also set, synchronization will be aborted. When the <span style="font-family:monospace">path</span> preference is used, the same confirmation will be requested for top-level paths. (At the moment, this flag only affects the text user interface.) See also the <span style="font-family:monospace">mountpoint</span> preference.</dd><dt class="dt-description"><span style="font-weight:bold">confirmmerge </span></dt><dd class="dd-description">
 Setting this preference causes both the text and graphical interfaces to ask the user if the results of a merge command may be committed to the replica or not. Since the merge command works on temporary files, the user can then cancel all the effects of applying the merge if it turns out that the result is not satisfactory. In batch-mode, this preference has no effect. Default is false.</dd><dt class="dt-description"><span style="font-weight:bold">contactquietly </span></dt><dd class="dd-description">
 If this flag is set, Unison will skip displaying the ‘Contacting server’ message (which some users find annoying) during startup.</dd><dt class="dt-description"><span style="font-weight:bold">copymax <span style="font-family:monospace">n</span></span></dt><dd class="dd-description">
-A number indicating how many instances of the external copying utility Unison is allowed to run simultaneously (default to 1).</dd><dt class="dt-description"><span style="font-weight:bold">copyonconflict </span></dt><dd class="dd-description">
+<em>(Deprecated)</em> A number indicating how many instances of the external copying utility Unison is allowed to run simultaneously (default to 1).</dd><dt class="dt-description"><span style="font-weight:bold">copyonconflict </span></dt><dd class="dd-description">
 When this flag is set, Unison will make a copy of files that would otherwise be overwritten or deleted in case of conflicting changes, and more generally whenever the default behavior is overridden. This makes it possible to automatically resolve conflicts in a fairly safe way when synchronizing continuously, in combination with the <code class="verb">-repeat watch</code> and <code class="verb">-prefer newer</code> preferences.</dd><dt class="dt-description"><span style="font-weight:bold">copyprog <span style="font-family:monospace">xxx</span></span></dt><dd class="dd-description">
-A string giving the name of an external program that can be used to copy large files efficiently (plus command-line switches telling it to copy files in-place). The default setting invokes <span style="font-family:monospace">rsync</span> with appropriate options—most users should not need to change it.</dd><dt class="dt-description"><span style="font-weight:bold">copyprogrest <span style="font-family:monospace">xxx</span></span></dt><dd class="dd-description">
-A variant of <span style="font-family:monospace">copyprog</span> that names an external program that should be used to continue the transfer of a large file that has already been partially transferred. Typically, <span style="font-family:monospace">copyprogrest</span> will just be <span style="font-family:monospace">copyprog</span> with one extra option (e.g., <span style="font-family:monospace">--partial</span>, for rsync). The default setting invokes <span style="font-family:monospace">rsync</span> with appropriate options—most users should not need to change it.</dd><dt class="dt-description"><span style="font-weight:bold">copythreshold <span style="font-family:monospace">n</span></span></dt><dd class="dd-description">
-A number indicating above what filesize (in kilobytes) Unison should use the external copying utility specified by <span style="font-family:monospace">copyprog</span>. Specifying 0 will cause <em>all</em> copies to use the external program; a negative number will prevent any files from using it. The default is -1. See the <a href="#speeding">Making Unison Faster on Large Files</a> section for more information.</dd><dt class="dt-description"><span style="font-weight:bold">debug <span style="font-family:monospace">xxx</span></span></dt><dd class="dd-description">
+<em>(Deprecated)</em> A string giving the name of an external program that can be used to copy large files efficiently (plus command-line switches telling it to copy files in-place). The default setting invokes <span style="font-family:monospace">rsync</span> with appropriate options—most users should not need to change it.</dd><dt class="dt-description"><span style="font-weight:bold">copyprogrest <span style="font-family:monospace">xxx</span></span></dt><dd class="dd-description">
+<em>(Deprecated)</em> A variant of <span style="font-family:monospace">copyprog</span> that names an external program that should be used to continue the transfer of a large file that has already been partially transferred. Typically, <span style="font-family:monospace">copyprogrest</span> will just be <span style="font-family:monospace">copyprog</span> with one extra option (e.g., <span style="font-family:monospace">--partial</span>, for rsync). The default setting invokes <span style="font-family:monospace">rsync</span> with appropriate options—most users should not need to change it.</dd><dt class="dt-description"><span style="font-weight:bold">copythreshold <span style="font-family:monospace">n</span></span></dt><dd class="dd-description">
+<em>(Deprecated)</em> A number indicating above what filesize (in kilobytes) Unison should use the external copying utility specified by <span style="font-family:monospace">copyprog</span>. Specifying 0 will cause <em>all</em> copies to use the external program; a negative number will prevent any files from using it. The default is -1.</dd><dt class="dt-description"><span style="font-weight:bold">debug <span style="font-family:monospace">xxx</span></span></dt><dd class="dd-description">
 This preference is used to make Unison print various sorts of information about what it is doing internally on the standard error stream. It can be used many times, each time with the name of a module for which debugging information should be printed. Possible arguments for <code class="verb">debug</code> can be found by looking for calls to <code class="verb">Util.debug</code> in the sources (using, e.g., <code class="verb">grep</code>). Setting <code class="verb">-debug all</code> causes information from <em>all</em> modules to be printed (this mode of usage is the first one to try, if you are trying to understand something that Unison seems to be doing wrong); <code class="verb">-debug verbose</code> turns on some additional debugging output from some modules (e.g., it will show exactly what bytes are being sent across the network).</dd><dt class="dt-description"><span style="font-weight:bold">diff <span style="font-family:monospace">xxx</span></span></dt><dd class="dd-description">
 This preference can be used to control the name and command-line arguments of the system utility used to generate displays of file differences. The default is ‘<code class="verb">diff -u OLDER NEWER</code>’. If the value of this preference contains the substrings CURRENT1 and CURRENT2, these will be replaced by the names of the files to be diffed. If the value of this preference contains the substrings NEWER and OLDER, these will be replaced by the names of files to be diffed, NEWER being the most recently modified file of the two. Without any of these substrings, the two filenames will be appended to the command. In all cases, the filenames are suitably quoted.</dd><dt class="dt-description"><span style="font-weight:bold">doc <span style="font-family:monospace">xxx</span></span></dt><dd class="dd-description">
 The command-line argument <span style="font-family:monospace">-doc </span><span style="font-family:monospace"><span style="font-style:italic">secname</span></span> causes unison to display section <span style="font-family:monospace"><span style="font-style:italic">secname</span></span> of the manual on the standard output and then exit. Use <code class="verb">-doc all</code> to display the whole manual, which includes exactly the same information as the printed and HTML manuals, modulo formatting. Use <code class="verb">-doc topics</code> to obtain a list of the names of the various sections that can be printed.</dd><dt class="dt-description"><span style="font-weight:bold">dontchmod </span></dt><dd class="dd-description">
@@ -1193,8 +1184,8 @@ When this preference is set to <code class="verb">true</code>, Unison will use t
 THIS FEATURE IS STILL EXPERIMENTAL AND SHOULD BE USED WITH EXTREME CAUTION. <p>When this flag is set to <span style="font-family:monospace">true</span>, Unison will compute a ’pseudo-fingerprint’ the first time it sees a file (either because the file is new or because Unison is running for the first time). This enormously speeds update detection, but it must be used with care, as it can cause Unison to miss conflicts: If a given path in the filesystem contains files on <em>both</em> sides that Unison has not yet seen, and if those files have the same length but different contents, then Unison will not notice the presence of a conflict. If, later, one of the files is changed, the changed file will be propagated, overwriting the other. </p><p>Moreover, even when the files are initially identical, setting this flag can lead to potentially confusing behavior: if a newly created file is later touched without being modified, Unison will treat this conservatively as a potential change (since it has no record of the earlier contents) and show it as needing to be propagated to the other replica. </p><p>Most users should leave this flag off – the small time savings of not fingerprinting new files is not worth the cost in terms of safety. However, it can be very useful for power users with huge replicas that are known to be already synchronized (e.g., because one replica is a newly created duplicate of the other, or because they have previously been synchronized with Unison but Unison’s archives need to be rebuilt). In such situations, it is recommended that this flag be set only for the initial run of Unison, so that new archives can be created quickly, and then turned off for normal use.</p></dd><dt class="dt-description"><span style="font-weight:bold">fat </span></dt><dd class="dd-description">
 When this is set to <span style="font-family:monospace">true</span>, Unison will use appropriate options to synchronize efficiently and without error a replica located on a FAT filesystem on a non-Windows machine: do not synchronize permissions (<span style="font-family:monospace">perms = 0</span>); never use chmod (<span style="font-family:monospace">dontchmod = true</span>); treat filenames as case insensitive (<span style="font-family:monospace">ignorecase = true</span>); do not attempt to synchronize symbolic links (<span style="font-family:monospace">links = false</span>); ignore inode number changes when detecting updates (<span style="font-family:monospace">ignoreinodenumbers = true</span>). Any of these change can be overridden by explicitly setting the corresponding preference in the profile.</dd><dt class="dt-description"><span style="font-weight:bold">follow <span style="font-family:monospace">xxx</span></span></dt><dd class="dd-description">
 Including the preference <span style="font-family:monospace">-follow </span><span style="font-family:monospace"><span style="font-style:italic">pathspec</span></span> causes Unison to treat symbolic links matching <span style="font-family:monospace"><span style="font-style:italic">pathspec</span></span> as ‘invisible’ and behave as if the object pointed to by the link had appeared literally at this position in the replica. See the <a href="#symlinks">Symbolic Links</a> section for more details. The syntax of <span style="font-family:monospace"><span style="font-style:italic">pathspec</span></span> is described in the <a href="#pathspec">Path Specification</a> section.</dd><dt class="dt-description"><span style="font-weight:bold">force <span style="font-family:monospace">xxx</span></span></dt><dd class="dd-description">
-Including the preference <span style="font-family:monospace">-force </span><span style="font-family:monospace"><span style="font-style:italic">root</span></span> causes Unison to resolve all differences (even non-conflicting changes) in favor of <span style="font-family:monospace"><span style="font-style:italic">root</span></span>. This effectively changes Unison from a synchronizer into a mirroring utility. <p>You can also specify a unique prefix or suffix of the path of one of the roots or a unique prefix of the hostname of a remote root.</p><p>You can also specify <code class="verb">-force newer</code> (or <code class="verb">-force older</code>) to force Unison to choose the file with the later (earlier) modtime. In this case, the <code class="verb">-times</code> preference must also be enabled.</p><p>This preference is overridden by the <code class="verb">forcepartial</code> preference.</p><p>This preference should be used only if you are <em>sure</em> you know what you are doing!</p></dd><dt class="dt-description"><span style="font-weight:bold">forcepartial <span style="font-family:monospace">xxx</span></span></dt><dd class="dd-description">
-Including the preference <span style="font-family:monospace">forcepartial = </span><span style="font-family:monospace"><span style="font-style:italic">PATHSPEC</span></span><span style="font-family:monospace"> -&gt; </span><span style="font-family:monospace"><span style="font-style:italic">root</span></span> causes Unison to resolve all differences (even non-conflicting changes) in favor of <span style="font-family:monospace"><span style="font-style:italic">root</span></span> for the files in <span style="font-family:monospace"><span style="font-style:italic">PATHSPEC</span></span> (see the <a href="#pathspec">Path Specification</a> section for more information). This effectively changes Unison from a synchronizer into a mirroring utility. <p>You can also specify a unique prefix or suffix of the path of one of the roots or a unique prefix of the hostname of a remote root.</p><p>You can also specify <code class="verb">forcepartial PATHSPEC -&gt; newer</code> (or <code class="verb">forcepartial PATHSPEC -&gt; older</code>) to force Unison to choose the file with the later (earlier) modtime. In this case, the <code class="verb">-times</code> preference must also be enabled.</p><p>This preference should be used only if you are <em>sure</em> you know what you are doing!</p></dd><dt class="dt-description"><span style="font-weight:bold">group </span></dt><dd class="dd-description">
+Including the preference <span style="font-family:monospace">-force </span><span style="font-family:monospace"><span style="font-style:italic">root</span></span> causes Unison to resolve all differences (including non-conflicting changes) in favor of <span style="font-family:monospace"><span style="font-style:italic">root</span></span>. This effectively changes Unison from a synchronizer into a mirroring utility. <p>You can also specify a unique prefix or suffix of the path of one of the roots or a unique prefix of the hostname of a remote root.</p><p>You can also specify <code class="verb">-force newer</code> (or <code class="verb">-force older</code>) to force Unison to choose the file with the later (earlier) modtime. In this case, the <code class="verb">-times</code> preference must also be enabled. If modtimes are equal in both replicas when using <code class="verb">newer</code> or <code class="verb">older</code> then this preference will have no effect (changes will be synced as if without this preference or remain unsynced in case of a conflict).</p><p>This preference is overridden by the <code class="verb">forcepartial</code> preference.</p><p>This preference should be used only if you are <em>sure</em> you know what you are doing!</p></dd><dt class="dt-description"><span style="font-weight:bold">forcepartial <span style="font-family:monospace">xxx</span></span></dt><dd class="dd-description">
+Including the preference <span style="font-family:monospace">forcepartial = </span><span style="font-family:monospace"><span style="font-style:italic">PATHSPEC</span></span><span style="font-family:monospace"> -&gt; </span><span style="font-family:monospace"><span style="font-style:italic">root</span></span> causes Unison to resolve all differences (even non-conflicting changes) in favor of <span style="font-family:monospace"><span style="font-style:italic">root</span></span> for the files in <span style="font-family:monospace"><span style="font-style:italic">PATHSPEC</span></span> (see the <a href="#pathspec">Path Specification</a> section for more information). This effectively changes Unison from a synchronizer into a mirroring utility. <p>You can also specify a unique prefix or suffix of the path of one of the roots or a unique prefix of the hostname of a remote root.</p><p>You can also specify <code class="verb">forcepartial PATHSPEC -&gt; newer</code> (or <code class="verb">forcepartial PATHSPEC -&gt; older</code>) to force Unison to choose the file with the later (earlier) modtime. In this case, the <code class="verb">-times</code> preference must also be enabled. If modtimes are equal in both replicas when using <code class="verb">newer</code> or <code class="verb">older</code> then this preference will have no effect (changes will be synced as if without this preference or remain unsynced in case of a conflict).</p><p>This preference should be used only if you are <em>sure</em> you know what you are doing!</p></dd><dt class="dt-description"><span style="font-weight:bold">group </span></dt><dd class="dd-description">
 When this flag is set to <code class="verb">true</code>, the group attributes of the files are synchronized. Whether the group names or the group identifiers are synchronized depends on the preference <span style="font-family:monospace">numerids</span>.</dd><dt class="dt-description"><span style="font-weight:bold">halfduplex </span></dt><dd class="dd-description">
 <em>(Deprecated)</em> When this flag is set to <span style="font-family:monospace">true</span>, Unison network communication is forced to be half duplex (the client and the server never simultaneously emit data). If you experience unstabilities with your network link, this may help.</dd><dt class="dt-description"><span style="font-weight:bold">height <span style="font-family:monospace">n</span></span></dt><dd class="dd-description">
 Used to set the height (in lines) of the main window in the graphical user interface.</dd><dt class="dt-description"><span style="font-weight:bold">i </span></dt><dd class="dd-description">
@@ -1227,7 +1218,7 @@ Include preferences from a profile. <span style="font-family:monospace">include 
 Used in a profile to define a numeric key (0-9) that can be used in the user interface to switch immediately to this profile.</dd><dt class="dt-description"><span style="font-weight:bold">killserver </span></dt><dd class="dd-description">
 When set to <code class="verb">true</code>, this flag causes Unison to kill the remote server process when the synchronization is finished. This behavior is the default for <code class="verb">ssh</code> connections, so this preference is not normally needed when running over <code class="verb">ssh</code>; it is provided so that socket-mode servers can be killed off after a single run of Unison, rather than waiting to accept future connections. (Some users prefer to start a remote socket server for each run of Unison, rather than leaving one running all the time.)</dd><dt class="dt-description"><span style="font-weight:bold">label <span style="font-family:monospace">xxx</span></span></dt><dd class="dd-description">
 Used in a profile to provide a descriptive string documenting its settings. (This is useful for users that switch between several profiles, especially using the ‘fast switch’ feature of the graphical user interface.)</dd><dt class="dt-description"><span style="font-weight:bold">links <span style="font-family:monospace">xxx</span></span></dt><dd class="dd-description">
-When set to <span style="font-family:monospace">true</span>, this flag causes Unison to synchronize symbolic links. When the flag is set to <span style="font-family:monospace">false</span>, symbolic links will be ignored during update detection. Ordinarily, when the flag is set to <span style="font-family:monospace">default</span>, symbolic links are synchronized except when one of the hosts is running Windows. On a Windows client, Unison makes an attempt to detect if symbolic links are supported and allowed by user privileges. You may have to get elevated privileges to create symbolic links. When the flag is set to default and symbolic links can’t be synchronized then an error is produced during update detection.</dd><dt class="dt-description"><span style="font-weight:bold">listen <span style="font-family:monospace">xxx</span></span></dt><dd class="dd-description">
+When set to <span style="font-family:monospace">true</span>, this flag causes Unison to synchronize symbolic links. When the flag is set to <span style="font-family:monospace">false</span>, symbolic links will be ignored during update detection. Ordinarily, when the flag is set to <span style="font-family:monospace">default</span>, symbolic links are synchronized except when one of the hosts is running Windows. On a Windows client, Unison makes an attempt to detect if symbolic links are supported and allowed by user privileges. You may have to get elevated privileges to create symbolic links. When the flag is set to <span style="font-family:monospace">default</span> and symbolic links can’t be synchronized then an error is produced during update detection.</dd><dt class="dt-description"><span style="font-weight:bold">listen <span style="font-family:monospace">xxx</span></span></dt><dd class="dd-description">
 When acting as a server on a TCP socket, Unison will by default listen on "any" address (0.0.0.0 and [::]). This command-line argument allows to specify a different listening address and can be repeated to listen on multiple addresses. Listening address can be specified as a host name or an IP address.</dd><dt class="dt-description"><span style="font-weight:bold">log </span></dt><dd class="dd-description">
 When this flag is set, Unison will log all changes to the filesystems
 on a file.</dd><dt class="dt-description"><span style="font-weight:bold">logfile <span style="font-family:monospace">xxx</span></span></dt><dd class="dd-description">
@@ -1241,7 +1232,8 @@ This preference controls after how many errors Unison aborts a directory transfe
 A number indicating above what filesize (in kilobytes) Unison should flag a conflict instead of transferring the file. This conflict remains even in the presence of force or prefer options. A negative number will allow every transfer independently of the size. The default is -1. </dd><dt class="dt-description"><span style="font-weight:bold">maxthreads <span style="font-family:monospace">n</span></span></dt><dd class="dd-description">
 This preference controls how much concurrency is allowed during the transport phase. Normally, it should be set reasonably high to maximize performance, but when Unison is used over a low-bandwidth link it may be helpful to set it lower (e.g. to 1) so that Unison doesn’t soak up all the available bandwidth. The default is the special value 0, which mean 20 threads when file content streaming is deactivated and 1000 threads when it is activated.</dd><dt class="dt-description"><span style="font-weight:bold">merge <span style="font-family:monospace">xxx</span></span></dt><dd class="dd-description">
 This preference can be used to run a merge program which will create a new version for each of the files and the backup, with the last backup and both replicas. The syntax of <span style="font-family:monospace"><span style="font-style:italic">pathspec -&gt; cmd</span></span> is described in the <a href="#pathspec">Path Specification</a> section, and further details on Merging functions are present in the <a href="#merge">Merging Conflicting Versions</a> section.</dd><dt class="dt-description"><span style="font-weight:bold">mountpoint <span style="font-family:monospace">xxx</span></span></dt><dd class="dd-description">
-Including the preference <span style="font-family:monospace">-mountpoint PATH</span> causes Unison to double-check, at the end of update detection, that <span style="font-family:monospace">PATH</span> exists and abort if it does not. This is useful when Unison is used to synchronize removable media. This preference can be given more than once. See the <a href="#mountpoints">Mount Points and Removable Media</a> section.</dd><dt class="dt-description"><span style="font-weight:bold">nocreation <span style="font-family:monospace">xxx</span></span></dt><dd class="dd-description">
+Including the preference <span style="font-family:monospace">-mountpoint PATH</span> causes Unison to check, at the end of update detection, that <span style="font-family:monospace">PATH</span> exists within each root, and abort if not. This can avoid synchronzing whenremovable media is not mounted. This preference can be given more than once. See the <a href="#mountpoints">Mount Points and Removable Media</a> section.</dd><dt class="dt-description"><span style="font-weight:bold">moves-experimental </span></dt><dd class="dd-description">
+When this preference is set, Unison will try to avoid transferring file contents across the network, or making a local copy, by recognizing when a file or a directory has been renamed or moved to a new location. This usually allows to propagate only the rename, without transferring or copying any data. The default value is <span style="font-family:monospace">false</span>.<p>This feature is currently experimental and may change in incompatible ways in future versions.</p></dd><dt class="dt-description"><span style="font-weight:bold">nocreation <span style="font-family:monospace">xxx</span></span></dt><dd class="dd-description">
 Including the preference <span style="font-family:monospace">-nocreation </span><span style="font-family:monospace"><span style="font-style:italic">root</span></span> prevents Unison from performing any file creation on root <span style="font-family:monospace"><span style="font-style:italic">root</span></span>.<p>You can also specify a unique prefix or suffix of the path of one of the roots or a unique prefix of the hostname of a remote root.</p><p>This preference can be included twice, once for each root, if you want to prevent any creation.</p></dd><dt class="dt-description"><span style="font-weight:bold">nocreationpartial <span style="font-family:monospace">xxx</span></span></dt><dd class="dd-description">
 Including the preference <span style="font-family:monospace">nocreationpartial = </span><span style="font-family:monospace"><span style="font-style:italic">PATHSPEC</span></span><span style="font-family:monospace"> -&gt; </span><span style="font-family:monospace"><span style="font-style:italic">root</span></span> prevents Unison from performing any file creation in <span style="font-family:monospace"><span style="font-style:italic">PATHSPEC</span></span> on root <span style="font-family:monospace"><span style="font-style:italic">root</span></span> (see the <a href="#pathspec">Path Specification</a> section for more information). It is recommended to use <span style="font-family:monospace">BelowPath</span> patterns when selecting a directory and all its contents.</dd><dt class="dt-description"><span style="font-weight:bold">nodeletion <span style="font-family:monospace">xxx</span></span></dt><dd class="dd-description">
 Including the preference <span style="font-family:monospace">-nodeletion </span><span style="font-family:monospace"><span style="font-style:italic">root</span></span> prevents Unison from performing any file deletion on root <span style="font-family:monospace"><span style="font-style:italic">root</span></span>.<p>You can also specify a unique prefix or suffix of the path of one of the roots or a unique prefix of the hostname of a remote root.</p><p>This preference can be included twice, once for each root, if you want to prevent any deletion.</p></dd><dt class="dt-description"><span style="font-weight:bold">nodeletionpartial <span style="font-family:monospace">xxx</span></span></dt><dd class="dd-description">
@@ -1254,7 +1246,7 @@ When no <code class="verb">path</code> preference is given, Unison will simply s
 The integer value of this preference is a mask indicating which permission bits should be synchronized. It is set by default to 0<span style="font-style:italic">o</span>1777: all bits but the set-uid and set-gid bits are synchronised (synchronizing these latter bits can be a security hazard). If you want to synchronize all bits, you can set the value of this preference to −1. If one of the replica is on a FAT [Windows] filesystem, you should consider using the <span style="font-family:monospace">fat</span> preference instead of this preference. If you need Unison not to set permissions at all, set the value of this preference to 0 and set the preference <span style="font-family:monospace">dontchmod</span> to <span style="font-family:monospace">true</span>.</dd><dt class="dt-description"><span style="font-weight:bold">prefer <span style="font-family:monospace">xxx</span></span></dt><dd class="dd-description">
 Including the preference <span style="font-family:monospace">-prefer </span><span style="font-family:monospace"><span style="font-style:italic">root</span></span> causes Unison always to resolve conflicts in favor of <span style="font-family:monospace"><span style="font-style:italic">root</span></span>, rather than asking for guidance from the user, except for paths marked by the preference <span style="font-family:monospace">merge</span>. (The syntax of <span style="font-family:monospace"><span style="font-style:italic">root</span></span> is the same as for the <code class="verb">root</code> preference, plus the special values <code class="verb">newer</code> and <code class="verb">older</code>.) <p>You can also specify a unique prefix or suffix of the path of one of the roots or a unique prefix of the hostname of a remote root.</p><p>This preference is overridden by the <code class="verb">preferpartial</code> preference.</p><p>This preference should be used only if you are <em>sure</em> you know what you are doing!</p></dd><dt class="dt-description"><span style="font-weight:bold">preferpartial <span style="font-family:monospace">xxx</span></span></dt><dd class="dd-description">
 Including the preference <span style="font-family:monospace">preferpartial = </span><span style="font-family:monospace"><span style="font-style:italic">PATHSPEC</span></span><span style="font-family:monospace"> -&gt; </span><span style="font-family:monospace"><span style="font-style:italic">root</span></span> causes Unison always to resolve conflicts in favor of <span style="font-family:monospace"><span style="font-style:italic">root</span></span>, rather than asking for guidance from the user, for the files in <span style="font-family:monospace"><span style="font-style:italic">PATHSPEC</span></span> (see the <a href="#pathspec">Path Specification</a> section for more information). (The syntax of <span style="font-family:monospace"><span style="font-style:italic">root</span></span> is the same as for the <code class="verb">root</code> preference, plus the special values <code class="verb">newer</code> and <code class="verb">older</code>.) <p>You can also specify a unique prefix or suffix of the path of one of the roots or a unique prefix of the hostname of a remote root.</p><p>This preference should be used only if you are <em>sure</em> you know what you are doing!</p></dd><dt class="dt-description"><span style="font-weight:bold">repeat <span style="font-family:monospace">xxx</span></span></dt><dd class="dd-description">
-Setting this preference causes the text-mode interface to synchronize repeatedly, rather than doing it just once and stopping. If the argument is a number, Unison will pause for that many seconds before beginning again. When the argument is <code class="verb">watch</code>, Unison relies on an external file monitoring process to synchronize whenever a change happens. You can combine the two with a <code class="verb">+</code> character to use file monitoring and also do a full scan every specificed number of seconds. For example, <code class="verb">watch+3600</code> will react to changes immediately and additionally do a full scan every hour.</dd><dt class="dt-description"><span style="font-weight:bold">retry <span style="font-family:monospace">n</span></span></dt><dd class="dd-description">
+Setting this preference causes the text-mode interface to synchronize repeatedly, rather than doing it just once and stopping. If the argument is a number, Unison will pause for that many seconds before beginning again. When the argument is <code class="verb">watch</code>, Unison relies on an external file monitoring process to synchronize whenever a change happens. You can combine the two with a <code class="verb">+</code> character to use file monitoring and also do a full scan every specified number of seconds. For example, <code class="verb">watch+3600</code> will react to changes immediately and additionally do a full scan every hour.</dd><dt class="dt-description"><span style="font-weight:bold">retry <span style="font-family:monospace">n</span></span></dt><dd class="dd-description">
 Setting this preference causes the text-mode interface to try again to synchronize updated paths where synchronization fails. Each such path will be tried N times.</dd><dt class="dt-description"><span style="font-weight:bold">root <span style="font-family:monospace">xxx</span></span></dt><dd class="dd-description">
 Each use of this preference names the root of one of the replicas for Unison to synchronize. Exactly two roots are needed, so normal modes of usage are either to give two values for <code class="verb">root</code> in the profile, or to give no values in the profile and provide two on the command line. Details of the syntax of roots can be found in the <a href="#roots">Roots</a> section.<p>The two roots can be given in either order; Unison will sort them into a canonical order before doing anything else. It also tries to ‘canonize’ the machine names and paths that appear in the roots, so that, if Unison is invoked later with a slightly different name for the same root, it will be able to locate the correct archives.</p></dd><dt class="dt-description"><span style="font-weight:bold">rootalias <span style="font-family:monospace">xxx</span></span></dt><dd class="dd-description">
 When calculating the name of the archive files for a given pair of roots, Unison replaces any roots matching the left-hand side of any rootalias rule by the corresponding right-hand side.</dd><dt class="dt-description"><span style="font-weight:bold">rsrc <span style="font-family:monospace">xxx</span></span></dt><dd class="dd-description">
@@ -1649,7 +1641,6 @@ terminal alone and process input a line at a time.
 <h3 id="sec47" class="subsection"><a id="intr">Interrupting a Synchronization</a></h3><!--SEC END --><p>It is possible to interrupt an ongoing synchronization process before it
 completes. Different user interfaces offer different ways of doing it.</p><p><br>
 <em>Graphical Interface:</em></p><ul class="itemize"><li class="li-itemize">
-
 In the graphical user interface the synchronization process can be interrupted
 before it is finished by pressing the “Stop” button or by closing the window.
 The “Stop” button causes the onging propagation to be stopped as quickly as
@@ -1660,7 +1651,6 @@ without doing proper cleanup; it is therefore not recommended unless the
 “Stop” button does not react quickly enough.
 </li></ul><p><br>
 <em>Textual Interface:</em></p><ul class="itemize"><li class="li-itemize">
-
 When not synchronizing continuously, the text interface terminates when
 synchronization is finished normally or due to a fatal error occurring.<p>In the text interface, to interrupt synchronization before it is finished,
 press “Ctrl-C” (or send signal <code class="verb">SIGINT</code> or <code class="verb">SIGTERM</code>). This will
@@ -1680,11 +1670,13 @@ The exit status could be useful when Unison is invoked from a script.
 Currently, there are four possible values for the exit status:
 </p><ul class="itemize"><li class="li-itemize">
 0: successful synchronization; everything is up-to-date now.
+
 </li><li class="li-itemize">1: some files were skipped, but all file transfers were successful.
+
 </li><li class="li-itemize">2: non-fatal failures occurred during file transfer.
+
 </li><li class="li-itemize">3: a fatal error occurred, or the execution was interrupted.
-</li></ul><p>
-The graphical interface does not return any useful information through the
+</li></ul><p>The graphical interface does not return any useful information through the
 exit status.</p><!--TOC subsection id="sec49" Path Specification-->
 <h3 id="sec49" class="subsection"><a id="pathspec">Path Specification</a></h3><!--SEC END --><p>
 Several Unison preferences (e.g., <code class="verb">ignore</code>/<code class="verb">ignorenot</code>,
@@ -1701,9 +1693,11 @@ For example, a profile line of the form
              ignore = <span style="font-family:monospace"><span style="font-style:italic">pattern</span></span>
 </pre>
 adds <span style="font-family:monospace"><span style="font-style:italic">pattern</span></span> to the list of patterns to be ignored.</li><li class="li-itemize">Each <span style="font-family:monospace"><span style="font-style:italic">pattern</span></span> can have one of three forms. The most
-general form is a Posix extended regular expression introduced by the
-keyword <code class="verb">Regex</code>. (The collating sequences and character classes of
-full Posix regexps are not currently supported).
+general form is a POSIX Extended Regular Expression introduced by the
+keyword <code class="verb">Regex</code>. (The collating symbol, equivalence class
+expression, and character class expression described in 
+<a href="https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap09.html#tag_09_03_05">Section 9.3.5 of the POSIX specification</a>
+are not currently supported).
 <pre>
                  Regex <span style="font-family:monospace"><span style="font-style:italic">regexp</span></span>
 </pre>
@@ -1813,8 +1807,38 @@ this whole path <em>including everything below it</em> will be ignored.
 </li><li class="li-itemize">If any of the non-ignored children are directories, then the process
 continues recursively.
 </li></ul>
-</li></ul><!--TOC subsection id="sec51" Symbolic Links-->
-<h3 id="sec51" class="subsection"><a id="symlinks">Symbolic Links</a></h3><!--SEC END --><p>Ordinarily, Unison treats symbolic links in Unix replicas as
+</li></ul><!--TOC subsection id="sec51" Moved or Renamed Paths-->
+<h3 id="sec51" class="subsection"><a id="moves">Moved or Renamed Paths</a></h3><!--SEC END --><p>Unison can, under certain conditions, detect moved and/or renamed files and
+directories. In that case, the move/rename is atomically propagated to the
+other replica, completely bypassing copying any data over the network or
+locally. To ask Unison to detect moves/renames, enable the
+<code class="verb">moves-experimental</code> preference. When the <code class="verb">moves-experimental</code>
+preference is not enabled then all moved and/or renamed files and directories
+will be detected and propagated as a separate creation at the new path and
+deletion at the old path, potentially having to copy a large amount of data.</p><p>It is not possible to detect actual moves and renames simply by scanning the
+file system. Thus, moved and/or renamed files and directories are detected
+heuristically by matching detected deletions and creations that have the same
+contents; this may detect supposed moves/renames that do not match the actions
+done by user. For directories, contents means the names and contents of all
+children recursively.</p><p>When having the same contents, a deletion and a creation are matched as a
+possible move/rename by following tests (up to first passing test):
+</p><ul class="itemize"><li class="li-itemize">
+(for files only) inodes match;
+</li><li class="li-itemize">modification time and parent are same, but names are not (a renamed
+file/directory);
+</li><li class="li-itemize">modification time and name are the same, but parents are not (a moved
+file/directory);
+</li><li class="li-itemize">parent is the same, but names are not (a renamed file/directory);
+</li><li class="li-itemize">name is the same, but parents are not (a moved file/directory);
+</li><li class="li-itemize">modification time is the same, but parents and names are not (renamed
+and moved file/directory);
+</li><li class="li-itemize">nothing is the same (except contents) (renamed and moved
+file/directory).
+</li></ul><p>
+If the contents have changed since the last sync then it will not be detected
+as a move/rename. If propagating a move/rename fails in the other replica then
+Unison falls back to a regular copy.</p><!--TOC subsection id="sec52" Symbolic Links-->
+<h3 id="sec52" class="subsection"><a id="symlinks">Symbolic Links</a></h3><!--SEC END --><p>Ordinarily, Unison treats symbolic links in Unix replicas as
 “opaque”: it considers the contents of the link to be just the
 string specifying where the link points, and it will propagate changes in
 this string to the other replica.</p><p>It is sometimes useful to treat a symbolic link “transparently,”
@@ -1825,15 +1849,45 @@ to treat a link in this manner, add a line of the form
              follow = <span style="font-family:monospace"><span style="font-style:italic">pathspec</span></span>
 </pre><p>
 to the profile, where <span style="font-family:monospace"><span style="font-style:italic">pathspec</span></span> is a path pattern as described in
-the <a href="#pathspec">Path Specification</a> section.</p><p>Not all Windows versions and file systems support symbolic links; Unison will
+the <a href="#pathspec">Path Specification</a> section.</p><blockquote class="quote">
+<span style="font-weight:bold"><span style="color:red">Warning:</span></span> Be careful when using the <code class="verb">follow</code>
+preference. Using a <code class="verb">Pathspec</code> that is not detailed and accurate enough
+will cause Unison to follow symlinks that you may have not intended to. This
+can cause paths outside the replica to be overwritten and deleted due to
+updates in the other replica. This can also cause the targets of links
+pointing to within the replica to be synchronized under two or more names
+(once directly and once via the link, for example), leading to unintended
+results and conflicts.
+</blockquote><p><em>Warning</em>: Deleting, in one replica, the path where a followed symbolic
+link is in the other replica will cause the <em>target</em> of the “transparent”
+link to be deleted in the other replica. The symbolic link itself will not be
+deleted and remains as a broken link. This happens even if there was a symbolic link in both replicas and only the
+link, not the link target, was deleted in one.</p><p>Treating symbolic links “transparently” may not always work as expected when
+it comes to directories. Deleting a file or directory in one replica will cause
+the target of a “transparent” link to be deleted in the other replica.
+Deleting a parent directory, however, which itself might or might not be a
+followed link, will not delete the targets of any “transparent” links
+contained within. </p><p>Renaming or moving a file or directory in one replica behaves as a combination
+of a delete on the old path and a recreate on the new path. Thus, all the
+caveats regarding deletion of followed symbolic links apply (see above).
+Additionally, the link <em>target</em> is recreated in-place on the new path,
+<em>not</em> the symbolic link.</p><p>Followed symbolic links are treated “transparently” also when it comes to the
+<code class="verb">copyonconflict</code> and <code class="verb">backup</code> preferences. This means that the target
+of the link is copied to the conflict or backup location, and you need to
+restore to the original link target location outside the replica, should you
+need the backup. </p><p>Not all Windows versions and file systems support symbolic links; Unison will
 refuse to propagate an opaque symbolic link from Unix to Windows and flag the
 path as erroneous if the support or privileges are lacking on the Windows side.
 When a Unix replica is to be synchronized with such Windows system, all symbolic
-links should match either an <code class="verb">ignore</code> pattern or a <code class="verb">follow</code> pattern.</p><p>You may need to acquire extra privileges to create symbolic links under
+links should match either an <code class="verb">ignore</code> pattern or a <code class="verb">follow</code> pattern.
+To completely ignore all symbolic links, you may set the preference <span style="font-family:monospace">links</span>
+to <span style="font-family:monospace">false</span>.</p><p><em>Warning</em>: Just like with <code class="verb">ignore</code>, be careful with “<span style="font-family:monospace">links =
+false</span>”. This makes Unison effectively ignore symbolic links, so they could be
+deleted without notice.</p><p>You may need to acquire extra privileges to create symbolic links under
 Windows. By default, this is only allowed for administrators. Unison may not
 be able to automatically detect support for symbolic links under Windows. In
-that case, set the preference <span style="font-family:monospace">links</span> to <span style="font-family:monospace">true</span> explicitly.</p><!--TOC subsection id="sec52" Permissions-->
-<h3 id="sec52" class="subsection"><a id="perms">Permissions</a></h3><!--SEC END --><p>Synchronizing the permission bits of files is slightly tricky when two
+that case, set the preference <span style="font-family:monospace">links</span> to <span style="font-family:monospace">true</span> explicitly.</p><!--TOC subsection id="sec53" Permissions-->
+<h3 id="sec53" class="subsection"><a id="perms">Permissions</a></h3><!--SEC END --><p>Synchronizing the permission bits of files is slightly tricky when two
 different filesystems are involved (e.g., when synchronizing a Windows
 client and a Unix server). In detail, here’s how it works:
 </p><ul class="itemize"><li class="li-itemize">
@@ -1851,8 +1905,8 @@ bits are not propagated.
 </li><li class="li-itemize">The Unix owner and group ids can be propagated (see <code class="verb">owner</code>
 and <code class="verb">group</code> preferences) by mapping names or by numeric ids (see
 <code class="verb">numericids</code> preference).
-</li></ul><!--TOC subsection id="sec53" Access Control Lists - ACLs-->
-<h3 id="sec53" class="subsection"><a id="acls">Access Control Lists - ACLs</a></h3><!--SEC END --><p>Unison allows synchronizing access control lists (ACLs) on platforms
+</li></ul><!--TOC subsection id="sec54" Access Control Lists - ACLs-->
+<h3 id="sec54" class="subsection"><a id="acls">Access Control Lists - ACLs</a></h3><!--SEC END --><p>Unison allows synchronizing access control lists (ACLs) on platforms
 and filesystems that support them. In general, synchronization makes
 sense only in case both replicas support the same type of ACLs and
 recognize same users and groups. In some cases you may be able to
@@ -1884,7 +1938,7 @@ NFSv4 ACL (ZFS ACL)
 </li><li class="li-itemize">Some NFSv4 ACL (ZFS ACL) cross-synchronization with
 POSIX-draft ACL
 </li><li class="li-itemize">Full cross-synchronization with other platforms that support
-NFSv4 ACLs; limited cross-synchronization with POSIX-draft ACLs
+NFSv4 ACLs; limited cross-syn&#173;chro&#173;niza&#173;tion with POSIX-draft ACLs
 </li></ul>
 </li><li class="li-itemize">FreeBSD, NetBSD
 <ul class="itemize"><li class="li-itemize">
@@ -1910,8 +1964,8 @@ to enable the preference <code class="verb">xattrs</code> and add a preference
 <code class="verb">posix_acl_default</code> attributes – if you only want to sync either one,
 just remove the <code class="verb">*</code> and type out the attribute name in full. If you want
 to prevent other xattrs from being synced then add an <code class="verb">xattrignore</code> with a
-value <span style="font-family:monospace">Path *</span> (value <span style="font-family:monospace">Regex .*</span> will also work).</p><!--TOC subsection id="sec54" Extended Attributes - xattrs-->
-<h3 id="sec54" class="subsection"><a id="xattrs">Extended Attributes - xattrs</a></h3><!--SEC END --><p>Unison allows synchronizing extended attributes on platforms and
+value <span style="font-family:monospace">Path *</span> (value <span style="font-family:monospace">Regex .*</span> will also work).</p><!--TOC subsection id="sec55" Extended Attributes - xattrs-->
+<h3 id="sec55" class="subsection"><a id="xattrs">Extended Attributes - xattrs</a></h3><!--SEC END --><p>Unison allows synchronizing extended attributes on platforms and
 filesystems that support them. System attributes are not synchronized.
 What exactly is considered a system attribute is platform-dependent.
 Synchronization is possible cross-platform, but see caveats below.</p><p>If one of the replicas does not support extended attributes then
@@ -1964,8 +2018,8 @@ a default <code class="verb">xattrignore</code> pattern of
 <span style="font-family:monospace">Regex !(security|trusted)[.].*</span>.
 Disabling the syncing of attributes used to store POSIX ACL on Linux is
 achieved by setting a default <code class="verb">xattrignore</code> pattern of
-<span style="font-family:monospace">Path !system.posix_acl_*</span>.</p><!--TOC subsection id="sec55" Cross-Platform Synchronization-->
-<h3 id="sec55" class="subsection"><a id="crossplatform">Cross-Platform Synchronization</a></h3><!--SEC END --><p>If you use Unison to synchronize files between Windows and Unix
+<span style="font-family:monospace">Path !system.posix_acl_*</span>.</p><!--TOC subsection id="sec56" Cross-Platform Synchronization-->
+<h3 id="sec56" class="subsection"><a id="crossplatform">Cross-Platform Synchronization</a></h3><!--SEC END --><p>If you use Unison to synchronize files between Windows and Unix
 systems, there are a few special issues to be aware of.</p><p><span style="font-weight:bold">Case conflicts.</span> In Unix, filenames are case sensitive:
 <span style="font-family:monospace">foo</span> and <span style="font-family:monospace">FOO</span> can refer to different files. In
 Windows, on the other hand, filenames are not case sensitive:
@@ -1986,46 +2040,14 @@ Windows filenames, but they are legal in Unix filenames. This means
 that a Unix file <span style="font-family:monospace">foo:bar</span> can’t be synchronized to a Windows
 system. As with case conflicts, Unison detects this situation for
 you, and you have the same options: you can either rename the Unix
-file and re-synchronize, or you can ignore it.</p><!--TOC subsection id="sec56" Slow Links-->
-<h3 id="sec56" class="subsection"><a id="speed">Slow Links</a></h3><!--SEC END --><p>Unison is built to run well even over relatively slow links such as
+file and re-synchronize, or you can ignore it.</p><!--TOC subsection id="sec57" Slow Links-->
+<h3 id="sec57" class="subsection"><a id="speed">Slow Links</a></h3><!--SEC END --><p>Unison is built to run well even over relatively slow links such as
 modems and DSL connections.</p><p>Unison uses the “rsync protocol” designed by Andrew Tridgell and Paul
 Mackerras to greatly speed up transfers of large files in which only
 small changes have been made. More information about the rsync protocol
 can be found at the rsync web site (<a href="http://samba.anu.edu.au/rsync/"><span style="font-family:monospace">http://samba.anu.edu.au/rsync/</span></a>).</p><p>If you are using Unison with <span style="font-family:monospace">ssh</span>, you may get some speed
 improvement by enabling <span style="font-family:monospace">ssh</span>’s compression feature. Do this by
-adding the option “<span style="font-family:monospace">-sshargs -C</span>” to the command line or “<span style="font-family:monospace">sshargs = -C</span>” to your profile.</p><!--TOC subsection id="sec57" Making Unison Faster on Large Files-->
-<h3 id="sec57" class="subsection"><a id="speeding">Making Unison Faster on Large Files</a></h3><!--SEC END --><p>Unison’s built-in implementation of the rsync algorithm makes transferring
-updates to existing files pretty fast. However, for whole-file copies of
-newly created files, the built-in transfer method is not highly optimized.
-Also, if Unison is interrupted in the middle of transferring a large file,
-it will attempt to retransfer the whole thing on the next run.</p><p>These shortcomings can be addressed with a little extra work by telling
-Unison to use an external file copying utility for whole-file transfers.
-The recommended one is the standalone <span style="font-family:monospace">rsync</span> tool, which is available
-by default on most Unix systems and can easily be installed on Windows
-systems using Cygwin.</p><p>If you have <span style="font-family:monospace">rsync</span> installed on both hosts, you can make Unison use it
-simply by setting the <span style="font-family:monospace">copythreshold</span> flag to something non-negative.
-If you set it to 0, Unison will use the external copy utility for <em>all</em>
-whole-file transfers. (This is probably slower than letting Unison copy
-small files by itself, but can be useful for testing.) If you set it to a
-larger value, Unison will use the external utility for all files larger than
-this size (which is given in kilobytes, so setting it to 1000 will cause the
-external tool to be used for all transfers larger than a megabyte).</p><p>If you want to use a different external copy utility, set both the <span style="font-family:monospace">copyprog</span> and <span style="font-family:monospace">copyprogrest</span> preferences—the former is used for
-the first transfer of a file, while the latter is used when Unison sees a
-partially transferred temp file on the receiving host. Be careful here:
-Your external tool needs to be instructed to copy files in place (otherwise
-if the transfer is interrupted Unison will not notice that some of the data
-has already been transferred, the next time it tries). The default values
-are:
-</p><pre class="verbatim">   copyprog      =   rsync --inplace --compress
-   copyprogrest  =   rsync --partial --inplace --compress
-</pre><p>If a <em>directory</em> transfer is interrupted, the next run of Unison will
-automatically skip any files that were completely transferred before the
-interruption. (This behavior is always on: it does not depend on the
-setting of the <span style="font-family:monospace">copythreshold</span> preference.) Note, though, that the new
-directory will not appear in the destination filesystem until everything has
-been transferred—partially transferred directories are kept in a temporary
-location (with names like <span style="font-family:monospace">.unison.DIRNAME....</span>) until the transfer is
-complete.</p><!--TOC subsection id="sec58" Fast Update Detection-->
+adding the option “<span style="font-family:monospace">-sshargs -C</span>” to the command line or “<span style="font-family:monospace">sshargs = -C</span>” to your profile.</p><!--TOC subsection id="sec58" Fast Update Detection-->
 <h3 id="sec58" class="subsection"><a id="fastcheck">Fast Update Detection</a></h3><!--SEC END --><p>If your replicas are large and at least one of them is on a Windows
 system, you may find that Unison’s default method for detecting changes
 (which involves scanning the full contents of every file on every
@@ -2058,8 +2080,13 @@ directory from the other replica—probably not what you want!</p><p>To prevent 
 </pre><p>
 in your preference file will cause Unison to check, after it finishes
 detecting updates, that something actually exists at the path
-<code class="verb">foo</code> on both replicas; if it does not, the Unison run will
-abort.</p><p></div></p><!--CUT END -->
+<code class="verb">foo</code> within both replicas; if it does not, the Unison run will
+abort.</p><p>Note that the preference’s name is confusing; it is intended to be
+used when a root might or might not be mounted, but the value is a
+relative path within a root, for a file or directory that should be
+present.
+(The preference is not used to specify the path at which a replica is
+mounted.)</p><p></div></p><!--CUT END -->
 <!--HTMLFOOT-->
 <!--ENDHTML-->
 <!--FOOTER-->

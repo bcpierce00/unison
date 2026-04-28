@@ -1,40 +1,32 @@
 
 Unison File Synchronizer
-Version 2.53.3
+Version 2.53.8
 
 Overview
 
-   Unison is a file-synchronization tool for Unix and Windows. It allows
-   two replicas of a collection of files and directories to be stored on
-   different hosts (or different disks on the same host), modified
-   separately, and then brought up to date by propagating the changes in
-   each replica to the other.
+   Unison is a file-synchronization tool for POSIX-compliant systems (e.g.
+   BSDs, GNU/Linux, macOS) and Windows. It allows two replicas of a
+   collection of files and directories to be stored on different hosts (or
+   different disks on the same host), modified separately, and then
+   brought up to date by propagating the changes in each replica to the
+   other.
 
-   Unison shares a number of features with tools such as configuration
-   management packages (CVS (http://www.cyclic.com/), PRCS
-   (http://www.XCF.Berkeley.EDU/~jmacd/prcs.html), etc.), distributed
-   filesystems (Coda (http://www.coda.cs.cmu.edu/), etc.), uni-directional
-   mirroring utilities (rsync (http://samba.anu.edu.au/rsync/), etc.), and
-   other synchronizers (Intellisync (http://www.pumatech.com), Reconcile
-   (http://www.merl.com/reports/TR99-14/), etc). However, there are
-   several points where it differs:
-     * Unison runs on both Windows (95, 98, NT, 2k, and XP) and Unix (OSX,
-       Solaris, Linux, etc.) systems. Moreover, Unison works across
-       platforms, allowing you to synchronize a Windows laptop with a Unix
-       server, for example.
+   Features:
+     * Unison works across platforms, allowing you to synchronize a
+       Windows laptop with a Unix server, for example.
      * Unlike a distributed filesystem, Unison is a user-level program:
        there is no need to modify the kernel or to have superuser
        privileges on either host.
      * Unlike simple mirroring or backup utilities, Unison can deal with
        updates to both replicas of a distributed directory structure.
-       Updates that do not conflict are propagated automatically.
+       Updates that do not conflict can be propagated automatically.
        Conflicting updates are detected and displayed.
      * Unison works between any pair of machines connected to the
        internet, communicating over either a direct socket link or
        tunneling over an encrypted ssh connection. It is careful with
-       network bandwidth, and runs well over slow links such as PPP
-       connections. Transfers of small updates to large files are
-       optimized using a compression protocol similar to rsync.
+       network bandwidth, and runs well over slow links. Transfers of
+       small updates to large files are optimized using a compression
+       protocol similar to rsync.
      * Unison has a clear and precise specification, described below.
      * Unison is resilient to failure. It is careful to leave the replicas
        and its own private structures in a sensible state at all times,
@@ -140,6 +132,7 @@ Acknowledgements
    Synchronization, and by University of Pennsylvania’s Institute for
    Research in Cognitive Science (IRCS).
 
+
 Upgrading
 
    (This section is perhaps misplaced, but is early because it is far
@@ -164,12 +157,15 @@ Upgrading
    upgrade Unison on the local machine (compiled with any OCaml version)
    and keep the existing archive.
 
-   If version interoperability requirements are followed then Unison 2.52
-   and newer can upgrade the archive created by earlier Unison versions.
-   To avoid rebuilding archive files when upgrading from a version older
-   than 2.52, you must install version 2.52 or newer built with the same
-   OCaml version as your previous version of Unison, and then run it at
-   least once on each root. Doing so will upgrade the archive file.
+   Upgrading from Unison 2.48 or 2.51: If version interoperability
+   requirements are followed then Unison 2.52 up to 2.53.8 can upgrade the
+   archive created by Unison 2.48 to 2.51. To avoid rebuilding archive
+   files when upgrading from a version older than 2.52, you must install
+   version 2.52 or newer built with the same OCaml version as your
+   previous version of Unison, and then run it at least once on each root.
+   Doing so will upgrade the archive file. Upgrading directly to version
+   newer than 2.53.8 is not supported; upgrade first to a version between
+   2.52 and 2.53.8 if you want to keep the archives.
 
    After upgrading the archive, you are free to swap the Unison 2.52 or
    newer executable to one compiled with a different version of OCaml. The
@@ -188,6 +184,8 @@ Version interoperability
      * Unison 2.52 or newer (for as long as backwards compatibility is
        maintained in the newer versions). You do not have to pay any
        attention to OCaml compiler versions.
+
+   Additionally, Unison 2.52 up to 2.53.8 (included) are compatible with:
      * Unison 2.51 if both versions are compiled with same OCaml compiler
        version (you can see which compiler version was used by running
        unison -version).
@@ -196,9 +194,15 @@ Version interoperability
 
    Interoperability matrix for quick reference:
 
+   Client versions   Server versions
+                     newer than 2.53.8 2.52 to 2.53.8 older than 2.52
+   newer than 2.53.8 full interop      full interop   no interop
+   2.52 to 2.53.8    full interop      full interop   see below
+   older than 2.52   no interop        see below      see below
+
    Client versions Server versions
-                   2.52 or newer       2.51               2.48
-   2.52 or newer   full interop        same OCaml version same OCaml version
+                   2.52 to 2.53.8      2.51               2.48
+   2.52 to 2.53.8  full interop        same OCaml version same OCaml version
    2.51            same OCaml version  full interop       no interop
    2.48            same OCaml version* no interop         full interop
 
@@ -373,7 +377,9 @@ Remote Usage
    build an executable version of Unison on the server machine, and
    install it somewhere on your search path. (It doesn’t matter whether
    you install the textual or graphical version, since the copy of Unison
-   on the server doesn’t need to display any user interface at all.)
+   on the server doesn’t need to display any user interface at all. The
+   major benefit of installing the textual version is that it doesn’t have
+   any external dependencies required by the GUI executable.)
 
    It is important that the version of Unison installed on the server
    machine is the same as the version of Unison on the client machine. But
@@ -549,12 +555,7 @@ Using Unison for All Your Files
     2. Create a subdirectory called shared (or current, or whatever) in
        your home directory on each host, and put all the files you want to
        synchronize into this directory.
-    3. Create a subdirectory called shared (or current, or whatever) in
-       your home directory on each host, and put links to all the files
-       you want to synchronize into this directory. Use the follow
-       preference (see the section “Symbolic Links” ) to make Unison treat
-       these links as transparent.
-    4. Make your home directory the root of the synchronization, but tell
+    3. Make your home directory the root of the synchronization, but tell
        Unison to synchronize only some of the files and subdirectories
        within it on any given run. This can be accomplished by using the
        -path switch on the command line:
@@ -580,10 +581,6 @@ Using Unison for All Your Files
    changes. the section “Profiles” covers the syntax of Unison profiles,
    together with some sample profiles.
 
-   Some tips on improving Unison’s performance can be found on the
-   Frequently Asked Questions page
-   (http://www.cis.upenn.edu/~bcpierce/unison/faq.html).
-
 Using Unison to Synchronize More Than Two Machines
 
    Unison is designed for synchronizing pairs of replicas. However, it is
@@ -607,7 +604,7 @@ Going Further
    at the command line, or by selecting the Help menu in the graphical
    user interface. The same information is also available in a typeset
    User’s Manual (HTML or PostScript format) through
-   http://www.cis.upenn.edu/~bcpierce/unison.
+   https://github.com/bcpierce00/unison/wiki.
 
    If you use Unison regularly, you should subscribe to one of the mailing
    lists, to receive announcements of new versions. See the section
@@ -664,7 +661,7 @@ Roots
             |  socket
             |  ssh
 
-  user ::= [-_a-zA-Z0-9]+
+  user ::= [-_a-zA-Z0-9%@]+
 
   host ::= [-_a-zA-Z0-9.]+
         |  \[ [a-f0-9:.]+ zone? \]    IPv6 literals (no future format).
@@ -1096,6 +1093,7 @@ Advanced options:
    -links xxx          allow the synchronization of symbolic links
                        (true/false/default)
    -merge xxx          add a pattern to the merge list
+   -moves-experimental optimize transfers by detecting renames and moves
    -nocreationpartial xxx add a pattern to the nocreationpartial list
    -nodeletionpartial xxx add a pattern to the nodeletionpartial list
    -noupdatepartial xxx add a pattern to the noupdatepartial list
@@ -1166,10 +1164,13 @@ Advanced options:
   Other:
    -addprefsto xxx     file to add new prefs to
    -contactquietly     suppress the 'contacting server' message during startup
-   -copymax n          maximum number of simultaneous copyprog transfers
-   -copyprog xxx       external program for copying large files
-   -copyprogrest xxx   variant of copyprog for resuming partial transfers
-   -copythreshold n    use copyprog on files bigger than this (if >=0, in Kb)
+   -copymax n          (deprecated) maximum number of simultaneous copyprog
+                       transfers
+   -copyprog xxx       (deprecated) external program for copying large files
+   -copyprogrest xxx   (deprecated) variant of copyprog for resuming partial
+                       transfers
+   -copythreshold n    (deprecated) use copyprog on files bigger than this (if
+                       >=0, in Kb)
    -diff xxx           set command for showing differences between files
    -ignorelocks        ignore locks left over from previous run (dangerous!)
    -include xxx        include a profile's preferences
@@ -1358,8 +1359,9 @@ Expert options:
           server’ message (which some users find annoying) during startup.
 
    copymax n
-          A number indicating how many instances of the external copying
-          utility Unison is allowed to run simultaneously (default to 1).
+          (Deprecated) A number indicating how many instances of the
+          external copying utility Unison is allowed to run simultaneously
+          (default to 1).
 
    copyonconflict
           When this flag is set, Unison will make a copy of files that
@@ -1371,27 +1373,26 @@ Expert options:
           preferences.
 
    copyprog xxx
-          A string giving the name of an external program that can be used
-          to copy large files efficiently (plus command-line switches
-          telling it to copy files in-place). The default setting invokes
-          rsync with appropriate options—most users should not need to
-          change it.
+          (Deprecated) A string giving the name of an external program
+          that can be used to copy large files efficiently (plus
+          command-line switches telling it to copy files in-place). The
+          default setting invokes rsync with appropriate options—most
+          users should not need to change it.
 
    copyprogrest xxx
-          A variant of copyprog that names an external program that should
-          be used to continue the transfer of a large file that has
-          already been partially transferred. Typically, copyprogrest will
-          just be copyprog with one extra option (e.g., --partial, for
-          rsync). The default setting invokes rsync with appropriate
-          options—most users should not need to change it.
+          (Deprecated) A variant of copyprog that names an external
+          program that should be used to continue the transfer of a large
+          file that has already been partially transferred. Typically,
+          copyprogrest will just be copyprog with one extra option (e.g.,
+          --partial, for rsync). The default setting invokes rsync with
+          appropriate options—most users should not need to change it.
 
    copythreshold n
-          A number indicating above what filesize (in kilobytes) Unison
-          should use the external copying utility specified by copyprog.
-          Specifying 0 will cause all copies to use the external program;
-          a negative number will prevent any files from using it. The
-          default is -1. See the section “Making Unison Faster on Large
-          Files” for more information.
+          (Deprecated) A number indicating above what filesize (in
+          kilobytes) Unison should use the external copying utility
+          specified by copyprog. Specifying 0 will cause all copies to use
+          the external program; a negative number will prevent any files
+          from using it. The default is -1.
 
    debug xxx
           This preference is used to make Unison print various sorts of
@@ -1528,8 +1529,8 @@ Expert options:
 
    force xxx
           Including the preference -force root causes Unison to resolve
-          all differences (even non-conflicting changes) in favor of root.
-          This effectively changes Unison from a synchronizer into a
+          all differences (including non-conflicting changes) in favor of
+          root. This effectively changes Unison from a synchronizer into a
           mirroring utility.
 
           You can also specify a unique prefix or suffix of the path of
@@ -1538,7 +1539,11 @@ Expert options:
 
           You can also specify -force newer (or -force older) to force
           Unison to choose the file with the later (earlier) modtime. In
-          this case, the -times preference must also be enabled.
+          this case, the -times preference must also be enabled. If
+          modtimes are equal in both replicas when using newer or older
+          then this preference will have no effect (changes will be synced
+          as if without this preference or remain unsynced in case of a
+          conflict).
 
           This preference is overridden by the forcepartial preference.
 
@@ -1559,7 +1564,10 @@ Expert options:
           You can also specify forcepartial PATHSPEC -> newer (or
           forcepartial PATHSPEC -> older) to force Unison to choose the
           file with the later (earlier) modtime. In this case, the -times
-          preference must also be enabled.
+          preference must also be enabled. If modtimes are equal in both
+          replicas when using newer or older then this preference will
+          have no effect (changes will be synced as if without this
+          preference or remain unsynced in case of a conflict).
 
           This preference should be used only if you are sure you know
           what you are doing!
@@ -1757,10 +1765,22 @@ Expert options:
 
    mountpoint xxx
           Including the preference -mountpoint PATH causes Unison to
-          double-check, at the end of update detection, that PATH exists
-          and abort if it does not. This is useful when Unison is used to
-          synchronize removable media. This preference can be given more
-          than once. See the section “Mount Points and Removable Media” .
+          check, at the end of update detection, that PATH exists within
+          each root, and abort if not. This can avoid synchronzing
+          whenremovable media is not mounted. This preference can be given
+          more than once. See the section “Mount Points and Removable
+          Media” .
+
+   moves-experimental
+          When this preference is set, Unison will try to avoid
+          transferring file contents across the network, or making a local
+          copy, by recognizing when a file or a directory has been renamed
+          or moved to a new location. This usually allows to propagate
+          only the rename, without transferring or copying any data. The
+          default value is false.
+
+          This feature is currently experimental and may change in
+          incompatible ways in future versions.
 
    nocreation xxx
           Including the preference -nocreation root prevents Unison from
@@ -1888,7 +1908,7 @@ Expert options:
           watch, Unison relies on an external file monitoring process to
           synchronize whenever a change happens. You can combine the two
           with a + character to use file monitoring and also do a full
-          scan every specificed number of seconds. For example, watch+3600
+          scan every specified number of seconds. For example, watch+3600
           will react to changes immediately and additionally do a full
           scan every hour.
 
@@ -2616,9 +2636,12 @@ Path Specification
 
        adds pattern to the list of patterns to be ignored.
      * Each pattern can have one of three forms. The most general form is
-       a Posix extended regular expression introduced by the keyword
-       Regex. (The collating sequences and character classes of full Posix
-       regexps are not currently supported).
+       a POSIX Extended Regular Expression introduced by the keyword
+       Regex. (The collating symbol, equivalence class expression, and
+       character class expression described in Section 9.3.5 of the POSIX
+       specification
+       (https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap0
+       9.html#tag_09_03_05) are not currently supported).
                  Regex regexp
 
        For convenience, three other styles of pattern are also recognized:
@@ -2733,6 +2756,44 @@ Ignoring Paths
           + If any of the non-ignored children are directories, then the
             process continues recursively.
 
+Moved or Renamed Paths
+
+   Unison can, under certain conditions, detect moved and/or renamed files
+   and directories. In that case, the move/rename is atomically propagated
+   to the other replica, completely bypassing copying any data over the
+   network or locally. To ask Unison to detect moves/renames, enable the
+   moves-experimental preference. When the moves-experimental preference
+   is not enabled then all moved and/or renamed files and directories will
+   be detected and propagated as a separate creation at the new path and
+   deletion at the old path, potentially having to copy a large amount of
+   data.
+
+   It is not possible to detect actual moves and renames simply by
+   scanning the file system. Thus, moved and/or renamed files and
+   directories are detected heuristically by matching detected deletions
+   and creations that have the same contents; this may detect supposed
+   moves/renames that do not match the actions done by user. For
+   directories, contents means the names and contents of all children
+   recursively.
+
+   When having the same contents, a deletion and a creation are matched as
+   a possible move/rename by following tests (up to first passing test):
+     * (for files only) inodes match;
+     * modification time and parent are same, but names are not (a renamed
+       file/directory);
+     * modification time and name are the same, but parents are not (a
+       moved file/directory);
+     * parent is the same, but names are not (a renamed file/directory);
+     * name is the same, but parents are not (a moved file/directory);
+     * modification time is the same, but parents and names are not
+       (renamed and moved file/directory);
+     * nothing is the same (except contents) (renamed and moved
+       file/directory).
+
+   If the contents have changed since the last sync then it will not be
+   detected as a move/rename. If propagating a move/rename fails in the
+   other replica then Unison falls back to a regular copy.
+
 Symbolic Links
 
    Ordinarily, Unison treats symbolic links in Unix replicas as “opaque”:
@@ -2749,12 +2810,52 @@ Symbolic Links
    to the profile, where pathspec is a path pattern as described in the
    section “Path Specification” .
 
+     Warning: Be careful when using the follow preference. Using a
+     Pathspec that is not detailed and accurate enough will cause Unison
+     to follow symlinks that you may have not intended to. This can cause
+     paths outside the replica to be overwritten and deleted due to
+     updates in the other replica. This can also cause the targets of
+     links pointing to within the replica to be synchronized under two or
+     more names (once directly and once via the link, for example),
+     leading to unintended results and conflicts.
+
+   Warning: Deleting, in one replica, the path where a followed symbolic
+   link is in the other replica will cause the target of the “transparent”
+   link to be deleted in the other replica. The symbolic link itself will
+   not be deleted and remains as a broken link. This happens even if there
+   was a symbolic link in both replicas and only the link, not the link
+   target, was deleted in one.
+
+   Treating symbolic links “transparently” may not always work as expected
+   when it comes to directories. Deleting a file or directory in one
+   replica will cause the target of a “transparent” link to be deleted in
+   the other replica. Deleting a parent directory, however, which itself
+   might or might not be a followed link, will not delete the targets of
+   any “transparent” links contained within.
+
+   Renaming or moving a file or directory in one replica behaves as a
+   combination of a delete on the old path and a recreate on the new path.
+   Thus, all the caveats regarding deletion of followed symbolic links
+   apply (see above). Additionally, the link target is recreated in-place
+   on the new path, not the symbolic link.
+
+   Followed symbolic links are treated “transparently” also when it comes
+   to the copyonconflict and backup preferences. This means that the
+   target of the link is copied to the conflict or backup location, and
+   you need to restore to the original link target location outside the
+   replica, should you need the backup.
+
    Not all Windows versions and file systems support symbolic links;
    Unison will refuse to propagate an opaque symbolic link from Unix to
    Windows and flag the path as erroneous if the support or privileges are
    lacking on the Windows side. When a Unix replica is to be synchronized
    with such Windows system, all symbolic links should match either an
-   ignore pattern or a follow pattern.
+   ignore pattern or a follow pattern. To completely ignore all symbolic
+   links, you may set the preference links to false.
+
+   Warning: Just like with ignore, be careful with “links = false”. This
+   makes Unison effectively ignore symbolic links, so they could be
+   deleted without notice.
 
    You may need to acquire extra privileges to create symbolic links under
    Windows. By default, this is only allowed for administrators. Unison
@@ -2960,51 +3061,6 @@ Slow Links
    enabling ssh’s compression feature. Do this by adding the option
    “-sshargs -C” to the command line or “sshargs = -C” to your profile.
 
-Making Unison Faster on Large Files
-
-   Unison’s built-in implementation of the rsync algorithm makes
-   transferring updates to existing files pretty fast. However, for
-   whole-file copies of newly created files, the built-in transfer method
-   is not highly optimized. Also, if Unison is interrupted in the middle
-   of transferring a large file, it will attempt to retransfer the whole
-   thing on the next run.
-
-   These shortcomings can be addressed with a little extra work by telling
-   Unison to use an external file copying utility for whole-file
-   transfers. The recommended one is the standalone rsync tool, which is
-   available by default on most Unix systems and can easily be installed
-   on Windows systems using Cygwin.
-
-   If you have rsync installed on both hosts, you can make Unison use it
-   simply by setting the copythreshold flag to something non-negative. If
-   you set it to 0, Unison will use the external copy utility for all
-   whole-file transfers. (This is probably slower than letting Unison copy
-   small files by itself, but can be useful for testing.) If you set it to
-   a larger value, Unison will use the external utility for all files
-   larger than this size (which is given in kilobytes, so setting it to
-   1000 will cause the external tool to be used for all transfers larger
-   than a megabyte).
-
-   If you want to use a different external copy utility, set both the
-   copyprog and copyprogrest preferences—the former is used for the first
-   transfer of a file, while the latter is used when Unison sees a
-   partially transferred temp file on the receiving host. Be careful here:
-   Your external tool needs to be instructed to copy files in place
-   (otherwise if the transfer is interrupted Unison will not notice that
-   some of the data has already been transferred, the next time it tries).
-   The default values are:
-   copyprog      =   rsync --inplace --compress
-   copyprogrest  =   rsync --partial --inplace --compress
-
-   If a directory transfer is interrupted, the next run of Unison will
-   automatically skip any files that were completely transferred before
-   the interruption. (This behavior is always on: it does not depend on
-   the setting of the copythreshold preference.) Note, though, that the
-   new directory will not appear in the destination filesystem until
-   everything has been transferred—partially transferred directories are
-   kept in a temporary location (with names like .unison.DIRNAME....)
-   until the transfer is complete.
-
 Fast Update Detection
 
    If your replicas are large and at least one of them is on a Windows
@@ -3049,6 +3105,12 @@ Mount Points and Removable Media
              mountpoint = foo
 
    in your preference file will cause Unison to check, after it finishes
-   detecting updates, that something actually exists at the path foo on
-   both replicas; if it does not, the Unison run will abort.
+   detecting updates, that something actually exists at the path foo
+   within both replicas; if it does not, the Unison run will abort.
+
+   Note that the preference’s name is confusing; it is intended to be used
+   when a root might or might not be mounted, but the value is a relative
+   path within a root, for a file or directory that should be present.
+   (The preference is not used to specify the path at which a replica is
+   mounted.)
 
