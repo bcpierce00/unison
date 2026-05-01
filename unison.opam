@@ -10,8 +10,8 @@ homepage: "https://www.cis.upenn.edu/~bcpierce/unison/"
 bug-reports: "https://github.com/bcpierce00/unison/issues"
 dev-repo: "git://github.com/bcpierce00/unison.git"
 build: [
-  [make "NATIVE=%{ocaml:native}%" "-j" jobs] {!host-system-msvc:installed}
-  ["nmake" "NATIVE=%{ocaml:native}%"] {host-system-msvc:installed}
+  [make "NATIVE=%{ocaml:native}%" "-j" jobs "tui" "fsmonitor" "manpage"] {!host-system-msvc:installed}
+  ["nmake" "NATIVE=%{ocaml:native}%" "tui" "fsmonitor"] {host-system-msvc:installed}
 ]
 install: [
   [make "install" "PREFIX=%{prefix}%"] {os != "win32"}
@@ -21,8 +21,7 @@ depends: [
   "ocaml" {>= "4.08"}
 ]
 depopts: [
-  "lablgtk3" {>= "3.1.0"}
-  "ocamlfind"
+  "host-system-msvc" (* To silence the linter: needed for host-system-msvc:installed *)
 ]
 synopsis: "File-synchronization tool for Unix and Windows"
 description: """
@@ -30,4 +29,7 @@ Unison is a file-synchronization tool for Unix and Windows. It allows
 two replicas of a collection of files and directories to be stored on
 different hosts (or different disks on the same host), modified
 separately, and then brought up to date by propagating the changes in
-each replica to the other."""
+each replica to the other.
+
+This package contains the textual user interface, man pages and the
+file system monitor."""
