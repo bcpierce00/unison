@@ -652,12 +652,13 @@ jobs:
         # This list is intended to balance good enough coverage and
         # limited resource usage.
         job:
-        - { os: ubuntu-22.04  , ocaml-version: 5.4.x   , ref: v2.53.8 }
+        - { os: ubuntu-24.04  , ocaml-version: 5.5.x   , ref: v2.54.0 }
         - { os: ubuntu-22.04  , ocaml-version: 4.14.x  , ref: v2.53.8 }
+        - { os: ubuntu-22.04  , ocaml-version: 4.08.x  , ref: v2.53.8 }
         - { os: ubuntu-22.04  , ocaml-version: 4.14.x  , ref: v2.52.1 , oldmake: true }
-        - { os: windows-2022  , ocaml-version: 4.14.x  , ref: v2.53.8 }
+        - { os: windows-2022  , ocaml-version: 4.14.x  , ref: v2.54.0 }
         - { os: windows-2022  , ocaml-version: 4.14.x  , ref: v2.52.1 , oldmake: true }
-        - { os: macos-14      , ocaml-version: 4.14.x  , ref: v2.53.8 }
+        - { os: macos-14      , ocaml-version: 5.5.x   , ref: v2.54.0 }
         - { os: macos-14      , ocaml-version: 4.14.x  , ref: v2.52.1 , oldmake: true }
 
     runs-on: ${{ matrix.job.os }}
