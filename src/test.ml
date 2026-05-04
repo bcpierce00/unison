@@ -366,7 +366,18 @@ let test() =
       let expect = Dir (r1 @ r2) in
       put R1 (Dir r1); put R2 (Dir r2); sync ();
       check "1" R1 expect;
-      check "2" R2 expect
+      check "2" R2 expect;
+      (* File->file update, file->dir update, subdir update, dir->file update, delete *)
+      let r1 = ["a", File "au"; "b", Dir []; "d1", Dir ["a", File "a1u"; "b", File "b1"]; "d2", File "du"] in
+      let expect = Dir r1 in
+      put R1 (Dir r1); sync ();
+      check "3" R1 expect;
+      check "4" R2 expect;
+      let r2 = ["a", File "au2"; "b", File "bu2"; "d1", Dir ["a", File "a1u2"]; "d2", Dir ["z", File "z"]] in
+      let expect = Dir r2 in
+      put R2 (Dir r2); sync ();
+      check "5" R1 expect;
+      check "6" R2 expect
     )
   done;
 
