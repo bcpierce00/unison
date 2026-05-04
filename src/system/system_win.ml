@@ -58,13 +58,51 @@ let stat f = stat_impl f false
 let lstat f = stat_impl f true
 
 let rename f1 f2 =
+  let rename_with_readonly_fix () =
+    (* If the target exists and is a read-only file/symlink then the rename
+       will fail (this might get fixed in OCaml 5.6 or some later version)
+       with EACCESS (on NTFS, ReFS) or EEXIST (on (ex)FAT). To make renaming
+       more POSIX-like, strip the read-only attribute and try again. *)
+    try
+      Unix.rename f1 f2
+    with
+    | (Unix.Unix_error ((Unix.EACCES | Unix.EEXIST), _, _)) as e ->
+        let origbt = Printexc.get_raw_backtrace () in
+        let st =
+          try
+            lstat f2
+          with Unix.Unix_error _ ->
+            Printexc.raise_with_backtrace e origbt
+        in
+        if st.st_perm land 0o200 <> 0 ||
+            (st.st_kind <> S_REG && st.st_kind <> S_LNK) then
+          Printexc.raise_with_backtrace e origbt
+        else begin
+          begin
+            try
+              Unix.chmod f2 (st.st_perm lor 0o200)
+            with Unix.Unix_error _ ->
+              Printexc.raise_with_backtrace e origbt
+          end;
+          begin
+            try
+              Unix.rename f1 f2
+            with Unix.Unix_error _ as e2 ->
+              let origbt2 = Printexc.get_raw_backtrace () in
+              begin
+                try Unix.chmod f2 st.st_perm with Unix.Unix_error _ -> ()
+              end;
+              Printexc.raise_with_backtrace e2 origbt2
+          end
+        end
+  in
   (* Comment from original C stub implementation:
      Windows Unicode API: when a file cannot be renamed due to a sharing
      violation error or an access denied error, retry for up to 1 second,
      in case the file is temporarily opened by an indexer or an anti-virus. *)
   let rec ren_aux delay =
     try
-      Unix.rename f1 f2
+      rename_with_readonly_fix ()
     with
     | Unix.Unix_error ((Unix.EACCES | Unix.EUNKNOWNERR (-32)), _, _) when delay < 1. ->
                                        (* ERROR_SHARING_VIOLATION *)
