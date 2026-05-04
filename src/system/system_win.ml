@@ -66,14 +66,10 @@ let rename f1 f2 =
     try
       Unix.rename f1 f2
     with
-    | (Unix.Unix_error ((Unix.EACCES | Unix.EUNKNOWNERR (-32)), _, _)) as e ->
+    | Unix.Unix_error ((Unix.EACCES | Unix.EUNKNOWNERR (-32)), _, _) when delay < 1. ->
                                        (* ERROR_SHARING_VIOLATION *)
-        if (delay < 1.) then begin
-          Unix.sleepf delay;
-          ren_aux (delay *. 2.)
-        end else
-          raise e
-    | e -> raise e
+        Unix.sleepf delay;
+        ren_aux (delay *. 2.)
   in
   ren_aux 0.01
 
