@@ -50,16 +50,16 @@ jobs:
         # non-deprecated version for each arch, for published
         # packages.
         job:
-        - { os: macos-15      , ocaml-version: 5.4.x }
+        - { os: macos-15      , ocaml-version: 5.5.x }
         - { os: macos-14      , ocaml-version: 4.14.x           , publish: true  , fnsuffix: -macos-arm64 }
         - { os: macos-15-intel, ocaml-version: 4.14.x           , publish: true  , fnsuffix: -macos-x86-64 }
-        - { os: ubuntu-24.04  , ocaml-version: 5.4.x }
+        - { os: ubuntu-24.04  , ocaml-version: 5.5.x }
         - { os: ubuntu-22.04  , ocaml-version: 4.14.x }
-        - { os: ubuntu-22.04  , ocaml-version: "ocaml-variants.4.14.3+options,ocaml-option-32bit", publish: true, fnsuffix: -ubuntu-22.04-i386 }
-        - { os: windows-2022  , ocaml-version: "ocaml.4.14.3"            , win-comp: mingw, publish: true        , fnsuffix: -windows-x86_64 }
-        - { os: windows-2022  , ocaml-version: "ocaml.4.14.3,arch-x86_32", win-comp: mingw, publish: true        , fnsuffix: -windows-i386 }
-        - { os: windows-2022  , ocaml-version: "ocaml.4.14.3"            , win-comp: msvc }
-        - { os: windows-2022  , ocaml-version: "ocaml.4.14.3,arch-x86_32", win-comp: msvc }
+        - { os: ubuntu-22.04  , ocaml-version: "ocaml-variants.4.14.4+options,ocaml-option-32bit", publish: true, fnsuffix: -ubuntu-22.04-i386 }
+        - { os: windows-2022  , ocaml-version: "ocaml.4.14.4"            , win-comp: mingw, publish: true        , fnsuffix: -windows-x86_64 }
+        - { os: windows-2022  , ocaml-version: "ocaml.4.14.4,arch-x86_32", win-comp: mingw, publish: true        , fnsuffix: -windows-i386 }
+        - { os: windows-2022  , ocaml-version: "ocaml.4.14.4"            , win-comp: msvc }
+        - { os: windows-2022  , ocaml-version: "ocaml.4.14.4,arch-x86_32", win-comp: msvc }
 
     runs-on: ${{ matrix.job.os }}
 
@@ -915,7 +915,7 @@ jobs:
       matrix:
         job:
         - { ocaml-version: 4.14.x, publish: true, fnsuffix: -ubuntu-22.04-x86_64 }
-        - { ocaml-version: "ocaml-variants.4.14.3+options,ocaml-option-musl,ocaml-option-static,ocaml-option-flambda", publish: true, fnsuffix: -ubuntu-22.04-x86_64-static, static: -static }
+        - { ocaml-version: "ocaml-variants.4.14.4+options,ocaml-option-musl,ocaml-option-static,ocaml-option-flambda", publish: true, fnsuffix: -ubuntu-22.04-x86_64-static, static: -static }
         - { ocaml-version: 4.12.x }
         - { ocaml-version: ocaml-base-compiler.4.08.1 }
 
