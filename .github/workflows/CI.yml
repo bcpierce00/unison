@@ -374,6 +374,9 @@ jobs:
         '@ | patch -Nu -p 1
         opam pin --no-action add cairo2 .
         cd ..
+        # [2026-07] Pin dune to 3.23.1 because 3.24 breaks lablgtk3
+        opam pin --no-action add dune 3.23.1
+        #
         opam source lablgtk3
         cd lablgtk3*
         @'
@@ -412,11 +415,11 @@ jobs:
          bug-reports: "https://github.com/ocaml/opam-repository/issues"
          depends: [
            "conf-pkg-config" {>= "3" & build}
-        -  ("host-arch-x86_32" {os = "win32" & os-distribution != "cygwinports"} &
-        -   "conf-mingw-w64-cairo-i686"
-        -     {os = "win32" & os-distribution != "cygwinports"} |
-        -   "host-arch-x86_64" {os = "win32" & os-distribution != "cygwinports"} &
+        -  ("host-arch-x86_64" {os = "win32" & os-distribution != "cygwinports"} &
         -   "conf-mingw-w64-cairo-x86_64"
+        -     {os = "win32" & os-distribution != "cygwinports"} |
+        -   "host-arch-x86_32" {os = "win32" & os-distribution != "cygwinports"} &
+        -   "conf-mingw-w64-cairo-i686"
         -     {os = "win32" & os-distribution != "cygwinports"})
          ]
          flags: conf
@@ -442,11 +445,11 @@ jobs:
          bug-reports: "https://github.com/garrigue/lablgtk/issues"
          depends: [
            "conf-pkg-config" {build}
-        -  ("host-arch-x86_32" {os = "win32" & os-distribution != "cygwinports"} &
-        -   "conf-mingw-w64-gtk3-i686"
-        -     {os = "win32" & os-distribution != "cygwinports"} |
-        -   "host-arch-x86_64" {os = "win32" & os-distribution != "cygwinports"} &
+        -  ("host-arch-x86_64" {os = "win32" & os-distribution != "cygwinports"} &
         -   "conf-mingw-w64-gtk3-x86_64"
+        -     {os = "win32" & os-distribution != "cygwinports"} |
+        -   "host-arch-x86_32" {os = "win32" & os-distribution != "cygwinports"} &
+        -   "conf-mingw-w64-gtk3-i686"
         -     {os = "win32" & os-distribution != "cygwinports"})
          ]
          flags: conf
@@ -468,8 +471,8 @@ jobs:
         '@ | patch -Nu -p 1
         opam pin --no-action add conf-gtk3 .
         cd ..
-        opam source conf-pkg-config
-        cd conf-pkg-config*
+        opam source conf-pkg-config.3
+        cd conf-pkg-config.3
         @'
         --- a/opam      2026-03-26 14:52:18.634978101 +0100
         +++ b/opam      2026-03-26 14:54:20.148430000 +0100
@@ -480,7 +483,7 @@ jobs:
         -  ["pkgconf"] {os-distribution = "cygwin"}
          ]
         '@ | patch -Nu -p 1
-        opam pin --no-action add conf-pkg-config .
+        opam pin --no-action add conf-pkg-config.3 .
 
     - name: lablgtk install
       ## [2020-09] non-working/unavailable for musl OCaml variant
