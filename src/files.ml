@@ -304,11 +304,32 @@ let performRename fspathTo localPathTo (workingDirFrom, pathFrom)
           be raised.  We want to avoid doing the move first, if possible,
           because this opens a "window of danger" during which the contents of
           the path is nothing. *)
+       (* [2026-05] The above is no longer true since OCaml 3.05 (released in
+          July 2002) for >= Windows XP (at least; likely >= Windows 2000) and
+          since OCaml 4.06 for all supported Windows versions, due to using
+          MoveFileEx() with MOVEFILE_REPLACE_EXISTING.
+          Testing in Windows 11 suggests that when the target exists, renaming
+          correctly keeps the props of the source.
+            NTFS: keeps source props.
+            ReFS: keeps source props.
+            exFAT: keeps source props.
+            FAT32: keeps source props.
+            SMB: keeps source props (possibly depends on server implementation).
+            Renaming symlink over file works.
+            Renaming file over symlink works.
+          According to MoveFileEx() documentation, the security descriptor is
+          not kept when moving across volumes. This function, however, is
+          normally used to rename in the same working dir. The only exception
+          is 'moves', but the props are always re-set after propagating the
+          move, precisely for this reason.
+          [Unix.rename] (used since 2.53.0) in Windows will not raise EXDEV but
+          transparently switches to copying. When this happens, we will lose
+          progress tracking. *)
       let moveFirst =
         match (filetypeFrom, filetypeTo) with
         | (_, `ABSENT)            -> false
         | ((`FILE | `SYMLINK),
-           (`FILE | `SYMLINK))    -> Sys.win32
+           (`FILE | `SYMLINK))    -> false
         | _                       -> true (* Safe default *) in
       if moveFirst then begin
         debug (fun() -> Util.msg "rename: moveFirst=true\n");
