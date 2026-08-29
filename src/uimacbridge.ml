@@ -258,6 +258,11 @@ let do_unisonInit1 profileName =
   Trace.debug "" (fun() -> Prefs.dumpPrefsToStderr() );
 
   (* FIX: if no roots, ask the user *)
+  match Globals.rawRoots () with
+  | [] | [_] ->
+      (* Relief for https://github.com/bcpierce00/unison/issues/1058 *)
+      raise (Util.Fatal "Synchronization roots not specified in the profile")
+  | _ -> ();
 
   Recon.checkThatPreferredRootIsValid();
 
