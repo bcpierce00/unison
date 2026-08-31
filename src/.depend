@@ -1446,7 +1446,8 @@ uimacbridge.cmo : \
     fspath.cmi \
     files.cmi \
     common.cmi \
-    clroot.cmi
+    clroot.cmi \
+    abort.cmi
 uimacbridge.cmx : \
     xferhint.cmx \
     uutil.cmx \
@@ -1472,7 +1473,8 @@ uimacbridge.cmx : \
     fspath.cmx \
     files.cmx \
     common.cmx \
-    clroot.cmx
+    clroot.cmx \
+    abort.cmx
 uitext.cmo : \
     uutil.cmi \
     ubase/util.cmi \
