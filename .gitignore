@@ -58,6 +58,7 @@ man/unison.1
 src/.depend.dot.tmp
 src/DEPENDENCIES.ps
 
+Makefile*.cfg
 _build
 .merlin
 *.install
