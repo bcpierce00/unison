@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop">
+  <id>io.github.bcpierce00.unison</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <name>Unison</name>
+  <summary>File Synchronizer</summary>
+  <description>
+    <p>
+      Unison is a file-synchronization tool for POSIX-compliant systems
+      (e.g. *BSD, GNU/Linux, macOS) and Windows. It allows two replicas of a
+      collection of files and directories to be stored on different hosts (or
+      different disks on the same host), modified separately, and then brought
+      up to date by propagating the changes in each replica to the other.
+    </p>
+  </description>
+  <url type="homepage">https://github.com/bcpierce00/unison</url>
+  <launchable type="desktop-id">io.github.bcpierce00.unison.desktop</launchable>
+  <releases>
+    <release version="2.53.7" date="2024-11-04">
+      <url type="details">https://github.com/bcpierce00/unison/releases/tag/v2.53.7</url>
+      <description>
+        <p>Fix for parallel builds of the gui.</p>
+      </description>
+    </release>
+  </releases>
+  <content_rating type="oars-1.1" />
+  <developer id="io.github.bcpierce00">
+    <name>The Unison Project</name>
+  </developer>
+  <screenshots>
+    <screenshot type="default">
+      <image>https://github.com/flathub/io.github.bcpierce00.unison/blob/78ea57b57e81f437a67deb9f587677949643a80f/unison-screenshot-1.png?raw=true</image>
+      <caption>The main window, showing changed files</caption>
+    </screenshot>
+  </screenshots>
+  <recommends>
+    <control>keyboard</control>
+    <control>pointing</control>
+  </recommends>
+</component>
