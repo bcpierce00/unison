@@ -906,6 +906,15 @@ let test() =
     );
   end;
 
+  (* Do the dry run test as the very last test. The dryrun option may be sticky
+     (once set, it can't be unset). *)
+  runtest "dryrun 1" ["dryrun = true"] (fun () ->
+    let r1 = Dir ["foo", File "bar"; "bar", Dir ["x", File "y"]] in
+    put R1 r1; put R2 (Dir []); sync ();
+    check "1" R1 r1;
+    check "2" R2 (Dir [])
+  );
+
   if !failures = 0 then
     Util.msg "Success :-)\n"
   else

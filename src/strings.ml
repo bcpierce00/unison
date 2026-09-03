@@ -1103,6 +1103,7 @@ let docs =
       \n\
       \032 How to sync:\n\
       \032  -batch              batch mode: ask no questions at all\n\
+      \032  -dryrun             dry run, do not change replicas\n\
       \n\
       \032 How to sync (text interface (CLI) only):\n\
       \032  -auto               automatically accept default (nonconflicting) actions\n\
@@ -1468,6 +1469,18 @@ let docs =
       \032         circumstances (and under some operating systems), the chmod call\n\
       \032         always fails. Setting this preference completely prevents Unison\n\
       \032         from ever calling chmod.\n\
+      \n\
+      \032  dryrun\n\
+      \032         Scan and reconcile updates as normal, but do not synchronize.\n\
+      \032         Allows checking for updates and seeing what actions would be\n\
+      \032         taken to synchronize the replicas without making any changes in\n\
+      \032         replicas (note that the archive files and cache files used by\n\
+      \032         Unison may still be updated).\n\
+      \n\
+      \032         Process exit code will signal if there were updates to\n\
+      \032         synchronize. See the section \226\128\156Exit Code\226\128\157 for more information.\n\
+      \032         Dry run may be used together with batch and/or silent to check\n\
+      \032         the exit code in scripts.\n\
       \n\
       \032  dumbtty\n\
       \032         When set to true, this flag makes the text mode user interface\n\

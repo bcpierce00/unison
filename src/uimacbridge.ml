@@ -554,7 +554,9 @@ Callback.register "runShowDiffs" runShowDiffs;;
 (* --------------------------------------------------- *)
 
 let do_unisonSynchronize () =
-  if Array.length !theState = 0 then
+  if Prefs.read Uicommon.dryRun then
+    Trace.status "Dry run enabled, will not synchronize"
+  else if Array.length !theState = 0 then
     Trace.status "Nothing to synchronize"
   else begin
     Trace.status "Propagating changes";
