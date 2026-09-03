@@ -1146,7 +1146,9 @@ let rec interactAndPropagateChanges prevItemList reconItemList
         failedPaths;
     if intr then raise Sys.Break; (* Make sure repeat mode is stopped *)
     (skipped > 0, partials > 0, failures > 0, notstarted > 0, failedPaths) in
-  if updatesToDo = 0 then begin
+  if Prefs.read Uicommon.dryRun then
+    (skipped > 0, false, false, updatesToDo > 0, [])
+  else if updatesToDo = 0 then begin
     (* BCP (3/09): We need to commit the archives even if there are
        no updates to propagate because some files (in fact, if we've
        just switched to DST on windows, a LOT of files) might have new

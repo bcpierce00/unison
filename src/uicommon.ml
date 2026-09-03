@@ -57,6 +57,25 @@ let auto =
      ^ "to move to the next, it will skip over all non-conflicting entries "
      ^ "and go directly to the next conflict.)" )
 
+let dryRun =
+  Prefs.createBool "dryrun" false
+    ~category:(`Basic `Syncprocess) ~local:true
+    ~send:(fun () -> false)
+    "dry run, do not change replicas"
+    "Scan and reconcile updates as normal, but do not synchronize. \
+     Allows checking for updates and seeing what actions would be taken \
+     to synchronize the replicas without making any changes in replicas \
+     (note that the archive files and cache files used by Unison may still \
+     be updated).\
+     \n\n\
+     Process exit code will signal if there were updates to synchronize. \
+     See \\sectionref{exit}{Exit Code} for more information. \
+     Dry run may be used together with \\texttt{batch} and/or \\texttt{silent} \
+     to check the exit code in scripts."
+(* Provide commonly-used alternatives *)
+let () = Prefs.alias dryRun "-dry-run"
+let () = Prefs.alias dryRun "n"
+
 (* This has to be here rather than in uigtk.ml, because it is part of what
    gets sent to the server at startup *)
 let mainWindowHeight =
@@ -701,6 +720,7 @@ let transportFinish () = Transport.logFinish ()
 
 let transportItems items pRiThisRound makeAction =
   if Abort.isAll () then () else
+  if Prefs.read dryRun then () else
   let waiter = Lwt.wait () in
   let outstanding = ref 0 in
   let starting () = incr outstanding in
