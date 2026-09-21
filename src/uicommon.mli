@@ -18,6 +18,9 @@ end
 (* User preference: when true, ask fewer questions *)
 val auto : bool Prefs.t
 
+(* User preference: when true, do not synchronize *)
+val dryRun : bool Prefs.t
+
 (* User preference: How tall to make the main window in the GTK ui *)
 val mainWindowHeight : int Prefs.t
 
